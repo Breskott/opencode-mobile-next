@@ -256,7 +256,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 400));
 
-    // Auto-opened while running.
+    // A running group starts summarized, with its status still visible.
+    expect(find.byKey(const Key('embedded-tool-row')), findsNothing);
+    await tester.tap(find.byKey(const Key('tool-call-group-header')));
+    await tester.pump();
     expect(find.byKey(const Key('embedded-tool-row')), findsWidgets);
 
     await tester.tap(find.byKey(const Key('tool-call-group-header')));

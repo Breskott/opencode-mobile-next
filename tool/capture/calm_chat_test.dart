@@ -1,11 +1,11 @@
-// Stable chat captures (2026-09-13): real chat widgets with deterministic
+// Calm chat captures (2026-09-13): real chat widgets with deterministic
 // local content; no server or model calls. Companion to quiet_chat_test.dart,
 // adding the phone shapes the stabilization targets: 390dp at 1x and 2x
 // text, and a 320dp phone at 2.5x with the keyboard open while a run is
-// active. Writes PNGs under docs/qa/stable-chat-2026-09-13/.
+// active. Writes PNGs under docs/qa/calm-chat-2026-09-13/.
 //
 // Run with:
-//   flutter test --no-pub --concurrency=1 tool/capture/stable_chat_test.dart
+//   flutter test --no-pub --concurrency=1 tool/capture/calm_chat_test.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
@@ -15,7 +15,7 @@ import '../../test/support/setup_capture_preferences.dart';
 
 import 'fixtures.dart';
 
-const _outputDir = 'docs/qa/stable-chat-2026-09-13';
+const _outputDir = 'docs/qa/calm-chat-2026-09-13';
 const _draft =
     'Keep the basket after reopening.\n'
     'Show a useful empty state.\n'
@@ -38,6 +38,22 @@ Future<List<MessageWithParts>> _transcript(String _) async => [
       role: 'assistant',
     ),
     parts: [
+      for (final (id, tool, input) in [
+        ('read-basket', 'read', <String, dynamic>{'filePath': 'src/basket.ts'}),
+        ('edit-basket', 'edit', <String, dynamic>{'filePath': 'src/basket.ts'}),
+        ('test-basket', 'bash', <String, dynamic>{'command': 'npm test'}),
+      ])
+        Part(
+          id: id,
+          callID: id,
+          type: 'tool',
+          toolName: tool,
+          toolState: ToolState.fromJson({
+            'status': 'completed',
+            'input': input,
+            'output': 'Completed successfully.',
+          }, toolName: tool),
+        ),
       Part(
         type: 'text',
         text:
@@ -67,7 +83,7 @@ void main() {
     final mode = light ? 'light' : 'dark';
 
     for (final scale in [1.0, 2.0]) {
-      testWidgets('stable chat $mode at ${scale}x', (tester) async {
+      testWidgets('calm chat $mode at ${scale}x', (tester) async {
         tester.view.physicalSize = const Size(390, 844);
         tester.view.devicePixelRatio = 1;
         tester.platformDispatcher.textScaleFactorTestValue = scale;
@@ -93,6 +109,8 @@ void main() {
         expect(find.byKey(const Key('chat-title')), findsOneWidget);
         expect(find.text('Tasks'), findsNothing);
         expect(find.byTooltip('Tasks · 0 running'), findsNothing);
+        expect(find.byKey(const Key('prompt-editor-button')), findsNothing);
+        expect(find.byKey(const Key('embedded-tool-row')), findsNothing);
         final suffix = scale == 1 ? '' : '-${scale.toInt()}x';
         await writePng(
           '$_outputDir/$mode$suffix-idle.png',
@@ -112,7 +130,7 @@ void main() {
       });
     }
 
-    testWidgets('stable chat $mode 320dp keyboard busy at 2.5x', (
+    testWidgets('calm chat $mode 320dp keyboard busy at 2.5x', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(320, 640);

@@ -141,8 +141,7 @@ void main() {
 
   for (final scale in [1.0, 2.0, 2.5]) {
     testWidgets(
-      'a 320dp app bar at ${scale}x keeps the title beside an icon-only '
-      'Tasks shortcut that still opens Tasks',
+      'a 320dp app bar at ${scale}x keeps a compact title and task details reachable',
       (tester) async {
         final conn = await _controller(_Api(title: _longTitle));
         addTearDown(conn.dispose);
@@ -154,28 +153,18 @@ void main() {
         );
         expect(tester.takeException(), isNull);
 
-        expect(_tasks, findsOneWidget);
-        expect(tester.widget(_tasks), isA<IconButton>());
-        expect(find.text('Tasks'), findsNothing);
-        // The shortcut keeps its name and count for TalkBack and long press.
-        expect(find.byTooltip('Tasks · 0 running'), findsOneWidget);
-        expect(tester.getSize(_tasks).width, lessThanOrEqualTo(48));
-
-        // The title gets at least half of the bar between its start and
-        // the first action, at every text scale.
+        expect(_tasks, findsNothing);
+        expect(find.byTooltip('Tasks · 0 running'), findsNothing);
         final titleRect = tester.getRect(_title);
-        final tasksRect = tester.getRect(_tasks);
-        expect(tasksRect.left - titleRect.left, greaterThanOrEqualTo(160));
-        expect(tester.widget<Text>(_title).maxLines, 2);
-
-        // Two lines, never clipped: the toolbar is at least as tall as the
-        // wrapped title, at the title's own (Material-capped) text scale.
+        expect(tester.widget<Text>(_title).maxLines, 1);
         final appBar = tester.getRect(find.byType(AppBar));
-        expect(titleRect.height, greaterThan(31));
         expect(titleRect.top, greaterThanOrEqualTo(appBar.top));
         expect(titleRect.bottom, lessThanOrEqualTo(appBar.bottom + .5));
 
-        await tester.tap(_tasks);
+        await tester.tap(find.byKey(const ValueKey('session-actions-button')));
+        await tester.pumpAndSettle();
+        expect(find.text(_longTitle), findsWidgets);
+        await tester.tap(find.text('Results'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
         expect(find.byKey(const Key('running-work-sheet')), findsOneWidget);
@@ -185,15 +174,15 @@ void main() {
     );
   }
 
-  testWidgets('a wide app bar keeps the labelled Tasks shortcut', (
+  testWidgets('a wide idle app bar also omits empty task chrome', (
     tester,
   ) async {
     final conn = await _controller(_Api(title: _longTitle));
     addTearDown(conn.dispose);
     await _pumpChat(tester, conn, size: const Size(800, 600));
     expect(tester.takeException(), isNull);
-    expect(tester.widget(_tasks), isA<TextButton>());
-    expect(find.text('Tasks'), findsOneWidget);
+    expect(_tasks, findsNothing);
+    expect(find.text('Tasks'), findsNothing);
     expect(tester.widget<Text>(_title).maxLines, 1);
   });
 

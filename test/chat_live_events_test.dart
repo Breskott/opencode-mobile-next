@@ -656,7 +656,10 @@ void main() {
         controller: conn,
         reduceMotion: true,
       );
-      await tester.tap(find.byKey(const Key('running-work-indicator')));
+      expect(find.byKey(const Key('running-work-indicator')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('session-actions-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Results'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('work-agent-child')), findsOneWidget);
       await tester.tap(find.byKey(const Key('work-agent-child')));
@@ -704,7 +707,9 @@ void main() {
       find.byKey(const Key('chat-composer-field')),
       'Keep my draft',
     );
-    await tester.tap(find.byKey(const Key('running-work-indicator')));
+    await tester.tap(find.byKey(const ValueKey('session-actions-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Results'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('work-agent-child')));
     await tester.pumpAndSettle();

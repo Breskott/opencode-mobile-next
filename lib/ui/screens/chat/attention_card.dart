@@ -499,6 +499,7 @@ class _ComposerNote extends StatelessWidget {
 class SessionMenuSheet extends StatelessWidget {
   const SessionMenuSheet({
     super.key,
+    this.conversationTitle,
     required this.reasoningExpanded,
     required this.timestampsVisible,
     required this.todosAvailable,
@@ -522,6 +523,7 @@ class SessionMenuSheet extends StatelessWidget {
 
   final bool reasoningExpanded;
   final bool timestampsVisible;
+  final String? conversationTitle;
   final bool todosAvailable;
   final bool changesAvailable;
   final bool forkAvailable;
@@ -555,6 +557,11 @@ class SessionMenuSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (conversationTitle case final title?)
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 8),
+                child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+              ),
             SectionLabel(_chatL10n(context).chatUiConversation),
             // Views are the frequent destinations, so they take a compact
             // chip row instead of a tile each and leave the actions below

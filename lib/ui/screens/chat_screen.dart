@@ -176,12 +176,12 @@ Future<Uint8List?> readAttachmentBytesWithinLimit(
 int debugChatStreamFlushes = 0;
 
 /// Below this logical width the chat app bar is treated as a phone: the
-/// Tasks shortcut drops its visible label and the title may take two lines.
+/// Tasks shortcut drops its visible label. Conversation titles stay one line.
 const double _titleBarWide = 600;
 
 /// [AppBar] scales its title by at most this factor (Material's own ceiling
 /// for keeping the toolbar hierarchy readable); the toolbar height follows
-/// the same figure so a two-line title is never clipped at large text.
+/// the same figure so the title is never clipped at large text.
 const double _titleTextScaleCeiling = 1.34;
 
 String _fmtSessionTime(int ms, BuildContext context) {
@@ -5510,6 +5510,10 @@ class _ChatScreenState extends State<ChatScreen>
         builder: (context, constraints) => ConstrainedBox(
           constraints: BoxConstraints(maxHeight: constraints.maxHeight * .85),
           child: SessionMenuSheet(
+            conversationTitle: presentedSessionTitle(
+              _conn.sessionsById[widget.sessionID],
+              fallback: _chatL10n(context).commandDestination,
+            ),
             reasoningExpanded: _conn.transcriptReasoningExpanded,
             timestampsVisible: _conn.transcriptTimestampsVisible,
             todosAvailable: _conn.capabilities.sessionTodos,
@@ -6415,14 +6419,11 @@ class _ChatScreenState extends State<ChatScreen>
             )
             .length;
 
-    // A phone-width app bar gives the conversation title the room it needs:
-    // the Tasks shortcut keeps its badge, tooltip and key but drops its
-    // always-visible label, and the title may wrap to a second line with a
-    // toolbar tall enough to show both lines at the title's own text scale.
+    // The conversation is the reading surface, not a page heading. Keep the
+    // title compact; its full value remains in the tooltip and details sheet.
     final narrowTitleBar = MediaQuery.sizeOf(context).width < _titleBarWide;
-    final titleLines = narrowTitleBar ? 2 : 1;
-    final titleStyle =
-        theme.appBarTheme.titleTextStyle ?? theme.textTheme.titleLarge;
+    const titleLines = 1;
+    final titleStyle = theme.textTheme.titleMedium;
     final titleLineHeight =
         (titleStyle?.fontSize ?? 24) * (titleStyle?.height ?? 1.25);
     final titleScaler = MediaQuery.textScalerOf(
@@ -6443,15 +6444,21 @@ class _ChatScreenState extends State<ChatScreen>
         appBar: widget.showAppBar
             ? AppBar(
                 toolbarHeight: toolbarHeight,
-                title: Text(
-                  presentedSessionTitle(
+                title: Tooltip(
+                  message: presentedSessionTitle(
                     session,
                     fallback: _chatL10n(context).commandDestination,
                   ),
-                  key: const Key('chat-title'),
-                  softWrap: titleLines > 1,
-                  maxLines: titleLines,
-                  overflow: TextOverflow.ellipsis,
+                  child: Text(
+                    presentedSessionTitle(
+                      session,
+                      fallback: _chatL10n(context).commandDestination,
+                    ),
+                    key: const Key('chat-title'),
+                    style: titleStyle,
+                    maxLines: titleLines,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 actions: [
                   if (_readAloudRequestBusy || _readAloud?.speaking == true)
@@ -6460,7 +6467,9 @@ class _ChatScreenState extends State<ChatScreen>
                       icon: const Icon(AppIconography.stopCircle),
                       onPressed: () => unawaited(_stopReading()),
                     ),
-                  if (!_conn.isIsolated && _conn.capabilities.projectManagement)
+                  if (!_conn.isIsolated &&
+                      _conn.capabilities.projectManagement &&
+                      runningWorkCount > 0)
                     if (narrowTitleBar)
                       IconButton(
                         key: const Key('running-work-indicator'),

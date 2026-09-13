@@ -977,10 +977,7 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
       _expanded = choice;
       return;
     }
-    if ((!_expanded &&
-            widget.parts.length > oldWidget.parts.length &&
-            _running) ||
-        _shouldOpen(widget.parts)) {
+    if (_shouldOpen(widget.parts)) {
       _expanded = true;
     }
   }
@@ -994,9 +991,8 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
 
   bool _shouldOpen(List<Part> parts) => parts.any(
     (part) =>
-        (part.toolState.executed &&
-            (part.toolState.status == 'pending' ||
-                part.toolState.status == 'running')) ||
+        // Running progress is already named in the summary header. Only
+        // actionable errors and produced files reveal the full group by default.
         part.toolState.status == 'error' ||
         part.toolState.outputFiles.isNotEmpty,
   );

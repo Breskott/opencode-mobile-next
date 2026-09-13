@@ -676,6 +676,9 @@ void main() {
     await _pumpChat(tester, c);
     await tester.tap(find.byKey(const Key('composer-tools-button')));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('composer-tools-prompts')));
+    await tester.tap(find.byKey(const Key('composer-tools-prompts')));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(
       find.byKey(const Key('composer-tool-legacy-drafts')),
     );

@@ -283,6 +283,10 @@ Future<void> _nativeStatus(
 Future<void> _enterAndListen(WidgetTester tester, _Api api) async {
   await tester.tap(find.byKey(const Key('composer-tools-button')));
   await _settle(tester);
+  await tester.ensureVisible(find.byKey(const Key('composer-tools-advanced')));
+  await tester.tap(find.byKey(const Key('composer-tools-advanced')));
+  await _settle(tester);
+  await tester.ensureVisible(find.byKey(const Key('composer-tool-conversation')));
   await tester.tap(find.byKey(const Key('composer-tool-conversation')));
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 400));

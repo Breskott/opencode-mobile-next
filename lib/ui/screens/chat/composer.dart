@@ -508,7 +508,7 @@ class _ChatComposer extends StatelessWidget {
                   child: _modelControls(context),
                 ),
               ),
-              if (!isolated)
+              if (!isolated && _hasPrompt)
                 IconButton(
                   key: const Key('prompt-editor-button'),
                   tooltip: _chatL10n(context).chatUiOpenFullScreenPromptEditor,
@@ -654,10 +654,11 @@ class _ChatComposer extends StatelessWidget {
         _ => false,
       };
 
-  /// Show the known context share beside the model before it needs attention.
+  /// Routine usage is available in Context usage. Surface the percentage
+  /// when the reader may need to make space, alongside the warning meter.
   Widget? _contextPercent(BuildContext context) {
     final usage = contextUsage;
-    if (usage == null) return null;
+    if (usage == null || usage < .7) return null;
     return _ContextPercentBadge(usage: usage.clamp(0.0, 1.0));
   }
 
@@ -862,15 +863,6 @@ class _PromptToolsSheet extends StatelessWidget {
               subtitle: Text(_chatL10n(context).chatUiSlashCommandsAndAgents),
               onTap: () => Navigator.pop(context, _PromptTool.commands),
             ),
-            ListTile(
-              leading: const Icon(AppIconography.layers),
-              title: Text(_chatL10n(context).capsuleTitle),
-              subtitle: Text(_chatL10n(context).capsuleEntry),
-              enabled: !voiceBlocked,
-              onTap: voiceBlocked
-                  ? null
-                  : () => Navigator.pop(context, _PromptTool.contextCapsule),
-            ),
             if (attachmentsSupported)
               ListTile(
                 key: const Key('composer-tool-attach'),
@@ -935,6 +927,19 @@ class _PromptToolsSheet extends StatelessWidget {
                     ? null
                     : () => Navigator.pop(context, _PromptTool.voice),
               ),
+            ExpansionTile(
+              key: const Key('composer-tools-advanced'),
+              title: Text(_chatL10n(context).e7SharedAdvanced),
+              children: [
+            ListTile(
+              leading: const Icon(AppIconography.layers),
+              title: Text(_chatL10n(context).capsuleTitle),
+              subtitle: Text(_chatL10n(context).capsuleEntry),
+              enabled: !voiceBlocked,
+              onTap: voiceBlocked
+                  ? null
+                  : () => Navigator.pop(context, _PromptTool.contextCapsule),
+            ),
             if (webSourcesSupported)
               ListTile(
                 enabled: !attachBlocked,
@@ -956,6 +961,13 @@ class _PromptToolsSheet extends StatelessWidget {
                     ? null
                     : () => Navigator.pop(context, _PromptTool.conversation),
               ),
+              ],
+            ),
+            if (canReusePrompt || canOpenStash || hasLegacyDrafts || canClearText)
+              ExpansionTile(
+                key: const Key('composer-tools-prompts'),
+                title: Text(_chatL10n(context).usagePrompts),
+                children: [
             if (canReusePrompt)
               ListTile(
                 key: const Key('composer-tool-history'),
@@ -998,6 +1010,8 @@ class _PromptToolsSheet extends StatelessWidget {
                 title: Text(_chatL10n(context).composerClearTextTitle),
                 subtitle: Text(_chatL10n(context).composerClearTextSubtitle),
                 onTap: () => Navigator.pop(context, _PromptTool.clearText),
+              ),
+                ],
               ),
             const SizedBox(height: 8),
           ],

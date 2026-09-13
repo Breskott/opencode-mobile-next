@@ -128,6 +128,9 @@ Future<void> _openSearchFromChat(
   await _chatFrames(tester);
   await tester.tap(find.byKey(const Key('composer-tools-button')));
   await _chatFrames(tester);
+  await tester.ensureVisible(find.byKey(const Key('composer-tools-advanced')));
+  await tester.tap(find.byKey(const Key('composer-tools-advanced')));
+  await _chatFrames(tester);
   final entry = find.widgetWithText(ListTile, 'Add web source');
   await tester.ensureVisible(entry);
   await tester.pump();

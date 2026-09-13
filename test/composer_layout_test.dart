@@ -289,6 +289,9 @@ void main() {
       await tester.enterText(field, 'Original draft');
       await tester.tap(find.byKey(const Key('composer-tools-button')));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('composer-tools-prompts')));
+      await tester.tap(find.byKey(const Key('composer-tools-prompts')));
+      await tester.pumpAndSettle();
       final clearText = find.byKey(const Key('composer-tool-clear'));
       await tester.scrollUntilVisible(
         clearText.hitTestable(),
@@ -328,6 +331,9 @@ void main() {
       final field = find.byKey(const Key('chat-composer-field'));
       await tester.enterText(field, 'Keep this');
       await tester.tap(find.byKey(const Key('composer-tools-button')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('composer-tools-prompts')));
+      await tester.tap(find.byKey(const Key('composer-tools-prompts')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('composer-tool-history')));
       await tester.pumpAndSettle();
@@ -392,6 +398,9 @@ void main() {
         keyboardInset: 300,
       );
       await tester.tap(find.byKey(const Key('composer-tools-button')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('composer-tools-prompts')));
+      await tester.tap(find.byKey(const Key('composer-tools-prompts')));
       await tester.pumpAndSettle();
       final history = find.byKey(const Key('composer-tool-history'));
       await tester.ensureVisible(history);

@@ -139,6 +139,9 @@ Future<(_Controller, ReviewHandoffStore)> _pump(
 Future<void> _tool(WidgetTester tester, String key) async {
   await tester.tap(find.byKey(const Key('composer-tools-button')));
   await tester.pumpAndSettle();
+  await tester.ensureVisible(find.byKey(const Key('composer-tools-prompts')));
+  await tester.tap(find.byKey(const Key('composer-tools-prompts')));
+  await tester.pumpAndSettle();
   await tester.ensureVisible(find.byKey(Key(key)));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(Key(key)));

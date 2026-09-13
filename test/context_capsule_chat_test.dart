@@ -61,6 +61,10 @@ Future<void> _chat(WidgetTester tester, ConnectionController conn) async {
 Future<void> _open(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('composer-tools-button')));
   await tester.pumpAndSettle();
+  await tester.ensureVisible(find.byKey(const Key('composer-tools-advanced')));
+  await tester.tap(find.byKey(const Key('composer-tools-advanced')));
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(find.text('Context capsule'));
   await tester.tap(find.text('Context capsule'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Error'));
