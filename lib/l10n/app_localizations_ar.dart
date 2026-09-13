@@ -6919,7 +6919,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SettingsDetailUi18 => 'المصادر المفتوحة';
 
   @override
-  String get e7SettingsDetailUi19 => 'إصدار ألفا · بمساعدة الذكاء الاصطناعي';
+  String get e7SettingsDetailUi19 => 'حول هذا الإصدار';
 
   @override
   String get e7SettingsDetailUi20 => 'OpenCode لنظام Android';
@@ -6949,7 +6949,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SettingsAlphaBody =>
-      'أُنشئ هذا التطبيق بمساعدة كبيرة من الذكاء الاصطناعي، وهو في مرحلة ألفا العامة. توقّع جوانب غير مكتملة وأخرى غير مختبرة، ولا سيما إصدارات الحاسوب التي لم تُختبر على أجهزة فعلية. أبلغ عمّا يتعطّل، فبلاغاتك تحدّد مباشرةً ما يُصلَح.';
+      'بُني هذا التطبيق المستقل بمساعدة كبيرة من الذكاء الاصطناعي. أندرويد هو المنصة الأساسية المدعومة. إصدارات الحاسوب تجريبية ولم تُختبر على أجهزة فعلية. أبلغ عن الأعطال للمساعدة في تحسين التطبيق.';
 
   @override
   String get e7SettingsNonAffiliation =>

@@ -5089,9 +5089,9 @@
   "@e7SettingsDetailUi18": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsDetailUi19": "Alpha · vibecoded",
+  "e7SettingsDetailUi19": "About this build",
   "@e7SettingsDetailUi19": {
-    "description": "Settings and appearance user interface."
+    "description": "About screen build provenance heading, independent of release channel"
   },
   "e7SettingsDetailUi20": "OpenCode for Android",
   "@e7SettingsDetailUi20": {
@@ -5125,9 +5125,9 @@
   "@e7SettingsInformationFailed": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsAlphaBody": "This app is built heavily with AI assistance and is in public alpha. Expect rough edges and untested corners — the desktop builds especially have not been hardware-tested. Report what breaks: it directly decides what gets fixed.",
+  "e7SettingsAlphaBody": "This independent app is built heavily with AI assistance. Android is the primary supported platform. Desktop builds are experimental and have not been hardware-tested. Report what breaks to help improve the app.",
   "@e7SettingsAlphaBody": {
-    "description": "Settings and appearance user interface."
+    "description": "About screen AI assistance provenance and experimental desktop limitation"
   },
   "e7SettingsNonAffiliation": "OpenCode Mobile is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.",
   "@e7SettingsNonAffiliation": {

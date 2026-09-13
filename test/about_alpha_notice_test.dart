@@ -27,16 +27,19 @@ void main() {
     expect(find.textContaining('not been hardware-tested'), findsOneWidget);
   });
 
-  test('the notice retains provenance and desktop limits without a channel claim', () {
-    // Android publication must not overstate readiness on other platforms.
-    expect(buildProvenanceBody, contains('AI assistance'));
-    expect(buildProvenanceBody, contains('Android is the primary supported'));
-    expect(buildProvenanceBody, isNot(contains('public alpha')));
-    expect(buildProvenanceBody, contains('not been hardware-tested'));
-    expect(
-      find.text('About this build'),
-      findsNothing,
-      reason: 'the title is a widget concern, asserted in the test above',
-    );
-  });
+  test(
+    'the notice retains provenance and desktop limits without a channel claim',
+    () {
+      // Android publication must not overstate readiness on other platforms.
+      expect(buildProvenanceBody, contains('AI assistance'));
+      expect(buildProvenanceBody, contains('Android is the primary supported'));
+      expect(buildProvenanceBody, isNot(contains('public alpha')));
+      expect(buildProvenanceBody, contains('not been hardware-tested'));
+      expect(
+        find.text('About this build'),
+        findsNothing,
+        reason: 'the title is a widget concern, asserted in the test above',
+      );
+    },
+  );
 }

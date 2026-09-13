@@ -6848,7 +6848,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsDetailUi18 => 'Open source';
 
   @override
-  String get e7SettingsDetailUi19 => 'Alpha · vibecoded';
+  String get e7SettingsDetailUi19 => 'About this build';
 
   @override
   String get e7SettingsDetailUi20 => 'OpenCode for Android';
@@ -6878,7 +6878,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SettingsAlphaBody =>
-      'This app is built heavily with AI assistance and is in public alpha. Expect rough edges and untested corners — the desktop builds especially have not been hardware-tested. Report what breaks: it directly decides what gets fixed.';
+      'This independent app is built heavily with AI assistance. Android is the primary supported platform. Desktop builds are experimental and have not been hardware-tested. Report what breaks to help improve the app.';
 
   @override
   String get e7SettingsNonAffiliation =>

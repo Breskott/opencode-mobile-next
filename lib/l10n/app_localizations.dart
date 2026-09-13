@@ -11360,10 +11360,10 @@ abstract class AppLocalizations {
   /// **'Open source'**
   String get e7SettingsDetailUi18;
 
-  /// Settings and appearance user interface.
+  /// About screen build provenance heading, independent of release channel
   ///
   /// In en, this message translates to:
-  /// **'Alpha · vibecoded'**
+  /// **'About this build'**
   String get e7SettingsDetailUi19;
 
   /// Settings and appearance user interface.
@@ -11414,10 +11414,10 @@ abstract class AppLocalizations {
   /// **'App information could not be loaded. Try opening this page again.'**
   String get e7SettingsInformationFailed;
 
-  /// Settings and appearance user interface.
+  /// About screen AI assistance provenance and experimental desktop limitation
   ///
   /// In en, this message translates to:
-  /// **'This app is built heavily with AI assistance and is in public alpha. Expect rough edges and untested corners — the desktop builds especially have not been hardware-tested. Report what breaks: it directly decides what gets fixed.'**
+  /// **'This independent app is built heavily with AI assistance. Android is the primary supported platform. Desktop builds are experimental and have not been hardware-tested. Report what breaks to help improve the app.'**
   String get e7SettingsAlphaBody;
 
   /// Settings and appearance user interface.
