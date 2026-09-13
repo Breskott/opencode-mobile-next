@@ -19,16 +19,13 @@ const String nonAffiliationDisclaimer =
     'OpenCode Mobile is an independent community project. It is not built, '
     'maintained, endorsed by, or affiliated with the official OpenCode team.';
 
-/// The alpha statement shown on every tab of About. These three claims are
-/// the product's public position: AI-assisted ("vibecoded") construction,
-/// alpha maturity, and desktop builds that nobody has hardware-tested yet.
-/// They are asserted verbatim by test/about_alpha_notice_test.dart so the
-/// copy cannot quietly walk back any of them.
-const String alphaNoticeBody =
-    'This app is built heavily with AI assistance and is in public alpha. '
-    'Expect rough edges and untested corners — the desktop builds especially '
-    'have not been hardware-tested. Report what breaks: it directly decides '
-    'what gets fixed.';
+/// Build provenance is independent of the Android release channel. Desktop
+/// readiness is still disclosed until those builds have hardware evidence.
+const String buildProvenanceBody =
+    'This independent app is built heavily with AI assistance. '
+    'Android is the primary supported platform. Desktop builds are '
+    'experimental and have not been hardware-tested. '
+    'Report what breaks to help improve the app.';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key, this.initialTab = 0});
@@ -129,8 +126,8 @@ class _BuildData {
   final String? signer;
 }
 
-class _AlphaNotice extends StatelessWidget {
-  const _AlphaNotice();
+class _BuildProvenanceNotice extends StatelessWidget {
+  const _BuildProvenanceNotice();
 
   @override
   Widget build(BuildContext context) {
@@ -202,7 +199,7 @@ class _DocumentView extends StatelessWidget {
           // Scrolls with the document rather than sitting as fixed chrome:
           // at 2x text a fixed notice would squeeze (or overflow) the very
           // content the reader came for.
-          const _AlphaNotice(),
+          const _BuildProvenanceNotice(),
           const SizedBox(height: 16),
           if (showAppSummary) ...[
             ListTile(

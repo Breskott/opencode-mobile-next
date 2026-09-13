@@ -362,7 +362,7 @@ test_strict_arguments() {
   new_fixture
   run_release
   assert_status 64
-  assert_output_contains 'Usage: ./scripts/release.sh <release|sideload|patch> [--publish]'
+  assert_output_contains 'Usage: ./scripts/release.sh <release|sideload|patch|github> [--publish]'
   assert_log_line_count 0 'shorebird '
 
   run_release ship

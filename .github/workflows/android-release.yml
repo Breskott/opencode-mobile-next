@@ -1,7 +1,7 @@
 # Builds the Android sideload APK on a release tag with the project's real
 # signing key, proves the signer is the public upgrade lineage and the version
 # matches the tag, keeps the APK as a workflow artifact for 90 days, and
-# creates or updates a draft GitHub prerelease for a tag. A maintainer must
+# creates or updates a draft stable GitHub release for a tag. A maintainer must
 # inspect and publish the draft; this workflow never announces it publicly.
 #
 # Fails closed: without the four RELEASE_* secrets the job stops before it
@@ -66,6 +66,21 @@ jobs:
             exit 1
           fi
           echo "Building $version"
+
+      - name: Require the exact master candidate and an unpublished tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin master --depth=1
+          [ "$(git rev-parse origin/master)" = "$GITHUB_SHA" ] || {
+            echo '::error::Release tag must identify the current master candidate'
+            exit 1
+          }
+          if gh release view "$GITHUB_REF_NAME" --json isDraft > "$RUNNER_TEMP/release-state.json"; then
+            python3 -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("isDraft") is True else "Refusing to overwrite a published release")' "$RUNNER_TEMP/release-state.json"
+          fi
 
       - name: Set up Java 17
         uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
@@ -147,6 +162,7 @@ jobs:
           badging="$("$tools/aapt" dump badging "$apk" | sed -n '1p')"
           version="$(sed -n 's/^version:[[:space:]]*\([^[:space:]#]*\).*/\1/p' pubspec.yaml | head -1)"
           name="${version%%+*}"; code="${version#*+}"
+          grep -q "^package: name='io.github.eslamasabry.opencode_mobile' " <<<"$badging" || { echo "::error::Package ID mismatch: $badging"; exit 1; }
           grep -q "versionCode='$code'" <<<"$badging" || { echo "::error::versionCode mismatch: $badging"; exit 1; }
           grep -q "versionName='$name'" <<<"$badging" || { echo "::error::versionName mismatch: $badging"; exit 1; }
           mkdir -p dist
@@ -162,26 +178,15 @@ jobs:
             echo "Signer SHA-256: \`$SIDELOAD_CERT_SHA256\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload signed APK
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: opencode-mobile-signed-${{ github.ref_name }}
-          path: dist/
-          if-no-files-found: error
-          retention-days: 90
-
-      - name: Create draft GitHub prerelease
+      - name: Prepare stable release notes
         if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
-          notes=dist/RELEASE_NOTES.md
-          anchor="# OpenCode Mobile - Alpha $version"
-          awk -v anchor="$anchor" 'index($0, anchor) == 1 { found = 1 } found { print }' \
-            docs/release-alpha-notes.md > "$notes"
-          grep -qF "$anchor" "$notes"
+          source_notes="docs/releases/v$version.md"
+          test -s "$source_notes"
+          [ "$(head -n 1 "$source_notes")" = "# OpenCode Mobile $version" ]
+          cp "$source_notes" dist/RELEASE_NOTES.md
           {
             echo
             echo '## Verify this build'
@@ -193,20 +198,35 @@ jobs:
             echo '```text'
             cat dist/SHA256SUMS
             echo '```'
-            echo
-            echo 'If Settings → About shows a different signer, uninstalling is required and erases local app data.'
-          } >> "$notes"
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+          } >> dist/RELEASE_NOTES.md
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: opencode-mobile-signed-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Create draft stable GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          if gh release view "$GITHUB_REF_NAME" --json isDraft > "$RUNNER_TEMP/release-state.json"; then
+            python3 -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("isDraft") is True else "Refusing to overwrite a published release")' "$RUNNER_TEMP/release-state.json"
             gh release edit "$GITHUB_REF_NAME" \
-              --draft --prerelease \
-              --title "OpenCode Mobile $version alpha" \
-              --notes-file "$notes"
+              --draft --prerelease=false \
+              --title "OpenCode Mobile $version" \
+              --notes-file dist/RELEASE_NOTES.md
             gh release upload "$GITHUB_REF_NAME" \
               "dist/opencode-mobile-$version.apk" dist/SHA256SUMS --clobber
           else
             gh release create "$GITHUB_REF_NAME" \
-              --draft --prerelease \
-              --title "OpenCode Mobile $version alpha" \
-              --notes-file "$notes" \
+              --verify-tag --draft --prerelease=false \
+              --title "OpenCode Mobile $version" \
+              --notes-file dist/RELEASE_NOTES.md \
               "dist/opencode-mobile-$version.apk" dist/SHA256SUMS
           fi

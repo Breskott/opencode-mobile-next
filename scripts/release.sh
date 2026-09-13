@@ -19,14 +19,18 @@ SIGNING_CERTIFICATE_OUTPUT=""
 
 usage() {
   cat >&2 <<'EOF'
-Usage: ./scripts/release.sh <release|sideload|patch> [--publish]
+Usage: ./scripts/release.sh <release|sideload|patch|github> [--publish]
 
-Without --publish, the command runs every gate and a Shorebird dry-run only.
-Add --publish to upload to Shorebird after the dry-run succeeds.
+For release/sideload/patch, the default runs gates and a Shorebird dry-run.
+Add --publish to upload to Shorebird after that dry-run succeeds.
+The github mode verifies existing CI assets; its default never publishes.
 
 release  creates the production/store AAB and rejects the legacy certificate.
 sideload creates the GitHub APK and requires the exact public legacy certificate.
 patch    creates a Dart-only patch for the exact tagged release version.
+github   verifies a CI-built draft and publishes it stable only with --publish.
+         Requires OC_RELEASE_BUILD_RUN_ID and OC_RELEASE_QUALITY_RUN_ID.
+         No local signing files, Flutter build or Shorebird upload are used.
 EOF
 }
 
@@ -61,7 +65,7 @@ fi
 
 readonly MODE="$1"
 case "$MODE" in
-  release | sideload | patch) ;;
+  release | sideload | patch | github) ;;
   *)
     usage
     exit "$EXIT_USAGE"
@@ -81,7 +85,11 @@ readonly PUBLISH
 cd "$(dirname "$0")/.."
 export PATH="$HOME/.shorebird/bin:$PATH"
 
-for command_name in git flutter shorebird python3; do
+required_commands=(git flutter shorebird python3)
+if [[ "$MODE" == github ]]; then
+  required_commands=(git gh python3)
+fi
+for command_name in "${required_commands[@]}"; do
   command -v "$command_name" >/dev/null 2>&1 ||
     fail "Required command is not available: $command_name"
 done
@@ -263,14 +271,15 @@ resolve_android_tool() {
 }
 
 assert_apk_identity() {
-  [[ -f "$APK_PATH" ]] || fail "Shorebird dry-run did not create the expected APK: $APK_PATH"
+  local apk_path="${1:-$APK_PATH}"
+  [[ -f "$apk_path" ]] || fail "Missing APK: $apk_path"
 
   local apksigner aapt certificate_output badging
   local -a signer_fingerprints
   apksigner="$(resolve_android_tool apksigner)"
   aapt="$(resolve_android_tool aapt)"
-  certificate_output="$("$apksigner" verify --print-certs "$APK_PATH")" ||
-    fail "Unable to verify the APK signature: $APK_PATH"
+  certificate_output="$("$apksigner" verify --print-certs "$apk_path")" ||
+    fail "Unable to verify the APK signature: $apk_path"
   mapfile -t signer_fingerprints < <(
     sed -n 's/^Signer #[0-9][0-9]* certificate SHA-256 digest:[[:space:]]*//p' <<<"$certificate_output" |
       tr '[:lower:]' '[:upper:]'
@@ -280,8 +289,8 @@ assert_apk_identity() {
   [[ "${signer_fingerprints[0]}" == "$EXPECTED_CERT_SHA256" ]] ||
     fail "GitHub sideload APK certificate does not match the public upgrade lineage."
 
-  badging="$("$aapt" dump badging "$APK_PATH")" ||
-    fail "Unable to inspect the APK package identity: $APK_PATH"
+  badging="$("$aapt" dump badging "$apk_path")" ||
+    fail "Unable to inspect the APK package identity: $apk_path"
   local package_line package_name version_code version_name
   package_line="$(sed -n '1p' <<<"$badging")"
   package_name="$(sed -n "s/^package: name='\([^']*\)'.*/\1/p" <<<"$package_line")"
@@ -328,6 +337,13 @@ assert_patchable_diff() {
     exit 1
   fi
 }
+
+if [[ "$MODE" == github ]]; then
+  assert_git_ready
+  source scripts/release_github.sh
+  release_github
+  exit 0
+fi
 
 assert_flutter_version
 assert_git_ready

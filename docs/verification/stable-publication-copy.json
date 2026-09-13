@@ -1,0 +1,16 @@
+{
+  "en": {
+    "e7SettingsDetailUi19": "About this build",
+    "e7SettingsAlphaBody": "This independent app is built heavily with AI assistance. Android is the primary supported platform. Desktop builds are experimental and have not been hardware-tested. Report what breaks to help improve the app.",
+    "@e7SettingsDetailUi19": {
+      "description": "About screen build provenance heading, independent of release channel"
+    },
+    "@e7SettingsAlphaBody": {
+      "description": "About screen AI assistance provenance and experimental desktop limitation"
+    }
+  },
+  "ar": {
+    "e7SettingsDetailUi19": "حول هذا الإصدار",
+    "e7SettingsAlphaBody": "بُني هذا التطبيق المستقل بمساعدة كبيرة من الذكاء الاصطناعي. أندرويد هو المنصة الأساسية المدعومة. إصدارات الحاسوب تجريبية ولم تُختبر على أجهزة فعلية. أبلغ عن الأعطال للمساعدة في تحسين التطبيق."
+  }
+}
