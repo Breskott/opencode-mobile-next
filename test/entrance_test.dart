@@ -4,9 +4,7 @@ import 'package:opencode_mobile/ui/widgets/entrance.dart';
 
 Widget _host(Widget child, {bool disableAnimations = false}) => MaterialApp(
   builder: (context, inner) => MediaQuery(
-    data: MediaQuery.of(
-      context,
-    ).copyWith(disableAnimations: disableAnimations),
+    data: MediaQuery.of(context).copyWith(disableAnimations: disableAnimations),
     child: inner!,
   ),
   home: Scaffold(body: child),

@@ -271,9 +271,7 @@ class Api2EventStream {
       await done.future;
     } catch (e) {
       if (_isCurrent(generation)) {
-        onError?.call(
-          e is Api2Error ? e : Exception('Event stream lost: $e'),
-        );
+        onError?.call(e is Api2Error ? e : Exception('Event stream lost: $e'));
       }
     } finally {
       backoffResetTimer?.cancel();
@@ -316,10 +314,7 @@ class Api2SessionLogStream extends Api2EventStream {
   }) : _after = after,
        _onLogEvent = onEvent,
        _onSynced = onSynced,
-       super(
-         path: '/experimental/session/$sessionID/log',
-         onEvent: _ignore,
-       );
+       super(path: '/experimental/session/$sessionID/log', onEvent: _ignore);
 
   static void _ignore(Api2EventEnvelope envelope, Sse2Frame frame) {}
 

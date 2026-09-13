@@ -109,7 +109,7 @@ void main() {
     );
     await tester.tap(revoke);
     await tester.pumpAndSettle();
-    expect(find.text('Revoke always allowed action?'), findsOneWidget);
+    expect(find.text('Revoke access?'), findsOneWidget);
     expect(find.text('Edit a file'), findsWidgets);
     expect(find.text('lib/**'), findsWidgets);
     expect(repository.removeCalls, isEmpty);
@@ -371,7 +371,7 @@ void main() {
     await tester.tap(revoke);
     await tester.pumpAndSettle();
 
-    expect(find.text('Revoke always allowed action?'), findsOneWidget);
+    expect(find.text('Revoke access?'), findsOneWidget);
     expect(find.text('Keep access'), findsOneWidget);
     expect(find.text('Revoke access'), findsOneWidget);
     expect(tester.takeException(), isNull);

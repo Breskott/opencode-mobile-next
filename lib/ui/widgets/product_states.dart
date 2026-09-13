@@ -22,7 +22,7 @@ import '../app_theme.dart';
 /// - Everything else — [StateError]s, socket/transport failures, and other
 ///   internals — collapses to one generic connectivity line instead of leaking
 ///   `Bad state:` prefixes or raw exception dumps.
-String productErrorText(Object error) {
+String productErrorText(Object error, {AppLocalizations? l10n}) {
   if (error is ProductException) return error.message;
   if (error is ApiException) return error.message;
   if (error is McpOAuthCallbackException) return error.message;
@@ -30,10 +30,12 @@ String productErrorText(Object error) {
   if (error is PlatformException) {
     final message = error.message?.trim();
     if (message != null && message.isNotEmpty) return message;
-    return 'This device reported an error (${error.code}).';
+    return l10n?.e7SharedDeviceReportedError(error.code) ??
+        'This device reported an error (${error.code}).';
   }
   if (error is String && error.trim().isNotEmpty) return error;
-  return 'OpenCode is unreachable. Try again.';
+  return l10n?.e7SharedOpenCodeUnreachableTryAgain ??
+      'OpenCode is unreachable. Try again.';
 }
 
 /// The one styled error snackbar for mutation failures: error-red background,
@@ -46,7 +48,10 @@ void showProductError(BuildContext context, Object error) {
     ..showSnackBar(
       SnackBar(
         content: Text(
-          productErrorText(error),
+          productErrorText(
+            error,
+            l10n: Localizations.of<AppLocalizations>(context, AppLocalizations),
+          ),
           style: TextStyle(color: scheme.onError),
         ),
         backgroundColor: scheme.error,
@@ -438,23 +443,28 @@ class SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final label = Text(
+      text,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: AppTheme.mutedOf(theme),
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
+      ),
+    );
     return Padding(
       padding: padding ?? const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.1,
-              ),
+      child: trailing == null
+          ? label
+          // A Wrap, not a Row: when the caption and its status do not fit
+          // on one line at large text scales, the status drops under the
+          // caption instead of overflowing the edge.
+          : Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 2,
+              children: [label, trailing!],
             ),
-          ),
-          ?trailing,
-        ],
-      ),
     );
   }
 }

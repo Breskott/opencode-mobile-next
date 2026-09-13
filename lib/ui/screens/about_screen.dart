@@ -36,8 +36,12 @@ class AboutScreen extends StatelessWidget {
   /// 0 opens Privacy, 1 opens Open source.
   final int initialTab;
 
-  Future<List<String>> _loadDocuments() => Future.wait([
-    rootBundle.loadString('PRIVACY.md'),
+  Future<List<String>> _loadDocuments(BuildContext context) => Future.wait([
+    rootBundle.loadString(
+      Localizations.localeOf(context).languageCode == 'ar'
+          ? 'assets/l10n/PRIVACY.ar.md'
+          : 'PRIVACY.md',
+    ),
     rootBundle.loadString('THIRD_PARTY_NOTICES.md'),
   ]);
 
@@ -61,11 +65,11 @@ class AboutScreen extends StatelessWidget {
       initialIndex: initialTab.clamp(0, 1),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('About and open source notices'),
+          title: Text(_screenCopy(context).e7SettingsUi96),
           actions: [
             IconButton(
               key: const ValueKey('about-report-bug'),
-              tooltip: 'Report a bug',
+              tooltip: _screenCopy(context).e7SettingsDetailUi16,
               onPressed: () => unawaited(openBugReport(context)),
               icon: const Icon(AppIconography.bug),
             ),
@@ -77,18 +81,18 @@ class AboutScreen extends StatelessWidget {
               Tab(
                 height: tabHeight,
                 icon: const Icon(Icons.privacy_tip_outlined),
-                text: 'Privacy',
+                text: _screenCopy(context).e7SettingsDetailUi17,
               ),
               Tab(
                 height: tabHeight,
                 icon: const Icon(AppIconography.code),
-                text: 'Open source',
+                text: _screenCopy(context).e7SettingsDetailUi18,
               ),
             ],
           ),
         ),
         body: FutureBuilder<List<String>>(
-          future: _loadDocuments(),
+          future: _loadDocuments(context),
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
               return const LoadingList(rows: 6);
@@ -98,8 +102,7 @@ class AboutScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Text(
-                    'App information could not be loaded: '
-                    '${snapshot.error}',
+                    _screenCopy(context).e7SettingsInformationFailed,
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -150,7 +153,7 @@ class _AlphaNotice extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Alpha · vibecoded',
+                    _screenCopy(context).e7SettingsDetailUi19,
                     style: theme.textTheme.titleSmall,
                   ),
                 ),
@@ -158,19 +161,19 @@ class _AlphaNotice extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              alphaNoticeBody,
+              _screenCopy(context).e7SettingsAlphaBody,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppTheme.mutedOf(theme),
               ),
             ),
             const SizedBox(height: 4),
             Align(
-              alignment: Alignment.centerRight,
+              alignment: AlignmentDirectional.centerEnd,
               child: TextButton.icon(
                 key: const ValueKey('about-alpha-report-bug'),
                 onPressed: () => unawaited(openBugReport(context)),
                 icon: const Icon(AppIconography.bug, size: 18),
-                label: const Text('Report a bug'),
+                label: Text(_screenCopy(context).e7SettingsDetailUi16),
               ),
             ),
           ],
@@ -210,26 +213,28 @@ class _DocumentView extends StatelessWidget {
               // build the reader is not running.
               title: Text(
                 platformCapabilities.supportsVoice
-                    ? 'OpenCode for Android'
+                    ? _screenCopy(context).e7SettingsDetailUi20
                     : platformCapabilities.platform == TargetPlatform.iOS
                     ? lookupAppLocalizations(
                         Localizations.localeOf(context),
                       ).iosAppTitle
-                    : 'OpenCode for desktop',
+                    : _screenCopy(context).e7SettingsDetailUi21,
               ),
               subtitle: Text(
                 platformCapabilities.supportsVoice
-                    ? 'A mobile client for an OpenCode server. Voice '
-                          'recognition runs locally after optional model '
-                          'downloads.'
+                    ? _screenCopy(context).e7SettingsDetailUi22
                     : platformCapabilities.platform == TargetPlatform.iOS
                     ? lookupAppLocalizations(
                         Localizations.localeOf(context),
                       ).iosRemoteSummary
-                    : 'A desktop client for an OpenCode server.',
+                    : _screenCopy(context).e7SettingsDetailUi23,
               ),
             ),
             const Divider(height: 28),
+          ],
+          if (showAppSummary) ...[
+            Text(_screenCopy(context).e7SettingsOriginalLicenses),
+            const SizedBox(height: 12),
           ],
           MarkdownText(data),
         ],
@@ -286,6 +291,7 @@ class _BuildIdentityCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   package.packageName,
+                  textDirection: TextDirection.ltr,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 if (signer != null && signer.isNotEmpty) ...[
@@ -297,6 +303,7 @@ class _BuildIdentityCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     signer,
+                    textDirection: TextDirection.ltr,
                     key: const ValueKey('about-signing-certificate'),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       fontFamily: 'JetBrainsMono',
@@ -336,7 +343,7 @@ class _NonAffiliationNotice extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              nonAffiliationDisclaimer,
+              _screenCopy(context).e7SettingsNonAffiliation,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -347,3 +354,7 @@ class _NonAffiliationNotice extends StatelessWidget {
     );
   }
 }
+
+AppLocalizations _screenCopy(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+    lookupAppLocalizations(const Locale('en'));

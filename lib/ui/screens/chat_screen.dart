@@ -14,10 +14,13 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../api/models.dart';
 import '../../api/provider_presentation.dart';
 import '../../api/product_repository.dart';
+import '../../api/server_probe.dart' show ServerFlavor;
 import '../../api/sse.dart';
 import '../../domain/prompt_attachment.dart';
 import '../../domain/context_capsule.dart';
 import '../../domain/background_work.dart';
+import '../../domain/background_agent_result.dart';
+import '../../domain/session_handoff.dart';
 import '../../domain/session_history.dart';
 import '../../domain/transcript_search.dart';
 import 'running_work_sheet.dart';
@@ -28,6 +31,7 @@ import '../../state/connection.dart';
 import '../../state/review_handoff.dart';
 import '../../state/prompt_shelf.dart';
 import '../../state/session_drafts.dart';
+import '../../state/session_auto_approval.dart';
 import '../../state/draft_attachments.dart';
 import '../../state/prompt_photos.dart';
 import '../../voice/controller.dart';
@@ -56,6 +60,7 @@ import '../widgets/transcript_highlight.dart';
 import '../widgets/question_options.dart';
 import '../widgets/session_title.dart';
 import '../widgets/session_read_state.dart';
+import '../widgets/session_handoff_sheets.dart';
 import '../widgets/running_agents_strip.dart';
 import '../widgets/tool_card.dart';
 import '../widgets/transcript_display_toggles.dart';
@@ -83,6 +88,7 @@ import 'terminal_screen.dart';
 import 'tools_screen.dart';
 import 'web_sources_screen.dart';
 import 'context_capsule_screen.dart';
+import '../early_l10n.dart';
 
 part 'chat/sessions_tab.dart';
 part 'chat/timeline_sheet.dart';
@@ -95,6 +101,7 @@ part 'chat/composer.dart';
 part 'chat/message_view.dart';
 part 'chat/session_sheets.dart';
 part 'chat/attention_card.dart';
+part 'chat/approvals_sheet.dart';
 part 'chat/read_aloud.dart';
 part 'chat/voice_conversation.dart';
 
@@ -168,29 +175,26 @@ Future<Uint8List?> readAttachmentBytesWithinLimit(
 @visibleForTesting
 int debugChatStreamFlushes = 0;
 
-String _fmtSessionTime(int ms) {
-  final d = DateTime.fromMillisecondsSinceEpoch(ms);
+/// Below this logical width the chat app bar is treated as a phone: the
+/// Tasks shortcut drops its visible label and the title may take two lines.
+const double _titleBarWide = 600;
+
+/// [AppBar] scales its title by at most this factor (Material's own ceiling
+/// for keeping the toolbar hierarchy readable); the toolbar height follows
+/// the same figure so a two-line title is never clipped at large text.
+const double _titleTextScaleCeiling = 1.34;
+
+String _fmtSessionTime(int ms, BuildContext context) {
+  final date = DateTime.fromMillisecondsSinceEpoch(ms);
   final now = DateTime.now();
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  final hh = d.hour.toString().padLeft(2, '0');
-  final mm = d.minute.toString().padLeft(2, '0');
-  if (d.year == now.year && d.month == now.month && d.day == now.day) {
-    return '$hh:$mm';
-  }
-  return '${d.day} ${months[d.month - 1]}, $hh:$mm';
+  final material = MaterialLocalizations.of(context);
+  final time = material.formatTimeOfDay(
+    TimeOfDay.fromDateTime(date),
+    alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+  );
+  return DateUtils.isSameDay(date, now)
+      ? time
+      : '${material.formatShortDate(date)}, $time';
 }
 
 // =====================================================================
@@ -427,7 +431,10 @@ class _ChatScreenState extends State<ChatScreen>
   late final String _draftProfileID;
   int _draftWriteGeneration = 0;
   SessionDraftFailure? _draftSaveFailure;
-  BackgroundWorkSupport _backgroundSupport = BackgroundWorkSupport.unavailable;
+  final _backgroundSupportState = ValueNotifier<BackgroundWorkSupport>(
+    BackgroundWorkSupport.unavailable,
+  );
+  BackgroundWorkSupport get _backgroundSupport => _backgroundSupportState.value;
   ServerOperationsGateway? _backgroundRepository;
   int _backgroundSupportRevision = 0;
   int _backgroundLocationRevision = -1;
@@ -595,13 +602,14 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Future<VoiceComposerController> _getVoice() {
+    final strings = _chatL10n(context);
     if (_conn.isIsolated) {
-      return Future.error(StateError('Voice input is unavailable.'));
+      return Future.error(StateError(strings.chatUiVoiceInputIsUnavailable));
     }
     return _voiceFuture ??= VoiceComposerController.create().then((voice) {
       if (!mounted) {
         voice.dispose();
-        throw StateError('Voice input is unavailable.');
+        throw StateError(strings.chatUiVoiceInputIsUnavailable);
       }
       _voice = voice;
       return voice;
@@ -825,15 +833,42 @@ class _ChatScreenState extends State<ChatScreen>
 
   Future<void> _openRunningWork() async {
     if (!_conn.capabilities.projectManagement) return;
+    final sessionID = widget.sessionID;
+    final location = _conn.locationRevision;
+    final profileID = _conn.profile?.id;
     final targetID = await showRunningWorkSheet(
       context,
       controller: _conn,
       sessionID: widget.sessionID,
       shellIDs: _shellIDs,
+      backgroundSupport: _backgroundSupport,
+      readBackgroundSupport: () => _backgroundSupport,
+      canBackground: () =>
+          mounted &&
+          widget.sessionID == sessionID &&
+          location == _conn.locationRevision &&
+          profileID == _conn.profile?.id &&
+          _canBackgroundWork,
+      availabilityChanges: Listenable.merge([
+        _historyChanges,
+        _backgroundSupportState,
+      ]),
+      onBackground: () async {
+        if (widget.sessionID != sessionID ||
+            location != _conn.locationRevision ||
+            profileID != _conn.profile?.id) {
+          return null;
+        }
+        return _backgroundRunningWork();
+      },
     );
-    if (!mounted) return;
-    final target = _conn.sessionsById[targetID];
-    if (target != null) await _openRelatedSession(target);
+    if (!mounted ||
+        widget.sessionID != sessionID ||
+        location != _conn.locationRevision ||
+        profileID != _conn.profile?.id) {
+      return;
+    }
+    if (targetID != null) await _openSubagentSession(targetID);
     if (mounted) unawaited(_loadRunningShells());
   }
 
@@ -1164,7 +1199,7 @@ class _ChatScreenState extends State<ChatScreen>
     _backgroundLocationRevision = _conn.locationRevision;
     final location = _conn.locationRevision;
     final revision = ++_backgroundSupportRevision;
-    _backgroundSupport = BackgroundWorkSupport.unavailable;
+    _backgroundSupportState.value = BackgroundWorkSupport.unavailable;
     _backgroundRequestedParts.clear();
     if (repository == null) return;
     try {
@@ -1177,7 +1212,7 @@ class _ChatScreenState extends State<ChatScreen>
           repository != _conn.repository) {
         return;
       }
-      setState(() => _backgroundSupport = support);
+      setState(() => _backgroundSupportState.value = support);
     } catch (_) {
       // Unknown/older v1 servers must not advertise an experimental action.
       // Retry capability discovery after the next reconnect, not every event.
@@ -1197,10 +1232,10 @@ class _ChatScreenState extends State<ChatScreen>
         (part) => !_backgroundRequestedParts.contains(_backgroundPartKey(part)),
       );
 
-  Future<void> _backgroundRunningWork() async {
-    if (!_canBackgroundWork) return;
+  Future<BackgroundWorkResult?> _backgroundRunningWork() async {
+    if (!_canBackgroundWork) return null;
     final repository = _conn.repository;
-    if (repository == null) return;
+    if (repository == null) return null;
     final connection = _conn.connectionRevision;
     final location = _conn.locationRevision;
     final parts = foregroundBackgroundableParts(
@@ -1214,7 +1249,7 @@ class _ChatScreenState extends State<ChatScreen>
           repository != _conn.repository ||
           connection != _conn.connectionRevision ||
           location != _conn.locationRevision) {
-        return;
+        return null;
       }
       if (result != BackgroundWorkResult.unchanged) {
         _backgroundRequestedParts.addAll(parts);
@@ -1226,17 +1261,21 @@ class _ChatScreenState extends State<ChatScreen>
         _conn.refreshSessions(),
         _loadRunningShells(),
       ]);
-      if (!mounted) return;
+      if (!mounted) return null;
       if (result == BackgroundWorkResult.unchanged) {
         _showComposerNote(_chatL10n(context).backgroundWorkNoop);
       } else if (result == BackgroundWorkResult.promoted) {
         _showComposerNote(_chatL10n(context).backgroundWorkPromoted);
+      } else {
+        _showComposerNote(_chatL10n(context).workBackgroundRequested);
       }
+      return result;
     } catch (error) {
       if (mounted) _showActionError(error);
     } finally {
       if (mounted) setState(() => _backgrounding = false);
     }
+    return null;
   }
 
   ConnectionController _readConn() {
@@ -1248,7 +1287,10 @@ class _ChatScreenState extends State<ChatScreen>
   void _onEvent(EventEnvelope env) {
     _observeVoiceReplyStatus(env);
     if (!mounted) return;
-    if (env.type == 'session.skill.changed' &&
+    // Inbox delivery creates a canonical server message without a message event.
+    // Refresh every delivery; the pending inbox item may already be removed.
+    if ((env.type == 'session.skill.changed' ||
+            env.type == 'session.inbox.delivered') &&
         env.properties['sessionID'] == widget.sessionID) {
       _scheduleRecentHistoryRefresh();
     }
@@ -1516,12 +1558,12 @@ class _ChatScreenState extends State<ChatScreen>
       final data = raw['data'];
       final nested = data is Map ? data['message'] : null;
       return (raw['message'] ?? nested ?? raw['name'])?.toString() ??
-          'OpenCode could not complete this prompt.';
+          _chatL10n(context).chatUiOpenCodeCouldNotCompleteThisPrompt;
     }
     final text = raw?.toString().trim();
     return text?.isNotEmpty == true
         ? text!
-        : 'OpenCode could not complete this prompt.';
+        : _chatL10n(context).chatUiOpenCodeCouldNotCompleteThisPrompt;
   }
 
   MessageWithParts? _messageByID(String messageID) {
@@ -1828,7 +1870,10 @@ class _ChatScreenState extends State<ChatScreen>
     try {
       final api = scope.api;
       if (api == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        // Reached synchronously from initState on an offline open.
+        throw ProductException(
+          earlyAppLocalizations(context).chatUiOpenCodeIsReconnecting,
+        );
       }
       final page = await readHistoryAtStagedBoundary(
         api,
@@ -1910,7 +1955,7 @@ class _ChatScreenState extends State<ChatScreen>
     try {
       final api = scope.api;
       if (api == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(_chatL10n(context).chatUiOpenCodeIsReconnecting);
       }
       final page = await api.messagePage(scope.session, cursor: cursor);
       if (!_currentHistory(generation, scope)) return;
@@ -2185,15 +2230,12 @@ class _ChatScreenState extends State<ChatScreen>
       final evicted = _conn.takeQueueEvictionNotice();
       _showComposerNote(
         evicted == null
-            ? 'Queued — will send when reconnected'
-            : 'Queued — will send when reconnected. $evicted',
+            ? _chatL10n(context).chatUiQueuedWillSendWhenReconnected
+            : _chatL10n(context).chatUiQueuedWithEviction(evicted),
         key: const Key('queued-draft-notice'),
       );
     } else {
-      _showActionError(
-        'This draft is too large to queue, or the queue is full of newer '
-        'drafts. Remove an attachment, or clear queued prompts in Settings.',
-      );
+      _showActionError(_chatL10n(context).chatUiThisDraftIsTooLargeToQueue);
     }
     return queued;
   }
@@ -2272,14 +2314,14 @@ class _ChatScreenState extends State<ChatScreen>
     return showConfirmSheet(
       context,
       icon: AppIconography.clearAll,
-      title: 'Discard queued draft?',
+      title: _chatL10n(context).chatUiDiscardQueuedDraft,
       message: asked.dispatched
           ? l10n.queuedDiscardUnconfirmedMessage
-          : 'This draft has not been sent to OpenCode.',
-      confirmLabel: 'Discard draft',
+          : _chatL10n(context).chatUiThisDraftHasNotBeenSentTo,
+      confirmLabel: _chatL10n(context).chatUiDiscardDraft,
       cancelLabel: asked.dispatched
           ? l10n.queuedKeepForReview
-          : 'Keep it queued',
+          : _chatL10n(context).chatUiKeepItQueued,
       destructive: true,
     );
   }
@@ -2313,10 +2355,10 @@ class _ChatScreenState extends State<ChatScreen>
     final confirmed = await showConfirmSheet(
       context,
       icon: AppIconography.clearAll,
-      title: 'Cancel this pending message?',
-      message: 'Its text returns to the composer as a draft.',
-      confirmLabel: 'Cancel message',
-      cancelLabel: 'Keep it pending',
+      title: _chatL10n(context).chatUiCancelThisPendingMessage,
+      message: _chatL10n(context).chatUiItsTextReturnsToTheComposerAs,
+      confirmLabel: _chatL10n(context).chatUiCancelMessage,
+      cancelLabel: _chatL10n(context).chatUiKeepItPending,
       destructive: true,
     );
     if (!confirmed || !mounted) return;
@@ -2326,9 +2368,9 @@ class _ChatScreenState extends State<ChatScreen>
     } on ApiException catch (error) {
       if (!mounted) return;
       if (error.statusCode == 409) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Already delivered')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_chatL10n(context).chatUiAlreadyDelivered)),
+        );
         return;
       }
       _showActionError(error);
@@ -2356,9 +2398,9 @@ class _ChatScreenState extends State<ChatScreen>
     } on ApiException catch (error) {
       if (!mounted) return;
       if (error.statusCode == 409) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Already delivered')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_chatL10n(context).chatUiAlreadyDelivered)),
+        );
         return;
       }
       _showActionError(error);
@@ -2381,6 +2423,7 @@ class _ChatScreenState extends State<ChatScreen>
   /// it is omitted the composer's current delivery choice applies; the
   /// long-press shortcut passes an explicit steer or queue.
   Future<void> _send({PromptDelivery? delivery}) async {
+    final strings = _chatL10n(context);
     final conversationSend = _voiceConversation;
     final voiceEpoch = _voiceEpoch.value;
     final voiceScope = _speechScopeNow;
@@ -2396,7 +2439,7 @@ class _ChatScreenState extends State<ChatScreen>
       return;
     }
     if (_voiceConversation && _composer.text.trimLeft().startsWith('/')) {
-      _showComposerNote(_chatL10n(context).voiceConversationCommandsOnly);
+      _showComposerNote(strings.voiceConversationCommandsOnly);
       return;
     }
     delivery ??= _activeDelivery;
@@ -2440,13 +2483,13 @@ class _ChatScreenState extends State<ChatScreen>
     if (_conn.supportsStagedRevert &&
         (_conn.sessionsById[widget.sessionID]?.reverted == true ||
             _conn.sessionRevertSaving(widget.sessionID))) {
-      _showComposerNote(_chatL10n(context).revertResolveBeforeSending);
+      _showComposerNote(strings.revertResolveBeforeSending);
       return;
     }
     _applyStagedReferences(); // UX-103 review handoff
     if (_composer.text.trim().isEmpty && _attachments.isEmpty) return;
     if (!_supportsPromptAttachments && _attachments.isNotEmpty) {
-      _showComposerNote(_chatL10n(context).codexTextOnlyPrompt);
+      _showComposerNote(strings.codexTextOnlyPrompt);
       return;
     }
     if (_conn.status != StreamStatus.connected) {
@@ -2457,8 +2500,8 @@ class _ChatScreenState extends State<ChatScreen>
         if (mounted) {
           _showComposerNote(
             persisted && _draftSaveFailure == null
-                ? _chatL10n(context).codexOfflineDraftSaved
-                : _chatL10n(context).codexReconnectBeforeSending,
+                ? strings.codexOfflineDraftSaved
+                : strings.codexReconnectBeforeSending,
           );
         }
         return;
@@ -2489,7 +2532,7 @@ class _ChatScreenState extends State<ChatScreen>
       final detail = _conn.connectionError;
       _showActionError(
         detail == null || detail.isEmpty
-            ? 'OpenCode is reconnecting. Try again when the server is online.'
+            ? strings.chatUiOpenCodeIsReconnectingTryAgainWhenThe
             : detail,
       );
       return;
@@ -2557,7 +2600,7 @@ class _ChatScreenState extends State<ChatScreen>
         expectedApi: actionApi,
       );
       if (!voiceSendCurrent() || (conversationSend && !_conversationCanSend)) {
-        throw StateError('Voice conversation was interrupted.');
+        throw StateError(strings.chatUiVoiceConversationWasInterrupted);
       }
       selection = _conn.selectionForSession(widget.sessionID);
       promptStarted = true;
@@ -2697,7 +2740,9 @@ class _ChatScreenState extends State<ChatScreen>
   ) async {
     final command = typed.command;
     if (!command.enabled) {
-      _showActionError('/${command.slash} is not available right now.');
+      _showActionError(
+        _chatL10n(context).chatUiCommandUnavailable(command.slash),
+      );
       return;
     }
     if (command.serverCommand == null) {
@@ -2717,7 +2762,8 @@ class _ChatScreenState extends State<ChatScreen>
     if (actionApi == null) {
       setState(() => _sending = false);
       _showActionError(
-        _conn.connectionError ?? 'OpenCode is reconnecting. Try again shortly.',
+        _conn.connectionError ??
+            _chatL10n(context).chatUiOpenCodeIsReconnectingTryAgainShortly,
       );
       return;
     }
@@ -3215,14 +3261,15 @@ class _ChatScreenState extends State<ChatScreen>
   Future<PromptAttachment?> _chooseAttachment(
     List<PromptAttachment> current,
   ) async {
+    final strings = _chatL10n(context);
     if (!_supportsPromptAttachments) {
-      _showComposerNote(_chatL10n(context).codexTextOnlyPrompt);
+      _showComposerNote(strings.codexTextOnlyPrompt);
       return null;
     }
-    final unsupportedAttachment = _chatL10n(context).chatAttachmentUnsupported;
+    final unsupportedAttachment = strings.chatAttachmentUnsupported;
     if (current.length >= _maxAttachmentCount) {
       throw ProductException(
-        'You can attach up to $_maxAttachmentCount files.',
+        strings.chatUiAttachmentCountLimit(_maxAttachmentCount),
       );
     }
     final currentBytes = current.fold<int>(
@@ -3230,20 +3277,18 @@ class _ChatScreenState extends State<ChatScreen>
       (total, attachment) => total + _attachmentByteLength(attachment),
     );
     if (currentBytes >= _maxAggregateAttachmentBytes) {
-      throw const ProductException(
-        'Attachments must total no more than 20 MB.',
-      );
+      throw ProductException(strings.chatUiAttachmentsMustTotalNoMoreThan20);
     }
-    final file = await FilePicker.pickFile(dialogTitle: 'Attach to prompt');
+    final file = await FilePicker.pickFile(
+      dialogTitle: strings.chatUiAttachToPrompt,
+    );
     if (file == null) return null;
     final size = await file.length();
     if (size > _maxAttachmentBytes) {
-      throw const ProductException('Each attachment must be 10 MB or smaller.');
+      throw ProductException(strings.chatUiEachAttachmentMustBe10MBOr);
     }
     if (size > 0 && currentBytes + size > _maxAggregateAttachmentBytes) {
-      throw const ProductException(
-        'Attachments must total no more than 20 MB.',
-      );
+      throw ProductException(strings.chatUiAttachmentsMustTotalNoMoreThan20);
     }
     final remainingAggregateBytes = _maxAggregateAttachmentBytes - currentBytes;
     final readLimit = remainingAggregateBytes < _maxAttachmentBytes
@@ -3254,12 +3299,10 @@ class _ChatScreenState extends State<ChatScreen>
       maxBytes: readLimit,
     );
     if (bytes == null && readLimit < _maxAttachmentBytes) {
-      throw const ProductException(
-        'Attachments must total no more than 20 MB.',
-      );
+      throw ProductException(strings.chatUiAttachmentsMustTotalNoMoreThan20);
     }
     if (bytes == null) {
-      throw const ProductException('Each attachment must be 10 MB or smaller.');
+      throw ProductException(strings.chatUiEachAttachmentMustBe10MBOr);
     }
     final mime = promptAttachmentMime(filename: file.name, bytes: bytes);
     if (mime == null) {
@@ -3340,13 +3383,21 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _abort() async {
     if (_aborting) return;
     if (!_conn.isIsolated) unawaited(HapticFeedback.mediumImpact());
+    final location = _conn.locationRevision;
+    final profileID = _conn.profile?.id;
     setState(() => _aborting = true);
     final actionApi = await _conn.prepareActionTransport();
     if (!mounted) return;
+    if (location != _conn.locationRevision || profileID != _conn.profile?.id) {
+      setState(() => _aborting = false);
+      _showActionError(_chatL10n(context).workContextChanged);
+      return;
+    }
     if (actionApi == null) {
       setState(() => _aborting = false);
       _showActionError(
-        _conn.connectionError ?? 'OpenCode is reconnecting. Try again shortly.',
+        _conn.connectionError ??
+            _chatL10n(context).chatUiOpenCodeIsReconnectingTryAgainShortly,
       );
       return;
     }
@@ -3360,21 +3411,20 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Future<void> _share() async {
+    final strings = _chatL10n(context);
     final confirmed = await showConfirmSheet(
       context,
       icon: AppIconography.globe,
-      title: 'Share this session?',
-      message:
-          'Anyone with the link can view this session’s conversation and shared context. '
-          'Do not share sessions containing secrets, credentials, or private files.',
-      confirmLabel: 'Share session',
+      title: strings.chatUiShareThisSession,
+      message: strings.chatUiAnyoneWithTheLinkCanViewThis,
+      confirmLabel: strings.chatUiShareSession,
     );
     if (!confirmed) return;
     try {
       final repository = await _requireActionRepository();
       final url = await repository.shareSession(widget.sessionID);
       if (url == null) {
-        throw const ProductException('No share link was returned');
+        throw ProductException(strings.chatUiNoShareLinkWasReturned);
       }
       if (mounted) {
         setState(() => _localShareUrl = url);
@@ -3391,8 +3441,8 @@ class _ChatScreenState extends State<ChatScreen>
           SnackBar(
             content: Text(
               copied
-                  ? 'Share link copied'
-                  : 'Session shared. Copy the visible link manually.',
+                  ? strings.chatUiShareLinkCopied
+                  : strings.chatUiSessionSharedCopyTheVisibleLinkManually,
             ),
           ),
         );
@@ -3411,7 +3461,9 @@ class _ChatScreenState extends State<ChatScreen>
       await _conn.refreshSessions();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Session is no longer shared')),
+          SnackBar(
+            content: Text(_chatL10n(context).chatUiSessionIsNoLongerShared),
+          ),
         );
       }
     } catch (error) {
@@ -3432,10 +3484,12 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Future<ServerOperationsGateway> _requireActionRepository() async {
+    final strings = _chatL10n(context);
     final repository = await _conn.prepareActionRepository();
     if (repository != null) return repository;
     throw ProductException(
-      _conn.connectionError ?? 'OpenCode is reconnecting. Try again shortly.',
+      _conn.connectionError ??
+          strings.chatUiOpenCodeIsReconnectingTryAgainShortly,
     );
   }
 
@@ -3608,8 +3662,8 @@ class _ChatScreenState extends State<ChatScreen>
       SnackBar(
         content: Text(
           expanded
-              ? 'Reasoning expanded in the transcript'
-              : 'Long reasoning collapsed in the transcript',
+              ? _chatL10n(context).chatUiReasoningExpandedInTheTranscript
+              : _chatL10n(context).chatUiLongReasoningCollapsedInTheTranscript,
         ),
       ),
     );
@@ -3622,7 +3676,9 @@ class _ChatScreenState extends State<ChatScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          visible ? 'Message timestamps shown' : 'Message timestamps hidden',
+          visible
+              ? _chatL10n(context).chatUiMessageTimestampsShown
+              : _chatL10n(context).chatUiMessageTimestampsHidden,
         ),
       ),
     );
@@ -3735,7 +3791,7 @@ class _ChatScreenState extends State<ChatScreen>
     );
     if (chronologicalIndex < 0 ||
         chronologicalIndex >= _visibleHistory.length) {
-      _showActionError('That message is no longer in this session.');
+      _showActionError(_chatL10n(context).chatUiThatMessageIsNoLongerInThis);
       return;
     }
     final listIndex = _visibleHistory.length - 1 - chronologicalIndex;
@@ -3824,7 +3880,10 @@ class _ChatScreenState extends State<ChatScreen>
       (item) => item.info.id == message.info.id,
     );
     if (message.info.role != 'assistant' || index < 0) {
-      return (label: 'Copy message text', text: _messageText(message));
+      return (
+        label: _chatL10n(context).chatUiCopyMessageText,
+        text: _messageText(message),
+      );
     }
     var start = index;
     var end = index;
@@ -3841,7 +3900,7 @@ class _ChatScreenState extends State<ChatScreen>
         reply.any((item) => item.info.time?.isDone != true);
     return (
       label: start == end
-          ? 'Copy message text'
+          ? _chatL10n(context).chatUiCopyMessageText
           : unfinished
           ? _chatL10n(context).chatCopyReplySoFar
           : start == 0 && _olderCursor != null
@@ -3857,9 +3916,9 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _copyMessageText(MessageWithParts message) async {
     await Clipboard.setData(ClipboardData(text: _messageCopy(message).text));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Message text copied')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_chatL10n(context).chatUiMessageTextCopied)),
+    );
   }
 
   /// The desktop right-click menu for a transcript message. Same three
@@ -3876,7 +3935,7 @@ class _ChatScreenState extends State<ChatScreen>
     if (message.info.role == 'user' && _conn.capabilities.sessionFork)
       ContextMenuAction(
         menuKey: const ValueKey('message-menu-fork'),
-        label: 'Fork from this prompt',
+        label: _chatL10n(context).chatUiForkFromThisPrompt,
         icon: AppIconography.fork,
         onSelected: () => unawaited(_forkFromMessage(message)),
       ),
@@ -3890,7 +3949,7 @@ class _ChatScreenState extends State<ChatScreen>
     if (_conn.capabilities.messageDelete)
       ContextMenuAction(
         menuKey: const ValueKey('message-menu-delete'),
-        label: 'Delete message',
+        label: _chatL10n(context).chatUiDeleteMessage,
         icon: AppIconography.delete,
         destructive: true,
         onSelected: () => unawaited(_deleteMessage(message)),
@@ -3922,9 +3981,9 @@ class _ChatScreenState extends State<ChatScreen>
               ListTile(
                 key: const ValueKey('message-action-fork'),
                 leading: const Icon(AppIconography.fork),
-                title: const Text('Fork from this prompt'),
-                subtitle: const Text(
-                  'Start a new session with this prompt in the composer',
+                title: Text(_chatL10n(context).chatUiForkFromThisPrompt),
+                subtitle: Text(
+                  _chatL10n(context).chatUiStartANewSessionWithThisPrompt,
                 ),
                 onTap: () => Navigator.pop(context, 'fork'),
               ),
@@ -3957,11 +4016,13 @@ class _ChatScreenState extends State<ChatScreen>
                   color: theme.colorScheme.error,
                 ),
                 title: Text(
-                  'Delete message',
+                  _chatL10n(context).chatUiDeleteMessage,
                   style: TextStyle(color: theme.colorScheme.error),
                 ),
-                subtitle: const Text(
-                  'Removes it from the conversation permanently',
+                subtitle: Text(
+                  _chatL10n(
+                    context,
+                  ).chatUiRemovesItFromTheConversationPermanently,
                 ),
                 onTap: () => Navigator.pop(context, 'delete'),
               ),
@@ -3983,12 +4044,9 @@ class _ChatScreenState extends State<ChatScreen>
     final confirmed = await showConfirmSheet(
       context,
       icon: AppIconography.delete,
-      title: 'Delete this message?',
-      message:
-          'The message and all of its parts are permanently removed from the '
-          'conversation, so future replies no longer see them. File changes '
-          'it made are not reverted.',
-      confirmLabel: 'Delete message',
+      title: _chatL10n(context).chatUiDeleteThisMessage,
+      message: _chatL10n(context).chatUiTheMessageAndAllOfItsParts,
+      confirmLabel: _chatL10n(context).chatUiDeleteMessage,
       destructive: true,
     );
     if (!confirmed || !mounted) return;
@@ -4002,9 +4060,9 @@ class _ChatScreenState extends State<ChatScreen>
       setState(() {
         _messages.removeWhere((entry) => entry.info.id == message.info.id);
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Message deleted')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_chatL10n(context).chatUiMessageDeleted)),
+      );
       await _load(resetHistory: true);
     } catch (error) {
       if (mounted) _showActionError(error);
@@ -4024,7 +4082,7 @@ class _ChatScreenState extends State<ChatScreen>
       final url = part.url;
       if (url == null || url.isEmpty) {
         _showActionError(
-          'This prompt cannot be restored because an attachment is unavailable.',
+          _chatL10n(context).chatUiThisPromptCannotBeRestoredBecauseAn,
         );
         return;
       }
@@ -4067,7 +4125,9 @@ class _ChatScreenState extends State<ChatScreen>
     if (!_supportsSessionCompact) return;
     final model = _conn.modelForSession(widget.sessionID);
     if (model == null && !_conn.serverOwnsSessionSelection) {
-      _showActionError('Select a model before compacting this session.');
+      _showActionError(
+        _chatL10n(context).chatUiSelectAModelBeforeCompactingThisSession,
+      );
       return;
     }
     try {
@@ -4078,9 +4138,9 @@ class _ChatScreenState extends State<ChatScreen>
         modelID: model?.modelID ?? '',
       );
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Compaction started')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_chatL10n(context).chatUiCompactionStarted)),
+        );
       }
     } catch (error) {
       if (mounted) _showActionError(error);
@@ -4103,7 +4163,7 @@ class _ChatScreenState extends State<ChatScreen>
   Future<void> _continueTruncated() async {
     if (_sending) return;
     final draft = _composer.text;
-    _composer.text = 'Continue';
+    _composer.text = _chatL10n(context).returnBriefContinue;
     await _send();
     if (mounted && _composer.text.isEmpty && draft.trim().isNotEmpty) {
       _composer.text = draft;
@@ -4131,10 +4191,9 @@ class _ChatScreenState extends State<ChatScreen>
     final confirmed = await showConfirmSheet(
       context,
       icon: AppIconography.history,
-      title: 'Revert from this prompt?',
-      message:
-          'Messages and file changes after the most recent prompt will be rolled back.',
-      confirmLabel: 'Revert',
+      title: _chatL10n(context).chatUiRevertFromThisPrompt,
+      message: _chatL10n(context).chatUiMessagesAndFileChangesAfterTheMost,
+      confirmLabel: _chatL10n(context).chatUiRevert,
     );
     if (!confirmed) return;
     try {
@@ -4207,6 +4266,7 @@ class _ChatScreenState extends State<ChatScreen>
   );
 
   Future<void> _retryLast() async {
+    final strings = _chatL10n(context);
     if (_sending) return;
     MessageWithParts? target;
     for (final message in _visibleHistory.toList().reversed) {
@@ -4227,16 +4287,14 @@ class _ChatScreenState extends State<ChatScreen>
         const <Part>[];
     if (text.trim().isEmpty && files.isEmpty) return;
     if (!_supportsPromptAttachments && files.isNotEmpty) {
-      _showComposerNote(_chatL10n(context).codexTextOnlyPrompt);
+      _showComposerNote(strings.codexTextOnlyPrompt);
       return;
     }
     final attachments = <PromptAttachment>[];
     for (final file in files) {
       final url = file.url;
       if (url == null || url.isEmpty) {
-        _showActionError(
-          'This prompt cannot be retried because an attachment is unavailable.',
-        );
+        _showActionError(strings.chatUiThisPromptCannotBeRetriedBecauseAn);
         return;
       }
       final filename = file.filename?.isNotEmpty == true
@@ -4255,7 +4313,7 @@ class _ChatScreenState extends State<ChatScreen>
     try {
       final api = await _conn.prepareActionTransport();
       if (api == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(strings.chatUiOpenCodeIsReconnecting);
       }
       await _conn.waitForSessionSelection(widget.sessionID, expectedApi: api);
       await api.promptAsync(
@@ -4405,14 +4463,9 @@ class _ChatScreenState extends State<ChatScreen>
     final sent = _conn.lastFlushedPromptCount;
     if (sent <= 0) return;
     final waiting = _conn.lastFlushSkippedForOtherProfiles;
-    final message = StringBuffer(
-      'Sent $sent queued prompt${sent == 1 ? '' : 's'}',
-    );
+    final message = StringBuffer(_chatL10n(context).chatUiQueuedSent(sent));
     if (waiting > 0) {
-      message.write(
-        ' · $waiting draft${waiting == 1 ? '' : 's'} waiting for other '
-        'servers',
-      );
+      message.write(_chatL10n(context).chatUiOtherDraftsWaitingSuffix(waiting));
     }
     ScaffoldMessenger.of(
       context,
@@ -4461,12 +4514,13 @@ class _ChatScreenState extends State<ChatScreen>
       showQuestionSheet(context, _conn, question);
 
   Future<void> _runShellDialog() async {
+    final strings = _chatL10n(context);
     if (!_conn.capabilities.terminal) return;
     final ctrl = TextEditingController();
     final cmd = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Run shell command'),
+        title: Text(strings.chatUiRunShellCommand),
         content: TextField(
           controller: ctrl,
           autofocus: true,
@@ -4478,11 +4532,11 @@ class _ChatScreenState extends State<ChatScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(strings.projectFolderCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Run'),
+            child: Text(strings.commandRun),
           ),
         ],
       ),
@@ -4491,7 +4545,7 @@ class _ChatScreenState extends State<ChatScreen>
     try {
       final api = await _conn.prepareActionTransport();
       if (api == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(strings.chatUiOpenCodeIsReconnecting);
       }
       await _conn.waitForSessionSelection(widget.sessionID, expectedApi: api);
       await api.shell(
@@ -4533,9 +4587,12 @@ class _ChatScreenState extends State<ChatScreen>
     });
     try {
       final repository = await _conn.prepareActionRepository();
+      if (!mounted) return;
       if (repository == null) {
-        throw const ProductException(
-          'OpenCode commands are unavailable offline.',
+        // Looked up after the first await: this runs from initState, where
+        // inherited localizations are not yet available.
+        throw ProductException(
+          _chatL10n(context).chatUiOpenCodeCommandsAreUnavailableOffline,
         );
       }
       final commands = [...await repository.listCommands()];
@@ -4559,32 +4616,36 @@ class _ChatScreenState extends State<ChatScreen>
       _ChatCommand.mobile(
         slash: 'new',
         aliases: const ['clear'],
-        title: 'New session',
-        description: 'Start a clean session in this workspace',
-        group: 'Navigate',
+        title: _chatL10n(context).workspaceNewSession,
+        description: _chatL10n(context).chatUiStartACleanSessionInThisWorkspace,
+        group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.newSession,
       ),
       _ChatCommand.mobile(
         slash: 'sessions',
         aliases: const ['resume', 'continue'],
-        title: 'Sessions',
-        description: 'Find sessions across every OpenCode project',
-        group: 'Navigate',
+        title: _chatL10n(context).usageSessions,
+        description: _chatL10n(
+          context,
+        ).chatUiFindSessionsAcrossEveryOpenCodeProject,
+        group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.sessions,
       ),
       _ChatCommand.mobile(
         slash: 'workspaces',
         aliases: const ['workspace'],
-        title: 'Projects and workspaces',
-        description: 'Switch project, directory, or worktree',
-        group: 'Navigate',
+        title: _chatL10n(context).chatUiProjectsAndWorkspaces,
+        description: _chatL10n(context).chatUiSwitchProjectDirectoryOrWorktree,
+        group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.workspaces,
       ),
       _ChatCommand.mobile(
         slash: 'move',
-        title: 'Move session',
-        description: 'Move this session to another project directory',
-        group: 'Current session',
+        title: _chatL10n(context).chatUiMoveSession,
+        description: _chatL10n(
+          context,
+        ).chatUiMoveThisSessionToAnotherProjectDirectory,
+        group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.move,
       ),
       // §7 row 5: warping a session into a managed workspace has no v2
@@ -4592,76 +4653,87 @@ class _ChatScreenState extends State<ChatScreen>
       if (_conn.capabilities.workspaceWarp)
         _ChatCommand.mobile(
           slash: 'warp',
-          title: 'Move session',
-          description: 'Change this session’s experimental workspace',
-          group: 'Current session',
+          title: _chatL10n(context).chatUiMoveSession,
+          description: _chatL10n(
+            context,
+          ).chatUiChangeThisSessionSExperimentalWorkspace,
+          group: _chatL10n(context).chatUiCurrentSession,
           action: _ChatCommandAction.warp,
         ),
       _ChatCommand.mobile(
         slash: 'editor',
-        title: 'Prompt editor',
-        description: 'Edit the current prompt in a focused full-screen view',
-        group: 'Compose',
+        title: _chatL10n(context).chatUiPromptEditor,
+        description: _chatL10n(context).chatUiEditTheCurrentPromptInAFocused,
+        group: _chatL10n(context).chatUiCompose,
         action: _ChatCommandAction.promptEditor,
       ),
       _ChatCommand.mobile(
         slash: 'files',
         aliases: const ['open'],
-        title: 'Project files',
-        description: 'Browse, preview, download, and attach project files',
-        group: 'Navigate',
+        title: _chatL10n(context).chatUiProjectFiles,
+        description: _chatL10n(
+          context,
+        ).chatUiBrowsePreviewDownloadAndAttachProjectFiles,
+        group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.files,
       ),
       _ChatCommand.mobile(
         slash: 'health',
-        title: 'Project health',
-        description:
-            'Inspect Git, language services, and formatters for this project',
-        group: 'Navigate',
+        title: _chatL10n(context).chatUiProjectHealth,
+        description: _chatL10n(
+          context,
+        ).chatUiInspectGitLanguageServicesAndFormattersFor,
+        group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.projectHealth,
       ),
       _ChatCommand.mobile(
         slash: 'terminal',
-        title: 'Terminal',
-        description: 'Open persistent workspace terminals',
-        group: 'Navigate',
+        title: _chatL10n(context).libraryTerminalTitle,
+        description: _chatL10n(context).chatUiOpenPersistentWorkspaceTerminals,
+        group: _chatL10n(context).chatUiNavigate,
         action: _ChatCommandAction.terminal,
       ),
       _ChatCommand.mobile(
         slash: 'models',
         aliases: const ['model', 'mo'],
-        title: 'Model',
-        description: 'Choose a server model by provider and capability',
-        group: 'Model and agent',
+        title: _chatL10n(context).chatUiModel,
+        description: _chatL10n(context).chatUiChooseAServerModelByProviderAnd,
+        group: _chatL10n(context).chatUiModelAndAgent,
         action: _ChatCommandAction.model,
       ),
       _ChatCommand.mobile(
         slash: 'agents',
         aliases: const ['agent'],
-        title: 'Agent',
-        description: 'Choose the active OpenCode agent',
-        group: 'Model and agent',
+        title: _chatL10n(context).chatUiAgent,
+        description: _chatL10n(context).chatUiChooseTheActiveOpenCodeAgent,
+        group: _chatL10n(context).chatUiModelAndAgent,
         action: _ChatCommandAction.model,
       ),
       _ChatCommand.mobile(
         slash: 'variants',
-        title: 'Thinking mode',
-        description: 'Choose the current model variant or reasoning effort',
-        group: 'Model and agent',
+        title: _chatL10n(context).modelThinkingMode,
+        description: _chatL10n(
+          context,
+        ).chatUiChooseTheCurrentModelVariantOrReasoning,
+        group: _chatL10n(context).chatUiModelAndAgent,
         action: _ChatCommandAction.model,
       ),
       _ChatCommand.mobile(
         slash: 'mcps',
         aliases: const ['mcp'],
-        title: 'MCP servers',
-        description: 'Inspect MCP status, authentication, and resources',
+        title: _chatL10n(context).chatUiMCPServers,
+        description: _chatL10n(
+          context,
+        ).chatUiInspectMCPStatusAuthenticationAndResources,
         group: 'OpenCode',
         action: _ChatCommandAction.integrations,
       ),
       _ChatCommand.mobile(
         slash: 'connect',
-        title: 'Connect provider',
-        description: 'Manage provider and integration authentication',
+        title: _chatL10n(context).chatUiConnectProvider,
+        description: _chatL10n(
+          context,
+        ).chatUiManageProviderAndIntegrationAuthentication,
         group: 'OpenCode',
         action: _ChatCommandAction.integrations,
       ),
@@ -4670,15 +4742,17 @@ class _ChatScreenState extends State<ChatScreen>
         _ChatCommand.mobile(
           slash: 'org',
           aliases: const ['orgs', 'switch-org'],
-          title: 'Switch organization',
-          description: 'Change the active OpenCode Console organization',
+          title: _chatL10n(context).chatUiSwitchOrganization,
+          description: _chatL10n(
+            context,
+          ).chatUiChangeTheActiveOpenCodeConsoleOrganization,
           group: 'OpenCode',
           action: _ChatCommandAction.organization,
         ),
       _ChatCommand.mobile(
         slash: 'skills',
-        title: 'Skills',
-        description: 'Browse project and global skills',
+        title: _chatL10n(context).chatUiSkills,
+        description: _chatL10n(context).chatUiBrowseProjectAndGlobalSkills,
         group: 'OpenCode',
         action: _ChatCommandAction.skills,
       ),
@@ -4686,55 +4760,64 @@ class _ChatScreenState extends State<ChatScreen>
       if (_conn.capabilities.toolInventory)
         _ChatCommand.mobile(
           slash: 'tools',
-          title: 'Tools and capabilities',
-          description:
-              'Inspect tools callable by the active provider and model',
+          title: _chatL10n(context).chatUiToolsAndCapabilities,
+          description: _chatL10n(
+            context,
+          ).chatUiInspectToolsCallableByTheActiveProvider,
           group: 'OpenCode',
           action: _ChatCommandAction.tools,
         ),
       _ChatCommand.mobile(
         slash: 'references',
         aliases: const ['reference', 'refs'],
-        title: 'Project references',
-        description: 'Add an OpenCode project reference to this prompt',
+        title: _chatL10n(context).chatUiProjectReferences,
+        description: _chatL10n(
+          context,
+        ).chatUiAddAnOpenCodeProjectReferenceToThis,
         group: 'OpenCode',
         action: _ChatCommandAction.references,
       ),
       _ChatCommand.mobile(
         slash: 'status',
-        title: 'Server status',
-        description: 'Connection health, server version, and live mode',
+        title: _chatL10n(context).chatUiServerStatus,
+        description: _chatL10n(
+          context,
+        ).chatUiConnectionHealthServerVersionAndLiveMode,
         group: 'OpenCode',
         action: _ChatCommandAction.status,
       ),
       _ChatCommand.mobile(
         slash: 'debug',
-        title: 'App diagnostics',
-        description: 'Review handled app errors and send a redacted report',
+        title: _chatL10n(context).chatUiAppDiagnostics,
+        description: _chatL10n(context).chatUiReviewHandledAppErrorsAndSendA,
         group: 'OpenCode',
         action: _ChatCommandAction.diagnostics,
       ),
       _ChatCommand.mobile(
         slash: 'themes',
         aliases: const ['theme'],
-        title: 'Appearance',
-        description: 'Follow Android or choose the native light or dark theme',
-        group: 'Transcript display',
+        title: _chatL10n(context).chatUiAppearance,
+        description: _chatL10n(
+          context,
+        ).chatUiFollowAndroidOrChooseTheNativeLight,
+        group: _chatL10n(context).chatUiTranscriptDisplay,
         action: _ChatCommandAction.appearance,
       ),
       _ChatCommand.mobile(
         slash: 'diff',
-        title: 'Session changes',
-        description: 'Review the actual diff for this session',
-        group: 'Current session',
+        title: _chatL10n(context).chatUiSessionChanges,
+        description: _chatL10n(context).chatUiReviewTheActualDiffForThisSession,
+        group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.diff,
       ),
       _ChatCommand.mobile(
         slash: 'context',
         aliases: const ['usage'],
-        title: 'Session context',
-        description: 'Inspect current tokens, cache, cost, and context usage',
-        group: 'Current session',
+        title: _chatL10n(context).chatUiSessionContext,
+        description: _chatL10n(
+          context,
+        ).chatUiInspectCurrentTokensCacheCostAndContext,
+        group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.context,
         enabled: _messages.any(
           (message) =>
@@ -4745,50 +4828,56 @@ class _ChatScreenState extends State<ChatScreen>
       if (_conn.capabilities.sessionShare) ...[
         _ChatCommand.mobile(
           slash: 'share',
-          title: _shareUrl == null ? 'Share session' : 'Copy share link',
-          description: 'Create or copy a public session link',
-          group: 'Current session',
+          title: _shareUrl == null
+              ? _chatL10n(context).chatUiShareSession
+              : _chatL10n(context).chatUiCopyShareLink,
+          description: _chatL10n(context).chatUiCreateOrCopyAPublicSessionLink,
+          group: _chatL10n(context).chatUiCurrentSession,
           action: _ChatCommandAction.share,
         ),
         _ChatCommand.mobile(
           slash: 'unshare',
-          title: 'Stop sharing',
-          description: 'Disable the current public session link',
-          group: 'Current session',
+          title: _chatL10n(context).chatUiStopSharing,
+          description: _chatL10n(
+            context,
+          ).chatUiDisableTheCurrentPublicSessionLink,
+          group: _chatL10n(context).chatUiCurrentSession,
           action: _ChatCommandAction.unshare,
           enabled: _shareUrl != null,
         ),
       ],
       _ChatCommand.mobile(
         slash: 'rename',
-        title: 'Rename session',
-        description: 'Change the title shown in the session list',
-        group: 'Current session',
+        title: _chatL10n(context).chatUiRenameSession,
+        description: _chatL10n(context).chatUiChangeTheTitleShownInTheSession,
+        group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.rename,
       ),
       _ChatCommand.mobile(
         slash: 'timeline',
         aliases: const ['messages'],
-        title: 'Message timeline',
-        description: 'Find a message, jump to it, or fork from a prompt',
-        group: 'Current session',
+        title: _chatL10n(context).chatUiMessageTimeline,
+        description: _chatL10n(context).chatUiFindAMessageJumpToItOr,
+        group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.timeline,
         enabled: _messages.isNotEmpty,
       ),
       _ChatCommand.mobile(
         slash: 'fork',
-        title: 'Fork from prompt',
-        description: 'Choose a prompt and continue it in a new session',
-        group: 'Current session',
+        title: _chatL10n(context).chatUiForkFromPrompt,
+        description: _chatL10n(context).chatUiChooseAPromptAndContinueItIn,
+        group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.fork,
         enabled: hasUserMessage,
       ),
       _ChatCommand.mobile(
         slash: 'compact',
         aliases: const ['summarize'],
-        title: 'Compact context',
-        description: 'Summarize the session using the selected model',
-        group: 'Current session',
+        title: _chatL10n(context).chatUiCompactContext,
+        description: _chatL10n(
+          context,
+        ).chatUiSummarizeTheSessionUsingTheSelectedModel,
+        group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.compact,
         enabled: hasUserMessage,
       ),
@@ -4796,29 +4885,33 @@ class _ChatScreenState extends State<ChatScreen>
         slash: 'thinking',
         aliases: const ['toggle-thinking'],
         title: _conn.transcriptReasoningExpanded
-            ? 'Collapse reasoning'
-            : 'Expand reasoning',
-        description: 'Toggle long reasoning details across the transcript',
-        group: 'Transcript display',
+            ? _chatL10n(context).chatUiCollapseReasoning
+            : _chatL10n(context).chatUiExpandReasoning,
+        description: _chatL10n(
+          context,
+        ).chatUiToggleLongReasoningDetailsAcrossTheTranscript,
+        group: _chatL10n(context).chatUiTranscriptDisplay,
         action: _ChatCommandAction.thinking,
       ),
       _ChatCommand.mobile(
         slash: 'timestamps',
         aliases: const ['toggle-timestamps'],
         title: _conn.transcriptTimestampsVisible
-            ? 'Hide timestamps'
-            : 'Show timestamps',
-        description: 'Toggle creation times beside transcript entries',
-        group: 'Transcript display',
+            ? _chatL10n(context).chatUiHideTimestamps
+            : _chatL10n(context).chatUiShowTimestamps,
+        description: _chatL10n(
+          context,
+        ).chatUiToggleCreationTimesBesideTranscriptEntries,
+        group: _chatL10n(context).chatUiTranscriptDisplay,
         action: _ChatCommandAction.timestamps,
       ),
       _ChatCommand.mobile(
         slash: 'undo',
-        title: 'Revert last prompt',
+        title: _chatL10n(context).chatUiRevertLastPrompt,
         description: _conn.supportsStagedRevert
             ? _chatL10n(context).revertUndoDescription
-            : 'Roll back messages and file changes after the prompt',
-        group: 'Current session',
+            : _chatL10n(context).chatUiRollBackMessagesAndFileChangesAfter,
+        group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.undo,
         enabled:
             hasUserMessage &&
@@ -4830,32 +4923,38 @@ class _ChatScreenState extends State<ChatScreen>
         slash: 'redo',
         title: _conn.supportsStagedRevert
             ? _chatL10n(context).revertClearAction
-            : 'Restore reverted prompt',
+            : _chatL10n(context).chatUiRestoreRevertedPrompt,
         description: _conn.supportsStagedRevert
             ? _chatL10n(context).revertClearShortDescription
-            : 'Restore the currently reverted session state',
-        group: 'Current session',
+            : _chatL10n(context).chatUiRestoreTheCurrentlyRevertedSessionState,
+        group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.redo,
         enabled: session?.reverted == true,
       ),
       _ChatCommand.mobile(
         slash: 'copy',
-        title: 'Copy transcript',
-        description: 'Copy the rendered conversation as Markdown',
-        group: 'Current session',
+        title: _chatL10n(context).chatUiCopyTranscript,
+        description: _chatL10n(
+          context,
+        ).chatUiCopyTheRenderedConversationAsMarkdown,
+        group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.copy,
       ),
       _ChatCommand.mobile(
         slash: 'export',
-        title: 'Export transcript',
-        description: 'Save the conversation as a Markdown file',
-        group: 'Current session',
+        title: _chatL10n(context).chatUiExportTranscript,
+        description: _chatL10n(
+          context,
+        ).chatUiSaveTheConversationAsAMarkdownFile,
+        group: _chatL10n(context).chatUiCurrentSession,
         action: _ChatCommandAction.export,
       ),
       _ChatCommand.mobile(
         slash: 'help',
-        title: 'Command map',
-        description: 'Search mobile actions and server-provided commands',
+        title: _chatL10n(context).chatUiCommandMap,
+        description: _chatL10n(
+          context,
+        ).chatUiSearchMobileActionsAndServerProvidedCommands,
         group: 'OpenCode',
         action: _ChatCommandAction.help,
       ),
@@ -4864,7 +4963,7 @@ class _ChatScreenState extends State<ChatScreen>
     if (!_conn.capabilities.serverCatalog) return supported;
     final dynamic = [
       for (final command in _serverCommands ?? const <CommandInfo>[])
-        _ChatCommand.server(command),
+        _ChatCommand.server(command, _chatL10n(context)),
     ];
     return [...supported, ...dynamic];
   }
@@ -4899,8 +4998,10 @@ class _ChatScreenState extends State<ChatScreen>
           SnackBar(
             content: Text(
               next == null
-                  ? 'Choose another model in the picker to build your recent list.'
-                  : 'Next turns in this session use $_presentedModelLabel.',
+                  ? _chatL10n(context).chatUiChooseAnotherModelInThePickerTo
+                  : _chatL10n(
+                      context,
+                    ).chatUiNextTurnsModel(_presentedModelLabel ?? ''),
             ),
           ),
         );
@@ -4995,6 +5096,7 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Future<void> _executeMobileCommand(_ChatCommandAction action) async {
+    final strings = _chatL10n(context);
     switch (action) {
       case _ChatCommandAction.newSession:
         if (!await _persistDraft() || !mounted) return;
@@ -5038,7 +5140,7 @@ class _ChatScreenState extends State<ChatScreen>
           await Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => Scaffold(
-                appBar: AppBar(title: const Text('Project files')),
+                appBar: AppBar(title: Text(strings.chatUiProjectFiles)),
                 body: FilesScreen(
                   controller: _conn,
                   onAttachFile: _attachProjectFile,
@@ -5053,7 +5155,7 @@ class _ChatScreenState extends State<ChatScreen>
       case _ChatCommandAction.projectHealth:
         final repository = await _conn.prepareActionRepository();
         if (repository == null) {
-          throw const ProductException('OpenCode is reconnecting. Try again.');
+          throw ProductException(strings.chatUiOpenCodeIsReconnectingTryAgain);
         }
         if (mounted) {
           await Navigator.of(context).push(
@@ -5136,7 +5238,7 @@ class _ChatScreenState extends State<ChatScreen>
             ),
           );
           if (mounted && used == true && _conn.locationRevision == location) {
-            _showComposerNote(_chatL10n(context).skillApplied);
+            _showComposerNote(strings.skillApplied);
             await _load();
           }
         }
@@ -5197,9 +5299,9 @@ class _ChatScreenState extends State<ChatScreen>
         } else {
           await Clipboard.setData(ClipboardData(text: _shareUrl!));
           if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Share link copied')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(strings.chatUiShareLinkCopied)),
+            );
           }
         }
         return;
@@ -5255,7 +5357,9 @@ class _ChatScreenState extends State<ChatScreen>
       (candidate) =>
           candidate.isDirectoryReference && candidate.url == attachment.url,
     )) {
-      _showComposerNote('@${reference.name} is already in the prompt');
+      _showComposerNote(
+        _chatL10n(context).chatUiReferenceAlreadyAdded(reference.name),
+      );
       _focus.requestFocus();
       return;
     }
@@ -5278,20 +5382,22 @@ class _ChatScreenState extends State<ChatScreen>
     final title = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Rename session'),
+        title: Text(_chatL10n(context).chatUiRenameSession),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Title'),
+          decoration: InputDecoration(
+            labelText: _chatL10n(context).chatUiTitle,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(_chatL10n(context).projectFolderCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Rename'),
+            child: Text(_chatL10n(context).chatUiRename),
           ),
         ],
       ),
@@ -5309,7 +5415,7 @@ class _ChatScreenState extends State<ChatScreen>
   String _transcriptMarkdown() {
     final title = _conn.sessionsById[widget.sessionID]?.title;
     final out = StringBuffer(
-      '# ${title?.isNotEmpty == true ? title : 'OpenCode session'}\n',
+      '# ${title?.isNotEmpty == true ? title : _chatL10n(context).chatUiOpenCodeSession}\n',
     );
     if (_olderCursor != null) {
       out.write('\n> ${_chatL10n(context).historyLoadedOnly}\n');
@@ -5317,19 +5423,23 @@ class _ChatScreenState extends State<ChatScreen>
     for (final message in _visibleHistory) {
       if (message.info.id.startsWith('local-')) continue;
       out.write(
-        '\n## ${message.info.role == 'assistant' ? 'Assistant' : 'User'}\n\n',
+        '\n## ${message.info.role == 'assistant' ? _chatL10n(context).chatUiAssistant : _chatL10n(context).chatUiUser}\n\n',
       );
       for (final part in message.parts) {
         if (part.type == 'text' && part.text.trim().isNotEmpty) {
           out.write('${part.text.trim()}\n\n');
         } else if (part.type == 'reasoning' && part.text.trim().isNotEmpty) {
           out.write(
-            '<details><summary>Reasoning</summary>\n\n${part.text.trim()}\n\n</details>\n\n',
+            '<details><summary>${_chatL10n(context).transcriptFindReasoning}</summary>\n\n${part.text.trim()}\n\n</details>\n\n',
           );
         } else if (part.type == 'file') {
-          out.write('- Attachment: ${part.filename ?? part.url ?? 'file'}\n');
+          out.write(
+            '- ${_chatL10n(context).chatUiAttachment}: ${part.filename ?? part.url ?? _chatL10n(context).chatUiFile}\n',
+          );
         } else if (part.type == 'tool') {
-          out.write('### Tool: ${part.toolName ?? 'tool'}\n\n');
+          out.write(
+            '### ${_chatL10n(context).chatUiTool}: ${part.toolName ?? _chatL10n(context).chatUiTool}\n\n',
+          );
           final output = part.toolState.output?.trim();
           if (output?.isNotEmpty == true) {
             out.write('```text\n$output\n```\n\n');
@@ -5337,7 +5447,7 @@ class _ChatScreenState extends State<ChatScreen>
         }
       }
       if (message.info.errorText case final error?) {
-        out.write('> Error: $error\n');
+        out.write('> ${_chatL10n(context).chatUiError}: $error\n');
       }
     }
     return out.toString().trimRight();
@@ -5347,7 +5457,9 @@ class _ChatScreenState extends State<ChatScreen>
     await Clipboard.setData(ClipboardData(text: _transcriptMarkdown()));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transcript copied as Markdown')),
+        SnackBar(
+          content: Text(_chatL10n(context).chatUiTranscriptCopiedAsMarkdown),
+        ),
       );
     }
   }
@@ -5369,15 +5481,15 @@ class _ChatScreenState extends State<ChatScreen>
       return;
     }
     final path = await FilePicker.saveFile(
-      dialogTitle: 'Export session transcript',
+      dialogTitle: _chatL10n(context).chatUiExportSessionTranscript,
       fileName:
           'opencode-${widget.sessionID.substring(0, widget.sessionID.length.clamp(0, 8))}.md',
       bytes: Uint8List.fromList(utf8.encode(_transcriptMarkdown())),
     );
     if (mounted && path != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Transcript saved')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_chatL10n(context).chatUiTranscriptSaved)),
+      );
     }
   }
 
@@ -5397,7 +5509,7 @@ class _ChatScreenState extends State<ChatScreen>
       builder: (context) => LayoutBuilder(
         builder: (context, constraints) => ConstrainedBox(
           constraints: BoxConstraints(maxHeight: constraints.maxHeight * .85),
-          child: _SessionMenuSheet(
+          child: SessionMenuSheet(
             reasoningExpanded: _conn.transcriptReasoningExpanded,
             timestampsVisible: _conn.transcriptTimestampsVisible,
             todosAvailable: _conn.capabilities.sessionTodos,
@@ -5411,14 +5523,24 @@ class _ChatScreenState extends State<ChatScreen>
             stagedRevert: _conn.supportsStagedRevert,
             notesAvailable: _conn.supportsSessionNotes,
             skillsAvailable: _conn.supportsSessionSkills,
+            resultsAvailable: _conn.capabilities.projectManagement,
             shared: shared,
             sharingAvailable: _conn.capabilities.sessionShare,
+            approvalsAvailable: true,
+            continueOnComputerAvailable: _conn.capabilities.cliSessionResume,
+            continueOnPhoneAvailable: _conn.profile != null,
           ),
         ),
       ),
     );
     if (!mounted || action == null) return;
     switch (action) {
+      case 'approvals':
+        await showSessionApprovalsSheet(
+          context,
+          controller: _conn,
+          sessionID: widget.sessionID,
+        );
       case 'skills':
         if (_conn.locationRevision != menuLocation) {
           _showActionError(_chatL10n(context).skillLocationChanged);
@@ -5448,6 +5570,8 @@ class _ChatScreenState extends State<ChatScreen>
           ),
         );
         if (mounted) setState(() {});
+      case 'results':
+        await _openRunningWork();
       case 'timeline':
         await _openTimeline();
       case 'find':
@@ -5484,7 +5608,71 @@ class _ChatScreenState extends State<ChatScreen>
         await _openCommandLauncher();
       case 'reload':
         await _load();
+      case 'continue-computer':
+        await _continueOnComputer();
+      case 'continue-phone':
+        await _continueOnPhone();
     }
+  }
+
+  /// F4-S1: the terminal command that resumes this session on the computer
+  /// running the server. The CLI name follows the server's product
+  /// generation (the only thing the flavor is used for here — copy), the
+  /// availability follows [ServerCapabilities.cliSessionResume]. The sheet
+  /// only offers a copy; the cross-server route hands over to the existing
+  /// export screen instead of duplicating it.
+  Future<void> _continueOnComputer() async {
+    final session = _conn.sessionsById[widget.sessionID];
+    final command = SessionResumeCommand.build(
+      cli: _conn.serverFlavor == ServerFlavor.v2
+          ? SessionResumeCli.openCode2
+          : SessionResumeCli.openCode1,
+      sessionID: widget.sessionID,
+      directory: session?.directory ?? _conn.directory,
+      workspaceID: session?.workspaceID ?? _conn.workspace,
+    );
+    final repository = _conn.repository;
+    final exportAvailable =
+        _conn.capabilities.sessionImportExport &&
+        repository is SessionExportGateway &&
+        (repository as SessionExportGateway).sessionExportSupported;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => LayoutBuilder(
+        builder: (context, constraints) => ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: constraints.maxHeight * .85),
+          child: ContinueOnComputerSheet(
+            command: command,
+            exportAvailable: exportAvailable,
+          ),
+        ),
+      ),
+    );
+    if (!mounted || action != 'export') return;
+    await _exportTranscript();
+  }
+
+  /// F4-S2: the QR / link that opens this exact session in the app on
+  /// another phone. Route identifiers only, built from the saved server's
+  /// id and the session id; nothing is sent.
+  Future<void> _continueOnPhone() async {
+    final link = SessionLink.tryCreate(
+      profileID: _conn.profile?.id,
+      sessionID: widget.sessionID,
+    );
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => LayoutBuilder(
+        builder: (context, constraints) => ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: constraints.maxHeight * .85),
+          child: ContinueOnPhoneSheet(link: link),
+        ),
+      ),
+    );
   }
 
   void _showTodos() {
@@ -5525,52 +5713,83 @@ class _ChatScreenState extends State<ChatScreen>
   /// Opens the child session a Task tool card points at (its metadata
   /// carries the subagent's session id), fetching it when the list has not
   /// caught up with a freshly spawned subagent yet.
-  Future<void> _openSubagentSession(String sessionID) async {
+  Future<void> _openSubagentSession(
+    String sessionID, {
+    bool requireChild = false,
+  }) async {
     if (!_conn.capabilities.projectManagement ||
         sessionID == widget.sessionID) {
       return;
     }
+    final origin = widget.sessionID;
+    final location = _conn.locationRevision;
+    final profileID = _conn.profile?.id;
+    final scope = (_conn.profile?.baseUrl, _conn.directory, _conn.workspace);
+    bool current() =>
+        mounted &&
+        origin == widget.sessionID &&
+        location == _conn.locationRevision &&
+        profileID == _conn.profile?.id &&
+        scope == (_conn.profile?.baseUrl, _conn.directory, _conn.workspace);
     try {
+      final repository = await _requireActionRepository();
+      if (!current()) return;
       final target =
           _conn.sessionsById[sessionID] ??
-          await (await _requireActionRepository()).getSessionDetails(sessionID);
-      if (!mounted) return;
+          await repository.getSessionDetails(sessionID);
+      if (!current() || repository != _conn.repository) return;
+      if (requireChild && target.parentID != origin) return;
       await _openRelatedSession(target);
     } catch (error) {
-      if (mounted) _showActionError(error);
+      if (current()) _showActionError(error);
     }
   }
 
   Future<void> _openParentSession() async {
     if (!_conn.capabilities.projectManagement) return;
     final parentID = _conn.sessionsById[widget.sessionID]?.parentID;
-    if (parentID == null) return;
-    try {
-      final repository = await _requireActionRepository();
-      final target =
-          _conn.sessionsById[parentID] ??
-          await repository.getSessionDetails(parentID);
-      if (!mounted) return;
-      await _openRelatedSession(target);
-    } catch (error) {
-      if (mounted) _showActionError(error);
-    }
+    if (parentID != null) await _openSubagentSession(parentID);
   }
 
   Future<void> _openRelatedSession(Session target) async {
     if (_conn.isIsolated || !_conn.capabilities.projectManagement) return;
+    final location = _conn.locationRevision;
+    final origin = widget.sessionID;
+    final identity = (_conn.profile?.id, _conn.profile?.baseUrl);
+    final text = _composer.text;
+    final attachments = List.of(_attachments);
+    bool currentDraft() =>
+        mounted &&
+        origin == widget.sessionID &&
+        identity == (_conn.profile?.id, _conn.profile?.baseUrl) &&
+        text == _composer.text &&
+        listEquals(attachments, _attachments);
+    if (!await _persistDraft() ||
+        !mounted ||
+        location != _conn.locationRevision ||
+        !currentDraft()) {
+      return;
+    }
     if (_conn.directory != target.directory ||
         _conn.workspace != target.workspaceID) {
       await _conn.selectLocationForExistingSession(
         directory: target.directory,
         workspace: target.workspaceID,
       );
-      if (!mounted) return;
+    }
+    // A competing location selection can supersede the awaited operation.
+    // Its completion alone does not establish the target scope.
+    if (!mounted ||
+        !currentDraft() ||
+        _conn.directory != target.directory ||
+        _conn.workspace != target.workspaceID) {
+      return;
     }
     Navigator.of(context).pushReplacementNamed('/chat/${target.id}');
   }
 
   Future<void> _showDiff() async {
+    final strings = _chatL10n(context);
     if (!_conn.capabilities.sessionDiff) return;
     if (_conn.isIsolated) {
       final api = await _conn.prepareActionTransport();
@@ -5591,21 +5810,21 @@ class _ChatScreenState extends State<ChatScreen>
           loadDiffs: () async {
             final api = await _conn.prepareActionTransport();
             if (api == null) {
-              throw const ProductException('OpenCode is reconnecting.');
+              throw ProductException(strings.chatUiOpenCodeIsReconnecting);
             }
             return api.diff(widget.sessionID);
           },
           loadWorkingTreeDiffs: () async {
             final repository = await _conn.prepareActionRepository();
             if (repository == null) {
-              throw const ProductException('OpenCode is reconnecting.');
+              throw ProductException(strings.chatUiOpenCodeIsReconnecting);
             }
             return repository.listVcsDiffs(VcsDiffMode.workingTree);
           },
           loadBranchDiffs: () async {
             final repository = await _conn.prepareActionRepository();
             if (repository == null) {
-              throw const ProductException('OpenCode is reconnecting.');
+              throw ProductException(strings.chatUiOpenCodeIsReconnecting);
             }
             return repository.listVcsDiffs(VcsDiffMode.branch);
           },
@@ -5647,9 +5866,8 @@ class _ChatScreenState extends State<ChatScreen>
     final count = _handoff.references.length;
     _showComposerNote(
       count == 1
-          ? 'Reference kept for your next prompt — commands do not carry it.'
-          : 'References kept for your next prompt — commands do not carry '
-                'them.',
+          ? _chatL10n(context).chatUiReferenceKeptForYourNextPromptCommands
+          : _chatL10n(context).chatUiReferencesKeptForYourNextPromptCommands,
       key: const Key('references-kept-notice'),
     );
   }
@@ -5670,7 +5888,7 @@ class _ChatScreenState extends State<ChatScreen>
       );
     });
     _focus.requestFocus();
-    _showComposerNote('Review comment added to the prompt');
+    _showComposerNote(_chatL10n(context).chatUiReviewCommentAddedToThePrompt);
   }
 
   /// One listing validates every path in the same directory, and both maps
@@ -5729,13 +5947,14 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Future<void> _openPathLink(String raw) async {
+    final strings = _chatL10n(context);
     if (_conn.isIsolated || !_conn.capabilities.fileBrowsing) return;
     final path = stripPathLineSuffix(raw);
     final name = path.substring(path.lastIndexOf('/') + 1);
     try {
       final api = await _conn.prepareActionTransport();
       if (api == null) {
-        throw const ProductException('Not connected to the server right now.');
+        throw ProductException(strings.chatUiNotConnectedToTheServerRightNow);
       }
       final content = await api.fileContent(path);
       final binary = content.isBinary || content.encoding == 'base64';
@@ -5759,11 +5978,12 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Future<FilePreviewData> _loadToolOutputFile(ToolOutputFile file) async {
+    final strings = _chatL10n(context);
     if (_conn.isIsolated) {
       return FilePreviewData(
         name: file.displayName,
         mimeType: file.mimeType,
-        error: 'Files are unavailable in this preview.',
+        error: strings.chatUiFilesAreUnavailableInThisPreview,
       );
     }
     final path = file.path;
@@ -5772,7 +5992,7 @@ class _ChatScreenState extends State<ChatScreen>
       return FilePreviewData(
         name: file.displayName,
         mimeType: file.mimeType,
-        error: 'The generated file is not available from this server.',
+        error: strings.chatUiTheGeneratedFileIsNotAvailableFrom,
       );
     }
     final content = await api.fileContent(path);
@@ -5784,7 +6004,7 @@ class _ChatScreenState extends State<ChatScreen>
       bytes: bytes,
       text: binary ? null : content.content,
       error: binary && bytes!.isEmpty
-          ? 'The server returned empty image data.'
+          ? strings.chatUiTheServerReturnedEmptyImageData
           : null,
     );
   }
@@ -5805,7 +6025,7 @@ class _ChatScreenState extends State<ChatScreen>
     );
     if (!mounted) return;
     _focus.requestFocus();
-    _showComposerNote('${file.displayName} attached. Add your comment.');
+    _showComposerNote(_chatL10n(context).chatUiFileAttached(file.displayName));
   }
 
   Future<void> _attachProjectFile(String path, FilePreviewData data) =>
@@ -5826,17 +6046,16 @@ class _ChatScreenState extends State<ChatScreen>
   /// identically. The size is checked from the drop's own metadata first, so
   /// an oversized file is refused without ever being read into memory.
   Future<void> _handleDroppedFiles(List<DroppedFile> files) async {
+    final strings = _chatL10n(context);
     if (_conn.isIsolated) return;
     if (!_supportsPromptAttachments) {
-      _showComposerNote(_chatL10n(context).codexTextOnlyPrompt);
+      _showComposerNote(strings.codexTextOnlyPrompt);
       return;
     }
     for (final file in files) {
       try {
         if (await file.length() > _maxAttachmentBytes) {
-          throw const ProductException(
-            'Each attachment must be 10 MB or smaller.',
-          );
+          throw ProductException(strings.chatUiEachAttachmentMustBe10MBOr);
         }
         final bytes = await file.readBytes();
         if (!mounted) return;
@@ -5871,24 +6090,26 @@ class _ChatScreenState extends State<ChatScreen>
     final bytes = data.exportBytes;
     if (data.error != null || bytes == null) {
       throw ProductException(
-        data.error ?? 'The file has no content to attach.',
+        data.error ?? _chatL10n(context).chatUiTheFileHasNoContentToAttach,
       );
     }
     if (_attachments.length >= _maxAttachmentCount) {
       throw ProductException(
-        'You can attach up to $_maxAttachmentCount files.',
+        _chatL10n(context).chatUiAttachmentCountLimit(_maxAttachmentCount),
       );
     }
     if (bytes.length > _maxAttachmentBytes) {
-      throw const ProductException('Each attachment must be 10 MB or smaller.');
+      throw ProductException(
+        _chatL10n(context).chatUiEachAttachmentMustBe10MBOr,
+      );
     }
     final currentBytes = _attachments.fold<int>(
       0,
       (total, attachment) => total + _attachmentByteLength(attachment),
     );
     if (currentBytes + bytes.length > _maxAggregateAttachmentBytes) {
-      throw const ProductException(
-        'Attachments must total no more than 20 MB.',
+      throw ProductException(
+        _chatL10n(context).chatUiAttachmentsMustTotalNoMoreThan20,
       );
     }
     final mime = promptAttachmentMime(
@@ -5909,6 +6130,7 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   Future<String?> _discardUntouchedMobileSession() async {
+    final strings = _chatL10n(context);
     if (_conn.isIsolated) return null;
     if (!widget.discardIfUntouched ||
         _messages.isNotEmpty ||
@@ -5928,7 +6150,7 @@ class _ChatScreenState extends State<ChatScreen>
     try {
       final api = await _conn.prepareActionTransport();
       if (api == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(strings.chatUiOpenCodeIsReconnecting);
       }
       final currentMessages = await api.messagePage(widget.sessionID, limit: 1);
       if (currentMessages.items.isNotEmpty || currentMessages.hasMore) {
@@ -5943,7 +6165,7 @@ class _ChatScreenState extends State<ChatScreen>
       }
       return null;
     } catch (_) {
-      return 'Empty session was kept because OpenCode could not verify or remove it.';
+      return strings.chatUiEmptySessionWasKeptBecauseOpenCodeCould;
     }
   }
 
@@ -5991,16 +6213,20 @@ class _ChatScreenState extends State<ChatScreen>
     if (_conn.isIsolated) return;
     final bytes = data.exportBytes;
     if (data.error != null || bytes == null) {
-      throw ProductException(data.error ?? 'The file has no content to save.');
+      throw ProductException(
+        data.error ?? _chatL10n(context).chatUiTheFileHasNoContentToSave,
+      );
     }
     final savedPath = await FilePicker.saveFile(
-      dialogTitle: 'Save ${file.displayName}',
+      dialogTitle: _chatL10n(context).chatUiSaveFile(file.displayName),
       fileName: file.displayName,
       bytes: bytes,
     );
     if (!mounted || savedPath == null) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${file.displayName} saved to your device.')),
+      SnackBar(
+        content: Text(_chatL10n(context).chatUiFileSaved(file.displayName)),
+      ),
     );
   }
 
@@ -6011,11 +6237,9 @@ class _ChatScreenState extends State<ChatScreen>
     final mine = _conn.queuedPromptCount - review;
     final others = _conn.queuedPromptCountForOtherProfiles;
     final parts = <String>[
-      if (mine > 0)
-        '$mine draft${mine == 1 ? '' : 's'} queued to send on reconnect.',
+      if (mine > 0) _chatL10n(context).chatUiDraftsQueued(mine),
       if (review > 0) _chatL10n(context).queuedBannerReview(review),
-      if (others > 0)
-        '$others draft${others == 1 ? '' : 's'} waiting for other servers.',
+      if (others > 0) _chatL10n(context).chatUiOtherDraftsWaiting(others),
     ];
     return parts.isEmpty ? null : parts.join(' ');
   }
@@ -6071,6 +6295,14 @@ class _ChatScreenState extends State<ChatScreen>
   ) {
     final permission = pendingPermissions.firstOrNull;
     final question = _conn.questionForSession(widget.sessionID);
+    // Automatic approval is never silent: while the setting is on, the
+    // attention slot itself says so — even when the app is disconnected and
+    // approvals are paused — and names the last request answered. A request
+    // that needs a person takes the slot instead (its card says when an
+    // automatic reply failed); the strip returns once it is answered.
+    final approval = _conn.isIsolated
+        ? null
+        : _conn.autoApprovalFor(widget.sessionID);
     return _chatSizeTransition(
       reduceMotion: reduceMotion,
       duration: const Duration(milliseconds: 220),
@@ -6090,17 +6322,33 @@ class _ChatScreenState extends State<ChatScreen>
                           unawaited(_answerQuestion(question, answers)),
                       onMore: () => unawaited(_showQuestionSheet(question)),
                     )
-                  : _retryState == null
-                  ? const SizedBox.shrink(key: ValueKey('permission-card-none'))
-                  : _RetryAttentionCard(
+                  : _retryState != null
+                  ? _RetryAttentionCard(
                       key: const ValueKey('retry-banner'),
                       retry: _retryState!,
-                      stopping: _aborting,
-                      onStop: _abort,
+                    )
+                  : approval != null && approval.automatic
+                  ? _AutoApprovalIndicator(
+                      key: const ValueKey('auto-approval-indicator-slot'),
+                      effective: approval,
+                      connected: _conn.isConnected,
+                      approved: _conn.autoApprovedFor(widget.sessionID),
+                      onOpen: () => unawaited(
+                        showSessionApprovalsSheet(
+                          context,
+                          controller: _conn,
+                          sessionID: widget.sessionID,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(
+                      key: ValueKey('permission-card-none'),
                     ))
             : _PermissionAttentionCard(
                 key: ValueKey('permission-card-${permission.id}'),
                 permission: permission,
+                autoApprovalFailed:
+                    _conn.autoApprovalFailure(permission.id) != null,
                 onReview: () => unawaited(_showPermissionDialog(permission)),
               ),
       ),
@@ -6149,6 +6397,7 @@ class _ChatScreenState extends State<ChatScreen>
       sessionID: widget.sessionID,
       sessions: _conn.sessionsById,
       busy: _conn.busySessions,
+      includeIdle: true,
     );
     final relatedSessionIDs = {
       widget.sessionID,
@@ -6166,6 +6415,25 @@ class _ChatScreenState extends State<ChatScreen>
             )
             .length;
 
+    // A phone-width app bar gives the conversation title the room it needs:
+    // the Tasks shortcut keeps its badge, tooltip and key but drops its
+    // always-visible label, and the title may wrap to a second line with a
+    // toolbar tall enough to show both lines at the title's own text scale.
+    final narrowTitleBar = MediaQuery.sizeOf(context).width < _titleBarWide;
+    final titleLines = narrowTitleBar ? 2 : 1;
+    final titleStyle =
+        theme.appBarTheme.titleTextStyle ?? theme.textTheme.titleLarge;
+    final titleLineHeight =
+        (titleStyle?.fontSize ?? 24) * (titleStyle?.height ?? 1.25);
+    final titleScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: _titleTextScaleCeiling);
+    final titleBlock = titleScaler.scale(titleLineHeight) * titleLines + 4;
+    final toolbarHeight = math.max(
+      theme.appBarTheme.toolbarHeight ?? kToolbarHeight,
+      titleBlock,
+    );
+
     final screen = PopScope(
       canPop: _conn.isIsolated || _allowRoutePop,
       onPopInvokedWithResult: (didPop, _) {
@@ -6174,8 +6442,15 @@ class _ChatScreenState extends State<ChatScreen>
       child: Scaffold(
         appBar: widget.showAppBar
             ? AppBar(
+                toolbarHeight: toolbarHeight,
                 title: Text(
-                  presentedSessionTitle(session, fallback: 'Chat'),
+                  presentedSessionTitle(
+                    session,
+                    fallback: _chatL10n(context).commandDestination,
+                  ),
+                  key: const Key('chat-title'),
+                  softWrap: titleLines > 1,
+                  maxLines: titleLines,
                   overflow: TextOverflow.ellipsis,
                 ),
                 actions: [
@@ -6185,12 +6460,35 @@ class _ChatScreenState extends State<ChatScreen>
                       icon: const Icon(AppIconography.stopCircle),
                       onPressed: () => unawaited(_stopReading()),
                     ),
-                  if (busy)
-                    IconButton(
-                      tooltip: 'Stop',
-                      icon: Icon(AppIcons.stop, color: theme.colorScheme.error),
-                      onPressed: _aborting ? null : _abort,
-                    ),
+                  if (!_conn.isIsolated && _conn.capabilities.projectManagement)
+                    if (narrowTitleBar)
+                      IconButton(
+                        key: const Key('running-work-indicator'),
+                        tooltip: _chatL10n(context).workCount(runningWorkCount),
+                        onPressed: _openRunningWork,
+                        icon: Badge(
+                          isLabelVisible: runningWorkCount > 0,
+                          label: Text('$runningWorkCount'),
+                          child: const Icon(AppIconography.branch),
+                        ),
+                      )
+                    else
+                      Tooltip(
+                        message: _chatL10n(context).workCount(runningWorkCount),
+                        child: TextButton.icon(
+                          key: const Key('running-work-indicator'),
+                          onPressed: _openRunningWork,
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(48, 48),
+                          ),
+                          icon: Badge(
+                            isLabelVisible: runningWorkCount > 0,
+                            label: Text('$runningWorkCount'),
+                            child: const Icon(AppIconography.branch, size: 20),
+                          ),
+                          label: Text(_chatL10n(context).workTitle),
+                        ),
+                      ),
                   if (_conn.isIsolated)
                     IconButton(
                       tooltip: _chatL10n(context).demoReviewChanges,
@@ -6200,7 +6498,7 @@ class _ChatScreenState extends State<ChatScreen>
                   if (!_conn.isIsolated)
                     IconButton(
                       key: const ValueKey('session-actions-button'),
-                      tooltip: 'Session menu',
+                      tooltip: _chatL10n(context).chatUiSessionMenu,
                       icon: const Icon(AppIconography.menu),
                       onPressed: () => unawaited(
                         _openSessionMenu(
@@ -6399,6 +6697,21 @@ class _ChatScreenState extends State<ChatScreen>
                                                         ),
                                                         part: tagged,
                                                         messageId: m.info.id,
+                                                        parentSessionID:
+                                                            widget.sessionID,
+                                                        knownSessions:
+                                                            _conn.sessionsById,
+                                                        onOpenChild:
+                                                            _conn
+                                                                .capabilities
+                                                                .projectManagement
+                                                            ? (id) =>
+                                                                  _openSubagentSession(
+                                                                    id,
+                                                                    requireChild:
+                                                                        true,
+                                                                  )
+                                                            : null,
                                                       );
                                                     }
                                                     final meta = _messageMeta(
@@ -6621,7 +6934,11 @@ class _ChatScreenState extends State<ChatScreen>
                                           widget.sessionID,
                                         ) !=
                                         null ||
-                                    _retryState != null))
+                                    _retryState != null ||
+                                    (!_conn.isIsolated &&
+                                        _conn
+                                            .autoApprovalFor(widget.sessionID)
+                                            .automatic)))
                               Flexible(
                                 fit: FlexFit.loose,
                                 child: SingleChildScrollView(
@@ -6732,7 +7049,7 @@ class _ChatScreenState extends State<ChatScreen>
                             if (_draftSaveFailure case final failure?)
                               Padding(
                                 key: const ValueKey('draft-save-error'),
-                                padding: const EdgeInsets.fromLTRB(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
                                   16,
                                   8,
                                   16,
@@ -6838,40 +7155,6 @@ class _ChatScreenState extends State<ChatScreen>
                                             : _chatL10n(
                                                 context,
                                               ).backgroundWorkTitle,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            if (!_conn.isIsolated && runningWorkCount > 0)
-                              Center(
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxWidth: 860,
-                                  ),
-                                  child: Align(
-                                    alignment: AlignmentDirectional.centerStart,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                      ),
-                                      child: TextButton.icon(
-                                        key: const Key(
-                                          'running-work-indicator',
-                                        ),
-                                        onPressed: _openRunningWork,
-                                        style: TextButton.styleFrom(
-                                          minimumSize: const Size(48, 48),
-                                        ),
-                                        icon: const Icon(
-                                          AppIconography.branch,
-                                          size: 20,
-                                        ),
-                                        label: Text(
-                                          _chatL10n(
-                                            context,
-                                          ).workCount(runningWorkCount),
-                                        ),
                                       ),
                                     ),
                                   ),
@@ -6997,6 +7280,7 @@ class _ChatScreenState extends State<ChatScreen>
                                     conversationMode: _voiceConversation,
                                     onSend: _send,
                                     onStop: _abort,
+                                    stopping: _aborting,
                                     onChooseModel: () {
                                       if (!_conn.isIsolated) {
                                         showModelPicker(
@@ -7105,6 +7389,7 @@ class _ChatScreenState extends State<ChatScreen>
     _focus.dispose();
     _historyRefreshTimer?.cancel();
     _historyChanges.dispose();
+    _backgroundSupportState.dispose();
     _voiceControlsScroll.dispose();
     super.dispose();
   }
@@ -7131,7 +7416,7 @@ class _FormRequestCard extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 860),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+          padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 12, 2),
           child: Material(
             color: theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(12),
@@ -7140,7 +7425,7 @@ class _FormRequestCard extends StatelessWidget {
               onTap: onAnswer,
               child: Container(
                 constraints: const BoxConstraints(minHeight: 72),
-                padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
+                padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 12, 10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: theme.colorScheme.outlineVariant),
@@ -7158,14 +7443,15 @@ class _FormRequestCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            form.title ?? 'Input requested',
+                            form.title ??
+                                _chatL10n(context).chatUiInputRequested,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.titleSmall,
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '$count question${count == 1 ? '' : 's'}',
+                            _chatL10n(context).chatUiQuestionCount(count),
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -7177,7 +7463,7 @@ class _FormRequestCard extends StatelessWidget {
                     FilledButton.tonal(
                       key: ValueKey('form-request-answer-${form.id}'),
                       onPressed: onAnswer,
-                      child: const Text('Answer'),
+                      child: Text(_chatL10n(context).returnBriefAnswer),
                     ),
                   ],
                 ),

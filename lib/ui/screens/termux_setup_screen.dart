@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../widgets/setup_ui_messages.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
@@ -16,6 +17,8 @@ import '../../termux/managed_server_recovery.dart';
 import '../app_theme.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/setup_terminal.dart';
+import '../widgets/team_phone_onboarding.dart';
+import '../widgets/termux_phone_tools.dart';
 
 class TermuxSetupScreen extends ConsumerStatefulWidget {
   const TermuxSetupScreen({super.key, this.now});
@@ -66,7 +69,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   TermuxRuntime get _runtime => _knownRuntime ?? _selectedRuntime;
 
   String _runtimeName(TermuxRuntime runtime) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return runtime == TermuxRuntime.openCode2
         ? l10n.setupRuntimeTwo
         : l10n.setupRuntimeOne;
@@ -79,13 +82,15 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   Timer? _elapsedTimer;
   bool _launching = false;
   int _statusEpoch = 0;
-  String _launchMessage = 'Checking Termux connection';
+  String? _launchMessage;
   bool _busy = false;
   bool _refreshing = false;
   bool _polling = false;
   bool _monitoringFailed = false;
   bool _restarting = false;
   String? _restartOperationID;
+  String? _switchOperationID;
+  bool _connectRequested = false;
   int _snapshotFailures = 0;
   String? _error;
   String? _lastLaunchOutput;
@@ -186,8 +191,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         setState(() {
           _phase = _Phase.needUnlock;
           _error = error.code == 'command_timeout'
-              ? 'Termux did not answer. Open Termux once, run the unlock line, '
-                    'then verify again.'
+              ? lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7SetupTermuxNoAnswer
               : error.message;
         });
         return;
@@ -201,7 +207,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       if (!mounted || epoch != _statusEpoch) return;
       setState(() {
         _phase = _Phase.failed;
-        _error = error.message ?? 'Android could not inspect Termux.';
+        _error =
+            error.message ??
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupInspectTermuxFailed;
       });
     } finally {
       _refreshing = false;
@@ -215,7 +225,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
 
   Future<void> _openTermuxAndCopy() async {
     if (_busy) return;
-    final l10n = AppLocalizations.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     setState(() {
       _busy = true;
       _copyingToTermux = true;
@@ -264,7 +274,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _requestTermuxPermission() async {
-    final deniedMessage = AppLocalizations.of(context).termuxPermissionDenied;
+    final deniedMessage = lookupAppLocalizations(
+      Localizations.localeOf(context),
+    ).termuxPermissionDenied;
     if (!await TermuxBridge.requestPermission()) {
       throw TermuxBridgeException(deniedMessage, code: 'permission_denied');
     }
@@ -304,32 +316,46 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       if (!mounted) return;
       setState(() {
         _phase = _Phase.needUnlock;
-        _error = error.message ?? 'Termux bridge verification failed.';
+        _error =
+            error.message ??
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupVerifyTermuxFailed;
       });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<ServerProfile> _ensureLocalProfile() async {
+  Future<ServerProfile> _ensureLocalProfile({TermuxRuntime? runtime}) async {
+    final selectedRuntime = runtime ?? _runtime;
     final store = ref.read(bootstrapProvider).store;
     ServerProfile? profile;
     for (final candidate in store.profiles) {
       if (candidate.backend == ServerBackend.openCode &&
           candidate.baseUrl == localUrl &&
           candidate.flavor ==
-              (_runtime == TermuxRuntime.openCode2
+              (selectedRuntime == TermuxRuntime.openCode2
                   ? ServerFlavor.v2
                   : ServerFlavor.v1)) {
         profile = candidate;
         break;
       }
     }
+    if (runtime != null && profile != null && profile.password.isNotEmpty) {
+      return profile;
+    }
     profile ??= ServerProfile(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
-      name: 'This device (Termux)',
+      name: runtime == null
+          ? lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupThisDevice
+          : lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).setupSwitchProfileName(_runtimeName(selectedRuntime)),
       baseUrl: localUrl,
-      flavor: _runtime == TermuxRuntime.openCode2
+      flavor: selectedRuntime == TermuxRuntime.openCode2
           ? ServerFlavor.v2
           : ServerFlavor.v1,
     );
@@ -343,13 +369,14 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     return profile;
   }
 
-  ServerProfile? _localProfile() {
+  ServerProfile? _localProfile({TermuxRuntime? runtime}) {
+    final selectedRuntime = runtime ?? _runtime;
     for (final profile in ref.read(bootstrapProvider).store.profiles) {
       if (profile.backend == ServerBackend.openCode &&
           profile.baseUrl == localUrl &&
           profile.password.isNotEmpty &&
           profile.flavor ==
-              (_runtime == TermuxRuntime.openCode2
+              (selectedRuntime == TermuxRuntime.openCode2
                   ? ServerFlavor.v2
                   : ServerFlavor.v1)) {
         return profile;
@@ -358,9 +385,171 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     return null;
   }
 
+  Future<void> _confirmRuntimeSwitch(TermuxRuntime target) async {
+    if (_busy || _status?.isRunning == true) return;
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final confirmed = await showConfirmSheet(
+      context,
+      title: l10n.setupSwitchConfirmTitle(_runtimeName(target)),
+      message: l10n.setupSwitchConfirmDetail,
+      confirmLabel: l10n.setupSwitchConfirm,
+      icon: AppIconography.sync,
+    );
+    if (!confirmed || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await TermuxBridge.verifyBridge();
+      if (!mounted) return;
+      // Refuse lost prior credentials: generating a replacement would make a
+      // “return” silently change that runtime's authentication contract.
+      final previous = _status?.switchPrevious ?? _runtime;
+      if (_localProfile(runtime: previous) == null ||
+          (target == TermuxRuntime.openCode1 &&
+              _localProfile(runtime: target) == null)) {
+        throw StateError(l10n.setupSwitchMissingCredential);
+      }
+      await ref.read(connProvider).prepareManagedRuntimeSwitch();
+      if (!mounted) return;
+      final profile = await _ensureLocalProfile(runtime: target);
+      if (!mounted) return;
+      final operation = DateTime.now().microsecondsSinceEpoch.toRadixString(36);
+      _switchOperationID = operation;
+      _connectRequested = true;
+      _statusEpoch++;
+      _stopPolling();
+      setState(() {
+        _phase = _Phase.installing;
+        _launching = true;
+        // The old runtime's completed operation is not this switch's clock.
+        // Wait for the matching manager snapshot to supply durable timing.
+        _status = null;
+        _launchMessage = l10n.setupSwitchPreparing;
+        _setupOutput = '';
+        _restarting = false;
+        _restartOperationID = null;
+        _monitoringFailed = false;
+        _snapshotFailures = 0;
+      });
+      final result = await TermuxBridge.run(
+        TermuxBridge.restartScript(
+          operationID: operation,
+          switchTarget: target,
+          switchPassword: profile.password,
+        ),
+      );
+      if (!mounted) return;
+      if (!TermuxBridge.isLaunchAcknowledged(result.stdout)) {
+        throw TermuxBridgeException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupSwitchNotStarted,
+          code: 'invalid_launch_result',
+        );
+      }
+      _launching = false;
+      // The dispatch acknowledgement is not readiness. Poll only this switch;
+      // a ready snapshot left by OC1 must never connect the newly saved OC2 profile.
+      _startPolling();
+      await _refreshStatus();
+    } catch (error) {
+      if (!mounted) return;
+      _launching = false;
+      setState(() {
+        _phase = _Phase.failed;
+        _error = error is TermuxBridgeException
+            ? error.message
+            : error.toString().replaceFirst('Bad state: ', '');
+      });
+      // A native timeout may leave the manager alive. Its durable journal owns
+      // the answer, so restore status before offering another operation.
+      if (error is TermuxBridgeException && error.code == 'command_timeout') {
+        _startPolling();
+        await _refreshStatus();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _launching = false;
+        });
+      }
+    }
+  }
+
+  Widget _runtimeSwitchChoices({bool showHeading = true}) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final status = _status;
+    final pending = status?.switchPending == true;
+    final canReturn = status?.switchReturnAvailable == true;
+    final target = _runtime == TermuxRuntime.openCode1
+        ? TermuxRuntime.openCode2
+        : TermuxRuntime.openCode1;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showHeading)
+          Text(
+            l10n.setupSwitchInstalled(_runtimeName(_runtime)),
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        const SizedBox(height: 8),
+        if (pending) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton(
+                onPressed: _busy
+                    ? null
+                    : () => _confirmRuntimeSwitch(status!.switchTarget!),
+                child: Text(
+                  l10n.setupSwitchRetry(_runtimeName(status!.switchTarget!)),
+                ),
+              ),
+              if (status.switchTarget != status.switchPrevious)
+                OutlinedButton(
+                  onPressed: _busy
+                      ? null
+                      : () => _confirmRuntimeSwitch(status.switchPrevious!),
+                  child: Text(
+                    l10n.setupSwitchReturn(
+                      _runtimeName(status.switchPrevious!),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(l10n.setupSwitchPending),
+        ] else if (_runtime == TermuxRuntime.openCode1 || canReturn)
+          OutlinedButton.icon(
+            key: const Key('switch-managed-runtime'),
+            onPressed: _busy ? null : () => _confirmRuntimeSwitch(target),
+            icon: const Icon(AppIconography.sync),
+            label: Text(
+              target == TermuxRuntime.openCode1
+                  ? l10n.setupSwitchReturn(_runtimeName(target))
+                  : l10n.setupSwitchUse(_runtimeName(target)),
+            ),
+          )
+        else
+          Text(l10n.setupSwitchLegacyTwo),
+        if (canReturn && !pending) ...[
+          const SizedBox(height: 8),
+          Text(l10n.setupSwitchDataNotice),
+        ],
+      ],
+    );
+  }
+
   Future<void> _installAndStart() async {
     if (_busy || _phase == _Phase.installing) return;
     _selectedRuntime = _runtime;
+    _switchOperationID = null;
+    _connectRequested = true;
     var launchRequested = false;
     _stopPolling();
     _statusEpoch++;
@@ -369,7 +558,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       _launching = true;
       _phase = _Phase.installing;
       _status = null;
-      _launchMessage = 'Checking Termux connection';
+      _launchMessage = lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupCheckingTermux;
       _error = null;
       _monitoringFailed = false;
       _snapshotFailures = 0;
@@ -383,10 +574,18 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     try {
       await TermuxBridge.verifyBridge();
       if (!mounted) return;
-      setState(() => _launchMessage = 'Saving local server settings');
+      setState(
+        () => _launchMessage = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupSavingLocal,
+      );
       final profile = await _ensureLocalProfile();
       if (!mounted) return;
-      setState(() => _launchMessage = 'Starting setup in Termux');
+      setState(
+        () => _launchMessage = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupStartingSetup,
+      );
       final command = TermuxBridge.installAndServeScript(
         port: port,
         password: profile.password,
@@ -407,7 +606,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
           code: 'invalid_launch_result',
         );
       }
-      setState(() => _launchMessage = 'Reading setup progress');
+      setState(
+        () => _launchMessage = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupReadingProgress,
+      );
       var initialStatus = await TermuxBridge.status();
       if (!mounted) return;
       for (
@@ -451,7 +654,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       if (!mounted) return;
       setState(() {
         _phase = _Phase.failed;
-        _error = 'Could not save or start the local setup: $error';
+        _error = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupStartFailed(error.toString());
       });
     } finally {
       if (mounted) {
@@ -467,27 +672,39 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     final connection = ref.read(connProvider);
     if (connection.busySessions.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Stop active generation before updating OpenCode.'),
+        SnackBar(
+          content: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupStopBeforeUpdate,
+          ),
         ),
       );
       return;
     }
     final currentVersion = _status?.version.trim();
-    final l10n = AppLocalizations.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final confirmed = await showConfirmSheet(
       context,
-      title: 'Update managed OpenCode?',
+      title: lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupConfirmUpdate,
       message: [
         if (currentVersion?.isNotEmpty == true)
-          'Installed version: $currentVersion.',
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupInstalledVersion(currentVersion!),
         l10n.setupRuntimeUpdateDetail(
           _runtimeName(_runtime),
           _runtime.pinnedVersion,
         ),
-        'The server will be briefly unavailable. Active generation should be stopped first.',
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupUpdateInterruption,
       ].join('\n\n'),
-      confirmLabel: 'Update',
+      confirmLabel: lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupUpdate,
       icon: AppIconography.systemDownload,
     );
     if (confirmed && mounted) await _installAndStart();
@@ -498,13 +715,13 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     if (profile == null) {
       setState(() {
         _phase = _Phase.ready;
-        _error =
-            'The saved credential for this managed server is unavailable. '
-            'Run setup again to replace it safely.';
+        _error = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupMissingCredential;
       });
       return;
     }
-    final l10n = AppLocalizations.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final busyCount = ref.read(connProvider).busySessions.length;
     final confirmed = await showConfirmSheet(
       context,
@@ -540,7 +757,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       _setupOutput = '';
       _status = TermuxSetupStatus(
         phase: 'restarting',
-        message: 'Restarting the local server',
+        message: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupRestartingLocal,
         port: port,
         runner: 'proot',
         version: '',
@@ -588,7 +807,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       setState(() {
         _restarting = false;
         _phase = _Phase.failed;
-        _error = 'Could not restart the local server: ${error.message}';
+        _error = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupRestartFailed(error.message);
       });
     } finally {
       if (mounted) {
@@ -617,7 +838,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context).termuxRestartNotPerformed),
+          content: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).termuxRestartNotPerformed,
+          ),
         ),
       );
       return true;
@@ -627,6 +852,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   void _validateRestartSnapshot(TermuxSetupStatus status) {
+    if (status.switchPending || _switchOperationID != null) return;
     if (!_restarting) {
       if (status.phase == 'restarting' && status.operationID.isNotEmpty) {
         _restarting = true;
@@ -638,8 +864,10 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         (status.isReady &&
             status.operationResult != 'completed' &&
             status.operationResult != 'not_performed')) {
-      throw const TermuxBridgeException(
-        'Could not confirm this restart. Refresh its progress before retrying.',
+      throw TermuxBridgeException(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupRestartUnconfirmed,
         code: 'restart_unconfirmed',
       );
     }
@@ -666,6 +894,18 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       } else if (snapshot.status.isReady) {
         final profile = _localProfile();
         if (profile == null) return false;
+        await _saveObservedRuntimeVersion(profile);
+        if (!mounted) return true;
+        final active = ref.read(connProvider).profile;
+        if ((!_connectRequested && !_restarting) ||
+            (active != null && active.baseUrl != localUrl)) {
+          setState(() {
+            _phase = _Phase.connected;
+            _switchOperationID = null;
+          });
+          return true;
+        }
+        _switchOperationID = null;
         if (_restarting) {
           await _finishRestart(profile);
         } else {
@@ -705,8 +945,13 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     return [
       status.message,
       if (rootCause != null && rootCause != status.message)
-        'Last setup output: $rootCause',
-      if (bridgeMessage != null) 'Bridge detail: $bridgeMessage',
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupLastSetupDetail(rootCause),
+      if (bridgeMessage != null)
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupBridgeDetail(bridgeMessage),
     ].join('\n');
   }
 
@@ -748,6 +993,22 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       final snapshot = await TermuxBridge.setupSnapshot();
       if (!mounted || epoch != _statusEpoch) return;
       _validateRestartSnapshot(snapshot.status);
+      if (_switchOperationID != null &&
+          snapshot.status.operationID != _switchOperationID) {
+        _snapshotFailures++;
+        if (_snapshotFailures < 10) {
+          if (_poll == null) _startPolling();
+          return;
+        }
+        _stopPolling();
+        setState(() {
+          _phase = _Phase.failed;
+          _error = lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).setupSwitchFailed;
+        });
+        return;
+      }
       _snapshotFailures = 0;
       _monitoringFailed = false;
       final status = snapshot.status;
@@ -786,6 +1047,17 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         return;
       }
       _stopPolling();
+      if (status.switchPending) {
+        setState(() {
+          _phase = _Phase.failed;
+          _error = status.isFailed
+              ? _persistedFailureMessage(status, snapshot.output)
+              : lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).setupSwitchPending;
+        });
+        return;
+      }
       if (status.isFailed) {
         setState(() {
           _monitoringFailed =
@@ -800,12 +1072,24 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         if (profile == null) {
           setState(() {
             _phase = _Phase.ready;
-            _error =
-                'A local server exists, but its saved credential is unavailable. '
-                'Run setup again to replace it safely.';
+            _error = lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupExistingMissingCredential;
           });
           return;
         }
+        await _saveObservedRuntimeVersion(profile);
+        if (!mounted) return;
+        final active = ref.read(connProvider).profile;
+        if ((!_connectRequested && !_restarting) ||
+            (active != null && active.baseUrl != localUrl)) {
+          setState(() {
+            _phase = _Phase.connected;
+            _switchOperationID = null;
+          });
+          return;
+        }
+        _switchOperationID = null;
         if (_restarting) {
           await _finishRestart(profile);
         } else {
@@ -850,40 +1134,53 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     if (_setupOutput.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: _setupOutput));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Setup output copied.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupOutputCopied,
+        ),
+      ),
+    );
   }
 
   /// The text a person reads on screen. [_error] keeps the exact bridge and
   /// protocol wording for the copied failure report, where it is useful;
   /// on screen the same fact is said in plain words.
-  static String friendlyError(String raw) {
+  String friendlyError(String raw) {
     if (raw.contains('command-result protocol')) {
-      return 'This version of Termux is too old for the app to control it. '
-          'Install the current F-Droid or GitHub build of Termux, then check '
-          'again.';
+      return lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupTermuxOutdated;
     }
     if (raw.contains('setup manager disappeared') ||
         raw.contains('without starting the setup manager')) {
-      return 'Termux opened but the setup did not start. Retry once; if it '
-          'happens again, copy the failure report.';
+      return lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupSetupNotStarted;
     }
     if (raw.contains('Could not read setup manager status')) {
       return raw.replaceFirst(
         'Could not read setup manager status',
-        'Lost track of the setup running in Termux',
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupSetupLost,
       );
     }
-    return raw;
+    return setupUiMessage(
+      lookupAppLocalizations(Localizations.localeOf(context)),
+      raw,
+    );
   }
 
   Future<void> _copyFailureReport() async {
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
     String diagnostics;
     try {
       diagnostics = await TermuxBridge.diagnostics();
     } on TermuxBridgeException catch (error) {
-      diagnostics = 'Diagnostics unavailable: ${error.message}';
+      diagnostics = copy.e7SetupDiagnosticsUnavailable(error.message);
     }
     final report = [
       if (_lastLaunchOutput?.isNotEmpty ?? false)
@@ -895,7 +1192,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(const SnackBar(content: Text('Failure report copied.')));
+    ).showSnackBar(SnackBar(content: Text(copy.e7SetupReportCopied)));
   }
 
   Future<void> _resumeLiveOutput() async {
@@ -910,7 +1207,37 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     await _refreshStatus();
   }
 
+  Future<void> _saveObservedRuntimeVersion(ServerProfile profile) async {
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
+    final status = _status;
+    if (status == null ||
+        !status.isReady ||
+        status.switchPending ||
+        status.version.isEmpty ||
+        profile.flavor !=
+            (status.runtime == TermuxRuntime.openCode2
+                ? ServerFlavor.v2
+                : ServerFlavor.v1) ||
+        profile.serverVersion == status.version) {
+      return;
+    }
+    final previous = profile.serverVersion;
+    profile.serverVersion = status.version;
+    try {
+      await ref.read(bootstrapProvider).store.upsert(profile);
+    } catch (_) {
+      profile.serverVersion = previous;
+      throw TermuxBridgeException(
+        copy.e7SetupObservedVersionSaveFailed,
+        code: 'profile_save_failed',
+      );
+    }
+  }
+
   Future<void> _finishConnect(ServerProfile profile) async {
+    await _saveObservedRuntimeVersion(profile);
+    if (!mounted) return;
+    _connectRequested = false;
     await ref.read(connProvider).connect(profile);
     if (!mounted) return;
     final connection = ref.read(connProvider);
@@ -919,7 +1246,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         _phase = _Phase.failed;
         _error =
             connection.lastError ??
-            'The server started but authentication failed.';
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupAuthFailed;
       });
       return;
     }
@@ -930,6 +1259,8 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _finishRestart(ServerProfile profile) async {
+    await _saveObservedRuntimeVersion(profile);
+    if (!mounted) return;
     final status = _status;
     if (status == null) return;
     _validateRestartSnapshot(status);
@@ -942,7 +1273,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context).termuxRestartNotPerformed),
+          content: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).termuxRestartNotPerformed,
+          ),
         ),
       );
       return;
@@ -969,7 +1304,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         _phase = _Phase.failed;
         _error =
             connection.lastError ??
-            'The local server restarted, but the app could not reconnect.';
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupRestartReconnectFailed;
       });
       return;
     }
@@ -980,7 +1317,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(AppLocalizations.of(context).termuxRestartSucceeded),
+        content: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).termuxRestartSucceeded,
+        ),
       ),
     );
   }
@@ -992,15 +1333,36 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       _restarting = false;
       _restartOperationID = null;
       _phase = _Phase.ready;
-      _error =
-          'The local server restarted, but the active server changed. '
-          'Reconnect when you are ready.';
+      _error = lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupRestartActiveChanged;
     });
     return false;
   }
 
   void _continueToApp() {
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
+  }
+
+  /// The optional on-device AI Team block (TEAM-302) under a running
+  /// managed server: absent unless the runtime supports it. Open Workspace
+  /// connects to [profile] first when the app is on another server.
+  Widget _teamPhoneBlock(ServerProfile profile) {
+    final connection = ref.read(connProvider);
+    final activeHere =
+        connection.profile?.id == profile.id && connection.api != null;
+    return TeamPhoneOnboardingBlock(
+      key: ValueKey('team-phone-block-${profile.id}'),
+      connection: connection,
+      profile: profile,
+      onOpenWorkspace: () async {
+        if (!activeHere) {
+          await _finishConnect(profile);
+          if (!mounted || _phase != _Phase.connected) return;
+        }
+        _continueToApp();
+      },
+    );
   }
 
   Future<void> _stopServer() async {
@@ -1043,20 +1405,26 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
             ? lookupAppLocalizations(
                 Localizations.localeOf(context),
               ).managedRecoveryStoppedWithCleanupError
-            : 'The local server is stopped. Its installed files are kept.';
+            : lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupLocalStopped;
       });
       await _checkInstallation();
     } on TermuxBridgeException catch (error) {
       if (!mounted) return;
       setState(() {
         _phase = _Phase.failed;
-        _error = 'Could not stop the local server: ${error.message}';
+        _error = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupStopFailed(error.message);
       });
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _phase = _Phase.failed;
-        _error = 'The server stopped, but the app could not disconnect: $error';
+        _error = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupStopDisconnectFailed(error.toString());
       });
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -1087,7 +1455,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     if (!platformCapabilities.supportsTermux) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(AppLocalizations.of(context).setupScreenTitle),
+          title: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).setupScreenTitle,
+          ),
         ),
         body: SingleChildScrollView(
           child: Center(
@@ -1106,15 +1478,17 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'On-device setup is Android only',
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupAndroidOnly,
                       style: theme.textTheme.titleMedium,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'It drives Termux, which has no desktop equivalent. On '
-                      'this machine, run `opencode serve` yourself and add it '
-                      'as a server.',
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupUnsupportedSetup,
                       style: theme.textTheme.bodySmall!.copyWith(
                         color: AppTheme.mutedOf(theme),
                       ),
@@ -1130,18 +1504,37 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         ),
       );
     }
-    final l10n = AppLocalizations.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_phase == _Phase.installing) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(AppLocalizations.of(context).setupScreenTitle),
+          title: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).setupScreenTitle,
+          ),
         ),
         body: SafeArea(child: _buildSetupProgress()),
       );
     }
+    if (_knownRuntime != null &&
+        (_installation?.openCodeVersion != null ||
+            _status?.version.isNotEmpty == true ||
+            _status?.switchPending == true) &&
+        const {
+          _Phase.ready,
+          _Phase.connected,
+          _Phase.failed,
+        }.contains(_phase)) {
+      return _buildInstalledRuntime();
+    }
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).setupScreenTitle),
+        title: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).setupScreenTitle,
+        ),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -1150,6 +1543,10 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
             padding: const EdgeInsets.all(20),
             shrinkWrap: true,
             children: [
+              if (_knownRuntime != null || _status?.switchPending == true) ...[
+                _runtimeSwitchChoices(),
+                const SizedBox(height: 20),
+              ],
               Row(
                 children: [
                   Icon(AppIconography.phone, color: theme.colorScheme.primary),
@@ -1177,7 +1574,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
               ),
               _stepTile(
                 n: 1,
-                title: 'Get Termux',
+                title: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7SetupGetTermux,
                 state:
                     const {_Phase.checking, _Phase.needTermux}.contains(_phase)
                     ? _StepState.idle
@@ -1186,8 +1585,10 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Install the current F-Droid build of Termux, then return here.',
+                          Text(
+                            lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupInstallTermuxDetail,
                           ),
                           const SizedBox(height: 10),
                           Wrap(
@@ -1197,12 +1598,18 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                               FilledButton.icon(
                                 onPressed: _getTermux,
                                 icon: const Icon(AppIconography.download),
-                                label: const Text('Download page'),
+                                label: Text(
+                                  lookupAppLocalizations(
+                                    Localizations.localeOf(context),
+                                  ).e7SetupDownloadPage,
+                                ),
                               ),
                               OutlinedButton(
                                 onPressed: _refresh,
                                 child: Text(
-                                  AppLocalizations.of(context).setupCheckAgain,
+                                  lookupAppLocalizations(
+                                    Localizations.localeOf(context),
+                                  ).setupCheckAgain,
                                 ),
                               ),
                             ],
@@ -1231,7 +1638,14 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                             Semantics(
                               liveRegion: true,
                               child: Text(
-                                friendlyError(_error!),
+                                friendlyError(
+                                  setupUiMessage(
+                                    lookupAppLocalizations(
+                                      Localizations.localeOf(context),
+                                    ),
+                                    _error!,
+                                  ),
+                                ),
                                 style: TextStyle(
                                   color: theme.colorScheme.error,
                                 ),
@@ -1259,8 +1673,12 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                                       : const Icon(AppIconography.check),
                                   label: Text(
                                     _busy && !_copyingToTermux
-                                        ? 'Verifying...'
-                                        : 'Verify & continue',
+                                        ? lookupAppLocalizations(
+                                            Localizations.localeOf(context),
+                                          ).e7SetupVerifying
+                                        : lookupAppLocalizations(
+                                            Localizations.localeOf(context),
+                                          ).e7SetupVerifyContinue,
                                   ),
                                 ),
                                 OutlinedButton.icon(
@@ -1270,7 +1688,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                                   label: Text(
                                     _copyingToTermux
                                         ? l10n.termuxGuideOpening
-                                        : 'Copy & open Termux',
+                                        : lookupAppLocalizations(
+                                            Localizations.localeOf(context),
+                                          ).e7SetupCopyOpenTermux,
                                   ),
                                 ),
                               ] else ...[
@@ -1281,7 +1701,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                                   label: Text(
                                     _copyingToTermux
                                         ? l10n.termuxGuideOpening
-                                        : 'Copy & open Termux',
+                                        : lookupAppLocalizations(
+                                            Localizations.localeOf(context),
+                                          ).e7SetupCopyOpenTermux,
                                   ),
                                 ),
                                 OutlinedButton(
@@ -1289,8 +1711,12 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                                   onPressed: _busy ? null : _verifyUnlock,
                                   child: Text(
                                     _busy && !_copyingToTermux
-                                        ? 'Verifying...'
-                                        : 'Verify & continue',
+                                        ? lookupAppLocalizations(
+                                            Localizations.localeOf(context),
+                                          ).e7SetupVerifying
+                                        : lookupAppLocalizations(
+                                            Localizations.localeOf(context),
+                                          ).e7SetupVerifyContinue,
                                   ),
                                 ),
                               ],
@@ -1298,7 +1724,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                                 onPressed: _busy
                                     ? null
                                     : TermuxBridge.openAppSettings,
-                                child: const Text('App settings'),
+                                child: Text(
+                                  lookupAppLocalizations(
+                                    Localizations.localeOf(context),
+                                  ).e7SetupAppSettings,
+                                ),
                               ),
                             ],
                           ),
@@ -1318,7 +1748,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
               const SizedBox(height: 8),
               _stepTile(
                 n: 3,
-                title: 'Choose how to continue',
+                title: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7SetupChooseContinue,
                 state: switch (_phase) {
                   _Phase.installing => _StepState.running,
                   _Phase.connected => _StepState.done,
@@ -1331,14 +1763,25 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                   _Phase.checking,
                 }.contains(_phase),
                 body: switch (_phase) {
-                  _Phase.checking => const _ProgressLine(
-                    text: 'Checking Termux...',
+                  _Phase.checking => _ProgressLine(
+                    text: lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupCheckingTermuxShort,
                   ),
                   _Phase.ready => Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (_error != null) ...[
-                        Text(friendlyError(_error!)),
+                        Text(
+                          friendlyError(
+                            setupUiMessage(
+                              lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ),
+                              _error!,
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 10),
                       ],
                       _setupChoices(),
@@ -1359,21 +1802,44 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text('OpenCode is running on this phone.'),
+                          Expanded(
+                            child: Text(
+                              lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupRunningOnPhone,
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 6),
                       Text(
                         _status?.version.isNotEmpty == true
-                            ? 'Version ${_status!.version} · $localUrl'
+                            ? lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupVersionAddress(
+                                _status!.version,
+                                localUrl,
+                              )
                             : localUrl,
                         style: theme.textTheme.bodySmall!.copyWith(
                           color: AppTheme.mutedOf(theme),
                         ),
                       ),
                       const SizedBox(height: 12),
+
+                      if (ref.read(connProvider).profile?.id !=
+                              _localProfile()?.id &&
+                          _localProfile() != null) ...[
+                        Text(l10n.setupSwitchReady),
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => _finishConnect(_localProfile()!),
+                          child: Text(
+                            l10n.setupSwitchConnect(_runtimeName(_runtime)),
+                          ),
+                        ),
+                      ],
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -1381,7 +1847,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                           FilledButton.icon(
                             onPressed: _busy ? null : _continueToApp,
                             icon: const Icon(AppIconography.forward),
-                            label: const Text('Continue to app'),
+                            label: Text(
+                              lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupContinueApp,
+                            ),
                           ),
                           OutlinedButton.icon(
                             key: const Key('restart-managed-opencode'),
@@ -1397,17 +1867,31 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                             key: const Key('update-managed-opencode'),
                             onPressed: _busy ? null : _confirmUpdate,
                             icon: const Icon(AppIconography.systemDownload),
-                            label: const Text('Update OpenCode'),
+                            label: Text(
+                              lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupUpdateOpenCode,
+                            ),
                           ),
                           OutlinedButton.icon(
                             onPressed: _busy ? null : _stopServer,
                             icon: const Icon(AppIcons.stop),
                             label: Text(
-                              _busy ? 'Stopping...' : 'Stop local server',
+                              _busy
+                                  ? lookupAppLocalizations(
+                                      Localizations.localeOf(context),
+                                    ).e7SetupStopping
+                                  : lookupAppLocalizations(
+                                      Localizations.localeOf(context),
+                                    ).e7SetupStopLocal,
                             ),
                           ),
                         ],
                       ),
+                      if (_localProfile() case final profile?) ...[
+                        const SizedBox(height: 16),
+                        _teamPhoneBlock(profile),
+                      ],
                     ],
                   ),
                   _Phase.failed => Column(
@@ -1415,8 +1899,17 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                     children: [
                       Text(
                         _error == null
-                            ? 'Setup failed.'
-                            : friendlyError(_error!),
+                            ? lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupSetupFailed
+                            : friendlyError(
+                                setupUiMessage(
+                                  lookupAppLocalizations(
+                                    Localizations.localeOf(context),
+                                  ),
+                                  _error!,
+                                ),
+                              ),
                         style: TextStyle(color: theme.colorScheme.error),
                       ),
                       const SizedBox(height: 10),
@@ -1425,12 +1918,16 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                         running: false,
                         controller: _outputScrollController,
                         onCopy: _copyFailureReport,
-                        copyTooltip: 'Copy failure report',
+                        copyTooltip: lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7SetupCopyFailureReport,
                       ),
                       const SizedBox(height: 10),
                       _setupChoices(showInstall: false),
                       const SizedBox(height: 12),
-                      if (_monitoringFailed)
+                      if (_status?.switchPending == true)
+                        const SizedBox.shrink()
+                      else if (_monitoringFailed)
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -1438,12 +1935,18 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                             FilledButton.icon(
                               onPressed: _busy ? null : _resumeLiveOutput,
                               icon: const Icon(AppIconography.sync),
-                              label: const Text('Resume live view'),
+                              label: Text(
+                                lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).e7SetupResumeLive,
+                              ),
                             ),
                             OutlinedButton(
                               onPressed: _busy ? null : _retry,
-                              child: const Text(
-                                'Retry — resumes where setup left off',
+                              child: Text(
+                                lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).e7SetupResumeSetup,
                               ),
                             ),
                           ],
@@ -1452,14 +1955,203 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                         FilledButton.icon(
                           onPressed: _busy ? null : _retry,
                           icon: const Icon(AppIconography.retry),
-                          label: const Text(
-                            'Retry — resumes where setup left off',
+                          label: Text(
+                            lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupResumeSetup,
                           ),
                         ),
                     ],
                   ),
                   _ => null,
                 },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInstalledRuntime() {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final theme = Theme.of(context);
+    final status = _status;
+    final pending = status?.switchPending == true;
+    final running = status?.isReady == true && !pending;
+    final profile = _localProfile();
+    final connection = ref.read(connProvider);
+    final activeHere =
+        profile != null &&
+        connection.profile?.id == profile.id &&
+        connection.api != null;
+    final observedVersion = status?.version.isNotEmpty == true
+        ? status!.version
+        : _installation?.openCodeVersion;
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.setupScreenTitle)),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: ListView(
+            // Its own list element: the choose-server list this view
+            // replaces may have been scrolled down to its Install button,
+            // and that offset must not carry over and hide this heading.
+            key: const ValueKey('termux-installed-runtime'),
+            padding: const EdgeInsets.all(20),
+            children: [
+              Text(
+                l10n.setupSwitchLocalRuntime,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppTheme.mutedOf(theme),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _runtimeName(_runtime),
+                style: theme.textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                running
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupRunningOnPhone
+                    : pending || _phase == _Phase.failed
+                    ? l10n.setupSwitchAttention
+                    : l10n.setupSwitchStopped,
+              ),
+              if (!pending && observedVersion?.isNotEmpty == true) ...[
+                const SizedBox(height: 4),
+                Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupVersion(observedVersion!),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppTheme.mutedOf(theme),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (running && profile != null)
+                FilledButton.icon(
+                  onPressed: _busy
+                      ? null
+                      : activeHere
+                      ? _continueToApp
+                      : () => _finishConnect(profile),
+                  icon: const Icon(AppIconography.forward),
+                  label: Text(
+                    activeHere
+                        ? lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupContinueApp
+                        : l10n.setupSwitchConnect(_runtimeName(_runtime)),
+                  ),
+                )
+              else if (!pending && profile != null)
+                FilledButton.icon(
+                  onPressed: _busy ? null : _startInstalled,
+                  icon: const Icon(AppIconography.play),
+                  label: Text(l10n.setupStartInstalled),
+                )
+              else if (!pending)
+                Text(l10n.setupMissingCredential),
+              if (!pending) const SizedBox(height: 12),
+              _runtimeSwitchChoices(showHeading: false),
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  friendlyError(
+                    setupUiMessage(
+                      lookupAppLocalizations(Localizations.localeOf(context)),
+                      _error!,
+                    ),
+                  ),
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              ],
+              if (running) ...[
+                const SizedBox(height: 20),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      key: const Key('restart-managed-opencode'),
+                      onPressed: _busy ? null : _confirmRestart,
+                      icon: const Icon(AppIconography.restart),
+                      label: Text(l10n.termuxRestartServer),
+                    ),
+                    OutlinedButton.icon(
+                      key: const Key('update-managed-opencode'),
+                      onPressed: _busy ? null : _confirmUpdate,
+                      icon: const Icon(AppIconography.systemDownload),
+                      label: Text(
+                        lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7SetupUpdateOpenCode,
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _stopServer,
+                      icon: const Icon(AppIcons.stop),
+                      label: Text(
+                        lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7SetupStopLocal,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else if (!pending) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: _busy || _checkingInstallation
+                      ? null
+                      : _reviewInstallChoice,
+                  icon: const Icon(AppIconography.tools),
+                  label: Text(
+                    observedVersion == _runtime.pinnedVersion
+                        ? l10n.setupReinstallStart
+                        : l10n.setupInstallVersionStart(_runtime.pinnedVersion),
+                  ),
+                ),
+              ],
+              // TEAM-304/305: what the phone server uses and what is running
+              // in it, with live summaries; both open their own screens.
+              const SizedBox(height: 16),
+              const TermuxPhoneToolsRows(),
+              if (running && profile != null) ...[
+                const SizedBox(height: 16),
+                _teamPhoneBlock(profile),
+              ],
+              if (_phase == _Phase.failed) ...[
+                const SizedBox(height: 16),
+                SetupTerminal(
+                  output: _setupOutput,
+                  running: false,
+                  controller: _outputScrollController,
+                  onCopy: _copyFailureReport,
+                  copyTooltip: lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupCopyFailureReport,
+                ),
+              ],
+              const SizedBox(height: 20),
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: Text(l10n.setupSwitchHelp),
+                children: [
+                  _existingServerChoice(),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.e7SetupRuntimeInstallDetail(
+                      _runtimeName(_runtime),
+                      _runtime.pinnedVersion,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1494,7 +2186,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       if (!mounted || epoch != _statusEpoch) return;
       setState(() {
         _installation = null;
-        _installationError = 'Could not check the installed environment.';
+        _installationError = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupCheckInstallFailed;
       });
     } finally {
       if (mounted) setState(() => _checkingInstallation = false);
@@ -1506,12 +2200,15 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     if (_busy || profile == null) return;
     final confirmed = await showConfirmSheet(
       context,
-      title: 'Start installed OpenCode?',
-      message:
-          'Use OpenCode ${_installation?.openCodeVersion ?? ''} in the '
-          'existing Ubuntu environment and connect to it. This restarts only '
-          'the managed local server; it does not download or update packages.',
-      confirmLabel: 'Start & connect',
+      title: lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupStartInstalled,
+      message: lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupStartInstalledDetail(_installation?.openCodeVersion ?? ''),
+      confirmLabel: lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupStartConnect,
       icon: AppIconography.play,
     );
     if (confirmed && mounted) {
@@ -1520,28 +2217,43 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Widget _setupChoices({bool showInstall = true}) {
+    if (_status?.switchPending == true) return const SizedBox.shrink();
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final installed = _installation;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_checkingInstallation)
-          const _ProgressLine(text: 'Checking installed environment...')
+          _ProgressLine(
+            text: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupCheckingInstall,
+          )
         else if (_installationError != null) ...[
           Text(_installationError!),
           TextButton.icon(
             onPressed: _busy ? null : _checkInstallation,
             icon: const Icon(AppIconography.retry),
-            label: Text(AppLocalizations.of(context).setupCheckAgain),
+            label: Text(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).setupCheckAgain,
+            ),
           ),
         ] else if (installed != null) ...[
           Text(
             installed.openCodeVersion != null
-                ? 'Found OpenCode ${installed.openCodeVersion} in Ubuntu'
+                ? lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupFoundInstalled(installed.openCodeVersion!)
                 : installed.ubuntuInstalled
-                ? 'Ubuntu is installed. OpenCode is not installed yet.'
-                : 'No managed Ubuntu installation found.',
+                ? lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupUbuntuOnly
+                : lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupNoUbuntu,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -1551,10 +2263,18 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
             FilledButton.icon(
               onPressed: _busy ? null : _startInstalled,
               icon: const Icon(AppIconography.play),
-              label: Text(AppLocalizations.of(context).setupStartInstalled),
+              label: Text(
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).setupStartInstalled,
+              ),
             ),
           if (installed.openCodeVersion != null && _localProfile() == null)
-            Text(AppLocalizations.of(context).setupMissingCredential),
+            Text(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).setupMissingCredential,
+            ),
         ],
         if (showInstall) ...[
           const SizedBox(height: 12),
@@ -1593,12 +2313,14 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
             const SizedBox(height: 12),
           ],
           Text(
-            AppLocalizations.of(context).setupUbuntuOption,
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).setupUbuntuOption,
             style: theme.textTheme.titleSmall,
           ),
           const SizedBox(height: 4),
           Text(
-            l10n.setupRuntimeInstallDetail(
+            l10n.e7SetupRuntimeInstallDetail(
               _runtimeName(_runtime),
               _runtime.pinnedVersion,
             ),
@@ -1612,9 +2334,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
               icon: const Icon(AppIconography.tools),
               label: Text(
                 installed?.openCodeVersion == _runtime.pinnedVersion
-                    ? AppLocalizations.of(context).setupReinstallStart
-                    : AppLocalizations.of(
-                        context,
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).setupReinstallStart
+                    : lookupAppLocalizations(
+                        Localizations.localeOf(context),
                       ).setupInstallVersionStart(_runtime.pinnedVersion),
               ),
             )
@@ -1624,7 +2348,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                   ? null
                   : _reviewInstallChoice,
               icon: const Icon(AppIconography.launch),
-              label: Text(AppLocalizations.of(context).setupInstallStart),
+              label: Text(
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).setupInstallStart,
+              ),
             ),
         ],
       ],
@@ -1635,11 +2363,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     if (_busy || _checkingInstallation) return;
     final installedVersion = _installation?.openCodeVersion;
     if (installedVersion != null) {
-      final l10n = AppLocalizations.of(context);
+      final l10n = lookupAppLocalizations(Localizations.localeOf(context));
       final confirmed = await showConfirmSheet(
         context,
         title: l10n.setupReplaceTitle,
-        message: l10n.setupReplaceDescription(
+        message: l10n.e7SetupReplaceDetail(
           installedVersion,
           _runtime.pinnedVersion,
         ),
@@ -1649,11 +2377,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       if (!confirmed || !mounted) return;
     }
     if (_installation == null) {
-      final l10n = AppLocalizations.of(context);
+      final l10n = lookupAppLocalizations(Localizations.localeOf(context));
       final confirmed = await showConfirmSheet(
         context,
         title: l10n.setupUncheckedTitle,
-        message: l10n.setupUncheckedDescription,
+        message: l10n.e7SetupUncheckedDetail,
         confirmLabel: l10n.setupUncheckedContinue,
         icon: AppIconography.question,
       );
@@ -1668,18 +2396,28 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context).setupOwnOption,
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).setupOwnOption,
           style: theme.textTheme.titleSmall,
         ),
         const SizedBox(height: 4),
-        Text(AppLocalizations.of(context).setupOwnDescription),
+        Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).setupSwitchOwnDescription,
+        ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: _busy
               ? null
               : () => Navigator.of(context).pushNamed('/servers'),
           icon: const Icon(AppIconography.link),
-          label: Text(AppLocalizations.of(context).setupConnectExisting),
+          label: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).setupConnectExisting,
+          ),
         ),
       ],
     );
@@ -1688,25 +2426,53 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   Widget _buildSetupProgress() {
     final theme = Theme.of(context);
     final stage = _status?.phase;
-    final title = _launching
-        ? 'Preparing setup'
+    final title = _status?.switchPending == true
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).setupSwitchProgressTitle(_runtimeName(_status!.switchTarget!))
+        : _launching
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupPreparingSetup
         : switch (stage) {
-            'installing_ubuntu' => 'Setting up Ubuntu',
-            'installing_opencode' => 'Installing OpenCode',
-            'refreshing_models' => 'Getting models ready',
-            'starting_server' => 'Starting local server',
-            'restarting' => 'Restarting local server',
-            _ => 'Preparing setup',
+            'installing_ubuntu' => lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupInstallingUbuntu,
+            'installing_opencode' => lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupInstallingOpenCode,
+            'refreshing_models' => lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupPreparingModels,
+            'starting_server' => lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupStartingLocal,
+            'restarting' => lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupRestartingLocalStage,
+            _ => lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupPreparingSetup,
           };
     final message = _launching
-        ? _launchMessage
-        : _status?.message ?? 'Reading setup progress';
+        ? _launchMessage ??
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupCheckingTermux
+        : _status?.message ??
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupReadingProgress;
     final elapsedSeconds = _elapsedSeconds;
     final elapsed = elapsedSeconds == null
         ? null
         : elapsedSeconds < 60
-        ? '${elapsedSeconds}s elapsed'
-        : '${elapsedSeconds ~/ 60}m ${elapsedSeconds % 60}s elapsed';
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupElapsedSeconds(elapsedSeconds)
+        : lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupElapsedMinutes(elapsedSeconds ~/ 60, elapsedSeconds % 60);
     final summary = Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       child: Column(
@@ -1736,7 +2502,15 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Semantics(liveRegion: true, child: Text(message)),
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    setupUiMessage(
+                      lookupAppLocalizations(Localizations.localeOf(context)),
+                      message,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -1749,11 +2523,20 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
           const SizedBox(height: 10),
           Text(
             _launching
-                ? 'Waiting for Termux to respond. This can take a little while.'
+                ? lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupWaitingTermux
+                : _switchOperationID != null || _status?.switchPending == true
+                ? lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).setupSwitchInProgressHint
                 : _restarting
-                ? AppLocalizations.of(context).termuxRestartProgress
-                : 'First-time setup can take 10–15 minutes. You can leave '
-                      'this screen and return; setup keeps running.',
+                ? lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).termuxRestartProgress
+                : lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupFirstSetupDuration,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -1803,12 +2586,22 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }) {
     final theme = Theme.of(context);
     final stateLabel = !enabled
-        ? 'not yet available'
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupStepUnavailable
         : switch (state) {
-            _StepState.done => 'done',
-            _StepState.running => 'in progress',
-            _StepState.error => 'failed',
-            _StepState.idle => 'to do',
+            _StepState.done => lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupStepDone,
+            _StepState.running => lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupStepRunning,
+            _StepState.error => lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupStepFailed,
+            _StepState.idle => lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupStepTodo,
           };
     // The header row is spoken as one phrase ("Step 2 of 3, done. Let the
     // app control Termux") rather than a badge, a title and a spinner read
@@ -1816,7 +2609,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     // signal for "not yet": a locked step also says so in text.
     return Semantics(
       container: true,
-      label: 'Step $n of 3, $stateLabel. $title',
+      label: lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupStepSemantics(n, stateLabel, title),
       child: Opacity(
         opacity: enabled ? 1 : .6,
         child: Container(
@@ -1875,7 +2670,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                       ),
                     if (!enabled)
                       Text(
-                        'Not yet',
+                        lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7SetupNotYet,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: AppTheme.mutedOf(theme),
                         ),
@@ -1921,7 +2718,7 @@ class _TermuxPasteGuide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final terminalStyle = theme.textTheme.bodyMedium?.copyWith(
       fontFamily: AppTheme.monoFamily,
     );
@@ -2121,6 +2918,7 @@ class CmdPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: SelectableText(
+        textDirection: TextDirection.ltr,
         TermuxBridge.unlockCommand,
         style: theme.textTheme.bodySmall!.copyWith(
           fontFamily: AppTheme.monoFamily,

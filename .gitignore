@@ -52,3 +52,6 @@ app.*.map.json
 # Local opencode session configuration (agents, commands, node_modules) is
 # machine-specific and must never be committed.
 .opencode/
+
+# APKs are distributed as release assets, not source files.
+/*.apk

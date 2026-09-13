@@ -69,8 +69,10 @@ void main() {
 
   group('displayForBounds', () {
     test('returns null when the platform reported no displays', () {
-      expect(displayForBounds(const Rect.fromLTWH(0, 0, 800, 600), const []),
-          isNull);
+      expect(
+        displayForBounds(const Rect.fromLTWH(0, 0, 800, 600), const []),
+        isNull,
+      );
     });
 
     test('picks the display holding most of the window', () {

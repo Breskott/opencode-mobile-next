@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../domain/provider_quota.dart';
 import '../../l10n/app_localizations.dart';
@@ -108,7 +108,12 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(l10n.quotaMonitorConsent),
-                Text(_source(l10n)),
+                Text(
+                  _source(l10n),
+                  textDirection: _source(l10n) == l10n.quotaUnknownSource
+                      ? null
+                      : TextDirection.ltr,
+                ),
                 DropdownButton<double>(
                   value: threshold,
                   isExpanded: true,
@@ -263,7 +268,13 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
                     const SizedBox(height: 16),
                     Text(l10n.quotaSource, style: theme.textTheme.titleSmall),
                     const SizedBox(height: 4),
-                    Text(_source(l10n), style: theme.textTheme.bodyMedium),
+                    Text(
+                      _source(l10n),
+                      textDirection: _source(l10n) == l10n.quotaUnknownSource
+                          ? null
+                          : TextDirection.ltr,
+                      style: theme.textTheme.bodyMedium,
+                    ),
                     const SizedBox(height: 16),
                     if (!_overview.providerSupported)
                       _Notice(text: l10n.quotaClaudeUnavailable)
@@ -276,6 +287,7 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
                       Text(l10n.quotaSetupDescription),
                       const SizedBox(height: 12),
                       SelectableText(
+                        textDirection: TextDirection.ltr,
                         quotaPathFor(_overview.provider),
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontFamily: AppTheme.monoFamily,

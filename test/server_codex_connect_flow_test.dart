@@ -135,7 +135,7 @@ void main() {
       find.byKey(const ValueKey('server-backend-selector')),
       findsOneWidget,
     );
-    expect(find.widgetWithText(ChoiceChip, 'OpenCode'), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, 'OpenCode 1 or 2'), findsOneWidget);
     await tester.tap(find.text('Codex (experimental)'));
     await tester.pump();
 
@@ -400,7 +400,9 @@ void main() {
       );
       expect(
         tester
-            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'OpenCode'))
+            .widget<ChoiceChip>(
+              find.widgetWithText(ChoiceChip, 'OpenCode 1 or 2'),
+            )
             .onSelected,
         isNull,
       );
@@ -421,7 +423,7 @@ void main() {
         isFalse,
       );
       await tester.tap(
-        find.widgetWithText(ChoiceChip, 'OpenCode'),
+        find.widgetWithText(ChoiceChip, 'OpenCode 1 or 2'),
         warnIfMissed: false,
       );
       await tester.pump();

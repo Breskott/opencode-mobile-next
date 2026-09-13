@@ -167,7 +167,19 @@ void main() {
     expect(find.text('Run shell command'), findsNothing);
     expect(find.text('Subagent sessions'), findsNothing);
     expect(find.text('Share session'), findsNothing);
+    // Utility actions live behind the collapsed Session actions group.
+    await tester.ensureVisible(find.text('Session actions'));
+    await tester.tap(find.text('Session actions'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fork session'), findsNothing);
+    expect(find.text('Revert last prompt'), findsNothing);
+    expect(find.text('Compact context'), findsNothing);
+    expect(find.text('Run shell command'), findsNothing);
+    expect(find.text('Share session'), findsNothing);
+    await tester.ensureVisible(find.text('Reload messages'));
     expect(find.text('Reload messages'), findsOneWidget);
+    // Codex has no `opencode --session` CLI, so no resume command is offered.
+    expect(find.text('Continue on computer'), findsNothing);
   });
 
   testWidgets('Codex command launcher hides unsupported server catalogs', (

@@ -1,0 +1,1630 @@
+{
+  "quotaSetupTitle": "An optional collector is required",
+  "@quotaSetupTitle": {
+    "description": "First-visit quota setup heading; no claim of built-in OpenCode support"
+  },
+  "quotaSetupDescription": "Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this profile's server sign-in. Confirm only if you installed or trust that deployment. Provider tokens stay on the server.",
+  "@quotaSetupDescription": {
+    "description": "Informed consent before sending existing server authentication to an optional same-origin route"
+  },
+  "quotaSetupGuide": "Setup instructions are in tool/quota/README.md in the app repository. This screen does not install services or remember permission after you leave.",
+  "@quotaSetupGuide": {
+    "description": "Explains operator configuration and visit-only consent"
+  },
+  "quotaSetupNeeded": "Use a saved server with a password and HTTPS, or phone loopback. Update its connection settings before checking the collector.",
+  "@quotaSetupNeeded": {
+    "description": "Quota reads are unavailable for missing credentials or an unsafe source"
+  },
+  "quotaConsent": "I installed and trust this collector on this server.",
+  "@quotaConsent": {
+    "description": "Explicit opt-in checkbox; does not install or configure a collector"
+  },
+  "quotaRead": "Read remaining usage",
+  "@quotaRead": {
+    "description": "Explicit first quota read after informed consent"
+  },
+  "quotaRefresh": "Refresh remaining usage",
+  "@quotaRefresh": {
+    "description": "Manual refresh or retry of the same trusted quota source"
+  },
+  "quotaLoading": "Reading remaining usage",
+  "@quotaLoading": {
+    "description": "Progress semantics for a quota read"
+  },
+  "quotaForgetConsent": "Stop using this collector",
+  "@quotaForgetConsent": {
+    "description": "Clear this visit's consent and in-memory quota snapshot; no remote mutation"
+  },
+  "quotaCollectorAuth": "The collector route did not accept this server sign-in. Ask the server operator to check its authentication setup.",
+  "@quotaCollectorAuth": {
+    "description": "Collector or proxy authentication failure, distinct from provider reauthentication"
+  },
+  "quotaCollectorMissing": "The optional collector route is not available on this server. Check its installation and proxy routing.",
+  "@quotaCollectorMissing": {
+    "description": "Optional collector returned a missing route or unsupported method"
+  },
+  "quotaUnavailable": "Remaining usage could not be refreshed. Check the connection and collector, then retry.",
+  "@quotaUnavailable": {
+    "description": "Safe quota network/service failure without raw errors"
+  },
+  "quotaInvalidResponse": "The collector returned an unsupported or invalid snapshot. No new allowance is shown.",
+  "@quotaInvalidResponse": {
+    "description": "Malformed or incompatible quota response"
+  },
+  "quotaUnconfigured": "The collector has no authorized account source configured. Ask its operator to finish setup.",
+  "@quotaUnconfigured": {
+    "description": "The collector is reachable but lacks an explicitly configured credential source"
+  },
+  "quotaProviderUnsupported": "The selected OAuth login or provider usage route is not supported by this collector.",
+  "@quotaProviderUnsupported": {
+    "description": "Honest first-provider/auth-method limitation"
+  },
+  "quotaProviderAuth": "Sign in again using the provider's existing login tool on the server. This app does not read or refresh that login.",
+  "@quotaProviderAuth": {
+    "description": "Provider login expired or was unreadable; not collector Basic authentication failure"
+  },
+  "quotaRateLimited": "The provider limited quota checks. Wait before refreshing; this does not prove your coding allowance is exhausted.",
+  "@quotaRateLimited": {
+    "description": "A polling rate limit is distinct from an exhausted subscription window"
+  },
+  "quotaAccountUnverified": "The collector could not verify the selected account. No allowance is shown. Check the login source on the server.",
+  "@quotaAccountUnverified": {
+    "description": "Missing or mismatched account identity must not display measurements"
+  },
+  "quotaCodexAccount": "Codex account windows",
+  "@quotaCodexAccount": {
+    "description": "Heading for Codex entitlements, not all ChatGPT product allowances"
+  },
+  "quotaPlan": "Reported plan: {plan}",
+  "@quotaPlan": {
+    "description": "Provider-reported plan label, from a safe allowlist",
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaChecked": "Snapshot checked {time}",
+  "@quotaChecked": {
+    "description": "Collector snapshot time, formatted in the device locale",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaStale": "Previous snapshot — refresh to check the latest allowance.",
+  "@quotaStale": {
+    "description": "An expired, interrupted or failed-refresh snapshot is not live provider truth"
+  },
+  "quotaUseBlocked": "The provider reports that ordinary Codex use is currently blocked. Window percentages alone do not determine access.",
+  "@quotaUseBlocked": {
+    "description": "Explicit provider eligibility signal, independent of quota arithmetic"
+  },
+  "quotaNotReported": "Not reported",
+  "@quotaNotReported": {
+    "description": "Unknown allowance; never means zero or unlimited"
+  },
+  "quotaPrimaryWindow": "Primary window",
+  "@quotaPrimaryWindow": {
+    "description": "First provider rate-limit window without assuming a five-hour duration"
+  },
+  "quotaSecondaryWindow": "Secondary window",
+  "@quotaSecondaryWindow": {
+    "description": "Second provider rate-limit window without assuming a weekly duration"
+  },
+  "quotaOtherWindow": "Usage window {number}",
+  "@quotaOtherWindow": {
+    "description": "Safe display name for an additional bounded window",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaRemaining": "{percent} remaining",
+  "@quotaRemaining": {
+    "description": "Percentage remaining within one reported provider window",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaWindowRemainingLabel": "{window}: remaining percentage",
+  "@quotaWindowRemainingLabel": {
+    "description": "Progress-bar semantics label; its numeric value is expressed separately",
+    "placeholders": {
+      "window": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaUsed": "{percent} used",
+  "@quotaUsed": {
+    "description": "Provider-reported percentage used within one window",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaResetAt": "Reported reset: {time}",
+  "@quotaResetAt": {
+    "description": "Absolute provider reset time in device locale",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaResetUnknown": "Reset time not reported",
+  "@quotaResetUnknown": {
+    "description": "Missing provider reset time is not fabricated"
+  },
+  "quotaResetPassed": "Reset time passed — refresh to check. The displayed allowance has not been replenished locally.",
+  "@quotaResetPassed": {
+    "description": "Passing a reset deadline does not invent a new allowance"
+  },
+  "quotaDays": "{count, plural, one{1-day window} other{{count}-day window}}",
+  "@quotaDays": {
+    "description": "Exact whole-day provider window duration",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaHours": "{count, plural, one{1-hour window} other{{count}-hour window}}",
+  "@quotaHours": {
+    "description": "Exact whole-hour provider window duration",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaSeconds": "{count, plural, one{1-second window} other{{count}-second window}}",
+  "@quotaSeconds": {
+    "description": "Exact duration when a provider window is not whole hours or days",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "quotaSourceDisclosure": "Read-only snapshot from the optional collector using an internal provider endpoint. Other product allowances, model-specific limits, credits and eligibility are not included. Missing data is unknown, not unlimited.",
+  "@quotaSourceDisclosure": {
+    "description": "Honest limits and provenance of optional provider quota collectors"
+  },
+  "quotaCodex": "Codex",
+  "@quotaCodex": {
+    "description": "Codex provider selector"
+  },
+  "quotaClaude": "Claude",
+  "@quotaClaude": {
+    "description": "Claude provider selector"
+  },
+  "quotaClaudeUnavailable": "Claude subscription usage is unavailable here pending a supported, permitted integration. Current OpenCode does not include Claude Pro/Max sign-in. This app will not read or reuse that subscription login.",
+  "@quotaClaudeUnavailable": {
+    "description": "Explains the disabled Claude subscription collection path without suggesting an OAuth workaround"
+  },
+  "iosAppTitle": "OpenCode for iOS",
+  "@iosAppTitle": {
+    "description": "iOS app identity without describing it as an Android or desktop build"
+  },
+  "iosRemoteSummary": "A remote client for the OpenCode server you choose. On-device server hosting and background monitoring are not available in this iOS build.",
+  "@iosRemoteSummary": {
+    "description": "Truthful initial iOS remote-control scope"
+  },
+  "iosKeychainGuide": "Server passwords use this device's Keychain. They are not stored in plain profile preferences.",
+  "@iosKeychainGuide": {
+    "description": "iOS credential storage guidance"
+  },
+  "platformSecureStorageGuide": "Server passwords use this platform's secure credential storage. They are not stored in plain profile preferences.",
+  "@platformSecureStorageGuide": {
+    "description": "Platform-neutral storage copy rather than incorrectly promising Linux libsecret everywhere"
+  },
+  "quotaClaudeAccount": "Claude login windows",
+  "@quotaClaudeAccount": {
+    "description": "Claude allowances for the operator-selected OAuth login"
+  },
+  "quotaSourceBound": "Tied to the collector's configured Claude login. The usage response does not independently identify the account.",
+  "@quotaSourceBound": {
+    "description": "Distinguishes credential-bound Claude usage from provider-confirmed account identity"
+  },
+  "usageProviders": "Providers",
+  "@usageProviders": {
+    "description": "Provider grouping within server consumption statistics"
+  },
+  "usageProviderScope": "Totals from this server's returned model records for the selected scope. Not provider billing or subscription allowances.",
+  "@usageProviderScope": {
+    "description": "Limits the meaning of provider-grouped consumption"
+  },
+  "usageProviderModelCount": "{count, plural, one{1 model} other{{count} models}}",
+  "@usageProviderModelCount": {
+    "description": "Distinct model IDs within a provider; variants are not counted as new models",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "usageProviderCostUnavailable": "Cost subtotal unavailable",
+  "@usageProviderCostUnavailable": {
+    "description": "Invalid numeric aggregate is not rendered as a plausible cost"
+  },
+  "usageProviderCostShare": "{percent} of reported cost",
+  "@usageProviderCostShare": {
+    "description": "Provider subtotal divided by the selected server consumption total, when consistent",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "setupOutputWaiting": "Waiting for Termux output…",
+  "setupOutputWaitingDetail": "Setup messages will appear here when Termux responds.",
+  "setupStartInstalled": "Start installed OpenCode",
+  "setupMissingCredential": "This app has no saved credential for that installation. Connect with its server address, or run setup to configure it.",
+  "setupUbuntuOption": "Managed Ubuntu installation",
+  "setupOwnOption": "Use your own setup",
+  "setupOwnDescription": "Connect an existing OpenCode 1 or OpenCode 2 server by address. A native musl installation needs a compatible Linux environment and is not managed by this app.",
+  "setupConnectExisting": "Connect existing server",
+  "setupScreenTitle": "On-device setup",
+  "setupInstallStart": "Install & start",
+  "setupCheckAgain": "Check again",
+  "uncertainAuthTitle": "Unconfirmed sign-in: {integrationID}",
+  "@uncertainAuthTitle": {
+    "placeholders": {
+      "integrationID": {
+        "type": "String"
+      }
+    }
+  },
+  "uncertainAuthDetail": "The server may have started sign-in, but no attempt ID was received. Check on the server before starting again.",
+  "uncertainAuthForgetTitle": "Forget uncertain start?",
+  "uncertainAuthForgetDetail": "This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.",
+  "uncertainAuthForget": "Forget uncertain start",
+  "uncertainAuthCloseHint": "Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.",
+  "pluginsTitle": "Plugins",
+  "pluginsDescription": "Plugins reported for this server location. Inspect status and source here; manage plugins on the server.",
+  "pluginsUnsupported": "This server does not support plugin inspection.",
+  "pluginsDisconnected": "Connect to a server to inspect its plugins.",
+  "pluginsEmpty": "No plugins reported for this location.",
+  "pluginsLoadFailed": "Could not load plugins. Try again.",
+  "pluginsRefresh": "Refresh plugins",
+  "pluginsRetry": "Try again",
+  "pluginsUnnamed": "Plugin without an ID",
+  "pluginsStatusActive": "Active",
+  "pluginsStatusFailed": "Failed",
+  "pluginsStatusUnknown": "Unknown status",
+  "pluginsSourceBuiltin": "Built in",
+  "pluginsSourcePackage": "Package",
+  "pluginsSourceLocal": "Local file (path hidden)",
+  "pluginsSourceSdk": "SDK",
+  "pluginsSourceUnknown": "Unknown source",
+  "pluginsTerminalUi": "Terminal UI declared",
+  "pluginsFailureDetail": "Failure details are hidden because they may contain credentials.",
+  "demoReviewChanges": "Review changes",
+  "demoSetUpServer": "Set up your own server",
+  "handoffCommandTitle": "Continue on computer",
+  "handoffCommandDisclosure": "Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and session ID, but no password.",
+  "handoffCopyCommand": "Copy command",
+  "handoffCommandCopied": "Resume command copied",
+  "handoffCommandUnavailable": "A resume command is unavailable for this connection or workspace. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the session metadata below.",
+  "quotaMiniMax": "MiniMax",
+  "quotaMiniMaxAccount": "MiniMax subscription windows",
+  "quotaMiniMaxSourceBound": "Tied to the collector's configured MiniMax Subscription Key. The quota response does not independently identify the account. Only reported general-pool percentages are shown; other limits may apply.",
+  "managedHealthTitle": "On-device server",
+  "managedHealthUnchecked": "Check the server managed by this app in Termux.",
+  "managedHealthCheck": "Check status",
+  "managedHealthChecking": "Checking Termux…",
+  "managedHealthFailed": "Could not check Termux. Open setup to check permissions or try again.",
+  "managedHealthReady": "Server process running",
+  "managedHealthWorking": "Setup is in progress",
+  "managedHealthStopped": "Server stopped",
+  "managedHealthNeedsSetup": "Setup needs attention",
+  "managedHealthAbsent": "No managed setup found",
+  "managedHealthUnknown": "Server state unavailable",
+  "managedHealthManage": "Open setup controls",
+  "managedHealthObserved": "Last checked at {time}. Check again for the current state.",
+  "@managedHealthObserved": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "managedHealthVersion": "OpenCode {version}",
+  "@managedHealthVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "managedHealthUbuntu": "Runner: Ubuntu",
+  "managedHealthLifetime": "Android may stop either app. Keeping the mobile connection alive does not guarantee the Termux server will keep running overnight.",
+  "quotaBudgetTitle": "Personal alert threshold",
+  "quotaBudgetDescription": "Choose a percentage used for this source, account and window. This does not change provider limits.",
+  "quotaBudgetOff": "Off",
+  "quotaBudgetPercent": "{percent}% used",
+  "@quotaBudgetPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaBudgetOptIn": "Show threshold attention",
+  "quotaBudgetAttentionScope": "Only after a fresh read on this page. No background polling or device notifications. A window without a reset time alerts once until you change this rule.",
+  "quotaBudgetSaveFailed": "Could not save this budget change. Your last saved settings remain in effect.",
+  "quotaBudgetAttention": "A personal threshold was reached in the latest provider reading. Review the reported windows below.",
+  "quotaGlm": "GLM",
+  "quotaGlmAccount": "Configured GLM Coding Plan source",
+  "quotaGlmTokenWindow": "Reported token-plan window",
+  "quotaGlmMcpWindow": "Reported MCP window",
+  "usageBudgetTitle": "Personal consumption budgets",
+  "usageBudgetDescription": "Budgets use all reported consumption for the selected server, project, timezone and date-window start. Model filters do not change them. A new window start needs a new budget. These do not change subscription allowances or stop requests.",
+  "usageBudgetUsd": "Set USD budget",
+  "usageBudgetTokens": "Set token budget",
+  "usageBudgetAmount": "Budget amount",
+  "usageBudgetInvalid": "Enter a positive finite amount. Token budgets must use whole numbers.",
+  "usageBudgetRemove": "Remove budget",
+  "usageBudgetProgress": "{used} of {limit} {unit}",
+  "@usageBudgetProgress": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "usageBudgetTokenUnit": "tokens",
+  "usageBudgetReached": "Personal budget reached in this reading.",
+  "usageBudgetPrevious": "Previous reading reached this budget. Refresh to check current consumption.",
+  "usageBudgetClearAll": "Clear saved consumption budgets",
+  "usageBudgetClearDescription": "Remove all current and past consumption budgets for this saved server? Provider thresholds are kept.",
+  "monitorTitle": "Saved-server attention",
+  "monitorScope": "Counts cover each server’s last selected location, not every project on that server.",
+  "monitorDisclosure": "Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Keep live is already on and Android’s service is running. Android can stop that service; no remaining runtime is promised.",
+  "monitorConfigure": "Monitoring settings",
+  "monitorRefresh": "Check monitored servers",
+  "monitorOptIn": "Monitor this server",
+  "monitorOptInDetail": "Check pending permissions, questions and forms in its last selected location.",
+  "monitorNotifications": "Notify when attention is needed",
+  "monitorWifi": "Wi-Fi only",
+  "monitorWifiDetail": "Checks pause unless Android reports an active Wi-Fi network. VPN or unavailable network information may pause checks.",
+  "monitorWifiUnsupported": "Wi-Fi detection is unavailable on this platform.",
+  "monitorQuiet": "Quiet hours",
+  "monitorQuietDetail": "Mute attention alerts during these local times. Checks continue.",
+  "monitorQuietStart": "Quiet hours start",
+  "monitorQuietEnd": "Quiet hours end",
+  "monitorDisabled": "Not monitored · attention unknown",
+  "monitorWaiting": "Waiting for a check · attention unknown",
+  "monitorChecking": "Checking · attention unknown",
+  "monitorUnavailable": "Could not check · attention unknown",
+  "monitorWifiRequired": "Waiting for Wi-Fi · attention unknown",
+  "monitorPaused": "Paused in background · attention unknown",
+  "monitorCurrent": "Current observation",
+  "monitorAllClear": "No pending requests in the checked location",
+  "monitorNoServers": "Add a server to monitor attention.",
+  "monitorSaveFailed": "Could not save monitoring settings. Try again.",
+  "monitorOpenFailed": "This request or its server location changed. Refresh the inbox and try again.",
+  "monitorSwitchTitle": "Switch server to review?",
+  "monitorSwitchDetail": "A run is active on the selected server. Switching changes the connection shown in this app; it does not stop that server’s run.",
+  "monitorSwitch": "Switch server",
+  "monitorSession": "Session",
+  "monitorPermission": "Permission needed",
+  "monitorQuestion": "Answer needed",
+  "monitorForm": "Form response needed",
+  "monitorUnknown": "Unknown",
+  "monitorLastChecked": "Last checked",
+  "monitorNextCheck": "Next check",
+  "monitorPending": "Current pending requests",
+  "monitorUnknownServers": "Servers with unknown attention",
+  "monitorPendingSummary": "Current pending requests: {pendingCount}\nServers with unknown attention: {unknownCount}",
+  "@monitorPendingSummary": {
+    "description": "Saved-server attention counts in the current inbox",
+    "placeholders": {
+      "pendingCount": {
+        "type": "int"
+      },
+      "unknownCount": {
+        "type": "int"
+      }
+    }
+  },
+  "monitorRequestSummary": "{profile} · {kind}\n{lastChecked}: {time}",
+  "@monitorRequestSummary": {
+    "description": "Saved-server request row summary",
+    "placeholders": {
+      "profile": {
+        "type": "String"
+      },
+      "kind": {
+        "type": "String"
+      },
+      "lastChecked": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "monitorLabeledTime": "{label}: {time}",
+  "@monitorLabeledTime": {
+    "description": "A localized monitor timestamp with its label",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "monitorSelected": "Selected location",
+  "monitorNoNotifications": "Background notifications also require Keep live and notification permission in Background settings.",
+  "monitorCheckIn": "Check in on long runs",
+  "monitorCheckInDetail": "Shows when busy checks span the chosen time. Work may pause or restart between checks. At most one notification is attempted per observed interval, while Keep live is on.",
+  "monitorCheckInDetailForeground": "Shows a check-in row when busy checks span the chosen time. Work may pause or restart between checks. This device cannot deliver reminders in the background.",
+  "monitorCheckInAfter": "Check in after",
+  "monitorMinutes": "{minutes, plural, =1{1 minute} other{{minutes} minutes}}",
+  "@monitorMinutes": {
+    "description": "A duration choice for the check-in rule",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "monitorCheckInDue": "Time to check in",
+  "monitorObservedBusy": "Busy at checks spanning {minutes} min · first check {since}",
+  "@monitorObservedBusy": {
+    "description": "Span between busy samples, not a continuous duration or a lower bound on run length",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "since": {
+        "type": "String"
+      }
+    }
+  },
+  "quotaBudgetClearAll": "Clear saved provider thresholds",
+  "quotaBudgetClearDescription": "Remove all provider thresholds and attention settings for this saved server, including previous accounts? Consumption budgets are kept.",
+  "managedStorageSummary": "Termux storage: {available} GiB free of {total} GiB",
+  "@managedStorageSummary": {
+    "placeholders": {
+      "available": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "managedStorageFailed": "Termux storage could not be checked. Retry Check status.",
+  "managedRecoveryTitle": "Recover a crashed managed server",
+  "managedRecoveryPolicy": "Opt in to at most 3 restart attempts, with delays of at least 5, 15 and 45 seconds. Only while this app is in the foreground. No install or update.",
+  "managedRecoveryAttempts": "Attempts used: {attempts} of 3. The limit survives app restarts.",
+  "@managedRecoveryAttempts": {
+    "placeholders": {
+      "attempts": {
+        "type": "int"
+      }
+    }
+  },
+  "managedRecoveryExhausted": "Recovery limit reached. Check the server and start it manually before resetting the retry budget.",
+  "managedRecoveryBackground": "Recovery waits while the app is in the background.",
+  "managedRecoveryChecking": "Checking the managed recovery operation…",
+  "managedRecoveryNext": "Next recovery attempt no earlier than {time}.",
+  "@managedRecoveryNext": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "managedRecoveryCheck": "Check recovery status",
+  "managedRecoveryReset": "Reset retry budget",
+  "managedRecoverySaveFailed": "Recovery settings could not be saved. Retry.",
+  "managedRecoveryRevokeFailed": "Could not save or revoke recovery. Keep this profile and retry before removing it.",
+  "managedRecoverySettingsUnreadable": "Recovery settings could not be read. Check the server before enabling recovery.",
+  "managedRecoveryEnableFailed": "Could not enable recovery. Start the managed server, then try again.",
+  "managedRecoveryOwnershipChanged": "The managed operation changed. Check the server before enabling recovery again.",
+  "managedRecoveryUncertain": "Recovery paused because Termux did not confirm the result. Check status to continue.",
+  "managedRecoveryRetryDisable": "Retry disabling recovery",
+  "managedRecoveryStoppedWithCleanupError": "The local server is stopped. Recovery settings could not be fully cleared; retry disabling recovery in Servers before removing the profile.",
+  "pluginMappingPersonal": "Your command links · not verified plugin ownership",
+  "pluginMappingReview": "Review /{command}",
+  "@pluginMappingReview": {
+    "placeholders": {
+      "command": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginMappingManage": "Link commands",
+  "pluginMappingDescription": "Choose commands you associate with this plugin. These personal links apply only to this server location. Each action opens a review of the chat and arguments before you run it.",
+  "pluginMappingEmpty": "No server commands are available to link.",
+  "pluginMappingUnavailable": "This plugin or command is no longer available here. Refresh and review your links.",
+  "pluginMappingLimit": "Choose up to 16 commands for this plugin.",
+  "pluginMappingSave": "Save links",
+  "pluginMappingSaveFailed": "Links could not be saved. Check that this server location is still selected and try again.",
+  "pluginMappingLoadFailed": "Commands could not be loaded. Try again when connected.",
+  "mobileTasksDescription": "Server-reported tasks · mobile view",
+  "mobileTasksUnfinished": "Show unfinished only",
+  "mobileTasksNoUnfinished": "No unfinished tasks in this list.",
+  "mobileTaskPending": "Pending",
+  "mobileTaskInProgress": "In progress",
+  "mobileTaskCompleted": "Completed",
+  "mobileTaskCancelled": "Cancelled",
+  "mobileTasksProgress": "{done} of {total} done",
+  "@mobileTasksProgress": {
+    "description": "Task card progress caption and progress-bar semantics label: completed tasks out of tracked (non-cancelled) tasks",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "mobileTasksCopyAll": "Copy all tasks",
+  "@mobileTasksCopyAll": {
+    "description": "Task card button: copies the full server-reported task list as plain text, ignoring the local unfinished-only filter"
+  },
+  "mobileTasksCopied": "All tasks copied",
+  "@mobileTasksCopied": {
+    "description": "Snackbar after the task list was placed on the clipboard"
+  },
+  "mobileTasksCopyFailed": "Could not copy the task list.",
+  "@mobileTasksCopyFailed": {
+    "description": "Snackbar when the clipboard write fails"
+  },
+  "mobileTaskPriorityHigh": "High priority",
+  "mobileTaskPriorityMedium": "Medium priority",
+  "mobileTaskPriorityLow": "Low priority",
+  "pluginMappingClearAll": "Clear personal links",
+  "pluginMappingClearTitle": "Clear all personal command links?",
+  "pluginMappingClearDescription": "Remove personal plugin-command links for every location in this server profile, including previous locations. Server plugins and commands stay installed.",
+  "pluginMappingClearConfirm": "Clear links",
+  "pluginMappingClearFailed": "Personal links could not be cleared. Check that this server profile is still selected and try again.",
+  "quotaMonitorTitle": "Quota monitoring",
+  "quotaMonitorConsentTitle": "Monitor this provider source?",
+  "quotaMonitorConsent": "Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require the separate switch below and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.",
+  "quotaMonitorRuntime": "Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.",
+  "quotaMonitorEmpty": "No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.",
+  "quotaMonitorEnable": "Enable quota monitoring",
+  "quotaMonitorNotifications": "Device alerts for reported quota thresholds",
+  "quotaMonitorWifi": "Read only on confirmed Wi-Fi",
+  "quotaMonitorQuiet": "Quiet hours: 22:00–08:00 local time",
+  "quotaMonitorDisabled": "Monitoring is off.",
+  "quotaMonitorWaiting": "Waiting for a fresh reading.",
+  "quotaMonitorChecking": "Checking the trusted collector…",
+  "quotaMonitorCurrent": "Fresh reading from the consented provider source.",
+  "quotaMonitorPaused": "Monitoring is paused. Open the app or check the existing background service.",
+  "quotaMonitorWifiRequired": "Waiting for confirmed Wi-Fi. Unknown network status does not permit a read.",
+  "quotaMonitorSourceChanged": "This provider account or source changed, or could not be verified. Open Remaining, read it again and review new consent.",
+  "quotaMonitorSaveFailed": "Could not save quota monitoring. A failed disable stays paused in this app; retry before closing the app.",
+  "quotaMonitorDisable": "Disable quota monitoring",
+  "setupChooseServerTitle": "Choose your server setup",
+  "setupChooseServerDescription": "Connect an existing server, or use Termux to run OpenCode on this phone.",
+  "setupUncheckedTitle": "Continue without an installation check?",
+  "setupUncheckedDescription": "The current installation could not be checked. Continuing may install or update OpenCode 1 in the app-managed Ubuntu environment. Existing Ubuntu files are kept. You can check again or connect by address instead.",
+  "setupUncheckedContinue": "Continue with Ubuntu",
+  "webSearchDisclosure": "Search sends your query to this server’s selected search provider. Review results before adding them to your editable draft. Nothing is sent to the model here.",
+  "webSearchManual": "Or paste a source",
+  "webSearchUnavailable": "Web search is unavailable. Configure a search provider on this server, then refresh providers. You can still paste a source below.",
+  "webSearchAuthentication": "The server did not authorize web search. Check this connection’s credentials.",
+  "webSearchInvalidResponse": "The search response did not match this connection or the supported format. Refresh providers or paste a source.",
+  "webSearchFailed": "Web search could not finish. Try again or paste a source.",
+  "webSearchRefresh": "Refresh providers",
+  "webSearchProvider": "Search provider",
+  "webSearchQuery": "Search query",
+  "webSearchSubmit": "Search",
+  "webSearchEmpty": "No usable results for this query.",
+  "webSearchOmitted": "Some results were omitted because their links or excerpts exceeded the review limits.",
+  "setupReinstallStart": "Reinstall & start",
+  "setupInstallVersionStart": "Install {version} & start",
+  "@setupInstallVersionStart": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "setupReplaceTitle": "Replace installed OpenCode?",
+  "setupReplaceDescription": "Replace OpenCode {installedVersion} with {targetVersion} in the managed Ubuntu environment and restart the local server. Existing Ubuntu files are kept.",
+  "@setupReplaceDescription": {
+    "placeholders": {
+      "installedVersion": {
+        "type": "String"
+      },
+      "targetVersion": {
+        "type": "String"
+      }
+    }
+  },
+  "setupInstallRestart": "Install & restart",
+  "queueStorageUnreadable": "Saved queued prompts could not be read. New prompts cannot be queued until this device data is cleared.",
+  "queueStorageDiscardUnreadable": "This permanently deletes the unreadable queued prompts and their attachments from this device. Their contents and count are unknown. Nothing on the server is affected.",
+  "filesViewerScopeChanged": "Connection changed. Close and reopen this file.",
+  "filesViewerPathChanged": "File context changed. Close and reopen this file.",
+  "queueStorageCountUnknown": "Saved queued data could not be read. The number of queued prompts is unknown.",
+  "codexConnectionVerified": "Connection verified. Save and connect to continue.",
+  "codexApprovalRecoveryNotice": "After reconnecting, review any pending approvals on your computer.",
+  "connectionTokenRejected": "The connection token was rejected. Update it to reconnect.",
+  "updateConnectionToken": "Update token",
+  "codexDraftReconnectNotice": "Review draft stays here; nothing is sent automatically.",
+  "codexTextOnlyPrompt": "This connection supports text only. Remove attachments before sending.",
+  "codexOfflineDraftSaved": "Reconnect before sending. Your draft is kept on this device.",
+  "codexReconnectBeforeSending": "Reconnect before sending.",
+  "connectionTypeLabel": "CONNECTION TYPE",
+  "openCodeConnectionLabel": "OpenCode",
+  "codexExperimentalLabel": "Codex (experimental)",
+  "connectionDisplayName": "Display name (optional)",
+  "connectionDisplayNameHint": "Defaults to the server host",
+  "connectionServerAddress": "Server address",
+  "codexAddressHint": "wss://codex.example or ws://127.0.0.1:4500",
+  "codexAddressHelp": "Use wss:// for remote servers. ws:// is limited to this device.",
+  "codexProjectFolder": "Project folder on server",
+  "codexTokenReentry": "Re-enter connection token",
+  "codexTokenLabel": "Connection token",
+  "codexTokenStorageHelp": "Stored securely on this device and sent only to this Codex server.",
+  "codexShowToken": "Show connection token",
+  "codexHideToken": "Hide connection token",
+  "codexPasteToken": "Paste connection token",
+  "connectionCloseEditor": "Close server editor",
+  "connectionCredentialUnavailable": "A saved connection credential can no longer be read. Edit the active server and re-enter it before connecting.",
+  "projectContextTitle": "Project context",
+  "projectConfiguredFolder": "Configured folder",
+  "termuxGuideTitle": "Connect Termux once",
+  "termuxGuideIntro": "We copy the command for you. Here is what to do when Termux opens.",
+  "termuxGuideAutomaticCheck": "When you return, we will check the connection automatically.",
+  "termuxGuideShowCommand": "Show command",
+  "termuxGuideOpening": "Opening Termux...",
+  "termuxGuideCopyTitle": "1. Copy & open",
+  "termuxGuideCopyDescription": "Tap Copy & open Termux above. Allow Android's permission request if shown.",
+  "termuxGuidePasteTitle": "2. Press and hold, then Paste",
+  "termuxGuidePasteDescription": "In Termux, press and hold near the blinking cursor. Tap Paste in the menu.",
+  "termuxGuideEnterTitle": "3. Enter, then return",
+  "termuxGuideEnterDescription": "Press the keyboard Enter or return key. When Termux shows bridge-unlocked, switch back to this app.",
+  "@termuxGuideEnterDescription": {
+    "description": "Keep bridge-unlocked unchanged: it is the literal terminal command output."
+  },
+  "termuxGuideCopied": "Command copied",
+  "termuxGuidePaste": "Paste",
+  "termuxGuideEnterKey": "Enter",
+  "termuxGuideIllustrationNote": "Illustrations only. Your keyboard and Paste menu may look different.",
+  "termuxGuideOpenFailed": "The command was copied, but Termux could not open. Open Termux yourself or try Copy & open Termux again.",
+  "termuxGuideCopyOpenFailed": "Could not copy the command or open Termux.",
+  "termuxPermissionDenied": "Android denied the Termux command permission. Allow it in OpenCode app settings.",
+  "launchShortcutWaiting": "Connecting to the saved server. The new task opens when it is ready.",
+  "@launchShortcutWaiting": {
+    "description": "Snackbar shown once when the New task home-screen shortcut arrives while the saved server is still connecting"
+  },
+  "launchShortcutNoServer": "Choose a server, then start a new task.",
+  "@launchShortcutNoServer": {
+    "description": "Snackbar shown on the servers screen when the New task shortcut arrives with no saved server selected"
+  },
+  "launchShortcutReentry": "Enter the credentials for the saved server, then start a new task.",
+  "@launchShortcutReentry": {
+    "description": "Snackbar shown on the servers screen when the New task shortcut arrives while the saved server needs its password or token entered again"
+  },
+  "launchShortcutConnectionFailed": "Could not connect to the saved server. Choose or fix a server, then start a new task.",
+  "@launchShortcutConnectionFailed": {
+    "description": "Snackbar shown on the servers screen when the New task shortcut arrives after the saved server connection failed"
+  },
+  "launchShortcutNewTaskFailed": "Could not start a new task. {error}",
+  "@launchShortcutNewTaskFailed": {
+    "description": "Snackbar shown when the New task shortcut reached a connected server but creating the session failed",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedSending": "Sending…",
+  "@queuedSending": {
+    "description": "Queued draft bubble label while the offline flush is dispatching it"
+  },
+  "queuedDeliveryUnconfirmed": "Delivery unconfirmed — review before resending",
+  "@queuedDeliveryUnconfirmed": {
+    "description": "Queued draft bubble label for a send that left the device without a confirmed outcome; never resent automatically"
+  },
+  "queuedDeliveryUnconfirmedWithError": "Delivery unconfirmed: {error}",
+  "@queuedDeliveryUnconfirmedWithError": {
+    "description": "Queued draft bubble label for an unconfirmed send that also recorded a transport error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedResendTooltip": "Send again",
+  "@queuedResendTooltip": {
+    "description": "Tooltip on the queued draft bubble's explicit resend action"
+  },
+  "queuedResendTitle": "Send this draft again?",
+  "@queuedResendTitle": {
+    "description": "Confirmation dialog title before resending an unconfirmed queued draft"
+  },
+  "queuedResendMessage": "It may already have reached OpenCode. Sending again can duplicate it.",
+  "@queuedResendMessage": {
+    "description": "Confirmation dialog body before resending an unconfirmed queued draft"
+  },
+  "queuedResendConfirm": "Send again",
+  "@queuedResendConfirm": {
+    "description": "Confirmation dialog affirmative button for resending an unconfirmed queued draft"
+  },
+  "queuedKeepForReview": "Keep for review",
+  "@queuedKeepForReview": {
+    "description": "Cancel label on the resend and discard dialogs for an unconfirmed queued draft; the draft stays queued for review"
+  },
+  "queuedDiscardUnconfirmedMessage": "Its earlier send was never confirmed; it may already be in the session.",
+  "@queuedDiscardUnconfirmedMessage": {
+    "description": "Discard sheet body for a queued draft whose send was never confirmed"
+  },
+  "setupRuntimeTitle": "Which OpenCode would you like to use?",
+  "@setupRuntimeTitle": {
+    "description": "First-time on-device server runtime selection"
+  },
+  "setupRuntimeOne": "OpenCode 1",
+  "@setupRuntimeOne": {
+    "description": "Existing OpenCode server generation"
+  },
+  "setupRuntimeOneDetail": "Recommended for the widest feature support in this app.",
+  "@setupRuntimeOneDetail": {
+    "description": "Description of the default first-run runtime"
+  },
+  "setupRuntimeTwo": "OpenCode 2 beta",
+  "@setupRuntimeTwo": {
+    "description": "Experimental new OpenCode server generation"
+  },
+  "setupRuntimeTwoDetail": "Try the new server API. Some features are unavailable in this beta.",
+  "@setupRuntimeTwoDetail": {
+    "description": "Honest support note for the optional beta runtime"
+  },
+  "setupRuntimeInstallDetail": "Install {runtime} ({version}) in an app-managed Ubuntu environment. Existing Ubuntu files are reused.",
+  "@setupRuntimeInstallDetail": {
+    "description": "Names the exact runtime and pinned version before installation",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "setupRuntimeUpdateDetail": "The app will install {runtime} {version}, restart only the managed local server, and reconnect this profile.",
+  "@setupRuntimeUpdateDetail": {
+    "description": "Names the selected runtime and pinned version in the update confirmation",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "queuedBannerReview": "{count, plural, =1{1 draft with an unconfirmed send to review.} other{{count} drafts with an unconfirmed send to review.}}",
+  "@queuedBannerReview": {
+    "description": "Connection banner line counting queued drafts whose send was never confirmed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "isolatedTaskAction": "Start a task in a fresh worktree",
+  "@isolatedTaskAction": {
+    "description": "Tooltip and accessibility label of the workspace action that opens the fresh-worktree task sheet"
+  },
+  "isolatedTaskTitle": "New task in a fresh worktree",
+  "@isolatedTaskTitle": {
+    "description": "Title of the fresh-worktree task sheet"
+  },
+  "isolatedTaskIntro": "OpenCode creates a new Git worktree and branch for {project} and runs the project's setup. The worktree stays listed under Manage project until you remove it there.",
+  "@isolatedTaskIntro": {
+    "description": "Explanation shown before the user starts a fresh-worktree task",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskNameLabel": "Worktree name (optional)",
+  "@isolatedTaskNameLabel": {
+    "description": "Label of the optional worktree name field"
+  },
+  "isolatedTaskNameHelper": "Leave empty to let OpenCode choose a name.",
+  "@isolatedTaskNameHelper": {
+    "description": "Helper text under the optional worktree name field"
+  },
+  "isolatedTaskStart": "Create and start",
+  "@isolatedTaskStart": {
+    "description": "Primary button that creates the worktree and waits for it"
+  },
+  "isolatedTaskCreating": "Creating the worktree…",
+  "@isolatedTaskCreating": {
+    "description": "Status while the create request is in flight"
+  },
+  "isolatedTaskCreatingHint": "Stopping now cannot undo a create the server may already be running.",
+  "@isolatedTaskCreatingHint": {
+    "description": "Caution under the creating status: cancelling does not imply server rollback"
+  },
+  "isolatedTaskPreparing": "{name} was created. OpenCode is preparing it…",
+  "@isolatedTaskPreparing": {
+    "description": "Status after the server returned the worktree, before its readiness event",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskReady": "{name} is ready. Opening a blank session…",
+  "@isolatedTaskReady": {
+    "description": "Status once the worktree reported ready and the session is being opened",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskReadyIdle": "{name} is ready.",
+  "@isolatedTaskReadyIdle": {
+    "description": "Status when the worktree is ready but the last open attempt failed and nothing is in flight",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskUnconfirmed": "{name} was created, but its setup status is not confirmed.",
+  "@isolatedTaskUnconfirmed": {
+    "description": "Status when no readiness event arrived within the wait",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskUnconfirmedHint": "You can keep waiting or open it now. Setup may still be running.",
+  "@isolatedTaskUnconfirmedHint": {
+    "description": "Explanation under the unconfirmed status"
+  },
+  "isolatedTaskFailed": "OpenCode could not prepare the worktree.",
+  "@isolatedTaskFailed": {
+    "description": "Status when the server reported worktree.failed"
+  },
+  "isolatedTaskCreateFailed": "The worktree could not be created.",
+  "@isolatedTaskCreateFailed": {
+    "description": "Status when the create request itself failed"
+  },
+  "isolatedTaskFailedKept": "{name} stays listed under Manage project. Nothing was deleted.",
+  "@isolatedTaskFailedKept": {
+    "description": "Note under a failed preparation: the created worktree is kept",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskCancelled": "Stopped waiting.",
+  "@isolatedTaskCancelled": {
+    "description": "Status after the user stopped waiting for readiness"
+  },
+  "isolatedTaskCancelledKept": "{name} was created and stays listed under Manage project.",
+  "@isolatedTaskCancelledKept": {
+    "description": "Note after stopping when the server had already returned the worktree",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskCancelledUnknown": "If OpenCode created the worktree, it appears under Manage project.",
+  "@isolatedTaskCancelledUnknown": {
+    "description": "Note after stopping before the create request answered"
+  },
+  "isolatedTaskOpening": "Opening a blank session in {name}…",
+  "@isolatedTaskOpening": {
+    "description": "Status while switching scope and creating the session",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskOpened": "Session ready in {name}. Nothing has been sent.",
+  "@isolatedTaskOpened": {
+    "description": "Status once the blank session exists in the worktree",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskBranch": "Branch {branch}",
+  "@isolatedTaskBranch": {
+    "description": "Branch line under the worktree status",
+    "placeholders": {
+      "branch": {
+        "type": "String"
+      }
+    }
+  },
+  "isolatedTaskStopWaiting": "Stop waiting",
+  "@isolatedTaskStopWaiting": {
+    "description": "Button that stops waiting for readiness without deleting anything"
+  },
+  "isolatedTaskKeepWaiting": "Keep waiting",
+  "@isolatedTaskKeepWaiting": {
+    "description": "Button that waits another period for the readiness event"
+  },
+  "isolatedTaskOpenAnyway": "Open anyway",
+  "@isolatedTaskOpenAnyway": {
+    "description": "Button that opens a session in a worktree whose setup is unconfirmed"
+  },
+  "isolatedTaskRetryOpen": "Try again",
+  "@isolatedTaskRetryOpen": {
+    "description": "Button that retries opening the session after an open error"
+  },
+  "isolatedTaskClose": "Close",
+  "@isolatedTaskClose": {
+    "description": "Close action on the fresh-worktree task sheet"
+  },
+  "returnBriefTitle": "Unreviewed work",
+  "returnBriefDescription": "For this project on this device. Dismissing keeps conversations unread and requests pending.",
+  "returnBriefUntitled": "Untitled session",
+  "returnBriefStale": "Last observed state. Reconnect or refresh to check current work and requests.",
+  "returnBriefStatusUnknown": "Review status unknown",
+  "returnBriefUnknown": "This server does not report read state. Unreviewed results are unknown.",
+  "returnBriefPartial": "Loaded sessions only. The session list is still incomplete.",
+  "returnBriefAnswer": "Answer",
+  "returnBriefUnreviewed": "Unreviewed session. Open results to check the outcome.",
+  "returnBriefReview": "Review results",
+  "returnBriefContinue": "Continue",
+  "returnBriefMore": "Additional items: {count}. They remain unacknowledged; see the sessions below or Activity.",
+  "@returnBriefMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "returnBriefSaveFailed": "Dismissal was not saved. These items are still unreviewed. Try again.",
+  "returnBriefSaving": "Saving dismissal...",
+  "returnBriefDismiss": "Dismiss shown items",
+  "capsuleTitle": "Context capsule",
+  "capsuleEntry": "Collect notes, errors and screenshots for this task",
+  "capsuleDescription": "Build a bundle for this task. Applying adds it to your existing draft; nothing is sent. Unapplied edits are kept only while this screen is open.",
+  "capsuleNote": "Note",
+  "capsuleError": "Error",
+  "capsuleCode": "Code",
+  "capsuleLabel": "Label",
+  "capsuleExcerpt": "Excerpt",
+  "capsulePaste": "Paste",
+  "capsuleRemove": "Remove",
+  "capsuleAddImage": "Add screenshot or image",
+  "capsulePreview": "Tap to preview",
+  "capsuleApply": "Apply to draft",
+  "capsuleApplied": "Context added to your saved draft. Review it before sending.",
+  "capsuleScopeChanged": "The task, connection or draft changed. Close this capsule and reopen it from the intended task.",
+  "capsuleTextOnly": "This connection accepts text only. You can still collect notes, errors and code.",
+  "capsuleImagesOnly": "Choose a PNG, JPEG, GIF or WebP image. Paste text into an excerpt instead.",
+  "capsuleImageFailed": "Could not add that image. Use up to 5 attachments, 10 MB each and 20 MB total, including your existing draft.",
+  "capsulePasteFailed": "Clipboard text is unavailable. You can type or paste into the excerpt.",
+  "capsuleTextLimit": "Keep each excerpt under 16,000 characters and the bundle under 32,000.",
+  "markdownCopyCode": "Copy code",
+  "markdownCopied": "Code copied",
+  "markdownCopyFailed": "Could not copy code. Try again.",
+  "markdownCopyRetry": "Retry",
+  "markdownWrapCode": "Wrap lines",
+  "markdownScrollCode": "Scroll lines",
+  "markdownExpandCode": "Full screen",
+  "markdownReaderTitle": "Code reader",
+  "markdownSnapshot": "Snapshot of the code when opened. Close and reopen to read later updates.",
+  "tailscaleTitle": "Connect with Tailscale",
+  "tailscaleQuickAdd": "Use your private network and an HTTPS server address",
+  "tailscaleIntro": "Reach OpenCode on another computer through your own Tailscale network. You control sign-in and VPN access in the official Tailscale app.",
+  "tailscaleAppStep": "1. Open your private network",
+  "tailscaleChecking": "Checking for the Tailscale app…",
+  "tailscaleInstalled": "Tailscale is installed. VPN connection is unverified.",
+  "tailscaleMissing": "Tailscale is not installed. Install the official app, then return and check again.",
+  "tailscaleUnknown": "Could not check the app. Try again, or open Tailscale from your phone.",
+  "tailscaleUnsupported": "This device cannot open the Android app. Set up Tailscale on this device yourself, then review your HTTPS address below.",
+  "tailscaleVpnHandoff": "In Tailscale, sign in to the network that can reach your server, approve Android’s VPN prompt if asked, and turn the connection on. OpenCode cannot see or change that VPN state.",
+  "tailscaleReturned": "Welcome back. App presence was checked again; use Test connection on the next screen to check your server.",
+  "tailscaleOpenFailed": "Tailscale could not open. Open it from your launcher, then return here. Your address stays in this form.",
+  "tailscaleOpen": "Open Tailscale",
+  "tailscaleInstall": "Get official Android app",
+  "tailscaleCheckAgain": "Check app again",
+  "tailscaleAddressStep": "2. Review your server address",
+  "tailscaleAddressLabel": "Private HTTPS server address",
+  "tailscaleAddressDetail": "Use the full HTTPS origin printed by Tailscale Serve, such as https://computer.tailnet-name.ts.net. Keep any HTTPS port it prints. A short device name or a raw HTTP port may not provide a valid certificate.",
+  "tailscaleAddressError": "Enter an HTTPS origin with a valid port (1–65535). Remove paths, credentials, query text and fragments. Use the full address from Serve; do not replace https with http.",
+  "tailscaleReviewDetail": "Continue only with an address you recognize. The next screen reviews your server credentials before you explicitly test or save. This app cannot confirm that an address is private from its name alone.",
+  "tailscaleContinue": "Continue to authentication",
+  "tailscaleHelp": "Tailscale setup and recovery",
+  "tailscaleServeHelp": "On the server computer, Tailscale Serve can provide private HTTPS for a local OpenCode port. Use Serve, not public Funnel. Your tailnet access rules still apply. Enabling HTTPS publishes the certificate’s device and tailnet names in a public certificate log, although access stays private. Review the official guide before changing your server.",
+  "tailscaleServeDocs": "Read the official Serve guide",
+  "tailscaleAndroidDocs": "Read the official Android guide",
+  "tailscaleRecovery": "If the server is unreachable, check Tailscale on both devices, the full HTTPS name and port, Serve on the server, and your network’s access rules. A VPN or DNS conflict may also prevent access. Keep HTTPS enabled. Correct the server password if authentication is rejected, then retry Test connection.",
+  "tailscaleEditorDetail": "Your network connection is managed in Tailscale. Test connection checks this OpenCode server, not the VPN. Enter the server’s own username and password here, not your Tailscale login. Setup help keeps these fields intact.",
+  "a2aDraftSaveError": "Draft changes could not be saved. Keep this screen open and retry before leaving.",
+  "a2aRetryDraftSave": "Retry saving draft",
+  "a2aSavingDraft": "Saving draft changes…",
+  "a2aCardVersion": "Agent version: {version}",
+  "@a2aCardVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "a2aSupportedConnection": "A2A 1.0 · JSON-RPC · Text tasks",
+  "a2aTitle": "External agents",
+  "a2aIntro": "Bring an agent you trust.",
+  "a2aBoundary": "Connect to an A2A agent and send a task you choose. Only the text you submit is shared. Your projects, files and other conversations stay on this phone.",
+  "a2aAdd": "Add agent",
+  "a2aEmpty": "No external agents yet. Start with an agent's HTTPS address or public Agent Card URL.",
+  "a2aDeleteAgent": "Delete agent",
+  "a2aDeleteAgentDetail": "Remove this agent, its saved tasks and its credential from this phone. This does not stop remote work or delete data held by the agent.",
+  "a2aDeleteLocal": "Delete local data",
+  "a2aDeletionPending": "Local deletion is incomplete. This agent is unavailable until its remaining data is removed.",
+  "a2aRetryDelete": "Retry deletion",
+  "a2aInspectIntro": "Inspect before you connect",
+  "a2aAddress": "Agent address",
+  "a2aInspect": "Inspect Agent Card",
+  "a2aUnsupported": "Unavailable: this card does not advertise the supported A2A 1.0 JSON-RPC, text and authentication combination on the same origin, or requires an unsupported extension. No task can be sent.",
+  "a2aBearerDetail": "Supply an HTTP bearer credential issued for this agent. It is stored in the phone's secure storage and sent only to the inspected origin. No sign-in or credential sharing with other agents is performed.",
+  "a2aNoAuthDetail": "This card requests no authentication. Do not send private information unless you trust this agent.",
+  "a2aBearer": "Agent bearer credential",
+  "a2aSave": "Save agent",
+  "a2aCardClaim": "Self-reported Agent Card. This app has not verified the agent's identity, skills or billing terms.",
+  "a2aSkills": "Advertised skills",
+  "a2aNewTask": "New task",
+  "a2aTaskPrompt": "Task text",
+  "a2aSendDetail": "Review the text and destination before sending. The agent may use its own compute or services; check its terms. This app cannot estimate or limit that usage.",
+  "a2aReviewTask": "Review task",
+  "a2aUpdateCredential": "Update credential",
+  "a2aSavedTasks": "Saved tasks",
+  "a2aReopenDetail": "Reopening checks the existing task. It never sends your task again.",
+  "a2aDeliveryUnconfirmed": "Delivery unconfirmed",
+  "a2aDraft": "Not sent",
+  "a2aBack": "Back",
+  "a2aTaskTitle": "Agent task",
+  "a2aFresh": "Checked with the agent this visit.",
+  "a2aSavedSnapshot": "Saved locally. Refresh a known task to check its current state.",
+  "a2aCancelTask": "Cancel task",
+  "a2aCancelDetail": "Ask this agent to cancel this task. Work may already have finished, and the agent decides whether cancellation is possible.",
+  "a2aRequestCancel": "Request cancellation",
+  "a2aForgetTask": "Forget saved task",
+  "a2aForgetDetail": "Remove this saved task from the phone. Remote work may continue, including a send whose delivery is unconfirmed. This cannot delete the agent's copy.",
+  "a2aYourReply": "Your reply",
+  "a2aSend": "Send to agent",
+  "a2aReplySameTask": "Reply to this task",
+  "a2aAgentOutput": "Agent output",
+  "a2aBlockedLink": "Unsupported link",
+  "a2aReviewLink": "Review external link",
+  "a2aOmittedContent": "Some output is omitted. This view shows bounded text and links; binary or structured artifacts are not downloaded or executed.",
+  "a2aRefresh": "Refresh task",
+  "a2aSubmitted": "Submitted",
+  "a2aWorking": "Working",
+  "a2aInputRequired": "Your input is needed",
+  "a2aAuthRequired": "Agent requires authentication",
+  "a2aCompleted": "Completed",
+  "a2aFailed": "Failed",
+  "a2aCanceled": "Canceled",
+  "a2aRejected": "Rejected",
+  "a2aUnknown": "Unsupported task state",
+  "a2aAddressError": "Use an HTTPS origin or public Agent Card URL without credentials, query or fragment. HTTP is supported only on this device's loopback address.",
+  "a2aAuthenticationError": "The agent rejected or could not use this credential. Return to the agent to update it, then reopen the saved task.",
+  "a2aUnavailable": "The agent could not be reached or rejected this operation. Refresh a known task to check its state.",
+  "a2aInvalidResponse": "The agent returned an unsupported, oversized or mismatched response. The saved task has not been replaced.",
+  "a2aUncertain": "The agent may have received this message. It will not be resent. If a task ID was confirmed, refresh to check progress; otherwise check with the agent before starting another task.",
+  "a2aStorageError": "Local data could not be saved or removed. Check device storage and retry the local operation. A message without a saved delivery marker is not sent.",
+  "a2aScopeError": "This agent, credential or saved task changed. Close this view and reopen the agent to continue.",
+  "a2aCancelUnconfirmed": "Cancellation is not confirmed. The agent still reports an active task; refresh to check again.",
+  "a2aAuthRequiredDetail": "This agent requested an additional authentication flow, which this client does not support. No automatic login or task continuation will occur.",
+  "a2aUnknownDetail": "This task state is not supported. You can refresh or forget the local record; sending and cancellation remain unavailable.",
+  "fileTable": "Table",
+  "fileSource": "Source",
+  "fileSourceExcerpt": "Up to the first 200,000 characters are displayed. Copy and Save keep the original content.",
+  "filePreviewPartialSource": "Only part of this file is shown. Copy and Save keep the original content.",
+  "fileLineOutsidePreview": "Line {line} is outside this preview. Save the original to read that location.",
+  "@fileLineOutsidePreview": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "fileTableMalformed": "This file has incomplete or inconsistent quoting. Read its source instead.",
+  "fileTableTooLarge": "Table preview supports files up to 256 KB. Read the source or save the original file.",
+  "fileTableTooWide": "This file has more than 32 columns. Read the source or save the original file.",
+  "fileTableFieldTooLong": "A cell exceeds 4,096 characters. Read the source or save the original file.",
+  "fileTableMoreRows": "Showing the first 200 rows. More data remains in the original file.",
+  "fileTableRows": "{rows} rows shown · {columns} columns",
+  "@fileTableRows": {
+    "placeholders": {
+      "rows": {
+        "type": "int"
+      },
+      "columns": {
+        "type": "int"
+      }
+    }
+  },
+  "fileTableColumn": "Column {number}",
+  "@fileTableColumn": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "fileTableEmpty": "This file has no rows.",
+  "fileCopied": "File contents copied",
+  "fileCopyFailed": "Could not copy file contents. Try again.",
+  "fileImage": "Image",
+  "fileSvgUnsupported": "This SVG cannot be shown as a local static image. Read its source or save the original file. External resources, animation and complex SVG features are not supported.",
+  "filePdfEncrypted": "This PDF requires a password or uses unsupported protection. Save the original to open it in a PDF app.",
+  "filePdfLimit": "PDF preview supports files up to 10 MB and the first 200 pages. Save the original to read the full document.",
+  "filePdfUnavailable": "PDF viewing is available on Android 10 or newer. You can still save the original file.",
+  "filePdfCancelled": "PDF loading cancelled. Retry when you are ready.",
+  "filePdfFailed": "This PDF page could not be displayed. Retry or save the original file.",
+  "filePdfPageLimit": "Only the first 200 pages can be previewed. Save the original to read the full document.",
+  "filePdfPage": "Page {page} of {count}",
+  "@filePdfPage": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filePrevious": "Previous",
+  "fileNext": "Next",
+  "fileCancel": "Cancel",
+  "agentAccountTitle": "Codex account",
+  "agentAccountScopeLost": "This connection changed. Return to Servers and open the account for the connected profile.",
+  "agentAccountRefresh": "Refresh account",
+  "agentAccountLoading": "Checking the host account",
+  "agentAccountUnavailable": "Account panel unavailable",
+  "agentAccountReadFailed": "Could not read the account",
+  "agentAccountDisconnected": "Connection interrupted",
+  "agentAccountConnected": "Signed in on the host",
+  "agentAccountSignedOut": "Ready to sign in",
+  "agentAccountInProgress": "Sign-in in progress",
+  "agentAccountNeedsAttention": "Sign-in needs attention",
+  "agentAccountNoAuth": "Host does not require sign-in",
+  "agentAccountApiKey": "API key",
+  "agentAccountHostAuth": "Host authentication",
+  "agentAccountPlan": "Plan: {plan}",
+  "@agentAccountPlan": {
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "agentAccountHostNote": "The official Codex runtime keeps your provider credentials. Account changes apply to this host, including other profiles connected to it.",
+  "agentAccountUnsupportedDetail": "This panel is verified with Codex 0.153.4. The connected runtime may not support these account methods.",
+  "agentAccountReconnectDetail": "Account data and the sign-in code were cleared. Reconnect to refresh. Sign-in will not restart automatically.",
+  "agentAccountSignIn": "Sign in with ChatGPT",
+  "agentAccountSignInNote": "Start an official device-code sign-in on this host. Complete it in your browser; the app never receives your provider tokens.",
+  "agentAccountLimits": "Rate limits",
+  "agentAccountLimitsUnavailable": "Rate limits are unavailable for this account or host.",
+  "agentAccountUsage": "Token usage",
+  "agentAccountUsageUnavailable": "Token usage is unavailable for this account or host.",
+  "agentAccountLifetimeTokens": "Lifetime tokens",
+  "agentAccountPeakTokens": "Peak daily tokens",
+  "agentAccountUsageNote": "Values are reported by the host. Missing values are unknown, not zero. Token counts are not a bill or remaining message allowance.",
+  "agentAccountUpdated": "Last checked {time}",
+  "@agentAccountUpdated": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "agentAccountStarting": "Requesting a sign-in code",
+  "agentAccountWaiting": "Finish sign-in in your browser",
+  "agentAccountCancelling": "Cancelling sign-in",
+  "agentAccountCancelled": "Sign-in cancelled",
+  "agentAccountLoginFailed": "Sign-in did not complete. Check the host and try again.",
+  "agentAccountLoginUncertain": "The host could not confirm sign-in or cancellation. It may still be waiting. Check the official host runtime before starting again.",
+  "agentAccountLoginCompleted": "Sign-in completed. Checking the account.",
+  "agentAccountCodeHint": "Enter this one-time code on the official sign-in page. Keep it private.",
+  "agentAccountOpenSignIn": "Open official sign-in",
+  "agentAccountCancel": "Cancel sign-in",
+  "agentAccountAllowance": "Reported allowance",
+  "agentAccountPercentUsed": "{percent}% used",
+  "@agentAccountPercentUsed": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "agentAccountWindowUnknown": "Window duration unavailable",
+  "agentAccountWindowMinutes": "{minutes}-minute window",
+  "@agentAccountWindowMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "agentAccountWindowHours": "{hours}-hour window",
+  "@agentAccountWindowHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "agentAccountWindowDays": "{days}-day window",
+  "@agentAccountWindowDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "agentAccountResetUnknown": "Reset time unavailable",
+  "agentAccountReset": "Resets {time}",
+  "@agentAccountReset": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "projectFolderChooserTitle": "Choose a project folder",
+  "projectFolderChooserMessage": "OpenCode Mobile does not work in the server’s home folder. Create a new folder or open a project folder to start sessions.",
+  "projectFolderCreate": "Create a new folder",
+  "projectFolderOpen": "Open a project folder",
+  "projectFolderBrowse": "Choose from opened projects",
+  "projectFolderNoCreateHint": "This server cannot create folders from the app. Create the folder on that machine, then open it here by its path.",
+  "projectFolderCreateMessage": "The folder is created in {directory} on this device and opened as the workspace.",
+  "@projectFolderCreateMessage": {
+    "placeholders": {
+      "directory": {
+        "type": "String"
+      }
+    }
+  },
+  "projectFolderNameLabel": "Folder name",
+  "projectFolderNameHint": "my-app",
+  "projectFolderCreateAction": "Create",
+  "projectFolderCancel": "Cancel",
+  "projectFolderOpenMessage": "Enter the full path of a folder on the server. The home folder itself cannot be used; choose a project inside it.",
+  "projectFolderPathLabel": "Folder path",
+  "projectFolderPathHint": "{directory}/my-app",
+  "@projectFolderPathHint": {
+    "placeholders": {
+      "directory": {
+        "type": "String"
+      }
+    }
+  },
+  "projectFolderOpenAction": "Open",
+  "projectFolderCreateSubtitle": "In {directory} on this device",
+  "@projectFolderCreateSubtitle": {
+    "placeholders": {
+      "directory": {
+        "type": "String"
+      }
+    }
+  },
+  "projectFolderOpenSubtitle": "Enter the full path of a folder on the server",
+  "globalSessionsTitle": "All sessions",
+  "globalSessionsSearchLabel": "Search session titles",
+  "globalSessionsSearchHint": "Across every folder on this server",
+  "globalSessionsIncludeArchived": "Include archived",
+  "globalSessionsArchivedShort": "Archived",
+  "globalSessionsAllFolders": "All folders",
+  "globalSessionsUnknownLocation": "Unknown location",
+  "globalSessionsSummary": "{count} sessions in {folders} folders",
+  "@globalSessionsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "folders": {
+        "type": "int"
+      }
+    }
+  },
+  "globalSessionsSummaryOneFolder": "{count} sessions in one folder",
+  "@globalSessionsSummaryOneFolder": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSessionsFilteredSummary": "{count} of {total} sessions shown",
+  "@globalSessionsFilteredSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSessionsEmptyTitle": "No sessions yet",
+  "globalSessionsEmptyMessage": "Sessions from every folder on this server will appear here.",
+  "globalSessionsNoMatchTitle": "No matching sessions",
+  "globalSessionsNoMatchMessage": "Try a shorter title search or include archived sessions.",
+  "globalSessionsRefresh": "Refresh",
+  "globalSessionsLoadMoreFailed": "Could not load more sessions",
+  "globalSessionsOpen": "Open",
+  "globalSessionsContinueHere": "Continue here",
+  "globalSessionsActions": "Session actions",
+  "globalSessionsWorking": "Working",
+  "globalSessionsUntitled": "Untitled session",
+  "workspaceNewSession": "New session",
+  "workspaceIsolatedTask": "Isolated task",
+  "workspaceAllSessions": "All sessions",
+  "workspaceDismissNotice": "Dismiss",
+  "workspaceManageProject": "Manage project",
+  "workspaceManageProjectHint": "Switch project, worktrees, and project health",
+  "workspaceManage": "Manage",
+  "reviewCopiedFile": "Updated file copied",
+  "reviewCopiedPatch": "Patch copied",
+  "reviewCopyFailed": "Could not copy. Try again.",
+  "reviewCopyFile": "Copy updated file",
+  "reviewCopyPatch": "Copy patch",
+  "reviewNoChanges": "No changes",
+  "reviewEmptyDiff": "No diff content",
+  "reviewHideContext": "Hide revealed context",
+  "reviewAdded": "Added",
+  "reviewRemoved": "Removed",
+  "reviewUnchanged": "Unchanged",
+  "reviewPatchNote": "Patch note",
+  "reviewShowNext": "Show next {count} lines",
+  "@reviewShowNext": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewShowPrevious": "Show {count} previous lines ({remaining} hidden)",
+  "@reviewShowPrevious": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewMissingContext": "{count} unchanged lines not included in patch",
+  "@reviewMissingContext": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewCounts": "{added} added, {removed} removed",
+  "@reviewCounts": {
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewLineDescription": "{kind}, line {number}: {text}",
+  "@reviewLineDescription": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "number": {
+        "type": "int"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewNoteDescription": "{kind}: {text}",
+  "@reviewNoteDescription": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDiscoveryNewChatsModel": "New chats: {model}",
+  "@settingsDiscoveryNewChatsModel": {
+    "description": "More destination summary showing the model used by new chats, not an existing session.",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingValueTitle": "Keep your work moving.",
+  "onboardingValueBody": "Ask your coding agent for a change, review the result, and pick up where you left off.",
+  "onboardingConnect": "Connect to a server",
+  "onboardingDemoNote": "A simulated session. No server needed.",
+  "onboardingMoreSetup": "More setup options",
+  "onboardingPrivateNetwork": "Reach a server over your private network",
+  "onboardingRunOnPhone": "Run OpenCode on this phone",
+  "onboardingTermuxNote": "Guided Termux setup",
+  "onboardingSetupGuide": "Setup guide",
+  "onboardingSaveConnect": "Save & connect",
+  "onboardingSaveChanges": "Save changes",
+  "onboardingTermuxSetup": "Termux setup",
+  "activityClearHere": "All clear here",
+  "activityStatusIncomplete": "Status incomplete",
+  "activityCheckedLocationsClear": "Nothing needs you in the checked locations.",
+  "activityUnknownStatusDetail": "No requests loaded. Some server activity is still unknown.",
+  "activityCheckAgain": "Check again",
+  "activitySavedServers": "Saved servers",
+  "activitySelectedLocationsOnly": "Last selected locations only",
+  "activityBackgroundUpdates": "Background updates",
+  "activityBackgroundOffDetail": "Off · choose when to stay connected",
+  "activityPendingCount": "{count} pending",
+  "@activityPendingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityUnknownCount": "{count} unknown",
+  "@activityUnknownCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "demoTaskTitle": "Try a small change",
+  "demoTaskInstruction": "Send the sample prompt below, then review the proposed edit.",
+  "reviewTitle": "Review",
+  "modelChoiceProvidersTitle": "Providers not loaded",
+  "modelChoiceProvidersSummary": "{count, plural, =1{1 signed-in provider not loaded. View details} other{{count} signed-in providers not loaded. View details}}",
+  "@modelChoiceProvidersSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelChoiceReloadProviders": "Reload providers",
+  "modelChoiceStagedAgentHint": "Applied with your model choice",
+  "modelChoiceAgentTitle": "Choose an agent",
+  "modelChoiceDone": "Done",
+  "modelChoicePartialSaveError": "Model saved. Agent choice was not confirmed. Try again.",
+  "modelChoiceModelSaveError": "Could not confirm the model choice. Check your selection and try again.",
+  "workIdle": "Idle",
+  "workStartedInBackground": "Started in background",
+  "workRunInBackground": "Run in background",
+  "workBackgroundPending": "Requesting background work…",
+  "workBackgroundRequested": "Background work requested. Status will update when the server reports it.",
+  "workBackgroundUnavailable": "This server has not confirmed support for moving work to the background.",
+  "workBackgroundEligible": "Run in background is available while a supported agent task or command is blocking this chat.",
+  "workBackgroundAutomatic": "Ask your agent to delegate work in the background. Results return to this chat automatically.",
+  "oc2DiscoveryConnect": "Connect OpenCode 2",
+  "@oc2DiscoveryConnect": {
+    "description": "Opens the existing-server editor for someone looking for OpenCode 2; does not force the protocol."
+  },
+  "oc2DiscoveryEditorTitle": "OpenCode 2",
+  "oc2DiscoveryExisting": "Use a server that is already running.",
+  "oc2DiscoveryTypes": "OpenCode 1 or 2",
+  "oc2DiscoveryAutodetect": "Detects OpenCode 1 or 2 automatically.",
+  "oc2DiscoveryPhone": "Set up OpenCode 1 or 2 on this phone.",
+  "setupSwitchUse": "Try {runtime}",
+  "@setupSwitchUse": {
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "setupSwitchConfirmTitle": "Switch to {runtime}?",
+  "@setupSwitchConfirmTitle": {
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "setupSwitchConfirmDetail": "Stops this phone’s server and running tasks. Chats, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.",
+  "setupSwitchConfirm": "Switch version",
+  "setupSwitchInstalled": "On this phone: {runtime}",
+  "@setupSwitchInstalled": {
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "setupSwitchPending": "The runtime switch has not finished. Retry the selected runtime or return to the previous one. Your saved runtime data is retained.",
+  "setupSwitchReturn": "Return to {runtime}",
+  "@setupSwitchReturn": {
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "setupSwitchRetry": "Retry {runtime}",
+  "@setupSwitchRetry": {
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "setupSwitchInProgressHint": "You can leave this screen and return to check progress.",
+  "setupSwitchPreparing": "Preparing the runtime switch…",
+  "setupSwitchFailed": "Could not finish switching runtimes. Check the setup output, then retry or return to the previous runtime.",
+  "setupSwitchConnect": "Connect to {runtime}",
+  "@setupSwitchConnect": {
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "setupSwitchLegacyTwo": "This OpenCode 2 installation keeps its existing data. Switching it to OpenCode 1 is not available.",
+  "setupSwitchProfileName": "This phone · {runtime}",
+  "@setupSwitchProfileName": {
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "setupSwitchReady": "The local runtime is ready. Your current remote connection is unchanged.",
+  "setupSwitchMissingCredential": "The saved credential for the previous runtime is unavailable. Its data is retained; restore the saved profile before returning.",
+  "setupSwitchOwnDescription": "Connect an existing OpenCode 1 or OpenCode 2 server by address.",
+  "setupSwitchProgressTitle": "Switching to {runtime}",
+  "@setupSwitchProgressTitle": {
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "setupSwitchDataNotice": "Each version keeps its own chats and provider settings. Project files and project configuration are shared.",
+  "setupSwitchHelp": "Setup help",
+  "setupSwitchReadyToConnect": "Ready to connect",
+  "setupSwitchStopped": "Ready to start",
+  "setupSwitchAttention": "Needs attention",
+  "setupSwitchLocalRuntime": "On this phone"
+}

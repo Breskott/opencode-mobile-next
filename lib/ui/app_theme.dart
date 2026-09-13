@@ -72,6 +72,42 @@ abstract final class AppTheme {
   /// platform face, so the display face reads as identity, not as noise.
   static const displayFamily = 'AppDisplay';
 
+  /// Arabic uses the platform's Arabic-capable sans fallback rather than
+  /// Latin display metrics. Zero tracking preserves connected glyph shaping.
+  static ThemeData forLocale(ThemeData theme, Locale locale) {
+    if (locale.languageCode != 'ar') return theme;
+    TextStyle? arabic(TextStyle? style) => style?.copyWith(
+      fontFamily: 'sans-serif',
+      fontFamilyFallback: const [
+        'Noto Sans Arabic',
+        'Noto Naskh Arabic',
+        'Arial',
+      ],
+      letterSpacing: 0,
+    );
+    TextTheme adapt(TextTheme text) => TextTheme(
+      displayLarge: arabic(text.displayLarge),
+      displayMedium: arabic(text.displayMedium),
+      displaySmall: arabic(text.displaySmall),
+      headlineLarge: arabic(text.headlineLarge),
+      headlineMedium: arabic(text.headlineMedium),
+      headlineSmall: arabic(text.headlineSmall),
+      titleLarge: arabic(text.titleLarge),
+      titleMedium: arabic(text.titleMedium),
+      titleSmall: arabic(text.titleSmall),
+      bodyLarge: arabic(text.bodyLarge),
+      bodyMedium: arabic(text.bodyMedium),
+      bodySmall: arabic(text.bodySmall),
+      labelLarge: arabic(text.labelLarge),
+      labelMedium: arabic(text.labelMedium),
+      labelSmall: arabic(text.labelSmall),
+    );
+    return theme.copyWith(
+      textTheme: adapt(theme.textTheme),
+      primaryTextTheme: adapt(theme.primaryTextTheme),
+    );
+  }
+
   /// Ceiling for the global text scaler. The system setting passes through
   /// untouched below this — smaller-than-default choices included — and only
   /// runaway scales are capped. Critical flows are tested at this value.

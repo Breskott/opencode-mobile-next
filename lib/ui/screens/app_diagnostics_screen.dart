@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../l10n/app_localizations.dart';
+
 import 'package:flutter/services.dart';
 
 import '../../api/product_repository.dart';
@@ -25,18 +28,19 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
   Future<void> _copy() async {
     await Clipboard.setData(ClipboardData(text: _diagnostics.reportText()));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Diagnostics copied')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_screenCopy(context).e7SettingsDetailUi0)),
+    );
   }
 
   Future<void> _send() async {
+    final copy = _screenCopy(context);
     if (_sending || _diagnostics.isEmpty) return;
     setState(() => _sending = true);
     try {
       final repository = await widget.controller.prepareActionRepository();
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting. Try again.');
+        throw ProductException(copy.e7SettingsUi19);
       }
       final count = _diagnostics.count;
       await repository.writeClientLog(
@@ -44,16 +48,17 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
         extra: _diagnostics.reportJson(),
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Diagnostics sent to OpenCode')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(copy.e7SettingsDetailUi2)));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Could not send diagnostics: '
-            '${_diagnostics.sanitize(error.toString(), limit: 300)}',
+            copy.e7SettingsDiagnosticSendError(
+              _diagnostics.sanitize(error.toString(), limit: 300),
+            ),
           ),
         ),
       );
@@ -65,9 +70,9 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
   Future<void> _clear() async {
     final confirmed = await showConfirmSheet(
       context,
-      title: 'Clear diagnostics?',
-      message: 'This removes every captured error from process memory.',
-      confirmLabel: 'Clear',
+      title: _screenCopy(context).e7SettingsDetailUi3,
+      message: _screenCopy(context).e7SettingsDetailUi4,
+      confirmLabel: _screenCopy(context).e7SettingsDetailUi5,
       icon: AppIconography.delete,
       destructive: true,
     );
@@ -84,7 +89,7 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('App diagnostics')),
+      appBar: AppBar(title: Text(_screenCopy(context).e7SettingsUi88)),
       body: SafeArea(
         child: ListenableBuilder(
           listenable: _diagnostics,
@@ -99,14 +104,12 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Private until you send it',
+                          _screenCopy(context).e7SettingsDetailUi7,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Handled app errors are redacted and kept only in memory. '
-                          'Chat messages and file contents are not collected. Nothing '
-                          'is sent automatically.',
+                          _screenCopy(context).e7SettingsDetailUi8,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 color: Theme.of(
@@ -140,19 +143,25 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                                       ),
                                     )
                                   : const Icon(AppIconography.send),
-                              label: Text(_sending ? 'Sending…' : 'Send'),
+                              label: Text(
+                                _sending
+                                    ? _screenCopy(context).queuedSending
+                                    : _screenCopy(context).e7SettingsDetailUi10,
+                              ),
                             ),
                             OutlinedButton.icon(
                               key: const ValueKey('copy-app-diagnostics'),
                               onPressed: entries.isEmpty ? null : _copy,
                               icon: const Icon(AppIcons.copy),
-                              label: const Text('Copy'),
+                              label: Text(_screenCopy(context).fileCopy),
                             ),
                             TextButton.icon(
                               key: const ValueKey('clear-app-diagnostics'),
                               onPressed: entries.isEmpty ? null : _clear,
                               icon: const Icon(AppIconography.delete),
-                              label: const Text('Clear'),
+                              label: Text(
+                                _screenCopy(context).e7SettingsDetailUi5,
+                              ),
                             ),
                           ],
                         ),
@@ -161,7 +170,7 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                             key: const ValueKey('gated-client-diagnostics'),
                             padding: const EdgeInsets.only(top: 10),
                             child: Text(
-                              "This server doesn't accept client logs",
+                              _screenCopy(context).e7SettingsDetailUi12,
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Theme.of(
@@ -175,7 +184,7 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                   ),
                 ),
                 if (entries.isEmpty)
-                  const SliverFillRemaining(
+                  SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
                       child: Padding(
@@ -185,10 +194,10 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                           children: [
                             Icon(AppIconography.privacy, size: 38),
                             SizedBox(height: 14),
-                            Text('No captured app errors'),
+                            Text(_screenCopy(context).e7SettingsDetailUi13),
                             SizedBox(height: 6),
                             Text(
-                              'Handled Flutter, platform, and startup errors will appear here for this app run.',
+                              _screenCopy(context).e7SettingsDetailUi14,
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -199,7 +208,9 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                 else ...[
                   SliverToBoxAdapter(
                     child: SectionLabel(
-                      '${entries.length} handled error${entries.length == 1 ? '' : 's'}',
+                      _screenCopy(
+                        context,
+                      ).e7SettingsDiagnosticTotal(entries.length),
                     ),
                   ),
                   SliverList.separated(
@@ -216,8 +227,8 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         subtitle: Text(
-                          '${entry.source} · ${_time(entry.timestamp)}'
-                          '${entry.occurrences > 1 ? ' · ${entry.occurrences} occurrences' : ''}',
+                          '\u2066${entry.source} · ${_time(entry.timestamp)}\u2069'
+                          '${entry.occurrences > 1 ? ' · ${_screenCopy(context).e7SettingsDiagnosticOccurrences(entry.occurrences)}' : ''}',
                         ),
                         childrenPadding: const EdgeInsets.fromLTRB(
                           16,
@@ -229,6 +240,7 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                         children: [
                           SelectionArea(
                             child: Text(
+                              textDirection: TextDirection.ltr,
                               [
                                 entry.message,
                                 if (entry.stack.isNotEmpty) entry.stack,
@@ -253,3 +265,7 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
     );
   }
 }
+
+AppLocalizations _screenCopy(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+    lookupAppLocalizations(const Locale('en'));

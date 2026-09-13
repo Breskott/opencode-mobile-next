@@ -12,7 +12,12 @@ import 'return_brief_card.dart';
 /// Workspace owns placement; this panel owns only the displayed snapshot and
 /// explicit dismissal. It starts no refresh, polling, or model request.
 class ReturnBriefPanel extends StatefulWidget {
-  const ReturnBriefPanel({super.key, required this.controller});
+  const ReturnBriefPanel({
+    super.key,
+    required this.controller,
+    this.inventoryStatusInParent = false,
+  });
+  final bool inventoryStatusInParent;
   final ConnectionController controller;
   @override
   State<ReturnBriefPanel> createState() => _ReturnBriefPanelState();
@@ -104,10 +109,10 @@ class _ReturnBriefPanelState extends State<ReturnBriefPanel> {
           !c.isConnected ||
           c.permissionsLoading ||
           c.questionsLoading ||
-          c.formsLoading ||
+          (c.capabilities.forms && c.formsLoading) ||
           c.permissionsError != null ||
           c.questionsError != null ||
-          c.formsError != null;
+          (c.capabilities.forms && c.formsError != null);
       final brief = ReturnBrief.build(
         sessions: c.sortedSessions(),
         readStateKnown: c.supportsSessionReadState,
@@ -130,6 +135,7 @@ class _ReturnBriefPanelState extends State<ReturnBriefPanel> {
       );
       return ReturnBriefCard(
         brief: brief,
+        inventoryStatusInParent: widget.inventoryStatusInParent,
         stale: stale,
         saving: _saving,
         saveFailed: _saveFailed,

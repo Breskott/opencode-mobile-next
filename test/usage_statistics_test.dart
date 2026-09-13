@@ -519,7 +519,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        tester.widget<Text>(find.byKey(const ValueKey('usage-total-cost'))).data,
+        tester
+            .widget<Text>(find.byKey(const ValueKey('usage-total-cost')))
+            .data,
         r'$3.42',
       );
       expect(find.text('Timezone: Asia/Dubai'), findsOneWidget);
@@ -535,7 +537,9 @@ void main() {
         findsOneWidget,
       );
       expect(
-        tester.widget<Text>(find.byKey(const ValueKey('usage-total-cost'))).data,
+        tester
+            .widget<Text>(find.byKey(const ValueKey('usage-total-cost')))
+            .data,
         r'$3.42',
       );
       expect(tester.takeException(), isNull);

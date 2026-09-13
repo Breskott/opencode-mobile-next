@@ -74,10 +74,7 @@ void main() {
         password: 'wrong',
       );
       try {
-        await expectLater(
-          transport.health(),
-          throwsA(isA<Api2AuthRequired>()),
-        );
+        await expectLater(transport.health(), throwsA(isA<Api2AuthRequired>()));
       } finally {
         transport.close();
         await server.close(force: true);

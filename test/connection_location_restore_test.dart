@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
@@ -13,7 +14,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _RealHttpOverrides extends HttpOverrides {}
 
 class _ControlledApi extends OpenCodeApi {
-  _ControlledApi() : super(baseUrl: 'http://127.0.0.1:1');
+  _ControlledApi(this.script) : super(baseUrl: 'http://127.0.0.1:1');
+
+  final _ServerScript script;
 
   final healthResult = Completer<Health>();
 
@@ -21,7 +24,11 @@ class _ControlledApi extends OpenCodeApi {
   Future<Health> health() => healthResult.future;
 
   @override
-  Future<List<Session>> sessions() async => const [];
+  Future<List<Session>> sessions() async {
+    await script.sessionsGate?.future;
+    if (script.sessionsFail) throw ApiException('Session refresh unavailable');
+    return const [];
+  }
 
   @override
   Future<Map<String, String>> sessionStatuses() async => const {};
@@ -84,6 +91,10 @@ class _ServerScript {
   final bool currentProjectFails;
   final seenDirectories = <String?>[];
   int projectListCalls = 0;
+  Completer<void>? sessionsGate;
+  bool sessionsFail = false;
+  bool workspacesUnavailable = false;
+  List<WorkspaceInfo> workspaces = const [];
 }
 
 class _LocationRepository extends SdkProductRepository {
@@ -130,7 +141,34 @@ class _LocationRepository extends SdkProductRepository {
   }
 
   @override
-  Future<List<WorkspaceInfo>> listWorkspaces() async => const [];
+  Future<List<WorkspaceInfo>> listWorkspaces() async {
+    if (script.workspacesUnavailable) {
+      throw const ProductException('Workspace list unavailable');
+    }
+    return script.workspaces;
+  }
+}
+
+class _DelayedLocationStore extends ProfileStore {
+  _DelayedLocationStore(SharedPreferences prefs) : super(prefs: prefs);
+
+  Completer<void>? locationGate;
+  bool locationWriteStarted = false;
+
+  @override
+  Future<void> setLocation(
+    String profileId, {
+    String? directory,
+    String? workspace,
+  }) async {
+    locationWriteStarted = true;
+    await locationGate?.future;
+    await super.setLocation(
+      profileId,
+      directory: directory,
+      workspace: workspace,
+    );
+  }
 }
 
 WorkspaceProject _project(
@@ -157,13 +195,15 @@ ServerProfile _profile() =>
 Future<ConnectionController> _connect(
   WidgetTester tester,
   ProfileStore store,
-  _ServerScript script,
-) async {
+  _ServerScript script, {
+  Future<void> Function(ConnectionController)? duringConnect,
+  ServerProfile? profile,
+}) async {
   final apis = <_ControlledApi>[];
   final controller = ConnectionController(
     store,
     apiFactory: (_) {
-      final api = _ControlledApi();
+      final api = _ControlledApi(script);
       apis.add(api);
       return api;
     },
@@ -177,8 +217,9 @@ Future<ConnectionController> _connect(
               onError: onError,
             ),
   );
-  final connect = controller.connect(_profile());
+  final connect = controller.connect(profile ?? _profile());
   await tester.pump();
+  await duringConnect?.call(controller);
   apis.first.healthResult.complete(Health(healthy: true, version: '1'));
   await connect;
   await tester.pump();
@@ -238,6 +279,191 @@ void main() {
     );
   });
 
+  testWidgets(
+    'explicit project B survives a fresh controller with only server cwd in the catalog',
+    (tester) async {
+      final store = await _store();
+      final script = _ServerScript(
+        currentProjects: {'/work/b': _project('global', '/')},
+        projects: [_project('server-cwd', '/work/a', updatedAt: 99)],
+      );
+      final first = await _connect(tester, store, script);
+      await first.selectLocation(directory: '/work/b');
+      expect(store.locationFor('server')?.directory, '/work/b');
+      first.dispose();
+
+      final restartedStore = ProfileStore(prefs: store.prefs);
+      final restarted = await _connect(tester, restartedStore, script);
+      expect(restarted.directory, '/work/b');
+      expect(restartedStore.locationFor('server')?.directory, '/work/b');
+      restarted.dispose();
+    },
+  );
+
+  testWidgets(
+    'initial discovery cannot replace a saved selection during connect or after restore',
+    (tester) async {
+      final store = await _store();
+      await store.setLocation('server', directory: '/work/b');
+      final controller = await _connect(
+        tester,
+        store,
+        _ServerScript(currentProjects: {'/work/b': _project('b', '/work/b')}),
+        duringConnect: (controller) =>
+            controller.selectInitialLocation(directory: '/work/a'),
+      );
+      expect(controller.directory, '/work/b');
+      await controller.selectInitialLocation(directory: '/work/a');
+      expect(controller.directory, '/work/b');
+      expect(store.locationFor('server')?.directory, '/work/b');
+      controller.dispose();
+    },
+  );
+
+  testWidgets(
+    'project selection is saved before a slow failed refresh completes',
+    (tester) async {
+      final store = await _store();
+      final script = _ServerScript();
+      final controller = await _connect(tester, store, script);
+      await controller.selectLocation(directory: '/work/a');
+      script.sessionsGate = Completer<void>();
+      script.sessionsFail = true;
+      final selecting = controller.selectLocation(directory: '/work/b');
+      await tester.pump();
+      expect(controller.locationLoading, isTrue);
+      expect(store.locationFor('server')?.directory, '/work/b');
+      script.sessionsGate!.complete();
+      await selecting;
+      expect(controller.locationError, contains('Session refresh unavailable'));
+      expect(store.locationFor('server')?.directory, '/work/b');
+      controller.dispose();
+    },
+  );
+
+  testWidgets(
+    'explicit project choices restore independently for each profile',
+    (tester) async {
+      final store = await _store();
+      final script = _ServerScript();
+      final first = await _connect(tester, store, script);
+      await first.selectLocation(directory: '/work/b');
+      first.dispose();
+      final otherProfile = ServerProfile(
+        id: 'other',
+        name: 'other',
+        baseUrl: 'http://127.0.0.1:1',
+      );
+      final other = await _connect(
+        tester,
+        ProfileStore(prefs: store.prefs),
+        script,
+        profile: otherProfile,
+      );
+      await other.selectLocation(directory: '/work/c');
+      other.dispose();
+      final restarted = await _connect(
+        tester,
+        ProfileStore(prefs: store.prefs),
+        script,
+      );
+      expect(restarted.directory, '/work/b');
+      expect(store.locationFor('other')?.directory, '/work/c');
+      restarted.dispose();
+    },
+  );
+
+  for (final unavailable in [false, true]) {
+    testWidgets(
+      'remote workspace stays selected when its catalog is ${unavailable ? 'unavailable' : 'missing the entry'}',
+      (tester) async {
+        final store = await _store();
+        await store.setLocation(
+          'server',
+          directory: '/work/b',
+          workspace: 'remote-b',
+        );
+        final project = _project('b', '/work/b');
+        final script = _ServerScript(
+          currentProjects: {'/work/b': project},
+          projects: [project],
+        )..workspacesUnavailable = unavailable;
+        final controller = await _connect(tester, store, script);
+        expect(controller.directory, '/work/b');
+        expect(controller.workspace, 'remote-b');
+        expect(store.locationFor('server')?.workspace, 'remote-b');
+        expect(
+          controller.locationNotice,
+          contains('Couldn’t verify this workspace'),
+        );
+        expect(controller.pendingLocationRevalidation, isTrue);
+
+        script.workspacesUnavailable = false;
+        script.workspaces = const [
+          WorkspaceInfo(
+            id: 'remote-b',
+            projectID: 'b',
+            name: 'Remote B',
+            type: 'remote',
+            directory: '/work/b',
+          ),
+        ];
+        await controller.revalidateRestoredLocation();
+        expect(controller.directory, '/work/b');
+        expect(controller.workspace, 'remote-b');
+        expect(controller.locationNotice, isNull);
+        expect(controller.pendingLocationRevalidation, isFalse);
+        controller.dispose();
+      },
+    );
+  }
+
+  testWidgets(
+    'profile deletion drains a delayed location write without resurrecting its selection',
+    (tester) async {
+      const secure = MethodChannel(
+        'plugins.it_nomads.com/flutter_secure_storage',
+      );
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(secure, (_) async => null);
+      const background = MethodChannel('oc/background');
+      messenger.setMockMethodCallHandler(background, (_) async => null);
+      addTearDown(() => messenger.setMockMethodCallHandler(secure, null));
+      addTearDown(() => messenger.setMockMethodCallHandler(background, null));
+      final original = await _store();
+      final store = _DelayedLocationStore(original.prefs);
+      await store.upsert(_profile());
+      await store.setLocation('keeper', directory: '/work/keeper');
+      final controller = await _connect(tester, store, _ServerScript());
+      store.locationWriteStarted = false;
+      store.locationGate = Completer<void>();
+      final selecting = controller.selectLocation(directory: '/work/b');
+      await tester.pump();
+      expect(store.locationWriteStarted, isTrue);
+      var deletionFinished = false;
+      final deleting = controller.deleteProfileAndLocalData('server').then((
+        result,
+      ) {
+        deletionFinished = true;
+        return result;
+      });
+      await tester.pump();
+      expect(deletionFinished, isFalse);
+      store.locationGate!.complete();
+      await selecting;
+      final result = await deleting;
+      expect(result.removedProfile, isTrue);
+      expect(store.locationFor('server'), isNull);
+      expect(store.profileScopedPreferenceKeys('server'), isEmpty);
+      final restartedStore = ProfileStore(prefs: store.prefs);
+      await restartedStore.load();
+      expect(restartedStore.locationFor('server'), isNull);
+      expect(restartedStore.locationFor('keeper')?.directory, '/work/keeper');
+      controller.dispose();
+    },
+  );
+
   testWidgets('relaunch restores the saved directory', (tester) async {
     final store = await _store();
     await store.setLocation('server', directory: '/work/acme');
@@ -295,31 +521,31 @@ void main() {
     },
   );
 
-  testWidgets('a missing directory falls back to the newest project', (
-    tester,
-  ) async {
-    final store = await _store();
-    await store.setLocation('server', directory: '/deleted/worktree');
-    final controller = await _connect(
-      tester,
-      store,
-      _ServerScript(
-        projects: [
-          _project('old', '/work/old', updatedAt: 10),
-          _project('newest', '/work/newest', updatedAt: 30),
-          _project('global', '/', updatedAt: 99),
-          _project('middle', '/work/middle', updatedAt: 20),
-        ],
-      ),
-    );
+  testWidgets(
+    'catalog omission keeps the saved directory with an unverified notice',
+    (tester) async {
+      final store = await _store();
+      await store.setLocation('server', directory: '/deleted/worktree');
+      final controller = await _connect(
+        tester,
+        store,
+        _ServerScript(
+          projects: [
+            _project('old', '/work/old', updatedAt: 10),
+            _project('newest', '/work/newest', updatedAt: 30),
+            _project('global', '/', updatedAt: 99),
+            _project('middle', '/work/middle', updatedAt: 20),
+          ],
+        ),
+      );
 
-    expect(controller.directory, '/work/newest');
-    expect(controller.workspace, isNull);
-    expect(controller.locationNotice, contains('/deleted/worktree'));
-    expect(controller.locationNotice, contains('Opened newest'));
-    expect(store.locationFor('server')?.directory, '/work/newest');
-    controller.dispose();
-  });
+      expect(controller.directory, '/deleted/worktree');
+      expect(controller.workspace, isNull);
+      expect(controller.locationNotice, contains('Your selection was kept'));
+      expect(store.locationFor('server')?.directory, '/deleted/worktree');
+      controller.dispose();
+    },
+  );
 
   testWidgets(
     'an unavailable project list restores optimistically and re-checks later',
@@ -349,7 +575,7 @@ void main() {
   );
 
   testWidgets(
-    'a re-check that proves the directory gone opens the newest project',
+    'a later catalog omission cannot replace the selected directory',
     (tester) async {
       final store = await _store();
       await store.setLocation('server', directory: '/work/gone');
@@ -368,24 +594,23 @@ void main() {
       await controller.revalidateRestoredLocation();
       await tester.pump();
 
-      expect(controller.directory, '/work/b');
-      expect(controller.locationNotice, contains('/work/gone'));
-      expect(controller.locationNotice, contains('Opened b'));
-      expect(store.locationFor('server')?.directory, '/work/b');
+      expect(controller.directory, '/work/gone');
+      expect(controller.locationNotice, contains('Your selection was kept'));
+      expect(store.locationFor('server')?.directory, '/work/gone');
       controller.dispose();
     },
   );
 
-  testWidgets('a server with no projects returns to its root with a notice', (
+  testWidgets('an empty catalog keeps the saved directory with a notice', (
     tester,
   ) async {
     final store = await _store();
     await store.setLocation('server', directory: '/deleted/worktree');
     final controller = await _connect(tester, store, _ServerScript());
 
-    expect(controller.directory, isNull);
-    expect(controller.locationNotice, contains('no longer available'));
-    expect(store.locationFor('server'), isNull);
+    expect(controller.directory, '/deleted/worktree');
+    expect(controller.locationNotice, contains('Your selection was kept'));
+    expect(store.locationFor('server')?.directory, '/deleted/worktree');
     controller.dispose();
   });
 
@@ -428,9 +653,9 @@ void main() {
       ),
     );
 
-    expect(controller.directory, isNull);
-    expect(controller.workspaceChoiceRequired, isTrue);
-    expect(store.locationFor('server'), isNull);
+    expect(controller.directory, '/deleted/worktree');
+    expect(controller.workspaceChoiceRequired, isFalse);
+    expect(store.locationFor('server')?.directory, '/deleted/worktree');
     controller.dispose();
   });
 

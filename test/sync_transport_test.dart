@@ -10,45 +10,48 @@ class _RealHttpOverrides extends HttpOverrides {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('workspace sync start uses the generated location-scoped contract', () async {
-    await HttpOverrides.runZoned(() async {
-      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      late String method;
-      late Uri uri;
-      var sawBody = false;
-      server.listen((request) async {
-        method = request.method;
-        uri = request.uri;
-        final body = await utf8.decoder.bind(request).join();
-        sawBody = body.isNotEmpty;
-        request.response.headers.contentType = ContentType.json;
-        request.response.write(jsonEncode(true));
-        await request.response.close();
-      });
-
-      final api = OpenCodeApi(
-        baseUrl: 'http://${server.address.host}:${server.port}',
-      );
-      try {
-        final repository = SdkProductRepository(api.sdkClient)
-          ..setLocation(directory: '/work/acme', workspace: 'workspace-1');
-
-        final started = await repository.startWorkspaceSync();
-
-        expect(method, 'POST');
-        expect(uri.path, '/sync/start');
-        expect(uri.queryParameters, {
-          'directory': '/work/acme',
-          'workspace': 'workspace-1',
+  test(
+    'workspace sync start uses the generated location-scoped contract',
+    () async {
+      await HttpOverrides.runZoned(() async {
+        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        late String method;
+        late Uri uri;
+        var sawBody = false;
+        server.listen((request) async {
+          method = request.method;
+          uri = request.uri;
+          final body = await utf8.decoder.bind(request).join();
+          sawBody = body.isNotEmpty;
+          request.response.headers.contentType = ContentType.json;
+          request.response.write(jsonEncode(true));
+          await request.response.close();
         });
-        expect(sawBody, isFalse);
-        expect(started, isTrue);
-      } finally {
-        api.close();
-        await server.close(force: true);
-      }
-    }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
-  });
+
+        final api = OpenCodeApi(
+          baseUrl: 'http://${server.address.host}:${server.port}',
+        );
+        try {
+          final repository = SdkProductRepository(api.sdkClient)
+            ..setLocation(directory: '/work/acme', workspace: 'workspace-1');
+
+          final started = await repository.startWorkspaceSync();
+
+          expect(method, 'POST');
+          expect(uri.path, '/sync/start');
+          expect(uri.queryParameters, {
+            'directory': '/work/acme',
+            'workspace': 'workspace-1',
+          });
+          expect(sawBody, isFalse);
+          expect(started, isTrue);
+        } finally {
+          api.close();
+          await server.close(force: true);
+        }
+      }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
+    },
+  );
 
   test('session steal posts the exact generated body and returns the '
       'confirmed session', () async {
@@ -90,47 +93,49 @@ void main() {
     }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
   });
 
-  test('declared steal errors surface OpenCode detail as the product message',
-      () async {
-    await HttpOverrides.runZoned(() async {
-      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      server.listen((request) async {
-        await request.drain<void>();
-        request.response.statusCode = HttpStatus.badRequest;
-        request.response.headers.contentType = ContentType.json;
-        request.response.write(
-          jsonEncode({
-            '_tag': 'InvalidRequestError',
-            'requestID': 'request-steal-1',
-            'message': 'session belongs to another project',
-          }),
+  test(
+    'declared steal errors surface OpenCode detail as the product message',
+    () async {
+      await HttpOverrides.runZoned(() async {
+        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        server.listen((request) async {
+          await request.drain<void>();
+          request.response.statusCode = HttpStatus.badRequest;
+          request.response.headers.contentType = ContentType.json;
+          request.response.write(
+            jsonEncode({
+              '_tag': 'InvalidRequestError',
+              'requestID': 'request-steal-1',
+              'message': 'session belongs to another project',
+            }),
+          );
+          await request.response.close();
+        });
+
+        final api = OpenCodeApi(
+          baseUrl: 'http://${server.address.host}:${server.port}',
         );
-        await request.response.close();
-      });
+        try {
+          final repository = SdkProductRepository(api.sdkClient)
+            ..setLocation(directory: '/work/acme', workspace: 'workspace-1');
 
-      final api = OpenCodeApi(
-        baseUrl: 'http://${server.address.host}:${server.port}',
-      );
-      try {
-        final repository = SdkProductRepository(api.sdkClient)
-          ..setLocation(directory: '/work/acme', workspace: 'workspace-1');
-
-        await expectLater(
-          repository.stealSessionIntoWorkspace('session-7'),
-          throwsA(
-            isA<ProductException>().having(
-              (error) => error.message,
-              'message',
-              'session belongs to another project',
+          await expectLater(
+            repository.stealSessionIntoWorkspace('session-7'),
+            throwsA(
+              isA<ProductException>().having(
+                (error) => error.message,
+                'message',
+                'session belongs to another project',
+              ),
             ),
-          ),
-        );
-      } finally {
-        api.close();
-        await server.close(force: true);
-      }
-    }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
-  });
+          );
+        } finally {
+          api.close();
+          await server.close(force: true);
+        }
+      }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
+    },
+  );
 
   test('an old server without sync keeps the bounded product error', () async {
     await HttpOverrides.runZoned(() async {

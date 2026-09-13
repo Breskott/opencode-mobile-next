@@ -101,26 +101,26 @@ void main() {
       expect(capabilities.permissionGranted, isTrue);
     });
 
+    test('a missing handler is a bare device, not a crash', () async {
+      // Android without the plugin registered (an old engine, a torn-down
+      // activity) used to raise MissingPluginException straight through
+      // capabilities(), which only caught PlatformException.
+      _installChannel(null);
+      final capabilities = await TermuxBridge.capabilities();
+      expect(capabilities.installed, isFalse);
+      expect(await TermuxBridge.openTermux(), isFalse);
+    });
+
     test(
-      'a missing handler is a bare device, not a crash',
+      'a missing handler makes run() a bridge error, not a raw throw',
       () async {
-        // Android without the plugin registered (an old engine, a torn-down
-        // activity) used to raise MissingPluginException straight through
-        // capabilities(), which only caught PlatformException.
         _installChannel(null);
-        final capabilities = await TermuxBridge.capabilities();
-        expect(capabilities.installed, isFalse);
-        expect(await TermuxBridge.openTermux(), isFalse);
+        await expectLater(
+          TermuxBridge.run('echo hi'),
+          throwsA(isA<TermuxBridgeException>()),
+        );
       },
     );
-
-    test('a missing handler makes run() a bridge error, not a raw throw', () async {
-      _installChannel(null);
-      await expectLater(
-        TermuxBridge.run('echo hi'),
-        throwsA(isA<TermuxBridgeException>()),
-      );
-    });
 
     test('a PlatformException still surfaces its own message', () async {
       _installChannel(

@@ -13,9 +13,7 @@ Future<void> _pumpMarkdown(WidgetTester tester, String data) async {
 }
 
 TextSpan _codeSpan(WidgetTester tester) {
-  final selectable = tester.widget<SelectableText>(
-    find.byType(SelectableText),
-  );
+  final selectable = tester.widget<SelectableText>(find.byType(SelectableText));
   return selectable.textSpan!;
 }
 

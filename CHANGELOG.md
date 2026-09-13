@@ -2,6 +2,195 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 1.0.42+43 — Local checkpoint (2026-09-11, later)
+
+Built and verified locally; no CI, no public download.
+
+### AI Team · Gas City — Sprint B: decisions, controls, merge
+
+- **A small front on the host** (`tool/host/cp_front/front.py`, Python
+  stdlib) sits on the computer's Tailscale address in front of the
+  supervisor. It identifies each phone by its Tailscale login, allows
+  writes only for the logins you list, gives every mutation an idempotent
+  receipt, passes event streams through, and adds merge readiness, merge
+  request approval, a boundary-checked merge and a policy document. The
+  app finds it on port 8373 and prefers it over a bare supervisor.
+- **Answer decisions from Activity**: choices, approvals and free-text
+  prompts send to exactly the requesting interaction; the row shows
+  "Sent · waiting for the host to confirm", becomes "Answered" only when
+  the host confirms, and never re-sends on its own ("Sent, unconfirmed —
+  check on the host before re-sending" with a manual Retry). Destructive
+  confirmations are two-step and red. Failed runs offer Retry, restart or
+  reassign, View logs and Cancel work.
+- **Notifications** for a decision requested, a run failed, a run ready for
+  review and a run completed, with fixed copy and ids only, deep-linking to
+  the exact gate.
+- **Agent controls**: Message, Nudge, Pause/Resume, Stop and Restart
+  (two-step), Reassign work; **run controls**: Cancel run / Close batch;
+  **Start a run** sends an objective with a supervision level to the
+  planner (Mayor) and shows "Planning… (Mayor)" until a run appears.
+- **Merge from the phone**: readiness checklist, one-confirmation Approve
+  request, and a two-step Merge that names the missing line or the host
+  boundary that blocks it. Force-merge, reset and worktree deletion do not
+  exist on the phone.
+- **Supervision policy** and boundaries from the host shown read-only on
+  the run overview and in the start sheet.
+- Host guides for Ubuntu (verified), Fedora/Arch, macOS and Windows (WSL)
+  with a performance disclaimer per kind of computer, chosen when you add
+  the host. Controls exist only when the host front grants them; a plain
+  supervisor stays read-only.
+
+### Evidence
+
+- `docs/qa/ai-team/write-proof-2026-09-11.md`: live writes through the
+  front against Gas City 1.4.1 on the PC — sling with idempotent replay,
+  nudge round trip (host refused: agent busy), stop, close batch, merge
+  readiness — with receipts and stream events.
+- Full suite: 3590 tests, 0 failed (table in `docs/qa/ai-team/README.md`).
+- On-device: Android 15's seccomp rule found and worked around (Android
+  builds of gc/bd/dolt running natively in Termux, agent in proot); polecat
+  proven end to end on the emulator; on the phone the polecat starts in 7 s
+  and works while Termux is on screen, but Android kills the tree once
+  Termux goes to the background — mitigation documented for Sprint C.
+
+## 1.0.41+42 — Local checkpoint (2026-09-11)
+
+Built and verified locally; no CI, no public download.
+
+### AI Team · Gas City (optional plugin, read-only first slice)
+
+- **New optional plugin**, off by default and enabled per saved server:
+  More › Plugins › AI Team. Add a Gas City supervisor by address and city,
+  or accept the discovery card the app shows once when the connected
+  computer runs one. Turning it off removes every cached value and secret
+  for that server; deleting the server sweeps them too.
+- **Workspace card**: one number, one sentence, one action. Agents
+  working, progress bar with done / working / blocked segments, the runs
+  that matter, and "Showing data from HH:MM · host unreachable" when stale.
+- **AI Team home**: Runs (active → waiting/blocked → completed), Agents
+  (fleet with state words and glyphs), Needs you (decisions, failed runs,
+  review-ready, blocked agents). Host chip opens technical details with
+  provider, version, city and the side-by-side terms ("Work · bead",
+  "Run · convoy", "Agent · polecat").
+- **Run detail**: Overview answers the five questions top to bottom;
+  Work tab as a grouped list (graph view on wide screens with a
+  dependency DAG, critical path and blocked chain); Agents tab scoped to
+  the run; Timeline with filters and jump-to-latest.
+- **Agent detail**: identity, runtime, current work, a step log parsed
+  from the agent's transcript, and a live output page (mono, LTR,
+  Follow). Output stays on the phone after the host forgets the session.
+- **Activity**: AI Team items join the list in priority order; the gate
+  sheet renders choices, confirmations, free-text prompts, gate beads and
+  classified run failures, read-only for now ("Answer this on the host").
+- **Usage**: "Team today · $0.42 est. · 12.4k tokens" on the run overview
+  and agent runtime; always labelled estimated, absent without data.
+- Every screen is localised (English and Arabic, ~350 new strings), laid
+  out at 320 dp and 2.5× text, LTR and RTL.
+
+### Plumbing
+
+- `OrchestrationGateway` domain interfaces and product models with total
+  state enums (`unknown` never crashes a list); Gas City DTOs and mappers
+  that round-trip every recorded response; a Python fixture server with
+  `normal`, `blocked`, `failed` and `stream-drop` scenarios; the read
+  adapter with a host probe, problem+json handling and an SSE client that
+  resumes with `Last-Event-ID`. Plain `http://` is accepted only to
+  loopback and tailnet addresses (100.64.0.0/10, `*.ts.net`).
+- Plugin-off regression: with the plugin off, Workspace, Activity and
+  Settings contain no plugin widgets and the OpenCode gateway sees exactly
+  the same calls as before.
+- Real read proof against Gas City 1.4.1 on the PC, on loopback and over
+  the tailnet: counts match `curl`, stream resume has no duplicates.
+
+### Evidence
+
+`docs/qa/ai-team/README.md` indexes the two spike reports (PC and phone),
+the recordings, the read proof and the suite results. Headline from the
+phone spike: Android 15's seccomp policy kills Go 1.26 programs that call
+`faccessat2`; Gas City, beads and Dolt rebuilt for `GOOS=android` run
+natively in Termux, with only the OpenCode agent inside proot.
+
+## 1.0.40+41 — Local checkpoint (2026-09-10, later)
+
+Built and verified locally on the same day as 1.0.39; no CI, no public
+download.
+
+### Delegation and approvals
+
+- **Approvals per session** (Session menu › Session actions › Approvals):
+  keep *Ask each time*, or let this phone answer each permission request
+  with "Allow once" while it is connected. Subagent sessions can inherit the
+  setting, and can override it. Nothing is ever saved as "always allow";
+  the server's own deny rules still apply; a failed automatic answer leaves
+  the request visible.
+- Background subagents were proven end to end against a real OpenCode 2
+  server and a live model: the parent gets one result card, it survives a
+  cold restart, and the child stays out of the main session list.
+
+### Reliability found during that proof
+
+- Connecting to an OpenCode 2 host from a profile saved as OpenCode 1 no
+  longer fails with a cast error; the app redetects the generation.
+- A provider rejecting the model's credentials no longer shows an empty red
+  banner; the banner names the problem and where to fix it.
+- Choosing a model without a variant no longer reports "This choice is no
+  longer available" after it was applied.
+- A tool the server ran is never labelled "Not run".
+
+### Handoff and launch surfaces
+
+- **Continue on computer**: copy the exact terminal command that resumes
+  this session in its project folder (OpenCode 1 or 2), with a pointer to
+  session export for moving between servers.
+- **Continue on phone**: show a QR with an `opencode-mobile://session` link
+  that opens the same session on another phone holding the same saved
+  server; unknown servers get an honest "not saved on this phone" state.
+- **Pinned-session shortcuts**: long-press the app icon for up to four
+  pinned sessions (titles only), plus Connect and New task.
+- **Quick Settings tile**: shows how many requests need you and opens
+  Activity; reads a cached count so it works while the app is closed.
+
+## 1.0.39+40 — Local checkpoint (2026-09-10)
+
+Arabic and right-to-left support, plus the daily-use fixes batch. Built and
+verified locally; no CI run and no public download yet.
+
+### Language
+
+- Choose **System, English or Arabic** in Settings › Appearance. The choice
+  is saved on the device, applies immediately without leaving the current
+  screen, and survives restart. A failed save keeps the previous language
+  and offers a retry.
+- Every app-authored label, hint, error, sheet and empty state is translated.
+  Code, file paths, URLs, commands, model and provider names and everything
+  the server sends stay in their original form and direction.
+- Narrow phones at 2.5x text keep every control reachable in both layout
+  directions; long captions wrap instead of pushing buttons off the edge.
+
+### Chat and workspace
+
+- Background subagent results arrive as clear result cards with a link to
+  the child session instead of raw wrapper text.
+- The session menu groups the everyday views (Results, Find, Timeline,
+  Changes, Todos, Subagents) as chips and folds display toggles and session
+  actions into two expandable groups.
+- While a run is active, the delivery hint or the Steer/Queue toggle appears
+  only once you start typing. OpenCode 1 says plainly that steering mid-run
+  needs OpenCode 2.
+- Workspace and Activity show one inventory notice instead of repeating
+  "loaded / incomplete" in three places, and say when a count is partial.
+
+### Files and review
+
+- Files remembers source-first ordering and your code wrap choice per saved
+  server; the same choice follows code into snapshots, previews and diffs.
+- Review controls stay reachable at compact sizes with large text.
+
+### Appearance
+
+- The theme picker previews real text, code, buttons and surfaces before you
+  apply; browsing never changes the live theme, and Apply is explicit.
+
 ## 1.0.37+38 — Unreleased
 
 Changes since **1.0.34+35** (2026-09-06), whose source is tagged

@@ -33,7 +33,7 @@ class SessionsTab extends StatelessWidget {
             if (sessions.isEmpty && !controller.isConnected)
               Center(
                 child: Text(
-                  'Not connected',
+                  _chatL10n(context).chatUiNotConnected,
                   style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     color: AppTheme.mutedOf(Theme.of(context)),
                   ),
@@ -50,12 +50,12 @@ class SessionsTab extends StatelessWidget {
                       color: AppTheme.mutedOf(Theme.of(context)),
                     ),
                     const SizedBox(height: 12),
-                    const Text('No chats yet'),
+                    Text(_chatL10n(context).chatUiNoChatsYet),
                     const SizedBox(height: 12),
                     FilledButton.icon(
                       onPressed: () => _newChat(context),
                       icon: const Icon(AppIconography.add),
-                      label: const Text('Start one'),
+                      label: Text(_chatL10n(context).chatUiStartOne),
                     ),
                   ],
                 ),
@@ -84,7 +84,7 @@ class SessionsTab extends StatelessWidget {
                           actions: () => [
                             ContextMenuAction(
                               menuKey: const ValueKey('session-menu-open'),
-                              label: 'Open',
+                              label: _chatL10n(context).globalSessionsOpen,
                               icon: AppIconography.externalLink,
                               onSelected: () => Navigator.of(
                                 context,
@@ -92,7 +92,7 @@ class SessionsTab extends StatelessWidget {
                             ),
                             ContextMenuAction(
                               menuKey: const ValueKey('session-menu-rename'),
-                              label: 'Rename',
+                              label: _chatL10n(context).chatUiRename,
                               icon: AppIconography.edit,
                               onSelected: () => unawaited(
                                 _sessionAction(context, 'rename', s),
@@ -100,7 +100,7 @@ class SessionsTab extends StatelessWidget {
                             ),
                             ContextMenuAction(
                               menuKey: const ValueKey('session-menu-delete'),
-                              label: 'Delete',
+                              label: _chatL10n(context).promptStashDelete,
                               icon: AppIconography.delete,
                               destructive: true,
                               onSelected: () => unawaited(
@@ -162,7 +162,10 @@ class SessionsTab extends StatelessWidget {
                                       ),
                                     ),
                               title: Text(
-                                presentedSessionTitle(s, fallback: 'New chat'),
+                                presentedSessionTitle(
+                                  s,
+                                  fallback: _chatL10n(context).commandNewChat,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -173,19 +176,24 @@ class SessionsTab extends StatelessWidget {
                                 needsAttention: needsAttention,
                                 time: _fmtSessionTime(
                                   s.time?.updated ?? s.time?.created ?? 0,
+                                  context,
                                 ),
                               ),
                               trailing: PopupMenuButton<String>(
                                 onSelected: (v) =>
                                     _sessionAction(context, v, s),
-                                itemBuilder: (_) => const [
+                                itemBuilder: (_) => [
                                   PopupMenuItem(
                                     value: 'rename',
-                                    child: Text('Rename'),
+                                    child: Text(
+                                      _chatL10n(context).chatUiRename,
+                                    ),
                                   ),
                                   PopupMenuItem(
                                     value: 'delete',
-                                    child: Text('Delete'),
+                                    child: Text(
+                                      _chatL10n(context).promptStashDelete,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -207,7 +215,7 @@ class SessionsTab extends StatelessWidget {
                 heroTag: 'newChat',
                 onPressed: () => _newChat(context),
                 icon: const Icon(AppIconography.add),
-                label: const Text('New chat'),
+                label: Text(_chatL10n(context).commandNewChat),
               ),
             ),
           ],
@@ -221,7 +229,7 @@ class SessionsTab extends StatelessWidget {
     final title = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rename chat'),
+        title: Text(_chatL10n(context).chatUiRenameChat),
         content: TextFormField(
           initialValue: draftTitle,
           autofocus: true,
@@ -230,11 +238,11 @@ class SessionsTab extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(_chatL10n(context).projectFolderCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, draftTitle.trim()),
-            child: const Text('Save'),
+            child: Text(_chatL10n(context).fileSave),
           ),
         ],
       ),
@@ -245,18 +253,19 @@ class SessionsTab extends StatelessWidget {
     }
   }
 
-  Future<bool> _confirmDelete(
-    BuildContext context,
-    Session session,
-  ) => showConfirmSheet(
-    context,
-    icon: AppIconography.delete,
-    title: 'Delete chat?',
-    message:
-        '“${session.title?.isNotEmpty == true ? session.title : 'Untitled chat'}” and its history will be permanently removed.',
-    confirmLabel: 'Delete',
-    destructive: true,
-  );
+  Future<bool> _confirmDelete(BuildContext context, Session session) =>
+      showConfirmSheet(
+        context,
+        icon: AppIconography.delete,
+        title: _chatL10n(context).chatUiDeleteChat,
+        message: _chatL10n(context).chatUiDeleteChatBody(
+          session.title?.isNotEmpty == true
+              ? session.title!
+              : _chatL10n(context).chatUiUntitledChat,
+        ),
+        confirmLabel: _chatL10n(context).promptStashDelete,
+        destructive: true,
+      );
 
   Future<void> _sessionAction(
     BuildContext context,
@@ -328,19 +337,19 @@ class _SessionRowMeta extends StatelessWidget {
       if (needsAttention)
         _SessionChip(
           key: Key('session-needs-you-${session.id}'),
-          label: 'Needs you',
+          label: _chatL10n(context).chatUiNeedsYou,
           color: AppTheme.statusColor(theme, AppStatusTone.attention),
         ),
       if (retrying)
         _SessionChip(
           key: Key('session-retrying-${session.id}'),
-          label: 'Retrying',
+          label: _chatL10n(context).chatUiRetrying,
           color: AppTheme.statusColor(theme, AppStatusTone.attention),
         ),
       if (compacting)
         _SessionChip(
           key: Key('session-compacting-${session.id}'),
-          label: 'Compacting…',
+          label: _chatL10n(context).chatUiCompacting,
           color: AppTheme.statusColor(theme, AppStatusTone.progress),
           leading: SizedBox.square(
             dimension: 10,
@@ -370,8 +379,9 @@ class _SessionRowMeta extends StatelessWidget {
                 style: TextStyle(color: theme.colorScheme.error),
               ),
               TextSpan(
-                text:
-                    ' · ${summary.files} ${summary.files == 1 ? 'file' : 'files'}',
+                text: _chatL10n(
+                  context,
+                ).chatUiChangedFilesSuffix(summary.files),
               ),
             ],
           ),

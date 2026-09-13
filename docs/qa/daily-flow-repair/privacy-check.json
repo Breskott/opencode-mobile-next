@@ -1,0 +1,29 @@
+{
+  "scope": "Audit notes/results/assets plus files changed since395f374 and untracked files in every UI refinement worktree, including frosted navigation and daily-flow repair branches; Mobbin helper/tool schema included. No credential values in report.",
+  "worktrees": [
+    "oc_app-ui-integration",
+    "oc_app-ui-model",
+    "oc_app-ui-icons",
+    "oc_app-ui-files",
+    "oc_app-ui-onboarding",
+    "oc_app-ui-activity",
+    "oc_app-ui-settings",
+    "oc_app-ui-workspace",
+    "oc_app-ui-chat",
+    "oc_app-ui-shell",
+    "oc_app-ui-review",
+    "oc_app-frosted-navigation",
+    "oc_app-chat-task-repair",
+    "oc_app-project-restart-repair",
+    "oc_app-termux-discovery-repair",
+    "oc_app-v2-subagent-repair"
+  ],
+  "files_scanned": 3916,
+  "bytes_scanned": 433711411,
+  "exact_credential_match_files": [],
+  "literal_bearer_header_files": [],
+  "unreadable_files": [],
+  "status": "PASS",
+  "committed_blobs_scanned": 748,
+  "credential_match_git_blobs": []
+}

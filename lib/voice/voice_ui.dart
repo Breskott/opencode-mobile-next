@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
 import 'controller.dart';
+import 'presentation.dart';
+
 import 'audio.dart';
 import 'device.dart';
 import 'model_manager.dart';
@@ -11,6 +13,8 @@ import 'model_manifest.dart';
 import '../ui/app_theme.dart';
 import '../platform/platform_capabilities.dart';
 import '../l10n/app_localizations.dart';
+
+AppLocalizations _voiceStrings(BuildContext context) => voiceStrings(context);
 
 Future<bool> showVoiceModelSetupSheet(
   BuildContext context,
@@ -70,11 +74,11 @@ class _VoiceModelSetupSheet extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Local voice input',
+                              _voiceStrings(context).e7VoiceUiLocalInput,
                               style: theme.textTheme.titleLarge,
                             ),
                             Text(
-                              'Choose a multilingual Whisper INT8 model',
+                              _voiceStrings(context).e7VoiceUiChooseModel,
                               style: theme.textTheme.bodySmall,
                             ),
                           ],
@@ -100,9 +104,9 @@ class _VoiceModelSetupSheet extends StatelessWidget {
                           color: theme.colorScheme.primary,
                         ),
                         const SizedBox(width: 10),
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            'Audio stays on this device. Transcription is local and audio is discarded after use. The one-time model download requires internet access.',
+                            _voiceStrings(context).e7VoiceUiPrivacyDownload,
                           ),
                         ),
                       ],
@@ -116,9 +120,7 @@ class _VoiceModelSetupSheet extends StatelessWidget {
                         color: theme.colorScheme.errorContainer,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
-                        'Android reports no built-in microphone. Voice input may still work with a wired or USB microphone.',
-                      ),
+                      child: Text(_voiceStrings(context).e7VoiceUiNoBuiltInMic),
                     ),
                     const SizedBox(height: 14),
                   ],
@@ -142,15 +144,20 @@ class _VoiceModelSetupSheet extends StatelessWidget {
                     key: ValueKey(manager.language),
                     initialValue: manager.language,
                     isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Transcription language',
+                    decoration: InputDecoration(
+                      labelText: _voiceStrings(context).e7VoiceUiLanguage,
                       border: OutlineInputBorder(),
                     ),
                     items: [
                       for (final language in VoiceLanguage.values)
                         DropdownMenuItem(
                           value: language,
-                          child: Text(language.label),
+                          child: Text(
+                            voiceLanguageLabel(
+                              language,
+                              _voiceStrings(context),
+                            ),
+                          ),
                         ),
                     ],
                     onChanged: busy
@@ -165,8 +172,11 @@ class _VoiceModelSetupSheet extends StatelessWidget {
                       liveRegion: true,
                       excludeSemantics: true,
                       label: manager.state == VoiceModelState.verifying
-                          ? 'Verifying downloaded model'
-                          : 'Downloading voice model ${((manager.progress?.fraction ?? 0) * 10).floor() * 10} percent',
+                          ? _voiceStrings(context).e7VoiceUiVerifying
+                          : _voiceStrings(context).e7VoiceUiDownloadPercent(
+                              ((manager.progress?.fraction ?? 0) * 10).floor() *
+                                  10,
+                            ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -178,8 +188,17 @@ class _VoiceModelSetupSheet extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             manager.state == VoiceModelState.verifying
-                                ? 'Verifying size and SHA-256…'
-                                : '${formatModelBytes(manager.progress?.received ?? 0)} of ${formatModelBytes(manager.selectedPack.downloadBytes)}',
+                                ? _voiceStrings(context).e7VoiceUiVerifyChecksum
+                                : _voiceStrings(
+                                    context,
+                                  ).e7VoiceUiDownloadProgress(
+                                    formatModelBytes(
+                                      manager.progress?.received ?? 0,
+                                    ),
+                                    formatModelBytes(
+                                      manager.selectedPack.downloadBytes,
+                                    ),
+                                  ),
                           ),
                         ],
                       ),
@@ -190,11 +209,19 @@ class _VoiceModelSetupSheet extends StatelessWidget {
                     Semantics(
                       liveRegion: true,
                       child: Text(
-                        'Model setup failed: ${manager.error}',
+                        _voiceStrings(context).e7VoiceUiSetupFailed(
+                          voiceErrorText(
+                            manager.error,
+                            _voiceStrings(context),
+                            manager: manager,
+                          ),
+                        ),
                         style: TextStyle(color: theme.colorScheme.error),
                       ),
                     ),
                   ],
+                  if (manager.error != null)
+                    _VoiceTechnicalDetails(error: manager.error!),
                   const SizedBox(height: 12),
                   _AdaptiveVoiceActions(
                     secondary: OutlinedButton(
@@ -203,7 +230,11 @@ class _VoiceModelSetupSheet extends StatelessWidget {
                       onPressed: busy
                           ? manager.cancelDownload
                           : () => Navigator.pop(context, false),
-                      child: Text(busy ? 'Cancel download' : 'Not now'),
+                      child: Text(
+                        busy
+                            ? _voiceStrings(context).e7VoiceUiCancelDownload
+                            : _voiceStrings(context).e7VoiceUiNotNow,
+                      ),
                     ),
                     primary: FilledButton.icon(
                       key: const Key('voice-model-primary-action'),
@@ -222,8 +253,8 @@ class _VoiceModelSetupSheet extends StatelessWidget {
                       ),
                       label: Text(
                         manager.isInstalled(manager.selectedPack)
-                            ? 'Use model'
-                            : 'Download',
+                            ? _voiceStrings(context).e7VoiceUiUseModel
+                            : _voiceStrings(context).e7VoiceUiDownload,
                       ),
                     ),
                   ),
@@ -240,20 +271,26 @@ class _VoiceModelSetupSheet extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete ${pack.label}?'),
+        title: Text(
+          _voiceStrings(
+            context,
+          ).e7VoiceUiDeletePack(voicePackLabel(pack, _voiceStrings(context))),
+        ),
         content: Text(
-          'This removes ${formatModelBytes(pack.downloadBytes)} from app-private storage. You can download it again later.',
+          _voiceStrings(
+            context,
+          ).e7VoiceUiDeleteDetail(formatModelBytes(pack.downloadBytes)),
         ),
         actions: [
           TextButton(
             style: _voiceButtonStyle(),
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep'),
+            child: Text(_voiceStrings(context).e7VoiceUiKeep),
           ),
           FilledButton(
             style: _voiceButtonStyle(),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(_voiceStrings(context).e7VoiceUiDelete),
           ),
         ],
       ),
@@ -283,9 +320,11 @@ class _VoiceModelCard extends StatelessWidget {
     final support = manager.supportFor(pack);
     final enabled = !busy && support.supported;
     final badges = [
-      if (pack.id == 'base') 'default',
-      if (pack.id == 'small') 'optional',
-      installed ? 'installed' : 'not installed',
+      if (pack.id == 'base') _voiceStrings(context).e7VoiceUiDefaultBadge,
+      if (pack.id == 'small') _voiceStrings(context).e7VoiceUiOptionalBadge,
+      installed
+          ? _voiceStrings(context).e7VoiceUiInstalledBadge
+          : _voiceStrings(context).e7VoiceUiNotInstalledBadge,
     ];
 
     return Semantics(
@@ -315,15 +354,24 @@ class _VoiceModelCard extends StatelessWidget {
               selected: selected,
               enabled: enabled,
               excludeSemantics: true,
-              label:
-                  '${pack.label}, ${formatModelBytes(pack.downloadBytes)}, ${badges.join(', ')}. ${pack.description}',
+              label: _voiceStrings(context).e7VoiceUiPackSemantics(
+                voicePackLabel(pack, _voiceStrings(context)),
+                formatModelBytes(pack.downloadBytes),
+                badges.join(_voiceStrings(context).e7ModelUiListSeparator),
+                voicePackDescription(pack, _voiceStrings(context)),
+              ),
               hint: !support.supported
-                  ? support.reason
+                  ? voiceSupportReason(
+                      manager,
+                      pack,
+                      support,
+                      _voiceStrings(context),
+                    )
                   : busy
-                  ? 'Unavailable while model setup is in progress'
+                  ? _voiceStrings(context).e7VoiceUiSetupBusy
                   : selected
-                  ? 'Selected'
-                  : 'Double tap to select',
+                  ? _voiceStrings(context).e7VoiceUiSelected
+                  : _voiceStrings(context).e7VoiceUiSelectHint,
               child: InkWell(
                 key: Key('voice-model-${pack.id}'),
                 borderRadius: BorderRadius.circular(16),
@@ -358,41 +406,57 @@ class _VoiceModelCard extends StatelessWidget {
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
-                                  pack.label,
+                                  voicePackLabel(pack, _voiceStrings(context)),
                                   style: theme.textTheme.titleMedium,
                                 ),
                                 if (pack.id == 'base')
-                                  const Chip(
-                                    label: Text('Default'),
+                                  Chip(
+                                    label: Text(
+                                      _voiceStrings(context).e7VoiceUiDefault,
+                                    ),
                                     visualDensity: VisualDensity.compact,
                                   ),
                                 if (pack.id == 'small')
-                                  const Chip(
-                                    label: Text('Optional'),
+                                  Chip(
+                                    label: Text(
+                                      _voiceStrings(context).e7VoiceUiOptional,
+                                    ),
                                     visualDensity: VisualDensity.compact,
                                   ),
                                 if (installed)
-                                  const Chip(
+                                  Chip(
                                     avatar: Icon(Icons.check_rounded, size: 16),
-                                    label: Text('Installed'),
+                                    label: Text(
+                                      _voiceStrings(context).e7VoiceUiInstalled,
+                                    ),
                                     visualDensity: VisualDensity.compact,
                                   ),
                               ],
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              '${formatModelBytes(pack.downloadBytes)} download',
+                              _voiceStrings(context).e7VoiceUiDownloadSize(
+                                formatModelBytes(pack.downloadBytes),
+                              ),
                               style: theme.textTheme.labelLarge,
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              pack.description,
+                              voicePackDescription(
+                                pack,
+                                _voiceStrings(context),
+                              ),
                               style: theme.textTheme.bodySmall,
                             ),
                             if (!support.supported) ...[
                               const SizedBox(height: 6),
                               Text(
-                                support.reason!,
+                                voiceSupportReason(
+                                  manager,
+                                  pack,
+                                  support,
+                                  _voiceStrings(context),
+                                )!,
                                 style: TextStyle(
                                   color: theme.colorScheme.error,
                                 ),
@@ -418,14 +482,14 @@ class _VoiceModelCard extends StatelessWidget {
                       style: _voiceButtonStyle(),
                       onPressed: () => manager.redownloadPack(pack),
                       icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Re-download'),
+                      label: Text(_voiceStrings(context).e7VoiceUiRedownload),
                     ),
                     TextButton.icon(
                       key: Key('voice-delete-${pack.id}'),
                       style: _voiceButtonStyle(),
                       onPressed: onDelete,
                       icon: const Icon(Icons.delete_outline_rounded),
-                      label: const Text('Delete'),
+                      label: Text(_voiceStrings(context).e7VoiceUiDelete),
                     ),
                   ],
                 ),
@@ -629,19 +693,11 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).voiceInputInterrupted,
-                  ),
+                  Text(_voiceStrings(context).voiceInputInterrupted),
                   TextButton(
                     onPressed: _close,
                     style: _voiceButtonStyle(),
-                    child: Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).voiceInputClose,
-                    ),
+                    child: Text(_voiceStrings(context).voiceInputClose),
                   ),
                 ],
               ),
@@ -671,11 +727,7 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
                   _VoiceStatus(controller: controller),
                   if (widget.conversation) ...[
                     const SizedBox(height: 12),
-                    Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).voiceConversationInstructions,
-                    ),
+                    Text(_voiceStrings(context).voiceConversationInstructions),
                   ],
                   const SizedBox(height: 16),
                   if (controller.state == VoiceComposerState.draft)
@@ -686,9 +738,11 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
                       maxLines: 8,
                       autofocus: true,
                       decoration: InputDecoration(
-                        labelText: 'Review transcript',
-                        helperText: lookupAppLocalizations(
-                          Localizations.localeOf(context),
+                        labelText: _voiceStrings(
+                          context,
+                        ).e7VoiceUiReviewTranscript,
+                        helperText: _voiceStrings(
+                          context,
                         ).voiceReviewExplicitAction,
                         alignLabelWithHint: true,
                         border: const OutlineInputBorder(),
@@ -698,26 +752,34 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
                     Semantics(
                       liveRegion: true,
                       child: Text(
-                        '${controller.error}',
+                        voiceErrorText(
+                          controller.error,
+                          _voiceStrings(context),
+                          manager: controller.models,
+                        ),
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.error,
                         ),
                       ),
                     ),
                     const SizedBox(height: 12),
+                    if (controller.error != null)
+                      _VoiceTechnicalDetails(error: controller.error!),
                     if (controller.error is VoicePermissionDenied &&
                         (controller.error! as VoicePermissionDenied).permanent)
                       OutlinedButton.icon(
                         style: _voiceButtonStyle(),
                         onPressed: voiceDevicePlatform.openAppSettings,
                         icon: const Icon(Icons.settings_outlined),
-                        label: const Text('Open app settings'),
+                        label: Text(
+                          _voiceStrings(context).e7VoiceUiOpenSettings,
+                        ),
                       ),
                     FilledButton.icon(
                       style: _voiceButtonStyle(),
                       onPressed: controller.startListening,
                       icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Try again'),
+                      label: Text(_voiceStrings(context).e7VoiceUiRetry),
                     ),
                   ],
                   if (controller.state == VoiceComposerState.idle) ...[
@@ -725,7 +787,9 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
                       style: _voiceButtonStyle(),
                       onPressed: controller.startListening,
                       icon: const Icon(Icons.mic_rounded),
-                      label: const Text('Start listening'),
+                      label: Text(
+                        _voiceStrings(context).e7VoiceUiStartListening,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 16),
@@ -735,14 +799,14 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
                         key: const Key('voice-composer-cancel'),
                         style: _voiceButtonStyle(),
                         onPressed: _close,
-                        child: const Text('Cancel'),
+                        child: Text(_voiceStrings(context).e7VoiceUiCancel),
                       ),
                       primary: FilledButton.icon(
                         key: const Key('insert-voice-draft'),
                         style: _voiceButtonStyle(),
                         onPressed: () => unawaited(_insert(send: false)),
                         icon: const Icon(Icons.add_rounded),
-                        label: const Text('Insert'),
+                        label: Text(_voiceStrings(context).e7VoiceUiInsert),
                       ),
                       tertiary: widget.conversation
                           ? null
@@ -751,7 +815,9 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
                               style: _voiceButtonStyle(),
                               onPressed: () => unawaited(_insert(send: true)),
                               icon: const Icon(Icons.arrow_upward_rounded),
-                              label: const Text('Insert & send'),
+                              label: Text(
+                                _voiceStrings(context).e7VoiceUiInsertSend,
+                              ),
                             ),
                     )
                   else
@@ -759,7 +825,7 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
                       key: const Key('voice-composer-cancel'),
                       style: _voiceButtonStyle(),
                       onPressed: _close,
-                      child: const Text('Cancel'),
+                      child: Text(_voiceStrings(context).e7VoiceUiCancel),
                     ),
                   const SizedBox(height: 8),
                   TextButton.icon(
@@ -782,7 +848,7 @@ class _VoiceComposerSheetState extends State<_VoiceComposerSheet>
                           },
                     icon: const Icon(Icons.tune_rounded),
                     label: Text(
-                      '${controller.models.selectedPack.label} · ${controller.models.language.label}',
+                      '${voicePackLabel(controller.models.selectedPack, _voiceStrings(context))} · ${voiceLanguageLabel(controller.models.language, _voiceStrings(context))}',
                     ),
                   ),
                 ],
@@ -822,19 +888,36 @@ class _VoiceStatus extends StatelessWidget {
         controller.state == VoiceComposerState.loading;
     final status = switch (controller.state) {
       VoiceComposerState.listening =>
-        'Listening ${_formatElapsed(controller.elapsed)} of '
-            '${_formatElapsed(voiceRecordingCap)}',
-      VoiceComposerState.initializing => 'Starting microphone…',
-      VoiceComposerState.loading => 'Loading local model…',
-      VoiceComposerState.transcribing => 'Transcribing on this device…',
-      VoiceComposerState.finishingCancellation =>
-        'Finishing canceled transcription…',
-      VoiceComposerState.draft => 'Transcript ready to review',
-      VoiceComposerState.error => 'Voice input needs attention',
-      VoiceComposerState.idle => 'Ready for local voice input',
-      VoiceComposerState.modelRequired => 'A local model is required',
-      VoiceComposerState.downloading => 'Downloading voice model…',
-      VoiceComposerState.verifying => 'Verifying voice model…',
+        _voiceStrings(context).e7VoiceUiListeningTime(
+          _formatElapsed(controller.elapsed),
+          _formatElapsed(voiceRecordingCap),
+        ),
+      VoiceComposerState.initializing => _voiceStrings(
+        context,
+      ).e7VoiceUiStartingMic,
+      VoiceComposerState.loading => _voiceStrings(
+        context,
+      ).e7VoiceUiLoadingModel,
+      VoiceComposerState.transcribing => _voiceStrings(
+        context,
+      ).e7VoiceUiTranscribing,
+      VoiceComposerState.finishingCancellation => _voiceStrings(
+        context,
+      ).e7VoiceUiFinishingCancel,
+      VoiceComposerState.draft => _voiceStrings(context).e7VoiceUiDraftReady,
+      VoiceComposerState.error => _voiceStrings(
+        context,
+      ).e7VoiceUiNeedsAttention,
+      VoiceComposerState.idle => _voiceStrings(context).e7VoiceUiReady,
+      VoiceComposerState.modelRequired => _voiceStrings(
+        context,
+      ).e7VoiceUiModelRequired,
+      VoiceComposerState.downloading => _voiceStrings(
+        context,
+      ).e7VoiceUiDownloading,
+      VoiceComposerState.verifying => _voiceStrings(
+        context,
+      ).e7VoiceUiVerifyingModel,
     };
     return Column(
       children: [
@@ -865,7 +948,7 @@ class _VoiceStatus extends StatelessWidget {
         Semantics(
           liveRegion: true,
           label: listening
-              ? 'Listening. Double tap Stop recording when done.'
+              ? _voiceStrings(context).e7VoiceUiListeningHint
               : status,
           excludeSemantics: true,
           child: Text(
@@ -875,12 +958,15 @@ class _VoiceStatus extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        const Text('Audio stays on this device', textAlign: TextAlign.center),
+        Text(
+          _voiceStrings(context).e7VoiceUiPrivacy,
+          textAlign: TextAlign.center,
+        ),
         if (showCap)
           Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text(
-              'Up to $capSeconds s per recording',
+              _voiceStrings(context).e7VoiceUiRecordingCap(capSeconds),
               key: const Key('voice-recording-cap'),
               textAlign: TextAlign.center,
               style: theme.textTheme.labelSmall?.copyWith(
@@ -903,7 +989,7 @@ class _VoiceStatus extends StatelessWidget {
               ),
               onPressed: controller.stopListening,
               icon: const Icon(AppIcons.stop),
-              label: const Text('Stop recording'),
+              label: Text(_voiceStrings(context).e7VoiceUiStopRecording),
             ),
           ),
         ],
@@ -951,4 +1037,23 @@ class _LevelMeter extends StatelessWidget {
 String _formatElapsed(Duration duration) {
   final seconds = duration.inSeconds.clamp(0, voiceRecordingCap.inSeconds);
   return '0:${seconds.toString().padLeft(2, '0')}';
+}
+
+class _VoiceTechnicalDetails extends StatelessWidget {
+  const _VoiceTechnicalDetails({required this.error});
+  final Object error;
+  @override
+  Widget build(BuildContext context) => ExpansionTile(
+    title: Text(_voiceStrings(context).e7VoiceUiTechnicalDetails),
+    children: [
+      Padding(
+        padding: const EdgeInsets.all(12),
+        child: SelectableText(
+          error.toString(),
+          textDirection: TextDirection.ltr,
+          style: const TextStyle(fontFamily: AppTheme.monoFamily),
+        ),
+      ),
+    ],
+  );
 }

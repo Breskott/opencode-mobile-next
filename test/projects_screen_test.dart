@@ -621,7 +621,8 @@ void main() {
     pending.complete(const []);
     await tester.pumpAndSettle();
     expect(find.text('Swipe target'), findsOneWidget);
-    expect(find.text('No projects opened'), findsOneWidget);
+    expect(find.text('No projects opened'), findsNothing);
+    expect(find.text('/work/app'), findsOneWidget);
   });
 
   testWidgets(
@@ -723,9 +724,10 @@ void main() {
       await tester.tap(find.text('Retry projects'));
       await tester.pumpAndSettle();
       expect(find.text('Project list unavailable'), findsNothing);
-      expect(find.text('No projects opened'), findsOneWidget);
+      expect(find.text('No projects opened'), findsNothing);
+      expect(find.text('/work/app'), findsOneWidget);
       expect(find.text('Swipe target'), findsOneWidget);
-      expect(find.text('Search all sessions'), findsOneWidget);
+      expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
     },
   );
 
@@ -813,7 +815,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('No projects opened'), findsOneWidget);
+    expect(find.text('No projects opened'), findsNothing);
+    expect(find.byKey(const ValueKey('current-project-entry')), findsOneWidget);
+    expect(find.text('/work/app'), findsOneWidget);
     expect(find.text('Swipe target'), findsOneWidget);
     await tester.tap(find.text('Swipe target'));
     await tester.pumpAndSettle();
@@ -870,7 +874,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Search all sessions'));
+    await tester.tap(find.byKey(const ValueKey('search-all-sessions')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Previous conversation'));
     await tester.pumpAndSettle();

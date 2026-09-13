@@ -1,3 +1,5 @@
+import '../../l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -38,18 +40,39 @@ class HostManagementScreen extends StatelessWidget {
     final profile = controller.profile;
     final port = _serverPort();
     return Scaffold(
-      appBar: AppBar(title: const Text('Run as a Linux service')),
+      appBar: AppBar(
+        title: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupLinuxService,
+        ),
+      ),
       body: ListenableBuilder(
         listenable: controller,
         builder: (context, _) => ListView(
           padding: const EdgeInsets.only(bottom: 28),
           children: [
-            const SectionLabel('This server'),
+            SectionLabel(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupThisServer,
+            ),
             ListTile(
               leading: const Icon(AppIconography.server),
-              title: Text(profile?.name ?? 'OpenCode server'),
+              title: Text(
+                profile?.name ??
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupDefaultServer,
+              ),
               subtitle: SelectableText(
-                profile?.baseUrl ?? 'Not connected',
+                profile?.baseUrl ??
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupNotConnected,
+                textDirection: profile?.baseUrl == null
+                    ? Directionality.of(context)
+                    : TextDirection.ltr,
                 style: const TextStyle(
                   fontFamily: AppTheme.monoFamily,
                   fontSize: AppTheme.codeFontSize,
@@ -58,29 +81,48 @@ class HostManagementScreen extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(AppIconography.info),
-              title: Text('Server version ${controller.version ?? 'unknown'}'),
-              subtitle: const Text(
-                'These commands run on the computer that hosts this server — '
-                'the app cannot run them for you. Copy each one into a '
-                'terminal on that machine.',
+              title: Text(
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7SetupServerVersion(
+                  controller.version ??
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupUnknownVersion,
+                ),
+              ),
+              subtitle: Text(
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7SetupHostInstructions,
               ),
             ),
-            const SectionLabel('First-time setup — run on your computer'),
+            SectionLabel(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupHostFirstSetup,
+            ),
             _HostCommandTile(
-              label: 'Install OpenCode as a background service',
-              detail:
-                  'Official installer plus a systemd user service that '
-                  'survives closed terminals and reboots.',
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupInstallService,
+              detail: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupInstallServiceDetail,
               command:
                   'curl -fsSL $scriptUrl -o ubuntu-opencode.sh && '
                   'OPENCODE_PORT=$port bash ubuntu-opencode.sh install',
             ),
             _HostCommandTile(
-              label: 'Keep it running after logout',
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupKeepAfterLogout,
               command: 'loginctl enable-linger "\$USER"',
             ),
             _HostCommandTile(
-              label: 'Read the server password for this app',
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupReadPassword,
               command: 'bash ubuntu-opencode.sh password',
             ),
             // `adb reverse` forwards a port to an attached *Android* device.
@@ -89,31 +131,45 @@ class HostManagementScreen extends StatelessWidget {
             if (platformCapabilities.supportsUsbHostBridge)
               _HostCommandTile(
                 key: const Key('host-command-adb-reverse'),
-                label: 'Reach it from this phone over USB',
+                label: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7SetupUsbAccess,
                 command: 'adb reverse tcp:$port tcp:$port',
               ),
-            const SectionLabel('Day-to-day — run on your computer'),
+            SectionLabel(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupHostDaily,
+            ),
             _HostCommandTile(
-              label: 'Service status',
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupServiceStatus,
               command: 'bash ubuntu-opencode.sh status',
             ),
             _HostCommandTile(
-              label: 'Restart the server',
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupRestartServer,
               command: 'bash ubuntu-opencode.sh restart',
             ),
             _HostCommandTile(
-              label: 'Follow the server log',
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupFollowLog,
               command: 'bash ubuntu-opencode.sh logs',
             ),
             _HostCommandTile(
-              label: 'Update OpenCode on the host',
-              detail:
-                  'When the server reports an update, Settings offers the '
-                  'native upgrade first; this is the host-side equivalent.',
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupUpdateHost,
+              detail: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupUpdateHostDetail,
               command: 'bash ubuntu-opencode.sh update',
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 10, 16, 0),
+              padding: const EdgeInsetsDirectional.fromSTEB(8, 10, 16, 0),
               child: Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: TextButton.icon(
@@ -123,7 +179,11 @@ class HostManagementScreen extends StatelessWidget {
                     mode: LaunchMode.externalApplication,
                   ),
                   icon: const Icon(AppIconography.externalLink, size: 18),
-                  label: const Text('Full walkthrough (opens in browser)'),
+                  label: Text(
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupFullWalkthrough,
+                  ),
                 ),
               ),
             ),
@@ -153,7 +213,7 @@ class _HostCommandTile extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 6, 10),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(12),
@@ -185,6 +245,7 @@ class _HostCommandTile extends StatelessWidget {
                   const SizedBox(height: 6),
                   SelectableText(
                     command,
+                    textDirection: TextDirection.ltr,
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontFamily: AppTheme.monoFamily,
                       fontSize: AppTheme.codeFontSize,
@@ -195,17 +256,23 @@ class _HostCommandTile extends StatelessWidget {
             ),
             Semantics(
               button: true,
-              label: 'Copy command: $label',
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupCopyCommandLabel(label),
               child: IconButton(
                 key: ValueKey('copy-host-command-$label'),
-                tooltip: 'Copy command',
+                tooltip: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).handoffCopyCommand,
                 onPressed: () async {
                   await Clipboard.setData(ClipboardData(text: command));
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                      SnackBar(
                         content: Text(
-                          'Copied. Run it on the server\'s computer.',
+                          lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupHostCopied,
                         ),
                         duration: Duration(seconds: 2),
                       ),

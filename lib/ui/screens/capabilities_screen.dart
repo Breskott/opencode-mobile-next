@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+
 import '../../state/connection.dart';
 import 'library_screen.dart';
 import 'tools_screen.dart';
@@ -22,17 +24,30 @@ class CapabilitiesScreen extends StatelessWidget {
     // it sits in survives. The tool inventory is the only gated catalog here.
     final tools = controller.capabilities.toolInventory;
     final tabs = <(String, Widget)>[
-      ('Commands', CommandsScreen(controller: controller, embedded: true)),
-      if (tools) ('Tools', ToolsScreen(controller: controller, embedded: true)),
-      ('Skills', SkillsScreen(controller: controller, embedded: true)),
-      ('References', ReferencesScreen(controller: controller, embedded: true)),
+      (
+        _screenCopy(context).runResultsCommandsTitle,
+        CommandsScreen(controller: controller, embedded: true),
+      ),
+      if (tools)
+        (
+          _screenCopy(context).e7SettingsDetailUi25,
+          ToolsScreen(controller: controller, embedded: true),
+        ),
+      (
+        _screenCopy(context).e7SettingsDetailUi26,
+        SkillsScreen(controller: controller, embedded: true),
+      ),
+      (
+        _screenCopy(context).e7SettingsDetailUi27,
+        ReferencesScreen(controller: controller, embedded: true),
+      ),
     ];
     return DefaultTabController(
       length: tabs.length,
       initialIndex: initialTab.clamp(0, tabs.length - 1),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Commands & tools'),
+          title: Text(_screenCopy(context).libraryCommandsToolsTitle),
           bottom: TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.start,
@@ -47,3 +62,7 @@ class CapabilitiesScreen extends StatelessWidget {
     );
   }
 }
+
+AppLocalizations _screenCopy(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+    lookupAppLocalizations(const Locale('en'));

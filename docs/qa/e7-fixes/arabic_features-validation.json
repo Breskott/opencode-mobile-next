@@ -1,0 +1,45 @@
+{
+  "status": "passed",
+  "message_count": 727,
+  "missing_keys": [],
+  "extra_keys": [],
+  "placeholder_mismatches": [],
+  "icu_plural_messages": [
+    "quotaDays",
+    "quotaHours",
+    "quotaSeconds",
+    "usageProviderModelCount",
+    "monitorMinutes",
+    "queuedBannerReview",
+    "modelChoiceProvidersSummary"
+  ],
+  "arabic_plural_categories": [
+    "few",
+    "many",
+    "one",
+    "other",
+    "two",
+    "zero"
+  ],
+  "technical_only_keys": [
+    "managedHealthVersion",
+    "monitorLabeledTime",
+    "monitorRequestSummary",
+    "oc2DiscoveryEditorTitle",
+    "openCodeConnectionLabel",
+    "pluginsSourceSdk",
+    "projectFolderNameHint",
+    "projectFolderPathHint",
+    "quotaClaude",
+    "quotaCodex",
+    "quotaGlm",
+    "quotaMiniMax",
+    "reviewNoteDescription",
+    "setupRuntimeOne",
+    "termuxGuideEnterKey"
+  ],
+  "directional_controls": 0,
+  "source_sha256": "19414ab6bd7bcbf1091b4c2fc76bbf660403cf0b39b33ca140b3dbd8a53506b8",
+  "translation_sha256": "d2a33bb096fa23e99d421f04fb8da85124e2eb8318e26c44c69dc445fe6a4cae",
+  "limits": "Corpus validation only. Flutter generation, UI reachability and RTL visual checks belong to integration."
+}

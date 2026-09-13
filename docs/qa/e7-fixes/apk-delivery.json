@@ -1,0 +1,22 @@
+{
+  "created_at": "2026-09-10T00:30:49.194571+00:00",
+  "revision": "bc61d78f45ba9240043d94b1b3ba503229737a5e",
+  "download_url": "http://100.126.15.6:8876/opencode-local-checkpoint-bc61d78.apk",
+  "filename": "opencode-local-checkpoint-bc61d78.apk",
+  "sha256": "a5b9cd79bb40fbcfa33021164dd16a12c9e137ad88552ab75b39e6ee3dba73b9",
+  "bytes": 71728743,
+  "certificate_sha256": "1DE5BF08146F269BCD9EB5C2FFC94469CE4617D37806285955F978A62494D60C",
+  "abi": "arm64-v8a",
+  "package": "io.github.eslamasabry.opencode_mobile",
+  "version_code": "40",
+  "version_name": "1.0.39",
+  "target": "Android ARM64",
+  "build_mode": "Local release; CI disabled",
+  "signer": "Accepted local Android key; differs from stable CI certificate",
+  "updates_stable_ci_signed_app": false,
+  "x86_64_sha256": "f489fb159535ce7f40f7ef724df9e80fb05c0623416017ed2d1a74ce009e5b8b",
+  "suite": "docs/qa/e7-fixes/suite-final.json",
+  "build_seconds": 67.5,
+  "gradle_command": "see docs/qa/oc2-setup/local-build.json (same flags, --max-workers=4)",
+  "device_verification": "Not yet installed on a phone or emulator for this checkpoint; Arabic locale on device unverified."
+}

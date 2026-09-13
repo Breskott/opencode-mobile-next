@@ -1,0 +1,651 @@
+[
+ {
+  "id": "evt_088e828a200193Zmf0IDJbP8Dz",
+  "type": "server.connected",
+  "sessionID": null,
+  "created": null
+ },
+ {
+  "id": "evt_088e828c4001i37CRjnUy77IWh",
+  "type": "session.inbox.enqueued",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003311300
+ },
+ {
+  "id": "evt_088e828cf001Y8nL4VPfR9hCgJ",
+  "type": "session.execution.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003311311
+ },
+ {
+  "id": "evt_088e828e4001MtaXqMExp77EwE",
+  "type": "session.instructions.updated",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003311332
+ },
+ {
+  "id": "evt_088e828e70011Y7FO61BW1frD4",
+  "type": "session.inbox.delivered",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003311335
+ },
+ {
+  "id": "evt_088e83450001CtPSTXLfVo8bEl",
+  "type": "session.step.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003314256
+ },
+ {
+  "id": "evt_088e8345e001lSqz7rs7KaLtfM",
+  "type": "session.reasoning.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003314270
+ },
+ {
+  "id": "evt_088e83843001cMUhI4gEtEKl3w",
+  "type": "session.reasoning.delta",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003315267
+ },
+ {
+  "id": "evt_088e838630012uJkIh8OOrddzA",
+  "type": "session.tool.input.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003315299
+ },
+ {
+  "id": "evt_088e83f06001YSO3vzZ7A8mGpt",
+  "type": "session.reasoning.delta",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003316998
+ },
+ {
+  "id": "evt_088e83f06002aWOLs7M6GM9S7n",
+  "type": "session.reasoning.ended",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003316998
+ },
+ {
+  "id": "evt_088e83f1900107WxsR4X6nRNkz",
+  "type": "session.tool.input.ended",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003317017
+ },
+ {
+  "id": "evt_088e83f1e001xMmlNfszFLzgqC",
+  "type": "session.tool.called",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003317023,
+  "tool": null
+ },
+ {
+  "id": "evt_088e83f230019Aa6fFR60B3Sv6",
+  "type": "session.step.streamed",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003317027
+ },
+ {
+  "id": "evt_088e83f52001zXAL23qrBEr1zQ",
+  "type": "session.created",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003317075,
+  "parentID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q"
+ },
+ {
+  "id": "evt_088e83f57001VpcsHOjwITdgy3",
+  "type": "session.tool.progress",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003317079
+ },
+ {
+  "id": "evt_088e83f59001EIVwUsAsUQfrVY",
+  "type": "session.inbox.enqueued",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003317081
+ },
+ {
+  "id": "evt_088e83f65001LtpS7CCaDzmHp0",
+  "type": "session.tool.success",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003317093
+ },
+ {
+  "id": "evt_088e83f8c0016lsokCmeXt8hRV",
+  "type": "session.execution.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003317132
+ },
+ {
+  "id": "evt_088e83fa4001Ydfgt9LGGHGag7",
+  "type": "session.instructions.updated",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003317156
+ },
+ {
+  "id": "evt_088e83faa001H7Bl6xW4etVMw4",
+  "type": "session.inbox.delivered",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003317162
+ },
+ {
+  "id": "evt_088e83fda001G7CUuyERn58ZpC",
+  "type": "session.step.ended",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003317210
+ },
+ {
+  "id": "evt_088e83fe2001vl8KpkjfW6k4Ma",
+  "type": "session.usage.updated",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003317218
+ },
+ {
+  "id": "evt_088e84823001mM8DkByynTSrQz",
+  "type": "session.step.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003319331
+ },
+ {
+  "id": "evt_088e848480010zDXPxfi5dTl1O",
+  "type": "session.text.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003319368
+ },
+ {
+  "id": "evt_088e84851001szylXus4k9yKYI",
+  "type": "session.text.delta",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003319377
+ },
+ {
+  "id": "evt_088e84851002mEMxRaKUAVUiG9",
+  "type": "session.text.ended",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003319377
+ },
+ {
+  "id": "evt_088e84854001bMH8V2lycalQoT",
+  "type": "session.step.streamed",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003319380
+ },
+ {
+  "id": "evt_088e8485a001ScTBz95Wmy84mb",
+  "type": "session.step.ended",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003319387
+ },
+ {
+  "id": "evt_088e8485d001z8QvSOLrNGhV24",
+  "type": "session.usage.updated",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003319389
+ },
+ {
+  "id": "evt_088e8485e001YJsiGMLfOBxOdw",
+  "type": "session.execution.succeeded",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003319390
+ },
+ {
+  "id": "evt_088e84892001B5eUE2vNYPsWPK",
+  "type": "session.viewed",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003319443
+ },
+ {
+  "id": "evt_088e84ec2001Vg358PstsNRazu",
+  "type": "session.usage.updated",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003321026
+ },
+ {
+  "id": "evt_088e84ec400129ZJIiBZvAS0r6",
+  "type": "session.renamed",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003321028
+ },
+ {
+  "id": "evt_088e85721001T8YP0T82cykuZQ",
+  "type": "session.step.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003323169
+ },
+ {
+  "id": "evt_088e8572a001AlMhcDxR2lU5k3",
+  "type": "session.reasoning.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003323178
+ },
+ {
+  "id": "evt_088e8572c001iXBpn8ROzFhfPw",
+  "type": "session.tool.input.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003323181
+ },
+ {
+  "id": "evt_088e8572f001XyppjPCxNxBVEw",
+  "type": "session.reasoning.delta",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003323183
+ },
+ {
+  "id": "evt_088e85730001dX9SZStHv85SWi",
+  "type": "session.reasoning.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003323184
+ },
+ {
+  "id": "evt_088e85731001woIP3EYDkPTuXH",
+  "type": "session.tool.input.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003323185
+ },
+ {
+  "id": "evt_088e85733001AtIIEuSxYRN5Oq",
+  "type": "session.tool.called",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003323187,
+  "tool": null
+ },
+ {
+  "id": "evt_088e85735001ZycuNh1yaFJeNN",
+  "type": "session.step.streamed",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003323189
+ },
+ {
+  "id": "evt_088e85766001oaoiZAea4RircJ",
+  "type": "session.tool.success",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003323238
+ },
+ {
+  "id": "evt_088e85770001gOZQQ3Kmp4Jq0u",
+  "type": "session.step.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003323248
+ },
+ {
+  "id": "evt_088e857720013GoDs1wqOL4eXd",
+  "type": "session.usage.updated",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003323250
+ },
+ {
+  "id": "evt_088e869e9001CLioBM0PPaO6hj",
+  "type": "session.step.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003327977
+ },
+ {
+  "id": "evt_088e869ed001IeaJWUipi52msL",
+  "type": "session.reasoning.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003327981
+ },
+ {
+  "id": "evt_088e869f4001jum6mM5x0NreZN",
+  "type": "session.text.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003327988
+ },
+ {
+  "id": "evt_088e869f7001O2RSBUMgNZD1SN",
+  "type": "session.tool.input.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003327991
+ },
+ {
+  "id": "evt_088e869fc001tE1xMGKTIBXdRA",
+  "type": "session.reasoning.delta",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003327996
+ },
+ {
+  "id": "evt_088e869fc002J6JNjcHBgMtK1j",
+  "type": "session.reasoning.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003327996
+ },
+ {
+  "id": "evt_088e869fe0014ZWw6Voo30dlt5",
+  "type": "session.tool.input.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003327998
+ },
+ {
+  "id": "evt_088e86a00001fJ1B4A4iN6AzNZ",
+  "type": "session.tool.called",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003328000,
+  "tool": null
+ },
+ {
+  "id": "evt_088e86a02001zpGcMQl0PszIJ8",
+  "type": "session.text.delta",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003328002
+ },
+ {
+  "id": "evt_088e86a02002pvpMlkXVCjANcs",
+  "type": "session.text.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003328002
+ },
+ {
+  "id": "evt_088e86a050017ZD0R0zglPgPSP",
+  "type": "session.step.streamed",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003328005
+ },
+ {
+  "id": "evt_088e86a12001bBpReXhaKGBTxs",
+  "type": "session.tool.success",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003328018
+ },
+ {
+  "id": "evt_088e86a1c001JLC0p2W7y5BsFR",
+  "type": "session.step.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003328028
+ },
+ {
+  "id": "evt_088e86a210019x9W2eSDMM2e4W",
+  "type": "session.usage.updated",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003328033
+ },
+ {
+  "id": "evt_088e87d1d001Pl68Fh5ATzibuv",
+  "type": "session.step.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003332893
+ },
+ {
+  "id": "evt_088e87d28001WlIqrXYkEjQdUq",
+  "type": "session.tool.input.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003332904
+ },
+ {
+  "id": "evt_088e87d39001eIWoer1RhSFotd",
+  "type": "session.tool.input.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003332921
+ },
+ {
+  "id": "evt_088e87d3b001v4bKjz3FGXUNtD",
+  "type": "session.tool.called",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003332923,
+  "tool": null
+ },
+ {
+  "id": "evt_088e87d3d0010uRLLrGB4bb5I7",
+  "type": "session.step.streamed",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003332925
+ },
+ {
+  "id": "evt_088e87dd5001skOh4BlQAsLtaS",
+  "type": "session.tool.success",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003333077
+ },
+ {
+  "id": "evt_088e87de40015IQ37wC6iT6WWh",
+  "type": "session.step.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003333092
+ },
+ {
+  "id": "evt_088e87de6001THAor6nE6byqR1",
+  "type": "session.usage.updated",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003333094
+ },
+ {
+  "id": "evt_088e88f21001K0SfJOGx79Fmdv",
+  "type": "session.step.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003337505
+ },
+ {
+  "id": "evt_088e88f2c0018KG2XuNy9OBr6C",
+  "type": "session.tool.input.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003337516
+ },
+ {
+  "id": "evt_088e88f30001PDZdJn4WsOfkk7",
+  "type": "session.tool.input.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003337520
+ },
+ {
+  "id": "evt_088e88f32001coYOsigvIFDxhc",
+  "type": "session.tool.called",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003337522,
+  "tool": null
+ },
+ {
+  "id": "evt_088e88f34001yOQmRYQI33HGky",
+  "type": "session.step.streamed",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003337524
+ },
+ {
+  "id": "evt_088e88f3b001S5Am4mjIWrNXHl",
+  "type": "session.tool.success",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003337531
+ },
+ {
+  "id": "evt_088e88f45001cu7qSFFiz78HUa",
+  "type": "session.step.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003337541
+ },
+ {
+  "id": "evt_088e88f4a001fzfgko82cR1J7N",
+  "type": "session.usage.updated",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003337546
+ },
+ {
+  "id": "evt_088e8a5e80016rbzsIxApJ1KgX",
+  "type": "session.step.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003343336
+ },
+ {
+  "id": "evt_088e8a6070018w4iNVJmKcReBX",
+  "type": "session.text.started",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003343367
+ },
+ {
+  "id": "evt_088e8a6180013XCGEKcbpAjD7G",
+  "type": "session.text.delta",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003343384
+ },
+ {
+  "id": "evt_088e8a618002T2QmYD4dEe4J3U",
+  "type": "session.text.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003343384
+ },
+ {
+  "id": "evt_088e8a61a00193OHGsCaMI66aP",
+  "type": "session.step.streamed",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003343386
+ },
+ {
+  "id": "evt_088e8a6200013sV70TIxKjB4Sw",
+  "type": "session.step.ended",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003343392
+ },
+ {
+  "id": "evt_088e8a624001ZsjlszkcW3W0HW",
+  "type": "session.usage.updated",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003343396
+ },
+ {
+  "id": "evt_088e8a625001O8MVQYvETlGu07",
+  "type": "session.execution.succeeded",
+  "sessionID": "ses_f7717c0ccffek2nFQFqayii0w4",
+  "created": 1789003343397
+ },
+ {
+  "id": "evt_088e8a62b001khjiIOSXSLam0K",
+  "type": "session.inbox.enqueued",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003343403
+ },
+ {
+  "id": "evt_088e8a62e0015CCk9ChTS15tJQ",
+  "type": "session.execution.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003343406
+ },
+ {
+  "id": "evt_088e8a63f001kgMCon9J4JYCxj",
+  "type": "session.inbox.delivered",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003343423
+ },
+ {
+  "id": "evt_088e8c081001qcQEdwryl6askA",
+  "type": "session.step.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003350145
+ },
+ {
+  "id": "evt_088e8c08b001AOX8017jOfEoNd",
+  "type": "session.reasoning.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003350155
+ },
+ {
+  "id": "evt_088e8c0a5001XgwAvqT23pcHb8",
+  "type": "session.tool.input.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003350181
+ },
+ {
+  "id": "evt_088e8c0ae0013cYEyqMXqngKY4",
+  "type": "session.reasoning.delta",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003350191
+ },
+ {
+  "id": "evt_088e8c0af001u4xlU43KBRz9wt",
+  "type": "session.reasoning.ended",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003350191
+ },
+ {
+  "id": "evt_088e8c0b4001gUBQVE71XfL5ld",
+  "type": "session.tool.input.ended",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003350196
+ },
+ {
+  "id": "evt_088e8c0c10012k786kImzJOIKt",
+  "type": "session.tool.called",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003350209,
+  "tool": null
+ },
+ {
+  "id": "evt_088e8c0c8001BstMrrcO3uClQl",
+  "type": "session.step.streamed",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003350217
+ },
+ {
+  "id": "evt_088e8c0d1001Ephpt1THuPyilc",
+  "type": "session.tool.success",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003350225
+ },
+ {
+  "id": "evt_088e8c0e7001hLq2CoFuB4rszz",
+  "type": "session.step.ended",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003350247
+ },
+ {
+  "id": "evt_088e8c0ed001fyXmVG9jH7uinQ",
+  "type": "session.usage.updated",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003350253
+ },
+ {
+  "id": "evt_088e8d515001BacC32hlu50NNI",
+  "type": "session.step.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003355413
+ },
+ {
+  "id": "evt_088e8d538001Y676V5UpsxM52u",
+  "type": "session.text.started",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003355448
+ },
+ {
+  "id": "evt_088e8d5e8001Vqgq3DmcdQ7eLL",
+  "type": "session.text.delta",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003355624
+ },
+ {
+  "id": "evt_088e8d5e9001SNr4OFdZW0lPkr",
+  "type": "session.text.delta",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003355625
+ },
+ {
+  "id": "evt_088e8d5e9002lmx2iqCyJ49xsn",
+  "type": "session.text.ended",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003355625
+ },
+ {
+  "id": "evt_088e8d5f20015K2yYRRIJ07aT1",
+  "type": "session.step.streamed",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003355635
+ },
+ {
+  "id": "evt_088e8d604001v66O3tzOeDPWpP",
+  "type": "session.step.ended",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003355652
+ },
+ {
+  "id": "evt_088e8d60a0018pzxaQYs7OFMbG",
+  "type": "session.usage.updated",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003355658
+ },
+ {
+  "id": "evt_088e8d60b001pKxkLPubcqJ6Iv",
+  "type": "session.execution.succeeded",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003355659
+ },
+ {
+  "id": "evt_088e8d68c001h6jBec1JKASUnv",
+  "type": "session.viewed",
+  "sessionID": "ses_f771cf9f4ffe6RudGO7JgbqT3Q",
+  "created": 1789003355788
+ }
+]

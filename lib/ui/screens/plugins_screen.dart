@@ -248,7 +248,13 @@ class _PluginsScreenState extends State<PluginsScreen> {
         destructive: true,
       );
       if (!confirmed || !mounted) return;
-      if (scope != _scope) throw StateError('Location changed.');
+      if (scope != _scope) {
+        throw StateError(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryLocationChanged,
+        );
+      }
       setState(() => _mappingLoading = true);
       await store.clear();
       if (mounted && scope == _scope) setState(() => _mappings = {});
@@ -362,7 +368,11 @@ class _PluginsScreenState extends State<PluginsScreen> {
                           });
                           try {
                             if (!mounted || scope != _scope) {
-                              throw StateError('Location changed.');
+                              throw StateError(
+                                lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).e7LibraryLocationChanged,
+                              );
                             }
                             await store.set(mappingScope, plugin.id!, selected);
                             if (!dialogContext.mounted) return;

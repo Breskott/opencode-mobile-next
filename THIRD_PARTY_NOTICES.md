@@ -309,6 +309,7 @@ lives in `packages/opencode_sdk/`, and is covered by this project's
 | `platform` | 3.1.6 | BSD-3-Clause | Copyright 2017, the Dart project authors. All rights reserved | runtime |
 | `plugin_platform_interface` | 2.1.8 | BSD-3-Clause | Copyright 2013 The Flutter Authors. All rights reserved | runtime |
 | `pub_semver` | 2.2.0 | BSD-3-Clause | Copyright 2014, the Dart project authors | runtime |
+| `qr` | 3.0.2 | BSD-3-Clause | Copyright 2014, the Dart QR project authors | runtime |
 | `quiver` | 3.2.2 | Apache-2.0 | — | runtime |
 | `record` | 7.1.1 | BSD-3-Clause | Copyright 2022 openapi4j authors. All rights reserved | runtime |
 | `record_android` | 2.1.2 | BSD-3-Clause | Copyright 2022 openapi4j authors. All rights reserved | runtime |

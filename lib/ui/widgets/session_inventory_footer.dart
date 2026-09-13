@@ -31,7 +31,10 @@ class SessionInventoryFooter extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              error ?? l10n.sessionsLoadedOnly,
+              error ??
+                  (loading
+                      ? l10n.e7WorkspaceLoadingSessions
+                      : l10n.sessionsLoadedOnly),
               style: error == null
                   ? null
                   : TextStyle(color: Theme.of(context).colorScheme.error),

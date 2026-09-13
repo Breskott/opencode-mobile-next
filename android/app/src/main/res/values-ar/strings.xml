@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_new_session">+ جديد</string>
+    <string name="widget_empty">افتح التطبيق للاتصال. ستظهر الجلسات هنا.</string>
+    <string name="widget_description">أحدث جلسات OpenCode، بنقرة واحدة تفتح محادثاتها.</string>
+    <string name="shortcut_connect_short">اتصال</string>
+    <string name="shortcut_connect_long">اختر خادمًا للاتصال به</string>
+    <string name="shortcut_new_task_short">مهمة جديدة</string>
+    <string name="shortcut_new_task_long">ابدأ مهمة جديدة على الخادم الحالي</string>
+    <string name="shortcut_session_untitled">جلسة بلا عنوان</string>
+    <string name="shortcut_session_unavailable">لم تعد هذه الجلسة متاحة</string>
+    <string name="tile_label">OpenCode</string>
+    <string name="tile_label_with_count">OpenCode · %1$s</string>
+    <string name="tile_all_clear">لا شيء يحتاج إليك</string>
+    <plurals name="tile_need_you">
+        <item quantity="one">طلب واحد يحتاج إليك</item>
+        <item quantity="two">طلبان يحتاجان إليك</item>
+        <item quantity="few">%1$d طلبات تحتاج إليك</item>
+        <item quantity="many">%1$d طلبًا يحتاج إليك</item>
+        <item quantity="other">%1$d طلب يحتاج إليك</item>
+    </plurals>
+</resources>

@@ -121,9 +121,7 @@ void main() {
   ) async {
     await _pumpChat(tester);
 
-    await _drop(tester, [
-      _file('huge.bin', bytes: 10 * 1024 * 1024 + 1),
-    ]);
+    await _drop(tester, [_file('huge.bin', bytes: 10 * 1024 * 1024 + 1)]);
 
     expect(find.text('huge.bin'), findsNothing);
     expect(
@@ -162,8 +160,10 @@ void main() {
     // seeing the bytes back proves the payload survived the pipeline.
     await tester.tap(find.text('payload.txt'));
     await tester.pumpAndSettle();
-    expect(find.textContaining(utf8.decode(Uint8List.fromList([97, 97, 97]))),
-        findsWidgets);
+    expect(
+      find.textContaining(utf8.decode(Uint8List.fromList([97, 97, 97]))),
+      findsWidgets,
+    );
   });
 
   testWidgets('android installs no drop target', (tester) async {

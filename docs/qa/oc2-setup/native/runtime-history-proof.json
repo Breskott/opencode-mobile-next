@@ -1,0 +1,63 @@
+{
+  "v1": {
+    "health": {
+      "healthy": true,
+      "version": "1.18.29"
+    },
+    "unauthStatus": 401,
+    "sessionID": "ses_f7875aed4ffe54ANGrwu9cHomG",
+    "title": "OC1 \u2014 kept when trying OC2",
+    "message": "This OC1 message must still be here after trying OpenCode 2.",
+    "providerGenerationRequested": false
+  },
+  "v2": {
+    "health": {
+      "healthy": true,
+      "version": "0.0.0-beta-18600",
+      "pid": 24286
+    },
+    "unauthStatus": 401,
+    "sessionID": "ses_f782f5424ffebPcf4G0aN5GwOe",
+    "title": "OC2 \u2014 separate beta workspace",
+    "v1AbsentFromV2": true,
+    "providerGenerationRequested": false
+  },
+  "v1Returned": {
+    "sameSession": true,
+    "sameTitle": true,
+    "sameUserMessage": true,
+    "version": "1.18.29",
+    "unauthStatus": 401,
+    "verifiedAtUtc": "2026-09-09T20:53:12.052943+00:00",
+    "apkSource": "a6434209d3b5f85053fb868cb45d4f6dcb9b7c05"
+  },
+  "v2Returned": {
+    "sameSession": true,
+    "sameTitle": true,
+    "version": "0.0.0-beta-18600",
+    "unauthStatus": 401,
+    "v1AbsentFromV2": true,
+    "verifiedAtUtc": "2026-09-09T20:53:58.696453+00:00",
+    "apkSource": "a6434209d3b5f85053fb868cb45d4f6dcb9b7c05"
+  },
+  "preFinalNative": {
+    "apkSource": "a2525f0e6398a0cfdd77546ab8043d0aeec62b2e",
+    "appForceStoppedDuringInstallation": true,
+    "managerFinishedIndependently": true,
+    "coldRestartRestoredOC2Profile": true,
+    "coldRestartLoadedBetaSession": true,
+    "androidFontScale2Reviewed": true
+  },
+  "finalColdRestart": {
+    "apkSource": "a6434209d3b5f85053fb868cb45d4f6dcb9b7c05",
+    "restoredOC2Profile": true,
+    "restoredDirectory": "/root/projects",
+    "loadedOriginalOC2Session": true
+  },
+  "finalAccessibility": {
+    "apkSource": "a6434209d3b5f85053fb868cb45d4f6dcb9b7c05",
+    "androidFontScale2Reviewed": true,
+    "lowerControlsReachableByScroll": true,
+    "restoredFontScale": 1.0
+  }
+}

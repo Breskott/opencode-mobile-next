@@ -89,11 +89,12 @@ class _PromptEditorScreenState extends State<_PromptEditorScreen> {
     final discard = await showConfirmSheet(
       context,
       icon: AppIconography.clearAll,
-      title: 'Discard prompt changes?',
-      message:
-          'Your original composer draft and attachments will stay unchanged.',
-      confirmLabel: 'Discard',
-      cancelLabel: 'Keep editing',
+      title: _chatL10n(context).chatUiDiscardPromptChanges,
+      message: _chatL10n(
+        context,
+      ).chatUiYourOriginalComposerDraftAndAttachmentsWill,
+      confirmLabel: _chatL10n(context).chatUiDiscard,
+      cancelLabel: _chatL10n(context).draftKeepEditing,
       destructive: true,
     );
     _closing = false;
@@ -111,18 +112,18 @@ class _PromptEditorScreenState extends State<_PromptEditorScreen> {
         key: const Key('prompt-editor-screen'),
         appBar: AppBar(
           leading: IconButton(
-            tooltip: 'Close prompt editor',
+            tooltip: _chatL10n(context).chatUiClosePromptEditor,
             onPressed: _cancel,
             icon: const Icon(AppIconography.close),
           ),
-          title: const Text('Prompt editor'),
+          title: Text(_chatL10n(context).chatUiPromptEditor),
           actions: [
             if (widget.chooseAttachment != null)
               IconButton(
                 key: const Key('prompt-editor-attach'),
                 tooltip: _attachments.length >= _maxAttachmentCount
-                    ? 'Attachment limit reached'
-                    : 'Attach file',
+                    ? _chatL10n(context).chatUiAttachmentLimitReached
+                    : _chatL10n(context).chatUiAttachFile,
                 onPressed: _attachments.length >= _maxAttachmentCount
                     ? null
                     : _addAttachment,
@@ -131,7 +132,7 @@ class _PromptEditorScreenState extends State<_PromptEditorScreen> {
             TextButton(
               key: const Key('prompt-editor-done'),
               onPressed: _save,
-              child: const Text('Done'),
+              child: Text(_chatL10n(context).modelChoiceDone),
             ),
             const SizedBox(width: 4),
           ],
@@ -164,7 +165,7 @@ class _PromptEditorScreenState extends State<_PromptEditorScreen> {
                 ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                  padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 12),
                   child: TextField(
                     key: const Key('prompt-editor-field'),
                     controller: _controller,
@@ -175,8 +176,10 @@ class _PromptEditorScreenState extends State<_PromptEditorScreen> {
                     keyboardType: TextInputType.multiline,
                     textAlignVertical: TextAlignVertical.top,
                     textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(
-                      hintText: 'Write your OpenCode prompt…',
+                    decoration: InputDecoration(
+                      hintText: _chatL10n(
+                        context,
+                      ).chatUiWriteYourOpenCodePrompt,
                       alignLabelWithHint: true,
                       contentPadding: EdgeInsets.all(16),
                     ),

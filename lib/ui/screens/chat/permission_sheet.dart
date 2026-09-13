@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../l10n/app_localizations.dart';
+
 import 'package:flutter/services.dart';
 
 import '../../../api/models.dart';
@@ -10,6 +13,9 @@ import '../../app_theme.dart';
 import '../../widgets/code_highlight.dart';
 import '../../widgets/diff_view.dart';
 import '../../widgets/request_routes.dart';
+
+AppLocalizations _chatL10n(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));
 
 /// The glyph identifies the requested action rather than a generic admin role.
 IconData permissionActionIcon(String permission) =>
@@ -35,7 +41,7 @@ Future<void> showPermissionSheet(
   BuildContext context, {
   required PermissionRequest permission,
   required ConnectionController controller,
-  String contextLabel = 'in this chat',
+  String? contextLabel,
   VoidCallback? onShowSource,
 }) async {
   final request = controller.permissionIdentity(permission);
@@ -74,7 +80,7 @@ Future<void> showPermissionSheet(
           ),
           allowPersistentPermission:
               controller.capabilities.persistentPermissionGrants,
-          contextLabel: contextLabel,
+          contextLabel: contextLabel ?? _chatL10n(context).chatUiInThisChat,
           onShowSource: onShowSource,
         ),
       ),
@@ -91,7 +97,7 @@ class PermissionSheet extends StatefulWidget {
     required this.onReply,
     required this.supportsRejectMessage,
     this.allowPersistentPermission = true,
-    this.contextLabel = 'in this chat',
+    this.contextLabel,
     this.onShowSource,
     this.routes,
     this.allowDeviceActions = true,
@@ -101,7 +107,7 @@ class PermissionSheet extends StatefulWidget {
   final Future<void> Function(String reply, {String? message}) onReply;
   final bool supportsRejectMessage;
   final bool allowPersistentPermission;
-  final String contextLabel;
+  final String? contextLabel;
   final VoidCallback? onShowSource;
   final RequestRoutes? routes;
   final bool allowDeviceActions;
@@ -190,40 +196,48 @@ class _PermissionSheetState extends State<PermissionSheet> {
             return AlertDialog(
               scrollable: true,
               icon: const Icon(AppIconography.warning),
-              title: const Text('Confirm broader access'),
+              title: Text(_chatL10n(context).chatUiConfirmBroaderAccess),
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Context: ${permission.permission} ${widget.contextLabel}',
+                    _chatL10n(context).chatUiPermissionContext(
+                      permission.permission,
+                      (widget.contextLabel ??
+                          _chatL10n(context).chatUiInThisChat),
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  const Text('Always allow patterns:'),
+                  Text(_chatL10n(context).chatUiAlwaysAllowPatterns),
                   const SizedBox(height: 4),
                   SelectableText(
                     broader.isEmpty
-                        ? '(all matching requests)'
+                        ? _chatL10n(context).chatUiAllMatchingRequests
                         : broader.join('\n'),
                     style: const TextStyle(fontFamily: AppTheme.monoFamily),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Consequence: future matching actions can run without asking again for the lifetime of this OpenCode server. Allow once is safer.',
+                  Text(
+                    _chatL10n(
+                      context,
+                    ).chatUiConsequenceFutureMatchingActionsCanRunWithout,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Manage saved grants in Settings → Saved permissions.',
+                  Text(
+                    _chatL10n(
+                      context,
+                    ).chatUiManageSavedGrantsInSettingsSavedPermissions,
                   ),
                 ],
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Keep asking'),
+                  child: Text(_chatL10n(context).chatUiKeepAsking),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Confirm always allow'),
+                  child: Text(_chatL10n(context).chatUiConfirmAlwaysAllow),
                 ),
               ],
             );
@@ -250,7 +264,7 @@ class _PermissionSheetState extends State<PermissionSheet> {
   }
 
   FileDiff _pendingDiff(String diff) => FileDiff(
-    file: widget.permission.filePath ?? 'Pending change',
+    file: widget.permission.filePath ?? _chatL10n(context).chatUiPendingChange,
     patch: diff,
   );
 
@@ -282,7 +296,11 @@ class _PermissionSheetState extends State<PermissionSheet> {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final message = permission.message;
     final contextLine = message == null || message.isEmpty
-        ? 'The agent wants to use ${permission.permission.isEmpty ? 'a permission' : permission.permission}.'
+        ? _chatL10n(context).chatUiPermissionRequested(
+            permission.permission.isEmpty
+                ? _chatL10n(context).chatUiPermissionFallback
+                : permission.permission,
+          )
         : message;
     final showSourceChip =
         widget.onShowSource != null && permission.tool != null;
@@ -292,7 +310,7 @@ class _PermissionSheetState extends State<PermissionSheet> {
       children: [
         Flexible(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 18, 20, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -342,7 +360,7 @@ class _PermissionSheetState extends State<PermissionSheet> {
                     permission.always.isNotEmpty) ...[
                   const SizedBox(height: 14),
                   Text(
-                    'Always allow would also cover',
+                    _chatL10n(context).chatUiAlwaysAllowWouldAlsoCover,
                     style: theme.textTheme.labelLarge,
                   ),
                   const SizedBox(height: 4),
@@ -359,7 +377,7 @@ class _PermissionSheetState extends State<PermissionSheet> {
                   ActionChip(
                     key: const Key('permission-source-chip'),
                     avatar: const Icon(AppIconography.tools, size: 18),
-                    label: const Text('From tool call'),
+                    label: Text(_chatL10n(context).chatUiFromToolCall),
                     onPressed: () {
                       if (!_routes.isPending) return;
                       final onShowSource = widget.onShowSource!;
@@ -371,7 +389,7 @@ class _PermissionSheetState extends State<PermissionSheet> {
                 if (_error != null) ...[
                   const SizedBox(height: 10),
                   Text(
-                    'Reply failed: $_error',
+                    _chatL10n(context).chatUiReplyFailed(_error ?? ''),
                     style: TextStyle(color: theme.colorScheme.error),
                   ),
                 ],
@@ -395,14 +413,14 @@ class _PermissionSheetState extends State<PermissionSheet> {
         .toList();
     if (resources.isEmpty && shown.isNotEmpty) return null;
     final rows = resources.isEmpty
-        ? const ['(all matching requests)']
+        ? [_chatL10n(context).chatUiAllMatchingRequests]
         : resources;
     final card = Material(
       key: const Key('permission-resources'),
       color: theme.colorScheme.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -431,7 +449,9 @@ class _PermissionSheetState extends State<PermissionSheet> {
                     ),
                     if (widget.allowDeviceActions)
                       IconButton(
-                        tooltip: 'Copy $resource',
+                        tooltip: _chatL10n(
+                          context,
+                        ).chatUiCopyResource(resource),
                         constraints: const BoxConstraints.tightFor(
                           width: 48,
                           height: 48,
@@ -464,7 +484,7 @@ class _PermissionSheetState extends State<PermissionSheet> {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
           child: reduceMotion
               ? controls
               : AnimatedSize(
@@ -497,14 +517,18 @@ class _PermissionSheetState extends State<PermissionSheet> {
       key: const Key('permission-allow-once'),
       onPressed: _replying ? null : () => _reply('once'),
       child: _pendingLabel(
-        'Allow once',
+        _chatL10n(context).chatUiAllowOnce,
         pending: _replying && _pendingReply == 'once',
       ),
     );
     final reject = OutlinedButton(
       key: const Key('permission-reject'),
       onPressed: _replying ? null : _startReject,
-      child: Text(widget.supportsRejectMessage ? 'Reject…' : 'Reject'),
+      child: Text(
+        widget.supportsRejectMessage
+            ? _chatL10n(context).chatUiReject1
+            : _chatL10n(context).chatUiReject,
+      ),
     );
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -534,7 +558,7 @@ class _PermissionSheetState extends State<PermissionSheet> {
             key: const Key('permission-allow-always'),
             onPressed: _replying ? null : () => _reply('always'),
             icon: const Icon(AppIconography.permissions, size: 18),
-            label: const Text('Always allow'),
+            label: Text(_chatL10n(context).chatUiAlwaysAllow),
           ),
         ],
       ],
@@ -552,9 +576,9 @@ class _PermissionSheetState extends State<PermissionSheet> {
           autofocus: true,
           minLines: 1,
           maxLines: 3,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             border: OutlineInputBorder(),
-            hintText: 'Tell the agent why, or what to do instead (optional)',
+            hintText: _chatL10n(context).chatUiTellTheAgentWhyOrWhatTo,
           ),
         ),
         const SizedBox(height: 10),
@@ -565,14 +589,17 @@ class _PermissionSheetState extends State<PermissionSheet> {
             foregroundColor: theme.colorScheme.onErrorContainer,
           ),
           onPressed: _replying ? null : _sendRejection,
-          child: _pendingLabel('Send rejection', pending: _replying),
+          child: _pendingLabel(
+            _chatL10n(context).chatUiSendRejection,
+            pending: _replying,
+          ),
         ),
         const SizedBox(height: 4),
         TextButton(
           onPressed: _replying
               ? null
               : () => setState(() => _rejecting = false),
-          child: const Text('Back'),
+          child: Text(_chatL10n(context).a2aBack),
         ),
       ],
     );
@@ -593,7 +620,7 @@ class _CommandPreview extends StatelessWidget {
     return Container(
       key: const Key('permission-command-preview'),
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
@@ -623,7 +650,11 @@ class _CommandPreview extends StatelessWidget {
               ),
             ),
           ),
-          if (allowCopy) _CopyButton(text: command, label: 'Copy command'),
+          if (allowCopy)
+            _CopyButton(
+              text: command,
+              label: _chatL10n(context).handoffCopyCommand,
+            ),
         ],
       ),
     );
@@ -675,7 +706,11 @@ class _FilePathRow extends StatelessWidget {
             ),
           ),
         ),
-        if (allowCopy) _CopyButton(text: path, label: 'Copy $path'),
+        if (allowCopy)
+          _CopyButton(
+            text: path,
+            label: _chatL10n(context).chatUiCopyResource(path),
+          ),
       ],
     );
   }
@@ -708,7 +743,7 @@ class _DiffPreviewBox extends StatelessWidget {
               border: Border.all(color: AppTheme.hairline(theme)),
             ),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 12, 10),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Text.rich(
@@ -730,7 +765,7 @@ class _DiffPreviewBox extends StatelessWidget {
             key: const Key('permission-see-full-diff'),
             onPressed: onSeeFull,
             icon: const Icon(AppIconography.review, size: 18),
-            label: const Text('See full diff'),
+            label: Text(_chatL10n(context).chatUiSeeFullDiff),
           ),
         ),
       ],

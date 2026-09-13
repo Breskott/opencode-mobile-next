@@ -28,48 +28,53 @@ void main() {
     return (snapshot, prefs, refreshes);
   }
 
-  test('writes at most four sessions with busy flags and title fallback', () async {
-    final (snapshot, prefs, refreshes) = await harness();
-    await snapshot.update(
-      sessions: [
-        _session('s1', title: 'Fix auth', updated: 50),
-        _session('s2', updated: 40),
-        _session('s3', title: 'Refactor', updated: 30),
-        _session('s4', title: 'Docs', updated: 20),
-        _session('s5', title: 'Never shown', updated: 10),
-      ],
-      busySessions: {'s1', 's3'},
-      connected: true,
-      profileID: 'server-1',
-    );
-
-    final decoded =
-        jsonDecode(prefs.getString(WidgetSessionSnapshot.prefsKey)!)
-            as Map<String, dynamic>;
-    expect(decoded['connected'], isTrue);
-    // The widget stamps this onto every row's tap intent so a tap after a
-    // profile switch opens the app normally instead of a foreign chat.
-    expect(decoded['profileID'], 'server-1');
-    final sessions = decoded['sessions'] as List;
-    expect(sessions, hasLength(4));
-    expect(sessions[0], {
-      'id': 's1',
-      'title': 'Fix auth',
-      'busy': true,
-      'updatedAt': 50,
-    });
-    expect((sessions[1] as Map)['title'], 'Untitled session');
-    expect((sessions[1] as Map)['busy'], isFalse);
-    // The snapshot never carries prompt text, tool input, or file paths:
-    // exactly these four keys per session.
-    for (final entry in sessions) {
-      expect(
-        (entry as Map).keys.toSet(),
-        {'id', 'title', 'busy', 'updatedAt'},
+  test(
+    'writes at most four sessions with busy flags and title fallback',
+    () async {
+      final (snapshot, prefs, refreshes) = await harness();
+      await snapshot.update(
+        sessions: [
+          _session('s1', title: 'Fix auth', updated: 50),
+          _session('s2', updated: 40),
+          _session('s3', title: 'Refactor', updated: 30),
+          _session('s4', title: 'Docs', updated: 20),
+          _session('s5', title: 'Never shown', updated: 10),
+        ],
+        busySessions: {'s1', 's3'},
+        connected: true,
+        profileID: 'server-1',
       );
-    }
-    expect(refreshes, hasLength(1));
-  });
+
+      final decoded =
+          jsonDecode(prefs.getString(WidgetSessionSnapshot.prefsKey)!)
+              as Map<String, dynamic>;
+      expect(decoded['connected'], isTrue);
+      // The widget stamps this onto every row's tap intent so a tap after a
+      // profile switch opens the app normally instead of a foreign chat.
+      expect(decoded['profileID'], 'server-1');
+      final sessions = decoded['sessions'] as List;
+      expect(sessions, hasLength(4));
+      expect(sessions[0], {
+        'id': 's1',
+        'title': 'Fix auth',
+        'busy': true,
+        'updatedAt': 50,
+      });
+      expect((sessions[1] as Map)['title'], 'Untitled session');
+      expect((sessions[1] as Map)['busy'], isFalse);
+      // The snapshot never carries prompt text, tool input, or file paths:
+      // exactly these four keys per session.
+      for (final entry in sessions) {
+        expect((entry as Map).keys.toSet(), {
+          'id',
+          'title',
+          'busy',
+          'updatedAt',
+        });
+      }
+      expect(refreshes, hasLength(1));
+    },
+  );
 
   test('unchanged payloads neither rewrite nor redraw', () async {
     final (snapshot, _, refreshes) = await harness();

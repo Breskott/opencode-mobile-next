@@ -38,6 +38,8 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
   }
 
   Future<void> _loadShellSettings() async {
+    // Runs from initState, so inherited lookups are not yet allowed.
+    final copy = earlyAppLocalizations(context);
     // The row is gated (§7 row 22) rather than removed, so it must not spend a
     // request that can only come back as an "unavailable" error.
     if (!widget.controller.capabilities.shellSettings) return;
@@ -49,7 +51,7 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
     try {
       final repository = await widget.controller.prepareActionRepository();
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting. Try again.');
+        throw ProductException(copy.e7SettingsUi19);
       }
       final settings = await repository.loadTerminalShellSettings();
       if (mounted && generation == _shellLoadGeneration) {
@@ -67,6 +69,7 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
   }
 
   Future<void> _chooseShell() async {
+    final copy = _settingsCopy(context);
     final settings = _shellSettings;
     if (_savingShell) return;
     if (settings == null) {
@@ -86,12 +89,10 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
           child: ListView(
             shrinkWrap: true,
             children: [
-              const ListTile(
+              ListTile(
                 leading: Icon(AppIconography.terminal),
-                title: Text('Default shell'),
-                subtitle: Text(
-                  'Used by new terminals and compatible shell commands on this OpenCode server.',
-                ),
+                title: Text(copy.e7SettingsUi35),
+                subtitle: Text(copy.e7SettingsUi36),
               ),
               for (final choice in choices)
                 ListTile(
@@ -101,11 +102,14 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
                         ? AppIconography.radioSelected
                         : AppIconography.radioEmpty,
                   ),
-                  title: Text(choice.label),
+                  title: Text(
+                    choice.label,
+                    textDirection: choice.value.isEmpty
+                        ? null
+                        : TextDirection.ltr,
+                  ),
                   subtitle: choice.terminalOnly
-                      ? const Text(
-                          'Terminal only; OpenCode uses a compatible fallback for shell tools.',
-                        )
+                      ? Text(copy.e7SettingsUi37)
                       : null,
                   onTap: () => Navigator.pop(context, choice.value),
                 ),
@@ -121,7 +125,7 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
     try {
       final repository = await widget.controller.prepareActionRepository();
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting. Try again.');
+        throw ProductException(copy.e7SettingsUi19);
       }
       await repository.selectTerminalShell(selected);
       if (!mounted) return;
@@ -137,7 +141,7 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Default shell updated')));
+      ).showSnackBar(SnackBar(content: Text(copy.e7SettingsUi38)));
     } catch (error) {
       if (mounted) showProductError(context, error);
     } finally {
@@ -151,10 +155,10 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
       nameCounts.update(option.name, (count) => count + 1, ifAbsent: () => 1);
     }
     final choices = <_ShellChoice>[
-      const _ShellChoice(
+      _ShellChoice(
         id: 'automatic',
         value: '',
-        label: 'Automatic (server default)',
+        label: _settingsCopy(context).e7SettingsUi39,
         terminalOnly: false,
       ),
     ];
@@ -186,7 +190,7 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
   }
 
   String _selectedShellLabel(TerminalShellSettings settings) {
-    if (settings.selected.isEmpty) return 'Automatic (server default)';
+    if (settings.selected.isEmpty) return _settingsCopy(context).e7SettingsUi39;
     final choices = _shellChoices(settings);
     for (final choice in choices) {
       if (choice.value == settings.selected) return choice.label;
@@ -198,31 +202,28 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
   Widget build(BuildContext context) {
     final controller = widget.controller;
     return Scaffold(
-      appBar: AppBar(title: const Text('Coding defaults')),
+      appBar: AppBar(title: Text(_settingsCopy(context).e7SettingsUi2)),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
           if (!controller.capabilities.shellSettings)
-            const GatedRowTile(
+            GatedRowTile(
               feature: 'shell-settings',
-              title: 'Default shell',
-              explainer:
-                  "Shell selection isn't available on OpenCode 2 servers",
+              title: _settingsCopy(context).e7SettingsUi35,
+              explainer: _settingsCopy(context).e7SettingsUi40,
               leading: Icon(AppIconography.terminal),
             )
           else
             ListTile(
               key: const ValueKey('default-shell-settings-entry'),
               leading: const Icon(AppIconography.terminal),
-              title: const Text('Default shell'),
+              title: Text(_settingsCopy(context).e7SettingsUi35),
               subtitle: Text(
                 _shellError != null
-                    ? '${_shellError!} Tap to retry.'
+                    ? _settingsCopy(context).e7SettingsRetryError(_shellError!)
                     : _shellSettings == null
-                    ? 'Loading shells from OpenCode…'
+                    ? _settingsCopy(context).e7SettingsUi41
                     : _selectedShellLabel(_shellSettings!),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               trailing: _loadingShell || _savingShell
                   ? const SizedBox.square(
@@ -238,10 +239,10 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
             ),
           ListTile(
             leading: const Icon(AppIconography.model),
-            title: const Text('Selected model'),
+            title: Text(_settingsCopy(context).e7SettingsUi42),
             subtitle: Text(
               controller.selectedModel == null
-                  ? 'Server default'
+                  ? _settingsCopy(context).modelServerDefault
                   : [
                       controller.catalog?.models
                               .where(
@@ -266,10 +267,10 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
           ),
           ListTile(
             leading: const Icon(AppIconography.support),
-            title: const Text('Selected agent'),
+            title: Text(_settingsCopy(context).e7SettingsUi44),
             subtitle: Text(
               controller.selectedAgent.isEmpty
-                  ? 'Server default'
+                  ? _settingsCopy(context).modelServerDefault
                   : controller.selectedAgent,
             ),
             trailing: const Icon(AppIconography.chevronRight),

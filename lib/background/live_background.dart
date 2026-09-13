@@ -21,11 +21,34 @@ enum CodingAlertKind {
 
   /// A session has been observed busy past the profile's check-in rule.
   /// Must match the `"checkin"` branch in BackgroundConnectionService.kt.
-  checkIn('checkin');
+  checkIn('checkin'),
+
+  /// AI Team (TEAM-203, 06 decision 8): a new pending interaction. The
+  /// alert's session id is the gate id; tapping opens that Gate sheet.
+  /// Must match the `"team_decision"` branch in
+  /// BackgroundConnectionService.kt.
+  teamDecision('team_decision'),
+
+  /// AI Team: a run failed. The session id is the failed-run gate id.
+  teamRunFailed('team_run_failed'),
+
+  /// AI Team: a run is ready for review. The session id is the review
+  /// gate id.
+  teamReview('team_review'),
+
+  /// AI Team: a run completed. The session id is the run id; tapping
+  /// opens the run.
+  teamCompleted('team_completed');
 
   const CodingAlertKind(this.wireValue);
 
   final String wireValue;
+
+  /// One of the four AI Team kinds, whose session id is a gate or run id.
+  bool get isTeam => switch (this) {
+    teamDecision || teamRunFailed || teamReview || teamCompleted => true,
+    permission || question || complete || error || quota || checkIn => false,
+  };
 
   static CodingAlertKind? fromWireValue(Object? value) {
     for (final kind in values) {
@@ -285,7 +308,10 @@ class BackgroundLiveController extends ChangeNotifier {
   /// The native side owns all user-visible copy so no prompt, tool input,
   /// filename, session title, or server error can leak onto the lock screen.
   /// [quickReply] is a capability bit only: it lets a question alert carry a
-  /// RemoteInput action; it never carries request content.
+  /// RemoteInput action; it never carries request content. [subtext] is
+  /// the one user-chosen line an alert may carry — the saved server's
+  /// name, so an AI Team alert says which host wants the person — never a
+  /// title or a prompt.
   Future<bool> showCodingAlert({
     required CodingAlertKind kind,
     required String sessionID,
@@ -295,6 +321,7 @@ class BackgroundLiveController extends ChangeNotifier {
     String profileID = '',
     String monitorToken = '',
     bool allowActions = true,
+    String subtext = '',
   }) async {
     if (!platformCapabilities.supportsNotifications) return false;
     if (!enabled || !notificationGranted) return false;
@@ -308,6 +335,7 @@ class BackgroundLiveController extends ChangeNotifier {
         if (profileID.isNotEmpty) 'profileID': profileID,
         if (monitorToken.isNotEmpty) 'monitorToken': monitorToken,
         if (!allowActions) 'allowActions': false,
+        if (subtext.isNotEmpty) 'subtext': subtext,
       });
       return result['shown'] == true;
     } on PlatformException {

@@ -33,6 +33,9 @@ new_fixture() {
   mkdir -p "$FIXTURE/scripts" "$FIXTURE/android/app" "$FIXTURE/mock-bin" "$FIXTURE/home" "$(dirname "$KEYSTORE_PATH")"
   cp "$SOURCE_SCRIPT" "$FIXTURE/scripts/release.sh"
   cp "$CUT_SCRIPT" "$FIXTURE/scripts/cut-alpha.sh"
+  mkdir -p "$FIXTURE/tool/qa" "$FIXTURE/test/nested"
+  cp "$REPO_ROOT/tool/qa/run_serial_tests.py" "$FIXTURE/tool/qa/run_serial_tests.py"
+  printf 'void main() {}\n' >"$FIXTURE/test/nested/release_gate_test.dart"
   chmod +x "$FIXTURE/scripts/release.sh" "$FIXTURE/scripts/cut-alpha.sh"
   : >"$FIXTURE/commands.log"
 
@@ -479,7 +482,7 @@ test_release_is_dry_run_by_default_and_builds_aab() {
   assert_status 0
   assert_output_contains 'nothing was uploaded'
   assert_log_contains 'flutter analyze'
-  assert_log_contains 'flutter test --concurrency=1'
+  assert_log_contains 'flutter test --no-pub --concurrency=1 test/nested/release_gate_test.dart'
   assert_log_contains 'shorebird release android --build-name 1.0.12 --build-number 13 --flutter-version 3.47.2 --artifact aab --dry-run'
   assert_log_line_count 1 'shorebird '
   assert_log_not_contains '--artifact apk'
@@ -507,7 +510,7 @@ test_sideload_requires_public_lineage_and_verifies_apk() {
   assert_output_contains 'nothing was uploaded'
   assert_output_contains 'Publish explicitly with: ./scripts/release.sh sideload --publish'
   assert_log_contains 'flutter analyze'
-  assert_log_contains 'flutter test --concurrency=1'
+  assert_log_contains 'flutter test --no-pub --concurrency=1 test/nested/release_gate_test.dart'
   assert_log_contains 'shorebird release android --build-name 1.0.12 --build-number 13 --flutter-version 3.47.2 --artifact apk --dry-run'
   assert_log_contains 'apksigner verify --print-certs build/app/outputs/flutter-apk/app-release.apk'
   assert_log_contains 'aapt dump badging build/app/outputs/flutter-apk/app-release.apk'

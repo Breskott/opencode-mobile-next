@@ -26,6 +26,12 @@ Finder inBrief(String text) => find.descendant(
   matching: find.text(text),
 );
 
+class _NoFormsBriefApi extends BriefApi {
+  @override
+  ServerCapabilities get capabilities =>
+      const ServerCapabilities(projectManagement: false, forms: false);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
@@ -286,9 +292,72 @@ void main() {
       c.partial = true;
       c.publish();
       await frames(tester);
-      expect(find.textContaining('Loaded sessions only.'), findsOneWidget);
+      expect(find.textContaining('Loaded sessions only.'), findsNothing);
+      expect(find.textContaining('Showing loaded sessions.'), findsOneWidget);
+      expect(find.text('Load more sessions'), findsOneWidget);
     },
   );
+
+  testWidgets('unsupported form state does not make the return brief stale', (
+    tester,
+  ) async {
+    final c = await briefController();
+    addTearDown(c.dispose);
+    c.api = _NoFormsBriefApi();
+    c.formsLoading = true;
+    c.formsError = 'Old forms error';
+    c.sessionsById.clear();
+    await tester.pumpWidget(briefApp(c));
+    await frames(tester);
+    expect(find.textContaining('Last observed state.'), findsNothing);
+    expect(find.byKey(const ValueKey('return-brief-status')), findsNothing);
+  });
+
+  testWidgets(
+    'partial Workspace keeps review actions and one inventory notice',
+    (tester) async {
+      final c = await briefController(requests: true);
+      addTearDown(c.dispose);
+      c.partial = true;
+      await tester.pumpWidget(briefApp(c));
+      await frames(tester);
+      expect(inBrief('Review results'), findsOneWidget);
+      expect(inBrief('Answer'), findsOneWidget);
+      expect(
+        inBrief('Loaded sessions only. The session list is still incomplete.'),
+        findsNothing,
+      );
+      await tester.scrollUntilVisible(
+        find.text('Load more sessions'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.textContaining('Showing loaded sessions.'), findsOneWidget);
+      expect(c.returnBriefAcknowledgement.runs, isEmpty);
+      expect(c.permissions, hasLength(1));
+    },
+  );
+
+  testWidgets('empty failed inventory does not claim no recent sessions', (
+    tester,
+  ) async {
+    final c = await briefController();
+    addTearDown(c.dispose);
+    c.sessionsById.clear();
+    c.sessionsError = 'Could not load this project';
+    await tester.pumpWidget(briefApp(c));
+    await frames(tester);
+    expect(find.text('No recent sessions'), findsNothing);
+    expect(find.text('Could not load this project'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextButton>(
+            find.byKey(const ValueKey('session-inventory-more')),
+          )
+          .onPressed,
+      isNotNull,
+    );
+  });
 
   testWidgets('project switch during a save never dismisses the new project', (
     tester,

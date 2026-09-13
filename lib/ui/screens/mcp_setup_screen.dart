@@ -113,10 +113,20 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
             : const [],
         cwd: _kind == McpServerKind.local ? _cwd.text : null,
         headers: _kind == McpServerKind.remote
-            ? _pairs(_headers.text, 'HTTP header')
+            ? _pairs(
+                _headers.text,
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryHTTPHeader,
+              )
             : const {},
         environment: _kind == McpServerKind.local
-            ? _pairs(_environment.text, 'environment variable')
+            ? _pairs(
+                _environment.text,
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryEnvironmentVariable,
+              )
             : const {},
         detectOAuth: _detectOAuth,
         timeoutMs: timeoutText.isEmpty ? null : int.parse(timeoutText),
@@ -131,8 +141,10 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
         throw ProductException(l10n.mcpLocationChanged);
       }
       if (repository == null) {
-        throw const ProductException(
-          'OpenCode is reconnecting. Try again shortly.',
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryOpenCodeIsReconnectingTryAgainShortly,
         );
       }
       await repository.addMcpServer(draft, scope: _scope);
@@ -166,8 +178,12 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
         }
         setState(() {
           _saveError = _configurationSaved
-              ? '${l10n.mcpSavedStatus}, but the app could not reconnect. '
-                    '${productErrorText(error)}'
+              ? lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryButTheAppCouldNotReconnect(
+                  (l10n.mcpSavedStatus).toString(),
+                  (productErrorText(error)).toString(),
+                )
               : productErrorText(error);
         });
       }
@@ -209,9 +225,11 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
           return;
         }
         setState(() {
-          _saveError =
-              '${l10n.mcpSavedStatus}, but the app could not reconnect. '
-              '${productErrorText(error)}';
+          _saveError = lookupAppLocalizations(Localizations.localeOf(context))
+              .e7LibraryButTheAppCouldNotReconnect(
+                (l10n.mcpSavedStatus).toString(),
+                (productErrorText(error)).toString(),
+              );
         });
       }
     } finally {
@@ -240,14 +258,18 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add MCP server'),
+        title: Text(
+          lookupAppLocalizations(Localizations.localeOf(context)).mcpAdd,
+        ),
         actions: [
           // A full-size info target instead of an inline label: the form is
           // a lazy list and a header row would push its fields below the
           // fold on a narrow large-text phone.
           IconButton(
             key: const ValueKey('mcp-glossary'),
-            tooltip: 'What is MCP?',
+            tooltip: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryWhatIsMCP,
             icon: const Icon(AppIconography.info),
             onPressed: () => InfoLabel.show(
               context,
@@ -328,10 +350,18 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
                           ? l10n.mcpReconnecting
                           : (_runtime
                                 ? l10n.mcpAdding
-                                : 'Saving configuration'))
+                                : lookupAppLocalizations(
+                                    Localizations.localeOf(context),
+                                  ).e7LibrarySavingConfiguration))
                     : _configurationSaved
-                    ? 'Close'
-                    : (_runtime ? l10n.mcpAdd : 'Save MCP server'),
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).isolatedTaskClose
+                    : (_runtime
+                          ? l10n.mcpAdd
+                          : lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7LibrarySaveMCPServer),
               ),
             ),
           ],
@@ -342,17 +372,23 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
         autovalidateMode: AutovalidateMode.onUserInteraction,
         child: ListView(
           key: const ValueKey('mcp-setup-form'),
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 20, 24),
           children: [
             Text(
-              _runtime ? l10n.mcpRuntimeTitle : 'Persisted configuration',
+              _runtime
+                  ? l10n.mcpRuntimeTitle
+                  : lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryPersistedConfiguration,
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 4),
             Text(
               _runtime
                   ? l10n.mcpRuntimeDescription
-                  : 'Saved by OpenCode on the server. It remains available after the app or server restarts.',
+                  : lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibrarySavedByOpenCodeOnTheServerIt,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -373,6 +409,9 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
               ),
             ] else ...[
               SegmentedButton<McpConfigScope>(
+                direction: MediaQuery.textScalerOf(context).scale(14) > 20
+                    ? Axis.vertical
+                    : Axis.horizontal,
                 key: const ValueKey('mcp-scope'),
                 showSelectedIcon: false,
                 segments: [
@@ -380,12 +419,20 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
                     value: McpConfigScope.project,
                     enabled: _hasProject,
                     icon: const Icon(AppIconography.files),
-                    label: const Text('This project'),
+                    label: Text(
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryThisProject,
+                    ),
                   ),
-                  const ButtonSegment(
+                  ButtonSegment(
                     value: McpConfigScope.global,
                     icon: Icon(AppIconography.globe),
-                    label: Text('All projects'),
+                    label: Text(
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).usageAllProjects,
+                    ),
                   ),
                 ],
                 selected: {_scope},
@@ -396,8 +443,12 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
               const SizedBox(height: 8),
               Text(
                 _scope == McpConfigScope.project
-                    ? 'Writes only to $_directory.'
-                    : 'Writes to this OpenCode server’s global configuration.',
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryWritesOnlyTo((_directory).toString())
+                    : lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryWritesToThisOpenCodeServerSGlobal,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -409,30 +460,51 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
             TextFormField(
               key: const ValueKey('mcp-name'),
               controller: _name,
+              textDirection: TextDirection.ltr,
               enabled: _editable,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Server name',
-                hintText: 'docs or browser-tools',
-                helperText: 'Unique within the selected configuration.',
+              decoration: InputDecoration(
+                labelText: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryServerName,
+                hintText: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryDocsOrBrowserTools,
+                helperText: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryUniqueWithinTheSelectedConfiguration,
               ),
-              validator: (value) =>
-                  value?.trim().isEmpty == true ? 'Enter a server name' : null,
+              validator: (value) => value?.trim().isEmpty == true
+                  ? lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryEnterAServerName
+                  : null,
             ),
             const SizedBox(height: 20),
             SegmentedButton<McpServerKind>(
+              direction: MediaQuery.textScalerOf(context).scale(14) > 20
+                  ? Axis.vertical
+                  : Axis.horizontal,
               key: const ValueKey('mcp-kind'),
               showSelectedIcon: false,
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: McpServerKind.remote,
                   icon: Icon(AppIconography.cloud),
-                  label: Text('Remote URL'),
+                  label: Text(
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryRemoteURL,
+                  ),
                 ),
                 ButtonSegment(
                   value: McpServerKind.local,
                   icon: Icon(AppIconography.terminal),
-                  label: Text('Local command'),
+                  label: Text(
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryLocalCommand,
+                  ),
                 ),
               ],
               selected: {_kind},
@@ -450,19 +522,26 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
             TextFormField(
               key: const ValueKey('mcp-timeout'),
               controller: _timeout,
+              textDirection: TextDirection.ltr,
               enabled: _editable,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                labelText: 'Timeout in milliseconds',
-                hintText: 'Optional',
+              decoration: InputDecoration(
+                labelText: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryTimeoutInMilliseconds,
+                hintText: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryOptional,
               ),
               validator: (value) {
                 final text = value?.trim() ?? '';
                 if (text.isEmpty) return null;
                 final timeout = int.tryParse(text);
                 return timeout == null || timeout <= 0
-                    ? 'Enter a value greater than zero'
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryEnterAValueGreaterThanZero
                     : null;
               },
             ),
@@ -476,14 +555,19 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     TextFormField(
       key: const ValueKey('mcp-url'),
       controller: _url,
+      textDirection: TextDirection.ltr,
       enabled: _editable,
       keyboardType: TextInputType.url,
       textInputAction: TextInputAction.next,
       autocorrect: false,
-      decoration: const InputDecoration(
-        labelText: 'MCP endpoint URL',
+      decoration: InputDecoration(
+        labelText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryMCPEndpointURL,
         hintText: 'https://server.example/mcp',
-        helperText: 'HTTP is accepted for local development servers.',
+        helperText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryHTTPIsAcceptedForLocalDevelopmentServers,
       ),
       validator: (value) {
         final uri = Uri.tryParse(value?.trim() ?? '');
@@ -491,7 +575,9 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
             !uri.hasAuthority ||
             (uri.scheme != 'https' && uri.scheme != 'http') ||
             uri.userInfo.isNotEmpty) {
-          return 'Enter a valid HTTP or HTTPS URL without credentials';
+          return lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryEnterAValidHTTPOrHTTPSURL;
         }
         return null;
       },
@@ -500,26 +586,42 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     TextFormField(
       key: const ValueKey('mcp-headers'),
       controller: _headers,
+      textDirection: TextDirection.ltr,
       enabled: _editable,
       minLines: 2,
       maxLines: 5,
       keyboardType: TextInputType.multiline,
       autocorrect: false,
-      decoration: const InputDecoration(
-        labelText: 'HTTP headers',
+      decoration: InputDecoration(
+        labelText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryHTTPHeaders,
         hintText: 'Authorization=Bearer token',
-        helperText: 'Optional. Enter one KEY=VALUE pair per line.',
+        helperText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryOptionalEnterOneKEYVALUEPairPer,
         alignLabelWithHint: true,
       ),
-      validator: (value) => _pairError(value ?? '', 'HTTP header'),
+      validator: (value) => _pairError(
+        value ?? '',
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryHTTPHeader,
+      ),
     ),
     const SizedBox(height: 8),
     SwitchListTile.adaptive(
       key: const ValueKey('mcp-oauth-detection'),
       contentPadding: EdgeInsets.zero,
-      title: const Text('Detect OAuth automatically'),
-      subtitle: const Text(
-        'Turn this off when the server uses headers and should never start OAuth.',
+      title: Text(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryDetectOAuthAutomatically,
+      ),
+      subtitle: Text(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryTurnThisOffWhenTheServerUses,
       ),
       value: _detectOAuth,
       onChanged: !_editable
@@ -532,48 +634,70 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
     TextFormField(
       key: const ValueKey('mcp-command'),
       controller: _command,
+      textDirection: TextDirection.ltr,
       enabled: _editable,
       minLines: 4,
       maxLines: 8,
       keyboardType: TextInputType.multiline,
       autocorrect: false,
-      decoration: const InputDecoration(
-        labelText: 'Command and arguments',
+      decoration: InputDecoration(
+        labelText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryCommandAndArguments,
         hintText: 'npx\n-y\n@package/mcp-server',
-        helperText:
-            'Runs on the OpenCode server, not this phone. Enter one argument per line.',
+        helperText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryRunsOnTheOpenCodeServerNotThis,
         alignLabelWithHint: true,
       ),
-      validator: (value) =>
-          _lines(value ?? '').isEmpty ? 'Enter a command' : null,
+      validator: (value) => _lines(value ?? '').isEmpty
+          ? lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryEnterACommand
+          : null,
     ),
     const SizedBox(height: 16),
     TextFormField(
       key: const ValueKey('mcp-cwd'),
       controller: _cwd,
+      textDirection: TextDirection.ltr,
       enabled: _editable,
       textInputAction: TextInputAction.next,
-      decoration: const InputDecoration(
-        labelText: 'Working directory',
-        hintText: 'Optional server path',
+      decoration: InputDecoration(
+        labelText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryWorkingDirectory,
+        hintText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryOptionalServerPath,
       ),
     ),
     const SizedBox(height: 16),
     TextFormField(
       key: const ValueKey('mcp-environment'),
       controller: _environment,
+      textDirection: TextDirection.ltr,
       enabled: _editable,
       minLines: 2,
       maxLines: 5,
       keyboardType: TextInputType.multiline,
       autocorrect: false,
-      decoration: const InputDecoration(
-        labelText: 'Environment variables',
+      decoration: InputDecoration(
+        labelText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryEnvironmentVariables,
         hintText: 'LOG_LEVEL=warn',
-        helperText: 'Optional. Enter one KEY=VALUE pair per line.',
+        helperText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryOptionalEnterOneKEYVALUEPairPer,
         alignLabelWithHint: true,
       ),
-      validator: (value) => _pairError(value ?? '', 'environment variable'),
+      validator: (value) => _pairError(
+        value ?? '',
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryEnvironmentVariable,
+      ),
     ),
   ];
 
@@ -583,7 +707,7 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
       .where((line) => line.isNotEmpty)
       .toList();
 
-  static Map<String, String> _pairs(String value, String label) {
+  Map<String, String> _pairs(String value, String label) {
     final result = <String, String>{};
     final lines = value.split('\n');
     for (var index = 0; index < lines.length; index++) {
@@ -592,23 +716,39 @@ class _McpSetupScreenState extends State<McpSetupScreen> {
       final separator = line.indexOf('=');
       if (separator < 1) {
         throw ProductException(
-          'Invalid $label on line ${index + 1}. Use KEY=VALUE.',
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryInvalidOnLineUseKEYVALUE(
+            (label).toString(),
+            (index + 1).toString(),
+          ),
         );
       }
       final key = line.substring(0, separator).trim();
       final content = line.substring(separator + 1).trim();
       if (key.isEmpty || key.contains(RegExp(r'[\r\n=]'))) {
-        throw ProductException('Invalid $label name on line ${index + 1}.');
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryInvalidNameOnLine(
+            (label).toString(),
+            (index + 1).toString(),
+          ),
+        );
       }
       if (result.containsKey(key)) {
-        throw ProductException('Duplicate $label name "$key".');
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryDuplicateName((label).toString(), (key).toString()),
+        );
       }
       result[key] = content;
     }
     return result;
   }
 
-  static String? _pairError(String value, String label) {
+  String? _pairError(String value, String label) {
     try {
       _pairs(value, label);
       return null;

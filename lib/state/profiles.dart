@@ -8,10 +8,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/models.dart' show ModelRef;
 import '../api/server_probe.dart' show ServerFlavor;
+import '../domain/loopback_host.dart';
+import '../domain/orchestration_gateway.dart' show OrchestrationHostMode;
 import '../platform/platform_capabilities.dart';
 import 'model_library.dart';
 
 export '../api/server_probe.dart' show ServerFlavor;
+export '../domain/loopback_host.dart' show isLoopbackHost;
+export '../domain/orchestration_gateway.dart' show OrchestrationHostMode;
 
 /// A model (and variant) chosen for one session from inside its chat.
 class SessionModelChoice {
@@ -22,6 +26,193 @@ class SessionModelChoice {
 
 /// One opencode server the user can connect to.
 enum ServerBackend { openCode, codex }
+
+/// Which orchestration host the AI Team plugin talks to for a profile.
+enum OrchestrationProvider {
+  /// A Gas City supervisor reached over HTTP(S).
+  gascity,
+
+  /// The recorded fixture in `tool/qa/gascity_fixture` (tests and demos).
+  fixture;
+
+  /// Maps a stored name; unknown names fall back to [gascity] so an old
+  /// profile never loses its host.
+  static OrchestrationProvider fromName(Object? name) =>
+      name == fixture.name ? fixture : gascity;
+}
+
+/// The kind of machine an AI Team host runs on, chosen by the person when
+/// they add the host and used only for the performance disclaimer
+/// (03-onboarding §4, TEAM-206). Finer than [OrchestrationHostMode]: every
+/// kind maps to one mode ([mode]), and a mode without a chosen kind takes
+/// [forMode]'s default so a config stored before this field existed still
+/// shows a disclaimer.
+enum OrchestrationHostKind {
+  /// A desktop computer that stays awake.
+  pc,
+
+  /// A laptop: sleep and lid-close pause the team.
+  laptop,
+
+  /// Windows via WSL2: sleeps like a laptop and stops with its last terminal.
+  wsl,
+
+  /// This phone (Termux); set from the host mode, never chosen in the form.
+  phone;
+
+  /// The host mode this kind belongs to.
+  OrchestrationHostMode get mode => switch (this) {
+    pc || laptop || wsl => OrchestrationHostMode.computer,
+    phone => OrchestrationHostMode.phone,
+  };
+
+  /// The default kind for a mode: a computer is a [pc] until told otherwise.
+  static OrchestrationHostKind forMode(OrchestrationHostMode mode) =>
+      switch (mode) {
+        OrchestrationHostMode.computer => pc,
+        OrchestrationHostMode.phone => phone,
+      };
+
+  /// Maps a stored name; null for an unknown or missing one so the caller
+  /// can fall back to [forMode].
+  static OrchestrationHostKind? fromName(Object? name) {
+    for (final kind in values) {
+      if (kind.name == name) return kind;
+    }
+    return null;
+  }
+}
+
+/// The AI Team plugin's per-profile settings (04-plugin-architecture §1).
+/// A profile whose [ServerProfile.orchestration] is null has the plugin
+/// off: no controller, no store keys, no widgets in the tree.
+///
+/// Immutable; [toJson] / [fromJson] round-trip every field and tolerate a
+/// stored shape from an older build (missing fields take their defaults).
+class OrchestrationConfig {
+  const OrchestrationConfig({
+    required this.provider,
+    required this.url,
+    this.city = '',
+    this.hostMode = OrchestrationHostMode.computer,
+    OrchestrationHostKind? hostKind,
+    this.front = false,
+    this.enabledAt,
+  }) : hostKind =
+           hostKind ??
+           (hostMode == OrchestrationHostMode.phone
+               ? OrchestrationHostKind.phone
+               : OrchestrationHostKind.pc);
+
+  final OrchestrationProvider provider;
+
+  /// Base URL of the host (`https://…`, `http://` to loopback or tailnet
+  /// only); for [OrchestrationProvider.fixture], the fixture directory.
+  final String url;
+
+  /// Gas City city name; empty means whatever the host reports.
+  final String city;
+
+  /// Where the host runs relative to the OpenCode server.
+  final OrchestrationHostMode hostMode;
+
+  /// The kind of machine behind [hostMode], for the disclaimer line only.
+  /// Always agrees with [hostMode]: absent or contradicting input takes
+  /// [OrchestrationHostKind.forMode].
+  final OrchestrationHostKind hostKind;
+
+  /// True once the host front is in use (Sprint B); the read adapter alone
+  /// never writes.
+  final bool front;
+
+  /// When the person turned the plugin on for this profile.
+  final DateTime? enabledAt;
+
+  OrchestrationConfig copyWith({
+    OrchestrationProvider? provider,
+    String? url,
+    String? city,
+    OrchestrationHostMode? hostMode,
+    OrchestrationHostKind? hostKind,
+    bool? front,
+    DateTime? enabledAt,
+  }) {
+    final mode = hostMode ?? this.hostMode;
+    return OrchestrationConfig(
+      provider: provider ?? this.provider,
+      url: url ?? this.url,
+      city: city ?? this.city,
+      hostMode: mode,
+      hostKind: _kindFor(mode, hostKind ?? this.hostKind),
+      front: front ?? this.front,
+      enabledAt: enabledAt ?? this.enabledAt,
+    );
+  }
+
+  /// [kind] when it belongs to [mode], else the mode's default; a kind
+  /// never contradicts the mode it is stored with.
+  static OrchestrationHostKind _kindFor(
+    OrchestrationHostMode mode,
+    OrchestrationHostKind? kind,
+  ) => kind != null && kind.mode == mode
+      ? kind
+      : OrchestrationHostKind.forMode(mode);
+
+  Map<String, dynamic> toJson() => {
+    'provider': provider.name,
+    'url': url,
+    'city': city,
+    'hostMode': hostMode.name,
+    'hostKind': hostKind.name,
+    'front': front,
+    if (enabledAt != null) 'enabledAt': enabledAt!.toUtc().toIso8601String(),
+  };
+
+  /// Decodes a stored config; null for null, non-map or url-less input so
+  /// a corrupt entry reads as "plugin off" rather than crashing the load.
+  static OrchestrationConfig? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final url = json['url'];
+    if (url is! String || url.isEmpty) return null;
+    final enabledAt = json['enabledAt'];
+    final hostMode = json['hostMode'] == OrchestrationHostMode.phone.name
+        ? OrchestrationHostMode.phone
+        : OrchestrationHostMode.computer;
+    return OrchestrationConfig(
+      provider: OrchestrationProvider.fromName(json['provider']),
+      url: url,
+      city: (json['city'] ?? '').toString(),
+      hostMode: hostMode,
+      // Stored before TEAM-206, or an unknown name: the mode's default.
+      hostKind: _kindFor(
+        hostMode,
+        OrchestrationHostKind.fromName(json['hostKind']),
+      ),
+      front: json['front'] == true,
+      enabledAt: enabledAt is String ? DateTime.tryParse(enabledAt) : null,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is OrchestrationConfig &&
+      other.provider == provider &&
+      other.url == url &&
+      other.city == city &&
+      other.hostMode == hostMode &&
+      other.hostKind == hostKind &&
+      other.front == front &&
+      other.enabledAt == enabledAt;
+
+  @override
+  int get hashCode =>
+      Object.hash(provider, url, city, hostMode, hostKind, front, enabledAt);
+
+  @override
+  String toString() =>
+      'OrchestrationConfig(${provider.name} $url ${city.isEmpty ? '' : city}'
+      ' ${hostMode.name}/${hostKind.name}${front ? ' front' : ''})';
+}
 
 class ServerProfile {
   final String id;
@@ -52,6 +243,9 @@ class ServerProfile {
   /// alongside [flavor] for the servers list.
   String? serverVersion;
 
+  /// AI Team plugin settings; null means the plugin is off for this server.
+  OrchestrationConfig? orchestration;
+
   ServerProfile({
     required this.id,
     required this.name,
@@ -65,6 +259,7 @@ class ServerProfile {
     this.requiresCodexTokenReentry = false,
     this.flavor = ServerFlavor.v1,
     this.serverVersion,
+    this.orchestration,
   });
 
   Map<String, dynamic> toJson() => {
@@ -76,6 +271,7 @@ class ServerProfile {
     if (backend == ServerBackend.codex) 'codexDirectory': codexDirectory,
     'flavor': flavor.name,
     if (serverVersion != null) 'serverVersion': serverVersion,
+    if (orchestration != null) 'orchestration': orchestration!.toJson(),
   };
 
   static ServerProfile fromJson(Map<String, dynamic> j) => ServerProfile(
@@ -91,25 +287,12 @@ class ServerProfile {
         ? ServerFlavor.v2
         : ServerFlavor.v1,
     serverVersion: j['serverVersion']?.toString(),
+    orchestration: OrchestrationConfig.fromJson(j['orchestration']),
   );
 }
 
-/// The hosts this app will speak cleartext HTTP to: this device, by every
-/// name it has.
-///
-/// Kept as one predicate on purpose. The app used to have three loopback
-/// checks that disagreed — the URL normalizer split on `:` and so read the
-/// host of `[::1]:4096` as `[`, the validator's allowlist had no IPv6 entry
-/// at all, and the connection controller's did. `::1` reached different
-/// verdicts depending on which one you hit. Anything added here must also be
-/// added to `android/app/src/main/res/xml/network_security_config.xml`, or
-/// Android blocks the request after this code has allowed it.
-bool isLoopbackHost(String host) {
-  final normalized = host.toLowerCase();
-  return normalized == 'localhost' ||
-      normalized == '127.0.0.1' ||
-      normalized == '::1';
-}
+// `isLoopbackHost` lives in `lib/domain/loopback_host.dart` (Flutter-free)
+// and is re-exported above for the callers that import it from here.
 
 /// Splits a bare `host[:port]` into the host to judge and the authority to
 /// put in a URL, or null when it is not a plausible single address.
@@ -282,6 +465,12 @@ class DeleteProfileResult {
   /// Whether the home-screen widget's session snapshot was cleared.
   final bool clearedWidgetSnapshot;
 
+  /// Whether the launcher's pinned-session shortcuts were withdrawn.
+  final bool clearedPinnedShortcuts;
+
+  /// Whether the Quick Settings tile's cached count was dropped.
+  final bool clearedAttentionTile;
+
   /// Whether the server profile itself and its Keystore password are gone.
   ///
   /// False means the deletion stopped before touching them: the local data
@@ -299,6 +488,8 @@ class DeleteProfileResult {
     this.removedQueuedPrompts = 0,
     this.removedDrafts = 0,
     this.clearedWidgetSnapshot = false,
+    this.clearedPinnedShortcuts = false,
+    this.clearedAttentionTile = false,
     this.removedProfile = true,
     this.failures = const [],
   });
@@ -883,15 +1074,36 @@ class ProfileStore {
     return ThemePackId.opencode;
   }
 
-  Future<void> setThemePack(ThemePackId pack) async {
-    if (!await prefs.setString(_themePackKey, pack.name)) {
-      throw StateError('Could not save the theme preference');
-    }
-  }
+  Future<void> setThemePack(ThemePackId pack) => _saveDisplayPreference(
+    _themePackKey,
+    pack.name,
+    'Could not save the theme preference',
+  );
 
-  Future<void> setAppearance(AppAppearance appearance) async {
-    if (!await prefs.setString(_appearanceKey, appearance.name)) {
-      throw StateError('Could not save the appearance preference');
+  Future<void> setAppearance(AppAppearance appearance) =>
+      _saveDisplayPreference(
+        _appearanceKey,
+        appearance.name,
+        'Could not save the appearance preference',
+      );
+
+  Future<void> _saveDisplayPreference(
+    String key,
+    String value,
+    String error,
+  ) async {
+    try {
+      if (!await prefs.setString(key, value)) throw StateError(error);
+    } catch (_) {
+      // SharedPreferences writes its cache before the platform acknowledges.
+      // Reload so a refused preview save cannot become the next controller's
+      // apparent saved appearance, while preserving the original failure.
+      try {
+        await prefs.reload();
+      } catch (_) {
+        // The live controller still keeps the last acknowledged selection.
+      }
+      rethrow;
     }
   }
 }

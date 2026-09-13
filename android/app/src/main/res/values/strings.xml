@@ -9,4 +9,17 @@
     <string name="shortcut_connect_long">Choose a server to connect</string>
     <string name="shortcut_new_task_short">New task</string>
     <string name="shortcut_new_task_long">Start a new task on the current server</string>
+    <!-- Dynamic pinned-session shortcuts (PinnedSessionShortcuts.kt). -->
+    <string name="shortcut_session_untitled">Untitled session</string>
+    <string name="shortcut_session_unavailable">This session is no longer available</string>
+    <!-- Quick Settings tile (AttentionTileService.kt). The product name is
+         the tile label; the count goes into the subtitle on Android 10+ and
+         is folded into the label below that. -->
+    <string name="tile_label">OpenCode</string>
+    <string name="tile_label_with_count">OpenCode · %1$s</string>
+    <string name="tile_all_clear">Nothing needs you</string>
+    <plurals name="tile_need_you">
+        <item quantity="one">%1$d needs you</item>
+        <item quantity="other">%1$d need you</item>
+    </plurals>
 </resources>

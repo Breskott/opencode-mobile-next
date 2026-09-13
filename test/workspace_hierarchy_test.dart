@@ -12,6 +12,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/widgets/entrance.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -149,6 +150,7 @@ Widget _app(
   ConnectionController controller, {
   double textScale = 1,
   bool dark = false,
+  bool rtl = false,
   Map<String, WidgetBuilder> routes = const {},
 }) => MaterialApp(
   routes: routes,
@@ -157,7 +159,10 @@ Widget _app(
     data: MediaQuery.of(
       context,
     ).copyWith(textScaler: TextScaler.linear(textScale)),
-    child: child!,
+    child: Directionality(
+      textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+      child: child!,
+    ),
   ),
   home: Scaffold(body: WorkspaceScreen(controller: controller)),
 );
@@ -175,6 +180,76 @@ double _top(WidgetTester tester, Finder finder) => tester.getTopLeft(finder).dy;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  for (final rtl in [false, true]) {
+    testWidgets(
+      '320dp 2.5x ${rtl ? 'RTL' : 'LTR'} Workspace keeps search and session creation reachable',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 760);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final controller = await _controller();
+        addTearDown(controller.dispose);
+        controller.sessionsById.clear();
+        controller.busySessions.clear();
+        await tester.pumpWidget(
+          _app(
+            controller,
+            textScale: 2.5,
+            rtl: rtl,
+            routes: {
+              '/chat/created': (_) =>
+                  const Scaffold(body: Text('Created conversation')),
+            },
+          ),
+        );
+        await _pumpFrames(tester);
+        expect(
+          find.byTooltip(
+            'Search session titles across every project on this server',
+          ),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+        await tester.tap(find.widgetWithText(FilledButton, 'New session'));
+        await _pumpFrames(tester);
+        expect(find.text('Created conversation'), findsOneWidget);
+      },
+    );
+  }
+
+  testWidgets(
+    'recent rows are immediately visible when recycled after scrolling',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 760);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      controller.busySessions.clear();
+      controller.sessionsById = {
+        for (var i = 0; i < 40; i++)
+          'recent-$i': _session('recent-$i', 100 - i),
+      };
+      await tester.pumpWidget(_app(controller));
+      await _pumpFrames(tester);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -2400));
+      await _pumpFrames(tester);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, 3000));
+      await tester.pump();
+      expect(find.text('recent-0'), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.text('recent-0'),
+          matching: find.byType(EntranceReveal),
+        ),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'empty Workspace has one New session action that opens a session',
@@ -247,6 +322,31 @@ void main() {
       await _pumpFrames(tester);
       expect(find.text('Existing session opened'), findsOneWidget);
       expect(controller.createCalls, 0);
+    },
+  );
+
+  testWidgets(
+    'an unlisted selected folder is not labelled as another project',
+    (tester) async {
+      final controller = await _controller();
+      controller.directory = '/work/selected-b';
+      await tester.pumpWidget(_app(controller));
+      await _pumpFrames(tester);
+      final context = find.byKey(const ValueKey('current-project-entry'));
+      expect(
+        find.descendant(of: context, matching: find.text('selected-b')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: context, matching: find.text('OpenCode Mobile')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: context, matching: find.text('/work/selected-b')),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      controller.dispose();
     },
   );
 

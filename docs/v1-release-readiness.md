@@ -2,10 +2,13 @@
 
 Objective: release the app with complete feature parity and polished UI/UX.
 This is an active delivery checklist, not a claim that the release is ready.
-Current `dev` source declares **1.0.36+37 and is unreleased**. This source batch
-has no new APK, CI/native build, signing or publication. The focused 1.0.35+36
-CI APK was previously delivered; [its verification](verification/empty-project-session-recovery-2026-09-07.md)
-does not validate subsequent source changes. The public
+As checked on **13 September 2026**, the stabilization base `5e3b8a4` declares
+**1.0.42+47**. GitHub has eight releases, all marked prerelease, and no stable
+release. The current stabilization evidence and remaining gates live in
+[the candidate record](verification/stable-ui-2026-09-13.md). No signed candidate
+or publication is claimed by that source work. The focused 1.0.35+36 CI APK's
+[older verification](verification/empty-project-session-recovery-2026-09-07.md)
+does not validate later source. The public
 [1.0.34+35 release is marked BROKEN](https://github.com/Eslamasabry/opencode-mobile-next/releases/tag/v1.0.34%2B35)
 for hidden session access when no projects appear.
 
@@ -14,6 +17,9 @@ the primary Android journey is resume, compose, monitor, unblock and review.
 Supporting and advanced features remain in the full parity scope.
 
 ## Completion evidence
+
+The cycle inventory below is historical implementation evidence. It must be
+reconciled against the candidate record before any row is used as release proof.
 
 | Requirement | Evidence needed | Current state |
 |---|---|---|
@@ -26,7 +32,7 @@ Supporting and advanced features remain in the full parity scope.
 | Complete conversation export and transfer | Full server response, truthful redaction, explicit import destination and conflict behavior | Cycle 14 implements JSON export and verifies both redaction modes against pinned beta-18600. Sanitization replaces original text with placeholders; the UI explains the unredacted backup option. Cycle 15 implements import review and verifies transfer between two servers, source preservation and parent/conflict behavior. Native picker/device smoke remains; mobile import is limited to 128 MiB. See [export evidence](verification/export-beta-18600.md) and [import evidence](verification/import-beta-18600.md). |
 | Existing users can install the release predictably | Exact APK package/version/signer/checksum; install and upgrade smoke evidence with data-preservation behavior documented | Not verified for a final release candidate. Preserve the installed signer. Maintainer replacements must retain stable CI certificate `2D010C2103CB2F78ABAACA690EAD4D45F8003A6C0A02082CD2A2AE62FD18D0EC`; never substitute or rotate it. Historical public signing provenance is in the [release notes](release-alpha-notes.md). |
 | Final source and artifacts pass release gates | Clean merged commit, full platform CI, Android release build/lint, signed artifact verification and physical-device smoke | Pending final candidate. Prior clean builds are supporting evidence only. |
-| Public release is available and accurately documented | Published GitHub release, verified downloadable artifacts, matching tag/source/version, current notes and compatibility limits | Pending stable v1. Public 1.0.34+35 is marked BROKEN; focused 1.0.35+36 was delivered as a stable-CI-signed APK. Neither contains current 1.0.36+37 source changes. Historical preview artifacts are not current readiness evidence. |
+| Public release is available and accurately documented | Published GitHub release, verified downloadable artifacts, matching tag/source/version, current notes and compatibility limits | Pending stable v1. All eight public release entries inspected on 13 September 2026 are prereleases. Public 1.0.34+35 remains marked BROKEN. Historical preview artifacts do not verify source 1.0.42+47. |
 
 ## Delivery order
 

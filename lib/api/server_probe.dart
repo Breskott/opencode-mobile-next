@@ -37,13 +37,11 @@ class ServerProbeResult {
   /// supplied, or the supplied one was rejected (still a 401).
   final bool needsPassword;
 
-  const ServerProbeResult.success(
-    this.version, {
-    this.flavor = ServerFlavor.v1,
-  }) : ok = true,
-       message = null,
-       suggestsMissingServer = false,
-       needsPassword = false;
+  const ServerProbeResult.success(this.version, {this.flavor = ServerFlavor.v1})
+    : ok = true,
+      message = null,
+      suggestsMissingServer = false,
+      needsPassword = false;
   const ServerProbeResult.failure(
     this.message, {
     this.suggestsMissingServer = false,
@@ -89,9 +87,7 @@ Future<ServerProbeResult> probeServerConnection({
   final hasPassword = password != null && password.isNotEmpty;
   final headers = <String, Object>{};
   if (hasPassword) {
-    final user = (username == null || username.isEmpty)
-        ? 'opencode'
-        : username;
+    final user = (username == null || username.isEmpty) ? 'opencode' : username;
     headers['Authorization'] =
         'Basic ${base64Encode(utf8.encode('$user:$password'))}';
   }
@@ -103,7 +99,8 @@ Future<ServerProbeResult> probeServerConnection({
       connectTimeout: const Duration(seconds: 8),
       receiveTimeout: const Duration(seconds: 8),
       headers: headers,
-      validateStatus: (status) => status != null && status >= 200 && status < 300,
+      validateStatus: (status) =>
+          status != null && status >= 200 && status < 300,
     ),
   );
   final adapterFactory = serverProbeAdapterFactory;

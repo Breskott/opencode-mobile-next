@@ -35,7 +35,11 @@ class _CommandsScreenState extends State<CommandsScreen> {
       final repository = await widget.controller.prepareActionRepository();
       if (!mounted || generation != _loadGeneration) return;
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryOpenCodeIsReconnecting,
+        );
       }
       final commands = await repository.listCommands();
       if (!mounted || generation != _loadGeneration) return;
@@ -67,8 +71,10 @@ class _CommandsScreenState extends State<CommandsScreen> {
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Search server commands',
+                  decoration: InputDecoration(
+                    hintText: lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibrarySearchServerCommands,
                     prefixIcon: Icon(AppIconography.search),
                     border: OutlineInputBorder(),
                     isDense: true,
@@ -80,11 +86,14 @@ class _CommandsScreenState extends State<CommandsScreen> {
                 child: commands.isEmpty
                     ? RefreshIndicator(
                         onRefresh: _load,
-                        child: const ProductEmptyState(
+                        child: ProductEmptyState(
                           icon: AppIcons.run,
-                          title: 'No server commands found',
-                          message:
-                              'Commands from your project and skills appear here.',
+                          title: lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7LibraryNoServerCommandsFound,
+                          message: lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7LibraryCommandsFromYourProjectAndSkillsAppear,
                         ),
                       )
                     : RefreshIndicator(
@@ -97,9 +106,15 @@ class _CommandsScreenState extends State<CommandsScreen> {
                             final command = commands[index];
                             return ListTile(
                               leading: const Icon(AppIcons.run),
-                              title: Text('/${command.name}'),
+                              title: Text(
+                                '/${command.name}',
+                                textDirection: TextDirection.ltr,
+                              ),
                               subtitle: Text(
-                                command.description ?? 'No description',
+                                command.description ??
+                                    lookupAppLocalizations(
+                                      Localizations.localeOf(context),
+                                    ).e7LibraryNoDescription,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -119,7 +134,13 @@ class _CommandsScreenState extends State<CommandsScreen> {
     );
     if (widget.embedded) return content;
     return Scaffold(
-      appBar: AppBar(title: const Text('Server commands')),
+      appBar: AppBar(
+        title: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryServerCommands,
+        ),
+      ),
       body: content,
     );
   }

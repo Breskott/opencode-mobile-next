@@ -1,0 +1,8 @@
+{
+  "teamUiHomeUpkeepToggle": "إظهار صيانة الفريق ({count})",
+  "teamUiHomeUpkeepHint": "دوريات ومهام يشغّلها المضيف لنفسه",
+  "teamUiHomeSuspendedGroup": "موقوفون على المضيف ({count})",
+  "teamUiHomeSegmentAgentsOff": "الوكلاء ({count} · {off} متوقفون)",
+  "teamUiHomeHostChipHost": "{host} · {kind}",
+  "teamUiRunLabelRawTitle": "عنوان المزوّد"
+}

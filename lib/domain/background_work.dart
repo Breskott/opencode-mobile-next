@@ -2,7 +2,9 @@ import '../api/models.dart';
 import 'server_gateway.dart';
 
 /// Promotion belongs to the active, blocking tool call, not every busy
-/// child session. In particular, v1 Bash, shell and PTY work is ineligible.
+/// child session. OpenCode 2 names its native child tool `subagent`; v1
+/// uses `task`. Early v2 progress metadata `status: running` is not evidence
+/// of detachment. In particular, v1 Bash, shell and PTY work is ineligible.
 List<Part> foregroundBackgroundableParts(
   Iterable<MessageWithParts> messages,
   BackgroundWorkSupport support,
@@ -20,7 +22,8 @@ List<Part> foregroundBackgroundableParts(
               part.toolState.input['background'] != true &&
               (part.toolName == 'task' ||
                   (support == BackgroundWorkSupport.subagentsAndShells &&
-                      part.toolName == 'shell')))
+                      (part.toolName == 'shell' ||
+                          part.toolName == 'subagent'))))
             part,
   ];
 }

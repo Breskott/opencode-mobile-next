@@ -49,9 +49,7 @@ class _EmptyStore extends ProfileStore {
 }
 
 Future<void> pumpScanner(WidgetTester tester) async {
-  await tester.pumpWidget(
-    const MaterialApp(home: PairingScannerScreen()),
-  );
+  await tester.pumpWidget(const MaterialApp(home: PairingScannerScreen()));
   await tester.pumpAndSettle();
 }
 
@@ -219,10 +217,7 @@ void main() {
     testWidgets('Android offers scanning', (tester) async {
       debugPlatformCapabilities = const PlatformCapabilities.android();
       await pumpEditor(tester);
-      expect(
-        find.byKey(const ValueKey('server-pairing-scan')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const ValueKey('server-pairing-scan')), findsOneWidget);
     });
 
     testWidgets('desktop renders no scan affordance at all', (tester) async {

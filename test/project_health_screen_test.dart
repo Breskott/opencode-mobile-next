@@ -462,15 +462,9 @@ void main() {
     expect(controller.locations, [
       (directory: '/tmp/runtime-probe', workspace: null),
     ]);
-    expect(
-      find.byKey(const ValueKey('active-session-directory')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('current-project-entry')), findsOneWidget);
     expect(find.text('runtime-probe'), findsOneWidget);
     expect(find.text('/tmp/runtime-probe'), findsOneWidget);
-    expect(
-      find.text('Active session directory · /tmp/runtime-probe'),
-      findsOneWidget,
-    );
+    expect(find.text('OpenCode Mobile'), findsNothing);
   });
 }

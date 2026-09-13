@@ -144,7 +144,7 @@ class SessionUnreadBadge extends StatelessWidget {
       if (!controller.isSessionUnread(session)) return const SizedBox.shrink();
       final l10n =
           Localizations.of<AppLocalizations>(context, AppLocalizations) ??
-          lookupAppLocalizations(const Locale('en'));
+          lookupAppLocalizations(Localizations.localeOf(context));
       return Text(
         l10n.sessionUnread,
         key: ValueKey('session-unread-${session.id}'),

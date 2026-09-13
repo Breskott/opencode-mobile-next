@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../api/models.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
+import 'reader_preferences.dart';
 
 AppLocalizations _reviewL10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -62,6 +63,7 @@ class DiffView extends StatelessWidget {
         centerTitle: true,
         title: Text(title ?? l10n.reviewTitle, overflow: TextOverflow.ellipsis),
         actions: [
+          const ReaderWrapButton(),
           if (allowCopy && single != null)
             IconButton(
               tooltip: single.after != null
@@ -109,7 +111,9 @@ class _DiffBody extends StatelessWidget {
     final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wrap = constraints.maxWidth < DiffView.wrapBelow;
+        final wrap =
+            ReaderPreferencesScope.maybeOf(context)?.value.wrapCode ??
+            constraints.maxWidth < DiffView.wrapBelow;
         final scroll = CustomScrollView(
           slivers: [
             for (final diff in diffs) ...[
@@ -147,6 +151,7 @@ class _DiffBody extends StatelessWidget {
         return SingleChildScrollView(
           key: const Key('diff-view-horizontal'),
           scrollDirection: Axis.horizontal,
+          reverse: Directionality.of(context) == TextDirection.rtl,
           child: SizedBox(width: width, child: scroll),
         );
       },
@@ -676,6 +681,7 @@ class _LineRow extends StatelessWidget {
     final text = Text(
       row.text,
       softWrap: wrap,
+      textDirection: TextDirection.ltr,
       style: _codeStyle(
         theme,
         color: row.kind == DiffRowKind.removed
@@ -711,6 +717,7 @@ class _LineRow extends StatelessWidget {
           ),
         ),
         child: Row(
+          textDirection: TextDirection.ltr,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(

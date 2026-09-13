@@ -256,7 +256,8 @@ class BackgroundConnectionService : Service() {
             requestID: String = "",
             profileID: String = "",
             allowActions: Boolean = true,
-            monitorToken: String = ""
+            monitorToken: String = "",
+            subtext: String = ""
         ): Boolean {
             if (sessionID.isBlank() || key.isBlank()) return false
             if (kind == "quota" && (sessionID != "quota" || profileID.isBlank() ||
@@ -314,6 +315,38 @@ class BackgroundConnectionService : Service() {
                     category = Notification.CATEGORY_STATUS,
                     priority = Notification.PRIORITY_DEFAULT
                 )
+                // AI Team (TEAM-203): fixed copy per kind; the session id is
+                // a gate or run id that Dart routes to the exact sheet. No
+                // title, prompt or option ever travels; `subtext` is only
+                // the saved server's name.
+                "team_decision" -> CodingAlertContent(
+                    channelID = ACTION_CHANNEL_ID,
+                    title = "AI Team needs a decision",
+                    text = "Tap to answer it in the app.",
+                    category = Notification.CATEGORY_RECOMMENDATION,
+                    priority = Notification.PRIORITY_HIGH
+                )
+                "team_run_failed" -> CodingAlertContent(
+                    channelID = ACTION_CHANNEL_ID,
+                    title = "A run failed",
+                    text = "Tap to see what happened.",
+                    category = Notification.CATEGORY_ERROR,
+                    priority = Notification.PRIORITY_HIGH
+                )
+                "team_review" -> CodingAlertContent(
+                    channelID = STATUS_CHANNEL_ID,
+                    title = "A run is ready for review",
+                    text = "Tap to review it.",
+                    category = Notification.CATEGORY_STATUS,
+                    priority = Notification.PRIORITY_DEFAULT
+                )
+                "team_completed" -> CodingAlertContent(
+                    channelID = STATUS_CHANNEL_ID,
+                    title = "A run completed",
+                    text = "Tap to see the result.",
+                    category = Notification.CATEGORY_STATUS,
+                    priority = Notification.PRIORITY_DEFAULT
+                )
                 else -> return false
             }
 
@@ -355,6 +388,7 @@ class BackgroundConnectionService : Service() {
                 .setCategory(content.category)
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
                 .setGroup(CODING_ALERT_GROUP)
+            if (subtext.isNotBlank()) builder.setSubText(subtext)
             for (action in if (allowActions) codingAlertActions(
                 context, kind, sessionID, key, quickReply, requestID, notificationID, profileID
             ) else emptyList()) {

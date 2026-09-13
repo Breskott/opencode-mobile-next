@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 import '../../../api/models.dart' show ApiException;
 import '../../../api2/models.dart' show Api2FormInfo;
 import '../../../state/connection.dart';
 import '../../widgets/form_renderer.dart';
 import '../../widgets/request_routes.dart';
+
+AppLocalizations _chatL10n(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));
 
 /// Presents a pending form through the shared [FormRenderer] presenter and
 /// routes its reply/cancel through the connection's [FormGateway] state,
@@ -33,7 +38,9 @@ Future<void> presentConnectionForm(
           error.errorTag == 'FormNotFoundError');
   void toastSettled() {
     messenger?.showSnackBar(
-      const SnackBar(content: Text('Already answered elsewhere')),
+      SnackBar(
+        content: Text(_chatL10n(context).chatUiAlreadyAnsweredElsewhere),
+      ),
     );
   }
 
@@ -45,7 +52,7 @@ Future<void> presentConnectionForm(
       onSubmit: (answer) async {
         if (!current()) {
           throw StateError(
-            'The form or project changed. Reopen the current request.',
+            _chatL10n(context).chatUiTheFormOrProjectChangedReopenThe,
           );
         }
         try {
@@ -61,7 +68,7 @@ Future<void> presentConnectionForm(
       onCancel: () async {
         if (!current()) {
           throw StateError(
-            'The form or project changed. Reopen the current request.',
+            _chatL10n(context).chatUiTheFormOrProjectChangedReopenThe,
           );
         }
         try {

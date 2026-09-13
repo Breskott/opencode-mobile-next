@@ -124,7 +124,11 @@ class _CredentialManagementSheetState
       if (repository == null ||
           repository is! IntegrationCredentialGateway ||
           !_controller.capabilities.integrationCredentials) {
-        throw StateError('Unavailable');
+        throw StateError(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryUnavailable,
+        );
       }
       final values = await repository.listIntegrations();
       if (!_current) return;
@@ -259,7 +263,7 @@ class _CredentialManagementSheetState
         ),
         child: ListView(
           shrinkWrap: true,
-          padding: EdgeInsets.fromLTRB(
+          padding: EdgeInsetsDirectional.fromSTEB(
             16,
             0,
             16,

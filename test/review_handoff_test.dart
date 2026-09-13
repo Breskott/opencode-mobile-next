@@ -161,10 +161,7 @@ void main() {
 
     test('a snippet containing a fence gets a longer fence', () {
       final block = ReviewReference.format([
-        _reference(
-          id: '1',
-          snippet: '+```dart\n+final x = 1;\n+```',
-        ),
+        _reference(id: '1', snippet: '+```dart\n+final x = 1;\n+```'),
       ]);
       // A three-backtick fence would be closed by the snippet's own fence,
       // spilling the tail of the diff into the prompt as prose.

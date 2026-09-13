@@ -207,6 +207,27 @@ void main() {
       'model exploded',
     );
 
+    // Captured live from beta-18600 on 2026-09-10: the provider rejected
+    // the model's credentials and the server sent an EMPTY message. The
+    // envelope must carry the error type as its name and never an empty
+    // message, or the chat shows a blank error banner.
+    final blank = adaptApi2EventJson(adapter, {
+      'type': 'session.execution.failed',
+      'data': {
+        'sessionID': 'ses_x',
+        'error': {'type': 'provider.auth', 'message': ''},
+      },
+    });
+    final blankError = blank.single.properties['error'] as Map;
+    expect(blankError['name'], 'provider.auth');
+    expect(
+      MessageErrorKind.fromName(blankError['name'] as String),
+      MessageErrorKind.providerAuth,
+    );
+    expect(blankError['message'], sessionErrorFallbackText('provider.auth'));
+    expect((blankError['message'] as String).trim(), isNotEmpty);
+    expect(blankError['message'], contains('credentials'));
+
     final done = adaptApi2EventJson(adapter, {
       'type': 'session.execution.succeeded',
       'data': {'sessionID': 'ses_x'},

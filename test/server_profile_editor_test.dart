@@ -124,6 +124,8 @@ void main() {
       final (store, controller) = await _state();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(store, controller));
+      await tester.ensureVisible(find.text('More setup options'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('More setup options'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(

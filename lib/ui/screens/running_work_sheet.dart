@@ -47,6 +47,11 @@ Future<String?> showRunningWorkSheet(
   required ConnectionController controller,
   required String sessionID,
   required Set<String> shellIDs,
+  Future<BackgroundWorkResult?> Function()? onBackground,
+  BackgroundWorkSupport backgroundSupport = BackgroundWorkSupport.unavailable,
+  BackgroundWorkSupport Function()? readBackgroundSupport,
+  bool Function()? canBackground,
+  Listenable? availabilityChanges,
 }) => showModalBottomSheet<String>(
   context: context,
   isScrollControlled: true,
@@ -56,6 +61,11 @@ Future<String?> showRunningWorkSheet(
     controller: controller,
     sessionID: sessionID,
     shellIDs: shellIDs,
+    onBackground: onBackground,
+    backgroundSupport: backgroundSupport,
+    readBackgroundSupport: readBackgroundSupport,
+    canBackground: canBackground,
+    availabilityChanges: availabilityChanges,
   ),
 );
 
@@ -65,10 +75,20 @@ class RunningWorkSheet extends StatefulWidget {
     required this.controller,
     required this.sessionID,
     this.shellIDs = const {},
+    this.onBackground,
+    this.backgroundSupport = BackgroundWorkSupport.unavailable,
+    this.readBackgroundSupport,
+    this.canBackground,
+    this.availabilityChanges,
   });
   final ConnectionController controller;
   final String sessionID;
   final Set<String> shellIDs;
+  final Future<BackgroundWorkResult?> Function()? onBackground;
+  final BackgroundWorkSupport backgroundSupport;
+  final BackgroundWorkSupport Function()? readBackgroundSupport;
+  final bool Function()? canBackground;
+  final Listenable? availabilityChanges;
   @override
   State<RunningWorkSheet> createState() => _RunningWorkSheetState();
 }
@@ -82,6 +102,10 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
   bool? _shellSupport;
   Object? _error;
   List<ManagedShell> _shells = [];
+  final Map<String, Session> _related = {};
+  Object? _agentsError;
+  bool _promoting = false;
+  BackgroundWorkResult? _promotion;
   Timer? _timer;
   StreamSubscription<EventEnvelope>? _events;
   late int _revision;
@@ -99,8 +123,15 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
     WidgetsBinding.instance.addObserver(this);
     widget.controller.addListener(_changed);
+    widget.availabilityChanges?.addListener(_changed);
     _events = widget.controller.events.listen((event) {
-      if (event.type.startsWith('shell.') && _visible) unawaited(_refresh());
+      if ((event.type.startsWith('shell.') ||
+              event.type == 'session.created' ||
+              event.type == 'session.updated' ||
+              event.type == 'session.deleted') &&
+          _visible) {
+        unawaited(_refresh());
+      }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
     _timer = Timer.periodic(const Duration(seconds: 2), (_) {
@@ -135,22 +166,61 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
     }
     _refreshing = true;
     try {
+      // Session lists may omit child sessions. Resolve the family through the
+      // existing children endpoint without mutating the global session cache.
+      if (conn.capabilities.projectManagement) {
+        try {
+          final current =
+              conn.sessionsById[widget.sessionID] ??
+              await repo.getSessionDetails(widget.sessionID);
+          final children = <Session>[];
+          // Fetch the current session's own children as well as siblings when
+          // viewing a child; both may be absent from the global latest page.
+          for (final owner in {current.id, ?current.parentID}) {
+            children.addAll(await repo.listSessionChildren(owner));
+            if (!mounted || !_scopeMatches || repo != conn.repository) return;
+          }
+          if (!mounted || !_scopeMatches || repo != conn.repository) return;
+          _related
+            ..clear()
+            ..addAll({
+              current.id: current,
+              for (final child in children) child.id: child,
+            });
+          _agentsError = null;
+        } catch (error) {
+          if (!mounted || !_scopeMatches || repo != conn.repository) return;
+          _agentsError = error;
+        }
+      }
       final result = await repo.loadRunningShells();
+      final knownIDs = {
+        ...widget.shellIDs,
+        for (final shell in _shells) shell.id,
+      };
+      final retained = <ManagedShell>[];
+      if (result.supported) {
+        for (final id in knownIDs.difference(
+          result.shells.map((shell) => shell.id).toSet(),
+        )) {
+          final shell = await repo.getManagedShell(id);
+          if (shell != null) retained.add(shell);
+        }
+      }
       if (!mounted || !_scopeMatches || repo != conn.repository) return;
       final related = {
         widget.sessionID,
-        for (final session in conn.sessionsById.values)
+        for (final session in {...conn.sessionsById, ..._related}.values)
           if (session.parentID == widget.sessionID) session.id,
       };
       setState(() {
         _shellSupport = result.supported;
         _shells = result.supported
-            ? result.shells
+            ? [...result.shells, ...retained]
                   .where(
                     (shell) =>
-                        shell.running &&
-                        (related.contains(shell.sessionID) ||
-                            widget.shellIDs.contains(shell.id)),
+                        related.contains(shell.sessionID) ||
+                        widget.shellIDs.contains(shell.id),
                   )
                   .toList()
             : [];
@@ -171,6 +241,7 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
     _timer?.cancel();
     unawaited(_events?.cancel());
     widget.controller.removeListener(_changed);
+    widget.availabilityChanges?.removeListener(_changed);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -182,10 +253,16 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
     final conn = widget.controller;
     final agents = runningAgentEntries(
       sessionID: widget.sessionID,
-      sessions: conn.sessionsById,
+      sessions: {...conn.sessionsById, ..._related},
       busy: conn.busySessions,
-    ).where((entry) => !entry.current && entry.busy).toList();
+      includeIdle: true,
+    ).where((entry) => !entry.current).toList();
     final disconnected = conn.status != StreamStatus.connected;
+    final support =
+        widget.readBackgroundSupport?.call() ?? widget.backgroundSupport;
+    final canBackground =
+        widget.canBackground?.call() ??
+        (widget.onBackground != null && _promotion == null);
     return SafeArea(
       top: false,
       child: ConstrainedBox(
@@ -218,11 +295,64 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
               ],
             ),
             Text(l10n.workDescription, style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 12),
+            if (support != BackgroundWorkSupport.unavailable) ...[
+              Text(
+                l10n.workBackgroundAutomatic,
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (widget.onBackground != null &&
+                (canBackground || _promoting || _promotion != null))
+              FilledButton.icon(
+                onPressed:
+                    disconnected ||
+                        !_scopeMatches ||
+                        _promoting ||
+                        !canBackground
+                    ? null
+                    : () async {
+                        setState(() => _promoting = true);
+                        try {
+                          final result = await widget.onBackground!();
+                          if (mounted && _scopeMatches) {
+                            setState(() => _promotion = result);
+                          }
+                          if (mounted && _scopeMatches) await _refresh();
+                        } finally {
+                          if (mounted) setState(() => _promoting = false);
+                        }
+                      },
+                icon: const Icon(AppIconography.lowPriority),
+                label: Text(
+                  _promoting
+                      ? l10n.workBackgroundPending
+                      : l10n.workRunInBackground,
+                ),
+              )
+            else
+              Text(
+                support == BackgroundWorkSupport.unavailable
+                    ? l10n.workBackgroundUnavailable
+                    : l10n.workBackgroundEligible,
+                style: theme.textTheme.bodySmall,
+              ),
+            if (_promotion != null) ...[
+              const SizedBox(height: 8),
+              Text(switch (_promotion!) {
+                BackgroundWorkResult.promoted => l10n.backgroundWorkPromoted,
+                BackgroundWorkResult.unchanged => l10n.backgroundWorkNoop,
+                BackgroundWorkResult.requested => l10n.workBackgroundRequested,
+              }),
+            ],
             const SizedBox(height: 16),
             if (!_scopeMatches)
               Text(l10n.workContextChanged)
             else ...[
               if (disconnected) _Notice(text: l10n.workDisconnected),
+              if (_agentsError != null)
+                _Notice(text: productErrorText(_agentsError!)),
               if (_error != null)
                 _Notice(
                   text: productErrorText(_error!),
@@ -233,7 +363,10 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
                 ),
               if (_loading)
                 const Center(child: CircularProgressIndicator())
-              else if (agents.isEmpty && _shells.isEmpty && _error == null)
+              else if (agents.isEmpty &&
+                  _shells.isEmpty &&
+                  _error == null &&
+                  _agentsError == null)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Column(
@@ -261,7 +394,13 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    subtitle: Text(l10n.workRunning),
+                    subtitle: Text(
+                      disconnected
+                          ? l10n.workUnknown
+                          : entry.busy
+                          ? l10n.workRunning
+                          : l10n.workIdle,
+                    ),
                     trailing: const Icon(AppIconography.chevronRight),
                     onTap: () => Navigator.pop(context, entry.session.id),
                   ),
@@ -293,7 +432,7 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
                                 conn.status != StreamStatus.connected) {
                               return;
                             }
-                            await Navigator.of(context).push(
+                            await Navigator.of(context).push<void>(
                               MaterialPageRoute<void>(
                                 builder: (_) => ShellOutputScreen(
                                   controller: conn,

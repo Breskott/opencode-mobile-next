@@ -114,6 +114,9 @@ class _SetupProgressFixture {
   String? launchedScript;
   TermuxRuntime runtime = TermuxRuntime.openCode1;
   int restartCalls = 0;
+  int switchCalls = 0;
+  bool switchFails = false;
+  String switchPhase = 'ready';
   String? restartOperation;
   String inventoryOutput = 'ubuntu=absent\nversion=\n';
   Completer<Map<String, Object>>? pendingInventory;
@@ -196,6 +199,30 @@ class _SetupProgressFixture {
       return pendingBridge?.future ??
           Future.value(_commandResult(stdout: 'opencode-bridge-ok'));
     }
+    final switchMatch = RegExp(
+      r"restart '4096' '([^']+)' '' '' '(opencode[12])'",
+    ).firstMatch(script);
+    if (switchMatch != null) {
+      switchCalls++;
+      final result =
+          await (pendingLaunch?.future ??
+              Future.value(_commandResult(stdout: 'manager-started:123')));
+      final previous = runtime;
+      runtime = TermuxRuntime.parse(switchMatch.group(2));
+      final operation = switchMatch.group(1);
+      statusOutput =
+          'phase=${switchFails ? 'failed' : switchPhase}\n'
+          'message=${switchFails ? 'Authentication failed' : 'OpenCode is ready'}\n'
+          'port=4096\nrunner=proot\nversion=${runtime.pinnedVersion}\n'
+          'runtime=${runtime.wireName}\noperation=$operation\npid=123\n'
+          'switch_return=opencode1\n'
+          '${startedAtEpochSeconds == null ? '' : 'started_at=$startedAtEpochSeconds\n'}'
+          '${switchFails || switchPhase != 'ready' ? 'switch_previous=${previous.wireName}\nswitch_target=${runtime.wireName}\nswitch_phase=starting\n' : ''}'
+          '__OC_SETUP_OUTPUT__\n';
+      inventoryOutput =
+          'ubuntu=installed\nversion=${runtime.pinnedVersion}\nruntime=${runtime.wireName}\n';
+      return result;
+    }
     if (script.contains('"\$MANAGER" restart')) {
       restartCalls++;
       restartOperation = RegExp(
@@ -262,6 +289,7 @@ __OC_SETUP_OUTPUT__
   Future<void> mount(
     WidgetTester tester, {
     double textScale = 1,
+    bool rtl = false,
     DateTime Function()? now,
   }) async {
     const channel = MethodChannel('oc/termux');
@@ -279,13 +307,20 @@ __OC_SETUP_OUTPUT__
           connProvider.overrideWithValue(connection),
         ],
         child: MaterialApp(
+          // RTL cases flip direction only and keep the English catalog, so
+          // the literal expectations below stay readable; the Arabic copy
+          // itself is exercised by the e7 layout suites.
+          locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,
             ).copyWith(textScaler: TextScaler.linear(textScale)),
-            child: child!,
+            child: Directionality(
+              textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+              child: child!,
+            ),
           ),
           routes: {
             '/servers': (_) =>
@@ -318,9 +353,200 @@ Future<void> _revealGuideTarget(WidgetTester tester, Finder finder) async {
   expect(finder.hitTestable(), findsOneWidget);
 }
 
+/// The installed-runtime view has the On this phone rows (TEAM-304/305)
+/// under its controls, so it scrolls even on the test window and
+/// [WidgetTester.ensureVisible] parks a control at the top. The heading
+/// assertions below want the list back at its start.
+Future<void> _scrollToTop(WidgetTester tester) async {
+  final scrollable = find.byType(Scrollable).first;
+  if (scrollable.evaluate().isEmpty) return;
+  final position = Scrollable.of(
+    tester.element(
+      find.descendant(of: scrollable, matching: find.byType(Padding)).first,
+    ),
+  ).position;
+  position.jumpTo(0);
+  await tester.pump();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('oc/termux');
+
+  // 2.5x is covered by the phone-space test below; at that scale nothing
+  // fits "first" on a 320dp screen and the journey is about reachability.
+  for (final textScale in [1.0, 2.0]) {
+    testWidgets(
+      'managed switch is visible first, preserves profiles and returns at scale $textScale',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final fixture = await _setupFixture();
+        final original = ServerProfile(
+          id: 'original',
+          name: 'My phone',
+          baseUrl: TermuxBridge.managedServerUrl,
+          password: 'one-fixture',
+        );
+        fixture.store.savedProfiles.add(original);
+        fixture.store.selectedID = original.id;
+        fixture.statusOutput =
+            'phase=ready\nmessage=Ready\nport=4096\nrunner=proot\nversion=1.18.29\nruntime=opencode1\npid=123\n';
+        await fixture.mount(
+          tester,
+          textScale: textScale,
+          rtl: textScale == 2.5,
+        );
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(TermuxSetupScreen)),
+        );
+        expect(
+          find.text(l10n.setupSwitchUse(l10n.setupRuntimeTwo)).hitTestable(),
+          findsOneWidget,
+        );
+        expect(
+          fixture.connection.api,
+          isNull,
+          reason: 'Inspecting setup does not connect',
+        );
+        await tester.tap(find.text(l10n.setupSwitchUse(l10n.setupRuntimeTwo)));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.setupSwitchConfirmDetail), findsOneWidget);
+        await tester.ensureVisible(find.text(l10n.setupSwitchConfirm));
+        await tester.tap(find.text(l10n.setupSwitchConfirm));
+        await tester.pumpAndSettle();
+        expect(fixture.switchCalls, 1);
+        expect(original.flavor, ServerFlavor.v1);
+        expect(original.password, 'one-fixture');
+        expect(fixture.store.savedProfiles.length, 2);
+        final beta = fixture.store.savedProfiles.singleWhere(
+          (p) => p.flavor == ServerFlavor.v2,
+        );
+        expect(fixture.store.selectedID, beta.id);
+        expect(beta.serverVersion, TermuxRuntime.openCode2.pinnedVersion);
+        expect(find.text(l10n.setupRuntimeTwo), findsOneWidget);
+        expect(
+          find.text(l10n.setupSwitchReturn(l10n.setupRuntimeOne)).hitTestable(),
+          findsOneWidget,
+        );
+        await tester.tap(
+          find.text(l10n.setupSwitchReturn(l10n.setupRuntimeOne)),
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text(l10n.setupSwitchConfirm));
+        await tester.tap(find.text(l10n.setupSwitchConfirm));
+        await tester.pumpAndSettle();
+        expect(fixture.switchCalls, 2);
+        expect(fixture.store.selectedID, original.id);
+        expect(original.serverVersion, TermuxRuntime.openCode1.pinnedVersion);
+        expect(beta.flavor, ServerFlavor.v2);
+        expect(fixture.store.savedProfiles.length, 2);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'failed beta switch offers return without connecting unavailable beta',
+    (tester) async {
+      final fixture = await _setupFixture();
+      final original = ServerProfile(
+        id: 'original',
+        name: 'Phone',
+        baseUrl: TermuxBridge.managedServerUrl,
+        password: 'one-fixture',
+      );
+      fixture.store.savedProfiles.add(original);
+      fixture.store.selectedID = original.id;
+      fixture.statusOutput =
+          'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\nruntime=opencode1\n';
+      fixture.switchFails = true;
+      await fixture.mount(tester);
+      await tester.tap(find.text('Try OpenCode 2 beta'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Switch version'));
+      await tester.pumpAndSettle();
+      expect(fixture.connection.api, isNull);
+      expect(find.text('Retry OpenCode 2 beta'), findsOneWidget);
+      expect(find.text('Return to OpenCode 1'), findsOneWidget);
+      fixture.switchFails = false;
+      await tester.tap(find.text('Return to OpenCode 1'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Switch version'));
+      await tester.pumpAndSettle();
+      expect(fixture.store.selectedID, original.id);
+    },
+  );
+
+  testWidgets('missing prior profile refuses switch without mutating setup', (
+    tester,
+  ) async {
+    final fixture = await _setupFixture();
+    fixture.statusOutput =
+        'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\nruntime=opencode1\n';
+    await fixture.mount(tester);
+    await tester.tap(find.text('Try OpenCode 2 beta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Switch version'));
+    await tester.pumpAndSettle();
+    expect(fixture.switchCalls, 0);
+    expect(fixture.store.savedProfiles, isEmpty);
+    expect(
+      find.textContaining('restore the saved profile before returning'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('existing beta default data has no invented OC1 return', (
+    tester,
+  ) async {
+    final fixture = await _setupFixture();
+    fixture.runtime = TermuxRuntime.openCode2;
+    fixture.statusOutput =
+        'phase=stopped\nport=4096\nrunner=proot\nversion=0.0.0-beta-18600\nruntime=opencode2\n';
+    fixture.inventoryOutput =
+        'ubuntu=installed\nversion=0.0.0-beta-18600\nruntime=opencode2\n';
+    await fixture.mount(tester);
+    expect(find.text('Return to OpenCode 1'), findsNothing);
+    expect(find.textContaining('keeps its existing data'), findsOneWidget);
+    expect(fixture.switchCalls, 0);
+  });
+
+  testWidgets(
+    'inspect and switch local runtime leave active remote connection selected',
+    (tester) async {
+      final fixture = await _setupFixture();
+      final original = ServerProfile(
+        id: 'original',
+        name: 'Phone',
+        baseUrl: TermuxBridge.managedServerUrl,
+        password: 'one-fixture',
+      );
+      final remote = ServerProfile(
+        id: 'remote',
+        name: 'Laptop',
+        baseUrl: 'https://example.invalid',
+        password: 'remote-fixture',
+      );
+      fixture.store.savedProfiles.addAll([original, remote]);
+      fixture.store.selectedID = remote.id;
+      await fixture.connection.connect(remote);
+      final remoteApi = fixture.connection.api;
+      fixture.statusOutput =
+          'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\nruntime=opencode1\n';
+      await fixture.mount(tester);
+      expect(fixture.connection.api, same(remoteApi));
+      await tester.tap(find.text('Try OpenCode 2 beta'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Switch version'));
+      await tester.pumpAndSettle();
+      expect(fixture.store.selectedID, remote.id);
+      expect(fixture.connection.api, same(remoteApi));
+      expect(find.text('Connect to OpenCode 2 beta'), findsOneWidget);
+    },
+  );
 
   for (final layout in [
     (width: 800.0, textScale: 1.0),
@@ -571,6 +797,68 @@ void main() {
   );
 
   testWidgets(
+    'new switch hides prior elapsed clock until accepted and resumes durable timing',
+    (tester) async {
+      var now = DateTime.utc(2026, 9, 10, 1);
+      final oldStart =
+          now
+              .subtract(const Duration(minutes: 99, seconds: 30))
+              .millisecondsSinceEpoch ~/
+          1000;
+      final fixture = await _setupFixture();
+      fixture.store.savedProfiles.add(
+        ServerProfile(
+          id: 'original',
+          name: 'Phone',
+          baseUrl: TermuxBridge.managedServerUrl,
+          password: 'fixture-one',
+        ),
+      );
+      fixture.store.selectedID = 'original';
+      fixture.statusOutput =
+          'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\nruntime=opencode1\nstarted_at=$oldStart\n';
+      fixture.pendingLaunch = Completer<Map<String, Object>>();
+      fixture.switchPhase = 'installing_opencode';
+      await fixture.mount(tester, now: () => now);
+      await tester.tap(find.text('Try OpenCode 2 beta'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Switch version'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(fixture.switchCalls, 1);
+      expect(find.text('Preparing the runtime switch…'), findsOneWidget);
+      expect(find.textContaining('elapsed'), findsNothing);
+      now = now.add(const Duration(seconds: 20));
+      await tester.pump(const Duration(seconds: 20));
+      expect(find.textContaining('elapsed'), findsNothing);
+      fixture.startedAtEpochSeconds =
+          now.subtract(const Duration(seconds: 2)).millisecondsSinceEpoch ~/
+          1000;
+      fixture.pendingLaunch!.complete(
+        _commandResult(stdout: 'manager-started:123'),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('2s elapsed'), findsOneWidget);
+      expect(
+        find.text('You can leave this screen and return to check progress.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('First-time setup'), findsNothing);
+      final persisted = fixture.statusOutput;
+      await tester.pumpWidget(const SizedBox.shrink());
+      now = now.add(const Duration(minutes: 1));
+      final reopened = _SetupProgressFixture(fixture.store)
+        ..statusOutput = persisted;
+      await reopened.mount(tester, now: () => now);
+      expect(find.text('1m 2s elapsed'), findsOneWidget);
+      expect(find.textContaining('First-time setup'), findsNothing);
+      expect(reopened.switchCalls, 0);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
     'elapsed uses persisted start across background and route recreation',
     (tester) async {
       var now = DateTime.utc(2026, 9, 7, 12);
@@ -755,7 +1043,7 @@ void main() {
     },
   );
 
-  for (final textScale in [1.0, 2.0]) {
+  for (final textScale in [1.0, 2.0, 2.5]) {
     testWidgets(
       'setup uses phone space without overflow at text scale $textScale',
       (tester) async {
@@ -764,12 +1052,26 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
         final fixture = await _setupFixture();
-        await fixture.mount(tester, textScale: textScale);
+        await fixture.mount(
+          tester,
+          textScale: textScale,
+          rtl: textScale == 2.5,
+        );
         await tester.scrollUntilVisible(find.text('Install & start'), 250);
+        await Scrollable.ensureVisible(
+          tester.element(find.text('Install & start')),
+          alignment: 0.5,
+        );
         await tester.pump();
         await tester.tap(find.text('Install & start'));
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
+        await tester.scrollUntilVisible(
+          find.text('LIVE OUTPUT'),
+          250,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pump();
         expect(find.text('LIVE OUTPUT'), findsOneWidget);
         expect(tester.takeException(), isNull);
         if (textScale == 1) {
@@ -997,6 +1299,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       await _revealGuideTarget(tester, find.text('Reinstall & start'));
+      await _scrollToTop(tester);
       expect(find.byType(RadioGroup<TermuxRuntime>), findsNothing);
       expect(find.textContaining('0.0.0-beta-18600'), findsWidgets);
       await tester.tap(find.text('Reinstall & start').hitTestable());
@@ -1126,7 +1429,7 @@ void main() {
       ),
     );
     await fixture.mount(tester);
-    expect(find.text('Found OpenCode 1.18.29 in Ubuntu'), findsOneWidget);
+    expect(find.text('Version 1.18.29'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Start installed OpenCode'), 200);
     await tester.pump();
     await tester.tap(find.text('Start installed OpenCode'));
@@ -1199,7 +1502,8 @@ void main() {
           bootstrapProvider.overrideWithValue(AppBootstrap(store)),
           connProvider.overrideWithValue(connection),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
+          locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: TermuxSetupScreen(),
@@ -1351,6 +1655,7 @@ pid=
             connProvider.overrideWithValue(connection),
           ],
           child: MaterialApp(
+            locale: const Locale('en'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: const TermuxSetupScreen(),
@@ -1406,6 +1711,7 @@ pid=
       await tester.ensureVisible(
         find.byKey(const Key('restart-managed-opencode')),
       );
+      await _scrollToTop(tester);
       connection.retriesToFail = 1;
       await tester.tap(find.byKey(const Key('restart-managed-opencode')));
       await tester.pumpAndSettle();
@@ -1546,6 +1852,7 @@ __OC_SETUP_OUTPUT__
               connProvider.overrideWithValue(connection),
             ],
             child: const MaterialApp(
+              locale: Locale('en'),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: TermuxSetupScreen(),
@@ -1665,7 +1972,8 @@ __OC_SETUP_OUTPUT__
           bootstrapProvider.overrideWithValue(AppBootstrap(store)),
           connProvider.overrideWithValue(connection),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
+          locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: TermuxSetupScreen(),

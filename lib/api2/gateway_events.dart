@@ -228,14 +228,19 @@ class Api2EventAdapter {
             // session.error alone clears the busy flag and settles the
             // attention alert as an error; adding an idle event would
             // overwrite that settle with a "complete" one.
+            // The v2 error type doubles as the v1 `name` so the chat can
+            // classify it (provider.auth → providerAuth). beta-18600 sends
+            // an empty message for provider failures; never forward that.
+            final type = event.error?.type;
+            final message = event.error?.message?.trim();
             return [
               _env('session.error', {
                 'sessionID': event.sessionID,
                 'error': {
-                  'message':
-                      event.error?.message ??
-                      event.error?.type ??
-                      'The session run failed',
+                  if (type != null && type.isNotEmpty) 'name': type,
+                  'message': message == null || message.isEmpty
+                      ? sessionErrorFallbackText(type)
+                      : message,
                 },
               }),
             ];

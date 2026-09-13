@@ -76,6 +76,35 @@ void main() {
     },
   );
 
+  testWidgets(
+    'initial inventory request shows loading rather than load more advice',
+    (tester) async {
+      final pending = Completer<ServerPage<Session>>();
+      final api = _Api()..page = (_) => pending.future;
+      final controller = await _controller(api);
+      final refresh = controller.refreshSessions();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: SessionInventoryFooter(controller: controller)),
+        ),
+      );
+      expect(find.text('Loading sessions…'), findsOneWidget);
+      expect(find.textContaining('Showing loaded sessions.'), findsNothing);
+      expect(
+        tester
+            .widget<TextButton>(
+              find.byKey(const ValueKey('session-inventory-more')),
+            )
+            .onPressed,
+        isNull,
+      );
+      pending.complete(const ServerPage(items: []));
+      await refresh;
+      await tester.pumpAndSettle();
+      expect(find.byType(TextButton), findsNothing);
+    },
+  );
+
   testWidgets('status failures leave older sessions reachable', (tester) async {
     final api = _Api()
       ..page = (cursor) async => cursor == null

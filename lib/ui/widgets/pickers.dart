@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/models.dart';
@@ -12,6 +13,10 @@ import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import 'agent_color.dart';
 import 'provider_logo.dart';
+
+AppLocalizations _pickerStrings(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+    lookupAppLocalizations(const Locale('en'));
 
 /// How applying a model/agent selection is scoped and labeled.
 ///
@@ -132,8 +137,7 @@ class ModelCatalogView extends StatefulWidget {
 }
 
 class _ModelCatalogViewState extends State<ModelCatalogView> {
-  AppLocalizations get _strings =>
-      lookupAppLocalizations(Localizations.localeOf(context));
+  AppLocalizations get _strings => _pickerStrings(context);
 
   final _search = TextEditingController();
   // Preserve the search's focus and input connection when keyboard/large-text
@@ -334,7 +338,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         ),
         if (widget.onClose != null)
           IconButton(
-            tooltip: 'Close model selector',
+            tooltip: _strings.e7ModelUiClose,
             onPressed: widget.onClose,
             icon: const Icon(AppIconography.close),
           ),
@@ -361,7 +365,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
               suffixIcon: _query.isEmpty
                   ? null
                   : IconButton(
-                      tooltip: 'Clear model search',
+                      tooltip: _strings.e7ModelUiClearSearch,
                       onPressed: () {
                         _search.clear();
                         setState(() => _query = '');
@@ -411,14 +415,14 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     if (controller.catalogError != null) {
       return _PickerState(
         icon: Icons.sync_problem_rounded,
-        title: 'Could not load models',
+        title: _strings.e7ModelUiLoadFailed,
         message: controller.catalogError!,
         action: FilledButton.tonalIcon(
           onPressed: controller.catalogLoading
               ? null
               : controller.refreshCatalog,
           icon: const Icon(AppIconography.retry),
-          label: const Text('Try again'),
+          label: Text(_strings.e7ModelUiRetry),
         ),
       );
     }
@@ -499,10 +503,9 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         if (catalog.models.isNotEmpty) _pinnedControls(context),
       ],
       if (!widget.controller.catalogDetailed)
-        const _Notice(
+        _Notice(
           icon: AppIconography.info,
-          text:
-              'This server returned a basic catalog. Capability and context details are unavailable.',
+          text: _strings.e7ModelUiBasicCatalog,
         ),
       if (unloaded.isNotEmpty)
         Padding(
@@ -530,6 +533,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
                                   ),
                                 )
                                 .toList(),
+                            strings: _strings,
                           ),
                         ),
                         actions: [
@@ -578,14 +582,16 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
             children: [
               Expanded(
                 child: Text(
-                  '${models.length} ${models.length == 1 ? 'model' : 'models'}',
+                  _strings.e7ModelUiCount(models.length),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
               if (AppTheme.stackedActions(context))
                 IconButton(
                   key: const Key('model-picker-filters'),
-                  tooltip: filtered ? 'Edit model filters' : 'Filter models',
+                  tooltip: filtered
+                      ? _strings.e7ModelUiEditFilters
+                      : _strings.e7ModelUiFilterModels,
                   isSelected: _showFilters || filtered,
                   onPressed: () => setState(() => _showFilters = !_showFilters),
                   icon: const Icon(AppIconography.settings),
@@ -600,11 +606,15 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
                         : AppIconography.settings,
                     size: 18,
                   ),
-                  label: Text(filtered ? 'Filtered' : 'Filters'),
+                  label: Text(
+                    filtered
+                        ? _strings.e7ModelUiFiltered
+                        : _strings.e7ModelUiFilters,
+                  ),
                 ),
               IconButton(
                 key: const Key('model-picker-refresh'),
-                tooltip: 'Refresh models',
+                tooltip: _strings.e7ModelUiRefresh,
                 onPressed: widget.controller.catalogLoading
                     ? null
                     : widget.controller.refreshCatalog,
@@ -629,10 +639,19 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _intentChip('Any capability', _ModelIntent.all),
-                    _intentChip('Fast modes', _ModelIntent.fast),
-                    _intentChip('Reasoning', _ModelIntent.reasoning),
-                    _intentChip('Largest context', _ModelIntent.context),
+                    _intentChip(
+                      _strings.e7ModelUiAnyCapability,
+                      _ModelIntent.all,
+                    ),
+                    _intentChip(_strings.e7ModelUiFastModes, _ModelIntent.fast),
+                    _intentChip(
+                      _strings.e7ModelUiReasoning,
+                      _ModelIntent.reasoning,
+                    ),
+                    _intentChip(
+                      _strings.e7ModelUiLargestContext,
+                      _ModelIntent.context,
+                    ),
                   ],
                 ),
               ),
@@ -655,21 +674,21 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
               ? AppIconography.history
               : Icons.search_off_rounded,
           title: catalog.models.isEmpty
-              ? 'No models available'
+              ? _strings.e7ModelUiNoneAvailable
               : !filtered && _collection == _ModelCollection.favorites
-              ? 'Keep your go-to models here'
+              ? _strings.e7ModelUiFavoritesEmpty
               : !filtered && _collection == _ModelCollection.recent
-              ? 'Your next choice starts here'
-              : 'No matching models',
+              ? _strings.e7ModelUiRecentEmpty
+              : _strings.e7ModelUiNoMatches,
           message: catalog.models.isEmpty
-              ? 'Configure a provider on the OpenCode server, then refresh.'
+              ? _strings.e7ModelUiConfigureProvider
               : !filtered && _collection == _ModelCollection.favorites
-              ? 'Tap the star beside any model to find it here.'
+              ? _strings.e7ModelUiFavoritesHint
               : !filtered && _collection == _ModelCollection.recent
-              ? 'Models you use will appear here, most recent first.'
+              ? _strings.e7ModelUiRecentHint
               : _intent == _ModelIntent.fast
-              ? 'No model reports an explicit fast or low-effort mode.'
-              : 'Try another search, provider, or capability filter.',
+              ? _strings.e7ModelUiNoFastModes
+              : _strings.e7ModelUiNoMatchesHint,
           action: TextButton(
             onPressed: () => setState(() {
               _search.clear();
@@ -679,7 +698,11 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
               _collection = _ModelCollection.all;
               _showFilters = false;
             }),
-            child: Text(filtered ? 'Clear filters' : 'Browse all models'),
+            child: Text(
+              filtered
+                  ? _strings.e7ModelUiClearFilters
+                  : _strings.e7ModelUiBrowseAll,
+            ),
           ),
         ),
     ];
@@ -717,12 +740,16 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         isExpanded: true,
         initialValue: value,
         decoration: InputDecoration(
-          labelText: 'Agent',
+          labelText: _strings.e7ModelUiAgent,
           prefixIcon: const Icon(AppIconography.support),
           helperText: _strings.modelChoiceStagedAgentHint,
           helperMaxLines: 3,
         ),
-        hint: Text(visible.isEmpty ? 'No agents available' : 'Server default'),
+        hint: Text(
+          visible.isEmpty
+              ? _strings.e7ModelUiNoAgents
+              : _strings.e7ModelUiServerDefault,
+        ),
         items: [
           if (unavailable)
             DropdownMenuItem(value: selected, child: Text(selected)),
@@ -786,12 +813,15 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
       initialValue: providers.any((provider) => provider.id == _provider)
           ? _provider
           : '*',
-      decoration: const InputDecoration(
-        labelText: 'Provider',
+      decoration: InputDecoration(
+        labelText: _strings.e7ModelUiProvider,
         prefixIcon: Icon(AppIconography.cloud),
       ),
       items: [
-        const DropdownMenuItem(value: '*', child: Text('All providers')),
+        DropdownMenuItem(
+          value: '*',
+          child: Text(_strings.e7ModelUiAllProviders),
+        ),
         for (final provider in providers)
           DropdownMenuItem(
             value: provider.id,
@@ -811,7 +841,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
   }
 
   Widget _intentChip(String label, _ModelIntent intent) => Padding(
-    padding: const EdgeInsets.only(right: 8),
+    padding: const EdgeInsetsDirectional.only(end: 8),
     child: ChoiceChip(
       label: Text(label),
       selected: _intent == intent,
@@ -841,7 +871,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
         child: Semantics(
           selected: draft,
           button: true,
-          label: current ? 'Current model' : null,
+          label: current ? _strings.e7ModelUiCurrent : null,
           child: InkWell(
             key: ValueKey('model-option-${model.providerID}-${model.id}'),
             onTap: model.enabled ? () => _draft(reference) : null,
@@ -875,13 +905,15 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
                           [
                             providerName,
                             if (model.contextLimit > 0)
-                              '${_compactNumber(model.contextLimit)} context',
+                              _strings.e7ModelUiContext(
+                                _compactNumber(model.contextLimit),
+                              ),
                             if (!model.enabled)
-                              'Unavailable'
+                              _strings.e7ModelUiUnavailable
                             else if (model.deprecated)
-                              'Deprecated'
+                              _strings.e7ModelUiDeprecated
                             else if (model.preview)
-                              'Preview',
+                              _strings.e7ModelUiPreview,
                           ].join(' · '),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: scheme.onSurfaceVariant,
@@ -894,8 +926,8 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
                   ),
                   IconButton(
                     tooltip: favorite
-                        ? 'Remove ${model.name} from favorites'
-                        : 'Favorite ${model.name}',
+                        ? _strings.e7ModelUiUnfavorite(model.name)
+                        : _strings.e7ModelUiFavorite(model.name),
                     onPressed: model.enabled
                         ? () => _toggleFavorite(reference)
                         : null,
@@ -933,7 +965,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
       await widget.controller.toggleModelFavorite(model);
     } catch (_) {
       if (mounted) {
-        setState(() => _saveError = 'Could not save favorites. Try again.');
+        setState(() => _saveError = _strings.e7ModelUiFavoritesFailed);
       }
     }
   }
@@ -1024,10 +1056,12 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Text(switch (widget.applyScope) {
-                      ModelPickerApplyScope.classic => 'Use model and mode',
-                      ModelPickerApplyScope.session => 'Use for this session',
+                      ModelPickerApplyScope.classic =>
+                        _strings.e7ModelUiUseModelMode,
+                      ModelPickerApplyScope.session =>
+                        _strings.e7ModelUiUseSession,
                       ModelPickerApplyScope.newSessions =>
-                        'Use for new sessions',
+                        _strings.e7ModelUiUseNewSessions,
                     }, textAlign: TextAlign.center),
             ),
           ],
@@ -1092,13 +1126,13 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
                   Text(
                     [
                       if (model.contextLimit > 0)
-                        '${_number(model.contextLimit)} context',
+                        _strings.e7ModelUiContext(_number(model.contextLimit)),
                       if (model.outputLimit > 0)
-                        '${_number(model.outputLimit)} output',
-                      if (model.reasoning) 'Reasoning',
-                      if (model.tools) 'Tools',
-                      if (model.attachments) 'Attachments',
-                      ?modelCostLabel(model),
+                        _strings.e7ModelUiOutput(_number(model.outputLimit)),
+                      if (model.reasoning) _strings.e7ModelUiReasoning,
+                      if (model.tools) _strings.e7ModelUiTools,
+                      if (model.attachments) _strings.e7ModelUiAttachments,
+                      ?modelCostLabel(model, strings: _strings),
                     ].join(' · '),
                   ),
                   const SizedBox(height: 20),
@@ -1162,7 +1196,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
       children: [
         ChoiceChip(
           key: ValueKey('model-variant-${model.id}-default'),
-          label: const Text('Default'),
+          label: Text(_strings.e7ModelUiDefault),
           selected: _draftVariant.isEmpty,
           onSelected: (_) => onChanged(''),
         ),
@@ -1202,10 +1236,7 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
       if (!ModelLibrary.sameModel(_currentModel, model) ||
           _currentVariant != variant) {
         if (mounted) {
-          setState(
-            () => _saveError =
-                'This choice is no longer available. Refresh models and try again.',
-          );
+          setState(() => _saveError = _strings.e7ModelUiSelectionGone);
         }
         return;
       }
@@ -1238,40 +1269,39 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     }
   }
 
-  static String _variantLabel(CatalogVariant variant) {
+  String _variantLabel(CatalogVariant variant) {
     final effort = variant.reasoningEffort;
     if (effort == null || variant.id.toLowerCase() == effort.toLowerCase()) {
       return variant.id;
     }
-    return '${variant.id} · $effort effort';
+    return _strings.e7ModelUiEffort(variant.id, effort);
   }
 
-  static String _number(int value) {
-    final text = value.toString();
-    final out = StringBuffer();
-    for (var index = 0; index < text.length; index++) {
-      if (index > 0 && (text.length - index) % 3 == 0) out.write(',');
-      out.write(text[index]);
-    }
-    return out.toString();
-  }
+  String _number(int value) =>
+      NumberFormat.decimalPattern(_strings.localeName).format(value);
 }
 
 /// Copy for the picker notice about providers the server has signed in to
 /// but not loaded; [names] are already presented for display.
-String unloadedProvidersNotice(List<String> names) {
+String unloadedProvidersNotice(
+  List<String> names, {
+  AppLocalizations? strings,
+}) {
+  final l10n = strings ?? lookupAppLocalizations(const Locale('en'));
   final sorted = [...names]..sort();
   final list = switch (sorted.length) {
-    0 => 'a provider',
+    0 => l10n.e7ModelUiProviderFallback,
     1 => sorted.single,
-    2 => '${sorted[0]} and ${sorted[1]}',
-    _ =>
-      '${sorted.sublist(0, sorted.length - 1).join(', ')}, and ${sorted.last}',
+    2 => l10n.e7ModelUiProviderPair(sorted[0], sorted[1]),
+    _ => l10n.e7ModelUiProviderMany(
+      sorted.sublist(0, sorted.length - 1).join(l10n.e7ModelUiListSeparator),
+      sorted.last,
+    ),
   };
-  final plural = sorted.length > 1;
-  return 'OpenCode is signed in to $list but has not loaded '
-      '${plural ? 'them' : 'it'} yet, so ${plural ? 'their' : 'its'} models '
-      'fail with “Model not found”. Reload to pick up the sign-in.';
+  return l10n.e7ModelUiUnloadedProviders(
+    sorted.length > 1 ? sorted.length : 1,
+    list,
+  );
 }
 
 class _Notice extends StatelessWidget {
@@ -1313,7 +1343,7 @@ class _CatalogLoading extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Semantics(
       liveRegion: true,
-      label: 'Loading model catalog',
+      label: _pickerStrings(context).e7ModelUiLoading,
       child: ListView.separated(
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.all(20),
@@ -1374,7 +1404,7 @@ class _PickerState extends StatelessWidget {
 
 /// "\$3.00 in · \$15.00 out /1M" for a model with published pricing; null when
 /// the catalog carries no cost.
-String? modelCostLabel(CatalogModel model) {
+String? modelCostLabel(CatalogModel model, {AppLocalizations? strings}) {
   final cost = model.cost;
   if (cost == null) return null;
   final input = cost.inputPerMillion;
@@ -1383,5 +1413,8 @@ String? modelCostLabel(CatalogModel model) {
   String money(double value) => value >= 1
       ? '\$${value.toStringAsFixed(2)}'
       : '\$${value.toStringAsFixed(3)}';
-  return '${money(input)} in · ${money(output)} out /1M';
+  return (strings ?? lookupAppLocalizations(const Locale('en'))).e7ModelUiCost(
+    money(input),
+    money(output),
+  );
 }

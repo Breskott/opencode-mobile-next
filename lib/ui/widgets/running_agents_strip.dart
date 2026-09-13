@@ -1,8 +1,15 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+
+import '../../l10n/app_localizations.dart';
 
 import '../../api/models.dart';
 import '../app_theme.dart';
 import 'session_title.dart';
+
+AppLocalizations _chatL10n(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));
 
 /// One session in the family the chat belongs to: the parent that delegated,
 /// the current session, and every sibling or child subagent.
@@ -19,13 +26,18 @@ class RunningAgentEntry {
   final bool current;
   final RunningAgentRelation relation;
 
-  String get label => relation == RunningAgentRelation.parent
-      ? 'Parent · ${presentedSessionTitle(session, fallback: 'Main session')}'
+  String get label => labelFor(lookupAppLocalizations(const Locale('en')));
+
+  String labelFor(AppLocalizations strings) =>
+      relation == RunningAgentRelation.parent
+      ? strings.chatUiParentSession(
+          presentedSessionTitle(session, fallback: strings.chatUiMainSession),
+        )
       : presentedSessionTitle(
           session,
           fallback: session.agent?.isNotEmpty == true
               ? session.agent!
-              : 'Subagent',
+              : strings.chatUiSubagent,
         );
 }
 
@@ -40,6 +52,7 @@ List<RunningAgentEntry> runningAgentEntries({
   required String sessionID,
   required Map<String, Session> sessions,
   required Set<String> busy,
+  bool includeIdle = false,
 }) {
   final current = sessions[sessionID];
   if (current == null) return const [];
@@ -87,7 +100,7 @@ List<RunningAgentEntry> runningAgentEntries({
       ),
   ];
   final othersRunning = entries.any((e) => !e.current && e.busy);
-  if (!othersRunning) return const [];
+  if (!includeIdle && !othersRunning) return const [];
   // Running agents first so the switch target is one tap away, then the
   // current session for orientation, then whatever has finished.
   final running = entries.where((e) => e.busy && !e.current).toList();
@@ -116,12 +129,12 @@ class RunningAgentsStrip extends StatelessWidget {
     final runningCount = entries.where((e) => e.busy).length;
     return Semantics(
       container: true,
-      label: '$runningCount agents running',
+      label: _chatL10n(context).chatUiRunningAgentCount(runningCount),
       child: Padding(
         key: const ValueKey('running-agents-strip'),
-        padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
+        padding: const EdgeInsetsDirectional.fromSTEB(8, 4, 8, 6),
         child: SizedBox(
-          height: 48,
+          height: math.max(48, MediaQuery.textScalerOf(context).scale(14) + 22),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -168,7 +181,7 @@ class RunningAgentsStrip extends StatelessWidget {
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 180),
                           child: Text(
-                            entry.label,
+                            entry.labelFor(_chatL10n(context)),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.labelMedium?.copyWith(

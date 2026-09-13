@@ -1,0 +1,25 @@
+{
+  "revision_before_docs": "bac0d01b45e6cb4a87f544dd84b8a6e045110ccb",
+  "run_at": "2026-09-10T00:25:43.319258+00:00",
+  "flutter": "3.47.2 e16cf749cc (pinned shorebird cache)",
+  "command": "flutter test --no-pub --concurrency=6 <half of test files> x2",
+  "test_files": 275,
+  "tests": 2895,
+  "passed": 2895,
+  "failed": 0,
+  "skipped": 12,
+  "wall_seconds": {
+    "half_a": 111.7,
+    "half_b": 107.3
+  },
+  "analyze": "No issues found",
+  "opencode_sdk": {
+    "analyze": "No issues found",
+    "tests_passed": 47
+  },
+  "logs": [
+    "res_final_a.json",
+    "res_final_b.json"
+  ],
+  "note": "Two halves run back to back on the same source; summary counts are the union."
+}

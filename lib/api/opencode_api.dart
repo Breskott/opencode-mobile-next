@@ -267,7 +267,21 @@ class OpenCodeApi
   Future<Health> health() async {
     try {
       final r = await _dio.get('/global/health');
-      return Health.fromJson(Map<String, dynamic>.from(r.data as Map));
+      final data = r.data;
+      if (data is! Map) {
+        // An OpenCode 2 host answers this path with its web UI (200,
+        // text/html). Raise a typed signal so connect can redetect the
+        // protocol generation instead of surfacing a cast error.
+        final contentType =
+            r.headers.value(Headers.contentTypeHeader) ?? 'an unknown type';
+        throw ApiException(
+          'The health check answered with $contentType instead of JSON. '
+          'This address may be a different OpenCode generation.',
+          statusCode: r.statusCode,
+          errorTag: unexpectedHealthShapeTag,
+        );
+      }
+      return Health.fromJson(Map<String, dynamic>.from(data));
     } on DioException catch (e) {
       _fail(e, 'Health check');
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
@@ -76,6 +77,8 @@ void main() {
         builder: (context, _) {
           final pack = effectiveThemePack(controller.themePack.value);
           return MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             themeMode: ThemeMode.dark,
             theme: AppTheme.light(pack),
             darkTheme: AppTheme.dark(pack),
@@ -104,6 +107,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: AppTheme.light(),
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
@@ -123,7 +128,10 @@ void main() {
       find.byType(ListView),
       const Offset(0, -120),
     );
-    expect(find.text('Needs Android 12 or newer'), findsOneWidget);
+    expect(
+      find.text('Material You colors are not available on this device.'),
+      findsOneWidget,
+    );
     await tester.tap(dynamicTile, warnIfMissed: false);
     await tester.pump();
     expect(controller.themePack.value, ThemePackId.opencode);
@@ -134,7 +142,21 @@ void main() {
       find.byType(ListView),
       const Offset(0, -120),
     );
+    // Centre the tile: at 2x its centre can still sit below the fold.
+    await Scrollable.ensureVisible(tester.element(solarized), alignment: 0.5);
+    await tester.pumpAndSettle();
     await tester.tap(solarized);
+    await tester.pumpAndSettle();
+    expect(controller.themePack.value, ThemePackId.opencode);
+    await tester.scrollUntilVisible(
+      find.text('Apply'),
+      160,
+      scrollable: find.descendant(
+        of: find.byKey(const Key('appearance-picker')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.solarized);
     expect(tester.takeException(), isNull);
@@ -155,6 +177,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: AppTheme.light(),
         home: AppearanceSettingsScreen(controller: controller),
       ),
@@ -167,8 +191,22 @@ void main() {
       find.byType(ListView),
       const Offset(0, -120),
     );
-    expect(find.text('Needs Android 12 or newer'), findsNothing);
+    expect(
+      find.text('Material You colors are not available on this device.'),
+      findsNothing,
+    );
     await tester.tap(dynamicTile);
+    await tester.pumpAndSettle();
+    expect(controller.themePack.value, ThemePackId.opencode);
+    await tester.scrollUntilVisible(
+      find.text('Apply'),
+      160,
+      scrollable: find.descendant(
+        of: find.byKey(const Key('appearance-picker')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(controller.themePack.value, ThemePackId.dynamic);
   });

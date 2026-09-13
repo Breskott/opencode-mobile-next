@@ -46,22 +46,21 @@ void main() {
     await expectLater(service.downloadUpdate(), completes);
   });
 
-  testWidgets(
-    'the GitHub release check stays off where Shorebird patches',
-    (tester) async {
-      // Android: code push is the update channel, so a second notice must not
-      // also poll GitHub. Previously this was decided by dart:io Platform,
-      // which reports the Linux *host* — so the suite ran the desktop check
-      // on every test that mounted the app.
-      final checker = _CountingChecker();
-      await _pumpNotice(
-        tester,
-        messengerKey: GlobalKey<ScaffoldMessengerState>(),
-        checker: checker,
-      );
-      expect(checker.called, isFalse);
-    },
-  );
+  testWidgets('the GitHub release check stays off where Shorebird patches', (
+    tester,
+  ) async {
+    // Android: code push is the update channel, so a second notice must not
+    // also poll GitHub. Previously this was decided by dart:io Platform,
+    // which reports the Linux *host* — so the suite ran the desktop check
+    // on every test that mounted the app.
+    final checker = _CountingChecker();
+    await _pumpNotice(
+      tester,
+      messengerKey: GlobalKey<ScaffoldMessengerState>(),
+      checker: checker,
+    );
+    expect(checker.called, isFalse);
+  });
 
   testWidgets('the GitHub release check runs on desktop', (tester) async {
     debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();

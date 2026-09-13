@@ -138,7 +138,7 @@ extension _ChatReadAloud on _ChatScreenState {
               ),
               child: ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 24),
                 children: [
                   Text(
                     _chatL10n(context).readAloudChooseVoice,

@@ -5,12 +5,24 @@ part of '../library_screen.dart';
 class ModelStatusPill extends StatelessWidget {
   const ModelStatusPill._(this.label, this.tone, {super.key});
 
-  static ModelStatusPill? forModel(CatalogModel model, {Key? key}) {
+  static ModelStatusPill? forModel(
+    CatalogModel model,
+    AppLocalizations l10n, {
+    Key? key,
+  }) {
     if (model.deprecated) {
-      return ModelStatusPill._('Deprecated', AppStatusTone.neutral, key: key);
+      return ModelStatusPill._(
+        l10n.e7LibraryDeprecated,
+        AppStatusTone.neutral,
+        key: key,
+      );
     }
     if (model.preview) {
-      return ModelStatusPill._('Preview', AppStatusTone.attention, key: key);
+      return ModelStatusPill._(
+        l10n.e7LibraryPreview,
+        AppStatusTone.attention,
+        key: key,
+      );
     }
     return null;
   }
@@ -64,8 +76,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
     setState(() => _error = null);
     try {
       final repository = await widget.controller.prepareActionRepository();
+      if (!mounted) return;
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryOpenCodeIsReconnecting,
+        );
       }
       final value = await repository.loadCatalog();
       if (mounted && generation == _loadGeneration) {
@@ -81,7 +98,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Models and agents')),
+      appBar: AppBar(
+        title: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryModelsAndAgents,
+        ),
+      ),
       body: ModelCatalogView(controller: widget.controller, showHeader: false),
     );
   }
@@ -100,8 +123,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
         Padding(
           padding: const EdgeInsets.all(12),
           child: TextField(
-            decoration: const InputDecoration(
-              hintText: 'Search models',
+            decoration: InputDecoration(
+              hintText: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).modelSearchHint,
               prefixIcon: Icon(AppIconography.search),
               border: OutlineInputBorder(),
               isDense: true,
@@ -113,10 +138,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
           child: models.isEmpty
               ? RefreshIndicator(
                   onRefresh: _load,
-                  child: const ProductEmptyState(
+                  child: ProductEmptyState(
                     icon: Icons.search_off_rounded,
-                    title: 'No matching models',
-                    message: 'Try another provider or model name.',
+                    title: lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryNoMatchingModels,
+                    message: lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryTryAnotherProviderOrModelName,
                   ),
                 )
               : RefreshIndicator(
@@ -131,7 +160,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
                           widget.controller.selectedModel?.providerID ==
                               model.providerID &&
                           widget.controller.selectedModel?.modelID == model.id;
-                      final pill = ModelStatusPill.forModel(model);
+                      final pill = ModelStatusPill.forModel(
+                        model,
+                        lookupAppLocalizations(Localizations.localeOf(context)),
+                      );
                       final cost = modelCostLabel(model);
                       return ListTile(
                         enabled: model.enabled,
@@ -152,7 +184,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         subtitle: Text(
                           [
                             '${model.providerID}/${model.id}',
-                            '${_compactNumber(model.contextLimit)} context - ${_compactNumber(model.outputLimit)} output',
+                            lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7LibraryContextOutput(
+                              (_compactNumber(model.contextLimit)).toString(),
+                              (_compactNumber(model.outputLimit)).toString(),
+                            ),
                             ?cost,
                           ].join('\n'),
                           maxLines: 3,
@@ -183,10 +220,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
     if (_catalog!.providers.isEmpty) {
       return RefreshIndicator(
         onRefresh: _load,
-        child: const ProductEmptyState(
+        child: ProductEmptyState(
           icon: AppIconography.cloudOff,
-          title: 'No providers connected',
-          message: 'Connect a provider on the OpenCode server to use models.',
+          title: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryNoProvidersConnected,
+          message: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryConnectAProviderOnTheOpenCodeServer,
         ),
       );
     }
@@ -208,7 +249,11 @@ class _CatalogScreenState extends State<CatalogScreen> {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
-              '$count available models\nAuthentication is managed under MCP and integrations.',
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryAvailableModelsAuthenticationIsManagedUnderMCP(
+                (count).toString(),
+              ),
               maxLines: 2,
             ),
             trailing: const Icon(AppIconography.chevronRight),
@@ -230,10 +275,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
     if (agents.isEmpty) {
       return RefreshIndicator(
         onRefresh: _load,
-        child: const ProductEmptyState(
+        child: ProductEmptyState(
           icon: AppIconography.support,
-          title: 'No agents available',
-          message: 'No visible agents were returned for this workspace.',
+          title: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryNoAgentsAvailable,
+          message: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryNoVisibleAgentsWereReturnedForThis,
         ),
       );
     }
@@ -276,7 +325,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
         child: SizedBox(
           height: MediaQuery.sizeOf(context).height * .82,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,7 +338,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    if (ModelStatusPill.forModel(model) case final pill?) ...[
+                    if (ModelStatusPill.forModel(
+                          model,
+                          lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ),
+                        )
+                        case final pill?) ...[
                       const SizedBox(width: 8),
                       pill,
                     ],
@@ -315,16 +370,39 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   runSpacing: 8,
                   children: [
                     _CapabilityChip(
-                      label: '${_compactNumber(model.contextLimit)} context',
+                      label:
+                          lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7LibraryContext(
+                            (_compactNumber(model.contextLimit)).toString(),
+                          ),
                     ),
                     _CapabilityChip(
-                      label: '${_compactNumber(model.outputLimit)} output',
+                      label:
+                          lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7LibraryOutput(
+                            (_compactNumber(model.outputLimit)).toString(),
+                          ),
                     ),
                     if (model.reasoning)
-                      const _CapabilityChip(label: 'Reasoning'),
+                      _CapabilityChip(
+                        label: lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).transcriptFindReasoning,
+                      ),
                     if (model.attachments)
-                      const _CapabilityChip(label: 'Attachments'),
-                    if (model.tools) const _CapabilityChip(label: 'Tools'),
+                      _CapabilityChip(
+                        label: lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryAttachments,
+                      ),
+                    if (model.tools)
+                      _CapabilityChip(
+                        label: lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryTools,
+                      ),
                     for (final variant in model.variants)
                       _CapabilityChip(label: variant.id),
                   ],
@@ -345,7 +423,11 @@ class _CatalogScreenState extends State<CatalogScreen> {
                             if (mounted) setState(() {});
                           }
                         : null,
-                    child: const Text('Use this model'),
+                    child: Text(
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryUseThisModel,
+                    ),
                   ),
                 ),
               ],

@@ -1,0 +1,40 @@
+{
+  "revision": "a6434209d3b5f85053fb868cb45d4f6dcb9b7c05",
+  "command": [
+    "./android/gradlew",
+    "-p",
+    "android",
+    ":app:assembleRelease",
+    "-Ptarget-platform=android-arm64,android-x64",
+    "-Psplit-per-abi=true",
+    "-Pforce-version-code-ignoring-abi=true",
+    "-Ptarget=lib/main.dart",
+    "-Pdart-obfuscation=false",
+    "-Ptrack-widget-creation=false",
+    "-Ptree-shake-icons=true",
+    "-Dorg.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=1g -XX:ReservedCodeCacheSize=256m",
+    "--max-workers=2",
+    "--no-daemon"
+  ],
+  "exit_code": 0,
+  "seconds": 115.4,
+  "log": "/home/eslam/Storage/Code/oc_app-ui-audit-20260909/oc2-setup/local-build.log",
+  "ci": false,
+  "precompile_command": [
+    "./android/gradlew",
+    "-p",
+    "android",
+    ":app:compileFlutterBuildRelease",
+    "-Ptarget-platform=android-arm64,android-x64",
+    "-Psplit-per-abi=true",
+    "-Pforce-version-code-ignoring-abi=true",
+    "-Ptarget=lib/main.dart",
+    "-Pdart-obfuscation=false",
+    "-Ptrack-widget-creation=false",
+    "-Ptree-shake-icons=true",
+    "-Dorg.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=1g -XX:ReservedCodeCacheSize=256m",
+    "--max-workers=2",
+    "--no-daemon",
+    "--rerun-tasks"
+  ]
+}

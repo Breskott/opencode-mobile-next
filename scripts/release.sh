@@ -81,7 +81,7 @@ readonly PUBLISH
 cd "$(dirname "$0")/.."
 export PATH="$HOME/.shorebird/bin:$PATH"
 
-for command_name in git flutter shorebird; do
+for command_name in git flutter shorebird python3; do
   command -v "$command_name" >/dev/null 2>&1 ||
     fail "Required command is not available: $command_name"
 done
@@ -340,8 +340,11 @@ esac
 
 echo "==> Analyzing Dart code"
 flutter analyze
-echo "==> Running Flutter tests"
-flutter test --concurrency=1
+echo "==> Running recursive Flutter tests in bounded serial chunks"
+python3 tool/qa/run_serial_tests.py \
+  --flutter "$(command -v flutter)" \
+  --chunk-size 25 \
+  --chunk-timeout 900
 
 case "$MODE" in
   release)

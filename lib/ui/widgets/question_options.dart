@@ -1,3 +1,4 @@
+import '../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 import '../../domain/server_gateway.dart' show PendingQuestion, QuestionChoice;
@@ -112,7 +113,7 @@ class QuestionOptionRow extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'Recommended',
+                        _sharedCopy(context).e7SharedRecommended,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: scheme.primary,
                         ),
@@ -154,9 +155,12 @@ class QuestionCustomAnswerField extends StatelessWidget {
     maxLines: maxLines,
     onChanged: onChanged,
     onSubmitted: onSubmitted,
-    decoration: const InputDecoration(
-      labelText: 'Your answer',
+    decoration: InputDecoration(
+      labelText: _sharedCopy(context).e7SharedYourAnswer,
       border: OutlineInputBorder(),
     ),
   );
 }
+
+AppLocalizations _sharedCopy(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));

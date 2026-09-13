@@ -431,7 +431,18 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('review-file-strip')), findsOneWidget);
     expect(find.byKey(const Key('review-mode-unified')), findsOneWidget);
-    expect(find.text('+after'), findsOneWidget);
+    // Rows grow with the text scale, so the added line starts below the
+    // short fold; it must still be reachable by scrolling the diff canvas.
+    final addedLine = find.text('+after');
+    await tester.scrollUntilVisible(
+      addedLine,
+      50,
+      scrollable: find.byWidgetPredicate(
+        (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+      ),
+    );
+    expect(addedLine, findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('fits primary review actions on a phone without a clipped strip', (

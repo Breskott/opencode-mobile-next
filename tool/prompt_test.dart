@@ -49,7 +49,8 @@ Future<void> main(List<String> args) async {
             }
             if (p.type == 'text' &&
                 p.text.isNotEmpty &&
-                (p.messageID == null || assistantMsgIds.contains(p.messageID))) {
+                (p.messageID == null ||
+                    assistantMsgIds.contains(p.messageID))) {
               sawAssistantPart = true;
               textReceived.write(p.text);
               if (!done.isCompleted && textReceived.length > 5) done.complete();
@@ -77,7 +78,9 @@ Future<void> main(List<String> args) async {
 
   stdout.writeln('user message seen:      $sawUserMsg');
   stdout.writeln('assistant parts seen:    $sawAssistantPart');
-  stdout.writeln('text received:           "${textReceived.toString().trim()}"');
+  stdout.writeln(
+    'text received:           "${textReceived.toString().trim()}"',
+  );
   if (errorSeen != null) stdout.writeln('error from server:       $errorSeen');
 
   final pass = sawUserMsg && sawAssistantPart;

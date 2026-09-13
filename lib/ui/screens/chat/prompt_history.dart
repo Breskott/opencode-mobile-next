@@ -45,7 +45,7 @@ class _PromptHistorySheetState extends State<_PromptHistorySheet> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 12),
                 child: Text(_chatL10n(context).composerReuseDescription),
               ),
               Padding(

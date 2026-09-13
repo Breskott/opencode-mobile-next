@@ -36,7 +36,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       final repository = await widget.controller.prepareActionRepository();
       if (!mounted || generation != _loadGeneration) return;
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryOpenCodeIsReconnecting,
+        );
       }
       final references = await repository.listReferences();
       if (!mounted || generation != _loadGeneration) return;
@@ -55,7 +59,13 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
   Widget build(BuildContext context) => widget.embedded
       ? _body()
       : Scaffold(
-          appBar: AppBar(title: const Text('References')),
+          appBar: AppBar(
+            title: Text(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryReferences,
+            ),
+          ),
           body: _body(),
         );
 
@@ -72,10 +82,14 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       : _references!.isEmpty
       ? RefreshIndicator(
           onRefresh: _load,
-          child: const ProductEmptyState(
+          child: ProductEmptyState(
             icon: AppIconography.bookmarks,
-            title: 'No references configured',
-            message: 'References attached to this project appear here.',
+            title: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryNoReferencesConfigured,
+            message: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryReferencesAttachedToThisProjectAppearHere,
           ),
         )
       : RefreshIndicator(
@@ -120,7 +134,11 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('@${reference.name} copied'),
+        content: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryCopied((reference.name).toString()),
+        ),
         duration: const Duration(seconds: 2),
       ),
     );

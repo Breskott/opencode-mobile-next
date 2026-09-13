@@ -4,11 +4,15 @@ import 'package:flutter/material.dart';
 
 import '../../api/models.dart';
 import '../../domain/mobile_tool_view.dart';
+import '../../l10n/app_localizations.dart';
 import 'mobile_task_view.dart';
 import '../app_theme.dart';
 import 'agent_color.dart';
 import 'file_preview.dart';
 import 'markdown.dart';
+
+AppLocalizations _chatL10n(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));
 
 // The chat transcript (a `part` of chat_screen.dart) opens file diffs through
 // this library, which it already imports; tool cards render diffs too.
@@ -17,6 +21,18 @@ typedef ToolOutputFileLoader =
     Future<FilePreviewData> Function(ToolOutputFile file);
 typedef ToolOutputFileAction =
     Future<void> Function(ToolOutputFile file, FilePreviewData data);
+
+String _presentedToolStatus(String status, AppLocalizations strings) =>
+    switch (status) {
+      'pending' => strings.chatUiPending,
+      'running' => strings.chatUiRunning,
+      'completed' => strings.chatUiCompleted,
+      'error' => strings.chatUiError,
+      'cancelled' => strings.chatUiBackgroundCancelled,
+      'timeout' => strings.chatUiTimedOut,
+      'killed' => strings.chatUiKilled,
+      _ => status,
+    };
 
 enum _ToolKind {
   read,
@@ -54,10 +70,10 @@ String _fileName(String value) {
   return parts.isEmpty ? value : parts.last;
 }
 
-/// The child session the OpenCode `task` tool spawned for its subagent, read
+/// The child session the OpenCode `task` or native v2 `subagent` tool spawned, read
 /// from the tool metadata. The server writes `sessionId` (alongside
 /// `parentSessionId`, `model` and, for background jobs, `jobId`); the other
-/// spellings cover older builds and hand-written fixtures.
+/// spellings cover native v2 (`sessionID`) and older builds.
 String? taskChildSessionId(ToolState state) {
   final metadata = state.metadata;
   if (metadata == null) return null;
@@ -69,16 +85,24 @@ String? taskChildSessionId(ToolState state) {
 
 /// `state="…"` of the `<task …>` wrapper the server puts around a subagent
 /// result (running / completed / error); null when the output lacks one.
-String? _taskOutputState(String? output) {
+String? _taskOutputState(String? output, {bool nativeSubagent = false}) {
   if (output == null) return null;
-  final match = RegExp(r'<task\b[^>]*\bstate="([a-z_]+)"').firstMatch(output);
+  final tag = nativeSubagent ? 'subagent' : 'task';
+  final match = RegExp('<$tag\\b[^>]*\\bstate="([a-z_]+)"').firstMatch(output);
   return match?.group(1);
 }
 
 /// Text inside `<task_result>` / `<task_error>`, or the whole output when the
 /// server did not wrap it.
-String _taskResultText(String? output) {
+String _taskResultText(String? output, {bool nativeSubagent = false}) {
   final raw = output ?? '';
+  if (nativeSubagent) {
+    final wrapper = RegExp(
+      r'^\s*<subagent\b[^>]*>\n?(.*?)\n?</subagent>\s*$',
+      dotAll: true,
+    ).firstMatch(raw);
+    return (wrapper?.group(1) ?? raw).trim();
+  }
   final match = RegExp(
     r'<task_(?:result|error)>\n?(.*?)\n?</task_(?:result|error)>',
     dotAll: true,
@@ -86,10 +110,31 @@ String _taskResultText(String? output) {
   return (match?.group(1) ?? raw).trim();
 }
 
+/// The invocation finished by detaching its child, not by completing the
+/// child's work. The later synthetic completion is a separate server message.
+bool _nativeSubagentLaunched(ToolState state) =>
+    state.executed &&
+    state.status == 'completed' &&
+    state.metadata?['status'] == 'running';
+
+String? _subagentState(ToolState state, {required bool nativeSubagent}) {
+  if (!state.executed) return null;
+  if (nativeSubagent && state.status == 'error') return 'error';
+  if (nativeSubagent) {
+    final status = state.metadata?['status'];
+    if (status == 'running' || status == 'completed') return status as String;
+  }
+  return _taskOutputState(state.output, nativeSubagent: nativeSubagent);
+}
+
 /// Compact "Title · subtitle" line for the tool currently executing, used by
 /// the chat tool-group header as a live ticker while a run is active.
-String runningToolTicker(String rawName, ToolState state) {
-  final contract = _ToolContract.from(rawName, state);
+String runningToolTicker(
+  String rawName,
+  ToolState state, {
+  AppLocalizations? l10n,
+}) {
+  final contract = _ToolContract.from(rawName, state, l10n: l10n);
   final subtitle = contract.subtitle;
   return subtitle == null || subtitle.isEmpty
       ? contract.title
@@ -101,15 +146,23 @@ class _ToolContract {
   final String title;
   final String? subtitle;
   final List<String> details;
+  final bool nativeSubagent;
 
   const _ToolContract({
     required this.kind,
     required this.title,
     this.subtitle,
     this.details = const [],
+    this.nativeSubagent = false,
   });
 
-  factory _ToolContract.from(String rawName, ToolState state) {
+  factory _ToolContract.from(
+    String rawName,
+    ToolState state, {
+    String? backgroundLaunchLabel,
+    AppLocalizations? l10n,
+  }) {
+    final strings = l10n ?? lookupAppLocalizations(const Locale('en'));
     final name = rawName.trim().toLowerCase();
     final input = state.input;
     final metadata = state.metadata ?? const <String, dynamic>{};
@@ -121,45 +174,47 @@ class _ToolContract {
     switch (name) {
       case 'read':
         kind = _ToolKind.read;
-        title = 'Read';
+        title = strings.chatUiRead;
         final path = _valueString(input['filePath']);
         subtitle = path == null ? null : _fileName(path);
         if (_valueNumber(input['offset']) case final value?) {
-          details.add('from $value');
+          details.add(strings.chatUiFromLine(value));
         }
         if (_valueNumber(input['limit']) case final value?) {
-          details.add('$value lines');
+          details.add(strings.chatUiLineCount(value));
         }
         final display = metadata['display'];
         if (display is Map) {
           final start = _valueNumber(display['lineStart']);
           final end = _valueNumber(display['lineEnd']);
-          if (start != null && end != null) details.add('L$start–$end');
+          if (start != null && end != null) {
+            details.add(strings.chatUiLineRange(start, end));
+          }
           final count = display['entries'] is List
               ? (display['entries'] as List).length
               : null;
-          if (count != null) details.add('$count entries');
+          if (count != null) details.add(strings.chatUiEntryCount(count));
         }
         break;
       case 'list':
         kind = _ToolKind.list;
-        title = 'List';
+        title = strings.chatUiList;
         subtitle = _valueString(input['path']) ?? state.title;
         break;
       case 'glob':
         kind = _ToolKind.glob;
-        title = 'Find files';
+        title = strings.chatUiFindFiles;
         subtitle = _valueString(input['pattern']);
         if (_valueNumber(metadata['count']) case final value?) {
-          details.add('$value found');
+          details.add(strings.chatUiFoundCount(value));
         }
         break;
       case 'grep':
         kind = _ToolKind.grep;
-        title = 'Search text';
+        title = strings.chatUiSearchText;
         subtitle = _valueString(input['pattern']);
         if (_valueNumber(metadata['matches']) case final value?) {
-          details.add('$value matches');
+          details.add(strings.chatUiMatchCount(value));
         }
         if (_valueString(input['include']) case final value?) {
           details.add(value);
@@ -168,39 +223,43 @@ class _ToolContract {
       case 'bash':
       case 'shell':
         kind = _ToolKind.shell;
-        title = 'Shell';
+        title = strings.activeContextShell;
         subtitle = _valueString(input['command']);
         final exit = _valueNumber(metadata['exit']);
-        if (exit != null) details.add('exit $exit');
+        if (exit != null) details.add(strings.chatUiExitCode(exit));
         // v2 shell messages surface their terminal status when the command
         // did not run to completion.
         final shellStatus = _valueString(metadata['shellStatus']) ?? '';
         if (shellStatus == 'timeout' || shellStatus == 'killed') {
-          details.add(shellStatus);
+          details.add(_presentedToolStatus(shellStatus, strings));
         }
-        if (metadata['truncated'] == true) details.add('truncated');
+        if (metadata['truncated'] == true) details.add(strings.chatUiTruncated);
         break;
       case 'edit':
         kind = _ToolKind.edit;
-        title = 'Edit';
+        title = strings.chatUiEdit;
         final path = _valueString(input['filePath']);
         subtitle = path == null ? state.title : _fileName(path);
         _addDiffDetails(details, metadata['filediff']);
         break;
       case 'write':
         kind = _ToolKind.write;
-        title = 'Write';
+        title = strings.chatUiWrite;
         final path = _valueString(input['filePath']);
         subtitle = path == null ? state.title : _fileName(path);
-        details.add(metadata['exists'] == false ? 'new file' : 'updated');
+        details.add(
+          metadata['exists'] == false
+              ? strings.chatUiNewFile
+              : strings.chatUiUpdated,
+        );
         break;
       case 'patch':
       case 'apply_patch':
         kind = _ToolKind.patch;
-        title = 'Apply patch';
+        title = strings.chatUiApplyPatch;
         final files = metadata['files'];
         if (files is List) {
-          subtitle = '${files.length} ${files.length == 1 ? 'file' : 'files'}';
+          subtitle = strings.chatUiFileCount(files.length);
           var additions = 0;
           var deletions = 0;
           for (final file in files.whereType<Map>()) {
@@ -213,66 +272,78 @@ class _ToolContract {
         break;
       case 'webfetch':
         kind = _ToolKind.webFetch;
-        title = 'Fetch page';
+        title = strings.chatUiFetchPage;
         subtitle = _valueString(input['url']);
         if (_valueString(input['format']) case final value?) details.add(value);
         break;
       case 'websearch':
         kind = _ToolKind.webSearch;
         title = _valueString(metadata['provider']) == null
-            ? 'Web search'
-            : '${metadata['provider']} search';
+            ? strings.chatUiWebSearch
+            : strings.chatUiProviderSearch(metadata['provider'] ?? '');
         subtitle = _valueString(input['query']);
         if (_valueNumber(metadata['numResults']) case final value?) {
-          details.add('$value results');
+          details.add(strings.chatUiResultCount(value));
         }
         break;
       case 'task':
+      case 'subagent':
         kind = _ToolKind.task;
-        title = _valueString(input['subagent_type']) ?? 'Agent';
+        title =
+            _valueString(
+              input[name == 'subagent' ? 'agent' : 'subagent_type'],
+            ) ??
+            strings.chatUiAgent;
         subtitle = _valueString(input['description']);
-        if (metadata['background'] == true || input['background'] == true) {
-          details.add('background');
+        if (name == 'subagent' && _nativeSubagentLaunched(state)) {
+          if (backgroundLaunchLabel != null) details.add(backgroundLaunchLabel);
+        } else if (state.executed &&
+            (metadata['background'] == true || input['background'] == true)) {
+          details.add(strings.chatUiBackground);
         }
         // The child session's own state, as the server stamps it on the
         // <task> wrapper; a background job reads "running" after the call
         // itself has completed.
-        if (_taskOutputState(state.output) case final childState?) {
-          details.add(childState);
+        if (!(name == 'subagent' && _nativeSubagentLaunched(state))) {
+          if (_subagentState(state, nativeSubagent: name == 'subagent')
+              case final childState?) {
+            details.add(_presentedToolStatus(childState, strings));
+          }
         }
         break;
       case 'todowrite':
       case 'todo':
         kind = _ToolKind.todo;
-        title = 'Tasks';
+        title = strings.workTitle;
         final todos = metadata['todos'] ?? input['todos'];
         if (todos is List) {
           final done = todos
               .where((item) => item is Map && item['status'] == 'completed')
               .length;
-          subtitle = '$done/${todos.length} completed';
+          subtitle = strings.chatUiCompletedCount(done, todos.length);
         }
         break;
       case 'question':
         kind = _ToolKind.question;
-        title = 'Questions';
+        title = strings.chatUiQuestions;
         final questions = input['questions'];
         final answers = metadata['answers'];
         if (questions is List) {
           subtitle = answers is List && answers.isNotEmpty
-              ? '${questions.length} answered'
-              : '${questions.length} asked';
+              ? strings.chatUiAnsweredCount(questions.length)
+              : strings.chatUiAskedCount(questions.length);
         }
         break;
       case 'lsp':
         kind = _ToolKind.lsp;
-        title = _valueString(input['operation']) ?? 'Language server';
+        title =
+            _valueString(input['operation']) ?? strings.chatUiLanguageServer;
         final path = _valueString(input['filePath']);
         subtitle = path == null ? null : _fileName(path);
         break;
       case 'skill':
         kind = _ToolKind.skill;
-        title = 'Skill';
+        title = strings.activeContextSkill;
         subtitle = _valueString(input['name']);
         break;
       default:
@@ -280,14 +351,16 @@ class _ToolContract {
         title = state.title?.trim().isNotEmpty == true ? state.title! : rawName;
         subtitle = null;
     }
-    if (metadata['truncated'] == true && !details.contains('truncated')) {
-      details.add('truncated');
+    if (metadata['truncated'] == true &&
+        !details.contains(strings.chatUiTruncated)) {
+      details.add(strings.chatUiTruncated);
     }
     return _ToolContract(
       kind: kind,
       title: title,
       subtitle: subtitle,
       details: details,
+      nativeSubagent: name == 'subagent',
     );
   }
 
@@ -303,13 +376,16 @@ class _ToolContract {
 /// Wall-clock tool run time as the card shows it: tenths of a second under
 /// a minute ("0.8s", "12.4s"), minutes and zero-padded seconds past it
 /// ("1m 05s").
-String formatToolDuration(Duration duration) {
+String formatToolDuration(Duration duration, {AppLocalizations? l10n}) {
+  final strings = l10n ?? lookupAppLocalizations(const Locale('en'));
   final clamped = duration.isNegative ? Duration.zero : duration;
   if (clamped.inMinutes >= 1) {
     final seconds = (clamped.inSeconds % 60).toString().padLeft(2, '0');
-    return '${clamped.inMinutes}m ${seconds}s';
+    return strings.chatUiDurationMinutesSeconds(clamped.inMinutes, seconds);
   }
-  return '${(clamped.inMilliseconds / 1000).toStringAsFixed(1)}s';
+  return strings.chatUiDurationSeconds(
+    (clamped.inMilliseconds / 1000).toStringAsFixed(1),
+  );
 }
 
 /// Renders a single tool invocation as an expandable card with status,
@@ -428,13 +504,13 @@ class _ToolCardState extends State<ToolCard> {
       return FilePreviewData(
         name: file.displayName,
         mimeType: file.mimeType,
-        error: 'The generated file is not available from this server.',
+        error: _chatL10n(context).chatUiTheGeneratedFileIsNotAvailableFrom,
       );
     } catch (error) {
       return FilePreviewData(
         name: file.displayName,
         mimeType: file.mimeType,
-        error: 'Could not load this file from the OpenCode server: $error',
+        error: _chatL10n(context).chatUiFileLoadFailed(error),
       );
     }
   }
@@ -464,7 +540,12 @@ class _ToolCardState extends State<ToolCard> {
     };
   }
 
+  bool get _backgroundLaunch =>
+      widget.toolName.trim().toLowerCase() == 'subagent' &&
+      _nativeSubagentLaunched(widget.state);
+
   Color get _statusColor {
+    if (_backgroundLaunch) return Theme.of(context).colorScheme.primary;
     switch (widget.state.status) {
       case 'completed':
         return AppTheme.successOf(Theme.of(context));
@@ -482,9 +563,11 @@ class _ToolCardState extends State<ToolCard> {
   /// Run time shown once the tool has finished; nothing while it runs or
   /// when the server sent no timestamps.
   String? get _durationLabel {
-    if (_running || !widget.state.executed) return null;
+    if (_running || _backgroundLaunch || !widget.state.executed) return null;
     final duration = widget.state.duration;
-    return duration == null ? null : formatToolDuration(duration);
+    return duration == null
+        ? null
+        : formatToolDuration(duration, l10n: _chatL10n(context));
   }
 
   /// One ordered v2 content segment: a mono text run, an image preview, or a
@@ -514,7 +597,13 @@ class _ToolCardState extends State<ToolCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final contract = _ToolContract.from(widget.toolName, widget.state);
+    final strings = lookupAppLocalizations(Localizations.localeOf(context));
+    final contract = _ToolContract.from(
+      widget.toolName,
+      widget.state,
+      backgroundLaunchLabel: strings.workStartedInBackground,
+      l10n: strings,
+    );
     final hasBody =
         (widget.state.output?.isNotEmpty ?? false) ||
         (widget.state.inputJson?.isNotEmpty ?? false) ||
@@ -546,7 +635,11 @@ class _ToolCardState extends State<ToolCard> {
               button: hasBody,
               expanded: hasBody ? _expanded : null,
               label:
-                  '${contract.title}, ${widget.state.executed ? widget.state.status : 'not run'}',
+                  '${contract.title}, ${!widget.state.executed
+                      ? strings.chatUiNotRun
+                      : _backgroundLaunch
+                      ? strings.workStartedInBackground
+                      : _presentedToolStatus(widget.state.status, strings)}',
               child: InkWell(
                 onTap: hasBody ? _toggleExpanded : null,
                 borderRadius: widget.embedded
@@ -555,7 +648,7 @@ class _ToolCardState extends State<ToolCard> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 48),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+                    padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 8),
                     child: Row(
                       children: [
                         Icon(
@@ -623,7 +716,7 @@ class _ToolCardState extends State<ToolCard> {
                         if (!widget.state.executed) ...[
                           const SizedBox(width: 6),
                           Text(
-                            'Not run',
+                            _chatL10n(context).chatUiNotRun,
                             key: const Key('tool-not-run'),
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: AppTheme.mutedOf(theme),
@@ -663,7 +756,9 @@ class _ToolCardState extends State<ToolCard> {
                           )
                         else
                           Icon(
-                            _running
+                            _backgroundLaunch
+                                ? AppIconography.agent
+                                : _running
                                 ? AppIconography.waitingStart
                                 : widget.state.status == 'error'
                                 ? AppIconography.error
@@ -695,7 +790,7 @@ class _ToolCardState extends State<ToolCard> {
             if (_interleavedSegments case final segments?)
               Padding(
                 key: const Key('tool-interleaved-output'),
-                padding: const EdgeInsets.fromLTRB(10, 2, 10, 10),
+                padding: const EdgeInsetsDirectional.fromSTEB(10, 2, 10, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -709,7 +804,7 @@ class _ToolCardState extends State<ToolCard> {
               )
             else if (_files.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(10, 2, 10, 10),
+                padding: const EdgeInsetsDirectional.fromSTEB(10, 2, 10, 10),
                 child: Column(
                   children: [
                     for (final file in _files)
@@ -737,8 +832,8 @@ class _ToolCardState extends State<ToolCard> {
               Container(
                 width: double.infinity,
                 padding: widget.embedded
-                    ? const EdgeInsets.fromLTRB(34, 0, 10, 8)
-                    : const EdgeInsets.fromLTRB(10, 4, 10, 10),
+                    ? const EdgeInsetsDirectional.fromSTEB(34, 0, 10, 8)
+                    : const EdgeInsetsDirectional.fromSTEB(10, 4, 10, 10),
                 child: _ToolContractBody(
                   contract: contract,
                   state: widget.state,
@@ -811,29 +906,31 @@ class _ToolContractBody extends StatelessWidget {
     }
     if (state.status == 'error') {
       return _ErrorOutput(
-        message: state.output ?? 'Tool failed.',
+        message: state.output ?? _chatL10n(context).chatUiToolFailed,
         embedded: embedded,
       );
     }
-    if (suppressOutput) return _genericInput();
+    if (suppressOutput) return _genericInput(context);
     return switch (contract.kind) {
-      _ToolKind.read => _readBody(),
-      _ToolKind.shell => _shellBody(),
-      _ToolKind.edit => _editBody(),
-      _ToolKind.write => _writeBody(),
-      _ToolKind.patch => _patchBody(),
-      _ToolKind.todo => _todoBody(),
-      _ToolKind.question => _questionBody(),
-      _ToolKind.webFetch || _ToolKind.webSearch => _richOutputBody(),
+      _ToolKind.read => _readBody(context),
+      _ToolKind.shell => _shellBody(context),
+      _ToolKind.edit => _editBody(context),
+      _ToolKind.write => _writeBody(context),
+      _ToolKind.patch => _patchBody(context),
+      _ToolKind.todo => _todoBody(context),
+      _ToolKind.question => _questionBody(context),
+      _ToolKind.webFetch || _ToolKind.webSearch => _richOutputBody(context),
       _ToolKind.task => _taskBody(context),
-      _ToolKind.list || _ToolKind.glob || _ToolKind.grep => _searchBody(),
-      _ToolKind.lsp => _lspBody(),
-      _ToolKind.skill => _skillBody(),
-      _ToolKind.generic => _genericBody(),
+      _ToolKind.list ||
+      _ToolKind.glob ||
+      _ToolKind.grep => _searchBody(context),
+      _ToolKind.lsp => _lspBody(context),
+      _ToolKind.skill => _skillBody(context),
+      _ToolKind.generic => _genericBody(context),
     };
   }
 
-  Widget _readBody() {
+  Widget _readBody(BuildContext context) {
     final display = _metadata['display'];
     if (display is Map) {
       final map = Map<String, dynamic>.from(display);
@@ -847,8 +944,10 @@ class _ToolContractBody extends StatelessWidget {
           path: path,
           entries: (map['entries'] as List).map((item) => '$item').toList(),
           footer: map['truncated'] == true
-              ? '${map['totalEntries'] ?? ''} total · more available'
-              : '${map['totalEntries'] ?? (map['entries'] as List).length} entries',
+              ? _chatL10n(context).chatUiMoreEntries(map['totalEntries'] ?? '')
+              : _chatL10n(context).chatUiEntryTotal(
+                  map['totalEntries'] ?? (map['entries'] as List).length,
+                ),
         );
       }
       final text = _rawString(map['text']);
@@ -869,7 +968,9 @@ class _ToolContractBody extends StatelessWidget {
           .where((line) => line.trim().isNotEmpty && !line.startsWith('('))
           .toList();
       return _PathList(
-        path: _valueString(state.input['filePath']) ?? 'Directory',
+        path:
+            _valueString(state.input['filePath']) ??
+            _chatL10n(context).chatUiDirectory,
         entries: entries,
       );
     }
@@ -890,10 +991,10 @@ class _ToolContractBody extends StatelessWidget {
         maxLines: 240,
       );
     }
-    return _plainOutput('read-output.txt');
+    return _plainOutput(context, 'read-output.txt');
   }
 
-  Widget _shellBody() {
+  Widget _shellBody(BuildContext context) {
     final command = _valueString(state.input['command']) ?? '';
     final streamed = _rawString(_metadata['output']);
     var output = state.output?.trim().isNotEmpty == true
@@ -914,7 +1015,7 @@ class _ToolContractBody extends StatelessWidget {
     return _Mono(text: text, name: 'terminal.log', maxLines: 260);
   }
 
-  Widget _editBody() {
+  Widget _editBody(BuildContext context) {
     final filediff = _metadata['filediff'];
     final patch = filediff is Map ? _rawString(filediff['patch']) : null;
     final diff = patch ?? _rawString(_metadata['diff']);
@@ -929,13 +1030,13 @@ class _ToolContractBody extends StatelessWidget {
         ].join('\n'),
       );
     }
-    return _plainOutput('edit-output.txt');
+    return _plainOutput(context, 'edit-output.txt');
   }
 
-  Widget _writeBody() {
+  Widget _writeBody(BuildContext context) {
     final content = _rawString(state.input['content']);
     if (content?.trim().isNotEmpty != true) {
-      return _plainOutput('write-output.txt');
+      return _plainOutput(context, 'write-output.txt');
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -945,12 +1046,15 @@ class _ToolContractBody extends StatelessWidget {
           name: _valueString(state.input['filePath']) ?? 'written-file.txt',
           maxLines: 240,
         ),
-        if (_hasDiagnostics) ...[const SizedBox(height: 8), _diagnostics()],
+        if (_hasDiagnostics) ...[
+          const SizedBox(height: 8),
+          _diagnostics(context),
+        ],
       ],
     );
   }
 
-  Widget _patchBody() {
+  Widget _patchBody(BuildContext context) {
     final rawFiles = _metadata['files'];
     if (rawFiles is List && rawFiles.isNotEmpty) {
       return Column(
@@ -961,35 +1065,36 @@ class _ToolContractBody extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 8),
               child: _PatchFileSection(file: Map<String, dynamic>.from(raw)),
             ),
-          if (_hasDiagnostics) _diagnostics(),
+          if (_hasDiagnostics) _diagnostics(context),
         ],
       );
     }
     final diff =
         _rawString(_metadata['diff']) ?? _rawString(state.input['patchText']);
     return diff?.trim().isNotEmpty != true
-        ? _plainOutput('patch-output.txt')
+        ? _plainOutput(context, 'patch-output.txt')
         : _DiffPreview(diff: diff!);
   }
 
-  Widget _searchBody() {
+  Widget _searchBody(BuildContext context) {
     final path = _valueString(state.input['path']);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (path != null) _PathCaption(label: 'Scope', value: path),
+        if (path != null)
+          _PathCaption(label: _chatL10n(context).chatUiScope, value: path),
         if (_valueString(state.input['include']) case final include?)
-          _PathCaption(label: 'Files', value: include),
+          _PathCaption(label: _chatL10n(context).chatUiFiles, value: include),
         if (path != null || state.input['include'] != null)
           const SizedBox(height: 6),
-        _plainOutput('search-results.txt'),
+        _plainOutput(context, 'search-results.txt'),
       ],
     );
   }
 
-  Widget _richOutputBody() {
+  Widget _richOutputBody(BuildContext context) {
     final output = state.output ?? '';
-    if (output.trim().isEmpty) return _genericInput();
+    if (output.trim().isEmpty) return _genericInput(context);
     final name = switch (contract.kind) {
       _ToolKind.webFetch =>
         _valueString(state.input['format']) == 'html'
@@ -1008,20 +1113,37 @@ class _ToolContractBody extends StatelessWidget {
   /// and what came back (the `<task_result>`), plus a jump to the child
   /// session when the host can open one.
   Widget _taskBody(BuildContext context) {
-    final agent = _valueString(state.input['subagent_type']) ?? 'agent';
+    final agent =
+        _valueString(
+          state.input[contract.nativeSubagent ? 'agent' : 'subagent_type'],
+        ) ??
+        _chatL10n(context).chatUiAgent;
+    final launched = contract.nativeSubagent && _nativeSubagentLaunched(state);
     final description =
         _valueString(state.input['description']) ?? _valueString(state.title);
     final background =
-        _metadata['background'] == true || state.input['background'] == true;
+        state.executed &&
+        (launched ||
+            _metadata['background'] == true ||
+            state.input['background'] == true);
     final prompt = _rawString(state.input['prompt']);
     final model = _metadata['model'];
     final modelLabel = model is Map
         ? _valueString(model['modelID'])
         : _valueString(model);
     final sessionId = taskChildSessionId(state);
-    final resultText = _taskResultText(state.output);
-    final childState = _taskOutputState(state.output);
+    final resultText = launched
+        ? ''
+        : _taskResultText(
+            state.output,
+            nativeSubagent: contract.nativeSubagent,
+          );
+    final childState = _subagentState(
+      state,
+      nativeSubagent: contract.nativeSubagent,
+    );
     final working =
+        !launched &&
         state.executed &&
         state.status != 'error' &&
         (state.status == 'running' ||
@@ -1038,18 +1160,29 @@ class _ToolContractBody extends StatelessWidget {
         ),
         if (modelLabel != null) ...[
           const SizedBox(height: 4),
-          _PathCaption(label: 'Model', value: modelLabel),
+          _PathCaption(
+            label: _chatL10n(context).chatUiModel,
+            value: modelLabel,
+          ),
         ],
         if (prompt?.trim().isNotEmpty == true) ...[
           const SizedBox(height: 10),
           _TaskPrompt(prompt: prompt!),
         ],
         const SizedBox(height: 10),
-        const _SectionCaption(label: 'Result'),
+        _SectionCaption(label: _chatL10n(context).chatUiResult),
         const SizedBox(height: 4),
-        if (state.status == 'error')
+        if (launched)
+          Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).workStartedInBackground,
+          )
+        else if (state.status == 'error')
           _ErrorOutput(
-            message: resultText.isEmpty ? 'Subagent failed.' : resultText,
+            message: resultText.isEmpty
+                ? _chatL10n(context).chatUiSubagentFailed
+                : resultText,
             embedded: embedded,
           )
         else if (resultText.isNotEmpty)
@@ -1060,17 +1193,17 @@ class _ToolContractBody extends StatelessWidget {
         if (working) ...[
           if (resultText.isNotEmpty) const SizedBox(height: 6),
           const _TaskWorking(),
-        ] else if (resultText.isEmpty && state.status != 'error')
+        ] else if (!launched && resultText.isEmpty && state.status != 'error')
           Text(
-            '(no result)',
+            _chatL10n(context).chatUiNoResult,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: AppTheme.mutedOf(Theme.of(context)),
             ),
           ),
-        if (sessionId != null && onOpenSession != null) ...[
+        if (state.executed && sessionId != null && onOpenSession != null) ...[
           const SizedBox(height: 4),
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: TextButton.icon(
               key: const ValueKey('task-open-session'),
               onPressed: () => onOpenSession!(sessionId),
@@ -1080,7 +1213,7 @@ class _ToolContractBody extends StatelessWidget {
               ),
               icon: const Icon(AppIconography.externalLink, size: 14),
               label: Text(
-                'Open subagent session',
+                _chatL10n(context).chatUiOpenSubagentSession,
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ),
@@ -1090,22 +1223,24 @@ class _ToolContractBody extends StatelessWidget {
     );
   }
 
-  Widget _todoBody() {
+  Widget _todoBody(BuildContext context) {
     final raw = _metadata['todos'] ?? state.input['todos'];
     final view = MobileTaskView.fromTodos(raw);
     if (view != null) return MobileTaskList(view: view);
-    if (state.output?.isNotEmpty == true) return _plainOutput('tasks.json');
+    if (state.output?.isNotEmpty == true) {
+      return _plainOutput(context, 'tasks.json');
+    }
     final fallback = MobileTaskView.fallback(raw);
     return fallback.isEmpty
-        ? _plainOutput('tasks.json')
+        ? _plainOutput(context, 'tasks.json')
         : _Mono(text: fallback, name: 'tasks.txt', maxLines: 100);
   }
 
-  Widget _questionBody() {
+  Widget _questionBody(BuildContext context) {
     final questions = state.input['questions'];
     final answers = _metadata['answers'];
     if (questions is! List || questions.isEmpty) {
-      return _plainOutput('question-output.txt');
+      return _plainOutput(context, 'question-output.txt');
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1123,7 +1258,7 @@ class _ToolContractBody extends StatelessWidget {
     );
   }
 
-  Widget _lspBody() {
+  Widget _lspBody(BuildContext context) {
     final result = _metadata['result'] ?? state.outputValue ?? state.output;
     return _Mono(
       text: result is String
@@ -1134,21 +1269,21 @@ class _ToolContractBody extends StatelessWidget {
     );
   }
 
-  Widget _skillBody() {
+  Widget _skillBody(BuildContext context) {
     final output = state.output;
     return output?.trim().isNotEmpty == true
         ? SmartTextPreview(
             data: FilePreviewData(name: 'skill.md', text: output),
           )
-        : _genericInput();
+        : _genericInput(context);
   }
 
-  Widget _genericBody() {
+  Widget _genericBody(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (state.input.isNotEmpty || state.inputJson?.isNotEmpty == true)
-          _genericInput(),
+          _genericInput(context),
         if (state.output?.trim().isNotEmpty == true) ...[
           if (state.input.isNotEmpty || state.inputJson?.isNotEmpty == true)
             const SizedBox(height: 8),
@@ -1165,17 +1300,17 @@ class _ToolContractBody extends StatelessWidget {
     );
   }
 
-  Widget _genericInput() {
+  Widget _genericInput(BuildContext context) {
     final input = state.input.isNotEmpty
         ? const JsonEncoder.withIndent('  ').convert(state.input)
         : state.inputJson ?? '';
     return _Mono(text: input, name: 'tool-input.json', maxLines: 80);
   }
 
-  Widget _plainOutput(String name) => _Mono(
+  Widget _plainOutput(BuildContext context, String name) => _Mono(
     text: state.output?.trim().isNotEmpty == true
         ? state.output!
-        : '(no output)',
+        : _chatL10n(context).chatUiNoOutput,
     name: name,
     maxLines: 220,
   );
@@ -1185,7 +1320,7 @@ class _ToolContractBody extends StatelessWidget {
     return diagnostics is Map && diagnostics.isNotEmpty;
   }
 
-  Widget _diagnostics() => _Mono(
+  Widget _diagnostics(BuildContext context) => _Mono(
     text: const JsonEncoder.withIndent(' ').convert(_metadata['diagnostics']),
     name: 'diagnostics.json',
     maxLines: 100,
@@ -1207,31 +1342,31 @@ class _TaskHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _AgentChip(name: agent),
-        if (description?.isNotEmpty == true) ...[
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              description!,
-              key: const Key('task-description'),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _AgentChip(name: agent),
+            if (background)
+              _TaskBadge(
+                key: const Key('task-background-badge'),
+                label: _chatL10n(context).chatUiBackground,
+                icon: AppIconography.clock,
               ),
+          ],
+        ),
+        if (description?.isNotEmpty == true) ...[
+          const SizedBox(height: 8),
+          Text(
+            description!,
+            key: const Key('task-description'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-          ),
-        ] else
-          const Spacer(),
-        if (background) ...[
-          const SizedBox(width: 8),
-          const _TaskBadge(
-            key: Key('task-background-badge'),
-            label: 'background',
-            icon: AppIconography.clock,
           ),
         ],
       ],
@@ -1322,20 +1457,15 @@ class _SectionCaption extends StatelessWidget {
       fontFamily: AppTheme.monoFamily,
       color: AppTheme.mutedOf(theme),
     );
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: style),
-        if (detail?.isNotEmpty == true) ...[
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              detail!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: style,
-            ),
+        if (detail?.isNotEmpty == true)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(detail!, style: style),
           ),
-        ],
       ],
     );
   }
@@ -1372,13 +1502,13 @@ class _TaskPromptState extends State<_TaskPrompt> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionCaption(
-          label: 'Prompt from parent agent',
-          detail: '${lines.length} ${lines.length == 1 ? 'line' : 'lines'}',
+          label: _chatL10n(context).chatUiPromptFromParentAgent,
+          detail: _chatL10n(context).chatUiLineCount(lines.length),
         ),
         const SizedBox(height: 4),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+          padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 10, 8),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(6),
@@ -1414,7 +1544,7 @@ class _TaskPromptState extends State<_TaskPrompt> {
         ),
         if (truncatable)
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: TextButton.icon(
               key: const Key('task-prompt-toggle'),
               onPressed: () => setState(() => _showFull = !_showFull),
@@ -1429,7 +1559,9 @@ class _TaskPromptState extends State<_TaskPrompt> {
                 size: 14,
               ),
               label: Text(
-                _showFull ? 'Show less' : 'Show full prompt',
+                _showFull
+                    ? _chatL10n(context).chatUiShowLess
+                    : _chatL10n(context).chatUiShowFullPrompt,
                 style: theme.textTheme.labelSmall,
               ),
             ),
@@ -1464,7 +1596,7 @@ class _TaskWorking extends StatelessWidget {
           ),
         const SizedBox(width: 7),
         Text(
-          'Subagent working…',
+          _chatL10n(context).chatUiSubagentWorking,
           style: theme.textTheme.labelSmall?.copyWith(
             color: muted,
             fontStyle: FontStyle.italic,
@@ -1495,7 +1627,7 @@ class _ErrorOutput extends StatelessWidget {
       return Container(
         key: const Key('embedded-tool-error-output'),
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(8, 5, 0, 5),
+        padding: const EdgeInsetsDirectional.fromSTEB(8, 5, 0, 5),
         decoration: BoxDecoration(
           border: Border(
             left: BorderSide(
@@ -1558,7 +1690,7 @@ class _PathList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _PathCaption(label: 'Directory', value: path),
+        _PathCaption(label: _chatL10n(context).chatUiDirectory, value: path),
         const SizedBox(height: 6),
         Container(
           width: double.infinity,
@@ -1596,7 +1728,7 @@ class _PatchFileSection extends StatelessWidget {
         _valueString(file['relativePath']) ??
         _valueString(file['movePath']) ??
         _valueString(file['filePath']) ??
-        'Changed file';
+        _chatL10n(context).chatUiChangedFile;
     final additions = (_valueNumber(file['additions']) ?? 0).toInt();
     final deletions = (_valueNumber(file['deletions']) ?? 0).toInt();
     return Column(
@@ -1687,7 +1819,7 @@ class _DiffPreview extends StatelessWidget {
         ),
         if (truncated)
           _SeeAllButton(
-            label: 'See all · ${lines.length} lines',
+            label: _chatL10n(context).chatUiSeeAllLines(lines.length),
             onPressed: () => showFilePreviewSheet(
               context,
               FilePreviewData(name: 'changes.diff', text: diff),
@@ -1760,14 +1892,17 @@ class _QuestionAnswer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _valueString(question['question']) ?? 'Question',
+            _valueString(question['question']) ??
+                _chatL10n(context).chatUiQuestion,
             style: theme.textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 2),
           Text(
-            answerText == null ? 'No answer' : 'Answered: $answerText',
+            answerText == null
+                ? _chatL10n(context).chatUiNoAnswer
+                : _chatL10n(context).chatUiAnsweredDetail(answerText),
             style: theme.textTheme.bodySmall?.copyWith(
               color: answerText == null
                   ? AppTheme.mutedOf(theme)
@@ -1819,7 +1954,7 @@ class _ToolOutputPreview extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Loading ${file.displayName}',
+                  _chatL10n(context).chatUiLoadingFile(file.displayName),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall,
@@ -1834,7 +1969,7 @@ class _ToolOutputPreview extends StatelessWidget {
           return Container(
             key: const Key('tool-output-image-error'),
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(10, 8, 4, 8),
+            padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 4, 8),
             decoration: BoxDecoration(
               color: theme.colorScheme.errorContainer.withValues(alpha: .22),
               borderRadius: BorderRadius.circular(8),
@@ -1863,7 +1998,8 @@ class _ToolOutputPreview extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        error ?? 'Image data is unavailable.',
+                        error ??
+                            _chatL10n(context).chatUiImageDataIsUnavailable,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelSmall,
@@ -1872,7 +2008,7 @@ class _ToolOutputPreview extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Retry image preview',
+                  tooltip: _chatL10n(context).chatUiRetryImagePreview,
                   onPressed: onRetry,
                   icon: const Icon(AppIconography.retry, size: 18),
                 ),
@@ -1895,7 +2031,9 @@ class _ToolOutputPreview extends StatelessWidget {
         );
         return Semantics(
           button: true,
-          label: 'Preview generated image ${file.displayName}',
+          label: _chatL10n(
+            context,
+          ).chatUiPreviewGeneratedImage(file.displayName),
           child: InkWell(
             onTap: openPreview,
             borderRadius: BorderRadius.circular(8),
@@ -2018,7 +2156,9 @@ class _ToolOutputFileTileState extends State<_ToolOutputFileTile> {
     final theme = Theme.of(context);
     return Semantics(
       button: true,
-      label: 'Open generated file ${widget.file.displayName}',
+      label: _chatL10n(
+        context,
+      ).chatUiOpenGeneratedFile(widget.file.displayName),
       child: Material(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(8),
@@ -2047,7 +2187,8 @@ class _ToolOutputFileTileState extends State<_ToolOutputFileTile> {
                           ),
                         ),
                         Text(
-                          widget.file.mimeType ?? 'Generated file',
+                          widget.file.mimeType ??
+                              _chatL10n(context).chatUiGeneratedFile,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -2088,7 +2229,7 @@ class _SeeAllButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Align(
-    alignment: Alignment.centerLeft,
+    alignment: AlignmentDirectional.centerStart,
     child: TextButton.icon(
       key: const Key('tool-body-see-all'),
       onPressed: onPressed,
@@ -2144,7 +2285,7 @@ class _Mono extends StatelessWidget {
         ),
         if (truncated)
           _SeeAllButton(
-            label: 'See all · ${lines.length} lines',
+            label: _chatL10n(context).chatUiSeeAllLines(lines.length),
             onPressed: () => showFilePreviewSheet(
               context,
               FilePreviewData(name: name, text: text),
@@ -2169,8 +2310,8 @@ class _PrunedNote extends StatelessWidget {
     final muted = AppTheme.mutedOf(theme);
     return Padding(
       padding: embedded
-          ? const EdgeInsets.fromLTRB(34, 0, 10, 8)
-          : const EdgeInsets.fromLTRB(10, 0, 10, 8),
+          ? const EdgeInsetsDirectional.fromSTEB(34, 0, 10, 8)
+          : const EdgeInsetsDirectional.fromSTEB(10, 0, 10, 8),
       child: Container(
         key: const Key('tool-pruned'),
         width: double.infinity,
@@ -2179,7 +2320,7 @@ class _PrunedNote extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           border: Border.all(color: AppTheme.hairline(theme)),
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
+            begin: AlignmentDirectional.topStart,
             end: const Alignment(-0.9, -0.55),
             tileMode: TileMode.repeated,
             stops: const [0, .5, .5, 1],
@@ -2196,7 +2337,7 @@ class _PrunedNote extends StatelessWidget {
             Icon(AppIconography.cut, size: 13, color: muted),
             const SizedBox(width: 6),
             Text(
-              'Output pruned',
+              _chatL10n(context).chatUiOutputPruned,
               style: theme.textTheme.labelSmall?.copyWith(color: muted),
             ),
           ],

@@ -1,0 +1,56 @@
+{
+  "revision": "002ebef3138d7364abe36fad154e192880afe23c",
+  "serial": "emulator-5556",
+  "api": "34",
+  "installed_apk_sha256": "607c6e497f6ee861384ea43d51b2b6d5c2643adccf33218afbf6917b200454aa",
+  "fixture": "synthetic OpenCode 1 daily-flow fixture",
+  "provider_execution": false,
+  "checks": [
+    {
+      "check": "One foreground Stop and reachable Tasks",
+      "evidence": "repair-chat-running"
+    },
+    {
+      "check": "Background promotion hits exact parent endpoint and reports response",
+      "evidence": "repair-background-request"
+    },
+    {
+      "check": "Idle child remains reachable; child/parent round trip preserves unsent draft",
+      "evidence": "repair-tasks-idle, repair-child-chat, repair-parent-draft-restored"
+    },
+    {
+      "check": "Keyboard does not obscure composer controls",
+      "evidence": "repair-chat-keyboard"
+    },
+    {
+      "check": "Direct More Termux access reaches truthful not-installed setup without server change",
+      "evidence": "repair-more, repair-termux"
+    },
+    {
+      "check": "Selected B survives force-stop with catalog containing only A and B lookup503; B session and path retained",
+      "evidence": "repair-project-b-selected, repair-project-b-restored, restart-request-scope.json"
+    },
+    {
+      "check": "1.5x native text keeps Termux visible and bottom settings reachable by scroll",
+      "evidence": "repair-more-large-text, repair-more-large-bottom"
+    }
+  ],
+  "status": "PASS for scoped synthetic Android checks",
+  "viewport": {
+    "width": 1080,
+    "height": 2400,
+    "density_dpi": 420,
+    "font_scales": [
+      1.0,
+      1.5
+    ]
+  },
+  "prompt_posts": 0,
+  "background_posts": 1,
+  "error_log_empty": true,
+  "limitations": [
+    "Synthetic v1 fixture; no real OpenCode 2 provider-backed launch/parent completion run",
+    "V2 tool payload/card and delivered-inbox reconciliation verified by source, focused tests and full suite",
+    "Software-rendered emulator is not physical-device frame-time evidence"
+  ]
+}

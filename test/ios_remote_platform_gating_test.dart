@@ -8,11 +8,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
+import 'package:opencode_mobile/background/attention_tile_snapshot.dart';
 import 'package:opencode_mobile/background/live_background.dart';
+import 'package:opencode_mobile/background/pinned_session_shortcuts.dart';
 import 'package:opencode_mobile/background/widget_snapshot.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/camera.dart';
+import 'package:opencode_mobile/platform/launch_shortcut.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/platform/share_intent.dart';
 import 'package:opencode_mobile/state/connection.dart';
@@ -208,6 +211,7 @@ void main() {
     MethodChannel('oc/voice'),
     MethodChannel('oc/camera'),
     MethodChannel('oc/share'),
+    MethodChannel('oc/shortcut'),
   ];
   const secureStorage = MethodChannel(
     'plugins.it_nomads.com/flutter_secure_storage',
@@ -381,6 +385,36 @@ void main() {
         state.controller.store.prefs.getString(WidgetSessionSnapshot.prefsKey),
         isNull,
       );
+      // Launch surfaces: no launcher menu and no Quick Settings tile on iOS,
+      // so neither the shortcut receiver nor the two writers touch anything.
+      expect(platformCapabilities.supportsLaunchShortcuts, isFalse);
+      expect(platformCapabilities.supportsQuickSettingsTile, isFalse);
+      final launch = LaunchShortcut();
+      addTearDown(launch.dispose);
+      expect(LaunchShortcut.supported, isFalse);
+      await launch.start();
+      expect(launch.take(), isNull);
+      expect(launch.takeSession(), isNull);
+      final shortcuts = PinnedSessionShortcuts(
+        prefs: state.controller.store.prefs,
+      );
+      await shortcuts.update(
+        sessions: [Session(id: 'session-1', title: 'Remote session')],
+        profileID: 'profile-1',
+        untitledLabel: 'Untitled session',
+      );
+      await shortcuts.clear();
+      final tile = AttentionTileSnapshot(prefs: state.controller.store.prefs);
+      await tile.update(pendingCount: 1, profileID: 'profile-1');
+      await tile.clear();
+      expect(
+        state.controller.store.prefs.getString(PinnedSessionShortcuts.prefsKey),
+        isNull,
+      );
+      expect(
+        state.controller.store.prefs.getString(AttentionTileSnapshot.prefsKey),
+        isNull,
+      );
       expect(nativeCalls, isEmpty);
     },
   );
@@ -395,7 +429,7 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_screen(controller, const ServersScreen()));
       expect(find.text('Connect to a server'), findsOneWidget);
-      expect(find.text('Run OpenCode on this phone'), findsNothing);
+      expect(find.text('Set up OpenCode 1 or 2 on this phone.'), findsNothing);
       expect(find.textContaining('Termux'), findsNothing);
 
       await tester.tap(find.text('Connect to a server'));

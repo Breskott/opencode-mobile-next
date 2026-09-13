@@ -13,8 +13,11 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/background/attention_tile_snapshot.dart';
 import 'package:opencode_mobile/background/live_background.dart';
+import 'package:opencode_mobile/background/pinned_session_shortcuts.dart';
 import 'package:opencode_mobile/background/widget_snapshot.dart';
+import 'package:opencode_mobile/platform/launch_shortcut.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/guide_screen.dart';
 import 'package:opencode_mobile/ui/screens/host_management_screen.dart';
@@ -130,11 +133,17 @@ void main() {
       final (store, controller) = await _emptyState();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_servers(store, controller));
+      expect(find.byKey(const ValueKey('welcome-termux-card')), findsOneWidget);
+      await tester.ensureVisible(find.text('More setup options'));
       await tester.tap(find.text('More setup options'));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('welcome-termux-card')), findsOneWidget);
-      expect(find.text('Run OpenCode on this phone'), findsOneWidget);
+      expect(find.text('Termux setup'), findsOneWidget);
+      expect(
+        find.text('Set up OpenCode 1 or 2 on this phone.'),
+        findsOneWidget,
+      );
       expect(find.text('Setup guide'), findsOneWidget);
     });
 
@@ -143,6 +152,7 @@ void main() {
       final (store, controller) = await _emptyState();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_servers(store, controller));
+      await tester.ensureVisible(find.text('More setup options'));
       await tester.tap(find.text('More setup options'));
       await tester.pumpAndSettle();
 
@@ -163,6 +173,7 @@ void main() {
       final (store, controller) = await _seededState();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_servers(store, controller));
+      await tester.ensureVisible(find.text('More setup options'));
       await tester.tap(find.text('More setup options'));
       await tester.pumpAndSettle();
 
@@ -170,7 +181,11 @@ void main() {
         find.byKey(const ValueKey('quick-add-termux-card')),
         findsOneWidget,
       );
-      expect(find.text('Run OpenCode on this phone'), findsOneWidget);
+      expect(find.text('Termux setup'), findsOneWidget);
+      expect(
+        find.text('Set up OpenCode 1 or 2 on this phone.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('offers only the remote path on desktop', (tester) async {
@@ -178,6 +193,7 @@ void main() {
       final (store, controller) = await _seededState();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_servers(store, controller));
+      await tester.ensureVisible(find.text('More setup options'));
       await tester.tap(find.text('More setup options'));
       await tester.pumpAndSettle();
 
@@ -477,5 +493,65 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString(WidgetSessionSnapshot.prefsKey), isNull);
     });
+  });
+
+  group('the launch surfaces', () {
+    test('publish and cache on Android', () async {
+      expect(platformCapabilities.supportsLaunchShortcuts, isTrue);
+      expect(platformCapabilities.supportsQuickSettingsTile, isTrue);
+      expect(LaunchShortcut.supported, isTrue);
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final published = <Map<String, Object?>>[];
+      await PinnedSessionShortcuts(
+        prefs: prefs,
+        publishNative: (payload) async => published.add(payload),
+      ).update(
+        sessions: [Session(id: 'a', title: 'Pinned')],
+        profileID: 'p',
+        untitledLabel: 'Untitled session',
+      );
+      expect(published, hasLength(1));
+      await AttentionTileSnapshot(
+        prefs: prefs,
+      ).update(pendingCount: 1, profileID: 'p');
+      expect(prefs.getString(AttentionTileSnapshot.prefsKey), isNotNull);
+    });
+
+    test(
+      'are silent on desktop, where there is no launcher menu or tile',
+      () async {
+        onDesktop();
+        expect(platformCapabilities.supportsLaunchShortcuts, isFalse);
+        expect(platformCapabilities.supportsQuickSettingsTile, isFalse);
+        expect(LaunchShortcut.supported, isFalse);
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final published = <Map<String, Object?>>[];
+        final shortcuts = PinnedSessionShortcuts(
+          prefs: prefs,
+          publishNative: (payload) async => published.add(payload),
+        );
+        await shortcuts.update(
+          sessions: [Session(id: 'a', title: 'Pinned')],
+          profileID: 'p',
+          untitledLabel: 'Untitled session',
+        );
+        await shortcuts.clear();
+        final tile = AttentionTileSnapshot(prefs: prefs);
+        await tile.update(pendingCount: 1, profileID: 'p');
+        await tile.clear();
+        expect(published, isEmpty);
+        expect(prefs.getString(PinnedSessionShortcuts.prefsKey), isNull);
+        expect(prefs.getString(AttentionTileSnapshot.prefsKey), isNull);
+
+        // The receiver never touches the channel either.
+        final receiver = LaunchShortcut();
+        addTearDown(receiver.dispose);
+        await receiver.start();
+        expect(receiver.take(), isNull);
+        expect(receiver.takeSession(), isNull);
+      },
+    );
   });
 }

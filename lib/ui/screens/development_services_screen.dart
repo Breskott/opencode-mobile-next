@@ -198,7 +198,7 @@ class _DevelopmentServicesScreenState extends State<DevelopmentServicesScreen>
           return SizedBox(
             height: MediaQuery.sizeOf(context).height * .75,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 24),
               children: [
                 Text(
                   '${service.name} · ${l.servicesLogs}',
@@ -268,7 +268,7 @@ class _DevelopmentServicesScreenState extends State<DevelopmentServicesScreen>
               onRefresh: _refresh,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 32),
                 children: [
                   Container(
                     padding: const EdgeInsets.all(20),
@@ -517,7 +517,7 @@ class _ServiceEditorState extends State<_ServiceEditor> {
   Widget build(BuildContext context) {
     final l = lookupAppLocalizations(Localizations.localeOf(context));
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
+      padding: EdgeInsetsDirectional.fromSTEB(
         20,
         20,
         20,
@@ -528,7 +528,7 @@ class _ServiceEditorState extends State<_ServiceEditor> {
         children: [
           Text(l.servicesAdd, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
-          Text(widget.directory),
+          Text(widget.directory, textDirection: TextDirection.ltr),
           const SizedBox(height: 16),
           TextField(
             controller: _name,
@@ -538,6 +538,7 @@ class _ServiceEditorState extends State<_ServiceEditor> {
           const SizedBox(height: 8),
           TextField(
             controller: _command,
+            textDirection: TextDirection.ltr,
             maxLength: 4096,
             minLines: 1,
             maxLines: 5,
@@ -550,6 +551,7 @@ class _ServiceEditorState extends State<_ServiceEditor> {
           const SizedBox(height: 8),
           TextField(
             controller: _url,
+            textDirection: TextDirection.ltr,
             maxLength: 2048,
             keyboardType: TextInputType.url,
             decoration: InputDecoration(

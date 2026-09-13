@@ -317,22 +317,37 @@ sealed class Api2Error implements Exception {
 /// 401 — bad or missing password. Distinct so callers can prompt for
 /// credentials instead of retrying.
 class Api2AuthRequired extends Api2Error {
-  const Api2AuthRequired(super.message, {super.body}) : super(statusCode: 401, tag: 'UnauthorizedError');
+  const Api2AuthRequired(super.message, {super.body})
+    : super(statusCode: 401, tag: 'UnauthorizedError');
 }
 
 /// Could not reach the server at all (DNS, refused, timeout, cancelled).
 class Api2NetworkError extends Api2Error {
   final bool timedOut;
   final bool cancelled;
-  const Api2NetworkError(super.message, {this.timedOut = false, this.cancelled = false});
+  const Api2NetworkError(
+    super.message, {
+    this.timedOut = false,
+    this.cancelled = false,
+  });
 }
 
 /// 503 / boot-time `service_starting|stopping|failed` bodies.
 class Api2Unavailable extends Api2Error {
-  const Api2Unavailable(super.message, {super.statusCode, super.tag, super.body});
+  const Api2Unavailable(
+    super.message, {
+    super.statusCode,
+    super.tag,
+    super.body,
+  });
 }
 
 /// Any other non-2xx with an optional `_tag`-typed body.
 class Api2RequestError extends Api2Error {
-  const Api2RequestError(super.message, {super.statusCode, super.tag, super.body});
+  const Api2RequestError(
+    super.message, {
+    super.statusCode,
+    super.tag,
+    super.body,
+  });
 }

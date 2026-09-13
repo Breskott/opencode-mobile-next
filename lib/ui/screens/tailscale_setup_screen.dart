@@ -172,6 +172,7 @@ class _TailscaleSetupScreenState extends State<TailscaleSetupScreen>
             const SizedBox(height: 12),
             TextField(
               controller: _address,
+              textDirection: TextDirection.ltr,
               maxLength: 2048,
               autocorrect: false,
               keyboardType: TextInputType.url,

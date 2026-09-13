@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Team — Next Gen Mobile Control Plane</title>
+<style>
+  :root{
+    --bg:#060a09;
+    --bg-2:#090e0c;
+    --surface:#0d1311;
+    --surface-2:#111916;
+    --surface-3:#151f1b;
+    --line:rgba(235,255,247,.095);
+    --line-strong:rgba(235,255,247,.17);
+    --text:#edf7f2;
+    --muted:#91a39b;
+    --muted-2:#67776f;
+    --mint:#7cf2bd;
+    --mint-2:#49d798;
+    --mint-dim:rgba(124,242,189,.12);
+    --amber:#f2bc69;
+    --amber-dim:rgba(242,188,105,.11);
+    --red:#ff7f86;
+    --red-dim:rgba(255,127,134,.10);
+    --blue:#82b7ff;
+    --blue-dim:rgba(130,183,255,.10);
+    --shadow:0 32px 90px rgba(0,0,0,.48), 0 8px 26px rgba(0,0,0,.35);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  body{min-width:2060px; min-height:100vh; overflow:auto}
+  button,input{font:inherit}
+  button{cursor:pointer}
+  .board{
+    width:2060px;
+    min-height:1900px;
+    margin:0 auto;
+    padding:72px 76px 88px;
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(900px 700px at 8% 8%, rgba(75,222,156,.08), transparent 66%),
+      radial-gradient(800px 700px at 92% 24%, rgba(81,129,255,.055), transparent 66%),
+      radial-gradient(900px 600px at 55% 98%, rgba(75,222,156,.045), transparent 72%),
+      linear-gradient(180deg,#070b0a 0%, #050807 100%);
+  }
+  .board:before{
+    content:"";position:absolute;inset:0;pointer-events:none;opacity:.18;
+    background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+    background-size:36px 36px;
+    mask-image:linear-gradient(to bottom,rgba(0,0,0,.55),transparent 72%);
+  }
+  .board:after{
+    content:""; position:absolute; left:50%; top:-340px; width:1050px; height:650px; transform:translateX(-50%);
+    background:radial-gradient(ellipse,rgba(112,242,186,.06),transparent 68%); filter:blur(12px); pointer-events:none;
+  }
+  .masthead{position:relative;z-index:2;display:grid;grid-template-columns:1fr auto;align-items:end;gap:40px;margin-bottom:52px}
+  .kicker{display:flex;align-items:center;gap:10px;color:var(--mint);font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;margin-bottom:16px}
+  .kicker .spark{width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 16px rgba(124,242,189,.9)}
+  h1{font-size:48px;line-height:1.02;letter-spacing:-.045em;margin:0;font-weight:690;max-width:920px}
+  .masthead p{margin:18px 0 0;color:var(--muted);font-size:18px;line-height:1.5;max-width:720px}
+  .principle{align-self:center;border:1px solid var(--line);border-radius:16px;padding:14px 16px 14px 14px;background:rgba(255,255,255,.022);backdrop-filter:blur(18px);display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px;line-height:1.35;max-width:350px}
+  .principle b{display:block;color:var(--text);font-size:13px;margin-bottom:2px}
+  .principle .glyph{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--mint-dim);color:var(--mint);flex:0 0 auto}
+  .row{position:relative;z-index:2;display:flex;gap:34px;justify-content:center;align-items:flex-start}
+  .row + .row{margin-top:48px}
+  .screen-wrap{width:438px}
+  .screen-label{display:flex;align-items:center;justify-content:space-between;margin:0 8px 12px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:700}
+  .screen-label span:last-child{color:var(--muted-2);letter-spacing:.08em}
+  .phone{
+    width:438px;height:886px;border-radius:54px;padding:10px;background:linear-gradient(145deg,#2c3833 0%,#121815 28%,#050706 74%,#232d29 100%);
+    box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.14); position:relative;
+  }
+  .phone:before{content:"";position:absolute;inset:4px;border-radius:50px;border:1px solid rgba(255,255,255,.07);pointer-events:none}
+  .phone-inner{height:100%;border-radius:45px;overflow:hidden;background:var(--bg-2);position:relative;border:1px solid rgba(255,255,255,.03)}
+  .phone-inner:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.015),transparent 28%)}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:116px;height:30px;border-radius:20px;background:#020303;z-index:4}
+  .status{height:48px;padding:15px 24px 0;display:flex;justify-content:space-between;align-items:flex-start;font-size:12px;font-weight:700;position:relative;z-index:3}
+  .signals{display:flex;align-items:center;gap:6px;color:#d9e4df}
+  .bars{display:flex;align-items:flex-end;gap:2px;height:10px}.bars i{display:block;width:2px;border-radius:2px;background:currentColor}.bars i:nth-child(1){height:4px}.bars i:nth-child(2){height:6px}.bars i:nth-child(3){height:8px}.bars i:nth-child(4){height:10px}
+  .wifi{width:12px;height:8px;border-top:2px solid currentColor;border-radius:50%}.battery{width:18px;height:9px;border:1.5px solid currentColor;border-radius:3px;position:relative}.battery:before{content:"";position:absolute;inset:1.5px 2px;background:currentColor;border-radius:1px}.battery:after{content:"";position:absolute;right:-3.5px;top:2px;width:2px;height:4px;background:currentColor;border-radius:0 2px 2px 0}
+  .app{height:calc(100% - 48px);display:flex;flex-direction:column;position:relative;z-index:2}
+  .header{display:flex;align-items:center;gap:12px;padding:10px 20px 12px}
+  .header .back{width:34px;height:34px;border-radius:12px;border:0;background:transparent;color:var(--text);display:grid;place-items:center;margin-left:-8px}
+  .header h2{font-size:24px;letter-spacing:-.03em;margin:0;font-weight:680;flex:1;min-width:0}
+  .header .meta-title{font-size:13px;color:var(--muted);margin-top:3px}
+  .header .dots{width:32px;height:32px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:grid;place-items:center;font-size:18px}
+  .avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:750;font-size:12px;background:linear-gradient(135deg,#29483a,#14231d);border:1px solid rgba(124,242,189,.28);color:var(--mint);box-shadow:inset 0 0 24px rgba(124,242,189,.09)}
+  .content{padding:0 18px 16px;overflow:hidden;flex:1}
+  .scroll{overflow:auto;scrollbar-width:none}.scroll::-webkit-scrollbar{display:none}
+  .stack{display:flex;flex-direction:column;gap:11px}
+  .surface{background:rgba(255,255,255,.028);border:1px solid var(--line);border-radius:18px}
+  .surface.soft{background:rgba(255,255,255,.019)}
+  .surface.mint{background:linear-gradient(145deg,rgba(124,242,189,.105),rgba(255,255,255,.025));border-color:rgba(124,242,189,.22)}
+  .surface.amber{background:linear-gradient(145deg,rgba(242,188,105,.10),rgba(255,255,255,.02));border-color:rgba(242,188,105,.22)}
+  .project{display:flex;align-items:center;gap:12px;padding:12px 13px}
+  .iconbox{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.06);color:var(--muted);flex:0 0 auto}
+  .iconbox.mint{background:var(--mint-dim);color:var(--mint);border-color:rgba(124,242,189,.18)}
+  .copy{min-width:0;flex:1}.title{font-size:14px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sub{font-size:11.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .text-action{border:0;background:transparent;color:var(--mint);font-weight:650;font-size:12px;padding:8px}
+  .hero{padding:15px 15px 14px;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;right:-80px;top:-110px;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(124,242,189,.12),transparent 66%);pointer-events:none}
+  .eyebrow{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);font-weight:650;position:relative;z-index:1}
+  .eyebrow .grow{flex:1}.eyebrow .teamdot{width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 12px rgba(124,242,189,.75)}
+  .pill{display:inline-flex;align-items:center;gap:6px;height:25px;padding:0 9px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--muted);font-size:10.5px;font-weight:700;white-space:nowrap}
+  .pill.mint{color:var(--mint);background:var(--mint-dim);border-color:rgba(124,242,189,.18)}
+  .pill.amber{color:var(--amber);background:var(--amber-dim);border-color:rgba(242,188,105,.18)}
+  .pill.red{color:var(--red);background:var(--red-dim);border-color:rgba(255,127,134,.18)}
+  .pill.blue{color:var(--blue);background:var(--blue-dim);border-color:rgba(130,183,255,.18)}
+  .hero-number{font-size:31px;line-height:1.05;letter-spacing:-.045em;font-weight:720;margin:17px 0 8px;max-width:320px;position:relative;z-index:1}
+  .hero-sentence{font-size:13px;line-height:1.48;color:var(--muted);max-width:335px;position:relative;z-index:1}
+  .progress{height:6px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;margin:14px 0 13px}.progress > span{display:block;height:100%;background:linear-gradient(90deg,var(--mint-2),var(--mint));border-radius:99px;box-shadow:0 0 18px rgba(124,242,189,.28)}
+  .hero-actions{display:flex;align-items:center;gap:10px}.btn-primary{height:45px;border:0;border-radius:14px;background:var(--mint);color:#052217;font-size:13px;font-weight:760;padding:0 17px;box-shadow:0 10px 28px rgba(73,215,152,.18);display:inline-flex;align-items:center;justify-content:center;gap:8px}.btn-primary.full{width:100%}.btn-primary.small{height:34px;border-radius:11px;font-size:11.5px;padding:0 13px}.btn-secondary{height:42px;border-radius:13px;border:1px solid var(--line-strong);background:rgba(255,255,255,.025);color:var(--text);font-size:12px;font-weight:650;padding:0 14px}.mini-note{color:var(--muted);font-size:11px;margin-left:auto}
+  .section-head{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:11.5px;font-weight:650;padding:3px 2px 1px}.section-head button{border:0;background:none;color:var(--muted);font-size:10.5px}
+  .list{border:1px solid var(--line);border-radius:17px;overflow:hidden;background:rgba(255,255,255,.018)}
+  .rowitem{display:flex;align-items:center;gap:11px;padding:11px 12px;min-height:58px;border-bottom:1px solid rgba(255,255,255,.055);position:relative}.rowitem:last-child{border-bottom:0}.rowitem:hover{background:rgba(255,255,255,.025)}
+  .agentmark{width:31px;height:31px;border-radius:10px;background:rgba(124,242,189,.08);border:1px solid rgba(124,242,189,.12);display:grid;place-items:center;color:var(--mint);font-weight:760;font-size:11px;flex:0 0 auto}.agentmark.amber{color:var(--amber);background:var(--amber-dim);border-color:rgba(242,188,105,.15)}.agentmark.red{color:var(--red);background:var(--red-dim);border-color:rgba(255,127,134,.15)}.agentmark.blue{color:var(--blue);background:var(--blue-dim);border-color:rgba(130,183,255,.15)}
+  .rowcopy{min-width:0;flex:1}.rowtitle{font-size:12.4px;font-weight:640;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rowsub{font-size:10.6px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chev{color:var(--muted-2);font-size:17px}
+  .bottomnav{height:67px;border-top:1px solid var(--line);background:rgba(7,11,10,.92);backdrop-filter:blur(18px);display:flex;padding:5px 7px 8px;flex:0 0 auto}
+  .navitem{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:var(--muted-2);font-size:9.5px;font-weight:650}.navitem.active{color:var(--mint)}.navicon{width:19px;height:19px;display:grid;place-items:center;font-size:14px}
+  .summaryline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 18px 10px}.metric{height:31px;border-radius:10px;border:1px solid var(--line);display:flex;align-items:center;gap:7px;padding:0 10px;background:rgba(255,255,255,.02);font-size:10.5px;color:var(--muted)}.metric b{font-size:12px;color:var(--text)}
+  .decision-card{padding:13px;display:flex;align-items:center;gap:11px}.decision-card .question{font-size:12.3px;font-weight:650;line-height:1.32}.decision-card .question span{display:block;color:var(--muted);font-size:10.6px;font-weight:500;margin-top:3px}
+  .steps{padding:3px 4px 2px}.step{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:center;min-height:46px;position:relative}.step:before{content:"";position:absolute;left:12px;top:-12px;bottom:28px;width:1px;background:rgba(255,255,255,.09)}.step:first-child:before{top:23px}.step:last-child:before{bottom:23px}.step-dot{width:18px;height:18px;border-radius:50%;border:1px solid var(--line-strong);background:var(--bg-2);display:grid;place-items:center;font-size:10px;color:var(--muted);z-index:1;margin-left:3px}.step.done .step-dot{background:var(--mint);color:#062217;border:0}.step.now .step-dot{border-color:var(--mint);box-shadow:0 0 0 4px var(--mint-dim);color:var(--mint)}.step-title{font-size:12px;font-weight:610}.step-sub{font-size:10px;color:var(--muted);margin-top:2px}.step-status{font-size:9.5px;color:var(--muted-2)}
+  .segmented{height:47px;border-top:1px solid var(--line);display:flex;padding:6px 10px 8px;gap:3px;background:rgba(7,11,10,.9)}.segmented button{border:0;background:transparent;color:var(--muted);flex:1;border-radius:11px;font-size:10px;font-weight:650}.segmented button.active{color:var(--text);background:rgba(124,242,189,.10);box-shadow:inset 0 0 0 1px rgba(124,242,189,.10)}
+  .group{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.018)}.group + .group{margin-top:9px}.group-head{height:31px;display:flex;align-items:center;padding:0 11px;font-size:10.5px;font-weight:720;letter-spacing:.01em;border-bottom:1px solid rgba(255,255,255,.045);color:var(--muted)}.group-head.attn{color:var(--amber);background:var(--amber-dim)}.group-head.blocked{color:var(--red);background:var(--red-dim)}.group-head.working{color:var(--mint);background:var(--mint-dim)}.group-head.ready{color:var(--blue);background:var(--blue-dim)}
+  .task{display:grid;grid-template-columns:9px 1fr 25px;gap:9px;align-items:center;min-height:48px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.045)}.task:last-child{border-bottom:0}.task-dot{width:7px;height:7px;border-radius:50%;background:var(--muted-2)}.task-dot.mint{background:var(--mint);box-shadow:0 0 9px rgba(124,242,189,.5)}.task-dot.amber{background:var(--amber)}.task-dot.red{background:var(--red)}.task-dot.blue{background:var(--blue)}.taskname{font-size:11.8px;font-weight:620}.tasksub{font-size:9.8px;color:var(--muted);margin-top:2px}.owner{width:24px;height:24px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);font-size:9px;font-weight:720;background:rgba(255,255,255,.025)}
+  .agent-hero{display:flex;align-items:center;gap:13px;padding:3px 2px 12px}.agent-orb{width:66px;height:66px;border-radius:22px;background:radial-gradient(circle at 32% 27%,rgba(124,242,189,.25),rgba(124,242,189,.06) 48%,rgba(0,0,0,.05));border:1px solid rgba(124,242,189,.20);display:grid;place-items:center;position:relative;box-shadow:inset 0 0 30px rgba(124,242,189,.05)}.agent-orb:before{content:"W";font-size:22px;font-weight:780;color:var(--mint)}.agent-orb:after{content:"";position:absolute;width:9px;height:9px;border-radius:50%;background:var(--amber);right:-2px;top:-2px;box-shadow:0 0 0 4px var(--bg-2)}
+  .agent-intro h3{font-size:15px;margin:0 0 4px}.agent-intro p{margin:0;color:var(--muted);font-size:11px;line-height:1.4}.contextline{display:flex;align-items:center;gap:8px;margin-top:8px}.contextline .tinybar{width:90px;height:4px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}.contextline .tinybar span{display:block;height:100%;width:79%;background:var(--mint)}
+  .timeline{padding:9px 12px}.event{display:grid;grid-template-columns:18px 1fr;gap:9px;position:relative;padding:8px 0}.event:before{content:"";position:absolute;left:6px;top:26px;bottom:-10px;width:1px;background:rgba(255,255,255,.09)}.event:last-child:before{display:none}.eventdot{width:13px;height:13px;border:2px solid var(--muted-2);border-radius:50%;margin-top:2px;background:var(--surface)}.event:last-child .eventdot{border-color:var(--amber);box-shadow:0 0 0 4px var(--amber-dim)}.eventtitle{font-size:11.5px;line-height:1.35;font-weight:600}.eventmeta{font-size:9.8px;color:var(--muted);margin-top:3px}
+  .decision-module{padding:13px}.decision-module h3{font-size:15px;margin:0 0 4px;letter-spacing:-.015em}.decision-module .explain{color:var(--muted);font-size:10.5px;line-height:1.45;margin-bottom:11px}.option{display:flex;align-items:flex-start;gap:10px;padding:10px;border-radius:12px;border:1px solid transparent;margin-top:6px;background:rgba(255,255,255,.018);transition:.15s}.option:hover{background:rgba(255,255,255,.03)}.option.selected{background:var(--mint-dim);border-color:rgba(124,242,189,.2)}.radio{width:16px;height:16px;border-radius:50%;border:1px solid var(--muted);margin-top:1px;display:grid;place-items:center;flex:0 0 auto}.option.selected .radio{border-color:var(--mint)}.option.selected .radio:after{content:"";width:8px;height:8px;border-radius:50%;background:var(--mint)}.option b{font-size:11.5px}.option small{display:block;color:var(--muted);font-size:9.7px;margin-top:2px}
+  .answerbar{display:flex;gap:8px;padding:10px 18px 14px;border-top:1px solid var(--line);background:rgba(7,11,10,.96)}.answerbar input{min-width:0;flex:1;height:40px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.025);color:var(--text);padding:0 11px;outline:none;font-size:11px}.answerbar input:focus{border-color:rgba(124,242,189,.4)}
+  .tabs{display:flex;gap:6px;padding:0 18px 10px}.tab{height:30px;border:1px solid var(--line);background:rgba(255,255,255,.02);color:var(--muted);border-radius:10px;padding:0 11px;font-size:10px;font-weight:650}.tab.active{color:var(--mint);background:var(--mint-dim);border-color:rgba(124,242,189,.16)}.badge{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 5px;margin-left:5px;border-radius:99px;background:var(--red);color:#250709;font-size:9px;font-weight:800}
+  .feed{border:1px solid var(--line);border-radius:17px;overflow:hidden}.feeditem{display:flex;gap:10px;padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.05);align-items:center}.feeditem:last-child{border-bottom:0}.feeditem .rowcopy{padding-right:4px}.feeditem .act{height:31px;border-radius:10px;padding:0 11px;border:1px solid var(--line-strong);background:rgba(255,255,255,.025);color:var(--text);font-size:10.5px;font-weight:680}.feeditem .act.amber{color:#211203;background:var(--amber);border-color:transparent}.feeditem .act.mint{color:#062217;background:var(--mint);border-color:transparent}.feeditem .act.blue{color:#061326;background:var(--blue);border-color:transparent}
+  .logline{display:flex;align-items:center;gap:9px;padding:8px 4px}.logdot{width:18px;height:18px;border-radius:7px;background:rgba(255,255,255,.04);display:grid;place-items:center;color:var(--muted);font-size:9px}.logcopy{flex:1;font-size:10.5px}.logtime{font-size:9.5px;color:var(--muted-2)}
+  .setup-hero{text-align:center;padding:18px 10px 8px}.terminal-orb{width:82px;height:82px;border-radius:26px;margin:0 auto 18px;display:grid;place-items:center;background:linear-gradient(145deg,rgba(124,242,189,.13),rgba(255,255,255,.025));border:1px solid rgba(124,242,189,.17);box-shadow:inset 0 0 40px rgba(124,242,189,.06),0 16px 40px rgba(0,0,0,.2);position:relative}.terminal-orb:before{content:">_";font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:24px;color:var(--mint);font-weight:700}.terminal-orb:after{content:"";position:absolute;width:10px;height:10px;border-radius:50%;background:var(--mint);right:7px;bottom:8px;box-shadow:0 0 12px rgba(124,242,189,.7)}.setup-hero h3{font-size:22px;letter-spacing:-.03em;margin:0 0 6px}.setup-hero p{margin:0;color:var(--muted);font-size:12px}.experiment{padding:13px}.experiment h3{font-size:13px;margin:0 0 5px}.experiment p{color:var(--muted);font-size:10.7px;line-height:1.5;margin:0 0 13px}.dual{display:flex;gap:8px}.dual button{flex:1}
+  .server{display:flex;align-items:center;gap:12px;padding:12px}.server-icon{width:43px;height:43px;border-radius:14px;display:grid;place-items:center;background:var(--mint-dim);border:1px solid rgba(124,242,189,.18);color:var(--mint)}.server-title{font-size:14px;font-weight:670}.server-sub{font-size:10.5px;color:var(--muted);margin-top:3px}.onbar{display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--mint-dim);border:1px solid rgba(124,242,189,.15);border-radius:14px}.onbar .live{width:10px;height:10px;border-radius:50%;background:var(--mint);box-shadow:0 0 13px rgba(124,242,189,.7)}.onbar b{font-size:13px;color:var(--mint)}.onbar span{margin-left:auto;color:var(--muted);font-size:10px}
+  .settings-group{border:1px solid var(--line);border-radius:16px;overflow:hidden}.setting{display:flex;align-items:center;gap:11px;padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.05)}.setting:last-child{border-bottom:0}.setting .setting-icon{width:27px;height:27px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.025);color:var(--muted)}.setting-copy{flex:1}.setting-title{font-size:11.8px;font-weight:620}.setting-sub{font-size:9.6px;color:var(--muted);margin-top:2px}.toggle{width:38px;height:22px;border-radius:99px;border:0;background:#26302c;padding:2px;position:relative;transition:.16s}.toggle:after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#dce8e2;left:2px;top:2px;transition:.16s}.toggle.on{background:var(--mint)}.toggle.on:after{left:18px;background:#062217}.localrun{display:flex;align-items:center;gap:11px;padding:12px}.dangerbtn{height:43px;width:100%;border-radius:13px;border:1px solid rgba(255,127,134,.18);background:var(--red-dim);color:var(--red);font-size:11.5px;font-weight:680}
+  .svg{width:18px;height:18px;display:block;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .svg.sm{width:15px;height:15px}.svg.xs{width:13px;height:13px}
+  .toast{position:absolute;left:50%;bottom:83px;transform:translate(-50%,18px);background:#17201c;border:1px solid var(--line-strong);color:var(--text);padding:9px 12px;border-radius:12px;font-size:10.5px;opacity:0;pointer-events:none;transition:.18s;box-shadow:0 12px 30px rgba(0,0,0,.35);white-space:nowrap;z-index:10}.toast.show{opacity:1;transform:translate(-50%,0)}
+  .footer{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;margin-top:48px;padding:0 8px;color:var(--muted-2);font-size:11px;letter-spacing:.13em;text-transform:uppercase}.footer b{color:var(--muted);font-weight:650}.footer .line{height:1px;flex:1;background:linear-gradient(90deg,transparent,var(--line-strong),transparent);margin:0 18px}
+</style>
+</head>
+<body>
+<div class="board">
+  <div class="masthead">
+    <div>
+      <div class="kicker"><span class="spark"></span> AI Team / mobile control plane</div>
+      <h1>Supervise autonomous engineering without living in the terminal.</h1>
+      <p>A quieter, higher-signal mobile companion for running agents, clearing blockers, and making the decisions that actually need a human.</p>
+    </div>
+    <div class="principle">
+      <div class="glyph">✦</div>
+      <div><b>Next-gen principle</b>One number. One sentence. One action. Everything else waits until you ask.</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- 1 Workspace -->
+    <section class="screen-wrap">
+      <div class="screen-label"><span>01 / Workspace</span><span>Mission control</span></div>
+      <div class="phone"><div class="phone-inner">
+        <div class="island"></div>
+        <div class="status"><span>9:41</span><div class="signals"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="wifi"></span><span class="battery"></span></div></div>
+        <div class="app">
+          <div class="header"><h2>Workspace</h2><div class="avatar">ES</div></div>
+          <div class="content"><div class="stack">
+            <div class="surface soft project">
+              <div class="iconbox"><svg class="svg"><use href="#folder"/></svg></div>
+              <div class="copy"><div class="title">opencode_mobile</div><div class="sub">~/Storage/Code/oc_app</div></div>
+              <button class="text-action">Manage</button>
+            </div>
+            <div class="surface mint hero">
+              <div class="eyebrow"><span class="teamdot"></span><span>AI Team · Gas City</span><span class="grow"></span><span class="pill amber">● 1 needs you</span></div>
+              <div class="hero-number">72% done.</div>
+              <div class="hero-sentence">5 agents are working. Wolf is waiting for your decision on storage.</div>
+              <div class="progress"><span style="width:72%"></span></div>
+              <div class="hero-actions"><button class="btn-primary js-toast"><span>✦</span> Decide</button><span class="mini-note">1 blocker · 34 min</span></div>
+            </div>
+            <div class="section-head"><span>Recent sessions</span><button>See all</button></div>
+            <div class="list">
+              <div class="rowitem"><div class="agentmark">W</div><div class="rowcopy"><div class="rowtitle">Delegate multiply function in calc.py</div><div class="rowsub">Just now · 3 agents</div></div><span class="chev">›</span></div>
+              <div class="rowitem"><div class="agentmark blue">F</div><div class="rowcopy"><div class="rowtitle">Sync engine retry handling</div><div class="rowsub">10m ago · 4 agents</div></div><span class="chev">›</span></div>
+              <div class="rowitem"><div class="agentmark">B</div><div class="rowcopy"><div class="rowtitle">Android background handoff</div><div class="rowsub">Earlier · ready for review</div></div><span class="chev">›</span></div>
+            </div>
+          </div></div>
+          <nav class="bottomnav">
+            <div class="navitem active"><div class="navicon">⌂</div><span>Workspace</span></div>
+            <div class="navitem"><div class="navicon">▤</div><span>Files</span></div>
+            <div class="navitem"><div class="navicon">◴</div><span>Activity</span></div>
+            <div class="navitem"><div class="navicon">•••</div><span>More</span></div>
+          </nav>
+          <div class="toast">Opening Wolf’s decision</div>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- 2 Run -->
+    <section class="screen-wrap">
+      <div class="screen-label"><span>02 / Run</span><span>Live state</span></div>
+      <div class="phone"><div class="phone-inner">
+        <div class="island"></div>
+        <div class="status"><span>9:41</span><div class="signals"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="wifi"></span><span class="battery"></span></div></div>
+        <div class="app">
+          <div class="header"><button class="back">‹</button><div class="copy"><h2 style="font-size:20px">Offline-first sessions</h2><div class="meta-title">Run · convoy</div></div><button class="dots">•••</button></div>
+          <div class="summaryline"><span class="pill mint">● Working</span><span class="metric"><b>34</b> min</span><span class="metric"><b>12</b> / 18 done</span></div>
+          <div class="content"><div class="stack">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+              <div class="surface" style="padding:12px"><div class="eyebrow"><span class="teamdot"></span> Working</div><div style="font-size:27px;font-weight:720;margin-top:7px">5</div></div>
+              <div class="surface" style="padding:12px"><div class="eyebrow" style="color:var(--red)"><span class="teamdot" style="background:var(--red);box-shadow:none"></span> Blocked</div><div style="font-size:27px;font-weight:720;margin-top:7px">2</div></div>
+            </div>
+            <div class="surface amber decision-card">
+              <div class="agentmark amber">W</div><div class="copy"><div class="question">Wolf needs a decision<span>Which persistence strategy for the tests?</span></div></div><button class="btn-primary small js-toast">Decide</button>
+            </div>
+            <div class="section-head"><span>Execution</span><span>Next: testing</span></div>
+            <div class="surface soft steps">
+              <div class="step done"><div class="step-dot">✓</div><div><div class="step-title">Requirements</div></div><span class="step-status">done</span></div>
+              <div class="step done"><div class="step-dot">✓</div><div><div class="step-title">Architecture</div></div><span class="step-status">done</span></div>
+              <div class="step done"><div class="step-dot">✓</div><div><div class="step-title">Data model</div></div><span class="step-status">done</span></div>
+              <div class="step done"><div class="step-dot">✓</div><div><div class="step-title">Implementation</div></div><span class="step-status">done</span></div>
+              <div class="step now"><div class="step-dot">•</div><div><div class="step-title">Testing</div><div class="step-sub">4 of 6 tasks</div></div><span class="step-status" style="color:var(--mint)">active</span></div>
+              <div class="step"><div class="step-dot"></div><div><div class="step-title">Review and merge</div></div><span class="step-status">queued</span></div>
+            </div>
+          </div></div>
+          <div class="segmented"><button class="active">Work</button><button>Agents</button><button>Timeline</button><button>Details</button></div>
+          <div class="toast">Decision surface opened</div>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- 3 Work -->
+    <section class="screen-wrap">
+      <div class="screen-label"><span>03 / Work</span><span>Orchestration</span></div>
+      <div class="phone"><div class="phone-inner">
+        <div class="island"></div>
+        <div class="status"><span>9:41</span><div class="signals"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="wifi"></span><span class="battery"></span></div></div>
+        <div class="app">
+          <div class="header"><div class="copy"><h2>Work</h2><div class="meta-title">Offline-first sessions · 18 items</div></div><button class="dots">•••</button></div>
+          <div class="content scroll">
+            <div class="group"><div class="group-head attn">Needs input · 1</div><div class="task"><span class="task-dot amber"></span><div><div class="taskname">Database tests</div><div class="tasksub">Wolf is waiting for a decision</div></div><div class="owner">W</div></div></div>
+            <div class="group"><div class="group-head blocked">Blocked · 1</div><div class="task"><span class="task-dot red"></span><div><div class="taskname">Conflict resolution</div><div class="tasksub">Waits on sync engine</div></div><div class="owner">F</div></div></div>
+            <div class="group"><div class="group-head working">Working · 3</div>
+              <div class="task"><span class="task-dot mint"></span><div><div class="taskname">Sync engine</div><div class="tasksub">Building retry logic…</div></div><div class="owner">F</div></div>
+              <div class="task"><span class="task-dot mint"></span><div><div class="taskname">Android integration</div><div class="tasksub">Implementing notifications…</div></div><div class="owner">B</div></div>
+              <div class="task"><span class="task-dot mint"></span><div><div class="taskname">Background sync</div><div class="tasksub">Optimizing battery usage…</div></div><div class="owner">R</div></div>
+            </div>
+            <div class="group"><div class="group-head ready">Ready · 2</div>
+              <div class="task"><span class="task-dot blue"></span><div><div class="taskname">Unit tests</div><div class="tasksub">Ready to run</div></div><div class="owner">—</div></div>
+              <div class="task"><span class="task-dot blue"></span><div><div class="taskname">Integration tests</div><div class="tasksub">Ready to run</div></div><div class="owner">—</div></div>
+            </div>
+            <div class="group"><div class="group-head">Done · 12</div>
+              <div class="task"><span class="task-dot"></span><div><div class="taskname">Requirements</div><div class="tasksub">Completed</div></div><div class="owner">M</div></div>
+              <div class="task"><span class="task-dot"></span><div><div class="taskname">Architecture</div><div class="tasksub">Completed</div></div><div class="owner">M</div></div>
+              <div class="task"><span class="task-dot"></span><div><div class="taskname">Database</div><div class="tasksub">Completed</div></div><div class="owner">C</div></div>
+            </div>
+          </div>
+          <div class="segmented"><button class="active">Work</button><button>Agents</button><button>Timeline</button><button>Details</button></div>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- 4 Agent Decision -->
+    <section class="screen-wrap">
+      <div class="screen-label"><span>04 / Agent</span><span>Human checkpoint</span></div>
+      <div class="phone"><div class="phone-inner">
+        <div class="island"></div>
+        <div class="status"><span>9:41</span><div class="signals"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="wifi"></span><span class="battery"></span></div></div>
+        <div class="app">
+          <div class="header"><button class="back">‹</button><div class="copy"><h2 style="font-size:21px">Wolf</h2><div class="meta-title">Agent · polecat · Codex · gpt-5.6-terra</div></div><button class="dots">•••</button></div>
+          <div class="content scroll"><div class="stack">
+            <div class="agent-hero"><div class="agent-orb"></div><div class="agent-intro"><span class="pill amber">● Waiting for you</span><h3 style="margin-top:9px">Database tests</h3><p>Ready to proceed once you choose the persistence target.</p><div class="contextline"><span style="font-size:9.5px;color:var(--muted)">Context 79%</span><div class="tinybar"><span></span></div></div></div></div>
+            <div class="surface soft timeline">
+              <div class="event"><div class="eventdot"></div><div><div class="eventtitle">Read the migration plan and existing tests</div><div class="eventmeta">2 files · 41m ago</div></div></div>
+              <div class="event"><div class="eventdot"></div><div><div class="eventtitle">Ran the migration test suite</div><div class="eventmeta">18 passed, 2 failed · 12m ago</div></div></div>
+              <div class="event"><div class="eventdot"></div><div><div class="eventtitle">Asked which persistence strategy the tests should target</div><div class="eventmeta">4m ago</div></div></div>
+            </div>
+            <div class="surface decision-module">
+              <h3>Which persistence strategy?</h3><div class="explain">This choice controls how the tests store and verify data.</div>
+              <div class="option selected"><div class="radio"></div><div><b>SQLite</b><small>Lightweight, fast, recommended</small></div></div>
+              <div class="option"><div class="radio"></div><div><b>Filesystem</b><small>Simple, no external dependencies</small></div></div>
+              <div class="option"><div class="radio"></div><div><b>Server-only</b><small>Matches production, more complex</small></div></div>
+            </div>
+          </div></div>
+          <div class="answerbar"><input placeholder="Add a note (optional)…"/><button class="btn-primary js-toast" style="height:40px;border-radius:12px">Send answer</button></div>
+          <div class="toast">Answer sent to Wolf</div>
+        </div>
+      </div></div>
+    </section>
+  </div>
+
+  <div class="row">
+    <!-- 5 Activity -->
+    <section class="screen-wrap">
+      <div class="screen-label"><span>05 / Activity</span><span>Attention inbox</span></div>
+      <div class="phone"><div class="phone-inner">
+        <div class="island"></div>
+        <div class="status"><span>9:41</span><div class="signals"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="wifi"></span><span class="battery"></span></div></div>
+        <div class="app">
+          <div class="header"><h2>Activity</h2><div class="avatar">✦</div></div>
+          <div class="tabs"><button class="tab active">Needs you <span class="badge">3</span></button><button class="tab">All activity</button><button class="tab">Mentions</button></div>
+          <div class="content"><div class="stack">
+            <div class="feed">
+              <div class="feeditem"><div class="agentmark amber">W</div><div class="rowcopy"><div class="rowtitle">Storage strategy</div><div class="rowsub">Wolf · Offline-first sessions · 2m ago</div></div><button class="act amber js-toast">Decide</button></div>
+              <div class="feeditem"><div class="agentmark red">N</div><div class="rowcopy"><div class="rowtitle">Android notification redesign</div><div class="rowsub">Nova · Mobile app · 18m ago</div></div><button class="act js-toast">Retry</button></div>
+              <div class="feeditem"><div class="agentmark blue">F</div><div class="rowcopy"><div class="rowtitle">Sync engine ready for review</div><div class="rowsub">Fox · Offline-first sessions · 1h ago</div></div><button class="act blue js-toast">Review</button></div>
+            </div>
+            <div class="section-head"><span>Earlier today</span><button>See all</button></div>
+            <div class="surface soft" style="padding:4px 10px">
+              <div class="logline"><div class="logdot">✓</div><div class="logcopy">Bear finished Android integration</div><span class="logtime">10:47</span></div>
+              <div class="logline"><div class="logdot">✓</div><div class="logcopy">Test suite passed 182/182</div><span class="logtime">10:46</span></div>
+              <div class="logline"><div class="logdot">↗</div><div class="logcopy">Codex started database tests</div><span class="logtime">10:41</span></div>
+            </div>
+          </div></div>
+          <nav class="bottomnav">
+            <div class="navitem"><div class="navicon">⌂</div><span>Workspace</span></div>
+            <div class="navitem"><div class="navicon">▤</div><span>Files</span></div>
+            <div class="navitem active"><div class="navicon">◴</div><span>Activity</span></div>
+            <div class="navitem"><div class="navicon">•••</div><span>More</span></div>
+          </nav>
+          <div class="toast">Action opened</div>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- 6 Phone setup -->
+    <section class="screen-wrap">
+      <div class="screen-label"><span>06 / Phone setup</span><span>Edge runtime</span></div>
+      <div class="phone"><div class="phone-inner">
+        <div class="island"></div>
+        <div class="status"><span>9:41</span><div class="signals"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="wifi"></span><span class="battery"></span></div></div>
+        <div class="app">
+          <div class="header"><button class="back">‹</button><div class="copy"><h2 style="font-size:18px;text-align:center">Termux setup</h2></div><button class="dots">•••</button></div>
+          <div class="content"><div class="stack">
+            <div class="setup-hero"><div class="terminal-orb"></div><h3>OpenCode is ready</h3><p>Connected on this phone.</p></div>
+            <button class="btn-primary full js-toast">Open Workspace</button>
+            <div class="surface mint experiment" style="margin-top:8px"><div class="eyebrow"><span class="pill mint">Optional · experimental</span></div><h3 style="margin-top:12px">Run an AI team on this phone?</h3><p>Several agents can work on the project while you supervise. It is slower than a computer, Android may pause it when the screen is off, and it requires about 60 MB.</p><div class="dual"><button class="btn-secondary">Not now</button><button class="btn-primary js-toast" style="height:42px">Set up</button></div></div>
+            <div class="surface soft" style="padding:13px;display:flex;gap:10px;align-items:center"><div class="iconbox mint"><svg class="svg"><use href="#bolt"/></svg></div><div class="copy"><div class="title">Phone becomes a fallback worker</div><div class="sub">Runs small jobs locally when your main machine is unavailable.</div></div></div>
+          </div></div>
+          <div class="toast">Workspace opened</div>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- 7 Settings -->
+    <section class="screen-wrap">
+      <div class="screen-label"><span>07 / Settings</span><span>Control boundary</span></div>
+      <div class="phone"><div class="phone-inner">
+        <div class="island"></div>
+        <div class="status"><span>9:41</span><div class="signals"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="wifi"></span><span class="battery"></span></div></div>
+        <div class="app">
+          <div class="header"><div class="copy"><h2 style="font-size:20px">AI Team · Gas City</h2><div class="meta-title">Development PC · 1.4.1</div></div><button class="dots">•••</button></div>
+          <div class="content"><div class="stack">
+            <div class="surface server"><div class="server-icon"><svg class="svg"><use href="#monitor"/></svg></div><div class="copy"><div class="server-title">Development PC</div><div class="server-sub">Secure local bridge · healthy</div></div><span class="pill mint">Connected</span></div>
+            <div class="onbar"><span class="live"></span><b>On</b><span>AI team is connected and working.</span></div>
+            <div class="section-head"><span>Notifications</span></div>
+            <div class="settings-group">
+              <div class="setting"><div class="setting-icon">◉</div><div class="setting-copy"><div class="setting-title">Notify me</div><div class="setting-sub">Decisions, failures, reviews, completions</div></div><button class="toggle on" aria-label="Notify me"></button></div>
+              <div class="setting"><div class="setting-icon">☾</div><div class="setting-copy"><div class="setting-title">Keep the computer awake</div><div class="setting-sub">The team runs as fast as your computer</div></div><button class="toggle on" aria-label="Keep awake"></button></div>
+            </div>
+            <div class="section-head"><span>On this phone</span><span class="pill">Experimental</span></div>
+            <div class="surface localrun"><div class="agentmark red">■</div><div class="copy"><div class="title">Stopped</div><div class="sub">AI team is not running on this device.</div></div><button class="btn-secondary js-toast" style="height:36px">Start</button></div>
+            <button class="dangerbtn js-toast">Turn off for this server</button>
+          </div></div>
+          <div class="toast">Setting updated</div>
+        </div>
+      </div></div>
+    </section>
+  </div>
+
+  <div class="footer"><b>AI Team Plugin · Next Gen</b><span class="line"></span><span>human direction / autonomous execution</span></div>
+</div>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="folder" viewBox="0 0 24 24"><path d="M3.5 6.5h6l2 2h9v9.5a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 18z"/></symbol>
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13.2 2.5 5.8 13h5.6l-.6 8.5L18.2 11h-5.6z"/></symbol>
+  <symbol id="monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+</svg>
+<script>
+  document.querySelectorAll('.toggle').forEach(btn=>btn.addEventListener('click',()=>btn.classList.toggle('on')));
+  document.querySelectorAll('.option').forEach(opt=>opt.addEventListener('click',()=>{
+    opt.parentElement.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));
+    opt.classList.add('selected');
+  }));
+  document.querySelectorAll('.js-toast').forEach(btn=>btn.addEventListener('click',()=>{
+    const app=btn.closest('.app'); const toast=app && app.querySelector('.toast');
+    if(!toast) return; toast.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>toast.classList.remove('show'),1200);
+  }));
+</script>
+</body>
+</html>

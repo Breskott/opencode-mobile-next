@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Plain-language explanations for the handful of terms a first-time user
 /// meets in the first ten minutes. Screens attach these to the word itself
@@ -59,6 +60,48 @@ abstract final class Glossary {
         'A speed-versus-depth setting for the model, such as how long it '
         'may think before answering.',
   );
+
+  /// Resolve only known app-authored glossary entries; arbitrary caller prose
+  /// and server content stay untouched. The full pair is the stable identity.
+  static ({String term, String explanation}) localized(
+    AppLocalizations l10n, {
+    required String term,
+    required String explanation,
+  }) => switch ((term: term, explanation: explanation)) {
+    mcp => (
+      term: l10n.libraryMcpTitle,
+      explanation: l10n.e7GlossaryMcpExplanation,
+    ),
+    worktree => (
+      term: l10n.e7GlossaryWorktreeTerm,
+      explanation: l10n.e7GlossaryWorktreeExplanation,
+    ),
+    provider => (
+      term: l10n.usageProviderFilter,
+      explanation: l10n.e7GlossaryProviderExplanation,
+    ),
+    context => (
+      term: l10n.e7GlossaryContextTerm,
+      explanation: l10n.e7GlossaryContextExplanation,
+    ),
+    agent => (
+      term: l10n.e7GlossaryAgentTerm,
+      explanation: l10n.e7GlossaryAgentExplanation,
+    ),
+    reasoning => (
+      term: l10n.transcriptFindReasoning,
+      explanation: l10n.e7GlossaryReasoningExplanation,
+    ),
+    permission => (
+      term: l10n.e7GlossaryPermissionTerm,
+      explanation: l10n.e7GlossaryPermissionExplanation,
+    ),
+    variant => (
+      term: l10n.e7GlossaryVariantTerm,
+      explanation: l10n.e7GlossaryVariantExplanation,
+    ),
+    _ => (term: term, explanation: explanation),
+  };
 }
 
 /// A term with an inline "what is this?" affordance. Renders the word in the
@@ -97,6 +140,13 @@ class InfoLabel extends StatelessWidget {
     required String term,
     required String explanation,
   }) {
+    final localized = Glossary.localized(
+      lookupAppLocalizations(Localizations.localeOf(context)),
+      term: term,
+      explanation: explanation,
+    );
+    term = localized.term;
+    explanation = localized.explanation;
     return showModalBottomSheet<void>(
       context: context,
       builder: (context) {
@@ -119,10 +169,14 @@ class InfoLabel extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 Align(
-                  alignment: Alignment.centerRight,
+                  alignment: AlignmentDirectional.centerEnd,
                   child: FilledButton.tonal(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Got it'),
+                    child: Text(
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7GlossaryGotIt,
+                    ),
                   ),
                 ),
               ],
@@ -136,10 +190,17 @@ class InfoLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final localized = Glossary.localized(
+      l10n,
+      term: term,
+      explanation: explanation,
+    );
+    final shownTerm = localized.term;
     final textStyle = style ?? DefaultTextStyle.of(context).style;
     return Semantics(
       button: true,
-      label: '$term. Tap for an explanation.',
+      label: l10n.e7GlossaryExplain(shownTerm),
       excludeSemantics: true,
       onTap: () => show(context, term: term, explanation: explanation),
       child: InkWell(
@@ -150,7 +211,10 @@ class InfoLabel extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(term, style: textStyle),
+              // Flexible, not bare: a long localized term at 2.5x text
+              // wraps inside the label instead of pushing the icon out of
+              // its row.
+              Flexible(child: Text(shownTerm, style: textStyle)),
               const SizedBox(width: 3),
               Icon(
                 AppIconography.info,

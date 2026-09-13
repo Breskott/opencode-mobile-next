@@ -1,0 +1,8 @@
+{
+  "package": "@opencode-ai/cli-linux-x64",
+  "version": "0.0.0-beta-18600",
+  "url": "https://registry.npmjs.org/@opencode-ai/cli-linux-x64/-/cli-linux-x64-0.0.0-beta-18600.tgz",
+  "sha1": "0529b1866ff7de22e1d099c90675cc7179c48df6",
+  "integrity": "sha512-A1oLUk/j3eXpiL+CkZFJyGWgUYGJJ0wx+i+h1n6r798VbB8AgEot0RzUSZFn24fxHV2gCZ9q6JsFALL692ZsAw==",
+  "binarySha256": "a2f9e4a580fc51b655c48fa3590fb262f083c2003d51838b393bc9d5a0b63cf1"
+}

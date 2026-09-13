@@ -1,3 +1,4 @@
+import '../../l10n/app_localizations.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import '../../state/connection.dart';
 import '../widgets/product_states.dart';
 import '../widgets/session_handoff.dart';
 import '../app_iconography.dart';
+import '../early_l10n.dart';
 
 enum SessionDestinationMode { move, warp }
 
@@ -91,7 +93,7 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
   bool get _moving => widget.mode == SessionDestinationMode.move;
 
   /// Both modes read as "Move" to the user; only the transport differs.
-  String get _verb => 'Move';
+  String get _verb => _sharedCopy(context).e7SharedMove;
 
   @override
   void initState() {
@@ -101,10 +103,12 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
   }
 
   Future<void> _load() async {
+    // Runs from initState, so inherited lookups are not yet allowed.
+    final copy = earlyAppLocalizations(context);
     if (!_scope.matches(widget.controller)) {
       setState(
         () => _error = StateError(
-          'Session location changed. Close and reopen this sheet.',
+          copy.e7SharedSessionLocationChangedCloseAndReopenThis,
         ),
       );
       return;
@@ -114,14 +118,14 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
     if (!_scope.matches(widget.controller)) {
       setState(
         () => _error = StateError(
-          'Session location changed. Close and reopen this sheet.',
+          copy.e7SharedSessionLocationChangedCloseAndReopenThis,
         ),
       );
       return;
     }
     if (repository == null) {
       setState(
-        () => _error = const ProductException('OpenCode is reconnecting.'),
+        () => _error = ProductException(copy.e7SharedOpenCodeIsReconnecting),
       );
       return;
     }
@@ -141,9 +145,7 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
       if (!mounted) return;
       final project = _projectForSession(projects, session, currentDirectory);
       if (project == null) {
-        throw const ProductException(
-          'The session project is not available on this server.',
-        );
+        throw ProductException(copy.e7SharedTheSessionProjectIsNotAvailableOn);
       }
 
       final destinations = _moving
@@ -225,6 +227,7 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
     WorkspaceProject project,
     Session? session,
   ) async {
+    final copy = _sharedCopy(context);
     final currentWorkspaceID =
         session?.workspaceID ?? widget.controller.workspace;
     final workspaces = await repository.listWorkspaces();
@@ -239,7 +242,7 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
           });
     return [
       _SessionDestination(
-        title: 'Local project',
+        title: copy.e7SharedLocalProject,
         directory: project.directory,
         current: currentWorkspaceID == null,
       ),
@@ -256,6 +259,7 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
   }
 
   Future<void> _select(_SessionDestination destination) async {
+    final copy = _sharedCopy(context);
     if (_working || destination.current) return;
     final status = destination.status;
     if (!_moving && status != null && status != 'connected') return;
@@ -268,16 +272,14 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
       final repository = await widget.controller.prepareActionRepository();
       _scope.check(widget.controller);
       if (repository == null) {
-        throw StateError('OpenCode is reconnecting. Try again.');
+        throw StateError(copy.e7SharedOpenCodeIsReconnectingTryAgain);
       }
       final current = await repository.getSessionDetails(widget.sessionID);
       _scope.check(widget.controller);
       if (current.id != widget.sessionID ||
           current.directory != _session?.directory ||
           current.workspaceID != _session?.workspaceID) {
-        throw StateError(
-          'Session location changed. Close and reopen this sheet.',
-        );
+        throw StateError(copy.e7SharedSessionLocationChangedCloseAndReopenThis);
       }
       if (_moving) {
         await widget.controller.moveSessionToDirectory(
@@ -296,7 +298,7 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
       if (!mounted) return;
       Navigator.of(context).pop();
       messenger.showSnackBar(
-        SnackBar(content: Text('Moved to ${destination.title}')),
+        SnackBar(content: Text(copy.e7SharedDetail428(destination.title))),
       );
     } catch (error) {
       if (mounted) setState(() => _error = error);
@@ -311,24 +313,26 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
     return showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('$_verb session?'),
+        title: Text(_sharedCopy(context).e7SharedDetail429),
         content: Text(
           hasChanges
-              ? '${_changes.length} changed ${_changes.length == 1 ? 'file is' : 'files are'} present. Choose whether those working changes should ${_moving ? 'move' : 'be copied'} with the session.'
+              ? _sharedCopy(
+                  context,
+                ).e7SharedDetail430(_changes.length, _moving ? 'move' : 'copy')
               : unknownChanges
-              ? 'The app could not inspect working changes. For safety, this continues without transferring changes.'
-              : 'Continue to ${destination.title}?',
+              ? _sharedCopy(context).e7SharedTheAppCouldNotInspectWorkingChanges
+              : _sharedCopy(context).e7SharedDetail432(destination.title),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(_sharedCopy(context).projectFolderCancel),
           ),
           if (hasChanges)
             TextButton(
               key: const Key('session-destination-without-changes'),
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text('$_verb only'),
+              child: Text(_sharedCopy(context).e7SharedDetail435),
             ),
           FilledButton(
             key: const Key('session-destination-confirm'),
@@ -337,8 +341,8 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
             child: Text(
               hasChanges
                   ? _moving
-                        ? 'Move with changes'
-                        : 'Copy changes and move'
+                        ? _sharedCopy(context).e7SharedMoveWithChanges
+                        : _sharedCopy(context).e7SharedCopyChangesAndMove
                   : _verb,
             ),
           ),
@@ -366,10 +370,10 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
         key: Key(_moving ? 'move-session-sheet' : 'warp-session-sheet'),
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: const Text('Move session'),
+          title: Text(_sharedCopy(context).e7SharedMoveSession),
           actions: [
             IconButton(
-              tooltip: 'Close',
+              tooltip: _sharedCopy(context).isolatedTaskClose,
               constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               onPressed: _working ? null : () => Navigator.pop(context),
               icon: const Icon(AppIconography.close),
@@ -389,8 +393,12 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Text(
                 _moving
-                    ? 'Choose another directory in this project.'
-                    : 'Choose a connected workspace, or return to the local project.',
+                    ? _sharedCopy(
+                        context,
+                      ).e7SharedChooseAnotherDirectoryInThisProject
+                    : _sharedCopy(
+                        context,
+                      ).e7SharedChooseAConnectedWorkspaceOrReturnTo,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -402,8 +410,8 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
                 child: TextField(
                   key: const Key('session-destination-search'),
                   onChanged: (value) => setState(() => _query = value),
-                  decoration: const InputDecoration(
-                    labelText: 'Filter destinations',
+                  decoration: InputDecoration(
+                    labelText: _sharedCopy(context).e7SharedFilterDestinations,
                     prefixIcon: Icon(AppIconography.search),
                   ),
                 ),
@@ -431,8 +439,8 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
           padding: const EdgeInsets.all(24),
           child: Text(
             _query.isEmpty
-                ? 'No other destinations are available.'
-                : 'No destinations match this filter.',
+                ? _sharedCopy(context).e7SharedNoOtherDestinationsAreAvailable
+                : _sharedCopy(context).e7SharedNoDestinationsMatchThisFilter,
             textAlign: TextAlign.center,
           ),
         ),
@@ -466,9 +474,9 @@ class _SessionDestinationSheetState extends State<_SessionDestinationSheet> {
           title: Text(item.title),
           subtitle: Text(label, maxLines: 3, overflow: TextOverflow.ellipsis),
           trailing: item.current
-              ? const Text('Current')
+              ? Text(_sharedCopy(context).e7SharedCurrent)
               : unavailable
-              ? Text(item.status ?? 'Unavailable')
+              ? Text(item.status ?? _sharedCopy(context).e7SharedUnavailable)
               : const Icon(AppIconography.chevronRight),
           onTap: () => _select(item),
         );
@@ -503,11 +511,13 @@ class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
   }
 
   Future<void> _load() async {
+    // Runs from initState, so inherited lookups are not yet allowed.
+    final copy = earlyAppLocalizations(context);
     final repository = await widget.controller.prepareActionRepository();
     if (!mounted) return;
     if (repository == null) {
       setState(
-        () => _error = const ProductException('OpenCode is reconnecting.'),
+        () => _error = ProductException(copy.e7SharedOpenCodeIsReconnecting),
       );
       return;
     }
@@ -534,19 +544,19 @@ class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Switch organization?'),
+        title: Text(_sharedCopy(context).e7SharedSwitchOrganization),
         content: Text(
-          'Models and providers will reload using ${organization.orgName}.',
+          _sharedCopy(context).e7SharedDetail456(organization.orgName),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
+            child: Text(_sharedCopy(context).projectFolderCancel),
           ),
           FilledButton(
             key: const Key('console-org-confirm'),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Switch'),
+            child: Text(_sharedCopy(context).e7SharedSwitch),
           ),
         ],
       ),
@@ -561,7 +571,11 @@ class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
       if (!mounted) return;
       Navigator.pop(context);
       messenger.showSnackBar(
-        SnackBar(content: Text('Switched to ${organization.orgName}')),
+        SnackBar(
+          content: Text(
+            _sharedCopy(context).e7SharedDetail460(organization.orgName),
+          ),
+        ),
       );
     } catch (error) {
       if (mounted) setState(() => _error = error);
@@ -579,10 +593,10 @@ class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
         key: const Key('console-organization-sheet'),
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: const Text('Switch organization'),
+          title: Text(_sharedCopy(context).e7SharedSwitchOrganization462),
           actions: [
             IconButton(
-              tooltip: 'Close',
+              tooltip: _sharedCopy(context).isolatedTaskClose,
               constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               onPressed: _working ? null : () => Navigator.pop(context),
               icon: const Icon(AppIconography.close),
@@ -603,11 +617,13 @@ class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
                       onRetry: _load,
                     )
             : organizations.isEmpty
-            ? const Center(
+            ? Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
-                    'No switchable OpenCode Console organizations were returned.',
+                    _sharedCopy(
+                      context,
+                    ).e7SharedNoSwitchableOpenCodeConsoleOrganizationsWereReturned,
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -645,7 +661,7 @@ class _ConsoleOrganizationSheetState extends State<_ConsoleOrganizationSheet> {
                       title: Text(organizations[index].orgName),
                       subtitle: Text(organizations[index].orgID),
                       trailing: organizations[index].active
-                          ? const Text('Current')
+                          ? Text(_sharedCopy(context).e7SharedCurrent)
                           : const Icon(AppIconography.chevronRight),
                       onTap: () => _switch(organizations[index]),
                     ),
@@ -697,3 +713,6 @@ bool _containsPath(String root, String path) {
   return normalizedPath == normalizedRoot ||
       normalizedPath.startsWith('$normalizedRoot/');
 }
+
+AppLocalizations _sharedCopy(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));

@@ -57,7 +57,10 @@ void main() {
     final ids = RegExp(
       r'"([^"]+)"',
     ).allMatches(whitelist!.group(1)!).map((m) => m.group(1)).toList();
-    expect(ids, unorderedEquals(extraValues));
+    // The static shortcut ids plus the Quick Settings tile's action, which
+    // reaches MainActivity through the same extra (see
+    // launch_surfaces_native_contract_test.dart for the tile half).
+    expect(ids, unorderedEquals([...extraValues, 'activity']));
     expect(activity, contains('EXTRA_LAUNCH_ACTION = "oc.shortcut"'));
     expect(activity, contains('SHORTCUT_CHANNEL_NAME = "oc/shortcut"'));
   });

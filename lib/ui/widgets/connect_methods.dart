@@ -1,3 +1,4 @@
+import '../../l10n/app_localizations.dart';
 import '../../domain/server_gateway.dart';
 
 /// True for OAuth methods that finish through a browser redirect back to the
@@ -22,14 +23,13 @@ List<IntegrationMethodInfo> orderConnectMethods(
 }
 
 /// The one line under a connect option that says how it finishes.
-String connectMethodHint(IntegrationMethodInfo method) {
-  if (method.type == 'key') return 'Paste an API key';
+String connectMethodHint(IntegrationMethodInfo method, AppLocalizations l10n) {
+  if (method.type == 'key') return l10n.e7SetupApiKeyHint;
   if (connectMethodNeedsServerBrowser(method)) {
-    return 'Opens a browser. If the redirect cannot reach OpenCode, paste the '
-        'callback URL here.';
+    return l10n.e7SetupBrowserHint;
   }
   if (method.label.toLowerCase().contains('headless')) {
-    return 'Uses a one-time code. Works from a phone.';
+    return l10n.e7SetupDeviceCodeHint;
   }
-  return 'Sign in with your account';
+  return l10n.e7SetupAccountHint;
 }

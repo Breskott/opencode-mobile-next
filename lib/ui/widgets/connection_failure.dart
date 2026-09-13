@@ -7,6 +7,9 @@
 /// never that button.
 library;
 
+import '../../l10n/app_localizations.dart';
+import '../../l10n/app_localizations_en.dart';
+
 enum ConnectionFailureAction {
   retry,
   openTermuxSetup,
@@ -54,7 +57,9 @@ class ConnectionFailure {
     bool usesConnectionToken = false,
     bool requiresTokenReentry = false,
     int attempts = 1,
+    AppLocalizations? l10n,
   }) {
+    l10n ??= AppLocalizationsEn();
     final uri = Uri.tryParse(baseUrl);
     final lower = error.toLowerCase();
     final port = uri?.hasPort == true ? uri!.port : 4096;
@@ -83,35 +88,22 @@ class ConnectionFailure {
             lower.contains('token') &&
                 (lower.contains('reject') || lower.contains('invalid')));
 
-    final retried = attempts >= 3
-        ? 'Tried $attempts times. Retrying will not start a server that is '
-              'not running.'
-        : null;
+    final retried = attempts >= 3 ? l10n.e7ConnectionFailure1(attempts) : null;
 
     if (usesConnectionToken && requiresTokenReentry) {
       return ConnectionFailure(
-        title: 'Connection token required',
-        explanation:
-            'This Codex server needs a connection token before the app can '
-            'connect.',
-        checks: [
-          'Open server settings and enter the Codex connection token.',
-          ?retried,
-        ],
+        title: l10n.e7ConnectionFailure2,
+        explanation: l10n.e7ConnectionFailure3,
+        checks: [l10n.e7ConnectionFailure4, ?retried],
         primary: ConnectionFailureAction.updateToken,
         rawError: error,
       );
     }
     if (tokenRejected) {
       return ConnectionFailure(
-        title: 'Connection token rejected',
-        explanation:
-            'The Codex server answered, but it did not accept the saved '
-            'connection token.',
-        checks: [
-          'Open server settings and enter a current Codex connection token.',
-          ?retried,
-        ],
+        title: l10n.e7ConnectionFailure5,
+        explanation: l10n.e7ConnectionFailure6,
+        checks: [l10n.e7ConnectionFailure7, ?retried],
         primary: ConnectionFailureAction.updateToken,
         rawError: error,
       );
@@ -119,24 +111,15 @@ class ConnectionFailure {
     if (usesConnectionToken && (nothingAnswered || timedOut)) {
       final local = loopback;
       return ConnectionFailure(
-        title: local
-            ? 'Codex listener unavailable'
-            : 'Codex endpoint unreachable',
+        title: local ? l10n.e7ConnectionFailure8 : l10n.e7ConnectionFailure9,
         explanation: local
-            ? '$hostLabel:$port is a local Codex listener, but nothing '
-                  'answered.'
-            : 'Nothing answered at the remote Codex endpoint $hostLabel:$port.',
+            ? l10n.e7ConnectionFailure10(hostLabel, port)
+            : l10n.e7ConnectionFailure11(hostLabel, port),
         checks: local
-            ? [
-                'Start the Codex listener on this device.',
-                'If it is behind a tunnel, keep the tunnel running and verify '
-                    'its local endpoint.',
-                ?retried,
-              ]
+            ? [l10n.e7ConnectionFailure12, l10n.e7ConnectionFailure13, ?retried]
             : [
-                'Use the Codex wss:// endpoint or an active secure tunnel.',
-                'Check that the remote Codex listener is reachable from this '
-                    'device.',
+                l10n.e7ConnectionFailure14,
+                l10n.e7ConnectionFailure15,
                 ?retried,
               ],
         primary: ConnectionFailureAction.retry,
@@ -145,13 +128,11 @@ class ConnectionFailure {
     }
     if (unauthorized) {
       return ConnectionFailure(
-        title: 'Password rejected',
-        explanation:
-            'The server answered, but it did not accept the saved password. '
-            'This happens when the server was restarted with a new password.',
+        title: l10n.e7ConnectionFailure16,
+        explanation: l10n.e7ConnectionFailure17,
         checks: [
-          'Run opencode2 pair on the computer and paste the new code.',
-          'If you set OPENCODE_SERVER_PASSWORD by hand, copy it again.',
+          l10n.e7ConnectionFailure18,
+          l10n.e7ConnectionFailure19,
           ?retried,
         ],
         primary: ConnectionFailureAction.updatePassword,
@@ -160,14 +141,11 @@ class ConnectionFailure {
     }
     if (certificate) {
       return ConnectionFailure(
-        title: 'Certificate not trusted',
-        explanation:
-            'The server is there, but this device does not trust its HTTPS '
-            'certificate, so the app refused to send the password.',
+        title: l10n.e7ConnectionFailure20,
+        explanation: l10n.e7ConnectionFailure21,
         checks: [
-          'Use a certificate from a trusted authority, or a Tailscale Serve '
-              'address.',
-          'For a self-signed certificate, install it on this device first.',
+          l10n.e7ConnectionFailure22,
+          l10n.e7ConnectionFailure23,
           ?retried,
         ],
         primary: ConnectionFailureAction.changeServer,
@@ -178,19 +156,12 @@ class ConnectionFailure {
         loopback &&
         (nothingAnswered || timedOut || !serverError && !unhealthy)) {
       return ConnectionFailure(
-        title: 'Nothing is listening on this device',
-        explanation:
-            '$hostLabel:$port means the server should be running on this '
-            'device, or reached through a tunnel that ends here. Neither '
-            'answered.',
+        title: l10n.e7ConnectionFailure24,
+        explanation: l10n.e7ConnectionFailure25(hostLabel, port),
         checks: [
-          if (supportsTermux)
-            'Running OpenCode in Termux? Open Termux and check that '
-                'the server is still running.',
-          'Using adb reverse or an SSH forward? Check that the tunnel is '
-              'still connected, then try again.',
-          'Connecting to another computer instead? Change the server to its '
-              'HTTPS address or pair again.',
+          if (supportsTermux) l10n.e7ConnectionFailure26,
+          l10n.e7ConnectionFailure27,
+          l10n.e7ConnectionFailure28,
           ?retried,
         ],
         // Loopback identifies an endpoint, not whether Termux or a tunnel
@@ -201,14 +172,11 @@ class ConnectionFailure {
     }
     if (timedOut) {
       return ConnectionFailure(
-        title: 'The server did not answer in time',
-        explanation:
-            'Something is at $hostLabel, but it did not reply. Usually the '
-            'network in between, not the server.',
+        title: l10n.e7ConnectionFailure29,
+        explanation: l10n.e7ConnectionFailure30(hostLabel),
         checks: [
-          'Are you on the same network or VPN (for example Tailscale) as the '
-              'computer?',
-          'Is a firewall or captive portal blocking port $port?',
+          l10n.e7ConnectionFailure31,
+          l10n.e7ConnectionFailure32(port),
           ?retried,
         ],
         primary: ConnectionFailureAction.retry,
@@ -217,14 +185,12 @@ class ConnectionFailure {
     }
     if (nothingAnswered) {
       return ConnectionFailure(
-        title: 'Server not reachable',
-        explanation:
-            'Nothing answered at $hostLabel:$port. Either the server is not '
-            'running or this device cannot reach that address.',
+        title: l10n.e7ConnectionFailure33,
+        explanation: l10n.e7ConnectionFailure34(hostLabel, port),
         checks: [
-          'Is opencode serve still running on the computer?',
-          'Are you on the same network or VPN as the computer?',
-          'Did the address change? Pair again to pick up the new one.',
+          l10n.e7ConnectionFailure35,
+          l10n.e7ConnectionFailure36,
+          l10n.e7ConnectionFailure37,
           ?retried,
         ],
         primary: ConnectionFailureAction.retry,
@@ -233,13 +199,11 @@ class ConnectionFailure {
     }
     if (serverError || unhealthy) {
       return ConnectionFailure(
-        title: 'The server answered with an error',
-        explanation:
-            'The server is running but reported itself unhealthy. Its own '
-            'log will say why.',
+        title: l10n.e7ConnectionFailure38,
+        explanation: l10n.e7ConnectionFailure39,
         checks: [
-          'Restart opencode serve and watch its output.',
-          'Check that the server version is supported by this app.',
+          l10n.e7ConnectionFailure40,
+          l10n.e7ConnectionFailure41,
           ?retried,
         ],
         primary: ConnectionFailureAction.retry,
@@ -247,12 +211,12 @@ class ConnectionFailure {
       );
     }
     return ConnectionFailure(
-      title: 'Could not connect',
-      explanation: 'The connection to $hostLabel failed. Details below.',
+      title: l10n.e7ConnectionFailure42,
+      explanation: l10n.e7ConnectionFailure43(hostLabel),
       checks: [
         usesConnectionToken
-            ? 'Is the Codex listener running, and is this the right address?'
-            : 'Is opencode serve running, and is this the right address?',
+            ? l10n.e7ConnectionFailure44
+            : l10n.e7ConnectionFailure45,
         ?retried,
       ],
       primary: ConnectionFailureAction.retry,

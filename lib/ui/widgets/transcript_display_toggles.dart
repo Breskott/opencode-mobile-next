@@ -1,10 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../l10n/app_localizations.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/connection.dart';
 import '../app_theme.dart';
+
+AppLocalizations _chatL10n(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));
 
 /// The two transcript display switches — "Reasoning" and "Timestamps &
 /// usage" — named as nouns that describe the setting, not verbs that describe
@@ -70,11 +76,11 @@ class _TranscriptDisplayTogglesState extends State<TranscriptDisplayToggles> {
           key: const ValueKey('session-view-thinking'),
           dense: widget.dense,
           secondary: const Icon(AppIconography.model),
-          title: const Text('Reasoning'),
+          title: Text(_chatL10n(context).transcriptFindReasoning),
           subtitle: Text(
             _reasoning
-                ? 'Expanded under each answer'
-                : 'Collapsed until you tap it',
+                ? _chatL10n(context).chatUiExpandedUnderEachAnswer
+                : _chatL10n(context).chatUiCollapsedUntilYouTapIt,
             style: hint,
           ),
           value: _reasoning,
@@ -84,11 +90,11 @@ class _TranscriptDisplayTogglesState extends State<TranscriptDisplayToggles> {
           key: const ValueKey('session-view-timestamps'),
           dense: widget.dense,
           secondary: const Icon(AppIconography.clock),
-          title: const Text('Timestamps & usage'),
+          title: Text(_chatL10n(context).chatUiTimestampsUsage),
           subtitle: Text(
             _timestamps
-                ? 'Time, tokens and cost under each message'
-                : 'Hidden to keep the transcript quiet',
+                ? _chatL10n(context).chatUiTimeTokensAndCostUnderEachMessage
+                : _chatL10n(context).chatUiHiddenToKeepTheTranscriptQuiet,
             style: hint,
           ),
           value: _timestamps,

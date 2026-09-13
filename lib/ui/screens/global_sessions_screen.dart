@@ -58,7 +58,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
   /// groups are ordered by their most recent session, and each group lists
   /// its sessions from newest to oldest. Rebuilt from [_results] on every
   /// build so a loaded page slots into the right group.
-  List<_GlobalGroup> get _groups => _groupByDirectory(_results);
+  List<_GlobalGroup> get _groups => _groupByDirectory(_results, _l10n(context));
 
   /// A folder chip narrows the list to one group; null shows every group.
   String? _folderFilter;
@@ -75,6 +75,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
 
   static List<_GlobalGroup> _groupByDirectory(
     List<GlobalSessionResult> results,
+    AppLocalizations l10n,
   ) {
     final indexed = results.indexed.toList()
       ..sort((a, b) {
@@ -90,7 +91,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     // and card headers stay distinguishable.
     final labels = {
       for (final entry in groups.entries)
-        entry.key: _GlobalSessionRow._projectLabel(entry.value.first),
+        entry.key: _GlobalSessionRow._projectLabel(entry.value.first, l10n),
     };
     final counts = <String, int>{};
     for (final label in labels.values) {
@@ -250,7 +251,8 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
   Future<ServerOperationsGateway> _repository() async {
     final repository = await widget.controller.prepareActionRepository();
     if (repository != null) return repository;
-    throw const ProductException('OpenCode is reconnecting. Try again.');
+    if (!mounted) throw StateError('Session search closed');
+    throw ProductException(_l10n(context).e7WorkspaceReconnectingAgain);
   }
 
   Future<void> _reload() async {
@@ -318,6 +320,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
   }
 
   Future<void> _loadMore() async {
+    final failureMessage = _l10n(context).e7WorkspacePaginationStuck;
     final generation = _queryGeneration;
     final scope = _scope;
     final cursor = _nextCursor;
@@ -345,9 +348,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
       if (nextCursor != null &&
           (nextCursor == cursor || _usedCursors.contains(nextCursor))) {
         _restartPagination = true;
-        throw const ProductException(
-          'Session pagination could not advance. Refresh the list to continue.',
-        );
+        throw ProductException(failureMessage);
       }
       setState(() {
         _results = [..._results, ...added];
@@ -373,19 +374,13 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     final session = result.session;
     if (_openingSessionID != null) return;
     if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(session.id)) {
-      showProductError(
-        context,
-        'Session reference unavailable. Refresh and try again.',
-      );
+      showProductError(context, _l10n(context).e7WorkspaceReferenceRetry);
       return;
     }
     final profileID = widget.controller.profile?.id;
     final directory = session.directory ?? result.projectDirectory;
     if (profileID != _profileID || directory == null) {
-      showProductError(
-        context,
-        'Session location unavailable. Refresh and try again.',
-      );
+      showProductError(context, _l10n(context).e7WorkspaceLocationRetry);
       return;
     }
     setState(() => _openingSessionID = session.id);
@@ -398,7 +393,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
       if (widget.controller.profile?.id != profileID ||
           widget.controller.directory != directory ||
           widget.controller.workspace != session.workspaceID) {
-        throw StateError('Session location changed. Return and try again.');
+        throw ProductException(_l10n(context).e7WorkspaceLocationChangedReturn);
       }
       final scope = SessionNavigationScope(widget.controller);
       final repository = await _repository();
@@ -409,7 +404,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
       if (current.id != session.id ||
           current.directory != session.directory ||
           current.workspaceID != session.workspaceID) {
-        throw StateError('Session location changed. Refresh and try again.');
+        throw ProductException(_l10n(context).e7WorkspaceLocationChangedRetry);
       }
       if (handoff) {
         await showSessionHandoff(
@@ -430,7 +425,9 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
         scope.check(widget.controller);
         if (!mounted || selected == null) return;
         if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(selected.id)) {
-          throw StateError('Session reference unavailable.');
+          throw ProductException(
+            _l10n(context).e7WorkspaceReferenceUnavailable,
+          );
         }
         await Navigator.of(context).pushNamed('/chat/${selected.id}');
       } else {
@@ -468,16 +465,17 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     final session = result.session;
     if (_stealingSessionID != null || _openingSessionID != null) return;
     final scope = SessionNavigationScope(widget.controller);
-    final title = presentedSessionTitle(session, fallback: 'Untitled session');
+    final title = presentedSessionTitle(
+      session,
+      fallback: _l10n(context).globalSessionsUntitled,
+      l10n: _l10n(context),
+    );
     final confirmed = await showConfirmSheet(
       context,
       icon: AppIconography.inbox,
-      title: 'Continue this session here?',
-      message:
-          '“$title” will belong to your current workspace through the '
-          'server’s sync system. It stops belonging to the workspace it '
-          'runs in now.',
-      confirmLabel: 'Continue here',
+      title: _l10n(context).e7WorkspaceContinueHereConfirm,
+      message: _l10n(context).e7WorkspaceContinueHereDetail(title),
+      confirmLabel: _l10n(context).globalSessionsContinueHere,
     );
     if (!confirmed || !mounted) return;
     setState(() => _stealingSessionID = session.id);
@@ -489,10 +487,10 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
       scope.check(widget.controller);
       if (!mounted) return;
       if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(stolenID)) {
-        throw StateError('Session reference unavailable.');
+        throw ProductException(_l10n(context).e7WorkspaceReferenceUnavailable);
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('“$title” now belongs to this workspace')),
+        SnackBar(content: Text(_l10n(context).e7WorkspaceMovedHere(title))),
       );
       await Navigator.of(context).pushNamed('/chat/$stolenID');
     } catch (error) {
@@ -525,7 +523,9 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     final summary = _results.isEmpty
         ? null
         : filter != null
-        ? l10n.globalSessionsFilteredSummary(shown, loadedCount)
+        ? l10n.e7WorkspaceFilteredLoaded(shown, _results.length)
+        : _hasMore
+        ? l10n.e7WorkspaceLoadedSummary(_results.length, groups.length)
         : groups.length == 1
         ? l10n.globalSessionsSummaryOneFolder(loadedCount)
         : l10n.globalSessionsSummary(loadedCount, groups.length);
@@ -566,7 +566,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
           // folder the loaded results came from. Folder chips narrow the
           // list on the phone without another request.
           SizedBox(
-            height: 48,
+            height: 32 + MediaQuery.textScalerOf(context).scale(20),
             child: ListView(
               key: const ValueKey('global-session-filters'),
               scrollDirection: Axis.horizontal,
@@ -601,7 +601,11 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
                       key: const ValueKey('global-session-folder-all'),
                       selected: filter == null,
                       showCheckmark: false,
-                      label: Text(l10n.globalSessionsAllFolders),
+                      label: Text(
+                        _hasMore
+                            ? l10n.e7WorkspaceLoadedFolders
+                            : l10n.globalSessionsAllFolders,
+                      ),
                       onSelected: (_) => setState(() => _folderFilter = null),
                     ),
                   ),
@@ -682,7 +686,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
       if (!scope.matches(widget.controller)) {
         showProductError(
           context,
-          'Session location changed. Return and try again.',
+          _l10n(context).e7WorkspaceLocationChangedReturn,
         );
         return;
       }
@@ -880,6 +884,9 @@ class _FolderCard extends StatelessWidget {
                           ),
                           Text(
                             path,
+                            textDirection: group.directory.isEmpty
+                                ? null
+                                : TextDirection.ltr,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: muted,
                             ),
@@ -942,13 +949,15 @@ class _GlobalSessionRow extends StatelessWidget {
     final title = presentedSessionTitle(
       session,
       fallback: l10n.globalSessionsUntitled,
+      l10n: l10n,
     );
-    final project = _projectLabel(result);
+    final project = _projectLabel(result, l10n);
     final working = controller.busySessions.contains(session.id);
     final updated = session.time?.updated ?? session.time?.created;
     final details = <String>[
       if (working) l10n.globalSessionsWorking,
-      if (updated != null && updated > 0) relativeTimeLabel(updated),
+      if (updated != null && updated > 0)
+        relativeTimeLabel(updated, l10n: l10n),
       if (session.path?.trim().isNotEmpty == true) session.path!.trim(),
     ].join(' · ');
     // A screen reader hears the folder on every row; the card header
@@ -962,7 +971,7 @@ class _GlobalSessionRow extends StatelessWidget {
 
     final row = Semantics(
       button: true,
-      label: 'Open $title. $spoken',
+      label: _l10n(context).e7WorkspaceOpenSessionSemantics(title, spoken),
       onTap: busy ? null : onTap,
       customSemanticsActions: {
         if (!busy) ...{
@@ -1106,7 +1115,10 @@ class _GlobalSessionRow extends StatelessWidget {
     );
   }
 
-  static String _projectLabel(GlobalSessionResult result) {
+  static String _projectLabel(
+    GlobalSessionResult result,
+    AppLocalizations l10n,
+  ) {
     final named = result.projectName?.trim();
     if (named?.isNotEmpty == true) return named!;
     for (final path in [result.projectDirectory, result.session.directory]) {
@@ -1117,7 +1129,7 @@ class _GlobalSessionRow extends StatelessWidget {
           .toList();
       if (parts.isNotEmpty) return parts.last;
     }
-    return 'Unknown project';
+    return l10n.e7WorkspaceUnknownProject;
   }
 }
 
@@ -1145,3 +1157,7 @@ class _Pill extends StatelessWidget {
     );
   }
 }
+
+AppLocalizations _l10n(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+    lookupAppLocalizations(Localizations.localeOf(context));

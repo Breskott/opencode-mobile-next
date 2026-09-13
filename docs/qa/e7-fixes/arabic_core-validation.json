@@ -1,0 +1,43 @@
+{
+  "status": "passed",
+  "source_sha256": "a9510874d1e50652dc25491e3553e1a1a1c50eaff9a6622d4c387e9bc6a5a30d",
+  "translation_sha256": "cc50260257702695e656d2797f9cfe2320eb75b64025549cc9f104f29074f502",
+  "source_message_count": 730,
+  "translated_message_count": 730,
+  "missing_keys": [],
+  "extra_keys": [],
+  "placeholder_parity": "passed for every source and translated message",
+  "source_placeholder_metadata_verified": 51,
+  "metadata_policy": "Source file retains types; target contains messages only for root merge with unchanged English metadata.",
+  "icu_structure": "balanced and parsed; kind, argument and existing selectors preserved",
+  "arabic_plural_message_count": 12,
+  "arabic_plural_messages": [
+    "librarySearchResults",
+    "termuxRestartBusyMessage",
+    "promptStashAttachments",
+    "promptStashReferences",
+    "digestChangedFiles",
+    "digestPendingDecisions",
+    "runResultsSteps",
+    "runResultsStepsAtLeast",
+    "runResultsEarlierErrors",
+    "runResultsPrunedTools",
+    "transcriptFindCount",
+    "transcriptFindTotal"
+  ],
+  "arabic_plural_forms": "zero (or =0), one (or =1), two, few, many, other in every plural",
+  "unchanged_name_or_template_keys": [
+    "appTitle",
+    "libraryMcpTitle",
+    "aboutBuildVersion",
+    "workStatusElapsed",
+    "usagePeriod",
+    "activeContextTypeCount",
+    "activeContextPartHeading",
+    "quotaSourceTitle"
+  ],
+  "english_prose_left_untranslated": [],
+  "direction_control_characters": [],
+  "ascii_icu_quoting_apostrophes": [],
+  "boundary": "Corpus-only structural verification. Flutter generation, rendered RTL layouts and activation are integration checks."
+}

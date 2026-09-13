@@ -1,3 +1,4 @@
+import '../../l10n/app_localizations.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -327,52 +328,59 @@ class _FormRendererState extends State<FormRenderer> {
     switch (field.type) {
       case Api2FormFieldType.string:
         final value = answer as String?;
-        if (value == null) return field.required ? 'Required' : null;
+        if (value == null) {
+          return field.required ? _sharedCopy(context).e7SharedRequired : null;
+        }
         final minLength = field.minLength;
         if (minLength != null && value.length < minLength) {
-          return 'Must be at least $minLength characters';
+          return _sharedCopy(context).e7SharedDetail714(minLength);
         }
         final maxLength = field.maxLength;
         if (maxLength != null && value.length > maxLength) {
-          return 'Must be at most $maxLength characters';
+          return _sharedCopy(context).e7SharedDetail715(maxLength);
         }
         final pattern = field.pattern;
         if (pattern != null && !RegExp(pattern).hasMatch(value)) {
-          return 'Does not match the expected format';
+          return _sharedCopy(context).e7SharedDoesNotMatchTheExpectedFormat;
         }
         return null;
       case Api2FormFieldType.number:
       case Api2FormFieldType.integer:
         final raw = _text[field.key]?.text.trim() ?? '';
-        if (raw.isEmpty) return field.required ? 'Required' : null;
+        if (raw.isEmpty) {
+          return field.required ? _sharedCopy(context).e7SharedRequired : null;
+        }
         if (answer is! num) {
           return field.type == Api2FormFieldType.integer
-              ? 'Enter a whole number'
-              : 'Enter a number';
+              ? _sharedCopy(context).e7SharedEnterAWholeNumber
+              : _sharedCopy(context).e7SharedEnterANumber;
         }
         final minimum = field.minimum;
         final maximum = field.maximum;
         if ((minimum != null && answer < minimum) ||
             (maximum != null && answer > maximum)) {
           if (minimum != null && maximum != null) {
-            return 'Must be between ${_formatNum(minimum)} '
-                'and ${_formatNum(maximum)}';
+            return _sharedCopy(
+              context,
+            ).e7SharedDetail721(_formatNum(minimum), _formatNum(maximum));
           }
           return minimum != null
-              ? 'Must be at least ${_formatNum(minimum)}'
-              : 'Must be at most ${_formatNum(maximum!)}';
+              ? _sharedCopy(context).e7SharedDetail722(_formatNum(minimum))
+              : _sharedCopy(context).e7SharedDetail723(_formatNum(maximum!));
         }
         return null;
       case Api2FormFieldType.multiselect:
         final count = _multiselectValues(field).length;
-        if (count == 0) return field.required ? 'Required' : null;
+        if (count == 0) {
+          return field.required ? _sharedCopy(context).e7SharedRequired : null;
+        }
         final minItems = field.minItems;
         if (minItems != null && count < minItems) {
-          return 'Pick at least $minItems';
+          return _sharedCopy(context).e7SharedDetail754(minItems);
         }
         final maxItems = field.maxItems;
         if (maxItems != null && count > maxItems) {
-          return 'Pick at most $maxItems';
+          return _sharedCopy(context).e7SharedDetail726(maxItems);
         }
         return null;
       case Api2FormFieldType.boolean:
@@ -434,9 +442,9 @@ class _FormRendererState extends State<FormRenderer> {
     if (_busy) return;
     final confirmed = await showConfirmSheet(
       context,
-      title: 'Dismiss this request?',
-      message: 'The agent continues without your answers.',
-      confirmLabel: 'Dismiss',
+      title: _sharedCopy(context).e7SharedDismissThisRequest,
+      message: _sharedCopy(context).e7SharedTheAgentContinuesWithoutYourAnswers,
+      confirmLabel: _sharedCopy(context).workspaceDismissNotice,
       icon: AppIconography.blocked,
       destructive: true,
       sheetKey: const Key('form-dismiss-confirm'),
@@ -512,15 +520,15 @@ class _FormRendererState extends State<FormRenderer> {
   Widget _header(BuildContext context) {
     final theme = Theme.of(context);
     final origin = widget.form.sessionID == 'global'
-        ? 'Asked by an MCP server'
-        : 'Asked by the agent in this session';
+        ? _sharedCopy(context).e7SharedAskedByAnMCPServer
+        : _sharedCopy(context).e7SharedAskedByTheAgentInThisSession;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            widget.form.title ?? 'Input requested',
+            widget.form.title ?? _sharedCopy(context).e7SharedInputRequested,
             key: const Key('form-title'),
             style: theme.textTheme.titleMedium,
           ),
@@ -770,9 +778,9 @@ class _FormRendererState extends State<FormRenderer> {
                         : Text(option.description!),
                   ),
                 if (field.custom)
-                  const RadioListTile<String>(
+                  RadioListTile<String>(
                     value: _kOtherChoice,
-                    title: Text('Other…'),
+                    title: Text(_sharedCopy(context).e7SharedOther),
                   ),
               ],
             ),
@@ -835,7 +843,10 @@ class _FormRendererState extends State<FormRenderer> {
                       ),
               ),
             if (field.custom)
-              const DropdownMenuEntry(value: _kOtherChoice, label: 'Other…'),
+              DropdownMenuEntry(
+                value: _kOtherChoice,
+                label: _sharedCopy(context).e7SharedOther,
+              ),
           ],
         ),
         if (field.custom) _otherReveal(context, field, reduceMotion),
@@ -863,9 +874,9 @@ class _FormRendererState extends State<FormRenderer> {
                 key: Key('form-field-${field.key}-other'),
                 controller: _otherText[field.key],
                 onChanged: (_) => _clearError(field.key),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: OutlineInputBorder(),
-                  labelText: 'Your answer',
+                  labelText: _sharedCopy(context).e7SharedYourAnswer,
                 ),
               ),
             )
@@ -940,12 +951,14 @@ class _FormRendererState extends State<FormRenderer> {
     final maxItems = field.maxItems;
     if (minItems == null && maxItems == null) return null;
     final range = minItems != null && maxItems != null
-        ? 'Pick $minItems–$maxItems'
+        ? _sharedCopy(context).e7SharedDetail753(minItems, maxItems)
         : minItems != null
-        ? 'Pick at least $minItems'
-        : 'Pick up to $maxItems';
+        ? _sharedCopy(context).e7SharedDetail754(minItems)
+        : _sharedCopy(context).e7SharedDetail755(maxItems!);
     final count = _multiselectValues(field).length;
-    return count > 0 ? '$range · $count selected' : range;
+    return count > 0
+        ? _sharedCopy(context).e7SharedDetail756(range, count)
+        : range;
   }
 
   void _toggleOption(Api2FormField field, String value, bool selected) {
@@ -997,9 +1010,9 @@ class _FormRendererState extends State<FormRenderer> {
       onSubmitted: (_) => _addCustomValue(field),
       decoration: InputDecoration(
         border: const OutlineInputBorder(),
-        labelText: 'Add your own',
+        labelText: _sharedCopy(context).e7SharedAddYourOwn,
         suffixIcon: IconButton(
-          tooltip: 'Add answer',
+          tooltip: _sharedCopy(context).e7SharedAddAnswer,
           icon: const Icon(AppIconography.add),
           onPressed: () => _addCustomValue(field),
         ),
@@ -1127,7 +1140,7 @@ class _FormRendererState extends State<FormRenderer> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      field.title ?? 'Open link',
+                      field.title ?? _sharedCopy(context).e7SharedOpenLink,
                       style: theme.textTheme.titleSmall,
                     ),
                     if (field.description != null) ...[
@@ -1142,9 +1155,12 @@ class _FormRendererState extends State<FormRenderer> {
                     const SizedBox(height: 6),
                     Text(
                       destination == null
-                          ? 'This server sent a link this app will not open.'
-                          : 'Opens ${externalLinkHost(destination)} in your '
-                                'browser',
+                          ? _sharedCopy(
+                              context,
+                            ).e7SharedThisServerSentALinkThisApp
+                          : _sharedCopy(
+                              context,
+                            ).e7SharedDetail764(externalLinkHost(destination)),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: destination == null
                             ? theme.colorScheme.error
@@ -1169,8 +1185,7 @@ class _FormRendererState extends State<FormRenderer> {
   Widget _unknownField(BuildContext context, Api2FormField field) {
     final theme = Theme.of(context);
     return Text(
-      'This server sent a field type this app does not understand '
-      '("${field.key}").',
+      _sharedCopy(context).e7SharedDetail765(field.key),
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
       ),
@@ -1220,12 +1235,18 @@ class _FormRendererState extends State<FormRenderer> {
               dimension: 18,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : const Text('Send answers', textAlign: TextAlign.center),
+          : Text(
+              _sharedCopy(context).e7SharedSendAnswers,
+              textAlign: TextAlign.center,
+            ),
     );
     final dismiss = TextButton(
       key: const Key('form-cancel'),
       onPressed: _busy ? null : _dismiss,
-      child: const Text('Dismiss', textAlign: TextAlign.center),
+      child: Text(
+        _sharedCopy(context).workspaceDismissNotice,
+        textAlign: TextAlign.center,
+      ),
     );
     if (AppTheme.stackedActions(context)) {
       return Column(
@@ -1259,3 +1280,6 @@ class _FormRendererState extends State<FormRenderer> {
     );
   }
 }
+
+AppLocalizations _sharedCopy(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));

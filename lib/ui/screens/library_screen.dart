@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../api/models.dart' show ModelRef;
 import '../../api/mcp_oauth.dart';
 import '../../l10n/app_localizations.dart';
+import '../../platform/platform_capabilities.dart';
 import '../../domain/server_gateway.dart' show StreamStatus;
 import '../../api/provider_presentation.dart';
 import '../../feedback/bug_report.dart';
@@ -31,6 +32,7 @@ import 'mcp_setup_screen.dart';
 import 'settings_screen.dart';
 import 'session_import_screen.dart';
 import 'terminal_screen.dart';
+import 'termux_setup_screen.dart';
 import 'plugins_screen.dart';
 
 part 'library/catalog_screen.dart';
@@ -68,7 +70,21 @@ class _LibraryScreenState extends State<LibraryScreen> {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
-        final l10n = AppLocalizations.of(context);
+        final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+        // Local Android tools belong to the phone, not the connected server's
+        // capability set. Keep this entry visible even on a remote profile.
+        final phoneTools = <_DestinationRow>[
+          if (platformCapabilities.supportsTermux)
+            _DestinationRow(
+              icon: AppIconography.phone,
+              title: l10n.onboardingTermuxSetup,
+              subtitle: l10n.onboardingRunOnPhone,
+              keywords: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibrarySearchPhoneAliases,
+              onTap: () => _open(context, const TermuxSetupScreen()),
+            ),
+        ].where((row) => row.matches(_query)).toList();
         final group0 = <_DestinationRow>[
           if (controller.capabilities.serverCatalog) ...[
             _DestinationRow(
@@ -77,14 +93,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
               subtitle: l10n.settingsDiscoveryNewChatsModel(
                 _defaultModelLabel(controller, l10n),
               ),
-              keywords: 'AI reasoning favorites recent',
+              keywords: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibrarySearchModelAliases,
               onTap: () =>
                   _open(context, CatalogScreen(controller: controller)),
             ),
             _DestinationRow(
               icon: AppIconography.cloud,
               title: l10n.libraryProvidersTitle,
-              keywords: 'API keys authentication connect',
+              keywords: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibrarySearchProviderAliases,
               onTap: () => _open(
                 context,
                 IntegrationsScreen(
@@ -96,7 +116,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
             _DestinationRow(
               icon: AppIconography.network,
               title: l10n.libraryMcpTitle,
-              keywords: 'integrations servers',
+              keywords: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibrarySearchMcpAliases,
               onTap: () => _open(
                 context,
                 IntegrationsScreen(
@@ -108,7 +130,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
             _DestinationRow(
               icon: AppIconography.tools,
               title: l10n.libraryCommandsToolsTitle,
-              keywords: 'slash skills references capabilities',
+              keywords: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibrarySearchCommandsAliases,
               onTap: () =>
                   _open(context, CapabilitiesScreen(controller: controller)),
             ),
@@ -117,7 +141,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
             _DestinationRow(
               icon: AppIconography.extensions,
               title: l10n.pluginsTitle,
-              keywords: 'plugin installed source status',
+              keywords: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibrarySearchPluginsAliases,
               onTap: () =>
                   _open(context, PluginsScreen(controller: controller)),
             ),
@@ -128,7 +154,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
               key: const ValueKey('library-terminal'),
               icon: AppIconography.terminal,
               title: l10n.libraryTerminalTitle,
-              keywords: 'shell command line',
+              keywords: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibrarySearchTerminalAliases,
               onTap: () => _open(context, TerminalPage(controller: controller)),
             ),
         ].where((card) => card.matches(_query)).toList();
@@ -141,21 +169,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
               key: const ValueKey('library-import-session'),
               icon: AppIconography.fileUpload,
               title: l10n.importTitle,
-              keywords: 'backup restore transfer JSON conversation',
+              keywords: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibrarySearchImportAliases,
               onTap: () =>
                   _open(context, SessionImportScreen(controller: controller)),
             ),
           _DestinationRow(
             icon: AppIconography.settings,
             title: l10n.librarySettingsTitle,
-            keywords:
-                'appearance theme language notifications privacy voice background server',
+            keywords: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibrarySearchSettingsAliases,
             onTap: () => _open(context, SettingsScreen(controller: controller)),
           ),
           _DestinationRow(
             icon: AppIconography.guide,
-            title: 'Setup guide',
-            keywords: 'help connect tutorial start',
+            title: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).onboardingSetupGuide,
+            keywords: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibrarySearchGuideAliases,
             onTap: () => _open(context, const GuideScreen()),
           ),
           // The bug form lives in the failure states themselves; this
@@ -164,8 +199,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
           _DestinationRow(
             key: const ValueKey('library-report-bug'),
             icon: AppIconography.bug,
-            title: 'Report a bug',
-            keywords: 'feedback issue support',
+            title: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryReportABug,
+            keywords: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibrarySearchBugAliases,
             onTap: () => unawaited(openBugReport(context)),
           ),
           // The shortcut layer must be discoverable without already
@@ -174,8 +213,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
             _DestinationRow(
               key: const ValueKey('library-keyboard-shortcuts'),
               icon: AppIconography.keyboard,
-              title: 'Keyboard shortcuts',
-              keywords: 'hotkeys help desktop',
+              title: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryKeyboardShortcuts,
+              keywords: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibrarySearchShortcutsAliases,
               onTap: () => unawaited(showShortcutsHelp(context)),
             ),
         ].where((card) => card.matches(_query)).toList();
@@ -184,7 +227,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         return DesktopScrollbarArea(
           builder: (scrollController) => ListView(
             controller: scrollController,
-            padding: EdgeInsets.fromLTRB(
+            padding: EdgeInsetsDirectional.fromSTEB(
               12,
               8,
               12,
@@ -192,7 +235,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             ),
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 12),
                 child: TextField(
                   key: const Key('library-search'),
                   controller: _search,
@@ -214,6 +257,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ),
                 ),
               ),
+              ...phoneTools,
               _DestinationGroup(
                 title: l10n.libraryBrowseSection,
                 cards: group0,
@@ -227,7 +271,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     l10n.librarySearchResults(
-                      group0.length + group1.length,
+                      phoneTools.length + group0.length + group1.length,
                       _search.text.trim(),
                     ),
                     key: const Key('library-search-summary'),
@@ -281,7 +325,7 @@ class _DestinationGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, 24, 4, 8),
+          padding: const EdgeInsetsDirectional.fromSTEB(4, 24, 4, 8),
           child: Text(
             title,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(

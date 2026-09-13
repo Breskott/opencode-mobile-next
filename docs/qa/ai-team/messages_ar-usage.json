@@ -1,0 +1,7 @@
+{
+  "teamUiUsageChip": "الفريق اليوم · {usage}",
+  "teamUiUsageCostEstimated": "{cost} تقديريًا",
+  "teamUiUsageRuntimeHint": "الرموز والتكلفة لكامل الفريق اليوم، تقديرية.",
+  "teamUiUsageRuntimeLabel": "الرموز / السياق / التكلفة",
+  "teamUiUsageTokens": "{count} رمز"
+}

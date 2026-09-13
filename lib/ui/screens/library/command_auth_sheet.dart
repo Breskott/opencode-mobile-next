@@ -161,7 +161,7 @@ class _CommandAuthSheetState extends State<_CommandAuthSheet> {
         ),
         child: ListView(
           shrinkWrap: true,
-          padding: EdgeInsets.fromLTRB(
+          padding: EdgeInsetsDirectional.fromSTEB(
             16,
             0,
             16,

@@ -35,8 +35,12 @@ class MainActivity : FlutterActivity() {
     private var shareChannel: MethodChannel? = null
     private var shareDartReady = false
     private var pendingLaunchAction: String? = null
+    private var pendingSessionLaunch: Map<String, String>? = null
     private var shortcutChannel: MethodChannel? = null
     private var shortcutDartReady = false
+    private var pendingSessionLink: String? = null
+    private var linkChannel: MethodChannel? = null
+    private var linkDartReady = false
     private var readAloud: ReadAloudBridge? = null
     private var localPdf: LocalPdfBridge? = null
 
@@ -50,6 +54,26 @@ class MainActivity : FlutterActivity() {
         captureCodingAlertOpen(intent)
         captureSharedText(intent)
         captureLaunchAction(intent)
+        captureSessionLaunch(intent)
+        captureSessionLink(intent)
+        linkDartReady = false
+        linkChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LINK_CHANNEL_NAME)
+            .also { channel ->
+                channel.setMethodCallHandler { call, result ->
+                    when (call.method) {
+                        "consumeSessionLink" -> {
+                            // Same readiness handshake as shortcuts: Dart's
+                            // inbound handler is installed before this call,
+                            // so later links can be pushed live.
+                            linkDartReady = true
+                            val link = pendingSessionLink
+                            pendingSessionLink = null
+                            result.success(link)
+                        }
+                        else -> result.notImplemented()
+                    }
+                }
+            }
         shortcutDartReady = false
         shortcutChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SHORTCUT_CHANNEL_NAME)
             .also { channel ->
@@ -64,6 +88,29 @@ class MainActivity : FlutterActivity() {
                             val action = pendingLaunchAction
                             pendingLaunchAction = null
                             result.success(action)
+                        }
+                        "consumeSessionLaunch" -> {
+                            // The pinned-session tap that launched the app,
+                            // drained once; IDs only.
+                            val launch = pendingSessionLaunch
+                            pendingSessionLaunch = null
+                            result.success(launch)
+                        }
+                        "setPinnedSessions" -> {
+                            // Dart owns the payload (titles only, capped);
+                            // native only mirrors it onto the launcher.
+                            val profileID = call.argument<String>("profileID").orEmpty()
+                            val sessions = call.argument<List<Map<String, Any?>>>("sessions")
+                                .orEmpty()
+                            result.success(
+                                mapOf(
+                                    "published" to PinnedSessionShortcuts.publish(
+                                        this,
+                                        profileID = profileID,
+                                        sessions = sessions
+                                    )
+                                )
+                            )
                         }
                         else -> result.notImplemented()
                     }
@@ -184,7 +231,8 @@ class MainActivity : FlutterActivity() {
                                     requestID = requestID,
                                     profileID = call.argument<String>("profileID").orEmpty(),
                                     allowActions = call.argument<Boolean>("allowActions") ?: true,
-                                    monitorToken = call.argument<String>("monitorToken").orEmpty()
+                                    monitorToken = call.argument<String>("monitorToken").orEmpty(),
+                                    subtext = call.argument<String>("subtext").orEmpty()
                                 )
                             )
                         )
@@ -257,6 +305,8 @@ class MainActivity : FlutterActivity() {
         shareDartReady = false
         shortcutChannel = null
         shortcutDartReady = false
+        linkChannel = null
+        linkDartReady = false
         super.cleanUpFlutterEngine(flutterEngine)
     }
 
@@ -302,6 +352,64 @@ class MainActivity : FlutterActivity() {
                 channel.invokeMethod("launched", action)
             }
         }
+        if (captureSessionLaunch(intent)) {
+            val channel = shortcutChannel
+            val launch = pendingSessionLaunch
+            if (shortcutDartReady && channel != null && launch != null) {
+                pendingSessionLaunch = null
+                channel.invokeMethod("launchedSession", launch)
+            }
+        }
+        if (captureSessionLink(intent)) {
+            // Live when Dart is listening, otherwise parked until
+            // consumeSessionLink.
+            val channel = linkChannel
+            val link = pendingSessionLink
+            if (linkDartReady && channel != null && link != null) {
+                pendingSessionLink = null
+                channel.invokeMethod("linked", link)
+            }
+        }
+    }
+
+    /// A pinned-session launcher shortcut (PinnedSessionShortcuts) tapped
+    /// from the home screen. Only the two IDs travel; both extras are removed
+    /// so a configuration change does not replay the tap, and Dart decides
+    /// whether the named profile is the active one before opening anything.
+    private fun captureSessionLaunch(intent: Intent?): Boolean {
+        if (intent == null) return false
+        if (!intent.hasExtra(EXTRA_LAUNCH_SESSION)) return false
+        val sessionID = intent.getStringExtra(EXTRA_LAUNCH_SESSION)?.trim().orEmpty()
+        val profileID = intent.getStringExtra(EXTRA_LAUNCH_PROFILE)?.trim().orEmpty()
+        intent.removeExtra(EXTRA_LAUNCH_SESSION)
+        intent.removeExtra(EXTRA_LAUNCH_PROFILE)
+        if (sessionID.isEmpty() || profileID.isEmpty()) return false
+        pendingSessionLaunch = mapOf("profileID" to profileID, "sessionID" to sessionID)
+        return true
+    }
+
+    /// A session handoff link (AndroidManifest VIEW filter for
+    /// opencode-mobile://session) or an AI Team link (opencode-mobile://team,
+    /// TEAM-203). Only the links' own scheme and hosts are accepted and only
+    /// the URI text crosses to Dart, which validates the route identifiers
+    /// it may carry. The intent's action and data are
+    /// cleared so a configuration change does not replay the open. This
+    /// bridge never connects, creates a session or sends anything.
+    private fun captureSessionLink(intent: Intent?): Boolean {
+        if (intent == null || intent.action != Intent.ACTION_VIEW) return false
+        val data = intent.data ?: return false
+        if (!data.scheme.equals(LINK_SCHEME, ignoreCase = true)) return false
+        if (!data.host.equals(LINK_HOST, ignoreCase = true) &&
+            !data.host.equals(TEAM_LINK_HOST, ignoreCase = true)
+        ) return false
+        val text = data.toString()
+        // Consume the open before deciding, so a rejected link is not
+        // replayed either.
+        intent.action = Intent.ACTION_MAIN
+        intent.data = null
+        if (text.isBlank() || text.length > LINK_MAX_LENGTH) return false
+        pendingSessionLink = text
+        return true
     }
 
     /// A static launcher shortcut (res/xml/shortcuts.xml) tapped from the
@@ -718,10 +826,22 @@ class MainActivity : FlutterActivity() {
         private const val BACKGROUND_CHANNEL_NAME = "oc/background"
         private const val SHARE_CHANNEL_NAME = "oc/share"
         private const val SHORTCUT_CHANNEL_NAME = "oc/shortcut"
+        private const val LINK_CHANNEL_NAME = "oc/link"
+        // The session handoff link shape Dart's SessionLink.parse accepts.
+        private const val LINK_SCHEME = "opencode-mobile"
+        private const val LINK_HOST = "session"
+        private const val TEAM_LINK_HOST = "team"
+        private const val LINK_MAX_LENGTH = 1024
         // Intent extra set by res/xml/shortcuts.xml; values are the shortcut
         // ids Dart's LaunchAction enum understands.
-        private const val EXTRA_LAUNCH_ACTION = "oc.shortcut"
-        private val LAUNCH_ACTIONS = setOf("connect", "new_task")
+        const val EXTRA_LAUNCH_ACTION = "oc.shortcut"
+        // The static shortcut ids plus the Quick Settings tile's action
+        // (AttentionTileService.LAUNCH_ACTION_ACTIVITY).
+        private val LAUNCH_ACTIONS = setOf("connect", "new_task", "activity")
+        // Intent extras set by PinnedSessionShortcuts; a pinned-session tap
+        // carries exactly these two IDs and nothing else.
+        const val EXTRA_LAUNCH_PROFILE = "oc.shortcut.profile"
+        const val EXTRA_LAUNCH_SESSION = "oc.shortcut.session"
         private const val TERMUX_PACKAGE = "com.termux"
         private const val TERMUX_HOME = "/data/data/com.termux/files/home"
         private const val TERMUX_BASH = "/data/data/com.termux/files/usr/bin/bash"

@@ -3,10 +3,12 @@ import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter/services.dart';
 
 import '../../api/models.dart';
+import '../../l10n/app_localizations.dart';
 import '../../state/review_handoff.dart';
 import '../app_theme.dart';
 import '../desktop/desktop_interaction.dart';
 import '../widgets/product_states.dart';
+import '../widgets/reader_preferences.dart';
 
 typedef ReviewDiffLoader = Future<List<FileDiff>> Function();
 
@@ -273,8 +275,9 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
     return Scaffold(
       key: const Key('review-workspace'),
       appBar: AppBar(
-        title: const Text('Review changes'),
+        title: Text(readerL10n(context).demoReviewChanges),
         actions: [
+          if (_mode == ReviewDiffMode.unified) const ReaderWrapButton(),
           if (widget.handoff != null)
             ListenableBuilder(
               listenable: widget.handoff!.store,
@@ -287,14 +290,14 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
                     key: const Key('review-staged-count'),
                     onPressed: () => Navigator.of(context).maybePop(),
                     icon: const Icon(AppIconography.back, size: 18),
-                    label: Text('$staged on prompt'),
+                    label: Text(readerL10n(context).readerUiOnPrompt(staged)),
                   ),
                 );
               },
             ),
           IconButton(
             key: const Key('review-refresh'),
-            tooltip: 'Refresh changes',
+            tooltip: readerL10n(context).readerUiRefreshChanges,
             onPressed: _diffs == null || _refreshing ? null : _load,
             icon: _refreshing
                 ? const SizedBox.square(
@@ -389,7 +392,12 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
             ],
           );
         }
-        final compactHeight = constraints.maxHeight < 360;
+        // Everything above the diff grows with the text scale, so judge the
+        // vertical budget in scaled units: large fonts on a phone need the
+        // same short-viewport treatment as a landscape tablet keyboard.
+        final compactHeight =
+            constraints.maxHeight <
+            360 * MediaQuery.textScalerOf(context).scale(1);
         return Column(
           children: [
             if (!compactHeight) summary,
@@ -485,8 +493,8 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Copied from review'),
+      SnackBar(
+        content: Text(readerL10n(context).readerUiCopiedReview),
         duration: Duration(seconds: 2),
       ),
     );
@@ -517,7 +525,7 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
       builder: (context) => _ReviewCommentComposer(
         file: diff.file,
         selectionLabel: wholeFile
-            ? 'Entire file change'
+            ? readerL10n(context).readerUiEntireChange
             : _selectionLabel(lines),
       ),
     );
@@ -603,12 +611,15 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
     final outcome = handoff.stage(reference);
     if (!mounted) return;
     final message = switch (outcome) {
-      ReviewStageOutcome.staged => 'Added ${reference.label} to the prompt',
-      ReviewStageOutcome.duplicate =>
-        '${reference.label} is already on the prompt',
-      ReviewStageOutcome.full =>
-        'The prompt already holds '
-            '${ReviewHandoffStore.maxPerSession} references',
+      ReviewStageOutcome.staged => readerL10n(
+        context,
+      ).readerUiReferenceAdded(reference.label),
+      ReviewStageOutcome.duplicate => readerL10n(
+        context,
+      ).readerUiReferenceDuplicate(reference.label),
+      ReviewStageOutcome.full => readerL10n(
+        context,
+      ).readerUiReferenceFull(ReviewHandoffStore.maxPerSession),
     };
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -622,7 +633,9 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
   String _selectionLabel(List<_ReviewDiffLine> lines) {
     final start = _selectionStart;
     final end = _selectionEnd;
-    if (start == null || end == null) return 'Selected change';
+    if (start == null || end == null) {
+      return readerL10n(context).readerUiSelectedChange;
+    }
     final selected = lines
         .asMap()
         .entries
@@ -635,19 +648,19 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
     final oldLabel = _lineRange(oldNumbers);
     final newLabel = _lineRange(newNumbers);
     if (oldLabel != null && newLabel != null) {
-      return 'old $oldLabel · new $newLabel';
+      return readerL10n(context).readerUiOldNew(oldLabel, newLabel);
     }
-    if (newLabel != null) return 'new $newLabel';
-    if (oldLabel != null) return 'old $oldLabel';
-    return '${selected.length} selected lines';
+    if (newLabel != null) return readerL10n(context).readerUiNewLines(newLabel);
+    if (oldLabel != null) return readerL10n(context).readerUiOldLines(oldLabel);
+    return readerL10n(context).readerUiSelectedLines(selected.length);
   }
 
   String? _lineRange(Iterable<int> numbers) {
     if (numbers.isEmpty) return null;
     final values = numbers.toList();
     return values.first == values.last
-        ? 'line ${values.first}'
-        : 'lines ${values.first}–${values.last}';
+        ? readerL10n(context).readerUiLine(values.first)
+        : readerL10n(context).readerUiLineRange(values.first, values.last);
   }
 
   String _reviewPrompt({
@@ -656,7 +669,9 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
     String? snippet,
     String? selectionLabel,
   }) {
-    final out = StringBuffer('Review `${diff.file}`');
+    final out = StringBuffer(
+      readerL10n(context).readerUiReviewPrompt(diff.file),
+    );
     if (selectionLabel != null) out.write(' ($selectionLabel)');
     out.write(':\n\n$comment');
     if (snippet?.trim().isNotEmpty == true) {
@@ -711,8 +726,8 @@ class _ReviewScopePicker extends StatelessWidget {
           for (final scope in scopes)
             ButtonSegment(
               value: scope,
-              label: Text(_scopeLabel(scope)),
-              tooltip: _scopeDescription(scope),
+              label: Text(_scopeLabel(context, scope)),
+              tooltip: _scopeDescription(context, scope),
             ),
         ],
         selected: {selected},
@@ -721,16 +736,20 @@ class _ReviewScopePicker extends StatelessWidget {
     ),
   );
 
-  static String _scopeLabel(ReviewDiffScope scope) => switch (scope) {
-    ReviewDiffScope.session => 'Session',
-    ReviewDiffScope.workingTree => 'Working tree',
-    ReviewDiffScope.branch => 'Branch',
-  };
+  static String _scopeLabel(BuildContext context, ReviewDiffScope scope) =>
+      switch (scope) {
+        ReviewDiffScope.session => readerL10n(context).readerUiSession,
+        ReviewDiffScope.workingTree => readerL10n(context).readerUiWorkingTree,
+        ReviewDiffScope.branch => readerL10n(context).readerUiBranch,
+      };
 
-  static String _scopeDescription(ReviewDiffScope scope) => switch (scope) {
-    ReviewDiffScope.session => 'Changes attributed to this OpenCode session',
-    ReviewDiffScope.workingTree => 'Current uncommitted Git changes',
-    ReviewDiffScope.branch => 'Changes against the default branch',
+  static String _scopeDescription(
+    BuildContext context,
+    ReviewDiffScope scope,
+  ) => switch (scope) {
+    ReviewDiffScope.session => readerL10n(context).readerUiSessionScopeHint,
+    ReviewDiffScope.workingTree => readerL10n(context).readerUiWorkingScopeHint,
+    ReviewDiffScope.branch => readerL10n(context).readerUiBranchScopeHint,
   };
 }
 
@@ -759,7 +778,7 @@ class _ReviewSummary extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$files changed ${files == 1 ? 'file' : 'files'}',
+                  readerL10n(context).readerUiChangedCount(files),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     letterSpacing: -.2,
@@ -767,7 +786,7 @@ class _ReviewSummary extends StatelessWidget {
                 ),
                 Text(
                   key: const ValueKey('review-viewed-progress'),
-                  '$viewed of $files viewed',
+                  readerL10n(context).readerUiViewedCount(viewed, files),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: AppTheme.mutedOf(theme),
                   ),
@@ -819,7 +838,9 @@ class _ReviewFileStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scale = MediaQuery.textScalerOf(context).scale(1);
-    final extraHeight = (scale - 1).clamp(0.0, 1.0).toDouble() * 42;
+    // Each tab stacks two text lines whose height grows linearly with the
+    // text scale, so the strip must keep growing past 2x rather than clip.
+    final extraHeight = (scale - 1).clamp(0.0, double.infinity) * 42;
     return SizedBox(
       key: const Key('review-file-strip'),
       height: 70 + extraHeight,
@@ -864,9 +885,12 @@ class _ReviewFileTab extends StatelessWidget {
     return Semantics(
       selected: selected,
       button: true,
-      label:
-          '${diff.file}, ${_status(diff)}, '
-          '${counts.added} additions, ${counts.removed} deletions',
+      label: readerL10n(context).readerUiFileDescription(
+        diff.file,
+        _statusLabel(context, diff),
+        counts.added,
+        counts.removed,
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.radiusControl),
@@ -967,7 +991,7 @@ class _ReviewFileList extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
           child: Text(
-            'Changed files',
+            readerL10n(context).runResultsChangedFilesTitle,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -1119,20 +1143,20 @@ class _ReviewDiffToolbar extends StatelessWidget {
           children: [
             _ModeButton(
               key: const Key('review-mode-unified'),
-              label: 'Unified',
+              label: readerL10n(context).readerUiUnified,
               selected: mode == ReviewDiffMode.unified,
               onPressed: () => onModeChanged(ReviewDiffMode.unified),
             ),
             _ModeButton(
               key: const Key('review-mode-split'),
-              label: 'Split',
+              label: readerL10n(context).readerUiSplit,
               selected: mode == ReviewDiffMode.split,
               onPressed: () => onModeChanged(ReviewDiffMode.split),
             ),
             const SizedBox(width: 8),
-            Text('${hunks.length} ${hunks.length == 1 ? 'hunk' : 'hunks'}'),
+            Text(readerL10n(context).readerUiHunkCount(hunks.length)),
             IconButton(
-              tooltip: 'Previous hunk',
+              tooltip: readerL10n(context).readerUiPreviousHunk,
               onPressed: hunks.isEmpty ? null : () => onHunk(-1, hunks),
               icon: const RotatedBox(
                 quarterTurns: 2,
@@ -1140,22 +1164,25 @@ class _ReviewDiffToolbar extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Next hunk',
+              tooltip: readerL10n(context).readerUiNextHunk,
               onPressed: hunks.isEmpty ? null : () => onHunk(1, hunks),
               icon: const Icon(AppIconography.forward, size: 18),
             ),
-            TextButton(onPressed: onAsk, child: const Text('Ask')),
+            TextButton(
+              onPressed: onAsk,
+              child: Text(readerL10n(context).readerUiAsk),
+            ),
             if (onAddFile != null)
               TextButton(
                 key: const Key('review-add-file-compact'),
                 onPressed: onAddFile,
-                child: const Text('Add file'),
+                child: Text(readerL10n(context).readerUiAddFile),
               ),
             TextButton(
               onPressed: (diff.patch ?? diff.after ?? '').isEmpty
                   ? null
                   : onCopy,
-              child: const Text('Copy'),
+              child: Text(readerL10n(context).fileCopy),
             ),
           ],
         ),
@@ -1183,7 +1210,7 @@ class _ReviewDiffToolbar extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${_status(diff)} · +${counts.added} -${counts.removed}',
+                      '${_statusLabel(context, diff)} · +${counts.added} -${counts.removed}',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -1195,9 +1222,12 @@ class _ReviewDiffToolbar extends StatelessWidget {
                 TextButton(
                   key: const Key('review-add-file'),
                   onPressed: onAddFile,
-                  child: const Text('Add file to prompt'),
+                  child: Text(readerL10n(context).readerUiAddFilePrompt),
                 ),
-              TextButton(onPressed: onAsk, child: const Text('Ask about file')),
+              TextButton(
+                onPressed: onAsk,
+                child: Text(readerL10n(context).readerUiAskFile),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -1207,20 +1237,20 @@ class _ReviewDiffToolbar extends StatelessWidget {
               children: [
                 _ModeButton(
                   key: const Key('review-mode-unified'),
-                  label: 'Unified',
+                  label: readerL10n(context).readerUiUnified,
                   selected: mode == ReviewDiffMode.unified,
                   onPressed: () => onModeChanged(ReviewDiffMode.unified),
                 ),
                 _ModeButton(
                   key: const Key('review-mode-split'),
-                  label: 'Split',
+                  label: readerL10n(context).readerUiSplit,
                   selected: mode == ReviewDiffMode.split,
                   onPressed: () => onModeChanged(ReviewDiffMode.split),
                 ),
                 const SizedBox(width: 12),
-                Text('${hunks.length} ${hunks.length == 1 ? 'hunk' : 'hunks'}'),
+                Text(readerL10n(context).readerUiHunkCount(hunks.length)),
                 IconButton(
-                  tooltip: 'Previous hunk',
+                  tooltip: readerL10n(context).readerUiPreviousHunk,
                   onPressed: hunks.isEmpty ? null : () => onHunk(-1, hunks),
                   icon: const RotatedBox(
                     quarterTurns: 2,
@@ -1228,7 +1258,7 @@ class _ReviewDiffToolbar extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Next hunk',
+                  tooltip: readerL10n(context).readerUiNextHunk,
                   onPressed: hunks.isEmpty ? null : () => onHunk(1, hunks),
                   icon: const Icon(AppIconography.forward, size: 18),
                 ),
@@ -1236,7 +1266,7 @@ class _ReviewDiffToolbar extends StatelessWidget {
                   onPressed: (diff.patch ?? diff.after ?? '').isEmpty
                       ? null
                       : onCopy,
-                  child: const Text('Copy patch'),
+                  child: Text(readerL10n(context).reviewCopyPatch),
                 ),
               ],
             ),
@@ -1277,7 +1307,7 @@ class _ReviewPhoneDiffToolbar extends StatelessWidget {
     final canCopy = (diff.patch ?? diff.after ?? '').isNotEmpty;
     return Semantics(
       container: true,
-      label: 'Reviewing ${diff.file}',
+      label: readerL10n(context).readerUiReviewing(diff.file),
       child: Padding(
         key: const Key('review-phone-toolbar'),
         padding: const EdgeInsets.fromLTRB(12, 8, 4, 6),
@@ -1309,7 +1339,7 @@ class _ReviewPhoneDiffToolbar extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${_status(diff)}  +${counts.added} -${counts.removed}',
+                          '${_statusLabel(context, diff)}  +${counts.added} -${counts.removed}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -1322,7 +1352,7 @@ class _ReviewPhoneDiffToolbar extends StatelessWidget {
                 ),
                 PopupMenuButton<_ReviewFileAction>(
                   key: const Key('review-file-actions'),
-                  tooltip: 'File review actions',
+                  tooltip: readerL10n(context).readerUiFileActions,
                   onSelected: (action) {
                     switch (action) {
                       case _ReviewFileAction.ask:
@@ -1334,30 +1364,32 @@ class _ReviewPhoneDiffToolbar extends StatelessWidget {
                     }
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: _ReviewFileAction.ask,
                       child: ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: Icon(AppIconography.chat),
-                        title: Text('Ask about file'),
+                        title: Text(readerL10n(context).readerUiAskFile),
                       ),
                     ),
                     if (onAddFile != null)
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: _ReviewFileAction.addFile,
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: Icon(Icons.add_comment_outlined),
-                          title: Text('Add file to prompt'),
+                          title: Text(
+                            readerL10n(context).readerUiAddFilePrompt,
+                          ),
                         ),
                       ),
                     PopupMenuItem(
                       value: _ReviewFileAction.copy,
                       enabled: canCopy,
-                      child: const ListTile(
+                      child: ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: Icon(AppIcons.copy),
-                        title: Text('Copy patch'),
+                        title: Text(readerL10n(context).reviewCopyPatch),
                       ),
                     ),
                   ],
@@ -1371,7 +1403,7 @@ class _ReviewPhoneDiffToolbar extends StatelessWidget {
                 Expanded(
                   child: _ModeButton(
                     key: const Key('review-mode-unified'),
-                    label: 'Unified',
+                    label: readerL10n(context).readerUiUnified,
                     selected: mode == ReviewDiffMode.unified,
                     onPressed: () => onModeChanged(ReviewDiffMode.unified),
                   ),
@@ -1379,7 +1411,7 @@ class _ReviewPhoneDiffToolbar extends StatelessWidget {
                 Expanded(
                   child: _ModeButton(
                     key: const Key('review-mode-split'),
-                    label: 'Split',
+                    label: readerL10n(context).readerUiSplit,
                     selected: mode == ReviewDiffMode.split,
                     onPressed: () => onModeChanged(ReviewDiffMode.split),
                   ),
@@ -1391,19 +1423,20 @@ class _ReviewPhoneDiffToolbar extends StatelessWidget {
                     '${hunks.length}',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.labelMedium,
-                    semanticsLabel:
-                        '${hunks.length} ${hunks.length == 1 ? 'hunk' : 'hunks'}',
+                    semanticsLabel: readerL10n(
+                      context,
+                    ).readerUiHunkCount(hunks.length),
                   ),
                 ),
                 IconButton(
                   key: const Key('review-previous-hunk'),
-                  tooltip: 'Previous hunk',
+                  tooltip: readerL10n(context).readerUiPreviousHunk,
                   onPressed: hunks.isEmpty ? null : () => onHunk(-1, hunks),
                   icon: const Icon(AppIconography.send, size: 20),
                 ),
                 IconButton(
                   key: const Key('review-next-hunk'),
-                  tooltip: 'Next hunk',
+                  tooltip: readerL10n(context).readerUiNextHunk,
                   onPressed: hunks.isEmpty ? null : () => onHunk(1, hunks),
                   icon: const Icon(AppIconography.down, size: 20),
                 ),
@@ -1543,7 +1576,7 @@ class _ReviewDiffCanvasState extends State<_ReviewDiffCanvas> {
   int firstVisibleSourceIndex() {
     if (!widget.vertical.hasClients) return 0;
     if (!_wrap) {
-      return (widget.vertical.offset / _ReviewDiffCanvas.rowExtent).round();
+      return (widget.vertical.offset / _minRowHeight).round();
     }
     int? best;
     double? bestTop;
@@ -1570,7 +1603,7 @@ class _ReviewDiffCanvasState extends State<_ReviewDiffCanvas> {
     if (!widget.vertical.hasClients) return;
     if (!_wrap) {
       widget.vertical.animateTo(
-        index * _ReviewDiffCanvas.rowExtent,
+        index * _minRowHeight,
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
       );
@@ -1816,10 +1849,20 @@ class _ReviewDiffCanvasState extends State<_ReviewDiffCanvas> {
       builder: (context, constraints) {
         // Phones read a unified diff with soft-wrapped lines; wide layouts
         // and split mode keep the fixed, horizontally panning canvas.
-        _wrap = _ReviewDiffCanvas.wraps(widget.mode, constraints.maxWidth);
-        _minRowHeight = _wrap && _ReviewDiffCanvas._touchPlatform(context)
-            ? _ReviewDiffCanvas.touchRowExtent
-            : _ReviewDiffCanvas.rowExtent;
+        _wrap =
+            widget.mode == ReviewDiffMode.unified &&
+            (ReaderPreferencesScope.maybeOf(context)?.value.wrapCode ??
+                _ReviewDiffCanvas.wraps(widget.mode, constraints.maxWidth));
+        _minRowHeight =
+            (MediaQuery.textScalerOf(context).scale(AppTheme.codeFontSize) *
+                        1.55 +
+                    8)
+                .clamp(
+                  _wrap && _ReviewDiffCanvas._touchPlatform(context)
+                      ? _ReviewDiffCanvas.touchRowExtent
+                      : _ReviewDiffCanvas.rowExtent,
+                  double.infinity,
+                );
         if (_wrap) return _buildCompact(context, constraints);
 
         final list = ListView.builder(
@@ -1827,7 +1870,7 @@ class _ReviewDiffCanvasState extends State<_ReviewDiffCanvas> {
           // Always scrollable so pull-to-refresh works even when the
           // diff fits the viewport.
           physics: const AlwaysScrollableScrollPhysics(),
-          itemExtent: _ReviewDiffCanvas.rowExtent,
+          itemExtent: _minRowHeight,
           itemCount: splitRows?.length ?? lines.length,
           itemBuilder: (context, index) {
             if (splitRows != null) {
@@ -1857,9 +1900,28 @@ class _ReviewDiffCanvasState extends State<_ReviewDiffCanvas> {
             );
           },
         );
+        var longest = '';
+        for (final line in lines) {
+          if (line.text.length > longest.length) longest = line.text;
+        }
+        final painter = TextPainter(
+          text: TextSpan(
+            text: longest,
+            style: TextStyle(
+              fontFamily: AppTheme.monoFamily,
+              fontSize: AppTheme.codeFontSize,
+              height: 1.55,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout();
+        final gutter = MediaQuery.textScalerOf(context).scale(48);
+        final sideWidth = painter.width + gutter + 32;
+        painter.dispose();
         final minimumWidth = widget.mode == ReviewDiffMode.split
-            ? 1040.0
-            : 760.0;
+            ? (sideWidth * 2).clamp(1040.0, double.infinity)
+            : (sideWidth + gutter).clamp(760.0, double.infinity);
         final width = constraints.maxWidth > minimumWidth
             ? constraints.maxWidth
             : minimumWidth;
@@ -1871,6 +1933,7 @@ class _ReviewDiffCanvasState extends State<_ReviewDiffCanvas> {
           child: SingleChildScrollView(
             controller: widget.horizontal,
             scrollDirection: Axis.horizontal,
+            reverse: Directionality.of(context) == TextDirection.rtl,
             child: SizedBox(
               width: width,
               height: constraints.maxHeight,
@@ -1900,7 +1963,7 @@ class _ReviewDiffCanvasState extends State<_ReviewDiffCanvas> {
     }
     final afterLength = _afterLines?.length ?? 0;
     if (afterLength > maxNumber) maxNumber = afterLength;
-    final gutterWidth = _UnifiedDiffRow.compactGutterWidth(maxNumber);
+    final gutterWidth = _UnifiedDiffRow.compactGutterWidth(context, maxNumber);
     final diff = widget.diff;
     return Column(
       children: [
@@ -2132,18 +2195,18 @@ class _CompactHunkBar extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final label = hidden > 0
-        ? '+$hidden line${hidden == 1 ? '' : 's'}'
+        ? readerL10n(context).readerUiHiddenLines(hidden)
         : firstHunk
-        ? 'Start of file'
-        : 'No gap';
+        ? readerL10n(context).readerUiStartFile
+        : readerL10n(context).readerUiNoGap;
     final muted = theme.textTheme.labelMedium?.copyWith(
       color: scheme.onSurfaceVariant,
       fontFamily: AppTheme.monoFamily,
     );
     return Semantics(
       label: hidden > 0
-          ? '$hidden unchanged lines hidden. ${line.text}'
-          : _lineSemantics(line),
+          ? readerL10n(context).readerUiHiddenDescription(hidden, line.text)
+          : _lineSemantics(context, line),
       child: Container(
         color: scheme.primaryContainer.withValues(alpha: .22),
         constraints: BoxConstraints(minHeight: minHeight),
@@ -2153,31 +2216,39 @@ class _CompactHunkBar extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              InkWell(
-                onTap: onExpand,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        AppIconography.chevronUp,
-                        size: 20,
-                        color: onExpand == null
-                            ? AppTheme.mutedOf(theme)
-                            : scheme.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        label,
-                        style: muted?.copyWith(
+              // The label yields to narrow, large-text layouts by wrapping
+              // instead of pushing the hunk header off the canvas.
+              Flexible(
+                child: InkWell(
+                  onTap: onExpand,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          AppIconography.chevronUp,
+                          size: 20,
                           color: onExpand == null
-                              ? scheme.onSurfaceVariant
+                              ? AppTheme.mutedOf(theme)
                               : scheme.primary,
-                          fontWeight: FontWeight.w600,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: muted?.copyWith(
+                              color: onExpand == null
+                                  ? scheme.onSurfaceVariant
+                                  : scheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -2227,7 +2298,7 @@ class _CompactExpandBar extends StatelessWidget {
     final scheme = theme.colorScheme;
     return Semantics(
       button: true,
-      label: 'Expand. $remaining unchanged lines hidden below',
+      label: readerL10n(context).readerUiExpandDescription(remaining),
       child: InkWell(
         onTap: onTap,
         child: Container(
@@ -2248,7 +2319,7 @@ class _CompactExpandBar extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '$remaining more',
+                readerL10n(context).readerUiMoreCount(remaining),
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                   fontFamily: AppTheme.monoFamily,
@@ -2287,10 +2358,20 @@ class _UnifiedDiffRow extends StatelessWidget {
   final double gutterWidth;
 
   /// Room for the widest line number plus padding, per column.
-  static double compactGutterWidth(int maxNumber) {
-    final digits = maxNumber.toString().length;
-    final width = digits * 7.5 + 8;
-    return width < 30 ? 30 : width;
+  static double compactGutterWidth(BuildContext context, int maxNumber) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: '$maxNumber',
+        style: Theme.of(
+          context,
+        ).textTheme.labelSmall?.copyWith(fontFamily: AppTheme.monoFamily),
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final width = (painter.width + 8).clamp(30.0, double.infinity);
+    painter.dispose();
+    return width;
   }
 
   @override
@@ -2303,12 +2384,13 @@ class _UnifiedDiffRow extends StatelessWidget {
     return Semantics(
       button: onTap != null,
       selected: selected,
-      label: _lineSemantics(line),
+      label: _lineSemantics(context, line),
       child: InkWell(
         onTap: onTap,
         child: Container(
           color: background,
           child: Row(
+            textDirection: TextDirection.ltr,
             children: [
               _LineNumber(value: line.oldLine),
               _LineNumber(value: line.newLine),
@@ -2320,6 +2402,7 @@ class _UnifiedDiffRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.clip,
                   softWrap: false,
+                  textDirection: TextDirection.ltr,
                   style: TextStyle(
                     fontFamily: AppTheme.monoFamily,
                     fontSize: AppTheme.codeFontSize,
@@ -2353,6 +2436,7 @@ class _UnifiedDiffRow extends StatelessWidget {
       color: AppTheme.mutedOf(theme),
     );
     final row = Row(
+      textDirection: TextDirection.ltr,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // 3px change bar at the far left of the gutter; nothing on
@@ -2377,6 +2461,7 @@ class _UnifiedDiffRow extends StatelessWidget {
             child: Text(
               line.text.isEmpty ? ' ' : line.text,
               softWrap: true,
+              textDirection: TextDirection.ltr,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontFamily: AppTheme.monoFamily,
                 height: 1.4,
@@ -2392,7 +2477,7 @@ class _UnifiedDiffRow extends StatelessWidget {
     return Semantics(
       button: onTap != null,
       selected: selected,
-      label: _lineSemantics(line),
+      label: _lineSemantics(context, line),
       child: InkWell(
         onTap: onTap,
         child: Container(
@@ -2423,7 +2508,7 @@ class _CompactLineNumber extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: width,
-    alignment: AlignmentDirectional.topEnd,
+    alignment: Alignment.topRight,
     padding: const EdgeInsets.only(top: 6, right: 4),
     child: Text(value?.toString() ?? '', style: style, maxLines: 1),
   );
@@ -2466,6 +2551,7 @@ class _SplitDiffRow extends StatelessWidget {
                 old: true,
               )
             : Row(
+                textDirection: TextDirection.ltr,
                 children: [
                   Expanded(child: _SplitCell(line: left, old: true)),
                   VerticalDivider(width: 1, color: AppTheme.hairline(theme)),
@@ -2491,6 +2577,7 @@ class _SplitCell extends StatelessWidget {
     return Container(
       color: _lineBackground(theme, value.kind),
       child: Row(
+        textDirection: TextDirection.ltr,
         children: [
           _LineNumber(value: old ? value.oldLine : value.newLine),
           Container(width: 2, color: _lineAccent(theme, value.kind)),
@@ -2500,6 +2587,7 @@ class _SplitCell extends StatelessWidget {
               value.text.isEmpty ? ' ' : value.text,
               maxLines: 1,
               softWrap: false,
+              textDirection: TextDirection.ltr,
               overflow: TextOverflow.clip,
               style: TextStyle(
                 fontFamily: AppTheme.monoFamily,
@@ -2522,7 +2610,7 @@ class _LineNumber extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    width: 48,
+    width: MediaQuery.textScalerOf(context).scale(48),
     alignment: Alignment.centerRight,
     padding: const EdgeInsets.only(right: 8),
     color: Theme.of(context).colorScheme.surfaceContainerLow,
@@ -2569,36 +2657,39 @@ class _ReviewSelectionBar extends StatelessWidget {
         border: Border(top: BorderSide(color: AppTheme.hairline(theme))),
       ),
       padding: const EdgeInsets.fromLTRB(14, 8, 10, 8),
-      child: Row(
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 4,
+        runSpacing: 4,
         children: [
-          Expanded(
-            child: Text(
-              hunk
-                  ? 'Hunk selected · $count ${count == 1 ? 'line' : 'lines'}'
-                  : '$count ${count == 1 ? 'line' : 'lines'} selected',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge,
-            ),
+          Text(
+            hunk
+                ? readerL10n(context).readerUiHunkSelected(count)
+                : readerL10n(context).readerUiSelectionCount(count),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelLarge,
           ),
           // Icon actions keep the bar within a 360 dp phone at large text
           // scales; tooltips and semantics carry the labels.
           IconButton(
             key: const Key('review-selection-clear'),
-            tooltip: 'Clear selection',
+            tooltip: readerL10n(context).readerUiClearSelection,
             onPressed: onClear,
             icon: const Icon(AppIconography.close, size: 20),
           ),
           IconButton(
             key: const Key('review-selection-copy'),
-            tooltip: 'Copy selection',
+            tooltip: readerL10n(context).readerUiCopySelection,
             onPressed: onCopy,
             icon: const Icon(AppIcons.copy, size: 20),
           ),
           if (onAdd != null)
             IconButton(
               key: const Key('review-selection-add'),
-              tooltip: hunk ? 'Add hunk to prompt' : 'Add selection to prompt',
+              tooltip: hunk
+                  ? readerL10n(context).readerUiAddHunk
+                  : readerL10n(context).readerUiAddSelection,
               onPressed: onAdd,
               icon: const Icon(Icons.add_comment_outlined, size: 20),
             ),
@@ -2606,7 +2697,7 @@ class _ReviewSelectionBar extends StatelessWidget {
           FilledButton(
             key: const Key('review-comment-action'),
             onPressed: onComment,
-            child: const Text('Comment'),
+            child: Text(readerL10n(context).readerUiComment),
           ),
         ],
       ),
@@ -2637,7 +2728,7 @@ class _ReviewHunkBar extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              '${hunks.length} ${hunks.length == 1 ? 'hunk' : 'hunks'}',
+              readerL10n(context).readerUiHunkCount(hunks.length),
               style: theme.textTheme.labelMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -2645,13 +2736,13 @@ class _ReviewHunkBar extends StatelessWidget {
           ),
           IconButton(
             key: const Key('review-hunk-bar-previous'),
-            tooltip: 'Previous hunk',
+            tooltip: readerL10n(context).readerUiPreviousHunk,
             onPressed: () => onHunk(-1, hunks),
             icon: const Icon(AppIconography.send, size: 20),
           ),
           IconButton(
             key: const Key('review-hunk-bar-next'),
-            tooltip: 'Next hunk',
+            tooltip: readerL10n(context).readerUiNextHunk,
             onPressed: () => onHunk(1, hunks),
             icon: const Icon(AppIconography.down, size: 20),
           ),
@@ -2701,7 +2792,10 @@ class _ReviewCommentComposerState extends State<_ReviewCommentComposer> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Comment on change', style: theme.textTheme.titleLarge),
+            Text(
+              readerL10n(context).readerUiCommentChange,
+              style: theme.textTheme.titleLarge,
+            ),
             const SizedBox(height: 4),
             Text(
               '${widget.file} · ${widget.selectionLabel}',
@@ -2719,8 +2813,8 @@ class _ReviewCommentComposerState extends State<_ReviewCommentComposer> {
               minLines: 3,
               maxLines: 7,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                hintText: 'What should OpenCode inspect or change?',
+              decoration: InputDecoration(
+                hintText: readerL10n(context).readerUiCommentHint,
               ),
               onSubmitted: (_) => _submit(),
             ),
@@ -2735,14 +2829,14 @@ class _ReviewCommentComposerState extends State<_ReviewCommentComposer> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(readerL10n(context).projectFolderCancel),
                 ),
                 ListenableBuilder(
                   listenable: _controller,
                   builder: (context, _) => FilledButton(
                     key: const Key('review-add-to-prompt'),
                     onPressed: _controller.text.trim().isEmpty ? null : _submit,
-                    child: const Text('Add to prompt'),
+                    child: Text(readerL10n(context).readerUiAddPrompt),
                   ),
                 ),
               ],
@@ -2815,11 +2909,11 @@ class _ReviewEmptyState extends StatelessWidget {
   const _ReviewEmptyState();
 
   @override
-  Widget build(BuildContext context) => const ProductEmptyState(
+  Widget build(BuildContext context) => ProductEmptyState(
     key: Key('review-empty'),
     icon: AppIconography.review,
-    title: 'No changes to review',
-    message: 'OpenCode has not changed any files in this session.',
+    title: readerL10n(context).readerUiNoChanges,
+    message: readerL10n(context).readerUiNoChangesHint,
   );
 }
 
@@ -2841,12 +2935,11 @@ class _NoDiffContent extends StatelessWidget {
   const _NoDiffContent();
 
   @override
-  Widget build(BuildContext context) => const ProductEmptyState(
+  Widget build(BuildContext context) => ProductEmptyState(
     key: Key('review-no-content'),
     icon: AppIconography.fileText,
-    title: 'Diff content unavailable',
-    message:
-        'The server reported this file but did not include a patch or file contents.',
+    title: readerL10n(context).readerUiDiffUnavailable,
+    message: readerL10n(context).readerUiDiffUnavailableHint,
   );
 }
 
@@ -3084,16 +3177,18 @@ Color? _lineForeground(ThemeData theme, _ReviewLineKind kind) => switch (kind) {
   _ => null,
 };
 
-String _lineSemantics(_ReviewDiffLine line) {
+String _lineSemantics(BuildContext context, _ReviewDiffLine line) {
   final kind = switch (line.kind) {
-    _ReviewLineKind.added => 'Added',
-    _ReviewLineKind.removed => 'Removed',
-    _ReviewLineKind.context => 'Unchanged',
-    _ReviewLineKind.hunk => 'Hunk',
-    _ReviewLineKind.metadata => 'Metadata',
+    _ReviewLineKind.added => readerL10n(context).readerUiAdded,
+    _ReviewLineKind.removed => readerL10n(context).readerUiRemoved,
+    _ReviewLineKind.context => readerL10n(context).readerUiUnchanged,
+    _ReviewLineKind.hunk => readerL10n(context).readerUiHunk,
+    _ReviewLineKind.metadata => readerL10n(context).readerUiMetadata,
   };
   final number = line.newLine ?? line.oldLine;
-  return '$kind${number == null ? '' : ' line $number'}: ${line.text}';
+  return number == null
+      ? readerL10n(context).reviewNoteDescription(kind, line.text)
+      : readerL10n(context).reviewLineDescription(kind, number, line.text);
 }
 
 String _basename(String path) {
@@ -3161,3 +3256,14 @@ Color _additionColor(ThemeData theme) => AppTheme.successOf(theme);
 Color _additionBackground(ThemeData theme) => AppTheme.successOf(
   theme,
 ).withValues(alpha: theme.brightness == Brightness.dark ? .18 : .22);
+
+AppLocalizations readerL10n(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));
+
+String _statusLabel(BuildContext context, FileDiff diff) =>
+    switch (_status(diff)) {
+      "added" => readerL10n(context).readerUiStatusAdded,
+      "deleted" => readerL10n(context).readerUiStatusDeleted,
+      "modified" => readerL10n(context).readerUiStatusModified,
+      _ => _status(diff),
+    };

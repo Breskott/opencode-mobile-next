@@ -402,7 +402,7 @@ extension _ChatVoiceConversation on _ChatScreenState {
             _voiceReplyState == _VoiceReplyState.failed);
     final colors = Theme.of(context).colorScheme;
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      margin: const EdgeInsetsDirectional.fromSTEB(12, 4, 12, 8),
       decoration: BoxDecoration(
         color: colors.surfaceContainer,
         borderRadius: BorderRadius.circular(20),

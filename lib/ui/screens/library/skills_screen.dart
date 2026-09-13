@@ -46,7 +46,9 @@ class _SkillsScreenState extends State<SkillsScreen> {
       _load();
     } else {
       setState(
-        () => _error = AppLocalizations.of(context).skillLocationChanged,
+        () => _error = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).skillLocationChanged,
       );
     }
   }
@@ -60,7 +62,9 @@ class _SkillsScreenState extends State<SkillsScreen> {
   Future<void> _load() async {
     if (widget.sessionID != null && _location != _chatLocation) {
       setState(
-        () => _error = AppLocalizations.of(context).skillLocationChanged,
+        () => _error = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).skillLocationChanged,
       );
       return;
     }
@@ -70,7 +74,11 @@ class _SkillsScreenState extends State<SkillsScreen> {
       final repository = await widget.controller.prepareActionRepository();
       if (!mounted || generation != _loadGeneration) return;
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryOpenCodeIsReconnecting,
+        );
       }
       final skills = await repository.listSkills();
       if (!mounted || generation != _loadGeneration) return;
@@ -89,7 +97,13 @@ class _SkillsScreenState extends State<SkillsScreen> {
   Widget build(BuildContext context) => widget.embedded
       ? _body()
       : Scaffold(
-          appBar: AppBar(title: const Text('Skills')),
+          appBar: AppBar(
+            title: Text(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibrarySkills,
+            ),
+          ),
           body: _body(),
         );
 
@@ -106,10 +120,14 @@ class _SkillsScreenState extends State<SkillsScreen> {
       : _skills!.isEmpty
       ? RefreshIndicator(
           onRefresh: _load,
-          child: const ProductEmptyState(
+          child: ProductEmptyState(
             icon: Icons.extension_off_outlined,
-            title: 'No skills available',
-            message: 'Project and global OpenCode skills appear here.',
+            title: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryNoSkillsAvailable,
+            message: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryProjectAndGlobalOpenCodeSkillsAppearHere,
           ),
         )
       : RefreshIndicator(
@@ -170,7 +188,7 @@ class _SkillsScreenState extends State<SkillsScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 12),
                 child: SelectableText(
                   skill.location,
                   style: TextStyle(

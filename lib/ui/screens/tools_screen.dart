@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+
+import '../../l10n/app_localizations.dart';
+
 import 'package:flutter/services.dart';
 
 import '../../api/models.dart';
@@ -69,8 +72,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
     if (!mounted || generation != _generation) return;
     if (repository == null) {
       setState(() {
-        _toolsError = const ProductException(
-          'OpenCode is reconnecting. Try again.',
+        _toolsError = ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryOpenCodeIsReconnectingTryAgain,
         );
       });
       return;
@@ -123,10 +128,16 @@ class _ToolsScreenState extends State<ToolsScreen> {
     if (widget.embedded) return body;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tools and capabilities'),
+        title: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryToolsAndCapabilities,
+        ),
         actions: [
           IconButton(
-            tooltip: 'Refresh tools',
+            tooltip: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryRefreshTools,
             onPressed: _model == null ? null : _load,
             icon: const Icon(AppIconography.retry),
           ),
@@ -138,10 +149,15 @@ class _ToolsScreenState extends State<ToolsScreen> {
 
   Widget _noModel() => ProductEmptyState(
     icon: AppIconography.tools,
-    title: 'Choose a model',
-    message:
-        'OpenCode tools depend on the provider and model used by the active chat.',
-    actionLabel: 'Choose model',
+    title: lookupAppLocalizations(
+      Localizations.localeOf(context),
+    ).modelChooseTitle,
+    message: lookupAppLocalizations(
+      Localizations.localeOf(context),
+    ).e7LibraryOpenCodeToolsDependOnTheProviderAnd,
+    actionLabel: lookupAppLocalizations(
+      Localizations.localeOf(context),
+    ).e7LibraryChooseModel,
     onAction: _chooseModel,
   );
 
@@ -151,66 +167,30 @@ class _ToolsScreenState extends State<ToolsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        InkWell(
-          key: const Key('tools-model-summary'),
-          onTap: _chooseModel,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-            child: Row(
-              children: [
-                const Icon(AppIconography.model),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _modelName(model),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${model.providerID}/${model.modelID}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontFamily: AppTheme.monoFamily),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (widget.embedded)
-                  IconButton(
-                    tooltip: 'Refresh tools',
-                    onPressed: _load,
-                    icon: const Icon(AppIconography.retry),
-                  ),
-                TextButton(
-                  onPressed: _chooseModel,
-                  child: const Text('Change'),
-                ),
-              ],
-            ),
-          ),
-        ),
+        _modelHeader(model),
         const Divider(height: 1),
         _capabilitySummary(),
         const Divider(height: 1),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
           child: TextField(
             key: const Key('tools-search'),
             controller: _search,
             decoration: InputDecoration(
               hintText: tools == null
-                  ? 'Search tools'
-                  : 'Search ${tools.length} tools',
+                  ? lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibrarySearchTools
+                  : lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibrarySearchTools2((tools.length).toString()),
               prefixIcon: const Icon(AppIconography.search),
               suffixIcon: _query.isEmpty
                   ? null
                   : IconButton(
-                      tooltip: 'Clear search',
+                      tooltip: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).commonClearSearch,
                       onPressed: () {
                         _search.clear();
                         setState(() => _query = '');
@@ -228,29 +208,120 @@ class _ToolsScreenState extends State<ToolsScreen> {
     );
   }
 
+  Widget _modelHeader(ModelRef model) => InkWell(
+    key: const Key('tools-model-summary'),
+    onTap: _chooseModel,
+    child: Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+          final stacked = MediaQuery.textScalerOf(context).scale(14) > 20;
+          final summary = Row(
+            children: [
+              const Icon(AppIconography.model),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _modelName(model),
+                      maxLines: stacked ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${model.providerID}/${model.modelID}',
+                      textDirection: TextDirection.ltr,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontFamily: AppTheme.monoFamily),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+          final actions = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.embedded)
+                IconButton(
+                  tooltip: l10n.e7LibraryRefreshTools,
+                  onPressed: _load,
+                  icon: const Icon(AppIconography.retry),
+                ),
+              TextButton(
+                onPressed: _chooseModel,
+                child: Text(l10n.e7LibraryChange),
+              ),
+            ],
+          );
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                summary,
+                const SizedBox(height: 4),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: actions,
+                ),
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: summary),
+              const SizedBox(width: 8),
+              actions,
+            ],
+          );
+        },
+      ),
+    ),
+  );
+
   Widget _capabilitySummary() {
     final theme = Theme.of(context);
     final tools = _tools;
     final registered = _registeredIDs;
     final capabilities = _capabilities;
     final values = <String>[
-      if (tools != null) '${tools.length} usable',
-      if (registered != null) '${registered.length} registered',
+      if (tools != null)
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryUsable((tools.length).toString()),
+      if (registered != null)
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryRegistered((registered.length).toString()),
       if (capabilities != null)
         capabilities.backgroundSubagents
-            ? 'Background subagents enabled'
-            : 'Background subagents unavailable',
+            ? lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryBackgroundSubagentsEnabled
+            : lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryBackgroundSubagentsUnavailable,
     ];
     final errors = [
-      if (_registeredError != null) 'registered inventory unavailable',
-      if (_capabilitiesError != null) 'server capability unavailable',
+      if (_registeredError != null)
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryRegisteredInventoryUnavailable,
+      if (_capabilitiesError != null)
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryServerCapabilityUnavailable,
     ];
     return Semantics(
       container: true,
       excludeSemantics: true,
       label: [...values, ...errors].join(', '),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 10),
         child: Wrap(
           spacing: 12,
           runSpacing: 4,
@@ -296,10 +367,20 @@ class _ToolsScreenState extends State<ToolsScreen> {
     if (callable.isEmpty && registeredOnly.isEmpty) {
       return ProductEmptyState(
         icon: _query.isEmpty ? AppIconography.tools : Icons.search_off_rounded,
-        title: _query.isEmpty ? 'No tools for this model' : 'No matching tools',
+        title: _query.isEmpty
+            ? lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryNoToolsForThisModel
+            : lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryNoMatchingTools,
         message: _query.isEmpty
-            ? 'OpenCode returned no callable tools for this provider and model.'
-            : 'Try a tool ID or a word from its description.',
+            ? lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryOpenCodeReturnedNoCallableToolsForThis
+            : lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryTryAToolIDOrAWord,
       );
     }
     return RefreshIndicator(
@@ -309,7 +390,11 @@ class _ToolsScreenState extends State<ToolsScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           if (callable.isNotEmpty) ...[
-            const SectionLabel('Callable by this model'),
+            SectionLabel(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryCallableByThisModel,
+            ),
             for (var index = 0; index < callable.length; index++) ...[
               _callableToolRow(callable[index]),
               if (index < callable.length - 1)
@@ -317,7 +402,11 @@ class _ToolsScreenState extends State<ToolsScreen> {
             ],
           ],
           if (registeredOnly.isNotEmpty) ...[
-            const SectionLabel('Registered, not callable'),
+            SectionLabel(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryRegisteredNotCallable,
+            ),
             for (var index = 0; index < registeredOnly.length; index++) ...[
               _registeredToolRow(registeredOnly[index]),
               if (index < registeredOnly.length - 1)
@@ -334,7 +423,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
     key: Key('coding-tool-${tool.id}'),
     onTap: () => _showTool(tool),
     child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -344,12 +433,15 @@ class _ToolsScreenState extends State<ToolsScreen> {
               children: [
                 Text(
                   tool.id,
+                  textDirection: TextDirection.ltr,
                   style: const TextStyle(fontFamily: AppTheme.monoFamily),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   tool.description.isEmpty
-                      ? 'No description returned by OpenCode'
+                      ? lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryNoDescriptionReturnedByOpenCode
                       : tool.description,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
@@ -366,15 +458,19 @@ class _ToolsScreenState extends State<ToolsScreen> {
 
   Widget _registeredToolRow(String id) => Padding(
     key: Key('registered-tool-$id'),
-    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+    padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(id, style: const TextStyle(fontFamily: AppTheme.monoFamily)),
         const SizedBox(height: 4),
         Text(
-          'Registered on this project but not returned for '
-          '${_model!.providerID}/${_model!.modelID}.',
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryRegisteredOnThisProjectButNotReturned(
+            (_model!.providerID).toString(),
+            (_model!.modelID).toString(),
+          ),
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -397,7 +493,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 12, 14),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 12, 14),
               child: Row(
                 children: [
                   Expanded(
@@ -409,12 +505,20 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Copy parameter schema',
+                    tooltip: lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryCopyParameterSchema,
                     onPressed: () async {
                       await Clipboard.setData(ClipboardData(text: schema));
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('${tool.id} schema copied')),
+                          SnackBar(
+                            content: Text(
+                              lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7LibrarySchemaCopied((tool.id).toString()),
+                            ),
+                          ),
                         );
                       }
                     },
@@ -431,16 +535,31 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   children: [
                     if (tool.description.isNotEmpty)
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                          20,
+                          0,
+                          20,
+                          16,
+                        ),
                         child: SelectableText(tool.description),
                       ),
                     const Divider(height: 1),
-                    const SectionLabel('Parameter schema'),
+                    SectionLabel(
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryParameterSchema,
+                    ),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        20,
+                        4,
+                        20,
+                        24,
+                      ),
                       child: SelectableText(
                         schema,
+                        textDirection: TextDirection.ltr,
                         key: const Key('tool-parameter-schema'),
                         style: const TextStyle(
                           fontFamily: AppTheme.monoFamily,

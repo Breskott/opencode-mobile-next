@@ -13,6 +13,7 @@ import '../../state/review_handoff.dart';
 import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../widgets/file_preview.dart';
+import '../widgets/reader_preferences.dart';
 import '../widgets/product_states.dart';
 import 'review_workspace.dart';
 import '../app_theme.dart';
@@ -307,7 +308,7 @@ class _FilesScreenState extends State<FilesScreen> {
       final api = await widget.controller.prepareActionTransport();
       if (!mounted || generation != _requestGeneration) return;
       if (api == null) {
-        throw const ProductException('The server is not connected.');
+        throw ProductException(readerL10n(context).readerUiDisconnected);
       }
       final repository = widget.controller.repository;
       if (repository != null) {
@@ -356,7 +357,7 @@ class _FilesScreenState extends State<FilesScreen> {
       final api = await widget.controller.prepareActionTransport();
       if (!mounted || generation != _requestGeneration) return;
       if (api == null) {
-        throw const ProductException('The server is not connected.');
+        throw ProductException(readerL10n(context).readerUiDisconnected);
       }
       final repository = widget.controller.repository;
       if (repository != null) {
@@ -395,7 +396,7 @@ class _FilesScreenState extends State<FilesScreen> {
     }
     if (repository == null) {
       setState(() {
-        _fileStatusesError = 'OpenCode is reconnecting. Try again shortly.';
+        _fileStatusesError = readerL10n(context).readerUiReconnectingRetry;
       });
       return;
     }
@@ -471,8 +472,8 @@ class _FilesScreenState extends State<FilesScreen> {
       }
       setState(() {
         _fileStatusesError = _fileStatuses.isEmpty
-            ? 'File change indicators are unavailable on this server.'
-            : 'File change indicators could not refresh.';
+            ? readerL10n(context).readerUiIndicatorsUnavailable
+            : readerL10n(context).readerUiIndicatorsFailed;
       });
     } finally {
       if (generation == _fileStatusesGeneration &&
@@ -508,7 +509,7 @@ class _FilesScreenState extends State<FilesScreen> {
       if (!mounted || generation != _requestGeneration) return;
       final repository = widget.controller.repository;
       if (repository == null) {
-        throw const ProductException('The server is not connected.');
+        throw ProductException(readerL10n(context).readerUiDisconnected);
       }
       final results = await repository.findWorkspaceSymbols(value);
       if (!mounted || generation != _requestGeneration) return;
@@ -589,7 +590,7 @@ class _FilesScreenState extends State<FilesScreen> {
             ? ReviewReferenceKind.file
             : ReviewReferenceKind.changedFile,
         path: path,
-        lineLabel: line == null ? null : 'line $line',
+        lineLabel: line == null ? null : readerL10n(context).readerUiLine(line),
         added: change?.additions,
         removed: change?.deletions,
         status: change?.status,
@@ -656,12 +657,15 @@ class _FilesScreenState extends State<FilesScreen> {
     final outcome = handoff.stage(reference);
     if (!mounted) return;
     final message = switch (outcome) {
-      ReviewStageOutcome.staged => 'Added ${reference.label} to the prompt',
-      ReviewStageOutcome.duplicate =>
-        '${reference.label} is already on the prompt',
-      ReviewStageOutcome.full =>
-        'The prompt already holds '
-            '${ReviewHandoffStore.maxPerSession} references',
+      ReviewStageOutcome.staged => readerL10n(
+        context,
+      ).readerUiReferenceAdded(reference.label),
+      ReviewStageOutcome.duplicate => readerL10n(
+        context,
+      ).readerUiReferenceDuplicate(reference.label),
+      ReviewStageOutcome.full => readerL10n(
+        context,
+      ).readerUiReferenceFull(ReviewHandoffStore.maxPerSession),
     };
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -673,6 +677,7 @@ class _FilesScreenState extends State<FilesScreen> {
   }
 
   Future<void> _reviewChanges() async {
+    final copy = readerL10n(context);
     final prompt = await Navigator.of(context).push<String>(
       MaterialPageRoute<String>(
         builder: (_) => ReviewWorkspace(
@@ -682,7 +687,7 @@ class _FilesScreenState extends State<FilesScreen> {
             final repository = await widget.controller
                 .prepareActionRepository();
             if (repository == null) {
-              throw const ProductException('OpenCode is reconnecting.');
+              throw ProductException(copy.readerUiReconnecting);
             }
             return repository.listVcsDiffs(VcsDiffMode.workingTree);
           },
@@ -693,6 +698,7 @@ class _FilesScreenState extends State<FilesScreen> {
   }
 
   Future<void> _reviewFileChange(FileNode node) async {
+    final copy = readerL10n(context);
     final prompt = await Navigator.of(context).push<String>(
       MaterialPageRoute<String>(
         builder: (_) => ReviewWorkspace(
@@ -703,7 +709,7 @@ class _FilesScreenState extends State<FilesScreen> {
             final repository = await widget.controller
                 .prepareActionRepository();
             if (repository == null) {
-              throw const ProductException('OpenCode is reconnecting.');
+              throw ProductException(copy.readerUiReconnecting);
             }
             return repository.listVcsDiffs(VcsDiffMode.workingTree);
           },
@@ -723,20 +729,14 @@ class _FilesScreenState extends State<FilesScreen> {
     if (callback != null) {
       callback(reviewPrompt);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Review comment added. Return to the chat to continue.',
-          ),
-        ),
+        SnackBar(content: Text(readerL10n(context).readerUiCommentAdded)),
       );
       return;
     }
     await Clipboard.setData(ClipboardData(text: reviewPrompt));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Review comment copied. Paste it into a chat.'),
-      ),
+      SnackBar(content: Text(readerL10n(context).readerUiCommentCopied)),
     );
   }
 
@@ -758,6 +758,7 @@ class _FilesScreenState extends State<FilesScreen> {
     final l10n =
         Localizations.of<AppLocalizations>(context, AppLocalizations) ??
         lookupAppLocalizations(Localizations.localeOf(context));
+    final readerPreferences = ReaderPreferencesScope.maybeOf(context);
     final crumbs = _path.split('/').where((c) => c.isNotEmpty).toList();
 
     return Column(
@@ -792,7 +793,9 @@ class _FilesScreenState extends State<FilesScreen> {
                             minimumSize: const Size(48, 48),
                           ),
                           child: Text(
-                            surface == _FileSurface.files ? 'Files' : 'Symbols',
+                            surface == _FileSurface.files
+                                ? readerL10n(context).readerUiFiles
+                                : readerL10n(context).readerUiSymbols,
                           ),
                         ),
                       ),
@@ -811,23 +814,59 @@ class _FilesScreenState extends State<FilesScreen> {
               isDense: true,
               prefixIcon: const Icon(AppIconography.search, size: 20),
               hintText: _surface == _FileSurface.symbols
-                  ? 'Search symbols'
-                  : 'Search files',
-              suffixIcon: _search.text.isEmpty
-                  ? null
-                  : IconButton(
+                  ? readerL10n(context).readerUiSearchSymbols
+                  : readerL10n(context).readerUiSearchFiles,
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_search.text.isNotEmpty)
+                    IconButton(
                       tooltip: _surface == _FileSurface.symbols
-                          ? 'Clear symbol search'
-                          : 'Clear file search',
+                          ? readerL10n(context).readerUiClearSymbolSearch
+                          : readerL10n(context).readerUiClearFileSearch,
                       icon: Icon(
                         AppIconography.close,
                         size: 18,
                         semanticLabel: _surface == _FileSurface.symbols
-                            ? 'Clear symbol search'
-                            : 'Clear file search',
+                            ? readerL10n(context).readerUiClearSymbolSearch
+                            : readerL10n(context).readerUiClearFileSearch,
                       ),
                       onPressed: _clearSearch,
                     ),
+                  if (_surface == _FileSurface.files &&
+                      readerPreferences != null)
+                    PopupMenuButton<bool>(
+                      tooltip: l10n.readerUiFileOrder,
+                      initialValue: readerPreferences.value.sourceFirst,
+                      onSelected: (sourceFirst) => saveReaderPreferences(
+                        context,
+                        sourceFirst: sourceFirst,
+                      ),
+                      itemBuilder: (context) => [
+                        CheckedPopupMenuItem(
+                          value: false,
+                          checked: !readerPreferences.value.sourceFirst,
+                          child: Text(l10n.readerUiServerOrder),
+                        ),
+                        CheckedPopupMenuItem(
+                          value: true,
+                          checked: readerPreferences.value.sourceFirst,
+                          child: Text(l10n.readerUiSourceFirst),
+                        ),
+                        PopupMenuItem<bool>(
+                          enabled: false,
+                          child: Text(l10n.readerUiOrderHint),
+                        ),
+                      ],
+                      icon: Icon(
+                        Icons.sort_rounded,
+                        color: readerPreferences.value.sourceFirst
+                            ? theme.colorScheme.primary
+                            : null,
+                      ),
+                    ),
+                ],
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -855,7 +894,7 @@ class _FilesScreenState extends State<FilesScreen> {
                   ),
                   for (var i = 1; i <= crumbs.length; i++)
                     Padding(
-                      padding: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsetsDirectional.only(start: 6),
                       child: i == crumbs.length
                           ? Semantics(
                               selected: true,
@@ -918,7 +957,7 @@ class _FilesScreenState extends State<FilesScreen> {
                     child: _selectedPath == null
                         ? Center(
                             child: Text(
-                              'Select a file to preview',
+                              readerL10n(context).readerUiSelectFile,
                               style: TextStyle(color: AppTheme.mutedOf(theme)),
                             ),
                           )
@@ -978,10 +1017,12 @@ class _FilesScreenState extends State<FilesScreen> {
         onRefresh: _refreshFiles,
         child: ProductEmptyState(
           icon: Icons.folder_off_outlined,
-          title: _search.text.isEmpty ? 'Folder is empty' : 'No files found',
+          title: _search.text.isEmpty
+              ? readerL10n(context).readerUiEmptyFolder
+              : readerL10n(context).readerUiNoFiles,
           message: _search.text.isEmpty
-              ? 'Pull down to refresh this folder.'
-              : 'Try a different file name.',
+              ? readerL10n(context).readerUiPullRefresh
+              : readerL10n(context).readerUiTryFileName,
         ),
       );
     }
@@ -1137,7 +1178,7 @@ class _FilesScreenState extends State<FilesScreen> {
       if (node.isDir && !deleted)
         ContextMenuAction(
           menuKey: const ValueKey('file-menu-open'),
-          label: 'Open folder',
+          label: readerL10n(context).readerUiOpenFolder,
           icon: AppIconography.folderOpen,
           onSelected: () => _navigateTo(node.path),
         )
@@ -1151,14 +1192,14 @@ class _FilesScreenState extends State<FilesScreen> {
         if (widget.onAttachFile != null)
           ContextMenuAction(
             menuKey: const ValueKey('file-menu-attach'),
-            label: 'Attach to prompt',
+            label: readerL10n(context).readerUiAttachPrompt,
             icon: AppIconography.attach,
             onSelected: () => unawaited(_attachFile(path)),
           ),
         if (widget.handoff != null)
           ContextMenuAction(
             menuKey: const ValueKey('file-menu-reference'),
-            label: 'Add as reference',
+            label: readerL10n(context).readerUiAddReference,
             icon: Icons.add_link_rounded,
             onSelected: () => _stageProjectFile(path, null),
           ),
@@ -1166,13 +1207,13 @@ class _FilesScreenState extends State<FilesScreen> {
       if (change != null)
         ContextMenuAction(
           menuKey: const ValueKey('file-menu-review'),
-          label: 'Open in Review',
+          label: readerL10n(context).readerUiOpenReview,
           icon: AppIconography.review,
           onSelected: () => unawaited(_reviewFileChange(node)),
         ),
       ContextMenuAction(
         menuKey: const ValueKey('file-menu-copy-path'),
-        label: 'Copy path',
+        label: readerL10n(context).readerUiCopyPath,
         icon: AppIcons.copy,
         onSelected: () => unawaited(_copyPath(path)),
       ),
@@ -1183,6 +1224,7 @@ class _FilesScreenState extends State<FilesScreen> {
   /// the same thing once it has the content; this fetches the content first
   /// so the menu does not need the viewer open.
   Future<void> _attachFile(String path) async {
+    final copy = readerL10n(context);
     final action = widget.onAttachFile;
     if (action == null) return;
     final profileID = widget.controller.profile?.id;
@@ -1191,7 +1233,7 @@ class _FilesScreenState extends State<FilesScreen> {
     try {
       final api = await widget.controller.prepareActionTransport();
       if (api == null) {
-        throw const ProductException('The server is not connected.');
+        throw ProductException(copy.readerUiDisconnected);
       }
       if ((initialApi != null && !identical(api, initialApi)) ||
           !_matchesFileScope(
@@ -1220,7 +1262,7 @@ class _FilesScreenState extends State<FilesScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${path.split('/').last} attached.')),
+        SnackBar(content: Text(copy.readerUiAttached(path.split('/').last))),
       );
     } catch (error) {
       if (!mounted) return;
@@ -1231,9 +1273,9 @@ class _FilesScreenState extends State<FilesScreen> {
   Future<void> _copyPath(String path) async {
     await Clipboard.setData(ClipboardData(text: path));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Copied $path')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(readerL10n(context).readerUiCopiedPath(path))),
+    );
   }
 
   /// Type-aware glyphs so a directory scans by kind, matching the developer
@@ -1317,7 +1359,39 @@ class _FilesScreenState extends State<FilesScreen> {
         );
       }
     }
+    if (ReaderPreferencesScope.maybeOf(context)?.value.sourceFirst == true) {
+      // Stable partition: the server's order remains intact within each group.
+      // Generated and hidden entries remain visible, including deleted files.
+      return [
+        ...entries.where((entry) => !_isGeneratedEntry(entry)),
+        ...entries.where(_isGeneratedEntry),
+      ];
+    }
     return entries;
+  }
+
+  bool _isGeneratedEntry(FileNode node) {
+    const generatedDirectories = {
+      'node_modules',
+      '.git',
+      '.dart_tool',
+      'build',
+      'dist',
+      'coverage',
+      '__pycache__',
+      '.gradle',
+    };
+    final name = node.name.toLowerCase();
+    final directories = node.path.split('/');
+    if (!node.isDir && directories.isNotEmpty) directories.removeLast();
+    return directories.any(
+          (part) => generatedDirectories.contains(part.toLowerCase()),
+        ) ||
+        name.endsWith('.lock') ||
+        name.endsWith('.g.dart') ||
+        name.endsWith('.freezed.dart') ||
+        name.endsWith('.min.js') ||
+        name.endsWith('.map');
   }
 
   String? _fileDetail(
@@ -1330,16 +1404,14 @@ class _FilesScreenState extends State<FilesScreen> {
       details.add(node.path);
     }
     if (change != null) {
-      details.add(_fileStatusLabel(change.status));
+      details.add(_fileStatusLabel(context, change.status));
       final counts = <String>[
         if (change.additions > 0) '+${change.additions}',
         if (change.deletions > 0) '−${change.deletions}',
       ];
       if (counts.isNotEmpty) details.add(counts.join(' '));
     } else if (descendantChanges > 0) {
-      details.add(
-        '$descendantChanges changed ${descendantChanges == 1 ? 'file' : 'files'}',
-      );
+      details.add(readerL10n(context).readerUiChangedCount(descendantChanges));
     }
     return details.isEmpty ? null : details.join(' · ');
   }
@@ -1358,20 +1430,19 @@ class _FilesScreenState extends State<FilesScreen> {
       );
     }
     if (_search.text.trim().isEmpty) {
-      return const ProductEmptyState(
+      return ProductEmptyState(
         icon: AppIconography.dataObject,
-        title: 'Search workspace symbols',
-        message: 'Find classes, functions, methods, and variables by name.',
+        title: readerL10n(context).readerUiWorkspaceSymbols,
+        message: readerL10n(context).readerUiSymbolsHint,
       );
     }
     if (_symbols?.isEmpty == true) {
       return RefreshIndicator(
         onRefresh: () => _searchSymbols(_search.text),
-        child: const ProductEmptyState(
+        child: ProductEmptyState(
           icon: Icons.search_off_rounded,
-          title: 'No symbols found',
-          message:
-              'Try a different name. Some language services do not support workspace-wide symbol search.',
+          title: readerL10n(context).readerUiNoSymbols,
+          message: readerL10n(context).readerUiSymbolsUnavailable,
         ),
       );
     }
@@ -1413,27 +1484,27 @@ class _FilesScreenState extends State<FilesScreen> {
     );
   }
 
-  static String _symbolKind(int kind) => switch (kind) {
-    1 => 'File',
-    2 => 'Module',
-    3 => 'Namespace',
-    4 => 'Package',
-    5 => 'Class',
-    6 => 'Method',
-    7 => 'Property',
-    8 => 'Field',
-    9 => 'Constructor',
-    10 => 'Enum',
-    11 => 'Interface',
-    12 => 'Function',
-    13 => 'Variable',
-    14 => 'Constant',
-    22 => 'Enum member',
-    23 => 'Struct',
-    24 => 'Event',
-    25 => 'Operator',
-    26 => 'Type parameter',
-    _ => 'Symbol',
+  String _symbolKind(int kind) => switch (kind) {
+    1 => readerL10n(context).readerUiSymbolFile,
+    2 => readerL10n(context).readerUiSymbolModule,
+    3 => readerL10n(context).readerUiSymbolNamespace,
+    4 => readerL10n(context).readerUiSymbolPackage,
+    5 => readerL10n(context).readerUiSymbolClass,
+    6 => readerL10n(context).readerUiSymbolMethod,
+    7 => readerL10n(context).readerUiSymbolProperty,
+    8 => readerL10n(context).readerUiSymbolField,
+    9 => readerL10n(context).readerUiSymbolConstructor,
+    10 => readerL10n(context).readerUiSymbolEnum,
+    11 => readerL10n(context).readerUiSymbolInterface,
+    12 => readerL10n(context).readerUiSymbolFunction,
+    13 => readerL10n(context).readerUiSymbolVariable,
+    14 => readerL10n(context).readerUiSymbolConstant,
+    22 => readerL10n(context).readerUiSymbolEnummember,
+    23 => readerL10n(context).readerUiSymbolStruct,
+    24 => readerL10n(context).readerUiSymbolEvent,
+    25 => readerL10n(context).readerUiSymbolOperator,
+    26 => readerL10n(context).readerUiSymbolTypeparameter,
+    _ => readerL10n(context).readerUiSymbolSymbol,
   };
 
   static IconData _symbolIcon(int kind) => switch (kind) {
@@ -1457,12 +1528,13 @@ class _FilesScreenState extends State<FilesScreen> {
   }
 }
 
-String _fileStatusLabel(String status) => switch (status) {
-  'added' => 'Added',
-  'deleted' => 'Deleted',
-  'modified' => 'Modified',
-  _ => 'Changed',
-};
+String _fileStatusLabel(BuildContext context, String status) =>
+    switch (status) {
+      'added' => readerL10n(context).readerUiAdded,
+      'deleted' => readerL10n(context).readerUiDeleted,
+      'modified' => readerL10n(context).readerUiModified,
+      _ => readerL10n(context).readerUiChanged,
+    };
 
 enum _ChangeAction { reviewAll, review, stage }
 
@@ -1535,7 +1607,7 @@ class _ChangesCard extends StatelessWidget {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          '$files changed ${files == 1 ? 'file' : 'files'}',
+                          readerL10n(context).readerUiChangedCount(files),
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: theme.colorScheme.primary,
                           ),
@@ -1604,11 +1676,15 @@ class _ChangesSheet extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Changes', style: theme.textTheme.titleLarge),
+                Text(
+                  readerL10n(context).readerUiChanges,
+                  style: theme.textTheme.titleLarge,
+                ),
                 const SizedBox(height: 2),
                 Text(
-                  '${changes.length} '
-                  '${changes.length == 1 ? 'file' : 'files'} · +$added −$removed',
+                  readerL10n(
+                    context,
+                  ).readerUiChangeSummary(changes.length, added, removed),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -1623,7 +1699,7 @@ class _ChangesSheet extends StatelessWidget {
                       const _ChangeChoice(_ChangeAction.reviewAll),
                     ),
                     icon: const Icon(AppIconography.feedback, size: 18),
-                    label: const Text('Review all changes'),
+                    label: Text(readerL10n(context).readerUiReviewAll),
                   ),
                 ),
               ],
@@ -1638,7 +1714,7 @@ class _ChangesSheet extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(18, 12, 18, 4),
                     child: Text(
-                      '${_fileStatusLabel(status)} · ${groups[status]!.length}',
+                      '${_fileStatusLabel(context, status)} · ${groups[status]!.length}',
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -1664,7 +1740,9 @@ class _ChangesSheet extends StatelessWidget {
                       trailing: canStage
                           ? IconButton(
                               key: ValueKey('stage-change-${change.path}'),
-                              tooltip: 'Add ${change.path} to the prompt',
+                              tooltip: readerL10n(
+                                context,
+                              ).readerUiAddPath(change.path),
                               icon: const Icon(
                                 Icons.add_comment_outlined,
                                 size: 20,
@@ -1730,7 +1808,7 @@ class _FileStatusNotice extends StatelessWidget {
                     dimension: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Try again'),
+                : Text(readerL10n(context).isolatedTaskRetryOpen),
           ),
         ],
       ),
@@ -1867,7 +1945,7 @@ class __FileViewerState extends State<_FileViewer> {
       final api = await widget.controller.prepareActionTransport();
       if (!mounted || generation != _generation) return;
       if (api == null) {
-        throw const ProductException('The server is not connected.');
+        throw ProductException(readerL10n(context).readerUiDisconnected);
       }
       requestApi = api;
       if ((initialApi != null && !identical(api, initialApi)) ||
@@ -1954,7 +2032,7 @@ class __FileViewerState extends State<_FileViewer> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${_path.split('/').last} attached. Return to the chat to add your comment.',
+            readerL10n(context).readerUiAttachedReturn(_path.split('/').last),
           ),
           duration: const Duration(seconds: 3),
         ),
@@ -1975,13 +2053,15 @@ class __FileViewerState extends State<_FileViewer> {
     setState(() => _downloading = true);
     try {
       final savedPath = await FilePicker.saveFile(
-        dialogTitle: 'Save ${data.name}',
+        dialogTitle: readerL10n(context).readerUiSaveNamed(data.name),
         fileName: data.name,
         bytes: bytes,
       );
       if (!mounted || savedPath == null) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${data.name} saved to your device.')),
+        SnackBar(
+          content: Text(readerL10n(context).readerUiSavedDevice(data.name)),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -2020,7 +2100,9 @@ class __FileViewerState extends State<_FileViewer> {
                         Text(
                           widget.initialLine == null
                               ? _path
-                              : '$_path · Line ${widget.initialLine}',
+                              : readerL10n(
+                                  context,
+                                ).readerUiPathLine(_path, widget.initialLine!),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -2040,6 +2122,8 @@ class __FileViewerState extends State<_FileViewer> {
               child: Wrap(
                 spacing: 4,
                 children: [
+                  if (widget.initialLine != null)
+                    const ReaderWrapButton(fallbackWrap: false),
                   TextButton.icon(
                     label: Text(l10n.fileCopy),
                     icon: const Icon(AppIcons.copy, size: 18),
@@ -2051,8 +2135,10 @@ class __FileViewerState extends State<_FileViewer> {
                             );
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Copied'),
+                                SnackBar(
+                                  content: Text(
+                                    readerL10n(context).readerUiCopied,
+                                  ),
                                   duration: Duration(seconds: 1),
                                 ),
                               );
@@ -2152,3 +2238,6 @@ class _FileViewerScopeError extends StatelessWidget {
     ),
   );
 }
+
+AppLocalizations readerL10n(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));

@@ -49,7 +49,13 @@ class _ManageProjectScreenState extends State<ManageProjectScreen> {
         Navigator.of(context).pop(_changed);
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Manage project')),
+        appBar: AppBar(
+          title: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).workspaceManageProject,
+          ),
+        ),
         body: ListView(
           key: const ValueKey('manage-project-list'),
           padding: const EdgeInsets.only(bottom: 32),
@@ -57,16 +63,27 @@ class _ManageProjectScreenState extends State<ManageProjectScreen> {
             ListTile(
               key: const ValueKey('manage-project-context'),
               leading: const Icon(AppIconography.files),
-              title: Text(project?.name ?? 'No project selected'),
+              title: Text(
+                project?.name ??
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryNoProjectSelected,
+              ),
               subtitle: Text(
                 project?.directory ??
-                    'No project folder is open. Choose one from Workspace.',
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryNoProjectFolderIsOpenChooseOne,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             const Divider(height: 1),
-            const SectionLabel('Project'),
+            SectionLabel(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryProject,
+            ),
             ListTile(
               leading: const Icon(AppIconography.processor),
               title: Text(l10n.servicesTitle),
@@ -86,22 +103,40 @@ class _ManageProjectScreenState extends State<ManageProjectScreen> {
               ListTile(
                 key: const ValueKey('switch-project-entry'),
                 leading: const Icon(AppIconography.swap),
-                title: const Text('Switch project'),
-                subtitle: const Text(
-                  'Choose another project opened by this server',
+                title: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibrarySwitchProject,
+                ),
+                subtitle: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryChooseAnotherProjectOpenedByThisServer,
                 ),
                 trailing: const Icon(AppIconography.chevronRight),
                 onTap: _switchProject,
               ),
-              const SectionLabel('Coding'),
+              SectionLabel(
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryCoding,
+              ),
               ListTile(
                 key: const ValueKey('worktrees-entry'),
                 leading: const Icon(AppIconography.branch),
-                title: const Text('Worktrees'),
+                title: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryWorktrees,
+                ),
                 subtitle: Text(
                   project == null
-                      ? 'Choose a project first'
-                      : 'Create and manage isolated Git branches',
+                      ? lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryChooseAProjectFirst
+                      : lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryCreateAndManageIsolatedGitBranches,
                 ),
                 trailing: const Icon(AppIconography.chevronRight),
                 onTap: project == null ? null : _openWorktrees,
@@ -113,11 +148,19 @@ class _ManageProjectScreenState extends State<ManageProjectScreen> {
               ListTile(
                 key: const ValueKey('managed-workspaces-entry'),
                 leading: const Icon(AppIconography.cloud),
-                title: const Text('Managed workspaces'),
+                title: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryManagedWorkspaces,
+                ),
                 subtitle: Text(
                   project == null
-                      ? 'Choose a project first'
-                      : 'Create, discover, open, and remove adapter-backed environments',
+                      ? lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryChooseAProjectFirst
+                      : lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked,
                 ),
                 trailing: const Icon(AppIconography.chevronRight),
                 onTap: project == null ? null : _openManagedWorkspaces,
@@ -126,9 +169,15 @@ class _ManageProjectScreenState extends State<ManageProjectScreen> {
               ListTile(
                 key: const ValueKey('project-health-entry'),
                 leading: const Icon(AppIconography.diagnostics),
-                title: const Text('Project health'),
-                subtitle: const Text(
-                  'Branch, changed files, language services, and formatters',
+                title: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryProjectHealth,
+                ),
+                subtitle: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryBranchChangedFilesLanguageServicesAndFormatters,
                 ),
                 trailing: const Icon(AppIconography.chevronRight),
                 onTap: _openProjectHealth,

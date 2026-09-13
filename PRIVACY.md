@@ -17,7 +17,26 @@ not by this app. Their retention and privacy practices apply to the data they
 receive.
 
 Use an HTTPS server or an encrypted tunnel. Plain HTTP is accepted only for
-loopback addresses used by a server running on the same device.
+loopback addresses used by a server running on the same device, and for
+private Tailscale addresses (100.64.0.0/10 and `*.ts.net`), where the
+tailnet already encrypts and authenticates the connection.
+
+### Optional AI Team plugin
+
+If you turn on the AI Team plugin for a server, the app also reads from a
+Gas City supervisor you name (runs, work items, agents, pending decisions,
+agent transcripts and estimated usage). Reads send no credentials. The app
+keeps a cache of the last snapshot, the event cursor, view preferences and
+what it has streamed of agent output, all under keys scoped to that server;
+turning the plugin off or deleting the server removes them. Nothing is sent
+anywhere except the supervisor you configured.
+
+When the host runs the optional front, the app can also send actions
+(answers to decisions, messages and controls for agents, run cancellation,
+merge approval and merge). Each action carries a random idempotency key
+and is identified on the host by your Tailscale login; the app keeps a
+record of each action and its receipt under the same server-scoped keys.
+The front never receives a password from the app.
 
 ## Data stored on your device
 
@@ -36,6 +55,13 @@ storage. Android backup is disabled for this app.
 On-device Termux setup writes a server password into the private Termux/Ubuntu
 environment so that the local server can restart. Protect access to both apps
 and remove that environment when you no longer use it.
+
+On Android, the home-screen widget and the app icon's long-press menu can show
+the titles of your recent and pinned sessions, and the Quick Settings tile can
+show how many requests are waiting for you. These surfaces show only session
+titles or a count — never prompt text, tool input, file names, or server
+addresses. Removing a server clears them; disconnecting also withdraws the
+long-press entries and the tile count.
 
 You can remove a server profile in the app. You can erase all local data by
 clearing the app's storage or uninstalling it. Data retained by an OpenCode
@@ -64,10 +90,22 @@ a supported, permitted integration: choosing Claude sends no quota request.
 The collector's legacy Claude route returns unsupported without reading Claude
 credentials or contacting that provider; obsolete Claude settings are ignored.
 
-Quota consent and snapshots are kept only in memory for the screen visit;
-there is no background polling, quota notification, or quota upload to this
-project's developer. Changing provider clears the old snapshot and requires
-fresh consent before another supported read. Invalid or missing
+Screen-visit quota consent and measured snapshots are kept only in memory.
+Changing provider clears the old snapshot and requires fresh consent before
+another supported page read. Separately, you can explicitly enable monitoring
+for the exact trusted collector and provider account you just reviewed. That
+monitoring consent and its rules are saved per server profile and survive app
+restart; measured quota snapshots are not saved. Monitoring checks at most
+three saved sources per cycle, every five minutes in the foreground or every
+fifteen minutes while the existing live background service is active. Larger
+source lists rotate over several cycles. Monitoring does not start that service,
+and Android may stop it under its background-work limits.
+
+Device quota alerts require a separate opt-in and a fresh reported threshold
+reading. Wi-Fi-only reads and quiet hours are optional. An alert records a past
+reading, not a guarantee of the current allowance. Monitoring can be disabled
+from its settings; removing the server profile removes its saved monitoring
+rules. Quota data is not uploaded to this project's developer. Invalid or missing
 data is not converted into an estimated allowance. The provider's own privacy
 and access policies apply, and its internal usage endpoint may change.
 

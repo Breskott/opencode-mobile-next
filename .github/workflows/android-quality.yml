@@ -115,25 +115,33 @@ jobs:
         if: ${{ !inputs.apk_only }}
         run: flutter analyze
 
+      - name: Check the serial test runner
+        if: ${{ !inputs.apk_only }}
+        run: python3 -m unittest discover -s tool/qa -p 'test_*.py'
+
       - name: Test
         if: ${{ !inputs.apk_only }}
-        # Chunked into thirds so one hung invocation cannot consume the whole
-        # job timeout; each chunk keeps the repo's serial --concurrency=1.
-        run: |
-          set -euo pipefail
-          mapfile -t files < <(ls test/*_test.dart | sort)
-          total=${#files[@]}
-          test "$total" -gt 0
-          third=$(( (total + 2) / 3 ))
-          for start in 0 "$third" $((third * 2)); do
-            chunk=("${files[@]:start:third}")
-            [ ${#chunk[@]} -eq 0 ] && continue
-            flutter test --concurrency=1 "${chunk[@]}"
-          done
+        # Same runner as the local gate (tool/qa/run_serial_tests.py): every
+        # test/**/*_test.dart is discovered recursively and run exactly once,
+        # nested suites such as the theme goldens included, in bounded serial
+        # chunks with --concurrency=1. A hung chunk is stopped at the deadline
+        # and named in summary.json instead of silently consuming the job
+        # timeout. Per-chunk logs land in build/traycer for the artifact below.
+        run: >-
+          python3 tool/qa/run_serial_tests.py
+          --flutter "$(command -v flutter)"
+          --chunk-size 40
+          --chunk-timeout 1200
+          --output-root build/traycer
 
-      - name: Test theme goldens on Linux
-        if: ${{ !inputs.apk_only }}
-        run: flutter test --concurrency=1 test/goldens
+      - name: Upload serial test logs
+        if: ${{ always() && !inputs.apk_only }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: serial-test-logs-${{ github.sha }}
+          path: build/traycer
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Configure CI signing identity
         env:

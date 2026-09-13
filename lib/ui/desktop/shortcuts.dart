@@ -4,7 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'desktop_interaction.dart';
+import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
+
+AppLocalizations _shortcutL10n(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+    lookupAppLocalizations(const Locale('en'));
 
 // =====================================================================
 // Intents
@@ -103,27 +108,24 @@ class ShortcutHelpEntry {
 }
 
 /// The discoverable table behind Ctrl+/ and the More hub entry.
-List<ShortcutHelpEntry> shortcutHelp() {
+List<ShortcutHelpEntry> shortcutHelp(AppLocalizations l10n) {
   final mod = shortcutModifierLabel;
   return [
-    ShortcutHelpEntry('$mod + K', 'Command launcher'),
-    ShortcutHelpEntry('$mod + N', 'New session'),
-    ShortcutHelpEntry('$mod + F', 'Find in this surface'),
-    ShortcutHelpEntry('$mod + 1 … 4', 'Workspace, Files, Activity, More'),
-    ShortcutHelpEntry('$mod + ,', 'Settings'),
-    ShortcutHelpEntry('$mod + `', 'Terminal'),
-    ShortcutHelpEntry('$mod + W', 'Close this screen'),
-    ShortcutHelpEntry('$mod + Enter', 'Send the prompt'),
-    ShortcutHelpEntry('$mod + C', 'Copy the selected transcript text'),
-    const ShortcutHelpEntry(
-      'F2 / Shift + F2',
-      'Next / previous recent model in this chat',
-    ),
-    ShortcutHelpEntry('$mod + /', 'This list'),
-    const ShortcutHelpEntry('Esc', 'Close a sheet, dialog, or menu'),
-    const ShortcutHelpEntry(
-      'Right click / Shift + F10 / Menu',
-      'Message, file, and session actions',
+    ShortcutHelpEntry('$mod + K', l10n.e7LocaleUiCommandLauncher),
+    ShortcutHelpEntry('$mod + N', l10n.e7LocaleUiNewSession),
+    ShortcutHelpEntry('$mod + F', l10n.e7LocaleUiFindSurface),
+    ShortcutHelpEntry('$mod + 1 … 4', l10n.e7LocaleUiDestinations),
+    ShortcutHelpEntry('$mod + ,', l10n.e7LocaleUiSettings),
+    ShortcutHelpEntry('$mod + `', l10n.e7LocaleUiTerminal),
+    ShortcutHelpEntry('$mod + W', l10n.e7LocaleUiCloseScreen),
+    ShortcutHelpEntry('$mod + Enter', l10n.e7LocaleUiSendPrompt),
+    ShortcutHelpEntry('$mod + C', l10n.e7LocaleUiCopyTranscript),
+    ShortcutHelpEntry('F2 / Shift + F2', l10n.e7LocaleUiRecentModel),
+    ShortcutHelpEntry('$mod + /', l10n.e7LocaleUiThisList),
+    ShortcutHelpEntry('Esc', l10n.e7LocaleUiCloseOverlay),
+    ShortcutHelpEntry(
+      l10n.e7LocaleUiContextKeys,
+      l10n.e7LocaleUiContextActions,
     ),
   ];
 }
@@ -472,11 +474,11 @@ class _CommandPaletteState extends State<_CommandPalette> {
                   autofocus: true,
                   onChanged: (_) => setState(() => _highlighted = 0),
                   onSubmitted: (_) => _runHighlighted(),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     isDense: true,
-                    prefixIcon: Icon(AppIconography.lightning, size: 20),
-                    hintText: 'Type a command…',
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(AppIconography.lightning, size: 20),
+                    hintText: _shortcutL10n(context).e7LocaleUiTypeCommand,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ),
@@ -486,7 +488,7 @@ class _CommandPaletteState extends State<_CommandPalette> {
                     ? Padding(
                         padding: const EdgeInsets.all(28),
                         child: Text(
-                          'No matching command',
+                          _shortcutL10n(context).e7LocaleUiNoCommand,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -544,14 +546,14 @@ class _CommandPaletteState extends State<_CommandPalette> {
 /// The discoverable list of every shortcut, reachable from Ctrl+/ and from
 /// the More hub so it is not itself hidden behind a shortcut.
 Future<void> showShortcutsHelp(BuildContext context) {
-  final entries = shortcutHelp();
+  final entries = shortcutHelp(_shortcutL10n(context));
   return showDialog<void>(
     context: context,
     builder: (context) {
       final theme = Theme.of(context);
       return AlertDialog(
         key: const ValueKey('keyboard-shortcuts-sheet'),
-        title: const Text('Keyboard shortcuts'),
+        title: Text(_shortcutL10n(context).e7LocaleUiKeyboardShortcuts),
         content: SizedBox(
           width: 380,
           child: SingleChildScrollView(
@@ -569,6 +571,7 @@ Future<void> showShortcutsHelp(BuildContext context) {
                           width: 132,
                           child: Text(
                             entry.keys,
+                            textDirection: TextDirection.ltr,
                             style: theme.textTheme.labelLarge?.copyWith(
                               fontFamily: 'AppMono',
                             ),
@@ -592,7 +595,7 @@ Future<void> showShortcutsHelp(BuildContext context) {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: Text(_shortcutL10n(context).e7LocaleUiClose),
           ),
         ],
       );

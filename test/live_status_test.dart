@@ -113,10 +113,9 @@ void main() {
       expect(live.lastPublishedLiveStatus, status);
 
       await Future<void>.delayed(_debounce * 2);
-      await live.publishLiveStatus(const LiveStatus(
-        runningCount: 1,
-        title: 'Build feature',
-      ));
+      await live.publishLiveStatus(
+        const LiveStatus(runningCount: 1, title: 'Build feature'),
+      );
       expect(_statusCalls(calls), hasLength(1));
     });
 
@@ -221,18 +220,24 @@ void main() {
       return controller;
     }
 
-    test('counts runs and requests and names the freshest busy session',
-        () async {
-      final calls = <(String, Map<String, dynamic>?)>[];
-      final live = await _live(calls: calls);
-      final controller = await controllerWith(live);
-      addTearDown(controller.dispose);
+    test(
+      'counts runs and requests and names the freshest busy session',
+      () async {
+        final calls = <(String, Map<String, dynamic>?)>[];
+        final live = await _live(calls: calls);
+        final controller = await controllerWith(live);
+        addTearDown(controller.dispose);
 
-      expect(
-        controller.liveStatus(),
-        const LiveStatus(runningCount: 2, pendingCount: 2, title: 'Fix login'),
-      );
-    });
+        expect(
+          controller.liveStatus(),
+          const LiveStatus(
+            runningCount: 2,
+            pendingCount: 2,
+            title: 'Fix login',
+          ),
+        );
+      },
+    );
 
     test('publishes through notifyListeners and tool part events', () async {
       final calls = <(String, Map<String, dynamic>?)>[];
@@ -251,28 +256,34 @@ void main() {
       ]);
 
       controller.handleEventForTesting(
-        EventEnvelope(type: 'message.part.updated', properties: {
-          'part': {
-            'type': 'tool',
-            'sessionID': 'new',
-            'tool': 'edit',
-            'state': {'status': 'running'},
+        EventEnvelope(
+          type: 'message.part.updated',
+          properties: {
+            'part': {
+              'type': 'tool',
+              'sessionID': 'new',
+              'tool': 'edit',
+              'state': {'status': 'running'},
+            },
           },
-        }),
+        ),
       );
       expect(controller.liveStatus().detail, 'Editing files…');
       await Future<void>.delayed(_debounce * 2);
       expect(_statusCalls(calls).last?['detail'], 'Editing files…');
 
       controller.handleEventForTesting(
-        EventEnvelope(type: 'message.part.updated', properties: {
-          'part': {
-            'type': 'tool',
-            'sessionID': 'new',
-            'tool': 'edit',
-            'state': {'status': 'completed'},
+        EventEnvelope(
+          type: 'message.part.updated',
+          properties: {
+            'part': {
+              'type': 'tool',
+              'sessionID': 'new',
+              'tool': 'edit',
+              'state': {'status': 'completed'},
+            },
           },
-        }),
+        ),
       );
       expect(controller.liveStatus().detail, isNull);
     });
@@ -281,7 +292,10 @@ void main() {
       expect(ConnectionController.toolSentence('bash'), 'Running a command…');
       expect(ConnectionController.toolSentence('Edit'), 'Editing files…');
       expect(ConnectionController.toolSentence('grep'), 'Searching files…');
-      expect(ConnectionController.toolSentence('mcp_thing'), 'Running mcp_thing…');
+      expect(
+        ConnectionController.toolSentence('mcp_thing'),
+        'Running mcp_thing…',
+      );
       expect(ConnectionController.toolSentence(''), 'Working…');
     });
   });

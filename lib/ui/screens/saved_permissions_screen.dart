@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+
 import '../../api/product_repository.dart';
 import '../../state/connection.dart';
 import '../permission_presentation.dart';
@@ -113,8 +115,13 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
     });
     try {
       final repository = await _resolveRepository();
+      if (!mounted) return;
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting. Try again.');
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryOpenCodeIsReconnectingTryAgain,
+        );
       }
       if (!mounted || generation != _generation || scope != _currentScope) {
         return;
@@ -142,6 +149,7 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
   }
 
   Future<void> _revoke(SavedPermission permission) async {
+    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_removing.contains(permission.id)) return;
     final scope = _scope;
     final confirmed = await showDialog<bool>(
@@ -149,41 +157,48 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
       builder: (context) => AlertDialog(
         scrollable: true,
         icon: const Icon(AppIconography.privacyWarning),
-        title: const Text('Revoke always allowed action?'),
+        title: Text(actionL10n.e7LibraryRevokeAlwaysAllowedAction),
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'OpenCode will ask again before a future action matching this grant.',
-            ),
+            Text(actionL10n.e7LibraryOpenCodeWillAskAgainBeforeAFuture),
             const SizedBox(height: 16),
-            Text('Action', style: Theme.of(context).textTheme.labelLarge),
+            Text(
+              actionL10n.e7LibraryAction,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
             const SizedBox(height: 4),
             Text(permissionRequestTitle(permission.action)),
             const SizedBox(height: 12),
-            Text('Resource', style: Theme.of(context).textTheme.labelLarge),
+            Text(
+              actionL10n.e7LibraryResource,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
             const SizedBox(height: 4),
             SelectableText(
               permission.resource.trim().isEmpty
-                  ? '(all matching resources)'
+                  ? actionL10n.e7LibraryAllMatchingResources
                   : permission.resource,
+              textDirection: permission.resource.trim().isEmpty
+                  ? null
+                  : TextDirection.ltr,
               style: const TextStyle(fontFamily: AppTheme.monoFamily),
             ),
             const SizedBox(height: 12),
-            const Text('This does not stop an action that is already running.'),
+            Text(actionL10n.e7LibraryThisDoesNotStopAnActionThat),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep access'),
+            child: Text(actionL10n.e7LibraryKeepAccess),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Revoke access'),
+            child: Text(actionL10n.e7LibraryRevokeAccess),
           ),
         ],
       ),
@@ -196,8 +211,11 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
     });
     try {
       final repository = await _resolveRepository();
+      if (!mounted) return;
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting. Try again.');
+        throw ProductException(
+          actionL10n.e7LibraryOpenCodeIsReconnectingTryAgain,
+        );
       }
       if (!mounted || scope != _currentScope) return;
       await repository.removeSavedPermission(permission.id);
@@ -208,7 +226,7 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
             .toList();
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Always allowed action revoked')),
+        SnackBar(content: Text(actionL10n.e7LibraryAlwaysAllowedActionRevoked)),
       );
     } catch (error) {
       if (!mounted || scope != _currentScope) return;
@@ -226,10 +244,16 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
     final permissions = _permissions;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Always allowed actions'),
+        title: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryAlwaysAllowedActions,
+        ),
         actions: [
           IconButton(
-            tooltip: 'Refresh always allowed actions',
+            tooltip: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryRefreshAlwaysAllowedActions,
             onPressed: _loading || _removing.isNotEmpty ? null : _load,
             icon: _loading
                 ? const SizedBox.square(
@@ -245,11 +269,14 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
         child: permissions == null && _error == null
             ? const LoadingList(rows: 4)
             : permissions?.isEmpty == true && _error == null
-            ? const ProductEmptyState(
+            ? ProductEmptyState(
                 icon: AppIconography.privacy,
-                title: 'No always allowed actions',
-                message:
-                    'Grants created with Always allow for this project will appear here.',
+                title: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryNoAlwaysAllowedActions,
+                message: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryGrantsCreatedWithAlwaysAllowForThis,
               )
             : permissions?.isEmpty != false && _error != null
             ? ProductErrorState(message: _error!, onRetry: _load)
@@ -259,9 +286,13 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
                 padding: const EdgeInsets.only(bottom: 24),
                 children: [
                   SectionLabel(
-                    'Current project',
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).usageCurrentProject,
                     trailing: Text(
-                      '${permissions!.length} ${permissions.length == 1 ? 'grant' : 'grants'}',
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryGrantCount(permissions!.length),
                     ),
                   ),
                   if (_error != null)
@@ -270,7 +301,11 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
                         AppIconography.error,
                         color: Theme.of(context).colorScheme.error,
                       ),
-                      title: const Text('The last action failed'),
+                      title: Text(
+                        lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryTheLastActionFailed,
+                      ),
                       subtitle: Text(_error!),
                     ),
                   for (final permission in permissions)
@@ -280,9 +315,14 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
                       title: Text(permissionRequestTitle(permission.action)),
                       subtitle: SelectableText(
                         permission.resource.trim().isEmpty
-                            ? '(all matching resources)'
+                            ? lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7LibraryAllMatchingResources
                             : permission.resource,
                         maxLines: 3,
+                        textDirection: permission.resource.trim().isEmpty
+                            ? null
+                            : TextDirection.ltr,
                         style: const TextStyle(
                           fontFamily: AppTheme.monoFamily,
                           fontSize: AppTheme.codeFontSize,
@@ -297,7 +337,12 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
                               key: ValueKey(
                                 'revoke-saved-permission-${permission.id}',
                               ),
-                              tooltip: 'Revoke ${permission.action} access',
+                              tooltip:
+                                  lookupAppLocalizations(
+                                    Localizations.localeOf(context),
+                                  ).e7LibraryRevokeAccess2(
+                                    (permission.action).toString(),
+                                  ),
                               onPressed: () => _revoke(permission),
                               icon: const Icon(AppIconography.delete),
                             ),

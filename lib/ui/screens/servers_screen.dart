@@ -8,6 +8,7 @@ import '../../api/product_repository.dart' show ProductException;
 import '../../api/server_probe.dart';
 import '../../demo/demo_copy.dart';
 import '../../l10n/app_localizations.dart';
+import '../widgets/setup_ui_messages.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/codex_connection_probe.dart';
@@ -19,6 +20,7 @@ import '../app_theme.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/managed_server_health.dart';
 import '../widgets/product_states.dart';
+import '../widgets/team_host_form.dart';
 import 'demo_screen.dart';
 import 'attention_overview_screen.dart';
 import 'agent_account_screen.dart';
@@ -89,6 +91,13 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
 
   Future<void> _connect(ServerProfile p) async {
     if (_busy) return;
+    if (_needsManagedRuntimeChoice(
+      p,
+      ref.read(bootstrapProvider).store.profiles,
+    )) {
+      await Navigator.pushNamed(context, '/termux-setup');
+      return;
+    }
     if (p.requiresPasswordReentry || p.requiresCodexTokenReentry) {
       await _edit(
         existing: p,
@@ -114,12 +123,16 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
     } else {
       final detail = productErrorText(
-        conn.lastError ?? failure ?? 'Connection failed.',
+        conn.lastError ??
+            failure ??
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupConnectionFailed,
       );
       setState(() {
-        _listFailure =
-            'Could not connect to ${p.name}. $detail '
-            'Check the server address and credentials, then try again.';
+        _listFailure = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupConnectFailedDetail(p.name, detail);
       });
     }
   }
@@ -129,6 +142,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     bool focusPassword = false,
     bool tailscale = false,
     String? initialUrl,
+    bool openCode2Intent = false,
   }) async {
     final isNew = existing == null;
     final useTailscale =
@@ -152,6 +166,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           focusPassword: focusPassword,
           tailscale: useTailscale,
           initialUrl: initialUrl,
+          openCode2Intent: openCode2Intent,
           onSubmit: (profile) =>
               _saveAndConnect(profile, isNew: isNew, tailscale: useTailscale),
           secureStorageProbe: () =>
@@ -181,6 +196,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     required bool isNew,
     bool tailscale = false,
   }) async {
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
     final store = ref.read(bootstrapProvider).store;
     final wasActive = store.activeId == result.id;
     var saved = false;
@@ -193,7 +209,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       saved = true;
       if (tailscale &&
           !await store.prefs.setBool('oc.tailscale.${result.id}', true)) {
-        throw StateError('Could not save connection guidance. Retry saving.');
+        throw StateError(copy.e7SetupGuidanceSaveFailed);
       }
       if (wasActive || isNew || result.backend == ServerBackend.codex) {
         final savedProfile = store.profiles.firstWhere(
@@ -202,9 +218,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         final conn = ref.read(connProvider);
         await conn.connect(savedProfile);
         if (conn.api == null) {
-          throw ProductException(
-            conn.lastError ?? 'The server did not connect.',
-          );
+          throw ProductException(conn.lastError ?? copy.e7SetupDidNotConnect);
         }
       }
       return (saved: true, failure: null);
@@ -213,11 +227,8 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       return (
         saved: saved,
         failure: saved
-            ? '${result.name} was saved, but it could not '
-                  '${isNew ? 'connect' : 'reconnect'}. Check the '
-                  'server address and credentials, then try again. ($detail)'
-            : 'Could not save ${result.name}. The existing profile was left '
-                  'unchanged. Check device storage and try again. ($detail)',
+            ? copy.e7SetupSavedConnectFailed(result.name, detail)
+            : copy.e7SetupSaveFailed(result.name, detail),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -230,27 +241,20 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   String _deletionDisclosure(ConnectionController connection, String id) {
     final queued = connection.queuedPromptCountForProfile(id);
     final drafts = connection.draftCountForProfile(id);
-    final losses = [
-      if (queued > 0) '$queued queued ${queued == 1 ? 'prompt' : 'prompts'}',
-      if (drafts > 0) '$drafts unsent ${drafts == 1 ? 'draft' : 'drafts'}',
-    ];
-    return [
-      'This deletes everything this device stored for the server: its '
-          'password, selected model and agent, workspace choice'
-          '${losses.isEmpty ? '' : ', ${losses.join(' and ')}'}, and any '
-          'sessions shown in the home-screen widget.',
-      'Nothing is deleted on the server itself or at your AI providers.',
-    ].join('\n\n');
+    return lookupAppLocalizations(
+      Localizations.localeOf(context),
+    ).e7SetupDeleteDisclosure(queued, drafts);
   }
 
   Future<void> _delete(ServerProfile p) async {
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
     final connection = ref.read(connProvider);
     final disclosure = _deletionDisclosure(connection, p.id);
     final ok = await showConfirmSheet(
       context,
-      title: 'Remove ${p.name}?',
+      title: copy.e7SetupRemoveServer(p.name),
       message: disclosure,
-      confirmLabel: 'Remove',
+      confirmLabel: copy.capsuleRemove,
       icon: AppIconography.delete,
       destructive: true,
       sheetKey: ValueKey('remove-server-sheet-${p.id}'),
@@ -278,16 +282,10 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     } catch (error) {
       if (removed) {
         _showFailure(
-          '${p.name} was removed, but its connection could not be closed '
-          'cleanly. Restart the app before connecting elsewhere. '
-          '(${productErrorText(error)})',
+          copy.e7SetupRemovedDisconnectFailed(p.name, productErrorText(error)),
         );
       } else {
-        _showFailure(
-          'Could not remove ${p.name}. The saved profile and current '
-          'connection were kept. Check device storage and try again. '
-          '(${productErrorText(error)})',
-        );
+        _showFailure(copy.e7SetupRemoveFailed(p.name, productErrorText(error)));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -366,7 +364,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                     },
             ),
           IconButton(
-            tooltip: 'About and open source notices',
+            tooltip: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupAboutNotices,
             icon: const Icon(AppIconography.info),
             onPressed: () => Navigator.pushNamed(context, '/about'),
           ),
@@ -384,6 +384,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
             return _WelcomeView(
               busy: _busy,
               onConnect: () => _edit(),
+              onConnectOpenCode2: () => _edit(openCode2Intent: true),
               onTailscale: _tailscale,
               onTermux: () => Navigator.pushNamed(context, '/termux-setup'),
               onGuide: () => Navigator.pushNamed(context, '/guide'),
@@ -408,15 +409,23 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              const SectionLabel.inline('Servers'),
+              SectionLabel.inline(
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7SetupServers,
+              ),
               if (needsCredential) ...[
                 Semantics(
                   container: true,
                   liveRegion: true,
                   excludeSemantics: true,
                   label: needsToken
-                      ? 'Connection token re-entry required for the active server. Edit the server and save its token before connecting.'
-                      : 'Password re-entry required for the active server. Edit the server and save its password before connecting.',
+                      ? lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7SetupTokenBanner
+                      : lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7SetupPasswordBanner,
                   child: Container(
                     key: const Key('password-reentry-banner'),
                     margin: const EdgeInsets.only(bottom: 10),
@@ -460,7 +469,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
               ],
               if (_busy)
                 Semantics(
-                  label: 'Server operation in progress',
+                  label: lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupServerOperation,
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: LinearProgressIndicator(
@@ -515,9 +526,17 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                             fontSize: AppTheme.captionFontSize,
                           ),
                         ),
+                        if (p.backend == ServerBackend.openCode)
+                          Text(
+                            _knownOpenCodeGeneration(p),
+                            key: ValueKey('server-generation-${p.id}'),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
                         if (p.requiresPasswordReentry)
                           Text(
-                            'Password re-entry required',
+                            lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupPasswordRequired,
                             key: ValueKey('password-reentry-${p.id}'),
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.error,
@@ -535,7 +554,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                           ),
                         if (p.requiresCodexTokenReentry)
                           Text(
-                            'Connection token re-entry required',
+                            lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupTokenRequired,
                             key: ValueKey('codex-token-reentry-${p.id}'),
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.error,
@@ -570,14 +591,29 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                               _connectionL10n(context).agentAccountTitle,
                             ),
                           ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'conn',
-                          child: Text('Connect'),
+                          child: Text(
+                            lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupConnect,
+                          ),
                         ),
-                        const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                        const PopupMenuItem(
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Text(
+                            lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupEdit,
+                          ),
+                        ),
+                        PopupMenuItem(
                           value: 'del',
-                          child: Text('Remove'),
+                          child: Text(
+                            lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).capsuleRemove,
+                          ),
                         ),
                       ],
                     ),
@@ -600,22 +636,34 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
               OutlinedButton.icon(
                 onPressed: _busy ? null : () => _edit(),
                 icon: const Icon(AppIconography.add),
-                label: const Text('Add server'),
+                label: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupAddServer,
+                ),
               ),
               const SizedBox(height: 8),
+              _OpenCode2Entry(
+                onTap: _busy ? null : () => _edit(openCode2Intent: true),
+              ),
               TextButton.icon(
                 onPressed: _busy ? null : _demo,
                 icon: const Icon(AppIconography.playCircle),
                 label: const Text(DemoCopy.tryDemo),
               ),
               const SizedBox(height: 16),
+              if (platformCapabilities.supportsTermux)
+                _TermuxEntry(
+                  key: const ValueKey('quick-add-termux-card'),
+                  onTap: _busy
+                      ? null
+                      : () => Navigator.pushNamed(context, '/termux-setup'),
+                ),
               _SetupOptions(
                 busy: _busy,
                 onTailscale: _tailscale,
-                onTermux: () => Navigator.pushNamed(context, '/termux-setup'),
                 onGuide: () => Navigator.pushNamed(context, '/guide'),
                 onExternalAgents: _externalAgents,
-                savedProfiles: true,
               ),
             ],
           );
@@ -629,6 +677,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
 class _WelcomeView extends StatelessWidget {
   final bool busy;
   final VoidCallback onConnect;
+  final VoidCallback onConnectOpenCode2;
   final VoidCallback onTailscale;
   final VoidCallback onTermux;
   final VoidCallback onGuide;
@@ -638,6 +687,7 @@ class _WelcomeView extends StatelessWidget {
   const _WelcomeView({
     required this.busy,
     required this.onConnect,
+    required this.onConnectOpenCode2,
     required this.onTailscale,
     required this.onTermux,
     required this.onGuide,
@@ -705,11 +755,16 @@ class _WelcomeView extends StatelessWidget {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 24),
+                      _OpenCode2Entry(onTap: busy ? null : onConnectOpenCode2),
+                      if (platformCapabilities.supportsTermux)
+                        _TermuxEntry(
+                          key: const ValueKey('welcome-termux-card'),
+                          onTap: busy ? null : onTermux,
+                        ),
                       _SetupOptions(
                         busy: busy,
                         onTailscale: onTailscale,
-                        onTermux: onTermux,
                         onGuide: onGuide,
                         onExternalAgents: onExternalAgents,
                       ),
@@ -725,22 +780,91 @@ class _WelcomeView extends StatelessWidget {
   }
 }
 
+/// The phone has one managed listener. Choosing between retained generation
+/// profiles is a runtime decision, not permission to redetect/rewrite either.
+bool _needsManagedRuntimeChoice(
+  ServerProfile profile,
+  List<ServerProfile> profiles,
+) {
+  if (!platformCapabilities.supportsTermux ||
+      profile.backend != ServerBackend.openCode ||
+      !TermuxBridge.managesServerUrl(profile.baseUrl) ||
+      _knownOpenCodeFlavor(profile) == null) {
+    return false;
+  }
+  return profiles.any(
+    (other) =>
+        other.id != profile.id &&
+        other.backend == ServerBackend.openCode &&
+        TermuxBridge.managesServerUrl(other.baseUrl) &&
+        _knownOpenCodeFlavor(other) != null &&
+        _knownOpenCodeFlavor(other) != _knownOpenCodeFlavor(profile),
+  );
+}
+
+ServerFlavor? _knownOpenCodeFlavor(ServerProfile profile) {
+  if (profile.flavor == ServerFlavor.v2) return ServerFlavor.v2;
+  if (profile.flavor == ServerFlavor.v1 &&
+      profile.serverVersion?.trim().isNotEmpty == true) {
+    return ServerFlavor.v1;
+  }
+  return null;
+}
+
+/// Legacy profiles default to v1 without a probe. Only the cached version
+/// proves that this default was confirmed. v2 never comes from that default.
+String _knownOpenCodeGeneration(ServerProfile profile) =>
+    switch (_knownOpenCodeFlavor(profile)) {
+      ServerFlavor.v2 => 'OpenCode 2',
+      ServerFlavor.v1 => 'OpenCode 1',
+      _ => 'OpenCode',
+    };
+
+/// A discovery shortcut into the same autodetecting editor, not a flavor override.
+class _OpenCode2Entry extends StatelessWidget {
+  const _OpenCode2Entry({required this.onTap});
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    key: const ValueKey('connect-existing-opencode2'),
+    contentPadding: EdgeInsets.zero,
+    leading: const Icon(AppIconography.server),
+    title: Text(_connectionL10n(context).oc2DiscoveryConnect),
+    subtitle: Text(_connectionL10n(context).oc2DiscoveryExisting),
+    trailing: const Icon(AppIconography.chevronRight),
+    onTap: onTap,
+  );
+}
+
+/// A phone feature must stay discoverable when the current server is remote.
+class _TermuxEntry extends StatelessWidget {
+  const _TermuxEntry({super.key, required this.onTap});
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    leading: const Icon(AppIconography.phone),
+    title: Text(_connectionL10n(context).onboardingTermuxSetup),
+    subtitle: Text(_connectionL10n(context).oc2DiscoveryPhone),
+    trailing: const Icon(AppIconography.chevronRight),
+    onTap: onTap,
+  );
+}
+
 /// Advanced setup remains discoverable without competing with connect or demo.
 class _SetupOptions extends StatelessWidget {
   const _SetupOptions({
     required this.busy,
     required this.onTailscale,
-    required this.onTermux,
     required this.onGuide,
     required this.onExternalAgents,
-    this.savedProfiles = false,
   });
   final bool busy;
   final VoidCallback onTailscale;
-  final VoidCallback onTermux;
   final VoidCallback onGuide;
   final VoidCallback onExternalAgents;
-  final bool savedProfiles;
 
   @override
   Widget build(BuildContext context) => ExpansionTile(
@@ -758,17 +882,6 @@ class _SetupOptions extends StatelessWidget {
           title: Text(_connectionL10n(context).tailscaleTitle),
           subtitle: Text(_connectionL10n(context).onboardingPrivateNetwork),
           onTap: busy ? null : onTailscale,
-        ),
-      if (platformCapabilities.supportsTermux)
-        ListTile(
-          key: ValueKey(
-            savedProfiles ? 'quick-add-termux-card' : 'welcome-termux-card',
-          ),
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(AppIconography.phone),
-          title: Text(_connectionL10n(context).onboardingRunOnPhone),
-          subtitle: Text(_connectionL10n(context).onboardingTermuxNote),
-          onTap: busy ? null : onTermux,
         ),
       ListTile(
         key: const ValueKey('welcome-guide-card'),
@@ -791,6 +904,7 @@ class _ProfileEditorScreen extends StatefulWidget {
   final ServerProfile? existing;
   final bool tailscale;
   final bool reconnectOnSave;
+  final bool openCode2Intent;
   final String? initialUrl;
 
   /// Focus the password field on open — the path taken from the connection
@@ -810,6 +924,7 @@ class _ProfileEditorScreen extends StatefulWidget {
     this.existing,
     this.tailscale = false,
     this.reconnectOnSave = false,
+    this.openCode2Intent = false,
     this.initialUrl,
     this.focusPassword = false,
     required this.onSubmit,
@@ -873,6 +988,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
 
   /// True while a pairing payload's addresses are being probed.
   bool _pairing = false;
+
+  /// The AI Team host chosen in this editor (TEAM-106); the existing
+  /// profile's config until "Add manually" replaces it.
+  late OrchestrationConfig? _orchestration = widget.existing?.orchestration;
 
   /// Which address pairing settled on, as a sentence. Never contains the
   /// password.
@@ -1108,9 +1227,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     if (raw.trim().isEmpty) {
       setState(() {
         _pairingNotice = null;
-        _pairingFailure =
-            'The clipboard is empty. Run `opencode2 pair` on the server and '
-            'copy the code it prints.';
+        _pairingFailure = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupEmptyPairClipboard;
       });
       return;
     }
@@ -1208,14 +1327,25 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _testResult = selection.ok ? result : null;
       if (selection.ok) {
         _pairingNotice = tried > 1
-            ? 'Paired with $host — chosen from $tried addresses in the code.'
-            : 'Paired with $host.';
+            ? lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupPairedChoice(host, tried)
+            : lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupPaired(host);
         _pairingFailure = null;
       } else {
         _pairingNotice = null;
         _pairingFailure =
-            'No address in that pairing code answered:\n'
-            '${selection.failureDetail}\n$_pairingHint';
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupPairingFailed(
+              setupUiMessage(
+                lookupAppLocalizations(Localizations.localeOf(context)),
+                selection.failureDetail,
+              ),
+              _pairingHint,
+            );
       }
     });
     if (!selection.connected && (result?.needsPassword ?? false)) {
@@ -1226,12 +1356,12 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// What to do about a pairing code whose addresses all failed. A phone and
   /// a desktop have genuinely different answers, so they get different ones.
   String get _pairingHint => platformCapabilities.supportsUsbHostBridge
-      ? 'A server bound to its own 127.0.0.1 is not reachable from this '
-            'phone until you bridge it — `adb reverse tcp:PORT tcp:PORT` over '
-            'USB, or an SSH forward. To reach it over the network instead, '
-            'put it behind HTTPS.'
-      : 'Check that the server is running, and that the address it printed '
-            'is one this machine can reach.';
+      ? lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupPairingPhoneHint
+      : lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupPairingDesktopHint;
 
   /// Paste-first entry for the per-run serve password: nobody types a random
   /// 32-byte base64url string. Trims whitespace and a copied
@@ -1305,10 +1435,18 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     _closing = true;
     final discard = await showConfirmSheet(
       context,
-      title: 'Discard server changes?',
-      message: 'The server profile has not been saved.',
-      confirmLabel: 'Discard',
-      cancelLabel: 'Keep editing',
+      title: lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupDiscardChanges,
+      message: lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupUnsavedProfile,
+      confirmLabel: lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7SetupDiscard,
+      cancelLabel: lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).draftKeepEditing,
       icon: AppIconography.editOff,
     );
     _closing = false;
@@ -1338,6 +1476,22 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     });
   }
 
+  /// "AI Team (optional)" › Add manually: the shared form; a found host is
+  /// kept on the profile the next save writes.
+  Future<void> _addTeamHost() async {
+    final config = await showTeamHostSheet(
+      context,
+      initialUrl:
+          _orchestration?.url ??
+          teamDiscoveryUrlFor(normalizeServerProfileUrl(_url.text)) ??
+          '',
+      initialCity: _orchestration?.city ?? '',
+      initialHostKind: _orchestration?.hostKind,
+    );
+    if (config == null || !mounted) return;
+    setState(() => _orchestration = config);
+  }
+
   Future<void> _save() async {
     if (_submitting) return;
     if (_isCodex) {
@@ -1365,8 +1519,22 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     // on every cold connect and a failed connect re-probes, so a save without
     // a test (default v1) still self-corrects.
     final probed = _testResult;
+    final normalizedUrl = url.endsWith('/')
+        ? url.substring(0, url.length - 1)
+        : url;
+    final previousUrl = widget.existing == null
+        ? null
+        : normalizeServerProfileUrl(
+            widget.existing!.baseUrl,
+          ).replaceFirst(RegExp(r'/$'), '');
+    final endpointChanged = previousUrl != null && previousUrl != normalizedUrl;
+    // Cached identity belongs to an endpoint, not merely this profile name.
+    // A new untested endpoint uses the same safe default as a new profile;
+    // connect/probe will detect it rather than inherit the old server's v2 proof.
     final detected = probed != null && probed.flavor != ServerFlavor.unknown
         ? probed.flavor
+        : endpointChanged
+        ? ServerFlavor.v1
         : widget.existing?.flavor ?? ServerFlavor.v1;
     final profile = ServerProfile(
       id:
@@ -1374,11 +1542,14 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
           widget.existing?.id ??
           DateTime.now().microsecondsSinceEpoch.toString(),
       name: _name.text.trim().isEmpty ? uri.host : _name.text.trim(),
-      baseUrl: url.endsWith('/') ? url.substring(0, url.length - 1) : url,
+      baseUrl: normalizedUrl,
       username: _user.text.trim(),
       password: _pass.text,
       flavor: detected,
-      serverVersion: probed?.version ?? widget.existing?.serverVersion,
+      serverVersion:
+          probed?.version ??
+          (endpointChanged ? null : widget.existing?.serverVersion),
+      orchestration: _orchestration,
     );
     FocusScope.of(context).unfocus();
     setState(() {
@@ -1472,6 +1643,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     TextField(
       enabled: !_submitting,
       key: const ValueKey('codex-server-address-field'),
+      textDirection: TextDirection.ltr,
       controller: _url,
       focusNode: _urlFocus,
       autofocus: false,
@@ -1492,6 +1664,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     TextField(
       enabled: !_submitting,
       key: const ValueKey('codex-project-directory-field'),
+      textDirection: TextDirection.ltr,
       controller: _codexDirectory,
       focusNode: _codexDirectoryFocus,
       textInputAction: TextInputAction.next,
@@ -1506,6 +1679,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     TextField(
       enabled: !_submitting,
       key: const ValueKey('codex-connection-token-field'),
+      textDirection: TextDirection.ltr,
       controller: _codexToken,
       focusNode: _codexTokenFocus,
       autofocus: _needsCodexToken || widget.focusPassword,
@@ -1586,7 +1760,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     ? lookupAppLocalizations(
                         Localizations.localeOf(context),
                       ).codexConnectionVerified
-                    : result.message,
+                    : setupUiMessage(
+                        lookupAppLocalizations(Localizations.localeOf(context)),
+                        result.message,
+                      ),
                 style: TextStyle(
                   color: result.ok
                       ? theme.colorScheme.onSurface
@@ -1604,12 +1781,20 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final title = widget.existing == null
-        ? 'Add server'
+        ? widget.openCode2Intent && !_isCodex
+              ? _connectionL10n(context).oc2DiscoveryEditorTitle
+              : lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7SetupAddServer
         : _needsCodexToken
         ? _connectionL10n(context).codexTokenReentry
         : _needsPassword
-        ? 'Re-enter password'
-        : 'Edit server';
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupReenterPassword
+        : lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupEditServer;
     final theme = Theme.of(context);
     return PopScope(
       canPop: false,
@@ -1639,7 +1824,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
               onPressed: _submitting ? null : _save,
               child: Text(
                 _submitting
-                    ? 'Saving…'
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupSaving
                     : _isCodex ||
                           widget.existing == null ||
                           widget.reconnectOnSave
@@ -1687,7 +1874,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       children: [
                         ChoiceChip(
                           label: Text(
-                            _connectionL10n(context).openCodeConnectionLabel,
+                            _connectionL10n(context).oc2DiscoveryTypes,
                           ),
                           selected: !_isCodex,
                           onSelected: _submitting
@@ -1713,6 +1900,16 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     ),
                     const SizedBox(height: 8),
                   ],
+                  if (!_isCodex) ...[
+                    Text(
+                      _connectionL10n(context).oc2DiscoveryAutodetect,
+                      key: const ValueKey('opencode-autodetect-help'),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   // A save or connect that failed is shown first, where it is
                   // seen without scrolling, in the same verdict style as Test
                   // connection.
@@ -1736,8 +1933,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       container: true,
                       liveRegion: true,
                       excludeSemantics: true,
-                      label:
-                          'The saved password is unavailable. Enter it again, or leave it empty only if this server no longer requires a password.',
+                      label: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupMissingPasswordLong,
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -1745,7 +1943,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          'The saved password is unavailable. Enter it again, or leave it empty only if this server no longer requires one.',
+                          lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupMissingPasswordShort,
                           style: TextStyle(
                             color: theme.colorScheme.onErrorContainer,
                           ),
@@ -1787,6 +1987,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     TextField(
                       enabled: !_submitting,
                       key: const ValueKey('server-url-field'),
+                      textDirection: TextDirection.ltr,
                       controller: _url,
                       focusNode: _urlFocus,
                       autofocus: false,
@@ -1795,13 +1996,17 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       onSubmitted: (_) => _nameFocus.requestFocus(),
                       onChanged: _urlChanged,
                       decoration: InputDecoration(
-                        labelText: 'Server URL',
+                        labelText: lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7SetupServerUrl,
                         hintText: 'https://server.example',
                         errorText: _error,
                         errorMaxLines: 3,
                         helperText: widget.tailscale
                             ? _connectionL10n(context).tailscaleAddressDetail
-                            : 'Use HTTPS for remote machines. HTTP is limited to localhost or 127.0.0.1.',
+                            : lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupHttpsHint,
                         helperMaxLines: 3,
                       ),
                     ),
@@ -1825,7 +2030,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     ),
                     const SizedBox(height: 28),
                     Text(
-                      'AUTHENTICATION',
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupAuthentication,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         letterSpacing: 1,
@@ -1835,13 +2042,16 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     TextField(
                       enabled: !_submitting,
                       key: const ValueKey('server-username-field'),
+                      textDirection: TextDirection.ltr,
                       controller: _user,
                       focusNode: _userFocus,
                       textInputAction: TextInputAction.next,
                       onSubmitted: (_) => _passFocus.requestFocus(),
                       onChanged: (_) => setState(_invalidateProbe),
-                      decoration: const InputDecoration(
-                        labelText: 'Username (optional)',
+                      decoration: InputDecoration(
+                        labelText: lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7SetupUsername,
                         hintText: 'opencode',
                       ),
                     ),
@@ -1849,6 +2059,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     TextField(
                       enabled: !_submitting,
                       key: const ValueKey('server-password-field'),
+                      textDirection: TextDirection.ltr,
                       controller: _pass,
                       focusNode: _passFocus,
                       autofocus: _needsPassword || widget.focusPassword,
@@ -1864,13 +2075,19 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       onSubmitted: (_) => _save(),
                       decoration: InputDecoration(
                         labelText: _needsPassword
-                            ? 'Re-enter password'
-                            : 'Server password',
+                            ? lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupReenterPassword
+                            : lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupServerPassword,
                         helperText: _needsPassword
-                            ? 'Leave empty only if this server no longer uses a password.'
-                            : 'Printed by opencode2 serve at startup '
-                                  '("server password …"). Optional for servers '
-                                  'without one.',
+                            ? lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupEmptyPasswordHint
+                            : lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupPasswordStartupHint,
                         helperMaxLines: 3,
                         suffixIcon: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1878,8 +2095,12 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                             IconButton(
                               key: const ValueKey('server-password-visibility'),
                               tooltip: _obscurePassword
-                                  ? 'Show server password'
-                                  : 'Hide server password',
+                                  ? lookupAppLocalizations(
+                                      Localizations.localeOf(context),
+                                    ).e7SetupShowPassword
+                                  : lookupAppLocalizations(
+                                      Localizations.localeOf(context),
+                                    ).e7SetupHidePassword,
                               onPressed: () => setState(
                                 () => _obscurePassword = !_obscurePassword,
                               ),
@@ -1894,7 +2115,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                             // field edge.
                             IconButton(
                               key: const ValueKey('server-password-paste'),
-                              tooltip: 'Paste server password',
+                              tooltip: lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupPastePassword,
                               onPressed: () => unawaited(_pastePassword()),
                               icon: const Icon(AppIconography.paste),
                             ),
@@ -1913,7 +2136,15 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(AppIconography.networkCheck),
-                    label: Text(_testing ? 'Testing…' : 'Test connection'),
+                    label: Text(
+                      _testing
+                          ? lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupTesting
+                          : lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupTestConnection,
+                    ),
                   ),
                   if (_isCodex && _codexTestResult != null) ...[
                     const SizedBox(height: 12),
@@ -1958,11 +2189,26 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                                   if (result.ok) ...[
                                     Text(
                                       result.flavor == ServerFlavor.v2
-                                          ? 'OpenCode 2 · '
-                                                '${result.version ?? 'unknown version'}'
-                                          : 'OpenCode 1 · '
-                                                '${result.version ?? 'unknown version'}'
-                                                ' — limited feature set',
+                                          ? lookupAppLocalizations(
+                                              Localizations.localeOf(context),
+                                            ).e7SetupProbeV2(
+                                              result.version ??
+                                                  lookupAppLocalizations(
+                                                    Localizations.localeOf(
+                                                      context,
+                                                    ),
+                                                  ).e7SetupUnknownVersion,
+                                            )
+                                          : lookupAppLocalizations(
+                                              Localizations.localeOf(context),
+                                            ).e7SetupProbeV1(
+                                              result.version ??
+                                                  lookupAppLocalizations(
+                                                    Localizations.localeOf(
+                                                      context,
+                                                    ),
+                                                  ).e7SetupUnknownVersion,
+                                            ),
                                       style: theme.textTheme.bodyMedium
                                           ?.copyWith(
                                             fontWeight: FontWeight.w600,
@@ -1972,8 +2218,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                                     if (result.flavor == ServerFlavor.v1) ...[
                                       const SizedBox(height: 2),
                                       Text(
-                                        'This app targets OpenCode 2; some '
-                                        'features are unavailable on v1 servers.',
+                                        lookupAppLocalizations(
+                                          Localizations.localeOf(context),
+                                        ).e7SetupV1Limited,
                                         style: theme.textTheme.labelSmall
                                             ?.copyWith(
                                               color: theme
@@ -1985,7 +2232,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                                     ],
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Connected — save to finish.',
+                                      lookupAppLocalizations(
+                                        Localizations.localeOf(context),
+                                      ).e7SetupSaveToFinish,
                                       style: TextStyle(
                                         color: theme.colorScheme.onSurface,
                                         height: 1.35,
@@ -1994,7 +2243,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                                   ] else ...[
                                     if (result.flavor == ServerFlavor.v2) ...[
                                       Text(
-                                        'This is an OpenCode 2 server.',
+                                        lookupAppLocalizations(
+                                          Localizations.localeOf(context),
+                                        ).e7SetupIsV2,
                                         style: theme.textTheme.bodyMedium
                                             ?.copyWith(
                                               color: theme
@@ -2007,7 +2258,12 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                                       const SizedBox(height: 2),
                                     ],
                                     Text(
-                                      result.message!,
+                                      setupUiMessage(
+                                        lookupAppLocalizations(
+                                          Localizations.localeOf(context),
+                                        ),
+                                        result.message!,
+                                      ),
                                       style: TextStyle(
                                         color:
                                             theme.colorScheme.onErrorContainer,
@@ -2019,8 +2275,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                                       result.suggestsMissingServer) ...[
                                     const SizedBox(height: 6),
                                     Text(
-                                      'No server there yet? The setup guide '
-                                      'shows how to start one.',
+                                      lookupAppLocalizations(
+                                        Localizations.localeOf(context),
+                                      ).e7SetupNoServerGuide,
                                       style: TextStyle(
                                         color:
                                             theme.colorScheme.onErrorContainer,
@@ -2038,7 +2295,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                                         context,
                                         '/guide',
                                       ),
-                                      child: const Text('Open the setup guide'),
+                                      child: Text(
+                                        lookupAppLocalizations(
+                                          Localizations.localeOf(context),
+                                        ).e7SetupOpenSetupGuide,
+                                      ),
                                     ),
                                   ],
                                 ],
@@ -2047,6 +2308,47 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                           ],
                         ),
                       ),
+                    ),
+                  ],
+                  if (!_isCodex) ...[
+                    const SizedBox(height: 24),
+                    Text(
+                      _connectionL10n(context).teamUiEditorTitle,
+                      key: const ValueKey('server-editor-team-section'),
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _orchestration == null
+                          ? _connectionL10n(context).teamUiEditorBody
+                          : _connectionL10n(
+                              context,
+                            ).teamUiEditorConfigured(_orchestration!.url),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        height: 1.35,
+                      ),
+                    ),
+                    Wrap(
+                      spacing: 4,
+                      children: [
+                        TextButton(
+                          key: const ValueKey('server-editor-team-learn'),
+                          onPressed: _submitting
+                              ? null
+                              : () => showTeamHostGuideSheet(context),
+                          child: Text(_connectionL10n(context).teamUiLearnHow),
+                        ),
+                        TextButton(
+                          key: const ValueKey('server-editor-team-add'),
+                          onPressed: _submitting ? null : _addTeamHost,
+                          child: Text(
+                            _orchestration == null
+                                ? _connectionL10n(context).teamUiAddManually
+                                : _connectionL10n(context).teamUiChange,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],
@@ -2102,8 +2404,9 @@ class _PairingActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'On your computer run `opencode2 pair`, then paste or scan the '
-          'code it prints.',
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupPairingInstructions,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
             height: 1.35,
@@ -2123,14 +2426,26 @@ class _PairingActions extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(AppIconography.paste, size: 18),
-              label: Text(busy ? 'Pairing…' : 'Paste pairing code'),
+              label: Text(
+                busy
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupPairing
+                    : lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupPastePairing,
+              ),
             ),
             if (onScan case final scan?)
               OutlinedButton.icon(
                 key: const ValueKey('server-pairing-scan'),
                 onPressed: busy ? null : scan,
                 icon: const Icon(AppIconography.qrCode, size: 18),
-                label: const Text('Scan'),
+                label: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupScan,
+                ),
               ),
           ],
         ),
@@ -2182,7 +2497,10 @@ class _PairingActions extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      failure,
+                      setupUiMessage(
+                        lookupAppLocalizations(Localizations.localeOf(context)),
+                        failure,
+                      ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onErrorContainer,
                         height: 1.35,
@@ -2244,7 +2562,9 @@ class _InlineFailureCard extends StatelessWidget {
             ),
             if (onDismiss != null)
               IconButton(
-                tooltip: 'Dismiss',
+                tooltip: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).workspaceDismissNotice,
                 onPressed: onDismiss,
                 color: theme.colorScheme.onErrorContainer,
                 icon: const Icon(AppIconography.close, size: 20),

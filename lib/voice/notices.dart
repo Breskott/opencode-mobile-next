@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../ui/app_theme.dart';
+import 'presentation.dart';
 import '../ui/widgets/product_states.dart';
 
 const voiceNoticeAssets = <String>[
@@ -45,7 +47,7 @@ class _VoiceNoticesViewState extends State<VoiceNoticesView> {
     builder: (context, snapshot) {
       if (snapshot.hasError) {
         return ProductErrorState(
-          message: productErrorText(snapshot.error!),
+          message: voiceStrings(context).e7VoiceUiNoticesFailed,
           onRetry: _retry,
         );
       }
@@ -57,6 +59,7 @@ class _VoiceNoticesViewState extends State<VoiceNoticesView> {
           padding: const EdgeInsets.all(16),
           child: Text(
             snapshot.data!,
+            textDirection: TextDirection.ltr,
             style: const TextStyle(
               fontFamily: AppTheme.monoFamily,
               fontSize: AppTheme.codeFontSize,
@@ -73,7 +76,7 @@ class VoiceNoticesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Voice licenses and provenance')),
+    appBar: AppBar(title: Text(voiceStrings(context).e7VoiceUiLicenses)),
     body: const VoiceNoticesView(),
   );
 }

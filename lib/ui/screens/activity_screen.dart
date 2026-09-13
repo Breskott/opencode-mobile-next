@@ -4,21 +4,28 @@ import '../../api/models.dart';
 import '../../api/product_repository.dart';
 import '../../api2/models.dart' show Api2FormInfo;
 import '../../domain/completion_digest.dart';
+import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
+import '../../state/orchestration.dart';
 import '../app_theme.dart';
 import '../desktop/desktop_interaction.dart';
 import '../permission_presentation.dart';
 import '../widgets/product_states.dart';
 import '../widgets/completion_digest.dart';
 import '../widgets/question_options.dart';
+import '../widgets/relative_time.dart';
 import '../widgets/request_routes.dart';
+import '../widgets/team_receipt.dart';
+import '../widgets/team_vocabulary.dart';
 import 'chat/form_flow.dart';
 import 'chat/permission_sheet.dart';
 import 'settings_screen.dart';
 import 'profile_monitor_screen.dart';
 import 'run_result_screen.dart';
+import 'team/agent_screen.dart';
+import 'team/gate_sheet.dart';
 
 /// Activity: the single cross-session control centre (audit §3, §8).
 ///
@@ -28,7 +35,11 @@ import 'run_result_screen.dart';
 ///
 /// 1. **Needs attention** — permissions, questions, and v2 forms, each row
 ///    opening the *exact* resolver (the same permission sheet and form flow
-///    chat uses), never merely a link to the related chat.
+///    chat uses), never merely a link to the related chat. When the
+///    connected server runs the AI Team plugin, its gates join the same
+///    list in the BRD §47 order — decision requested, run failed, then the
+///    app's own permissions, then review ready, gate beads and blocked
+///    agents — each opening the read-only Gate sheet (02-ux §6).
 /// 2. **Running** — sessions busy right now, with their subagent counts.
 ///
 /// Every row is server truth the controller already holds; nothing here is
@@ -41,16 +52,26 @@ class ActivityScreen extends StatefulWidget {
   /// immediately, so the alert lands on the answer rather than a list.
   final String? initialQuestionSessionID;
 
+  /// An AI Team notification or link (TEAM-203) names the gate whose sheet
+  /// should open as soon as the plugin has data; ids only, and nothing is
+  /// sent by opening it.
+  final String? initialTeamGateId;
+
   /// True when Activity is hosted as a primary navigation destination, which
   /// already supplies the app bar. Pushed routes (deep links, notifications)
   /// keep their own Scaffold.
   final bool embedded;
 
+  /// The clock behind the AI Team rows' ages; tests pin it.
+  final DateTime Function()? now;
+
   const ActivityScreen({
     super.key,
     required this.controller,
     this.initialQuestionSessionID,
+    this.initialTeamGateId,
     this.embedded = false,
+    this.now,
   });
 
   @override
@@ -68,6 +89,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   String? _error;
   bool _initialQuestionScheduled = false;
   bool _initialQuestionHandled = false;
+  bool _initialGateScheduled = false;
+  bool _initialGateHandled = false;
   Object? _digestScope;
   bool _showDigests = false;
   final Set<(String, int)> _expandedDigests = {};
@@ -103,7 +126,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   void _reviewDigest(String sessionID, Object scope) {
     if (_currentDigestScope != scope) return;
     final controller = widget.controller;
-    for (final permission in controller.permissions.values) {
+    for (final permission in controller.awaitingPermissions) {
       if (permission.sessionID == sessionID) {
         showPermissionSheet(
           context,
@@ -182,7 +205,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
               title: Text(
                 session.title?.trim().isNotEmpty == true
                     ? session.title!
-                    : 'Untitled session',
+                    : _l10n(context).globalSessionsUntitled,
               ),
               subtitle: Text(l10n.digestIdle),
               trailing: Icon(
@@ -207,7 +230,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       : session.summary!.files,
                   pendingDecisions: !pendingKnown
                       ? null
-                      : controller.permissions.values
+                      : controller.awaitingPermissions
                                 .where((p) => p.sessionID == session.id)
                                 .length +
                             controller.questions.values
@@ -253,6 +276,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       if (!mounted) return;
       if (!widget.embedded) _refreshPending();
       _scheduleInitialQuestion();
+      _scheduleInitialGate();
     });
   }
 
@@ -266,6 +290,35 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (!mounted) return;
     setState(() {});
     _scheduleInitialQuestion();
+    _scheduleInitialGate();
+  }
+
+  /// Opens the Gate sheet a notification or link named, once the plugin
+  /// controller has its first snapshot (or gave up): the sheet itself says
+  /// when the gate is gone. Exactly one open per screen; nothing is sent.
+  void _scheduleInitialGate() {
+    final gateId = widget.initialTeamGateId;
+    final team = widget.controller.orchestration;
+    if (!mounted ||
+        gateId == null ||
+        team == null ||
+        _initialGateHandled ||
+        _initialGateScheduled) {
+      return;
+    }
+    final settled =
+        team.snapshot.hasData ||
+        team.phase == OrchestrationPhase.failed ||
+        team.phase == OrchestrationPhase.stopped;
+    if (!settled) return;
+    _initialGateScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initialGateScheduled = false;
+      if (!mounted || _initialGateHandled) return;
+      _initialGateHandled = true;
+      final now = (widget.now ?? DateTime.now)();
+      showGateSheet(context, team, gateId, now: () => now);
+    });
   }
 
   void _openBackgroundSettings(BuildContext context) {
@@ -327,6 +380,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   /// cannot query through a repository being retired after Android idle.
   /// Refreshes both halves — pending work and the session fleet.
   Future<void> _refresh() async {
+    final failureMessage = _l10n(context).e7WorkspaceReconnectingAgain;
     if (_refreshing) return;
     setState(() {
       _refreshing = true;
@@ -336,7 +390,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       await widget.controller.profileMonitor.refresh();
       final repository = await widget.controller.prepareActionRepository();
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting. Try again.');
+        throw ProductException(failureMessage);
       }
       await widget.controller.refreshSessions();
     } catch (error) {
@@ -394,6 +448,54 @@ class _ActivityScreenState extends State<ActivityScreen> {
     }
   }
 
+  /// The AI Team rows in the §47 order, newest first within a rank: every
+  /// gate of the snapshot plus the blocked agents. A run that completed
+  /// since the last view (rank 7) is omitted: the controller keeps no
+  /// per-view watermark, and inventing one here would mean guessing.
+  List<_TeamRow> _teamRows(OrchestrationController? team) {
+    if (team == null) return const [];
+    final snapshot = team.snapshot;
+    final now = (widget.now ?? DateTime.now)();
+    final rows = <_TeamRow>[
+      // A gate answered from here leaves once the host confirmed
+      // (02-ux §6); until then it stays with its receipt chip.
+      for (final gate in snapshot.gates)
+        if (!teamGateAnswered(team, gate))
+          _TeamRow(
+            rank: teamActivityGateRank(gate.kind),
+            at: gate.createdAt,
+            widget: ActivityGateTile(
+              key: ValueKey('activity-team-gate-${gate.id}'),
+              gate: gate,
+              team: team,
+              serverName: widget.controller.profile?.name,
+              now: now,
+            ),
+          ),
+      for (final agent in snapshot.agents)
+        if (agent.state == AgentState.blocked)
+          _TeamRow(
+            rank: teamActivityAgentBlockedRank,
+            at: agent.lastActivity,
+            widget: ActivityAgentBlockedTile(
+              key: ValueKey('activity-team-agent-${agent.id}'),
+              agent: agent,
+              team: team,
+              serverName: widget.controller.profile?.name,
+              now: now,
+            ),
+          ),
+    ];
+    rows.sort((a, b) {
+      final rank = a.rank.compareTo(b.rank);
+      if (rank != 0) return rank;
+      final at = a.at, bt = b.at;
+      if (at == null || bt == null) return 0;
+      return bt.compareTo(at);
+    });
+    return rows;
+  }
+
   static String _place(Session session) {
     final directory = session.directory?.trim() ?? '';
     if (directory.isEmpty) return '';
@@ -408,7 +510,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Widget build(BuildContext context) {
     _clearDigestScope();
     final controller = widget.controller;
-    final permissions = controller.permissions.values.toList();
+    final permissions = controller.awaitingPermissions.toList();
     final questions = controller.questions.values.toList()
       ..sort((a, b) {
         final selected = widget.initialQuestionSessionID;
@@ -437,6 +539,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
         .map((id) => controller.sessionsById[id] ?? Session(id: id, title: id))
         .where((session) => session.parentID == null)
         .toList();
+    // AI Team items of the connected server only: the plugin controller is
+    // built for the connected profile and disposed on disconnect, so a gate
+    // from another server never reaches this list.
+    final team = _teamRows(controller.orchestration);
 
     final loading =
         _loading ||
@@ -452,7 +558,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
         permissions.length +
         questions.length +
         sessionForms.length +
-        globalForms.length;
+        globalForms.length +
+        team.length;
     final empty =
         attentionCount == 0 &&
         running.isEmpty &&
@@ -508,12 +615,15 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   if (error != null)
                     ProductInlineEmpty(
                       icon: Icons.sync_problem_rounded,
-                      title: 'Could not refresh',
+                      title: _l10n(context).e7WorkspaceRefreshFailed,
                       message: error,
-                      actionLabel: 'Try again',
+                      actionLabel: _l10n(context).isolatedTaskRetryOpen,
                       onAction: _refresh,
                     ),
-                  if (attentionCount > 0) const SectionLabel('Needs attention'),
+                  if (attentionCount > 0)
+                    SectionLabel(_l10n(context).setupSwitchAttention),
+                  for (final row in team)
+                    if (row.rank < teamActivityPermissionRank) row.widget,
                   for (final permission in permissions)
                     ActivityPermissionTile(
                       key: ValueKey('activity-permission-${permission.id}'),
@@ -528,13 +638,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
                     ),
                   for (final form in sessionForms)
                     ActivityFormTile(form: form, controller: controller),
+                  for (final row in team)
+                    if (row.rank > teamActivityPermissionRank) row.widget,
                   if (globalForms.isNotEmpty) ...[
-                    const SectionLabel('Server requests'),
+                    SectionLabel(_l10n(context).e7WorkspaceServerRequests),
                     for (final form in globalForms)
                       ActivityFormTile(form: form, controller: controller),
                   ],
                   ProfileMonitorInbox(controller: controller, compact: true),
-                  if (running.isNotEmpty) const SectionLabel('Running'),
+                  if (running.isNotEmpty)
+                    SectionLabel(_l10n(context).workRunning),
                   if (running.isNotEmpty)
                     for (final session in running)
                       _SessionRow(
@@ -556,10 +669,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (widget.embedded) return body;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Activity'),
+        title: Text(_l10n(context).e7WorkspaceActivity),
         actions: [
           IconButton(
-            tooltip: 'Refresh',
+            tooltip: _l10n(context).globalSessionsRefresh,
             onPressed: _refreshing ? null : _refresh,
             icon: _refreshing
                 ? const SizedBox.square(
@@ -591,7 +704,7 @@ class ActivityPermissionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final title = permission.permission.isEmpty
-        ? 'Permission required'
+        ? _l10n(context).e7WorkspacePermissionRequired
         : permissionRequestTitle(permission.permission);
     return ListTile(
       minTileHeight: 66,
@@ -600,7 +713,7 @@ class ActivityPermissionTile extends StatelessWidget {
       subtitle: Text(
         permission.patterns.isNotEmpty
             ? permission.patterns.first
-            : _sessionTitle(controller, permission.sessionID),
+            : _sessionTitle(context, controller, permission.sessionID),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: permission.patterns.isNotEmpty
@@ -615,7 +728,9 @@ class ActivityPermissionTile extends StatelessWidget {
         context,
         permission: permission,
         controller: controller,
-        contextLabel: 'for ${_sessionTitle(controller, permission.sessionID)}',
+        contextLabel: _l10n(context).e7WorkspaceRequestFor(
+          _sessionTitle(context, controller, permission.sessionID),
+        ),
       ),
     );
   }
@@ -641,12 +756,12 @@ class ActivityQuestionTile extends StatelessWidget {
       ),
       title: Text(
         question.prompts.isEmpty
-            ? 'Assistant question'
+            ? _l10n(context).e7WorkspaceAssistantQuestion
             : question.prompts.first.title,
       ),
       subtitle: Text(
         question.prompts.isEmpty
-            ? _sessionTitle(controller, question.sessionID)
+            ? _sessionTitle(context, controller, question.sessionID)
             : question.prompts.first.question,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
@@ -677,17 +792,142 @@ class ActivityFormTile extends StatelessWidget {
         AppIconography.checklist,
         color: Theme.of(context).colorScheme.primary,
       ),
-      title: Text(form.title ?? 'Input requested'),
+      title: Text(form.title ?? _l10n(context).e7WorkspaceInputRequested),
       subtitle: Text(
         form.sessionID == 'global'
-            ? 'Asked by an MCP server'
-            : '$count question${count == 1 ? '' : 's'} · '
-                  '${_sessionTitle(controller, form.sessionID)}',
+            ? _l10n(context).e7WorkspaceMcpAsked
+            : _l10n(context).e7WorkspaceQuestionCount(
+                count,
+                _sessionTitle(context, controller, form.sessionID),
+              ),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: const Icon(AppIconography.chevronRight),
       onTap: () => presentConnectionForm(context, controller, form),
+    );
+  }
+}
+
+/// One AI Team row of the inbox with its §47 rank and time, for the merge
+/// with the app's own rows.
+class _TeamRow {
+  const _TeamRow({required this.rank, required this.at, required this.widget});
+
+  final int rank;
+  final DateTime? at;
+  final Widget widget;
+}
+
+/// A gate of the connected server's AI Team: kind glyph, one-line title,
+/// the kind, what it belongs to, the server and its age, and — once
+/// answered from here — the receipt chip ("Sent", "Unconfirmed", "Not
+/// accepted"). Opens the Gate sheet (02-ux §6), where the answer and the
+/// retry live.
+class ActivityGateTile extends StatelessWidget {
+  const ActivityGateTile({
+    super.key,
+    required this.gate,
+    required this.team,
+    required this.serverName,
+    required this.now,
+  });
+
+  final OrchestrationGate gate;
+  final OrchestrationController team;
+  final String? serverName;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10n(context);
+    final theme = Theme.of(context);
+    final (icon, tone) = teamGateGlyph(gate.kind);
+    final age = gate.createdAt == null
+        ? null
+        : relativeTimeLabel(
+            gate.createdAt!.millisecondsSinceEpoch,
+            now: now,
+            l10n: l10n,
+          );
+    final subtitle = [
+      teamGateKindWord(l10n, gate.kind),
+      ?teamGateLink(l10n, team.snapshot, gate),
+      ?serverName,
+      ?age,
+    ].join(' · ');
+    final record = teamGateMutation(team, gate);
+    void open() => showGateSheet(context, team, gate.id, now: () => now);
+    return ListTile(
+      minTileHeight: 66,
+      leading: Icon(icon, color: AppTheme.statusColor(theme, tone)),
+      title: Text(gate.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+      trailing: record == null || record.status == MutationStatus.confirmed
+          ? const Icon(AppIconography.chevronRight)
+          : TeamReceiptChip(
+              key: ValueKey('activity-team-gate-${gate.id}-receipt'),
+              record: record,
+              onOpen: open,
+            ),
+      onTap: open,
+    );
+  }
+}
+
+/// A blocked agent of the connected server's AI Team (BRD §47 rank 5):
+/// its name, what it works on, the server and its age. Opens the agent.
+class ActivityAgentBlockedTile extends StatelessWidget {
+  const ActivityAgentBlockedTile({
+    super.key,
+    required this.agent,
+    required this.team,
+    required this.serverName,
+    required this.now,
+  });
+
+  final OrchestrationAgent agent;
+  final OrchestrationController team;
+  final String? serverName;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _l10n(context);
+    final theme = Theme.of(context);
+    final (icon, tone) = teamAgentGlyph(agent.state);
+    String? work;
+    for (final item in team.snapshot.work) {
+      if (item.id == agent.currentWorkId) {
+        work = l10n.teamUiHomeGateLinkWork(item.title);
+        break;
+      }
+    }
+    final age = agent.lastActivity == null
+        ? null
+        : relativeTimeLabel(
+            agent.lastActivity!.millisecondsSinceEpoch,
+            now: now,
+            l10n: l10n,
+          );
+    final subtitle = [
+      l10n.teamUiGateKindAgentBlocked,
+      ?work,
+      ?serverName,
+      ?age,
+    ].join(' · ');
+    return ListTile(
+      minTileHeight: 66,
+      leading: Icon(icon, color: AppTheme.statusColor(theme, tone)),
+      title: Text(agent.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
+      trailing: const Icon(AppIconography.chevronRight),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              AgentScreen(controller: team, agentId: agent.id, now: () => now),
+        ),
+      ),
     );
   }
 }
@@ -745,7 +985,7 @@ class _SessionRow extends StatelessWidget {
     final theme = Theme.of(context);
     final title = session.title?.trim().isNotEmpty == true
         ? session.title!.trim()
-        : 'Untitled session';
+        : _l10n(context).globalSessionsUntitled;
     return ListTile(
       leading: running
           ? SizedBox.square(
@@ -768,7 +1008,7 @@ class _SessionRow extends StatelessWidget {
         children: [
           if (subagents > 0)
             Tooltip(
-              message: '$subagents subagent${subagents == 1 ? '' : 's'}',
+              message: _l10n(context).e7WorkspaceSubagentCount(subagents),
               child: Badge(
                 label: Text('$subagents'),
                 child: const Icon(AppIconography.branch, size: 19),
@@ -891,21 +1131,19 @@ class _QuestionSheetState extends State<_QuestionSheet> {
         builder: (context) {
           widget.routes.own(ModalRoute.of(context));
           return AlertDialog(
-            title: const Text('Dismiss this request?'),
-            content: const Text(
-              'OpenCode will continue without answers to these questions.',
-            ),
+            title: Text(_l10n(context).e7WorkspaceDismissRequest),
+            content: Text(_l10n(context).e7WorkspaceDismissDetail),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
+                child: Text(_l10n(context).projectFolderCancel),
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.error,
                 ),
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Dismiss'),
+                child: Text(_l10n(context).workspaceDismissNotice),
               ),
             ],
           );
@@ -955,12 +1193,13 @@ class _QuestionSheetState extends State<_QuestionSheet> {
                         ScrollViewKeyboardDismissBehavior.onDrag,
                     children: [
                       Text(
-                        'OpenCode needs input',
+                        _l10n(context).e7WorkspaceNeedsInput,
                         style: theme.textTheme.titleLarge,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _sessionTitle(
+                          context,
                           widget.controller,
                           widget.question.sessionID,
                         ),
@@ -1039,7 +1278,7 @@ class _QuestionSheetState extends State<_QuestionSheet> {
                   children: [
                     TextButton(
                       onPressed: _busy ? null : _reject,
-                      child: const Text('Dismiss'),
+                      child: Text(_l10n(context).workspaceDismissNotice),
                     ),
                     FilledButton(
                       onPressed: _complete && !_busy ? _submit : null,
@@ -1048,7 +1287,7 @@ class _QuestionSheetState extends State<_QuestionSheet> {
                               dimension: 16,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Send answers'),
+                          : Text(_l10n(context).e7WorkspaceSendAnswers),
                     ),
                   ],
                 ),
@@ -1069,9 +1308,15 @@ class _QuestionSheetState extends State<_QuestionSheet> {
   }
 }
 
-String _sessionTitle(ConnectionController controller, String id) {
+String _sessionTitle(
+  BuildContext context,
+  ConnectionController controller,
+  String id,
+) {
   final session = controller.sessionsById[id];
-  return session?.title?.isNotEmpty == true ? session!.title! : 'Session $id';
+  return session?.title?.isNotEmpty == true
+      ? session!.title!
+      : _l10n(context).e7WorkspaceSessionId(id);
 }
 
 class _BackgroundUpdatesHint extends StatelessWidget {
@@ -1147,3 +1392,7 @@ class _ActivityStatus extends StatelessWidget {
     );
   }
 }
+
+AppLocalizations _l10n(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+    lookupAppLocalizations(Localizations.localeOf(context));

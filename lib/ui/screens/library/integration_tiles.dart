@@ -21,11 +21,15 @@ class _McpServerTile extends StatelessWidget {
     this.authGated = false,
   });
 
-  Widget _action() {
+  Widget _action(BuildContext context) {
     if (authGated) {
-      return const Chip(
+      return Chip(
         key: ValueKey('gated-mcp-oauth'),
-        label: Text('Authenticate from the server machine'),
+        label: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryAuthenticateFromTheServerMachine,
+        ),
         visualDensity: VisualDensity.compact,
       );
     }
@@ -57,11 +61,11 @@ class _McpServerTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          trailing: _action(),
+          trailing: _action(context),
         );
       }
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 12, 8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -86,7 +90,7 @@ class _McpServerTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  _action(),
+                  _action(context),
                 ],
               ),
             ),
@@ -127,10 +131,12 @@ class _PendingMcpOAuthTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Semantics(
     container: true,
-    label: 'MCP authorization pending for ${pending.server.name}',
+    label: lookupAppLocalizations(
+      Localizations.localeOf(context),
+    ).e7LibraryMCPAuthorizationPendingFor((pending.server.name).toString()),
     child: Padding(
       key: const ValueKey('pending-mcp-oauth'),
-      padding: const EdgeInsets.fromLTRB(16, 4, 12, 12),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 12, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -144,14 +150,20 @@ class _PendingMcpOAuthTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Waiting for browser authorization',
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryWaitingForBrowserAuthorization,
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   pending.listener == null
-                      ? 'Automatic callback capture is unavailable. Paste the callback URL or authorization code.'
-                      : 'The phone is securely listening for this authorization callback. You can also enter it manually.',
+                      ? lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryAutomaticCallbackCaptureIsUnavailablePasteThe
+                      : lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryThePhoneIsSecurelyListeningForThis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -164,13 +176,21 @@ class _PendingMcpOAuthTile extends StatelessWidget {
                     TextButton(
                       key: const ValueKey('enter-mcp-oauth-code'),
                       onPressed: busy ? null : onEnterCode,
-                      child: const Text('Enter code'),
+                      child: Text(
+                        lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).pendingAuthEnterCode,
+                      ),
                     ),
                     TextButton.icon(
                       key: const ValueKey('cancel-mcp-oauth'),
                       onPressed: busy ? null : onCancel,
                       icon: const Icon(AppIconography.close),
-                      label: const Text('Cancel'),
+                      label: Text(
+                        lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).projectFolderCancel,
+                      ),
                     ),
                   ],
                 ),
@@ -211,19 +231,27 @@ class _McpOAuthCodeDialogState extends State<_McpOAuthCodeDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     scrollable: true,
-    title: const Text('Complete MCP authorization'),
+    title: Text(
+      lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryCompleteMCPAuthorization,
+    ),
     content: TextField(
       key: const ValueKey('mcp-oauth-code-input'),
       controller: _controller,
+      textDirection: TextDirection.ltr,
       autofocus: true,
       minLines: 1,
       maxLines: 4,
       autocorrect: false,
       enableSuggestions: false,
       decoration: InputDecoration(
-        labelText: 'Callback URL or code',
-        helperText:
-            'Paste the complete callback URL when available so its security state can be verified.',
+        labelText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryCallbackURLOrCode,
+        helperText: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryPasteTheCompleteCallbackURLWhenAvailable,
         errorText: _error,
       ),
       onSubmitted: (_) => _submit(),
@@ -231,12 +259,18 @@ class _McpOAuthCodeDialogState extends State<_McpOAuthCodeDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Back'),
+        child: Text(
+          lookupAppLocalizations(Localizations.localeOf(context)).a2aBack,
+        ),
       ),
       FilledButton(
         key: const ValueKey('complete-mcp-oauth'),
         onPressed: _submit,
-        child: const Text('Complete'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryComplete,
+        ),
       ),
     ],
   );
@@ -277,7 +311,7 @@ class _ProviderIntegrationTile extends StatelessWidget {
         final theme = Theme.of(context);
         final textScale = MediaQuery.textScalerOf(context).scale(1);
         final stackAction = constraints.maxWidth < 400 && textScale > 1.3;
-        final action = _action();
+        final action = _action(context);
         return ListTile(
           leading: ProviderLogo(presented.integration.id),
           title: Text(
@@ -297,10 +331,16 @@ class _ProviderIntegrationTile extends StatelessWidget {
                     ? AppStatusTone.ok
                     : AppStatusTone.neutral,
                 label: busy
-                    ? 'Updating…'
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryUpdating
                     : presented.connected
-                    ? 'Connected'
-                    : 'Not connected',
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryConnected
+                    : lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryNotConnected,
                 modelCount: modelCount,
               ),
               if (subtitle.trim().isNotEmpty) ...[
@@ -326,7 +366,7 @@ class _ProviderIntegrationTile extends StatelessWidget {
     );
   }
 
-  Widget? _action() {
+  Widget? _action(BuildContext context) {
     final integration = presented.integration;
     final hasLegacyOAuth =
         presented.connected &&
@@ -341,15 +381,23 @@ class _ProviderIntegrationTile extends StatelessWidget {
       return TextButton(
         key: ValueKey('disconnect-provider-${integration.id}'),
         onPressed: onDisconnect,
-        child: const Text('Disconnect'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryDisconnect,
+        ),
       );
     }
     if (presented.connected) {
       // Nothing mobile can act on: the credential lives on the server.
       return _ServerManagedLabel(
         text: integration.hasEnvironmentConnection
-            ? 'Server environment'
-            : 'Server-managed',
+            ? lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryServerEnvironment
+            : lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryServerManaged,
       );
     }
     final canConnect = integration.methods.any(
@@ -367,7 +415,11 @@ class _ProviderIntegrationTile extends StatelessWidget {
         visualDensity: VisualDensity.compact,
         padding: const EdgeInsets.symmetric(horizontal: 14),
       ),
-      child: const Text('Connect'),
+      child: Text(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryConnect,
+      ),
     );
   }
 }
@@ -398,7 +450,9 @@ class _ProviderStateLabel extends StatelessWidget {
           ),
           if (count != null && count > 0)
             TextSpan(
-              text: ' · $count ${count == 1 ? 'model' : 'models'}',
+              text: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryModelCount(count),
               style: TextStyle(color: AppTheme.mutedOf(theme)),
             ),
         ],
@@ -476,21 +530,39 @@ class _PendingOAuthTile extends StatelessWidget {
         state == IntegrationAuthState.failed ||
         state == IntegrationAuthState.expired;
     final message = switch (state) {
-      IntegrationAuthState.failed => 'Authentication failed',
-      IntegrationAuthState.expired => 'Authentication attempt expired',
-      IntegrationAuthState.complete => 'Authentication complete',
+      IntegrationAuthState.failed => lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryAuthenticationFailed,
+      IntegrationAuthState.expired => lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryAuthenticationAttemptExpired,
+      IntegrationAuthState.complete => lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryAuthenticationComplete,
       IntegrationAuthState.pending =>
         pending.launch.mode == IntegrationAuthMode.code
-            ? 'Return from the browser and enter the authorization code.'
-            : 'Finish authentication in the browser, then check its status.',
+            ? lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryReturnFromTheBrowserAndEnterThe
+            : lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryFinishAuthenticationInTheBrowserThenCheck,
     };
     final actionLabel = terminal
-        ? 'Dismiss'
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).workspaceDismissNotice
         : state == IntegrationAuthState.complete
-        ? 'Finish'
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryFinish
         : pending.launch.mode == IntegrationAuthMode.code
-        ? 'Enter code'
-        : 'Check';
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).pendingAuthEnterCode
+        : lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryCheck;
 
     return ListTile(
       key: const ValueKey('pending-provider-oauth'),
@@ -500,7 +572,11 @@ class _PendingOAuthTile extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : Icon(terminal ? AppIconography.error : AppIconography.login),
-      title: Text('Connecting ${pending.integrationName}'),
+      title: Text(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryConnecting2((pending.integrationName).toString()),
+      ),
       subtitle: Text(message, maxLines: 3, overflow: TextOverflow.ellipsis),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -515,14 +591,20 @@ class _PendingOAuthTile extends StatelessWidget {
           ),
           if (!terminal && !checking)
             PopupMenuButton<void>(
-              tooltip: 'Authentication options',
+              tooltip: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryAuthenticationOptions,
               itemBuilder: (context) => [
                 PopupMenuItem<void>(
                   onTap: onCancel,
-                  child: const ListTile(
+                  child: ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(AppIconography.close),
-                    title: Text('Cancel attempt'),
+                    title: Text(
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryCancelAttempt,
+                    ),
                   ),
                 ),
               ],
@@ -551,7 +633,11 @@ class _OAuthCodeDialogState extends State<_OAuthCodeDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text('Finish ${widget.integrationName}'),
+    title: Text(
+      lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryFinish2((widget.integrationName).toString()),
+    ),
     content: SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -564,10 +650,15 @@ class _OAuthCodeDialogState extends State<_OAuthCodeDialog> {
           TextField(
             key: const ValueKey('oauth-completion-code'),
             controller: _controller,
+            textDirection: TextDirection.ltr,
             autofocus: true,
             autocorrect: false,
             enableSuggestions: false,
-            decoration: const InputDecoration(labelText: 'Authorization code'),
+            decoration: InputDecoration(
+              labelText: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryAuthorizationCode,
+            ),
             onSubmitted: (_) => _complete(),
           ),
         ],
@@ -576,9 +667,20 @@ class _OAuthCodeDialogState extends State<_OAuthCodeDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Not yet'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryNotYet,
+        ),
       ),
-      FilledButton(onPressed: _complete, child: const Text('Complete')),
+      FilledButton(
+        onPressed: _complete,
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryComplete,
+        ),
+      ),
     ],
   );
 
@@ -668,7 +770,9 @@ class _OAuthInputsDialogState extends State<_OAuthInputsDialog> {
                           ],
                           validator: (value) =>
                               _isPromptRequired(prompt) && value == null
-                              ? 'Select an option'
+                              ? lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).e7LibrarySelectAnOption
                               : null,
                           onChanged: (value) => setState(() {
                             final key = prompt['key'].toString();
@@ -691,7 +795,9 @@ class _OAuthInputsDialogState extends State<_OAuthInputsDialog> {
                           validator: (value) =>
                               _isPromptRequired(prompt) &&
                                   (value == null || value.trim().isEmpty)
-                              ? 'Enter a value'
+                              ? lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).e7LibraryEnterAValue
                               : null,
                           onChanged: (value) => setState(
                             () => _values[prompt['key'].toString()] = value,
@@ -705,9 +811,20 @@ class _OAuthInputsDialogState extends State<_OAuthInputsDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).projectFolderCancel,
+        ),
       ),
-      FilledButton(onPressed: _submit, child: const Text('Continue')),
+      FilledButton(
+        onPressed: _submit,
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).returnBriefContinue,
+        ),
+      ),
     ],
   );
 
@@ -738,15 +855,15 @@ class _OAuthInputsDialogState extends State<_OAuthInputsDialog> {
 /// Parses a server-provided authorization URL using the app's external-launch
 /// policy. Authentication is allowed only on HTTPS origins without embedded
 /// credentials.
-Uri parseAuthorizationUrl(String value) {
+Uri parseAuthorizationUrl(String value, {AppLocalizations? l10n}) {
   final uri = Uri.tryParse(value.trim());
   if (uri == null ||
       uri.scheme.toLowerCase() != 'https' ||
       uri.host.trim().isEmpty ||
       uri.userInfo.isNotEmpty) {
-    throw const ProductException(
-      'The server returned an unsafe authorization link. '
-      'Only HTTPS links with a valid host and no embedded credentials are allowed.',
+    throw ProductException(
+      (l10n ?? lookupAppLocalizations(const Locale('en')))
+          .e7LibraryTheServerReturnedAnUnsafeAuthorizationLink,
     );
   }
   return uri;
@@ -785,9 +902,20 @@ class _SectionLoadError extends StatelessWidget {
       AppIconography.error,
       color: Theme.of(context).colorScheme.error,
     ),
-    title: const Text('Could not load this section'),
+    title: Text(
+      lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryCouldNotLoadThisSection,
+    ),
     subtitle: Text(message, maxLines: 3, overflow: TextOverflow.ellipsis),
-    trailing: TextButton(onPressed: onRetry, child: const Text('Try again')),
+    trailing: TextButton(
+      onPressed: onRetry,
+      child: Text(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).isolatedTaskRetryOpen,
+      ),
+    ),
   );
 }
 
@@ -838,7 +966,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 18, 16, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -871,7 +999,7 @@ class _ProviderSummaryRow extends StatelessWidget {
     final available = total - connected;
     return Padding(
       key: const ValueKey('provider-summary'),
-      padding: const EdgeInsets.fromLTRB(16, 2, 16, 2),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 2, 16, 2),
       child: Row(
         children: [
           Container(
@@ -888,7 +1016,12 @@ class _ProviderSummaryRow extends StatelessWidget {
           const SizedBox(width: 7),
           Expanded(
             child: Text(
-              '$connected connected · $available available',
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryConnectedAvailable(
+                (connected).toString(),
+                (available).toString(),
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelMedium?.copyWith(

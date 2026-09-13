@@ -1825,10 +1825,16 @@ void main() {
         status: StreamStatus.disconnected,
       );
       addTearDown(controller.dispose);
+      // The controller trims with the real clock, so these entries are
+      // stamped relative to now (not the pinned `now` above) to stay inside
+      // the TTL whenever the suite runs.
+      final wallNow = DateTime.now().toUtc();
+      int recent(int days) =>
+          wallNow.subtract(Duration(days: days)).millisecondsSinceEpoch;
       for (var i = 0; i < OfflineQueueStore.maxEntries; i++) {
         expect(
           await controller.queuePrompt(
-            sized('q$i', bytes: 10, createdAt: daysAgo(1) + i),
+            sized('q$i', bytes: 10, createdAt: recent(1) + i),
           ),
           isTrue,
         );
@@ -1837,7 +1843,7 @@ void main() {
 
       expect(
         await controller.queuePrompt(
-          sized('newest', bytes: 10, createdAt: daysAgo(0)),
+          sized('newest', bytes: 10, createdAt: recent(0)),
         ),
         isTrue,
       );

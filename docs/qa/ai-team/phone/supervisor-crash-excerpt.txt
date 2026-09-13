@@ -1,0 +1,35 @@
+2026/09/10 20:16:11 gc: order exec cascade-nudge-on-blocker-close failed: context deadline exceeded
+gc: order exec cascade-nudge-on-blocker-close failed: context deadline exceeded
+2026/09/10 20:16:11 tmux state cache: refresh failed in 249.565885ms: runtime unavailable: liveness observation failed: no tmux server running
+2026/09/10 20:16:12 tmux state cache: refresh failed in 676.50224ms: runtime unavailable: liveness observation failed: no tmux server running
+2026/09/10 20:16:15 beads cache: reconciled rig=sp beads=2 adds=0 updates=0 removes=0 took=1.563s cadence=default
+futexwakeup addr=0x7c9dca9960 returned -38
+SIGSEGV: segmentation violation
+PC=0x5ac94 m=0 sigcode=1 addr=0x1006
+
+goroutine 0 gp=0x522f4c0 m=0 mp=0x5230aa0 [idle]:
+runtime.futexwakeup(0x7c9dca9960, 0x65ddc?)
+	/opt/hostedtoolcache/go/1.26.5/x64/src/runtime/os_linux.go:98 +0x64 fp=0x7fd23ae250 sp=0x7fd23ae1f0 pc=0x5ac94
+runtime.notewakeup(0x7fd23ae2c8?)
+	/opt/hostedtoolcache/go/1.26.5/x64/src/runtime/lock_futex.go:32 +0x4c fp=0x7fd23ae280 sp=0x7fd23ae250 pc=0x2e89c
+runtime.startm(0x7c9dc92008?, 0x1, 0x0)
+	/opt/hostedtoolcache/go/1.26.5/x64/src/runtime/proc.go:3121 +0x1ec fp=0x7fd23ae2d0 sp=0x7fd23ae280 pc=0x65f3c
+runtime.wakep()
+	/opt/hostedtoolcache/go/1.26.5/x64/src/runtime/proc.go:3243 +0x16c fp=0x7fd23ae300 sp=0x7fd23ae2d0 pc=0x970ec
+runtime.goschedImpl(0x7c9e740780, 0x1)
+	/opt/hostedtoolcache/go/1.26.5/x64/src/runtime/proc.go:4342 +0x218 fp=0x7fd23ae360 sp=0x7fd23ae300 pc=0x693c8
+runtime.gopreempt_m(...)
+	/opt/hostedtoolcache/go/1.26.5/x64/src/runtime/proc.go:4362
+runtime.asyncPreempt2.func1(0x7c9e740780)
+	/opt/hostedtoolcache/go/1.26.5/x64/src/runtime/preempt.go:330 +0x48 fp=0x7fd23ae380 sp=0x7fd23ae360 pc=0x914a8
+runtime.mcall()
+	/opt/hostedtoolcache/go/1.26.5/x64/src/runtime/asm_arm64.s:339 +0x54 fp=0x7fd23ae390 sp=0x7fd23ae380 pc=0x9c8b4
+
+goroutine 1 gp=0x7c9dc301e0 m=nil [select]:
+runtime.gopark(0x7c9eac1228?, 0x3?, 0x88?, 0x69?, 0x7c9eac0bea?)
+	/opt/hostedtoolcache/go/1.26.5/x64/src/runtime/proc.go:462 +0xbc fp=0x7c9eac0940 sp=0x7c9eac0920 pc=0x96ecc
+runtime.selectgo(0x7c9eac1228, 0x7c9eac0be4, 0x0?, 0x0, 0x0?, 0x1)
+	/opt/hostedtoolcache/go/1.26.5/x64/src/runtime/select.go:351 +0x83c fp=0x7c9eac0a80 sp=0x7c9eac0940 pc=0x74a5c
+main.runSupervisor({0x326c838, 0x7c9de0e780}, {0x326c5f8, 0x7c9dd02038})
+	/home/runner/work/gascity/gascity/cmd/gc/cmd_supervisor.go:1527 +0x1594 fp=0x7c9eac15b0 sp=0x7c9eac0a80 pc=0x22266e4
+main.doSupervisorRun({0x326c838, 0x7c9de0e780}, {0x326c5f8, 0x7c9dd02038})

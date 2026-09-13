@@ -58,6 +58,7 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
     final error = widget.error;
     final failure = widget.requiresTokenReentry || error != null
         ? ConnectionFailure.diagnose(
+            l10n: lookupAppLocalizations(Localizations.localeOf(context)),
             error: error ?? 'Connection token is required',
             baseUrl: widget.baseUrl,
             supportsTermux: widget.supportsTermux,
@@ -73,7 +74,9 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
       liveRegion: true,
       label: failed
           ? '${failure.title}. ${failure.explanation}'
-          : 'Connecting to ${widget.profileName}',
+          : lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupConnectingProfile(widget.profileName),
       child: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -93,7 +96,7 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: AlignmentDirectional.centerStart,
                       child: Container(
                         width: 48,
                         height: 48,
@@ -118,8 +121,12 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
                       failed
                           ? failure.title
                           : widget.attempts > 1
-                          ? 'Connecting again (attempt ${widget.attempts})'
-                          : 'Connecting to ${widget.profileName}',
+                          ? lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupConnectingAttempt(widget.attempts)
+                          : lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupConnectingProfile(widget.profileName),
                       key: const ValueKey('saved-server-title'),
                       style: theme.textTheme.titleLarge,
                     ),
@@ -127,7 +134,9 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
                     Text(
                       failed
                           ? failure.explanation
-                          : 'Opening your saved workspace.',
+                          : lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupOpeningWorkspace,
                       key: const ValueKey('saved-server-explanation'),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
@@ -202,6 +211,7 @@ class _AddressRow extends StatelessWidget {
           Expanded(
             child: Text(
               baseUrl,
+              textDirection: TextDirection.ltr,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -229,7 +239,9 @@ class _Checks extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'What to check',
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupWhatToCheck,
           style: theme.textTheme.labelLarge?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
@@ -242,7 +254,7 @@ class _Checks extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(top: 7, right: 10),
+                  padding: const EdgeInsetsDirectional.only(top: 7, end: 10),
                   child: Container(
                     width: 6,
                     height: 6,
@@ -284,7 +296,7 @@ class _DetailsExpander extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Align(
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           child: TextButton.icon(
             key: const ValueKey('saved-server-details'),
             onPressed: onToggle,
@@ -292,7 +304,15 @@ class _DetailsExpander extends StatelessWidget {
               open ? AppIconography.chevronUp : AppIconography.chevronDown,
               size: 18,
             ),
-            label: Text(open ? 'Hide details' : 'Details'),
+            label: Text(
+              open
+                  ? lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupHideDetails
+                  : lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupDetails,
+            ),
           ),
         ),
         if (open)
@@ -306,6 +326,7 @@ class _DetailsExpander extends StatelessWidget {
             ),
             child: SelectableText(
               rawError,
+              textDirection: TextDirection.ltr,
               style: theme.textTheme.bodySmall?.copyWith(
                 fontFamily: AppTheme.monoFamily,
                 color: scheme.onSurfaceVariant,
@@ -339,12 +360,20 @@ class _Actions extends StatelessWidget {
       key: const ValueKey('saved-server-retry'),
       onPressed: onRetry,
       icon: const Icon(AppIconography.retry, size: 19),
-      label: const Text('Try again'),
+      label: Text(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).isolatedTaskRetryOpen,
+      ),
     );
     final change = TextButton(
       key: const ValueKey('saved-server-change'),
       onPressed: onChangeServer,
-      child: const Text('Change server'),
+      child: Text(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupChangeServer,
+      ),
     );
     final Widget primary = switch (failure.primary) {
       ConnectionFailureAction.openTermuxSetup when onOpenTermuxSetup != null =>
@@ -352,14 +381,22 @@ class _Actions extends StatelessWidget {
           key: const ValueKey('saved-server-open-termux'),
           onPressed: onOpenTermuxSetup,
           icon: const Icon(AppIconography.phone, size: 19),
-          label: const Text('Check Termux'),
+          label: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupCheckTermux,
+          ),
         ),
       ConnectionFailureAction.updatePassword when onUpdatePassword != null =>
         FilledButton.icon(
           key: const ValueKey('saved-server-update-password'),
           onPressed: onUpdatePassword,
           icon: const Icon(AppIconography.permissions, size: 19),
-          label: const Text('Update password'),
+          label: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupUpdatePassword,
+          ),
         ),
       ConnectionFailureAction.updateToken when onUpdateToken != null =>
         FilledButton.icon(
@@ -376,13 +413,21 @@ class _Actions extends StatelessWidget {
         key: const ValueKey('saved-server-change-primary'),
         onPressed: onChangeServer,
         icon: const Icon(AppIconography.swap, size: 19),
-        label: const Text('Change server'),
+        label: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupChangeServer,
+        ),
       ),
       _ => FilledButton.icon(
         key: const ValueKey('saved-server-retry-primary'),
         onPressed: onRetry,
         icon: const Icon(AppIconography.retry, size: 19),
-        label: const Text('Try again'),
+        label: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).isolatedTaskRetryOpen,
+        ),
       ),
     };
     final primaryIsRetry =

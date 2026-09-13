@@ -27,14 +27,12 @@ class GuideScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
       children: [
         Text(
-          'Three steps to your first session',
+          _sharedCopy(context).e7SharedThreeStepsToYourFirstSession,
           style: theme.textTheme.titleLarge,
         ),
         const SizedBox(height: 6),
         Text(
-          'OpenCode runs on your computer. This app is the remote. Pairing '
-          'connects the two with one command — no addresses or passwords to '
-          'type.',
+          _sharedCopy(context).e7SharedOpenCodeRunsOnYourComputerThisApp,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
             height: 1.4,
@@ -43,42 +41,32 @@ class GuideScreen extends StatelessWidget {
         const SizedBox(height: 18),
         _Step(
           n: 1,
-          title: 'On your computer, run one command',
+          title: _sharedCopy(context).e7SharedOnYourComputerRunOneCommand,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'In a terminal on the computer where OpenCode is installed:',
-              ),
+              Text(_sharedCopy(context).e7SharedInATerminalOnTheComputerWhere),
               const Cmd('opencode2 pair', key: ValueKey('guide-pair-command')),
-              const Text(
-                'It starts the server and prints a pairing code'
-                ' — and a QR code you can scan.',
-              ),
+              Text(_sharedCopy(context).e7SharedItStartsTheServerAndPrintsA),
             ],
           ),
         ),
         _Step(
           n: 2,
           title: canScan
-              ? 'Scan the QR or paste the code in this app'
-              : 'Paste the code in this app',
+              ? _sharedCopy(context).e7SharedScanTheQROrPasteTheCode
+              : _sharedCopy(context).e7SharedPasteTheCodeInThisApp,
           child: Text(
             canScan
-                ? 'Open Servers, tap Scan and point the camera at the QR — '
-                      'or copy the code and tap Paste pairing code. The '
-                      'address, username and password fill in together.'
-                : 'Copy the printed code, open Servers and tap Paste pairing '
-                      'code. The address, username and password fill in '
-                      'together.',
+                ? _sharedCopy(context).e7SharedOpenServersTapScanAndPointThe
+                : _sharedCopy(context).e7SharedCopyThePrintedCodeOpenServersAnd,
           ),
         ),
-        const _Step(
+        _Step(
           n: 3,
-          title: 'Start talking',
+          title: _sharedCopy(context).e7SharedStartTalking,
           child: Text(
-            'Pick a project and send your first message. The work happens on '
-            'your computer; this app shows it and lets you steer.',
+            _sharedCopy(context).e7SharedPickAProjectAndSendYourFirst,
           ),
         ),
         const SizedBox(height: 8),
@@ -100,61 +88,63 @@ class GuideScreen extends StatelessWidget {
             childrenPadding: const EdgeInsets.only(top: 4),
             expandedCrossAxisAlignment: CrossAxisAlignment.start,
             leading: const Icon(AppIconography.settings),
-            title: const Text('Advanced'),
+            title: Text(_sharedCopy(context).e7SharedAdvanced),
             subtitle: Text(
               onDevice
-                  ? 'HTTPS, SSH tunnels, older servers, Termux internals'
-                  : 'HTTPS, SSH tunnels, older servers',
+                  ? _sharedCopy(
+                      context,
+                    ).e7SharedHTTPSSSHTunnelsOlderServersTermuxInternals
+                  : _sharedCopy(context).e7SharedHTTPSSSHTunnelsOlderServers,
             ),
             children: [
               _Section(
-                title: 'Reach a server over HTTPS or a tunnel',
+                title: _sharedCopy(context).e7SharedReachAServerOverHTTPSOrA,
                 children: [
-                  const Text(
-                    'Pairing works when the address the server prints is one '
-                    'this device can reach. If it is not, expose the server '
-                    'through an HTTPS reverse proxy or an encrypted tunnel and '
-                    'add the resulting https:// URL by hand. Remote HTTP is '
-                    'intentionally blocked.',
+                  Text(
+                    _sharedCopy(
+                      context,
+                    ).e7SharedPairingWorksWhenTheAddressTheServer,
                   ),
                   _tip(context, l10n.connectionHelpGuideTip),
                 ],
               ),
               _Section(
-                title: 'Older servers without pairing',
+                title: _sharedCopy(context).e7SharedOlderServersWithoutPairing,
                 children: [
-                  const Text(
-                    'Servers started with `opencode serve` do not print a '
-                    'pairing code. Start them on loopback with a password:',
+                  Text(
+                    _sharedCopy(
+                      context,
+                    ).e7SharedServersStartedWithOpencodeServeDoNot,
                   ),
                   const Cmd(
                     'OPENCODE_SERVER_PASSWORD=your-secret \\\n  opencode serve --hostname 127.0.0.1 --port 4096',
                   ),
-                  const Text(
-                    'Then add the server manually with username opencode and '
-                    'that password.',
+                  Text(
+                    _sharedCopy(
+                      context,
+                    ).e7SharedThenAddTheServerManuallyWithUsername,
                   ),
                 ],
               ),
               if (onDevice)
                 _Section(
                   key: const ValueKey('guide-termux-section'),
-                  title: 'On-device via Termux (automated)',
+                  title: _sharedCopy(
+                    context,
+                  ).e7SharedOnDeviceViaTermuxAutomated,
                   children: [
-                    const Text(
-                      'Use the “On-device (Termux)” card on the Servers '
-                      'screen. The app installs Termux, unlocks the bridge, '
-                      'sets up opencode, starts the server and connects — '
-                      'all guided.',
+                    Text(
+                      _sharedCopy(context).e7SharedUseTheOnDeviceTermuxCardOn,
                     ),
                     _tip(
                       context,
-                      'Only two taps need you personally: downloading the '
-                      'Termux APK and pasting one unlock line inside Termux '
-                      'once — both required by Android’s security model, '
-                      'not by this app.',
+                      _sharedCopy(
+                        context,
+                      ).e7SharedOnlyTwoTapsNeedYouPersonallyDownloading,
                     ),
-                    const Text('Prefer manual? Inside Termux run:'),
+                    Text(
+                      _sharedCopy(context).e7SharedPreferManualInsideTermuxRun,
+                    ),
                     const Cmd(
                       '# plain-Termux npm installs are broken upstream\n'
                       '# (npm os=android -> no opencode-android-arm64 package),\n'
@@ -167,29 +157,34 @@ class GuideScreen extends StatelessWidget {
                       '  opencode serve --hostname 127.0.0.1 --port 4096 &\n'
                       'exit',
                     ),
-                    const Text(
-                      'The chroot shares the network stack, so '
-                      'http://127.0.0.1:4096 works from this app. Run '
-                      '`termux-wake-lock` to keep it alive.',
+                    Text(
+                      _sharedCopy(
+                        context,
+                      ).e7SharedTheChrootSharesTheNetworkStackSo,
                     ),
                   ],
                 ),
               _Section(
-                title: 'Security notes',
+                title: _sharedCopy(context).e7SharedSecurityNotes,
                 children: [
-                  const Bullet(
-                    'Always set OPENCODE_SERVER_PASSWORD when binding beyond localhost.',
+                  Bullet(
+                    _sharedCopy(
+                      context,
+                    ).e7SharedAlwaysSetOPENCODESERVERPASSWORDWhenBinding,
                   ),
                   Bullet(
                     onDevice
-                        ? 'Passwords are stored in the Android Keystore on '
-                              'this device only.'
+                        ? _sharedCopy(
+                            context,
+                          ).e7SharedPasswordsAreStoredInTheAndroidKeystore
                         : platformCapabilities.platform == TargetPlatform.iOS
                         ? l10n.iosKeychainGuide
                         : l10n.platformSecureStorageGuide,
                   ),
-                  const Bullet(
-                    'The server can execute commands on its host — treat access like SSH access.',
+                  Bullet(
+                    _sharedCopy(
+                      context,
+                    ).e7SharedTheServerCanExecuteCommandsOnIts,
                   ),
                 ],
               ),
@@ -224,7 +219,7 @@ class GuideScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     if (embedded) return _body(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Setup guide')),
+      appBar: AppBar(title: Text(_sharedCopy(context).onboardingSetupGuide)),
       body: _body(context),
     );
   }
@@ -247,7 +242,7 @@ class _Step extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Semantics(
-            label: 'Step $n of 3',
+            label: _sharedCopy(context).e7SharedDetail307(n),
             excludeSemantics: true,
             child: CircleAvatar(
               radius: 14,
@@ -338,14 +333,14 @@ class Cmd extends StatelessWidget {
           // A full-size target: the command is the thing the reader came
           // here to take away, so its copy button is not a 15px afterthought.
           IconButton(
-            tooltip: 'Copy command',
+            tooltip: _sharedCopy(context).handoffCopyCommand,
             icon: Icon(AppIcons.copy, color: AppTheme.mutedOf(theme)),
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: text));
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Copied'),
+                  SnackBar(
+                    content: Text(_sharedCopy(context).e7SharedCopied),
                     duration: Duration(seconds: 1),
                   ),
                 );
@@ -379,3 +374,6 @@ class Bullet extends StatelessWidget {
     );
   }
 }
+
+AppLocalizations _sharedCopy(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));

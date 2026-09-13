@@ -11,7 +11,7 @@ class _AttentionCard extends StatelessWidget {
     required this.announcement,
     this.summary,
     this.detail,
-    required this.primary,
+    this.primary,
     this.secondary,
     this.accent,
     this.minHeight = 72,
@@ -39,7 +39,7 @@ class _AttentionCard extends StatelessWidget {
   final String announcement;
   final String? summary;
   final String? detail;
-  final Widget primary;
+  final Widget? primary;
   final Widget? secondary;
 
   @override
@@ -51,10 +51,10 @@ class _AttentionCard extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 860),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+          padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 12, 2),
           child: Container(
             constraints: BoxConstraints(minHeight: minHeight),
-            padding: const EdgeInsets.fromLTRB(14, 12, 12, 10),
+            padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 12, 10),
             decoration: BoxDecoration(
               color: scheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(AppTheme.radiusCard),
@@ -122,17 +122,19 @@ class _AttentionCard extends StatelessWidget {
                 ),
                 if (body case final body?)
                   Padding(padding: const EdgeInsets.only(top: 8), child: body),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    alignment: WrapAlignment.end,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [?secondary, primary],
+                if (primary != null || secondary != null) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      alignment: WrapAlignment.end,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [?secondary, ?primary],
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -149,10 +151,15 @@ class _PermissionAttentionCard extends StatelessWidget {
     super.key,
     required this.permission,
     required this.onReview,
+    this.autoApprovalFailed = false,
   });
 
   final PermissionRequest permission;
   final VoidCallback onReview;
+
+  /// The session approves automatically but this request's reply failed,
+  /// so the card says why it is asking after all.
+  final bool autoApprovalFailed;
 
   @override
   Widget build(BuildContext context) {
@@ -160,16 +167,18 @@ class _PermissionAttentionCard extends StatelessWidget {
     return _AttentionCard(
       icon: permissionActionIcon(permission.permission),
       title: title,
-      announcement: 'Permission needed: $title',
+      announcement: _chatL10n(context).chatUiPermissionNeeded(title),
       summary: permission.patterns.isEmpty
           ? null
           : permission.patterns.join(' · '),
-      detail: permission.message,
+      detail: autoApprovalFailed
+          ? _chatL10n(context).approvalsUiFailedDetail
+          : permission.message,
       primary: FilledButton.icon(
         key: const Key('permission-card-review'),
         onPressed: onReview,
         icon: const Icon(AppIconography.checklist, size: 18),
-        label: const Text('Review'),
+        label: Text(_chatL10n(context).reviewTitle),
       ),
     );
   }
@@ -284,27 +293,27 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
     final first = _prompts.firstOrNull;
     final title = first?.title.trim().isNotEmpty == true
         ? first!.title.trim()
-        : 'OpenCode needs input';
+        : _chatL10n(context).chatUiOpenCodeNeedsInput;
     final more = TextButton(
       key: const Key('question-card-more'),
       onPressed: widget.replying ? null : widget.onMore,
-      child: const Text('More'),
+      child: Text(_chatL10n(context).chatUiMore),
     );
     if (first == null || questionPrefersSheet(widget.question)) {
       final count = _prompts.length;
       return _AttentionCard(
         icon: AppIconography.question,
         title: title,
-        announcement: 'Question: $title',
+        announcement: _chatL10n(context).chatUiQuestionLabel(title),
         detail: first == null
             ? null
             : count > 1
-            ? '${first.question} · $count questions'
+            ? _chatL10n(context).chatUiQuestionsSummary(first.question, count)
             : first.question,
         primary: FilledButton(
           key: const Key('question-card-answer'),
           onPressed: widget.replying ? null : widget.onMore,
-          child: const Text('Answer'),
+          child: Text(_chatL10n(context).returnBriefAnswer),
         ),
       );
     }
@@ -323,7 +332,7 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Sending…',
+                _chatL10n(context).queuedSending,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: AppTheme.mutedOf(theme),
                 ),
@@ -334,14 +343,14 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
         ? FilledButton(
             key: const Key('question-card-send'),
             onPressed: _complete ? _send : null,
-            child: const Text('Send'),
+            child: Text(_chatL10n(context).chatUiSend),
           )
         : more;
 
     return _AttentionCard(
       icon: AppIconography.question,
       title: title,
-      announcement: 'Question: $title',
+      announcement: _chatL10n(context).chatUiQuestionLabel(title),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -401,13 +410,18 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
 /// so the banner names the attempt rather than inventing a total. [now]
 /// defaults to the wall clock; tests pass a fixed instant.
 @visibleForTesting
-String retryBannerHeadline(SessionRetryState retry, {DateTime? now}) {
+String retryBannerHeadline(
+  SessionRetryState retry, {
+  DateTime? now,
+  AppLocalizations? l10n,
+}) {
+  final strings = l10n ?? lookupAppLocalizations(const Locale('en'));
   final attempt = retry.attempt > 0 ? ' ${retry.attempt}' : '';
   final next = retry.next;
-  if (next == null) return 'Rate limited. Retrying$attempt…';
+  if (next == null) return strings.chatUiRateLimitRetry(attempt);
   final delta = next.difference(now ?? DateTime.now());
   final remaining = delta.isNegative ? Duration.zero : delta;
-  return 'Rate limited. Retrying$attempt in ${_countdown(remaining)}';
+  return strings.chatUiRateLimitCountdown(attempt, _countdown(remaining));
 }
 
 String _countdown(Duration d) {
@@ -425,21 +439,14 @@ String _countdown(Duration d) {
 /// attempt and counting down to the next one, the server's own words when
 /// it sent any, and Stop wired to the same abort as the app-bar button.
 class _RetryAttentionCard extends StatelessWidget {
-  const _RetryAttentionCard({
-    super.key,
-    required this.retry,
-    required this.stopping,
-    required this.onStop,
-  });
+  const _RetryAttentionCard({super.key, required this.retry});
 
   final SessionRetryState retry;
-  final bool stopping;
-  final VoidCallback onStop;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title = retryBannerHeadline(retry);
+    final title = retryBannerHeadline(retry, l10n: _chatL10n(context));
     final message = retry.message?.trim();
     return _AttentionCard(
       icon: AppIcons.retry,
@@ -448,11 +455,6 @@ class _RetryAttentionCard extends StatelessWidget {
       title: title,
       announcement: title,
       detail: message == null || message.isEmpty ? null : message,
-      primary: TextButton(
-        key: const Key('retry-banner-stop'),
-        onPressed: stopping ? null : onStop,
-        child: const Text('Stop'),
-      ),
     );
   }
 }
@@ -473,7 +475,7 @@ class _ComposerNote extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 860),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 2, 24, 0),
+          padding: const EdgeInsetsDirectional.fromSTEB(24, 2, 24, 0),
           child: Semantics(
             liveRegion: true,
             child: Text(
@@ -494,8 +496,9 @@ class _ComposerNote extends StatelessWidget {
 /// One app-bar overflow for the whole session: the view destinations and
 /// transcript toggles that used to sit behind a second icon, then the
 /// mutation and utility actions. Every row pops with its action value.
-class _SessionMenuSheet extends StatelessWidget {
-  const _SessionMenuSheet({
+class SessionMenuSheet extends StatelessWidget {
+  const SessionMenuSheet({
+    super.key,
     required this.reasoningExpanded,
     required this.timestampsVisible,
     required this.todosAvailable,
@@ -511,6 +514,10 @@ class _SessionMenuSheet extends StatelessWidget {
     this.stagedRevert = false,
     this.notesAvailable = false,
     this.skillsAvailable = false,
+    this.resultsAvailable = false,
+    this.approvalsAvailable = false,
+    this.continueOnComputerAvailable = false,
+    this.continueOnPhoneAvailable = false,
   });
 
   final bool reasoningExpanded;
@@ -528,6 +535,16 @@ class _SessionMenuSheet extends StatelessWidget {
   final bool stagedRevert;
   final bool notesAvailable;
   final bool skillsAvailable;
+  final bool resultsAvailable;
+
+  /// Per-session approval settings; off only where a session cannot be
+  /// asked for permissions (the isolated demo).
+  final bool approvalsAvailable;
+  /// Session handoff (backlog F4): the terminal resume command for the
+  /// computer that runs the server, and the QR link for another phone.
+  /// Both pop a value; the chat screen builds the sheet and never sends.
+  final bool continueOnComputerAvailable;
+  final bool continueOnPhoneAvailable;
 
   @override
   Widget build(BuildContext context) {
@@ -538,121 +555,169 @@ class _SessionMenuSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SectionLabel('Views'),
+            SectionLabel(_chatL10n(context).chatUiConversation),
             // Views are the frequent destinations, so they take a compact
             // chip row instead of a tile each and leave the actions below
             // reachable without scrolling on a phone.
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _SessionMenuChip(
-                    icon: AppIconography.search,
-                    label: _chatL10n(context).transcriptFindTitle,
-                    value: 'find',
-                  ),
-                  _SessionMenuChip(
-                    icon: AppIconography.timeline,
-                    label: 'Timeline',
-                    value: 'timeline',
-                  ),
-                  _SessionMenuChip(
-                    icon: AppIconography.usageRing,
-                    label: 'Context usage',
-                    value: 'context',
-                  ),
-                  if (changesAvailable)
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
+              // A Wrap hands its children unbounded width, so the row's own
+              // width is measured here and capped on each chip: a long label
+              // at 2.5x text wraps inside its chip instead of running off
+              // the sheet.
+              child: LayoutBuilder(
+                builder: (context, constraints) => Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (resultsAvailable)
+                      _SessionMenuChip(
+                        maxWidth: constraints.maxWidth,
+                        icon: AppIconography.checkCircle,
+                        label: _chatL10n(context).chatUiResults,
+                        value: 'results',
+                      ),
                     _SessionMenuChip(
-                      icon: AppIconography.review,
-                      label: 'Changes',
-                      value: 'changes',
+                      maxWidth: constraints.maxWidth,
+                      icon: AppIconography.search,
+                      label: _chatL10n(context).transcriptFindTitle,
+                      value: 'find',
                     ),
-                  if (todosAvailable)
                     _SessionMenuChip(
-                      icon: AppIconography.checklist,
-                      label: 'Todos',
-                      value: 'todos',
+                      maxWidth: constraints.maxWidth,
+                      icon: AppIconography.timeline,
+                      label: _chatL10n(context).chatUiTimeline,
+                      value: 'timeline',
                     ),
-                  if (subagentsAvailable)
-                    _SessionMenuChip(
-                      icon: AppIconography.branch,
-                      label: 'Subagent sessions',
-                      value: 'subagents',
-                    ),
-                ],
+                    if (changesAvailable)
+                      _SessionMenuChip(
+                        maxWidth: constraints.maxWidth,
+                        icon: AppIconography.review,
+                        label: _chatL10n(context).chatUiChanges,
+                        value: 'changes',
+                      ),
+                    if (todosAvailable)
+                      _SessionMenuChip(
+                        maxWidth: constraints.maxWidth,
+                        icon: AppIconography.checklist,
+                        label: _chatL10n(context).chatUiTodos,
+                        value: 'todos',
+                      ),
+                    if (subagentsAvailable)
+                      _SessionMenuChip(
+                        maxWidth: constraints.maxWidth,
+                        icon: AppIconography.branch,
+                        label: _chatL10n(context).usageSubagents,
+                        value: 'subagents',
+                      ),
+                  ],
+                ),
               ),
             ),
-            const SectionLabel('Transcript'),
-            TranscriptDisplayToggles(
-              reasoningExpanded: reasoningExpanded,
-              timestampsVisible: timestampsVisible,
-              dense: true,
+            ExpansionTile(
+              title: Text(_chatL10n(context).chatUiDisplayAndContext),
+              children: [
+                TranscriptDisplayToggles(
+                  reasoningExpanded: reasoningExpanded,
+                  timestampsVisible: timestampsVisible,
+                  dense: true,
+                ),
+                _SessionSheetRow(
+                  icon: AppIconography.usageRing,
+                  label: _chatL10n(context).chatUiContextUsage,
+                  value: 'context',
+                ),
+              ],
             ),
-            const SectionLabel('Actions'),
-            if (skillsAvailable)
-              _SessionSheetRow(
-                icon: AppIconography.extensions,
-                label: _chatL10n(context).skillMenu,
-                value: 'skills',
-              ),
-            if (notesAvailable)
-              _SessionSheetRow(
-                icon: AppIconography.note,
-                label: _chatL10n(context).sessionNoteTitle,
-                value: 'note',
-              ),
-            _SessionSheetRow(
-              icon: AppIconography.retry,
-              label: 'Retry last prompt',
-              value: 'retry',
-            ),
-            if (revertAvailable)
-              _SessionSheetRow(
-                icon: reverted
-                    ? AppIconography.restore
-                    : AppIconography.history,
-                label: reverted
-                    ? (stagedRevert
-                          ? _chatL10n(context).revertReviewTitle
-                          : 'Restore messages')
-                    : 'Revert last prompt',
-                value: reverted ? 'restore' : 'revert',
-              ),
-            if (forkAvailable)
-              _SessionSheetRow(
-                icon: AppIconography.fork,
-                label: 'Fork session',
-                value: 'fork',
-              ),
-            if (compactAvailable)
-              _SessionSheetRow(
-                icon: AppIconography.collapse,
-                label: 'Compact context',
-                value: 'compact',
-              ),
-            if (sharingAvailable)
-              _SessionSheetRow(
-                icon: shared ? AppIconography.networkOff : AppIconography.globe,
-                label: shared ? 'Stop sharing' : 'Share session',
-                value: shared ? 'unshare' : 'share',
-              ),
-            if (terminalAvailable)
-              _SessionSheetRow(
-                icon: AppIconography.terminal,
-                label: 'Run shell command',
-                value: 'shell',
-              ),
-            _SessionSheetRow(
-              icon: AppIcons.run,
-              label: 'Commands',
-              value: 'slash',
-            ),
-            _SessionSheetRow(
-              icon: AppIconography.retry,
-              label: 'Reload messages',
-              value: 'reload',
+            ExpansionTile(
+              title: Text(_chatL10n(context).chatUiSessionActions),
+              children: [
+                if (skillsAvailable)
+                  _SessionSheetRow(
+                    icon: AppIconography.extensions,
+                    label: _chatL10n(context).skillMenu,
+                    value: 'skills',
+                  ),
+                if (notesAvailable)
+                  _SessionSheetRow(
+                    icon: AppIconography.note,
+                    label: _chatL10n(context).sessionNoteTitle,
+                    value: 'note',
+                  ),
+                if (approvalsAvailable)
+                  _SessionSheetRow(
+                    icon: AppIconography.permissions,
+                    label: _chatL10n(context).approvalsUiMenu,
+                    value: 'approvals',
+                  ),
+                _SessionSheetRow(
+                  icon: AppIconography.retry,
+                  label: _chatL10n(context).chatUiRetryLastPrompt,
+                  value: 'retry',
+                ),
+                if (revertAvailable)
+                  _SessionSheetRow(
+                    icon: reverted
+                        ? AppIconography.restore
+                        : AppIconography.history,
+                    label: reverted
+                        ? (stagedRevert
+                              ? _chatL10n(context).revertReviewTitle
+                              : _chatL10n(context).chatUiRestoreMessages)
+                        : _chatL10n(context).chatUiRevertLastPrompt,
+                    value: reverted ? 'restore' : 'revert',
+                  ),
+                if (forkAvailable)
+                  _SessionSheetRow(
+                    icon: AppIconography.fork,
+                    label: _chatL10n(context).chatUiForkSession,
+                    value: 'fork',
+                  ),
+                if (compactAvailable)
+                  _SessionSheetRow(
+                    icon: AppIconography.collapse,
+                    label: _chatL10n(context).chatUiCompactContext,
+                    value: 'compact',
+                  ),
+                if (sharingAvailable)
+                  _SessionSheetRow(
+                    icon: shared
+                        ? AppIconography.networkOff
+                        : AppIconography.globe,
+                    label: shared
+                        ? _chatL10n(context).chatUiStopSharing
+                        : _chatL10n(context).chatUiShareSession,
+                    value: shared ? 'unshare' : 'share',
+                  ),
+                if (terminalAvailable)
+                  _SessionSheetRow(
+                    icon: AppIconography.terminal,
+                    label: _chatL10n(context).chatUiRunShellCommand,
+                    value: 'shell',
+                  ),
+                _SessionSheetRow(
+                  icon: AppIcons.run,
+                  label: _chatL10n(context).runResultsCommandsTitle,
+                  value: 'slash',
+                ),
+                if (continueOnComputerAvailable)
+                  _SessionSheetRow(
+                    icon: AppIconography.computer,
+                    label: _chatL10n(context).handoffUiComputerTitle,
+                    value: 'continue-computer',
+                  ),
+                if (continueOnPhoneAvailable)
+                  _SessionSheetRow(
+                    icon: AppIconography.qrCode,
+                    label: _chatL10n(context).handoffUiPhoneTitle,
+                    value: 'continue-phone',
+                  ),
+                _SessionSheetRow(
+                  icon: AppIconography.retry,
+                  label: _chatL10n(context).chatUiReloadMessages,
+                  value: 'reload',
+                ),
+              ],
             ),
           ],
         ),
@@ -666,18 +731,26 @@ class _SessionMenuChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    required this.maxWidth,
   });
 
   final IconData icon;
   final String label;
   final String value;
 
+  /// The chip row's measured width; a Wrap alone would let a long label at
+  /// large text scales overflow the sheet.
+  final double maxWidth;
+
   @override
-  Widget build(BuildContext context) => ActionChip(
-    avatar: Icon(icon, size: 18),
-    label: Text(label),
-    // Chips read as light chrome but keep the 48 dp Android target.
-    materialTapTargetSize: MaterialTapTargetSize.padded,
-    onPressed: () => Navigator.pop(context, value),
+  Widget build(BuildContext context) => ConstrainedBox(
+    constraints: BoxConstraints(maxWidth: math.max(0, maxWidth)),
+    child: ActionChip(
+      avatar: Icon(icon, size: 18),
+      label: Text(label),
+      // Chips read as light chrome but keep the 48 dp Android target.
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      onPressed: () => Navigator.pop(context, value),
+    ),
   );
 }

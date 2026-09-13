@@ -314,16 +314,19 @@ void main() {
 
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
     expect(find.byKey(const Key('chat-send-button')), findsOneWidget);
-    // UX-P0-04: the choice is stated in words while the run is active.
-    expect(find.byKey(const Key('composer-delivery-control')), findsOneWidget);
-    expect(find.text('Steer'), findsOneWidget);
-    expect(find.text('Queue'), findsOneWidget);
+    // Watching a run with nothing typed shows no delivery strip.
+    expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
 
     await tester.enterText(
       find.byKey(const Key('chat-composer-field')),
       'interject now',
     );
     await tester.pump();
+    // UX-P0-04: once there is something to send, the choice is stated in
+    // words while the run is active.
+    expect(find.byKey(const Key('composer-delivery-control')), findsOneWidget);
+    expect(find.text('Steer'), findsOneWidget);
+    expect(find.text('Queue'), findsOneWidget);
 
     // Steer is the selected default, and now rides explicitly so the sent
     // delivery always matches the label the user can see.
@@ -389,15 +392,23 @@ void main() {
     // and Send sit side by side and the composer says what Send will do.
     expect(find.byKey(const Key('chat-stop-button')), findsOneWidget);
     expect(find.byKey(const Key('chat-send-button')), findsOneWidget);
-    expect(find.byKey(const Key('composer-queue-hint')), findsOneWidget);
-    // v1 has no inbox, so there is nothing to choose between.
-    expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
+    // Nothing typed yet: no hint competes with the running reply.
+    expect(find.byKey(const Key('composer-queue-hint')), findsNothing);
 
     await tester.enterText(
       find.byKey(const Key('chat-composer-field')),
       'after this run',
     );
     await tester.pump();
+    expect(find.byKey(const Key('composer-queue-hint')), findsOneWidget);
+    expect(
+      find.text(
+        'Sends after this run finishes. Steering mid-run needs OpenCode 2.',
+      ),
+      findsOneWidget,
+    );
+    // v1 has no inbox, so there is nothing to choose between.
+    expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
     await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
@@ -418,21 +429,36 @@ void main() {
     expect(find.byKey(const Key('composer-queue-hint')), findsNothing);
   });
 
-  testWidgets('the delivery control is absent until a run is active', (
-    tester,
-  ) async {
+  testWidgets('the delivery control is absent until a run is active and '
+      'something is typed', (tester) async {
     final api = _V2ChatApi();
     final controller = await _controller(api);
     addTearDown(controller.dispose);
     await _pumpChat(tester, controller);
 
     // Idle composer: nothing to deliver into, so no extra density.
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'typed while idle',
+    );
+    await tester.pump();
     expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
 
     controller.busySessions.add('session-1');
     controller.notifyListeners();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(const Key('composer-delivery-control')), findsOneWidget);
+
+    // Clearing the field while the run continues removes the strip again.
+    await tester.enterText(find.byKey(const Key('chat-composer-field')), '');
+    await tester.pump();
+    expect(find.byKey(const Key('composer-delivery-control')), findsNothing);
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'typed while busy',
+    );
+    await tester.pump();
     expect(find.byKey(const Key('composer-delivery-control')), findsOneWidget);
 
     controller.busySessions.remove('session-1');
@@ -453,12 +479,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.tap(find.byKey(const Key('composer-delivery-queue')));
-    await tester.pump();
     await tester.enterText(
       find.byKey(const Key('chat-composer-field')),
       'after this run',
     );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('composer-delivery-queue')));
     await tester.pump();
     await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pump();
@@ -504,6 +530,11 @@ void main() {
     controller.busySessions.add('session-1');
     controller.notifyListeners();
     await _settle(tester);
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'large text send',
+    );
+    await _settle(tester);
 
     expect(find.byKey(const Key('composer-delivery-control')), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -521,19 +552,27 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.tap(find.byKey(const Key('composer-delivery-queue')));
-    await tester.pump();
-    expect(find.text('Send waits for this run to finish'), findsOneWidget);
     await tester.enterText(
       find.byKey(const Key('chat-composer-field')),
       'queued through the toggle',
     );
     await tester.pump();
+    await tester.tap(find.byKey(const Key('composer-delivery-queue')));
+    await tester.pump();
+    expect(find.text('Send waits for this run to finish'), findsOneWidget);
     await tester.tap(find.byKey(const Key('chat-send-button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(api.prompts.single.delivery, PromptDelivery.queue);
+    // The send cleared the field, so the strip is gone; typing the next
+    // prompt brings it back still set to Queue.
+    expect(find.byType(SegmentedButton<PromptDelivery>), findsNothing);
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'next one',
+    );
+    await tester.pump();
     final toggle = tester.widget<SegmentedButton<PromptDelivery>>(
       find.byType(SegmentedButton<PromptDelivery>),
     );

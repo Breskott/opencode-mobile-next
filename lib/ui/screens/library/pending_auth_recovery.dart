@@ -110,7 +110,7 @@ class _PendingAuthRecoveryTileState extends State<_PendingAuthRecoveryTile> {
     final expired = entry.expired || _status == IntegrationAuthState.expired;
     final supported = widget.controller.integrationAuthRecoverySupported;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -210,7 +210,11 @@ class _UncertainAuthRecoveryTile extends StatelessWidget {
                 if (context.mounted) {
                   showProductError(
                     context,
-                    const ProductException('The sign-in source changed.'),
+                    ProductException(
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryTheSignInSourceChanged,
+                    ),
                   );
                 }
               }

@@ -19,6 +19,15 @@ ManagedShell sampleShell({
 
 class FakeManagedShellRepository extends ProductRepository {
   bool supported = true;
+  List<Session> children = [];
+  final childrenReads = <String>[];
+
+  @override
+  Future<List<Session>> listSessionChildren(String id) async {
+    childrenReads.add(id);
+    return children.where((child) => child.parentID == id).toList();
+  }
+
   List<ManagedShell> shells = [sampleShell()];
   String identity = 'server-1';
   String output =

@@ -3,6 +3,7 @@ import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/ui/screens/terminal_screen.dart';
 
@@ -117,6 +118,52 @@ Future<_TerminalRepository> _pumpTerminal(WidgetTester tester) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets(
+    'terminal controls and LTR input remain usable at 320dp 2.5x RTL',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repository = _TerminalRepository();
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale:
+              AppLocalizations.supportedLocales.any(
+                (l) => l.languageCode == 'ar',
+              )
+              ? const Locale('ar')
+              : const Locale('en'),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2.5)),
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: child!,
+            ),
+          ),
+          home: TerminalSurface(repository: repository, process: _process),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byKey(const Key('terminal-accessible-mode')));
+      await tester.pump();
+      final input = find.byKey(const Key('terminal-accessible-input'));
+      expect(tester.widget<TextField>(input).textDirection, TextDirection.ltr);
+      await tester.enterText(input, 'pwd');
+      await tester.testTextInput.receiveAction(TextInputAction.send);
+      await tester.pump();
+      expect(repository.channels.single.writes, contains('pwd\r'));
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets('accessible transcript strips terminal and transport controls', (
     tester,

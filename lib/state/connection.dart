@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' show Locale, PlatformDispatcher;
+
+import 'app_locale.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,19 +25,26 @@ import '../api2/client.dart';
 import '../api2/gateway.dart';
 import '../api2/gateway_operations.dart';
 import '../api2/transport.dart' show Api2AuthRequired;
+import '../background/attention_tile_snapshot.dart';
 import '../background/live_background.dart';
+import '../background/team_alerts.dart';
+import '../background/pinned_session_shortcuts.dart';
 import '../background/widget_snapshot.dart';
+import '../l10n/app_localizations.dart';
 import '../diagnostics/app_diagnostics.dart';
 import '../termux/bridge.dart';
 import 'isolated_task_launch.dart';
 import 'model_library.dart';
 import 'offline_queue.dart';
+import 'orchestration.dart';
+import 'orchestration_store.dart';
 import 'profiles.dart';
 import 'pending_auth.dart';
 import 'session_drafts.dart';
 import 'draft_attachments.dart';
 import 'prompt_photos.dart';
 import 'session_pins.dart';
+import 'session_auto_approval.dart';
 import 'prompt_shelf.dart';
 import 'session_read_state.dart';
 import 'return_brief_state.dart';
@@ -463,9 +473,10 @@ class ConnectionController extends ChangeNotifier {
 
   int get unifiedAttentionCount {
     final selected = profile?.id;
-    return permissions.length +
+    return awaitingPermissionCount +
         questions.length +
         forms.length +
+        (orchestration?.attentionCount ?? 0) +
         store.profiles
             .where((p) => p.id != selected && isProfileReadable(p.id))
             .fold<int>(
@@ -477,14 +488,28 @@ class ConnectionController extends ChangeNotifier {
 
   final WidgetSessionSnapshot _widgetSnapshot;
 
+  /// Launcher long-press entries for the connected profile's pinned sessions
+  /// and the Quick Settings tile's cached needs-attention count. Both are
+  /// derived from the same truth as the widget snapshot and follow its
+  /// suspension and deletion rules.
+  final PinnedSessionShortcuts _pinnedShortcuts;
+  final AttentionTileSnapshot _attentionTile;
+
   /// The most recent home-screen widget write started by [notifyListeners].
   Future<void>? _pendingWidgetSnapshotWrite;
 
+  /// The most recent launcher shortcut / tile writes started by
+  /// [notifyListeners], so deletion can wait for them instead of racing.
+  Future<void>? _pendingLauncherWrite;
+
   /// Set while [deleteProfileAndLocalData] runs, so a notification cannot
-  /// republish the sessions of the profile being erased.
+  /// republish the sessions of the profile being erased — to the widget, the
+  /// launcher shortcuts, or the tile.
   bool _widgetSnapshotSuspended = false;
   final AppDiagnosticsController diagnostics;
   final bool _ownsDiagnostics;
+  late final AppLocaleStore _localeStore;
+  late final ValueNotifier<Locale?> appLocale;
   late final ValueNotifier<AppAppearance> appearance;
   late final ValueNotifier<ThemePackId> themePack;
   final OpenCodeApiFactory _apiFactory;
@@ -660,8 +685,160 @@ class ConnectionController extends ChangeNotifier {
   /// sessions remain in [busySessions] as before.
   Map<String, SessionRetryState> retryStates = {};
 
-  /// Outstanding permission asks keyed by request ID.
+  /// Outstanding permission asks keyed by request ID. Includes requests the
+  /// app is answering automatically for a session with auto-approval on
+  /// while that reply is on the wire; [awaitingPermissions] excludes them.
   Map<String, PermissionRequest> permissions = {};
+
+  /// Per-session approval choices for the selected profile (device-only).
+  late final SessionAutoApprovalStore sessionAutoApproval =
+      SessionAutoApprovalStore(store.prefs);
+
+  /// The AI Team plugin's sibling controller for the connected profile;
+  /// null while that profile's [ServerProfile.orchestration] is null. This
+  /// controller only constructs and disposes it and adds its attention
+  /// count (04-plugin-architecture §9).
+  OrchestrationController? get orchestration => _orchestration;
+  OrchestrationController? _orchestration;
+  late final OrchestrationStore _orchestrationStore = OrchestrationStore(
+    store.prefs,
+    secure: store.secure,
+  );
+
+  /// The plugin's per-profile store, for the discovery-offer memory and the
+  /// cache size shown in Settings. Data writes stay with the controller.
+  OrchestrationStore get orchestrationStore => _orchestrationStore;
+
+  /// Re-evaluates the connected profile's plugin config after it changed:
+  /// disposes a controller whose config is gone or different and builds
+  /// one for a config that is new.
+  void syncOrchestration() {
+    final connected = _connectedProfile;
+    if (connected != null) {
+      // The store is the source of truth for the config: an editor save
+      // replaces the stored instance, so a stale connected copy would keep
+      // the old config alive.
+      for (final stored in store.profiles) {
+        if (stored.id == connected.id) {
+          connected.orchestration = stored.orchestration;
+          break;
+        }
+      }
+    }
+    _syncOrchestration(connected);
+    // The sibling changed hands (or went away); screens showing its state
+    // rebuild from here, as they do for every other controller change.
+    if (!_disposed) notifyListeners();
+  }
+
+  void _syncOrchestration(ServerProfile? selected) {
+    final config = selected?.orchestration;
+    final current = _orchestration;
+    if (current != null &&
+        selected != null &&
+        current.profileId == selected.id &&
+        current.config == config) {
+      return;
+    }
+    if (current != null) {
+      current.removeListener(_orchestrationChanged);
+      current.dispose();
+      _orchestration = null;
+      _dismissTeamAlerts();
+      _teamAlerts = null;
+    }
+    if (config == null || selected == null || isIsolated || _disposed) return;
+    final next = OrchestrationController(
+      profile: selected,
+      config: config,
+      store: _orchestrationStore,
+    )..addListener(_orchestrationChanged);
+    _orchestration = next;
+    _teamAlerts = TeamAlertTracker(profileId: selected.id);
+    unawaited(next.start());
+  }
+
+  void _orchestrationChanged() {
+    if (_disposed) return;
+    _syncTeamAlerts();
+    notifyListeners();
+  }
+
+  /// The AI Team's alert decisions for the current plugin controller
+  /// (TEAM-203); replaced with it, null without one.
+  TeamAlertTracker? _teamAlerts;
+
+  /// Test seam: adopts [controller] as the plugin controller the way a
+  /// connect does — listener and alert tracker included — without a
+  /// server. The caller owns the controller's lifecycle.
+  @visibleForTesting
+  void adoptOrchestrationForTesting(OrchestrationController controller) {
+    _orchestration?.removeListener(_orchestrationChanged);
+    _orchestration = controller..addListener(_orchestrationChanged);
+    _teamAlerts = TeamAlertTracker(profileId: controller.profileId);
+  }
+
+  /// Posted team alerts by key, so a dismiss-all and a settled gate can
+  /// take them down.
+  final Set<String> _postedTeamAlerts = {};
+
+  /// Posts one alert per new decision, failed run, review and completed
+  /// run the plugin controller reports (04 §6, 06 decision 8), under the
+  /// same toggle and quiet rules as every other coding alert. Ids only:
+  /// the platform copy is fixed and the saved server's name is the only
+  /// user-chosen text. Nothing here answers anything.
+  void _syncTeamAlerts() {
+    final team = _orchestration;
+    final tracker = _teamAlerts;
+    if (team == null || tracker == null) return;
+    final diff = tracker.observe(team.snapshot);
+    if (diff.isEmpty) return;
+    for (final key in diff.settled) {
+      if (_postedTeamAlerts.remove(key)) {
+        unawaited(backgroundLive.dismissCodingAlert(key));
+      }
+    }
+    if (!_canShowCodingAlert) return;
+    for (final alert in diff.alerts) {
+      _postedTeamAlerts.add(alert.key);
+      unawaited(
+        backgroundLive
+            .showCodingAlert(
+              kind: alert.kind,
+              profileID: team.profileId,
+              sessionID: alert.id,
+              key: alert.key,
+              allowActions: false,
+              subtext: team.profile.name,
+            )
+            .then((shown) {
+              if (!shown && !_disposed) _postedTeamAlerts.remove(alert.key);
+            }),
+      );
+    }
+  }
+
+  void _dismissTeamAlerts() {
+    for (final key in _postedTeamAlerts.toList()) {
+      unawaited(backgroundLive.dismissCodingAlert(key));
+    }
+    _postedTeamAlerts.clear();
+    _teamAlerts?.clearOpen();
+  }
+
+  /// Request IDs whose automatic "once" reply is in flight. They stay in
+  /// [permissions] so the reply plumbing keeps its identity checks, but no
+  /// surface asks a person about them unless the reply fails.
+  final Set<String> _autoApprovingPermissionIDs = {};
+
+  /// Recent automatic approvals per session, newest last, for the quiet
+  /// in-chat indicator. In-memory and bounded; cleared with the connection.
+  final Map<String, List<AutoApprovedPermission>> _autoApprovedBySession = {};
+  static const _maxAutoApprovedPerSession = 20;
+
+  /// Requests whose automatic reply failed, keyed by request ID with the
+  /// failure text. The request stays pending and visible for review.
+  final Map<String, String> _autoApprovalFailures = {};
   Map<String, PendingQuestion> questions = {};
 
   /// Outstanding OpenCode 2 form requests keyed by form ID. Includes global
@@ -793,8 +970,12 @@ class ConnectionController extends ChangeNotifier {
        backgroundLive =
            backgroundLive ?? BackgroundLiveController(preferences: store.prefs),
        _widgetSnapshot = WidgetSessionSnapshot(prefs: store.prefs),
+       _pinnedShortcuts = PinnedSessionShortcuts(prefs: store.prefs),
+       _attentionTile = AttentionTileSnapshot(prefs: store.prefs),
        diagnostics = diagnostics ?? AppDiagnosticsController(),
        _ownsDiagnostics = diagnostics == null {
+    _localeStore = AppLocaleStore(store.prefs);
+    appLocale = ValueNotifier(_localeStore.value);
     appearance = ValueNotifier(store.appearance);
     themePack = ValueNotifier(store.themePack);
     transcriptReasoningExpanded = store.transcriptReasoningExpanded;
@@ -954,6 +1135,12 @@ class ConnectionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setAppLocale(Locale? value) async {
+    await _localeStore.save(value);
+    if (_disposed) return;
+    appLocale.value = value == null ? null : Locale(value.languageCode);
+  }
+
   Future<void> setThemePack(ThemePackId value) async {
     await store.setThemePack(value);
     themePack.value = value;
@@ -1076,7 +1263,7 @@ class ConnectionController extends ChangeNotifier {
 
   void _syncInputAlerts() {
     final permissionSessions = {
-      for (final permission in permissions.values) permission.sessionID,
+      for (final permission in awaitingPermissions) permission.sessionID,
     }..removeWhere((id) => id.isEmpty);
     final questionSessions = {
       for (final question in questions.values) question.sessionID,
@@ -1122,6 +1309,7 @@ class ConnectionController extends ChangeNotifier {
     }
     _alertedInputKinds.clear();
     _alertedStatusSessions.clear();
+    _dismissTeamAlerts();
     if (clearActive) _attentionActiveSessions.clear();
   }
 
@@ -1330,11 +1518,6 @@ class ConnectionController extends ChangeNotifier {
     return best;
   }
 
-  static bool _isCatchAllProject(WorkspaceProject project) {
-    final directory = normalizeDirectoryPath(project.directory);
-    return isProtectedWorkspaceDirectory(directory) || project.id == 'global';
-  }
-
   /// True while an OpenCode connection has no usable project folder: nothing
   /// was chosen yet, or the choice resolves to a home folder or filesystem
   /// root. Workspace blocks session creation until the user creates or opens
@@ -1352,8 +1535,15 @@ class ConnectionController extends ChangeNotifier {
 
   /// Set when the saved directory was restored without the project list
   /// confirming it; [revalidateRestoredLocation] clears it once the list
-  /// loads.
+  /// confirms the directory.
   bool _pendingLocationRevalidation = false;
+  bool _restoringSavedLocation = false;
+  Future<void> _locationWrite = Future.value();
+
+  static const _unverifiedLocationNotice =
+      'Couldn’t verify this project. Your selection was kept.';
+  static const _unverifiedWorkspaceNotice =
+      'Couldn’t verify this workspace. Your selection was kept.';
 
   @visibleForTesting
   bool get pendingLocationRevalidation => _pendingLocationRevalidation;
@@ -1366,10 +1556,6 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
-  String _replacementNotice(String lost, WorkspaceProject replacement) =>
-      'Opened ${replacement.name}. The last project ($lost) is no longer on '
-      'the server.';
-
   /// Clears the one-line location notice once the user has read it.
   void dismissLocationNotice() {
     if (locationNotice == null) return;
@@ -1378,9 +1564,9 @@ class ConnectionController extends ChangeNotifier {
   }
 
   /// Resolves the location to restore for [profile]. The saved directory is
-  /// kept whenever the server confirms it or cannot yet say; it is replaced
-  /// by the newest project only when the project list proves it gone, and
-  /// dropped only when the server has no projects at all.
+  /// kept even when the server catalog does not list it. The catalog tracks
+  /// known projects, not every existing folder or worktree; absence is not
+  /// proof of deletion and never authorizes switching to another project.
   Future<ProfileLocation?> _validatedSavedLocation(
     ServerProfile profile,
     ServerOperationsGateway currentRepository,
@@ -1402,7 +1588,7 @@ class ConnectionController extends ChangeNotifier {
       locationNotice = workspaceChoiceNotice;
       return null;
     }
-    var workspace = saved.workspace;
+    final workspace = saved.workspace;
     _pendingLocationRevalidation = false;
     try {
       if (directory != null) {
@@ -1415,9 +1601,7 @@ class ConnectionController extends ChangeNotifier {
         }
         if (!_isCurrent(generation, currentApi)) return null;
         final confirmed =
-            project != null &&
-            (projectContainsDirectory(project, directory) ||
-                !_isCatchAllProject(project));
+            project != null && projectContainsDirectory(project, directory);
         if (!confirmed) {
           currentRepository.setLocation(directory: null, workspace: null);
           List<WorkspaceProject>? projects;
@@ -1427,28 +1611,14 @@ class ConnectionController extends ChangeNotifier {
             projects = null;
           }
           if (!_isCurrent(generation, currentApi)) return null;
-          if (projects == null) {
-            // The list is not available yet: keep the saved directory and
-            // re-check it once the list loads.
+          final confirmedByCatalog =
+              projects?.any(
+                (candidate) => projectContainsDirectory(candidate, directory!),
+              ) ??
+              false;
+          if (!confirmedByCatalog) {
             _pendingLocationRevalidation = true;
-          } else {
-            final target = directory;
-            final present = projects.any(
-              (candidate) => projectContainsDirectory(candidate, target),
-            );
-            if (!present) {
-              final replacement = newestProject(projects);
-              if (replacement == null) {
-                await _forgetSavedLocation(profile);
-                locationNotice =
-                    'The last project is no longer available. '
-                    'OpenCode Mobile returned to the server workspace.';
-                return null;
-              }
-              locationNotice = _replacementNotice(target, replacement);
-              directory = normalizeDirectoryPath(replacement.directory);
-              workspace = null;
-            }
+            locationNotice = _unverifiedLocationNotice;
           }
         }
       }
@@ -1461,41 +1631,28 @@ class ConnectionController extends ChangeNotifier {
           workspaces = null;
         }
         if (!_isCurrent(generation, currentApi)) return null;
-        if (workspaces == null) {
-          workspace = null;
-          locationNotice =
-              'The last remote workspace could not be verified. '
-              'The project was opened locally.';
-        } else if (!workspaces.any((candidate) => candidate.id == workspace)) {
-          workspace = null;
-          locationNotice =
-              'The last remote workspace is no longer available. '
-              'The project was opened locally.';
+        if (workspaces == null ||
+            !workspaces.any((candidate) => candidate.id == workspace)) {
+          _pendingLocationRevalidation = true;
+          locationNotice = _unverifiedWorkspaceNotice;
         }
       }
       return ProfileLocation(directory: directory, workspace: workspace);
     } catch (_) {
       if (!_isCurrent(generation, currentApi)) return null;
-      if (directory == null) {
-        locationNotice =
-            'The last project could not be verified. '
-            'OpenCode Mobile opened the server workspace instead.';
-        return null;
-      }
       _pendingLocationRevalidation = true;
-      locationNotice =
-          'The last project could not be verified. '
-          'OpenCode Mobile opened it anyway and will check again once the '
-          'project list loads.';
-      return ProfileLocation(directory: directory, workspace: null);
+      locationNotice = workspace == null
+          ? _unverifiedLocationNotice
+          : _unverifiedWorkspaceNotice;
+      return ProfileLocation(directory: directory, workspace: workspace);
     } finally {
       currentRepository.setLocation(directory: null, workspace: null);
     }
   }
 
   /// Re-checks a directory restored while the project list was unavailable.
-  /// When the list now loads without it, the newest project is opened and a
-  /// plain-sentence [locationNotice] explains the switch.
+  /// A later catalog can confirm the selection, but cannot replace it.
+  /// Missing or unavailable entries leave the explicit directory intact.
   Future<void> revalidateRestoredLocation() async {
     if (!_pendingLocationRevalidation) return;
     final currentRepository = repository;
@@ -1515,20 +1672,32 @@ class ConnectionController extends ChangeNotifier {
     if (!_isCurrent(generation, currentApi) || this.directory != directory) {
       return;
     }
-    _pendingLocationRevalidation = false;
-    if (projects.any(
+    if (!projects.any(
       (candidate) => projectContainsDirectory(candidate, directory),
     )) {
       return;
     }
-    final replacement = newestProject(projects);
-    if (replacement == null) return;
-    locationNotice = _replacementNotice(directory, replacement);
-    await _selectLocation(
-      directory: normalizeDirectoryPath(replacement.directory),
-      workspace: null,
-      preserveNotice: true,
-    );
+    final workspace = this.workspace;
+    if (workspace != null) {
+      List<WorkspaceInfo> workspaces;
+      try {
+        workspaces = await currentRepository.listWorkspaces();
+      } catch (_) {
+        return;
+      }
+      if (!_isCurrent(generation, currentApi) ||
+          this.directory != directory ||
+          this.workspace != workspace ||
+          !workspaces.any((candidate) => candidate.id == workspace)) {
+        return;
+      }
+    }
+    _pendingLocationRevalidation = false;
+    if (locationNotice == _unverifiedLocationNotice ||
+        locationNotice == _unverifiedWorkspaceNotice) {
+      locationNotice = null;
+      notifyListeners();
+    }
   }
 
   /// [redetectOnFailure] lets one failed connect re-probe the address and
@@ -1579,10 +1748,13 @@ class ConnectionController extends ChangeNotifier {
     api = currentApi;
     repository = currentRepository;
     _connectedProfile = profile;
+    _syncOrchestration(profile);
     availableServerVersion = null;
     installedServerVersion = null;
     directory = initialDirectory;
     workspace = null;
+    _restoringSavedLocation = !isCodex;
+    _pendingLocationRevalidation = false;
     locationRevision += 1;
     _clearLocationData();
     status = StreamStatus.connecting;
@@ -1654,6 +1826,7 @@ class ConnectionController extends ChangeNotifier {
             currentApi,
           );
     if (!_isCurrent(generation, currentApi)) return;
+    _restoringSavedLocation = false;
     if (savedLocation != null) {
       await _selectLocation(
         directory: savedLocation.directory,
@@ -2132,20 +2305,35 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
+  static const managedRuntimeMismatchMessage =
+      'This phone is running a different OpenCode version. Open This phone '
+      'setup to switch versions or connect with its matching profile.';
+
+  bool get managedRuntimeMismatch => lastError == managedRuntimeMismatchMessage;
+
   /// True for connect failures shaped like talking to the wrong server
   /// generation: a 401 (v1 client meeting v2's Basic-auth gate) or a 404/405
   /// (v2 client asking a v1 server for `/api/...`). Unreachable addresses and
   /// unhealthy servers are not flavor problems, so they never trigger a
   /// re-probe.
-  static bool _suggestsWrongFlavor(Object error) =>
+  /// True when a failed health check looks like the other protocol
+  /// generation answered: auth/route mismatches, or a 200 whose body is not
+  /// the JSON health object (an OpenCode 2 host serving its web UI on the
+  /// OpenCode 1 path).
+  @visibleForTesting
+  static bool suggestsWrongFlavor(Object error) =>
       error is ApiException &&
       (error.statusCode == 401 ||
           error.statusCode == 404 ||
-          error.statusCode == 405);
+          error.statusCode == 405 ||
+          error.errorTag == unexpectedHealthShapeTag);
+
+  static bool _suggestsWrongFlavor(Object error) => suggestsWrongFlavor(error);
 
   /// After a failed connect, asks the probe which protocol generation the
   /// address actually speaks. Returns the probe result when it disagrees with
-  /// the profile's cached flavor (persisting the correction), null otherwise.
+  /// the profile's cached flavor (persisting remote corrections), null
+  /// otherwise. A managed local mismatch fails without changing its profile.
   Future<ServerProbeResult?> _redetectFlavor(ServerProfile profile) async {
     if (profile.backend == ServerBackend.codex) return null;
     try {
@@ -2158,6 +2346,12 @@ class ConnectionController extends ChangeNotifier {
       if (detected == ServerFlavor.unknown || detected == profile.flavor) {
         return null;
       }
+      // Both managed runtimes share an address, but retain separate profile
+      // identity, credentials and local history. Detecting its current owner
+      // is not permission to turn the saved profile into the other runtime.
+      if (TermuxBridge.managesServerUrl(profile.baseUrl)) {
+        return const ServerProbeResult.failure(managedRuntimeMismatchMessage);
+      }
       profile.flavor = detected;
       if (result.version != null) profile.serverVersion = result.version;
       try {
@@ -2168,6 +2362,96 @@ class ConnectionController extends ChangeNotifier {
       return result;
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Prepares the app-owned local server for an explicitly confirmed runtime
+  /// switch. This checks work observed by this app, not server-wide idleness.
+  /// Recovery must be durably disabled before retiring the local transport.
+  /// Saved profiles, credentials, drafts and queued prompts remain intact.
+  Future<void> prepareManagedRuntimeSwitch() async {
+    bool isManagedLocal(ServerProfile? value) =>
+        value != null &&
+        value.backend == ServerBackend.openCode &&
+        TermuxBridge.managesServerUrl(value.baseUrl);
+
+    Set<String> managedIDs() => {
+      for (final value in store.profiles)
+        if (isManagedLocal(value)) value.id,
+    };
+
+    void checkKnownWork() {
+      final ids = managedIDs();
+      final current = _connectedProfile ?? profile;
+      if (isManagedLocal(current) &&
+          (busySessions.isNotEmpty ||
+              retryStates.isNotEmpty ||
+              permissions.isNotEmpty ||
+              questions.isNotEmpty ||
+              forms.isNotEmpty ||
+              _inboxBySession.values.any((items) => items.isNotEmpty) ||
+              _flushingOfflineQueue ||
+              _queuedPromptInFlight != null ||
+              _pendingReplies.isNotEmpty ||
+              _revertMutations.isNotEmpty)) {
+        throw StateError(
+          'Finish the running work and pending requests on this phone before '
+          'switching OpenCode versions.',
+        );
+      }
+      for (final id in ids) {
+        final observed = _profileMonitor?.snapshotFor(id);
+        if (observed?.isCurrent == true &&
+            ((observed?.runningCount ?? 0) > 0 ||
+                (observed?.pendingCount ?? 0) > 0)) {
+          throw StateError(
+            'This phone has running work or pending requests. Open its server '
+            'profile and finish them before switching OpenCode versions.',
+          );
+        }
+      }
+      final inFlight = _queuedPromptInFlight;
+      if (inFlight != null &&
+          _queueStore.load().any(
+            (entry) => entry.id == inFlight && ids.contains(entry.profileID),
+          )) {
+        throw StateError(
+          'Wait for the prompt being sent on this phone to finish before '
+          'switching OpenCode versions.',
+        );
+      }
+    }
+
+    checkKnownWork();
+    try {
+      for (final id in managedIDs()) {
+        await ManagedServerRecovery.disableForProfile(store.prefs, id);
+      }
+    } catch (_) {
+      throw StateError(
+        'Automatic server recovery could not be disabled. Try again before '
+        'switching OpenCode versions.',
+      );
+    }
+    // Work may have arrived while recovery revocation was being persisted.
+    checkKnownWork();
+    if (isManagedLocal(_connectedProfile ?? profile)) {
+      // Clear the remembered connection before retiring its transport so
+      // lifecycle recovery cannot reconnect the old runtime at this address.
+      // Use the serialized writer directly: disconnect() absorbs storage
+      // errors, while a runtime switch must not proceed after one.
+      try {
+        await _writeActiveProfile(_generation, null);
+      } catch (_) {
+        throw StateError(
+          'The local connection could not be cleared. Try again before '
+          'switching OpenCode versions.',
+        );
+      }
+      checkKnownWork();
+      if (isManagedLocal(_connectedProfile ?? profile)) {
+        await disconnect(keepActive: true);
+      }
     }
   }
 
@@ -2186,6 +2470,9 @@ class ConnectionController extends ChangeNotifier {
     availableServerVersion = null;
     installedServerVersion = null;
     _connectedProfile = null;
+    _syncOrchestration(null);
+    _restoringSavedLocation = false;
+    _pendingLocationRevalidation = false;
     directory = null;
     workspace = null;
     locationRevision += 1;
@@ -2195,6 +2482,14 @@ class ConnectionController extends ChangeNotifier {
     passwordRejected = false;
     status = StreamStatus.disconnected;
     if (!silent) notifyListeners();
+    // A launcher shortcut or a tile count that points at a server the user
+    // just left is a stale promise; withdraw both, after any publish still
+    // in flight so it cannot land on top of the withdrawal. Lifecycle
+    // suspension does not come through here, so backgrounding keeps them.
+    await _pendingLauncherWrite;
+    if (_disposed) return;
+    unawaited(_pinnedShortcuts.clear());
+    unawaited(_attentionTile.clear());
     if (!keepActive) {
       try {
         await _writeActiveProfile(generation, null);
@@ -2564,10 +2859,15 @@ class ConnectionController extends ChangeNotifier {
         final err = props['error'];
         if (err is Map<String, dynamic>) {
           final data = err['data'];
-          lastError =
-              err['message']?.toString() ??
-              (data is Map ? data['message']?.toString() : null) ??
-              lastError;
+          final message =
+              (err['message']?.toString() ??
+                      (data is Map ? data['message']?.toString() : null))
+                  ?.trim();
+          // A blank server message must not blank the banner: fall back to
+          // copy chosen by the error name (v1 `name`, v2 `type`).
+          lastError = message == null || message.isEmpty
+              ? sessionErrorFallbackText(err['name']?.toString())
+              : message;
         }
         notifyListeners();
         break;
@@ -2638,6 +2938,7 @@ class ConnectionController extends ChangeNotifier {
     _v2PermissionSessions.remove(permission.id);
     permissions[permission.id] = permission;
     _permissionRevision += 1;
+    _maybeAutoApprove(permission);
     _syncInputAlerts();
     notifyListeners();
   }
@@ -2659,6 +2960,7 @@ class ConnectionController extends ChangeNotifier {
     _v2PermissionSessions[permission.id] = permission.sessionID;
     permissions[permission.id] = permission;
     _permissionRevision += 1;
+    _maybeAutoApprove(permission);
     _syncInputAlerts();
     notifyListeners();
   }
@@ -2692,6 +2994,7 @@ class ConnectionController extends ChangeNotifier {
     permissions[id] = permission;
     _legacyPermissionIdentities[id] = (sessionID: sessionID, permissionID: id);
     _permissionRevision += 1;
+    _maybeAutoApprove(permission);
     _syncInputAlerts();
     notifyListeners();
   }
@@ -2706,6 +3009,7 @@ class ConnectionController extends ChangeNotifier {
   void _resolvePermission(String requestID) {
     _resolvedPermissionIDs.add(requestID);
     permissions.remove(requestID);
+    _autoApprovalFailures.remove(requestID);
     _legacyPermissionIdentities.remove(requestID);
     _v2PermissionSessions.remove(requestID);
     _permissionRevision += 1;
@@ -2713,17 +3017,135 @@ class ConnectionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The first request in [sessionID] that needs a person.
   PermissionRequest? permissionForSession(String sessionID) {
-    for (final permission in permissions.values) {
+    for (final permission in awaitingPermissions) {
       if (permission.sessionID == sessionID) return permission;
     }
     return null;
   }
 
-  List<PermissionRequest> permissionsForSession(String sessionID) => permissions
-      .values
-      .where((permission) => permission.sessionID == sessionID)
-      .toList();
+  /// Requests in [sessionID] that need a person; an automatic reply on the
+  /// wire is not one of them until it fails.
+  List<PermissionRequest> permissionsForSession(String sessionID) =>
+      awaitingPermissions
+          .where((permission) => permission.sessionID == sessionID)
+          .toList();
+
+  /// Pending requests that need a person: everything in [permissions] except
+  /// the ones an automatic "once" reply is currently answering.
+  Iterable<PermissionRequest> get awaitingPermissions =>
+      _autoApprovingPermissionIDs.isEmpty
+      ? permissions.values
+      : permissions.values.where(
+          (permission) => !_autoApprovingPermissionIDs.contains(permission.id),
+        );
+
+  int get awaitingPermissionCount => _autoApprovingPermissionIDs.isEmpty
+      ? permissions.length
+      : awaitingPermissions.length;
+
+  /// True while the app is answering [requestID] automatically.
+  bool isAutoApproving(String requestID) =>
+      _autoApprovingPermissionIDs.contains(requestID);
+
+  /// Why the automatic reply for [requestID] failed, when it did. The
+  /// request is still pending and shown for review.
+  String? autoApprovalFailure(String requestID) =>
+      _autoApprovalFailures[requestID];
+
+  /// Permissions this phone approved automatically in [sessionID] on the
+  /// current connection, oldest first.
+  List<AutoApprovedPermission> autoApprovedFor(String sessionID) =>
+      List.unmodifiable(
+        _autoApprovedBySession[sessionID] ?? const <AutoApprovedPermission>[],
+      );
+
+  String get _autoApprovalProfile => profile?.id ?? '';
+
+  /// The approval setting that applies to [sessionID] for the selected
+  /// profile, after walking its parent chain through [sessionsById].
+  EffectiveAutoApproval autoApprovalFor(String sessionID) =>
+      sessionAutoApproval.effectiveFor(
+        _autoApprovalProfile,
+        sessionID,
+        (id) => sessionsById[id]?.parentID,
+      );
+
+  /// Stores the session's own approval setting, or clears it (null) so the
+  /// session follows its parent again. Throws when storage refuses.
+  Future<void> setSessionAutoApproval(
+    String sessionID,
+    SessionAutoApproval? setting,
+  ) async {
+    await sessionAutoApproval.set(_autoApprovalProfile, sessionID, setting);
+    if (!_disposed) notifyListeners();
+  }
+
+  /// Answers a freshly arrived request with "once" when its session runs
+  /// with automatic approval and the app is connected. The reply rides the
+  /// live transport like a notification action: no wake reconciliation, and
+  /// the same identity checks as a tap on Allow once. Questions and forms
+  /// never take this path; only permissions do. Requests found by a
+  /// reconnect hydration are not answered here: they waited while the app
+  /// was away, so a person sees them.
+  void _maybeAutoApprove(PermissionRequest permission) {
+    final currentApi = api;
+    if (_disposed || currentApi == null || !isConnected) return;
+    if (_autoApprovalProfile.isEmpty) return;
+    if (!autoApprovalFor(permission.sessionID).automatic) return;
+    _autoApprovingPermissionIDs.add(permission.id);
+    unawaited(_autoApprove(currentApi, permission));
+  }
+
+  Future<void> _autoApprove(
+    ServerGateway currentApi,
+    PermissionRequest permission,
+  ) async {
+    final identity = permissionIdentity(permission);
+    var failure = '';
+    try {
+      await _sendPermissionReply(
+        currentApi,
+        permission.id,
+        'once',
+        expectedRequest: identity,
+      );
+    } catch (error) {
+      failure = error.toString();
+    }
+    if (_disposed) return;
+    _autoApprovingPermissionIDs.remove(permission.id);
+    final stillPending = isRequestPending(identity);
+    if (!stillPending &&
+        failure.isEmpty &&
+        _resolvedPermissionIDs.contains(permission.id)) {
+      final record = _autoApprovedBySession.putIfAbsent(
+        permission.sessionID,
+        () => [],
+      );
+      if (record.length >= _maxAutoApprovedPerSession) record.removeAt(0);
+      record.add(
+        AutoApprovedPermission(
+          requestID: permission.id,
+          sessionID: permission.sessionID,
+          permission: permission.permission,
+          patterns: List.unmodifiable(permission.patterns),
+          at: DateTime.now(),
+        ),
+      );
+    } else if (stillPending) {
+      // The reply did not land (transport gone, refused, or the wire went
+      // quiet): the request stays pending and a person sees it, with the
+      // reason when there is one.
+      _autoApprovalFailures[permission.id] = failure.isEmpty
+          ? 'Not connected to OpenCode'
+          : failure;
+    }
+    _permissionRevision += 1;
+    _syncInputAlerts();
+    notifyListeners();
+  }
 
   Future<void> refreshPendingPermissions() async {
     final currentApi = api;
@@ -4167,6 +4589,13 @@ class ConnectionController extends ChangeNotifier {
     retryStates.remove(id);
     _dismissSessionCodingAlerts(id);
     permissions.removeWhere((_, value) => value.sessionID == id);
+    _autoApprovingPermissionIDs.removeWhere(
+      (requestID) => !permissions.containsKey(requestID),
+    );
+    _autoApprovalFailures.removeWhere(
+      (requestID, _) => !permissions.containsKey(requestID),
+    );
+    _autoApprovedBySession.remove(id);
     final removedQuestionIDs = questions.entries
         .where((entry) => entry.value.sessionID == id)
         .map((entry) => entry.key)
@@ -5014,6 +5443,11 @@ class ConnectionController extends ChangeNotifier {
   ) async {
     await _draftChanges;
     await _pendingAuth.drain(profileId);
+    // Selection writes begin before network refresh; drain them before the
+    // profile sweep so a delayed write cannot resurrect its location.
+    try {
+      await _locationWrite;
+    } catch (_) {}
     // Drain shortcut writes before the deletion sweep discovers its keys.
     // A failed write must not prevent the user from removing a profile.
     try {
@@ -5029,7 +5463,16 @@ class ConnectionController extends ChangeNotifier {
       await _sessionPins.drain(profileId);
     } catch (_) {}
     try {
+      await sessionAutoApproval.drain(profileId);
+    } catch (_) {}
+    try {
       await _promptShelf.drain(profileId);
+    } catch (_) {}
+    try {
+      // The plugin's sibling stops first so no refetch can rewrite the
+      // `oc.orchestration.<id>.` keys the scoped sweep below discovers.
+      if (_orchestration?.profileId == profileId) await _orchestration!.stop();
+      await _orchestrationStore.drain(profileId);
     } catch (_) {}
     final scopedKeys = store.profileScopedPreferenceKeys(profileId);
     final failures = <String>[];
@@ -5096,6 +5539,17 @@ class ConnectionController extends ChangeNotifier {
       if (widgetOutcome == WidgetSnapshotClear.failed) {
         failures.add('the home-screen widget’s sessions');
       }
+      // The launcher's pinned-session shortcuts and the tile's count follow
+      // the same ownership rule.
+      await _pendingLauncherWrite;
+      final shortcutOutcome = await _pinnedShortcuts.clearForProfile(profileId);
+      if (shortcutOutcome == PinnedShortcutClear.failed) {
+        failures.add('the launcher’s pinned-session shortcuts');
+      }
+      final tileOutcome = await _attentionTile.clearForProfile(profileId);
+      if (tileOutcome == AttentionTileClear.failed) {
+        failures.add('the Quick Settings tile’s count');
+      }
 
       // 4. Stash metadata and its private files must go before the generic
       // preference sweep. On failure that sweep would erase the durable owner
@@ -5121,17 +5575,27 @@ class ConnectionController extends ChangeNotifier {
           removedQueuedPrompts: clearedQueued,
           removedDrafts: clearedDrafts,
           clearedWidgetSnapshot: widgetOutcome == WidgetSnapshotClear.cleared,
+          clearedPinnedShortcuts:
+              shortcutOutcome == PinnedShortcutClear.cleared,
+          clearedAttentionTile: tileOutcome == AttentionTileClear.cleared,
           removedProfile: false,
           failures: List.unmodifiable(failures),
         );
       }
       await store.remove(profileId);
+      // The plugin's Keystore entries go with the password, never before
+      // the row: a kept server keeps its secrets.
+      try {
+        await _orchestrationStore.sweep(profileId);
+      } catch (_) {}
 
       return DeleteProfileResult(
         removedPreferenceKeys: scopedKeys,
         removedQueuedPrompts: clearedQueued,
         removedDrafts: clearedDrafts,
         clearedWidgetSnapshot: widgetOutcome == WidgetSnapshotClear.cleared,
+        clearedPinnedShortcuts: shortcutOutcome == PinnedShortcutClear.cleared,
+        clearedAttentionTile: tileOutcome == AttentionTileClear.cleared,
       );
     } finally {
       // A partial deletion can already have removed stash/history/pin/read
@@ -5145,6 +5609,7 @@ class ConnectionController extends ChangeNotifier {
       _sessionReadStore.forgetProfile(profileId);
       _returnBriefStore.forgetProfile(profileId);
       _sessionPins.forget(profileId);
+      sessionAutoApproval.forget(profileId);
       _promptShelf.forget(profileId);
       _pendingAuth.forget(profileId);
       // Notify while republishing is still suspended, then lift it: this
@@ -6524,6 +6989,7 @@ class ConnectionController extends ChangeNotifier {
     final generation = _beginGeneration();
     _retireTransport();
     _connectedProfile = profile;
+    _syncOrchestration(profile);
     final pair = _buildTransportPair(profile);
     final currentApi = pair.gateway
       ..setLocation(directory: directory, workspace: workspace);
@@ -6574,8 +7040,9 @@ class ConnectionController extends ChangeNotifier {
     if (!_disposed && !_widgetSnapshotSuspended && !isIsolated) {
       // Retained so a caller that must observe the settled snapshot — profile
       // deletion — can wait for this write instead of racing it.
+      final sessions = sortedSessions();
       final write = _widgetSnapshot.update(
-        sessions: sortedSessions(),
+        sessions: sessions,
         busySessions: busySessions,
         connected: status == StreamStatus.connected,
         profileID: _connectedProfile?.id ?? store.activeId ?? '',
@@ -6583,7 +7050,51 @@ class ConnectionController extends ChangeNotifier {
       _pendingWidgetSnapshotWrite = write;
       unawaited(write);
       _publishLiveStatus();
+      _publishLaunchSurfaces(sessions);
     }
+  }
+
+  /// Keeps the launcher's pinned-session shortcuts and the Quick Settings
+  /// tile's count in step with the connected profile. Both writers skip
+  /// unchanged payloads. Nothing is published while connecting or while the
+  /// lifecycle has suspended the transport: the entries stay as the last
+  /// connected state left them, and only an explicit [disconnect] or a
+  /// profile deletion withdraws them.
+  void _publishLaunchSurfaces(List<Session> sortedSessions) {
+    if (status != StreamStatus.connected) return;
+    final profileID = _connectedProfile?.id ?? store.activeId ?? '';
+    if (profileID.isEmpty) return;
+    final pins = pinnedSessionIDs;
+    final write = Future.wait<void>([
+      _pinnedShortcuts.update(
+        sessions: [
+          for (final session in sortedSessions)
+            if (pins.contains(session.id)) session,
+        ],
+        profileID: profileID,
+        untitledLabel: _shellStrings().launchUiPinnedUntitled,
+      ),
+      _attentionTile.update(
+        pendingCount: permissions.length + questions.length + forms.length,
+        profileID: profileID,
+      ),
+    ]);
+    _pendingLauncherWrite = write;
+    unawaited(write);
+  }
+
+  /// Localized copy for surfaces the controller writes without a widget tree
+  /// (launcher shortcut labels). Follows the in-app language choice, then the
+  /// device locale, and falls back to English for a language the app does
+  /// not ship.
+  AppLocalizations _shellStrings() {
+    final locale = appLocale.value ?? PlatformDispatcher.instance.locale;
+    final supported = AppLocalizations.supportedLocales.any(
+      (candidate) => candidate.languageCode == locale.languageCode,
+    );
+    return lookupAppLocalizations(
+      supported ? Locale(locale.languageCode) : const Locale('en'),
+    );
   }
 
   /// The ongoing "OpenCode is connected" notification's content, derived
@@ -6605,7 +7116,7 @@ class ConnectionController extends ChangeNotifier {
     final detail = current == null ? null : _runningToolDetail[current.id];
     return LiveStatus(
       runningCount: busySessions.length,
-      pendingCount: permissions.length + questions.length + forms.length,
+      pendingCount: awaitingPermissionCount + questions.length + forms.length,
       title: title == null || title.isEmpty ? null : title,
       detail: detail,
     );
@@ -6641,6 +7152,7 @@ class ConnectionController extends ChangeNotifier {
       case 'websearch':
         return 'Browsing the web…';
       case 'task':
+      case 'subagent':
         return 'Running a subagent…';
       case 'todowrite':
       case 'todoread':
@@ -6923,12 +7435,58 @@ class ConnectionController extends ChangeNotifier {
     allowProtectedDirectory: true,
   );
 
-  Future<void> selectInitialLocation({String? directory, String? workspace}) =>
-      _selectLocation(
+  /// A discovered default can fill an empty connection only after restore.
+  /// Retained screens may finish loading while connect is still validating
+  /// the saved choice, or after an explicit selection has already won.
+  Future<void> selectInitialLocation({
+    String? directory,
+    String? workspace,
+  }) async {
+    final profile = _connectedProfile;
+    if (_restoringSavedLocation ||
+        this.directory != null ||
+        this.workspace != null ||
+        (profile != null && store.locationFor(profile.id) != null)) {
+      return;
+    }
+    await _selectLocation(
+      directory: directory,
+      workspace: workspace,
+      preserveNotice: true,
+    );
+  }
+
+  Future<void> _rememberSelectedLocation(
+    ServerProfile profile,
+    String? directory,
+    String? workspace,
+    int generation,
+    ServerGateway currentApi,
+  ) async {
+    if (isProtectedWorkspaceDirectory(directory)) return;
+    final previous = _locationWrite;
+    final write = () async {
+      try {
+        await previous;
+      } catch (_) {}
+      if (_deletingReadProfiles.contains(profile.id)) return;
+      await store.setLocation(
+        profile.id,
         directory: directory,
         workspace: workspace,
-        preserveNotice: true,
       );
+    }();
+    _locationWrite = write;
+    try {
+      await write;
+    } catch (_) {
+      if (_isCurrent(generation, currentApi)) {
+        locationNotice =
+            'This location is active, but it could not be remembered '
+            'for the next launch.';
+      }
+    }
+  }
 
   Future<void> _selectLocation({
     String? directory,
@@ -6937,7 +7495,11 @@ class ConnectionController extends ChangeNotifier {
     bool allowProtectedDirectory = false,
   }) async {
     final profile = _connectedProfile;
-    if (profile == null || api == null) return;
+    if (profile == null ||
+        api == null ||
+        _deletingReadProfiles.contains(profile.id)) {
+      return;
+    }
     if (profile.backend == ServerBackend.codex) {
       directory ??= profile.codexDirectory;
       if (workspace != null ||
@@ -6955,22 +7517,28 @@ class ConnectionController extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    if (!preserveNotice) locationNotice = null;
+    _restoringSavedLocation = false;
+    if (!preserveNotice) {
+      locationNotice = null;
+      _pendingLocationRevalidation = false;
+    }
     if (this.directory == directory && this.workspace == workspace) {
       if (isProtectedWorkspaceDirectory(directory)) {
         notifyListeners();
         return;
       }
-      try {
-        await store.setLocation(
-          profile.id,
-          directory: directory,
-          workspace: workspace,
-        );
-      } catch (_) {
-        locationNotice =
-            'This location is active, but it could not be remembered '
-            'for the next launch.';
+      final generation = _generation;
+      final currentApi = api!;
+      await _rememberSelectedLocation(
+        profile,
+        directory,
+        workspace,
+        generation,
+        currentApi,
+      );
+      if (!_isCurrent(generation, currentApi) ||
+          _deletingReadProfiles.contains(profile.id)) {
+        return;
       }
       notifyListeners();
       return;
@@ -7007,6 +7575,19 @@ class ConnectionController extends ChangeNotifier {
     notifyListeners();
     enablePollingFallback();
     _startEvents(generation, currentApi);
+    // Remember the user's scope before waiting for catalog/session requests.
+    // A slow or failed refresh must not restore the previous project later.
+    await _rememberSelectedLocation(
+      profile,
+      directory,
+      workspace,
+      generation,
+      currentApi,
+    );
+    if (!_isCurrent(generation, currentApi) ||
+        _deletingReadProfiles.contains(profile.id)) {
+      return;
+    }
     await _refreshPreexistingProviderRuntime(
       generation: generation,
       currentApi: currentApi,
@@ -7022,20 +7603,6 @@ class ConnectionController extends ChangeNotifier {
       refreshPendingPermissions(),
       refreshPendingQuestions(),
     ]);
-    if (!_isCurrent(generation, currentApi)) return;
-    if (locationError == null && !isProtectedWorkspaceDirectory(directory)) {
-      try {
-        await store.setLocation(
-          profile.id,
-          directory: directory,
-          workspace: workspace,
-        );
-      } catch (_) {
-        locationNotice =
-            'This location is active, but it could not be remembered '
-            'for the next launch.';
-      }
-    }
     if (!_isCurrent(generation, currentApi)) return;
     locationLoading = false;
     notifyListeners();
@@ -7928,6 +8495,9 @@ class ConnectionController extends ChangeNotifier {
     observedCompletedMessageIDs.clear();
     retryStates = {};
     permissions = {};
+    _autoApprovingPermissionIDs.clear();
+    _autoApprovalFailures.clear();
+    _autoApprovedBySession.clear();
     questions = {};
     forms = {};
     _resolvedFormIDs.clear();
@@ -7988,6 +8558,9 @@ class ConnectionController extends ChangeNotifier {
     _generation += 1;
     connectionRevision = _generation;
     _retireTransport();
+    _orchestration?.removeListener(_orchestrationChanged);
+    _orchestration?.dispose();
+    _orchestration = null;
     _profileMonitor?.removeListener(_monitorChanged);
     _profileMonitor?.dispose();
     _quotaMonitor?.removeListener(_quotaMonitorChanged);
@@ -7996,6 +8569,7 @@ class ConnectionController extends ChangeNotifier {
     backgroundLive.removeListener(_backgroundLiveChanged);
     backgroundLive.dispose();
     if (_ownsDiagnostics) diagnostics.dispose();
+    appLocale.dispose();
     appearance.dispose();
     themePack.dispose();
     unawaited(_eventBus.close());

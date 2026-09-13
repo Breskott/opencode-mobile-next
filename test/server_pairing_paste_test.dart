@@ -96,12 +96,11 @@ void main() {
   testWidgets('pasting a pairing code fills url, username and password', (
     tester,
   ) async {
-    serverProbe =
-        ({required baseUrl, username, password}) async =>
-            const ServerProbeResult.success(
-              '0.0.0-beta-18600',
-              flavor: ServerFlavor.v2,
-            );
+    serverProbe = ({required baseUrl, username, password}) async =>
+        const ServerProbeResult.success(
+          '0.0.0-beta-18600',
+          flavor: ServerFlavor.v2,
+        );
     await pumpEditor(tester);
     setClipboard(tester, pairJson());
 
@@ -114,21 +113,18 @@ void main() {
   });
 
   testWidgets('the confirmation names the host it chose', (tester) async {
-    serverProbe =
-        ({required baseUrl, username, password}) async =>
-            baseUrl == 'https://desk.example:4097'
-            ? const ServerProbeResult.success(
-                '0.0.0-beta-18600',
-                flavor: ServerFlavor.v2,
-              )
-            : const ServerProbeResult.failure('The connection was refused.');
+    serverProbe = ({required baseUrl, username, password}) async =>
+        baseUrl == 'https://desk.example:4097'
+        ? const ServerProbeResult.success(
+            '0.0.0-beta-18600',
+            flavor: ServerFlavor.v2,
+          )
+        : const ServerProbeResult.failure('The connection was refused.');
     debugPlatformCapabilities = const PlatformCapabilities.android();
     await pumpEditor(tester);
     setClipboard(
       tester,
-      pairJson(
-        urls: ['http://127.0.0.1:4097', 'https://desk.example:4097'],
-      ),
+      pairJson(urls: ['http://127.0.0.1:4097', 'https://desk.example:4097']),
     );
 
     await tester.tap(find.byKey(const ValueKey('server-pairing-paste')));
@@ -148,9 +144,8 @@ void main() {
   testWidgets('the pairing password never appears in the confirmation', (
     tester,
   ) async {
-    serverProbe =
-        ({required baseUrl, username, password}) async =>
-            const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2);
+    serverProbe = ({required baseUrl, username, password}) async =>
+        const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2);
     await pumpEditor(tester);
     setClipboard(tester, pairJson());
 
@@ -180,25 +175,23 @@ void main() {
   testWidgets('a failure names every address and what happened to it', (
     tester,
   ) async {
-    serverProbe =
-        ({required baseUrl, username, password}) async => baseUrl.contains('4097')
-            ? const ServerProbeResult.failure(
-                'The connection was refused. Is opencode serve running on '
-                'that host and port?',
-                suggestsMissingServer: true,
-              )
-            : const ServerProbeResult.failure(
-                'The connection timed out. Check the address, and that the '
-                'server is reachable from this phone.',
-                suggestsMissingServer: true,
-              );
+    serverProbe = ({required baseUrl, username, password}) async =>
+        baseUrl.contains('4097')
+        ? const ServerProbeResult.failure(
+            'The connection was refused. Is opencode serve running on '
+            'that host and port?',
+            suggestsMissingServer: true,
+          )
+        : const ServerProbeResult.failure(
+            'The connection timed out. Check the address, and that the '
+            'server is reachable from this phone.',
+            suggestsMissingServer: true,
+          );
     debugPlatformCapabilities = const PlatformCapabilities.android();
     await pumpEditor(tester);
     setClipboard(
       tester,
-      pairJson(
-        urls: ['http://127.0.0.1:4097', 'https://desk.example:9999'],
-      ),
+      pairJson(urls: ['http://127.0.0.1:4097', 'https://desk.example:9999']),
     );
 
     await tester.tap(find.byKey(const ValueKey('server-pairing-paste')));
@@ -253,7 +246,8 @@ void main() {
       expect(
         find.byKey(const ValueKey('server-pairing-failure')),
         findsOneWidget,
-        reason: 'should have explained the failure for: '
+        reason:
+            'should have explained the failure for: '
             '${bad.length > 40 ? '${bad.substring(0, 40)}…' : bad}',
       );
       expect(tester.takeException(), isNull);
@@ -277,9 +271,8 @@ void main() {
   testWidgets('a pairing code pasted into the URL field is never left there', (
     tester,
   ) async {
-    serverProbe =
-        ({required baseUrl, username, password}) async =>
-            const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2);
+    serverProbe = ({required baseUrl, username, password}) async =>
+        const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2);
     await pumpEditor(tester);
 
     // The payload carries the password; the URL field must not hold it even
@@ -299,9 +292,8 @@ void main() {
 
   testWidgets('a pairing code in the clipboard is honoured by the password '
       'paste button too', (tester) async {
-    serverProbe =
-        ({required baseUrl, username, password}) async =>
-            const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2);
+    serverProbe = ({required baseUrl, username, password}) async =>
+        const ServerProbeResult.success('1.0.0', flavor: ServerFlavor.v2);
     await pumpEditor(tester);
     setClipboard(tester, pairJson());
 
@@ -325,15 +317,14 @@ void main() {
   testWidgets('a server that answers with a stale password says so', (
     tester,
   ) async {
-    serverProbe =
-        ({required baseUrl, username, password}) async =>
-            const ServerProbeResult.failure(
-              'Password rejected. Copy the current "server password" line '
-              'from the server output — it changes on every restart unless '
-              'OPENCODE_PASSWORD is set.',
-              flavor: ServerFlavor.v2,
-              needsPassword: true,
-            );
+    serverProbe = ({required baseUrl, username, password}) async =>
+        const ServerProbeResult.failure(
+          'Password rejected. Copy the current "server password" line '
+          'from the server output — it changes on every restart unless '
+          'OPENCODE_PASSWORD is set.',
+          flavor: ServerFlavor.v2,
+          needsPassword: true,
+        );
     await pumpEditor(tester);
     setClipboard(tester, pairJson());
 
@@ -346,10 +337,7 @@ void main() {
     // The credential problem is the probe's verdict to report, through the
     // existing row — not a second pairing-specific error saying the same
     // thing, and not "no address answered", which would be a lie.
-    expect(
-      find.byKey(const ValueKey('server-pairing-failure')),
-      findsNothing,
-    );
+    expect(find.byKey(const ValueKey('server-pairing-failure')), findsNothing);
     expect(find.byKey(const ValueKey('server-test-failure')), findsOneWidget);
     expect(find.textContaining('Password rejected'), findsWidgets);
   });
@@ -357,12 +345,11 @@ void main() {
   testWidgets('a successful pair does not repeat the probe verdict', (
     tester,
   ) async {
-    serverProbe =
-        ({required baseUrl, username, password}) async =>
-            const ServerProbeResult.success(
-              '0.0.0-beta-18600',
-              flavor: ServerFlavor.v2,
-            );
+    serverProbe = ({required baseUrl, username, password}) async =>
+        const ServerProbeResult.success(
+          '0.0.0-beta-18600',
+          flavor: ServerFlavor.v2,
+        );
     await pumpEditor(tester);
     setClipboard(tester, pairJson());
 
@@ -388,7 +375,10 @@ void main() {
       // reused, leaving the pushed editor route in place.
       await tester.pumpWidget(const SizedBox.shrink());
       await pumpEditor(tester);
-      expect(find.byKey(const ValueKey('server-pairing-actions')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('server-pairing-actions')),
+        findsOneWidget,
+      );
       expect(
         find.byKey(const ValueKey('server-pairing-paste')),
         findsOneWidget,

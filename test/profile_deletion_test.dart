@@ -141,6 +141,19 @@ Map<String, Object> _seed() => {
       },
     ],
   }),
+  // The launcher's pinned-session shortcuts and the Quick Settings tile's
+  // count follow the widget snapshot's ownership rule.
+  'oc.pinnedShortcuts': jsonEncode({
+    'profileID': 'doomed',
+    'sessions': [
+      {'id': 'ses_a', 'title': 'Refactor billing'},
+    ],
+  }),
+  'oc.attentionTile': jsonEncode({
+    'pendingCount': 2,
+    'profileID': 'doomed',
+    'updatedAt': 5,
+  }),
 
   // App-wide keys that a profile deletion must never touch.
   'oc.appearance': 'dark',
@@ -153,6 +166,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late List<String> secureDeletes;
+  late List<Map<String, Object?>> shortcutPublishes;
 
   setUp(() {
     secureDeletes = [];
@@ -176,6 +190,18 @@ void main() {
           const MethodChannel('oc/background'),
           (_) async => null,
         );
+    shortcutPublishes = [];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('oc/shortcut'), (
+          call,
+        ) async {
+          if (call.method == 'setPinnedSessions') {
+            shortcutPublishes.add(
+              (call.arguments as Map).cast<String, Object?>(),
+            );
+          }
+          return null;
+        });
   });
 
   Future<(ConnectionController, SharedPreferences)> boot() async {
@@ -240,6 +266,8 @@ void main() {
     expect(result.removedQueuedPrompts, 2);
     expect(result.removedDrafts, 2); // owned + unattributable
     expect(result.clearedWidgetSnapshot, isTrue);
+    expect(result.clearedPinnedShortcuts, isTrue);
+    expect(result.clearedAttentionTile, isTrue);
 
     // Profile metadata (including the cached flavor/version) and the active
     // pointer.
@@ -293,6 +321,13 @@ void main() {
     // Widget snapshot.
     expect(prefs.getString('oc.widgetSessions'), isNull);
 
+    // Launcher shortcuts are withdrawn natively and forgotten; the tile's
+    // cached count is gone.
+    expect(prefs.getString('oc.pinnedShortcuts'), isNull);
+    expect(prefs.getString('oc.attentionTile'), isNull);
+    expect(shortcutPublishes, isNotEmpty);
+    expect(shortcutPublishes.last['sessions'], isEmpty);
+
     // App-wide settings are untouched.
     expect(prefs.getString('oc.appearance'), 'dark');
     expect(prefs.getString('oc.themePack'), 'gruvbox');
@@ -333,9 +368,15 @@ void main() {
     expect(result.removedQueuedPrompts, 1);
     // Only `keeper`'s own draft plus the unattributable one.
     expect(result.removedDrafts, 2);
-    // The widget snapshot belongs to `doomed`, so it stays.
+    // The widget snapshot belongs to `doomed`, so it stays — and so do the
+    // launcher shortcuts and the tile count.
     expect(result.clearedWidgetSnapshot, isFalse);
     expect(prefs.getString('oc.widgetSessions'), isNotNull);
+    expect(result.clearedPinnedShortcuts, isFalse);
+    expect(result.clearedAttentionTile, isFalse);
+    expect(prefs.getString('oc.pinnedShortcuts'), contains('Refactor billing'));
+    expect(prefs.getString('oc.attentionTile'), contains('doomed'));
+    expect(shortcutPublishes, isEmpty);
 
     expect(controller.store.profiles.map((p) => p.id), ['doomed']);
     // `doomed` is still active and still fully configured.
@@ -345,6 +386,55 @@ void main() {
     expect(controller.store.locationFor('doomed')?.workspace, 'main');
     expect(prefs.getString('oc.offlineQueue'), contains('secret prompt'));
     expect(prefs.getString('oc.sessionDrafts'), contains('half-written'));
+  });
+
+  test('the AI Team plugin data of the deleted profile is swept', () async {
+    // The same fixture with the plugin on for `doomed` (and its cache,
+    // cursor and refresh stamp on disk) and a cache for `keeper`.
+    final seed = _seed();
+    final profiles = jsonDecode(seed['oc.profiles'] as String) as List;
+    (profiles[0] as Map<String, dynamic>)['orchestration'] = {
+      'provider': 'gascity',
+      'url': 'http://127.0.0.1:8080',
+      'city': 'bright-lights',
+      'hostMode': 'computer',
+      'front': false,
+    };
+    SharedPreferences.setMockInitialValues({
+      ...seed,
+      'oc.profiles': jsonEncode(profiles),
+      'oc.orchestration.doomed.snapshot': jsonEncode({
+        'runs': [
+          {'run_id': 'oc-xru', 'status': 'running'},
+        ],
+      }),
+      'oc.orchestration.doomed.cursor': jsonEncode({'seq': 1200}),
+      'oc.orchestration.doomed.refreshedAt': '2026-09-10T10:00:00.000Z',
+      'oc.orchestration.keeper.snapshot': jsonEncode({'runs': []}),
+    });
+    final prefs = await SharedPreferences.getInstance();
+    final store = ProfileStore(prefs: prefs);
+    await store.load();
+    expect(store.profiles.first.orchestration?.city, 'bright-lights');
+    final controller = ConnectionController(store);
+    addTearDown(controller.dispose);
+
+    final result = await controller.deleteProfileAndLocalData('doomed');
+
+    expect(result.failures, isEmpty);
+    expect(controller.store.profiles.map((p) => p.id), ['keeper']);
+    // Every `oc.orchestration*.doomed` key and the plugin's Keystore entry.
+    expect(
+      prefs.getKeys().where(
+        (key) => key.startsWith('oc.orchestration') && key.contains('doomed'),
+      ),
+      isEmpty,
+    );
+    expect(secureDeletes, contains('oc.orchestration.doomed.grant'));
+    expect(secureDeletes, contains('pw.doomed'));
+    // The other profile's plugin cache is untouched.
+    expect(prefs.getString('oc.orchestration.keeper.snapshot'), isNotNull);
+    expect(prefs.getString('oc.profiles'), isNot(contains('bright-lights')));
   });
 
   group('queued prompts awaiting delivery review', () {
@@ -565,6 +655,28 @@ void main() {
       expect(result.failures, ['the home-screen widget’s sessions']);
       expect(result.clearedWidgetSnapshot, isFalse);
       expect(await onDisk('oc.widgetSessions'), isNotNull);
+      expect(controller.store.profiles.map((p) => p.id), ['doomed', 'keeper']);
+      expect(secureDeletes, isEmpty);
+    });
+
+    test('keeps the server when the launcher shortcut record or the tile count '
+        'will not clear', () async {
+      final (controller, _) = await bootRefusing({
+        'oc.pinnedShortcuts',
+        'oc.attentionTile',
+      });
+
+      final result = await controller.deleteProfileAndLocalData('doomed');
+
+      expect(result.removedProfile, isFalse);
+      expect(result.failures, [
+        'the launcher’s pinned-session shortcuts',
+        'the Quick Settings tile’s count',
+      ]);
+      expect(result.clearedPinnedShortcuts, isFalse);
+      expect(result.clearedAttentionTile, isFalse);
+      expect(await onDisk('oc.pinnedShortcuts'), isNotNull);
+      expect(await onDisk('oc.attentionTile'), isNotNull);
       expect(controller.store.profiles.map((p) => p.id), ['doomed', 'keeper']);
       expect(secureDeletes, isEmpty);
     });

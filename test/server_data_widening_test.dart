@@ -78,26 +78,28 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('1. session usage', () {
-    test('v1 Session keeps cost, tokens, summary, agent, model, compacting',
-        () {
-      final session = Session.fromJson(v1SessionJson);
-      expect(session.cost, 0.4275);
-      expect(session.tokens?.input, 59422);
-      expect(session.tokens?.output, 861);
-      expect(session.tokens?.reasoning, 61);
-      expect(session.tokens?.cacheRead, 78336);
-      expect(session.tokens?.cacheWrite, 12);
-      expect(session.summary?.additions, 42);
-      expect(session.summary?.deletions, 7);
-      expect(session.summary?.files, 3);
-      expect(session.agent, 'build');
-      expect(session.model, 'anthropic/claude-sonnet-4');
-      expect(session.time?.compacting, 1787952240000);
-      expect(
-        session.compactingSince,
-        DateTime.fromMillisecondsSinceEpoch(1787952240000),
-      );
-    });
+    test(
+      'v1 Session keeps cost, tokens, summary, agent, model, compacting',
+      () {
+        final session = Session.fromJson(v1SessionJson);
+        expect(session.cost, 0.4275);
+        expect(session.tokens?.input, 59422);
+        expect(session.tokens?.output, 861);
+        expect(session.tokens?.reasoning, 61);
+        expect(session.tokens?.cacheRead, 78336);
+        expect(session.tokens?.cacheWrite, 12);
+        expect(session.summary?.additions, 42);
+        expect(session.summary?.deletions, 7);
+        expect(session.summary?.files, 3);
+        expect(session.agent, 'build');
+        expect(session.model, 'anthropic/claude-sonnet-4');
+        expect(session.time?.compacting, 1787952240000);
+        expect(
+          session.compactingSince,
+          DateTime.fromMillisecondsSinceEpoch(1787952240000),
+        );
+      },
+    );
 
     test('v1 Session without usage fields stays null (old servers)', () {
       final session = Session.fromJson({
@@ -145,41 +147,43 @@ void main() {
       expect(next.agent, 'build');
     });
 
-    test('v2 session.usage.updated maps to a session.usage.updated envelope',
-        () {
-      final adapter = Api2EventAdapter();
-      final out = adapter.adapt(
-        Api2EventEnvelope.fromJson({
-          'id': 'evt_1',
-          'created': 1787961234000,
-          'type': 'session.usage.updated',
-          'data': {
-            'sessionID': 'ses_1',
-            'cost': 0.25,
-            'tokens': {
-              'input': 100,
-              'output': 20,
-              'reasoning': 5,
-              'cache': {'read': 50, 'write': 3},
+    test(
+      'v2 session.usage.updated maps to a session.usage.updated envelope',
+      () {
+        final adapter = Api2EventAdapter();
+        final out = adapter.adapt(
+          Api2EventEnvelope.fromJson({
+            'id': 'evt_1',
+            'created': 1787961234000,
+            'type': 'session.usage.updated',
+            'data': {
+              'sessionID': 'ses_1',
+              'cost': 0.25,
+              'tokens': {
+                'input': 100,
+                'output': 20,
+                'reasoning': 5,
+                'cache': {'read': 50, 'write': 3},
+              },
             },
-          },
-        }),
-      );
-      expect(out, hasLength(1));
-      expect(out.single.type, 'session.usage.updated');
-      expect(out.single.properties['sessionID'], 'ses_1');
-      expect(out.single.properties['cost'], 0.25);
-      final tokens = out.single.properties['tokens'] as Map;
-      expect(tokens['input'], 100);
-      expect((tokens['cache'] as Map)['write'], 3);
-    });
+          }),
+        );
+        expect(out, hasLength(1));
+        expect(out.single.type, 'session.usage.updated');
+        expect(out.single.properties['sessionID'], 'ses_1');
+        expect(out.single.properties['cost'], 0.25);
+        final tokens = out.single.properties['tokens'] as Map;
+        expect(tokens['input'], 100);
+        expect((tokens['cache'] as Map)['write'], 3);
+      },
+    );
 
-    test('captured v2 stream emits usage updates instead of dropping them',
-        () {
+    test('captured v2 stream emits usage updates instead of dropping them', () {
       final adapter = Api2EventAdapter();
       final out = <EventEnvelope>[];
-      for (final line
-          in File('test/fixtures/api2/events.sse').readAsLinesSync()) {
+      for (final line in File(
+        'test/fixtures/api2/events.sse',
+      ).readAsLinesSync()) {
         if (!line.startsWith('data:')) continue;
         out.addAll(
           adapter.adapt(
@@ -189,58 +193,61 @@ void main() {
           ),
         );
       }
-      final usage =
-          out.where((e) => e.type == 'session.usage.updated').toList();
+      final usage = out
+          .where((e) => e.type == 'session.usage.updated')
+          .toList();
       expect(usage, hasLength(2));
       expect(usage.first.properties['sessionID'], startsWith('ses_'));
     });
 
-    test('ConnectionController merges live usage into the stored session',
-        () async {
-      final controller = ConnectionController(await _store());
-      addTearDown(controller.dispose);
-      var notified = 0;
-      controller.addListener(() => notified += 1);
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.created',
-          properties: {'info': v1SessionJson},
-        ),
-      );
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.usage.updated',
-          properties: const {
-            'sessionID': 'ses_v1abc',
-            'cost': 0.9,
-            'tokens': {
-              'input': 1,
-              'output': 2,
-              'reasoning': 3,
-              'cache': {'read': 4, 'write': 5},
+    test(
+      'ConnectionController merges live usage into the stored session',
+      () async {
+        final controller = ConnectionController(await _store());
+        addTearDown(controller.dispose);
+        var notified = 0;
+        controller.addListener(() => notified += 1);
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.created',
+            properties: {'info': v1SessionJson},
+          ),
+        );
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.usage.updated',
+            properties: const {
+              'sessionID': 'ses_v1abc',
+              'cost': 0.9,
+              'tokens': {
+                'input': 1,
+                'output': 2,
+                'reasoning': 3,
+                'cache': {'read': 4, 'write': 5},
+              },
             },
-          },
-        ),
-      );
-      final session = controller.sessionsById['ses_v1abc']!;
-      expect(session.cost, 0.9);
-      expect(session.tokens?.input, 1);
-      expect(session.tokens?.cacheWrite, 5);
-      // Everything the usage event does not carry survives the merge.
-      expect(session.title, 'Repo test strategy overview');
-      expect(session.agent, 'build');
-      expect(session.summary?.files, 3);
-      expect(notified, 2);
+          ),
+        );
+        final session = controller.sessionsById['ses_v1abc']!;
+        expect(session.cost, 0.9);
+        expect(session.tokens?.input, 1);
+        expect(session.tokens?.cacheWrite, 5);
+        // Everything the usage event does not carry survives the merge.
+        expect(session.title, 'Repo test strategy overview');
+        expect(session.agent, 'build');
+        expect(session.summary?.files, 3);
+        expect(notified, 2);
 
-      // Unknown sessions are ignored without throwing.
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.usage.updated',
-          properties: const {'sessionID': 'ses_missing', 'cost': 1},
-        ),
-      );
-      expect(controller.sessionsById.containsKey('ses_missing'), isFalse);
-    });
+        // Unknown sessions are ignored without throwing.
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.usage.updated',
+            properties: const {'sessionID': 'ses_missing', 'cost': 1},
+          ),
+        );
+        expect(controller.sessionsById.containsKey('ses_missing'), isFalse);
+      },
+    );
   });
 
   group('2. retry state', () {
@@ -260,8 +267,7 @@ void main() {
       expect(SessionRetryState.fromStatusJson('retry'), isNull);
     });
 
-    test('OpenCodeApi.sessionRetryStatesFromJson keeps only retry entries',
-        () {
+    test('OpenCodeApi.sessionRetryStatesFromJson keeps only retry entries', () {
       final out = OpenCodeApi.sessionRetryStatesFromJson({
         'ses_a': {'type': 'idle'},
         'ses_b': {'type': 'busy'},
@@ -312,92 +318,96 @@ void main() {
       expect(status['next'], 1787961300000);
     });
 
-    test('controller tracks retryStates and clears them on busy/idle',
-        () async {
-      final controller = ConnectionController(await _store());
-      addTearDown(controller.dispose);
+    test(
+      'controller tracks retryStates and clears them on busy/idle',
+      () async {
+        final controller = ConnectionController(await _store());
+        addTearDown(controller.dispose);
 
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.status',
-          properties: const {'sessionID': 'ses_1', 'status': retryStatus},
-        ),
-      );
-      expect(controller.busySessions, contains('ses_1'));
-      expect(controller.retryStates['ses_1']?.attempt, 3);
-      expect(controller.retryStates['ses_1']?.message,
-          'Rate limited by provider');
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.status',
+            properties: const {'sessionID': 'ses_1', 'status': retryStatus},
+          ),
+        );
+        expect(controller.busySessions, contains('ses_1'));
+        expect(controller.retryStates['ses_1']?.attempt, 3);
+        expect(
+          controller.retryStates['ses_1']?.message,
+          'Rate limited by provider',
+        );
 
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.status',
-          properties: const {
-            'sessionID': 'ses_1',
-            'status': {'type': 'busy'},
-          },
-        ),
-      );
-      expect(controller.busySessions, contains('ses_1'));
-      expect(controller.retryStates, isEmpty);
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.status',
+            properties: const {
+              'sessionID': 'ses_1',
+              'status': {'type': 'busy'},
+            },
+          ),
+        );
+        expect(controller.busySessions, contains('ses_1'));
+        expect(controller.retryStates, isEmpty);
 
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.status',
-          properties: const {'sessionID': 'ses_1', 'status': retryStatus},
-        ),
-      );
-      expect(controller.retryStates, contains('ses_1'));
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.idle',
-          properties: const {'sessionID': 'ses_1'},
-        ),
-      );
-      expect(controller.busySessions, isNot(contains('ses_1')));
-      expect(controller.retryStates, isEmpty);
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.status',
+            properties: const {'sessionID': 'ses_1', 'status': retryStatus},
+          ),
+        );
+        expect(controller.retryStates, contains('ses_1'));
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.idle',
+            properties: const {'sessionID': 'ses_1'},
+          ),
+        );
+        expect(controller.busySessions, isNot(contains('ses_1')));
+        expect(controller.retryStates, isEmpty);
 
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.status',
-          properties: const {'sessionID': 'ses_2', 'status': retryStatus},
-        ),
-      );
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.error',
-          properties: const {
-            'sessionID': 'ses_2',
-            'error': {'message': 'boom'},
-          },
-        ),
-      );
-      expect(controller.retryStates, isEmpty);
-    });
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.status',
+            properties: const {'sessionID': 'ses_2', 'status': retryStatus},
+          ),
+        );
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.error',
+            properties: const {
+              'sessionID': 'ses_2',
+              'error': {'message': 'boom'},
+            },
+          ),
+        );
+        expect(controller.retryStates, isEmpty);
+      },
+    );
 
-    test('refreshSessions hydrates retry details from the v1 status endpoint',
-        () async {
-      final api = _StatusApi()
-        ..sessionsResult = [Session(id: 'ses_1'), Session(id: 'ses_2')]
-        ..statuses = {'ses_1': 'retry', 'ses_2': 'busy'}
-        ..retries = {
-          'ses_1': SessionRetryState.fromStatusJson(retryStatus)!,
-        };
-      final controller = ConnectionController(await _store())..api = api;
-      addTearDown(controller.dispose);
+    test(
+      'refreshSessions hydrates retry details from the v1 status endpoint',
+      () async {
+        final api = _StatusApi()
+          ..sessionsResult = [Session(id: 'ses_1'), Session(id: 'ses_2')]
+          ..statuses = {'ses_1': 'retry', 'ses_2': 'busy'}
+          ..retries = {'ses_1': SessionRetryState.fromStatusJson(retryStatus)!};
+        final controller = ConnectionController(await _store())..api = api;
+        addTearDown(controller.dispose);
 
-      await controller.refreshSessions();
-      expect(api.retryCalls, 1);
-      expect(controller.busySessions, containsAll(['ses_1', 'ses_2']));
-      expect(controller.retryStates.keys, ['ses_1']);
-      expect(controller.retryStates['ses_1']?.attempt, 3);
+        await controller.refreshSessions();
+        expect(api.retryCalls, 1);
+        expect(controller.busySessions, containsAll(['ses_1', 'ses_2']));
+        expect(controller.retryStates.keys, ['ses_1']);
+        expect(controller.retryStates['ses_1']?.attempt, 3);
 
-      // No retrying session → no extra request, and stale entries clear.
-      api.statuses = {'ses_1': 'busy', 'ses_2': 'idle'};
-      await controller.refreshSessions();
-      expect(api.retryCalls, 1);
-      expect(controller.retryStates, isEmpty);
-      expect(controller.busySessions, ['ses_1']);
-    });
+        // No retrying session → no extra request, and stale entries clear.
+        api.statuses = {'ses_1': 'busy', 'ses_2': 'idle'};
+        await controller.refreshSessions();
+        expect(api.retryCalls, 1);
+        expect(controller.retryStates, isEmpty);
+        expect(controller.busySessions, ['ses_1']);
+      },
+    );
   });
 
   group('3. tool timing', () {
@@ -437,29 +447,33 @@ void main() {
     });
 
     test('v2 tool content maps executed and time through the v1 mapper', () {
-      final content = Api2AssistantContent.fromJson({
-        'type': 'tool',
-        'id': 'call_1',
-        'name': 'read',
-        'executed': false,
-        'state': {
-          'status': 'completed',
-          'input': {'path': 'README.md'},
-          'content': [
-            {'type': 'text', 'text': 'ok'},
-          ],
-        },
-        'time': {
-          'created': 1000,
-          'ran': 1200,
-          'completed': 1800,
-          'pruned': 5000,
-        },
-      }) as Api2ToolCallContent;
+      final content =
+          Api2AssistantContent.fromJson({
+                'type': 'tool',
+                'id': 'call_1',
+                'name': 'read',
+                'executed': false,
+                'state': {
+                  'status': 'completed',
+                  'input': {'path': 'README.md'},
+                  'content': [
+                    {'type': 'text', 'text': 'ok'},
+                  ],
+                },
+                'time': {
+                  'created': 1000,
+                  'ran': 1200,
+                  'completed': 1800,
+                  'pruned': 5000,
+                },
+              })
+              as Api2ToolCallContent;
       expect(content.time?.pruned, 5000);
       final parts = partsFromAssistantContent('msg_1', [content]);
       final state = parts.single.toolState;
-      expect(state.executed, isFalse);
+      // Completed with a run timestamp: the server's executed:false marks
+      // provider-side execution, not a skipped call (seen live 2026-09-10).
+      expect(state.executed, isTrue);
       expect(state.startedAt, DateTime.fromMillisecondsSinceEpoch(1200));
       expect(state.completedAt, DateTime.fromMillisecondsSinceEpoch(1800));
       expect(state.duration, const Duration(milliseconds: 600));
@@ -467,14 +481,36 @@ void main() {
       expect(state.output, 'ok');
     });
 
-    test('captured v2 assistant message keeps executed:false', () {
+    test('captured v2 assistant message: executed follows the outcome', () {
       final message = Api2Message.fromJson(
         Map<String, dynamic>.from(fixture('message_assistant.json')['data']),
       )!;
       final bundle = mapApi2Message(sessionID, message);
       final tool = bundle.parts.firstWhere((p) => p.type == 'tool');
-      expect(tool.toolState.executed, isFalse);
+      final finished =
+          tool.toolState.status == 'completed' ||
+          tool.toolState.status == 'error' ||
+          tool.toolState.startedAt != null;
+      expect(tool.toolState.executed, finished);
       expect(tool.toolState.pruned, isFalse);
+    });
+
+    test('a v2 tool that never ran still reads as not executed', () {
+      final state = ToolState.fromJson({
+        'status': 'running',
+        'input': {'pattern': 'x'},
+        'executed': false,
+      });
+      expect(state.executed, isFalse);
+      final completedLive = ToolState.fromJson({
+        // Verbatim shape from beta-18600, 2026-09-10.
+        'status': 'completed',
+        'input': {'path': '/w/calc.py'},
+        'output': 'Read file /w/calc.py, lines 1-6',
+        'time': {'start': 1789003350209, 'end': 1789003350225},
+        'executed': false,
+      });
+      expect(completedLive.executed, isTrue);
     });
 
     test('v2 tool.success event forwards executed', () {
@@ -495,7 +531,10 @@ void main() {
       );
       final part = out.single.properties['part'] as Map;
       final state = ToolState.fromJson(part['state']);
-      expect(state.executed, isFalse);
+      // The raw flag is forwarded; a completed call still reads as executed
+      // because the outcome wins over beta-18600's provider-side flag.
+      expect((part['state'] as Map)['executed'], isFalse);
+      expect(state.executed, isTrue);
       expect(state.status, 'completed');
     });
   });

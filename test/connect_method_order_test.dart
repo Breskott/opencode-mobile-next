@@ -1,3 +1,4 @@
+import 'package:opencode_mobile/l10n/app_localizations_en.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/ui/widgets/connect_methods.dart';
@@ -28,9 +29,15 @@ void main() {
   });
 
   test('hints say where each flow finishes', () {
-    expect(connectMethodHint(browser), contains('paste the callback URL'));
-    expect(connectMethodHint(headless), contains('Works from a phone'));
-    expect(connectMethodHint(key), 'Paste an API key');
+    expect(
+      connectMethodHint(browser, AppLocalizationsEn()),
+      contains('paste the callback URL'),
+    );
+    expect(
+      connectMethodHint(headless, AppLocalizationsEn()),
+      contains('Works from a phone'),
+    );
+    expect(connectMethodHint(key, AppLocalizationsEn()), 'Paste an API key');
     expect(connectMethodNeedsServerBrowser(browser), isTrue);
     expect(connectMethodNeedsServerBrowser(headless), isFalse);
   });

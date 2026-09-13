@@ -83,8 +83,7 @@ class _V2InteractionApi extends OpenCodeApi {
   }
 
   @override
-  Future<List<Api2InboxItem>> inboxItems(String sessionID) async =>
-      inboxResult;
+  Future<List<Api2InboxItem>> inboxItems(String sessionID) async => inboxResult;
 
   @override
   Future<void> cancelInboxItem(String sessionID, String inboxID) async {
@@ -165,36 +164,38 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('form state', () {
-    test('form.v2.created adds the form; replied/cancelled settle it',
-        () async {
-      final api = _V2InteractionApi();
-      final controller = await _controller(api);
-      addTearDown(controller.dispose);
+    test(
+      'form.v2.created adds the form; replied/cancelled settle it',
+      () async {
+        final api = _V2InteractionApi();
+        final controller = await _controller(api);
+        addTearDown(controller.dispose);
 
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'form.v2.created',
-          properties: _formJson('frm_1', 'ses_1'),
-        ),
-      );
-      expect(controller.forms, contains('frm_1'));
-      expect(controller.formForSession('ses_1')?.id, 'frm_1');
-      expect(controller.formForSession('ses_other'), isNull);
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'form.v2.created',
+            properties: _formJson('frm_1', 'ses_1'),
+          ),
+        );
+        expect(controller.forms, contains('frm_1'));
+        expect(controller.formForSession('ses_1')?.id, 'frm_1');
+        expect(controller.formForSession('ses_other'), isNull);
 
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'form.v2.replied',
-          properties: const {'id': 'frm_1', 'sessionID': 'ses_1'},
-        ),
-      );
-      expect(controller.forms, isEmpty);
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'form.v2.replied',
+            properties: const {'id': 'frm_1', 'sessionID': 'ses_1'},
+          ),
+        );
+        expect(controller.forms, isEmpty);
 
-      // A late duplicate created event for the settled form is ignored on
-      // the next hydration pass (resolved IDs are filtered).
-      api.pendingFormsResult = [_form('frm_1', 'ses_1')];
-      await controller.refreshPendingForms();
-      expect(controller.forms, isEmpty);
-    });
+        // A late duplicate created event for the settled form is ignored on
+        // the next hydration pass (resolved IDs are filtered).
+        api.pendingFormsResult = [_form('frm_1', 'ses_1')];
+        await controller.refreshPendingForms();
+        expect(controller.forms, isEmpty);
+      },
+    );
 
     test('refreshPendingForms hydrates the pending list', () async {
       final api = _V2InteractionApi()
@@ -253,8 +254,7 @@ void main() {
       expect(controller.forms, isEmpty);
     });
 
-    test('a 400 invalid answer keeps the form pending and rethrows',
-        () async {
+    test('a 400 invalid answer keeps the form pending and rethrows', () async {
       final api = _V2InteractionApi()
         ..formReplyError = ApiException(
           'Invalid option for form field: env',
@@ -318,49 +318,51 @@ void main() {
   });
 
   group('inbox state', () {
-    test('enqueued/delivery.changed/delivered project the pending sends',
-        () async {
-      final api = _V2InteractionApi();
-      final controller = await _controller(api);
-      addTearDown(controller.dispose);
+    test(
+      'enqueued/delivery.changed/delivered project the pending sends',
+      () async {
+        final api = _V2InteractionApi();
+        final controller = await _controller(api);
+        addTearDown(controller.dispose);
 
-      _enqueue(controller, inboxID: 'msg_1', delivery: 'queue');
-      _enqueue(controller, inboxID: 'msg_2', delivery: 'steer', text: 'next');
-      final items = controller.inboxItemsFor('ses_1');
-      expect(items, hasLength(2));
-      expect(items.first.id, 'msg_1');
-      expect(items.first.delivery, Api2Delivery.queue);
-      expect(items.first.promptText, 'queued prompt');
+        _enqueue(controller, inboxID: 'msg_1', delivery: 'queue');
+        _enqueue(controller, inboxID: 'msg_2', delivery: 'steer', text: 'next');
+        final items = controller.inboxItemsFor('ses_1');
+        expect(items, hasLength(2));
+        expect(items.first.id, 'msg_1');
+        expect(items.first.delivery, Api2Delivery.queue);
+        expect(items.first.promptText, 'queued prompt');
 
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.inbox.delivery.changed',
-          properties: const {
-            'sessionID': 'ses_1',
-            'inboxID': 'msg_1',
-            'delivery': 'steer',
-          },
-        ),
-      );
-      expect(
-        controller.inboxItemsFor('ses_1').first.delivery,
-        Api2Delivery.steer,
-      );
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.inbox.delivery.changed',
+            properties: const {
+              'sessionID': 'ses_1',
+              'inboxID': 'msg_1',
+              'delivery': 'steer',
+            },
+          ),
+        );
+        expect(
+          controller.inboxItemsFor('ses_1').first.delivery,
+          Api2Delivery.steer,
+        );
 
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.inbox.delivered',
-          properties: const {'sessionID': 'ses_1', 'inboxID': 'msg_1'},
-        ),
-      );
-      controller.handleEventForTesting(
-        EventEnvelope(
-          type: 'session.inbox.cancelled',
-          properties: const {'sessionID': 'ses_1', 'inboxID': 'msg_2'},
-        ),
-      );
-      expect(controller.inboxItemsFor('ses_1'), isEmpty);
-    });
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.inbox.delivered',
+            properties: const {'sessionID': 'ses_1', 'inboxID': 'msg_1'},
+          ),
+        );
+        controller.handleEventForTesting(
+          EventEnvelope(
+            type: 'session.inbox.cancelled',
+            properties: const {'sessionID': 'ses_1', 'inboxID': 'msg_2'},
+          ),
+        );
+        expect(controller.inboxItemsFor('ses_1'), isEmpty);
+      },
+    );
 
     test('refreshInbox reconciles a session from REST', () async {
       final api = _V2InteractionApi()
@@ -395,24 +397,26 @@ void main() {
       expect(controller.inboxItemsFor('ses_1'), isEmpty);
     });
 
-    test('a 409 already-delivered cancel drops the item and rethrows',
-        () async {
-      final api = _V2InteractionApi()
-        ..inboxError = ApiException(
-          'delivered',
-          statusCode: 409,
-          errorTag: 'ConflictError',
-        );
-      final controller = await _controller(api);
-      addTearDown(controller.dispose);
-      _enqueue(controller, inboxID: 'msg_1');
+    test(
+      'a 409 already-delivered cancel drops the item and rethrows',
+      () async {
+        final api = _V2InteractionApi()
+          ..inboxError = ApiException(
+            'delivered',
+            statusCode: 409,
+            errorTag: 'ConflictError',
+          );
+        final controller = await _controller(api);
+        addTearDown(controller.dispose);
+        _enqueue(controller, inboxID: 'msg_1');
 
-      await expectLater(
-        controller.cancelInboxItem('ses_1', 'msg_1'),
-        throwsA(isA<ApiException>()),
-      );
-      expect(controller.inboxItemsFor('ses_1'), isEmpty);
-    });
+        await expectLater(
+          controller.cancelInboxItem('ses_1', 'msg_1'),
+          throwsA(isA<ApiException>()),
+        );
+        expect(controller.inboxItemsFor('ses_1'), isEmpty);
+      },
+    );
 
     test('setInboxDelivery flips the mode on the wire and locally', () async {
       final api = _V2InteractionApi();
@@ -516,23 +520,25 @@ void main() {
       expect(h.controller.permissions, isEmpty);
     });
 
-    test('a stale requestID refreshes the alert instead of resolving',
-        () async {
-      final h = await harness();
-      addTearDown(h.controller.dispose);
-      askV2Permission(h.controller);
+    test(
+      'a stale requestID refreshes the alert instead of resolving',
+      () async {
+        final h = await harness();
+        addTearDown(h.controller.dispose);
+        askV2Permission(h.controller);
 
-      final result = await h.live.handleNativeAction({
-        'kind': 'permission',
-        'sessionID': 'ses_1',
-        'decision': 'reply',
-        'requestID': 'per_stale',
-        'reply': 'whatever',
-      });
-      expect(result, {'handled': true});
-      expect(h.api.permissionReplies, isEmpty);
-      expect(h.controller.permissions, contains('per_1'));
-    });
+        final result = await h.live.handleNativeAction({
+          'kind': 'permission',
+          'sessionID': 'ses_1',
+          'decision': 'reply',
+          'requestID': 'per_stale',
+          'reply': 'whatever',
+        });
+        expect(result, {'handled': true});
+        expect(h.api.permissionReplies, isEmpty);
+        expect(h.controller.permissions, contains('per_1'));
+      },
+    );
 
     test('an empty reply is not delivered', () async {
       final h = await harness();

@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "message_count": 80,
+  "missing_keys": [],
+  "extra_keys": [],
+  "placeholder_mismatches": [],
+  "directional_controls": 0,
+  "source_sha256": "d29dc114025e2680aa02bed9765fef85320464700e5310dcaef986becf795756",
+  "translation_sha256": "e9877e0364f5c89ee7a4a95f17521a55fccea2727dd487723f62b558f10fd412",
+  "limits": "Frozen 80-message corpus only; not a Flutter generation or rendered RTL gate."
+}

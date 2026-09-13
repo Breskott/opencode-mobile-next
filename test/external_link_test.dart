@@ -12,8 +12,10 @@ void main() {
         'https://example.com/a?b=c#d',
       );
       expect(safeExternalLinkUri('HTTPS://example.com/')?.scheme, 'https');
-      expect(safeExternalLinkUri('  https://example.com/ ')?.host,
-          'example.com');
+      expect(
+        safeExternalLinkUri('  https://example.com/ ')?.host,
+        'example.com',
+      );
     });
 
     test('accepts http so the caller can warn, not so it opens silently', () {
@@ -58,8 +60,10 @@ void main() {
     test('refuses an overlong URL rather than passing it to the platform', () {
       final long = 'https://example.com/${'a' * 2048}';
       expect(safeExternalLinkUri(long), isNull);
-      expect(safeExternalLinkUri('https://example.com/${'a' * 2000}'),
-          isNotNull);
+      expect(
+        safeExternalLinkUri('https://example.com/${'a' * 2000}'),
+        isNotNull,
+      );
     });
   });
 

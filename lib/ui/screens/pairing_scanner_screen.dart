@@ -1,3 +1,6 @@
+import '../../l10n/app_localizations.dart';
+import '../widgets/setup_ui_messages.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -157,11 +160,17 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
       key: const ValueKey('pairing-scanner-screen'),
       appBar: AppBar(
         leading: IconButton(
-          tooltip: 'Close the scanner',
+          tooltip: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupCloseScanner,
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(AppIconography.close),
         ),
-        title: const Text('Scan pairing code'),
+        title: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupScanPairing,
+        ),
       ),
       body: SafeArea(
         child: switch (_stage) {
@@ -173,53 +182,71 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
           _ScanStage.denied => _Recovery(
             key: const ValueKey('pairing-scanner-denied'),
             icon: AppIconography.camera,
-            title: 'Camera access is needed to scan',
-            body:
-                'The camera is used only to read the QR that opencode2 pair '
-                'prints, and only while this screen is open. You can paste '
-                'the code instead — it does exactly the same thing.',
-            primaryLabel: 'Try again',
+            title: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupCameraNeeded,
+            body: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupCameraPrivacy,
+            primaryLabel: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).isolatedTaskRetryOpen,
             onPrimary: () {
               setState(() => _stage = _ScanStage.starting);
               unawaited(_start());
             },
-            secondaryLabel: 'Paste it instead',
+            secondaryLabel: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupPasteInstead,
             onSecondary: () => Navigator.of(context).pop(),
           ),
           _ScanStage.permanentlyDenied => _Recovery(
             key: const ValueKey('pairing-scanner-blocked'),
             icon: AppIconography.cameraOff,
-            title: 'Camera access is turned off',
-            body:
-                'Android will not ask again, so this has to be changed in '
-                'app settings: turn on Camera, then come back. Pasting the '
-                'code needs no permission at all and works right now.',
-            primaryLabel: 'Open app settings',
+            title: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupCameraDisabled,
+            body: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupCameraSettingsDetail,
+            primaryLabel: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupOpenAppSettings,
             onPrimary: () => unawaited(cameraPlatform.openAppSettings()),
-            secondaryLabel: 'Paste it instead',
+            secondaryLabel: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupPasteInstead,
             onSecondary: () => Navigator.of(context).pop(),
           ),
           _ScanStage.noCamera => _Recovery(
             key: const ValueKey('pairing-scanner-no-camera'),
             icon: AppIconography.cameraOff,
-            title: 'This device has no camera',
-            body:
-                'There is nothing to scan with. Run opencode2 pair on the '
-                'server, copy the code it prints, and paste it into the '
-                'server editor.',
-            primaryLabel: 'Paste it instead',
+            title: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupNoCamera,
+            body: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupNoCameraDetail,
+            primaryLabel: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupPasteInstead,
             onPrimary: () => Navigator.of(context).pop(),
           ),
           _ScanStage.failed => _Recovery(
             key: const ValueKey('pairing-scanner-failed'),
             icon: AppIconography.error,
-            title: 'The camera could not be opened',
+            title: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupCameraFailed,
             body: [
               ?_rejected,
-              'Another app may be holding the camera. Pasting the pairing '
-                  'code works either way.',
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupCameraFailedDetail,
             ].join('\n\n'),
-            primaryLabel: 'Try again',
+            primaryLabel: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).isolatedTaskRetryOpen,
             onPrimary: () {
               setState(() {
                 _stage = _ScanStage.starting;
@@ -227,7 +254,9 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
               });
               unawaited(_start());
             },
-            secondaryLabel: 'Paste it instead',
+            secondaryLabel: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupPasteInstead,
             onSecondary: () => Navigator.of(context).pop(),
           ),
         },
@@ -253,7 +282,9 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Point the camera at the QR code printed by opencode2 pair.',
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7SetupScanInstruction,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -272,7 +303,10 @@ class _PairingScannerScreenState extends State<PairingScannerScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      rejected,
+                      setupUiMessage(
+                        lookupAppLocalizations(Localizations.localeOf(context)),
+                        rejected,
+                      ),
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onErrorContainer,

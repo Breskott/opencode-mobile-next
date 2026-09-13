@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
@@ -157,7 +158,11 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-diagnostics');
@@ -180,6 +185,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: SettingsScreen(controller: controller),
         routes: {
           '/termux-setup': (_) => const Scaffold(body: Text('Managed updater')),
@@ -203,7 +210,11 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-server');
@@ -232,7 +243,11 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-server');
@@ -278,7 +293,11 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-server');
@@ -326,6 +345,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
             context,
@@ -362,7 +383,11 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-privacy');
@@ -386,7 +411,11 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-appearance');
@@ -400,7 +429,24 @@ void main() {
     expect(find.text('Dark'), findsOneWidget);
     await tester.tap(entry);
     await tester.pumpAndSettle();
+    final pickerScroll = find.descendant(
+      of: find.byKey(const Key('appearance-picker')),
+      matching: find.byType(Scrollable),
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('appearance-system')),
+      160,
+      scrollable: pickerScroll,
+    );
     await tester.tap(find.byKey(const Key('appearance-system')));
+    await tester.pumpAndSettle();
+    expect(controller.appearance.value, AppAppearance.dark);
+    await tester.scrollUntilVisible(
+      find.text('Apply'),
+      160,
+      scrollable: pickerScroll,
+    );
+    await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
 
     expect(controller.appearance.value, AppAppearance.system);
@@ -419,7 +465,11 @@ void main() {
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(
-        MaterialApp(home: SettingsScreen(controller: controller)),
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SettingsScreen(controller: controller),
+        ),
       );
       await tester.pumpAndSettle();
       await _openCategory(tester, 'settings-category-coding');
@@ -468,7 +518,11 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-coding');
@@ -516,7 +570,11 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-coding');
@@ -553,6 +611,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
             context,
@@ -618,6 +678,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(
             context,
@@ -672,7 +734,11 @@ void main() {
     await controller.saveSessionDraft('session-1', 'half-typed thought');
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-privacy');
@@ -727,7 +793,11 @@ void main() {
       expect(controller.totalQueuedPromptCount, 0);
       expect(controller.queuedPromptStorageReadable, isFalse);
       await tester.pumpWidget(
-        MaterialApp(home: SettingsScreen(controller: controller)),
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SettingsScreen(controller: controller),
+        ),
       );
       await tester.pumpAndSettle();
       await _openCategory(tester, 'settings-category-privacy');
@@ -772,7 +842,11 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-privacy');
@@ -819,7 +893,11 @@ void main() {
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
-      MaterialApp(home: SettingsScreen(controller: controller)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SettingsScreen(controller: controller),
+      ),
     );
     await tester.pumpAndSettle();
     await _openCategory(tester, 'settings-category-background');

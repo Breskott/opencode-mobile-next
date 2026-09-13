@@ -9,6 +9,7 @@ import '../app_theme.dart';
 import '../desktop/desktop_interaction.dart';
 import 'agent_blocks.dart';
 import 'code_highlight.dart';
+import 'reader_preferences.dart';
 import 'external_link.dart';
 import 'transcript_highlight.dart';
 
@@ -1124,7 +1125,8 @@ class _CodeBlockState extends State<CodeBlock> {
     final original = widget.originalSource ?? widget.code;
     final language = widget.language;
     final highlighted = widget.highlightEnabled;
-    final wrap = _wrap;
+    final wrap =
+        ReaderPreferencesScope.maybeOf(context)?.value.wrapCode ?? _wrap;
     final query =
         context
             .dependOnInheritedWidgetOfExactType<TranscriptHighlight>()
@@ -1224,6 +1226,8 @@ class _CodeBlockState extends State<CodeBlock> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final enabled = _interactive;
+    final preferences = ReaderPreferencesScope.maybeOf(context);
+    final wrap = preferences?.value.wrapCode ?? _wrap;
     if (_displaySource != widget.code) {
       _displaySource = widget.code;
       _displayValue = _displayCode(widget.code);
@@ -1278,18 +1282,23 @@ class _CodeBlockState extends State<CodeBlock> {
                 ),
                 if (enabled) ...[
                   Semantics(
-                    toggled: _wrap,
+                    toggled: wrap,
                     child: IconButton(
-                      tooltip: _wrap
+                      tooltip: wrap
                           ? l10n.markdownScrollCode
                           : l10n.markdownWrapCode,
                       style: _toolbarStyle(theme),
                       onPressed: () {
-                        if (_interactive) setState(() => _wrap = !_wrap);
+                        if (!_interactive) return;
+                        if (preferences != null) {
+                          saveReaderPreferences(context, wrapCode: !wrap);
+                        } else {
+                          setState(() => _wrap = !wrap);
+                        }
                       },
                       icon: Icon(
                         Icons.wrap_text_rounded,
-                        color: _wrap ? theme.colorScheme.primary : null,
+                        color: wrap ? theme.colorScheme.primary : null,
                       ),
                     ),
                   ),
@@ -1320,7 +1329,7 @@ class _CodeBlockState extends State<CodeBlock> {
                 // Code starts at its left edge even when reader chrome is RTL.
                 child: Directionality(
                   textDirection: TextDirection.ltr,
-                  child: _wrap
+                  child: wrap
                       ? text
                       : SingleChildScrollView(
                           scrollDirection: Axis.horizontal,

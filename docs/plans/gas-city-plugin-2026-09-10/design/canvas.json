@@ -1,0 +1,72 @@
+{
+ "artboards": [
+  {
+   "file": "Main.dc.html",
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "01 Workspace"
+  },
+  {
+   "file": "RunOverview.dc.html",
+   "x": 470,
+   "y": 0,
+   "w": 390,
+   "h": 900,
+   "title": "02 Run"
+  },
+  {
+   "file": "WorkList.dc.html",
+   "x": 940,
+   "y": 0,
+   "w": 390,
+   "h": 1000,
+   "title": "03 Work"
+  },
+  {
+   "file": "Agent.dc.html",
+   "x": 1410,
+   "y": 0,
+   "w": 390,
+   "h": 1000,
+   "title": "04 Agent \u00b7 decision"
+  },
+  {
+   "file": "NeedsYou.dc.html",
+   "x": 0,
+   "y": 1180,
+   "w": 390,
+   "h": 844,
+   "title": "05 Activity \u00b7 Needs you"
+  },
+  {
+   "file": "PhoneSetup.dc.html",
+   "x": 470,
+   "y": 1180,
+   "w": 390,
+   "h": 844,
+   "title": "06 Termux \u00b7 optional step"
+  },
+  {
+   "file": "Settings.dc.html",
+   "x": 940,
+   "y": 1180,
+   "w": 390,
+   "h": 900,
+   "title": "07 Settings"
+  }
+ ],
+ "annotations": [
+  {
+   "id": "note-v3",
+   "x": 0,
+   "y": -150,
+   "w": 470,
+   "text": "v3 \u2014 next-gen layout on the app's own tokens.\nKept: hero number + sentence + one action; Working/Blocked pair; decision card; vertical steps with 'Next: testing'; tinted work groups; agent step log + pinned answer bar with optional note; one action per Activity row.\nDropped: fake OS chrome, glows, Mentions tab, fallback-worker card, emoji glyphs. Blocked is amber (red = failed only). Type \u2265 13px."
+  }
+ ],
+ "launch": {
+  "view": "canvas"
+ }
+}

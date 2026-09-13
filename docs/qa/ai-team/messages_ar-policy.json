@@ -1,0 +1,8 @@
+{
+  "teamUiPolicySupervision": "الإشراف · {level}",
+  "teamUiPolicyBoundariesLabel": "الحدود",
+  "teamUiPolicyBoundariesNone": "لا حدود مضبوطة على المضيف",
+  "teamUiPolicyFromHost": "مضبوطة على المضيف · للقراءة فقط هنا",
+  "teamUiPolicyRig": "لـ {rig}",
+  "teamUiPolicySemantics": "الإشراف {level}. الحدود: {boundaries}"
+}

@@ -1,4 +1,5 @@
 import 'support/complete_message_history.dart';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -255,12 +256,12 @@ void main() {
     ).readAsStringSync();
     expect(manifest, contains('android:usesCleartextTraffic="false"'));
     expect(manifest, contains('@xml/network_security_config'));
-    expect(network, contains('<base-config cleartextTrafficPermitted="false"'));
-    expect(network, contains('>localhost</domain>'));
-    expect(network, contains('>127.0.0.1</domain>'));
-    // Every host the Dart layer will speak HTTP to has to be here too, or
-    // Android blocks the connect after the app has already allowed it.
-    expect(network, contains('>::1</domain>'));
+    // Plain HTTP is gated in Dart (loopback + Tailscale addresses only);
+    // Android cannot express an address range, so the platform policy is
+    // open and must stay documented as such. 2026-09-11: a closed policy
+    // blocked the AI Team front at http://100.x:8373 with no usable error.
+    expect(network, contains('<base-config cleartextTrafficPermitted="true"'));
+    expect(network, contains('isOrchestrationUrlAllowed'));
     expect(network, isNot(contains('192.168.')));
     expect(launch, contains('@color/launch_background'));
     expect(launch, isNot(contains('@android:color/white')));
@@ -479,6 +480,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Session menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Session actions'));
     await tester.pumpAndSettle();
     // Sharing sits under Actions in the merged menu; scroll it into view on
     // the short test surface before tapping.
@@ -744,7 +747,7 @@ void main() {
     );
     final target = find.byType(InkWell).first;
     expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
-    expect(find.bySemanticsLabel(RegExp('Shell, running')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Shell, Running')), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     await tester.tap(target);
     await tester.pump();
@@ -774,9 +777,16 @@ void main() {
 
     await tester.tap(find.text('Open source'));
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('about-non-affiliation')), findsOneWidget);
+    // The bundled document sits below the build, alpha and original-language
+    // notes, so the lazy list only builds it once the reader scrolls.
+    await tester.scrollUntilVisible(
+      find.text('Third-Party Notices'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('Third-Party Notices'), findsOneWidget);
     expect(find.text('sherpa-onnx'), findsWidgets);
-    expect(find.byKey(const Key('about-non-affiliation')), findsOneWidget);
 
     // The same sentence is the public README's opening claim, so the two
     // cannot drift apart.

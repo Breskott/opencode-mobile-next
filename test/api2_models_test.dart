@@ -11,7 +11,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('parses the captured session list page with cursors', () {
-    final page = Api2Page.fromJson(fixture('sessions_page.json'), Api2Session.fromJson);
+    final page = Api2Page.fromJson(
+      fixture('sessions_page.json'),
+      Api2Session.fromJson,
+    );
     expect(page.data, hasLength(3));
     expect(page.hasNext, isTrue);
     expect(page.hasPrevious, isTrue);
@@ -43,7 +46,10 @@ void main() {
   });
 
   test('parses the captured message list into the typed union', () {
-    final page = Api2Page.fromJson(fixture('messages.json'), Api2Message.fromJson);
+    final page = Api2Page.fromJson(
+      fixture('messages.json'),
+      Api2Message.fromJson,
+    );
     expect(page.data.length, greaterThanOrEqualTo(3));
 
     final user = page.data.first as Api2UserMessage;
@@ -52,7 +58,10 @@ void main() {
     expect(user.files.first.mime, 'text/plain');
     expect(user.files.first.sourceType, 'inline');
     expect(user.files.first.name, 'att.txt');
-    expect(utf8.decode(base64Decode(user.files.first.data!)), 'tiny attachment');
+    expect(
+      utf8.decode(base64Decode(user.files.first.data!)),
+      'tiny attachment',
+    );
 
     final assistant = page.data[1] as Api2AssistantMessage;
     expect(assistant.agent, 'build');
@@ -72,14 +81,18 @@ void main() {
     expect(tool.id, startsWith('call_'));
     final state = tool.state as Api2ToolCompleted;
     expect(state.input['path'], 'README.md');
-    expect(state.content.whereType<Api2ToolResultText>().first.text,
-        contains('OpenCode for Android'));
+    expect(
+      state.content.whereType<Api2ToolResultText>().first.text,
+      contains('OpenCode for Android'),
+    );
     expect(tool.time?.ran, isNotNull);
   });
 
   test('parses a single captured assistant message', () {
     final message = Api2Message.fromJson(
-      Map<String, dynamic>.from(fixture('message_assistant.json')['data'] as Map),
+      Map<String, dynamic>.from(
+        fixture('message_assistant.json')['data'] as Map,
+      ),
     );
     expect(message, isA<Api2AssistantMessage>());
     final assistant = message as Api2AssistantMessage;
@@ -119,7 +132,9 @@ void main() {
     expect(fallback.ref(variant: 'high').toString(), 'openai/gpt-5.6-sol#high');
 
     final providers = (fixture('providers.json')['data'] as List)
-        .map((j) => Api2ProviderInfo.fromJson(Map<String, dynamic>.from(j as Map)))
+        .map(
+          (j) => Api2ProviderInfo.fromJson(Map<String, dynamic>.from(j as Map)),
+        )
         .whereType<Api2ProviderInfo>()
         .toList();
     expect(providers.map((p) => p.id), contains('openai'));
@@ -157,8 +172,10 @@ void main() {
         .whereType<Api2FsEntry>()
         .toList();
     expect(entries.first.isDirectory, isTrue);
-    expect(entries.any((e) => e.path == 'lib/main.dart' && !e.isDirectory),
-        isTrue);
+    expect(
+      entries.any((e) => e.path == 'lib/main.dart' && !e.isDirectory),
+      isTrue,
+    );
   });
 
   test('unknown message types and enum values never throw', () {
@@ -171,17 +188,24 @@ void main() {
     expect(message, isA<Api2UnknownMessage>());
     expect(message!.raw['brandNewField'], isNotNull);
 
-    final oddAssistant = Api2Message.fromJson({
-      'id': 'msg_a',
-      'type': 'assistant',
-      'finish': 'brand-new-reason',
-      'content': [
-        {'type': 'text', 'text': 'hi'},
-        {'type': 'video', 'uri': 'x'},
-        'not-a-map',
-        {'type': 'tool', 'id': 'c1', 'name': 't', 'state': {'status': 'paused'}},
-      ],
-    }) as Api2AssistantMessage;
+    final oddAssistant =
+        Api2Message.fromJson({
+              'id': 'msg_a',
+              'type': 'assistant',
+              'finish': 'brand-new-reason',
+              'content': [
+                {'type': 'text', 'text': 'hi'},
+                {'type': 'video', 'uri': 'x'},
+                'not-a-map',
+                {
+                  'type': 'tool',
+                  'id': 'c1',
+                  'name': 't',
+                  'state': {'status': 'paused'},
+                },
+              ],
+            })
+            as Api2AssistantMessage;
     expect(oddAssistant.finish, 'brand-new-reason');
     expect(oddAssistant.content, hasLength(3));
     expect(oddAssistant.content[1], isA<Api2UnknownContent>());
@@ -272,8 +296,18 @@ void main() {
     expect(tags.activeFor({'confirm': true}), isTrue);
 
     final includes = Api2FormCondition(key: 'tags', op: 'eq', value: 'a');
-    expect(includes.holds({'tags': ['a', 'b']}), isTrue);
-    expect(includes.holds({'tags': ['b']}), isFalse);
+    expect(
+      includes.holds({
+        'tags': ['a', 'b'],
+      }),
+      isTrue,
+    );
+    expect(
+      includes.holds({
+        'tags': ['b'],
+      }),
+      isFalse,
+    );
 
     final state = Api2FormState.fromJson({
       'status': 'answered',

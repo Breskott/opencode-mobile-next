@@ -1,0 +1,1827 @@
+{
+  "chatUiUnderAMessageForActions": {
+    "description": "Chat journey:  under a message for actions"
+  },
+  "chatUiAllMatchingRequests": {
+    "description": "Chat journey: (all matching requests)"
+  },
+  "chatUiNoOutput": {
+    "description": "Chat journey: (no output)"
+  },
+  "chatUiNoResult": {
+    "description": "Chat journey: (no result)"
+  },
+  "chatUiTapToExpand": {
+    "description": "Chat journey: (tap to expand)"
+  },
+  "chatUi1ReferenceIsAddedAsTextWhen": {
+    "description": "Chat journey: 1 reference is added as text when you send. Not saved with your draft."
+  },
+  "chatUiActions": {
+    "description": "Chat journey: Actions"
+  },
+  "chatUiAddAnOpenCodeProjectReferenceToThis": {
+    "description": "Chat journey: Add an OpenCode project reference to this prompt"
+  },
+  "chatUiAddAnImageOrFileToThe": {
+    "description": "Chat journey: Add an image or file to the prompt"
+  },
+  "chatUiAddHoldToAttachAFile": {
+    "description": "Chat journey: Add. Hold to attach a file"
+  },
+  "chatUiAgent": {
+    "description": "Chat journey: Agent"
+  },
+  "chatUiAllowOnce": {
+    "description": "Chat journey: Allow once"
+  },
+  "chatUiAlreadyAnsweredElsewhere": {
+    "description": "Chat journey: Already answered elsewhere"
+  },
+  "chatUiAlreadyDelivered": {
+    "description": "Chat journey: Already delivered"
+  },
+  "chatUiAlwaysAllow": {
+    "description": "Chat journey: Always allow"
+  },
+  "chatUiAlwaysAllowPatterns": {
+    "description": "Chat journey: Always allow patterns:"
+  },
+  "chatUiAlwaysAllowWouldAlsoCover": {
+    "description": "Chat journey: Always allow would also cover"
+  },
+  "chatUiAnswerWasCutOffByTheLength": {
+    "description": "Chat journey: Answer was cut off by the length limit"
+  },
+  "chatUiAnyoneWithTheLinkCanViewThis": {
+    "description": "Chat journey: Anyone with the link can view this session’s conversation and shared context. Do not share sessions containing secrets, credentials, or private files."
+  },
+  "chatUiAppDiagnostics": {
+    "description": "Chat journey: App diagnostics"
+  },
+  "chatUiAppearance": {
+    "description": "Chat journey: Appearance"
+  },
+  "chatUiApplyPatch": {
+    "description": "Chat journey: Apply patch"
+  },
+  "chatUiAskOpenCode": {
+    "description": "Chat journey: Ask OpenCode…"
+  },
+  "chatUiAssistantIsWorking": {
+    "description": "Chat journey: Assistant is working"
+  },
+  "chatUiAttachFile": {
+    "description": "Chat journey: Attach file"
+  },
+  "chatUiAttachToPrompt": {
+    "description": "Chat journey: Attach to prompt"
+  },
+  "chatUiAttachment": {
+    "description": "Chat journey: Attachment"
+  },
+  "chatUiAttachmentLimitReached": {
+    "description": "Chat journey: Attachment limit reached"
+  },
+  "chatUiAttachmentsMustTotalNoMoreThan20": {
+    "description": "Chat journey: Attachments must total no more than 20 MB."
+  },
+  "chatUiAvailableWhenTheCurrentRunFinishes": {
+    "description": "Chat journey: Available when the current run finishes"
+  },
+  "chatUiBrowseProjectAndGlobalSkills": {
+    "description": "Chat journey: Browse project and global skills"
+  },
+  "chatUiBrowsePreviewDownloadAndAttachProjectFiles": {
+    "description": "Chat journey: Browse, preview, download, and attach project files"
+  },
+  "chatUiCancelAndReturnToTheComposer": {
+    "description": "Chat journey: Cancel and return to the composer"
+  },
+  "chatUiCancelMessage": {
+    "description": "Chat journey: Cancel message"
+  },
+  "chatUiCancelThisPendingMessage": {
+    "description": "Chat journey: Cancel this pending message?"
+  },
+  "chatUiChangeTheActiveOpenCodeConsoleOrganization": {
+    "description": "Chat journey: Change the active OpenCode Console organization"
+  },
+  "chatUiChangeTheTitleShownInTheSession": {
+    "description": "Chat journey: Change the title shown in the session list"
+  },
+  "chatUiChangeThisSessionSExperimentalWorkspace": {
+    "description": "Chat journey: Change this session’s experimental workspace"
+  },
+  "chatUiChangedFile": {
+    "description": "Chat journey: Changed file"
+  },
+  "chatUiChanges": {
+    "description": "Chat journey: Changes"
+  },
+  "chatUiChooseAPromptAndContinueItIn": {
+    "description": "Chat journey: Choose a prompt and continue it in a new session"
+  },
+  "chatUiChooseAPromptToRestoreItIn": {
+    "description": "Chat journey: Choose a prompt to restore it in a new session."
+  },
+  "chatUiChooseAServerModelByProviderAnd": {
+    "description": "Chat journey: Choose a server model by provider and capability"
+  },
+  "chatUiChooseAnotherModelInThePickerTo": {
+    "description": "Chat journey: Choose another model in the picker to build your recent list."
+  },
+  "chatUiChooseModel": {
+    "description": "Chat journey: Choose model"
+  },
+  "chatUiChooseTheActiveOpenCodeAgent": {
+    "description": "Chat journey: Choose the active OpenCode agent"
+  },
+  "chatUiChooseTheCurrentModelVariantOrReasoning": {
+    "description": "Chat journey: Choose the current model variant or reasoning effort"
+  },
+  "chatUiCloseComposerTools": {
+    "description": "Chat journey: Close composer tools"
+  },
+  "chatUiClosePromptEditor": {
+    "description": "Chat journey: Close prompt editor"
+  },
+  "chatUiCloseTimeline": {
+    "description": "Chat journey: Close timeline"
+  },
+  "chatUiCollapseReasoning": {
+    "description": "Chat journey: Collapse reasoning"
+  },
+  "chatUiCollapseReasoningDetails": {
+    "description": "Chat journey: Collapse reasoning details"
+  },
+  "chatUiCollapsedUntilYouTapIt": {
+    "description": "Chat journey: Collapsed until you tap it"
+  },
+  "chatUiCommandMap": {
+    "description": "Chat journey: Command map"
+  },
+  "chatUiCompactContext": {
+    "description": "Chat journey: Compact context"
+  },
+  "chatUiCompactSession": {
+    "description": "Chat journey: Compact session"
+  },
+  "chatUiCompactingConversation": {
+    "description": "Chat journey: Compacting conversation…"
+  },
+  "chatUiCompacting": {
+    "description": "Chat journey: Compacting…"
+  },
+  "chatUiCompactionFailed": {
+    "description": "Chat journey: Compaction failed"
+  },
+  "chatUiCompactionStarted": {
+    "description": "Chat journey: Compaction started"
+  },
+  "chatUiCompose": {
+    "description": "Chat journey: Compose"
+  },
+  "chatUiComposerTools": {
+    "description": "Chat journey: Composer tools"
+  },
+  "chatUiConfirmAlwaysAllow": {
+    "description": "Chat journey: Confirm always allow"
+  },
+  "chatUiConfirmBroaderAccess": {
+    "description": "Chat journey: Confirm broader access"
+  },
+  "chatUiConnectProvider": {
+    "description": "Chat journey: Connect provider"
+  },
+  "chatUiConnectionHealthServerVersionAndLiveMode": {
+    "description": "Chat journey: Connection health, server version, and live mode"
+  },
+  "chatUiConsequenceFutureMatchingActionsCanRunWithout": {
+    "description": "Chat journey: Consequence: future matching actions can run without asking again for the lifetime of this OpenCode server. Allow once is safer."
+  },
+  "chatUiContextAdded": {
+    "description": "Chat journey: Context added"
+  },
+  "chatUiContextCompacted": {
+    "description": "Chat journey: Context compacted"
+  },
+  "chatUiContextUpdatePending": {
+    "description": "Chat journey: Context update pending"
+  },
+  "chatUiContextUsage": {
+    "description": "Chat journey: Context usage"
+  },
+  "chatUiCopiedPasteItIntoTheComposer": {
+    "description": "Chat journey: Copied. Paste it into the composer"
+  },
+  "chatUiCopyMessageText": {
+    "description": "Chat journey: Copy message text"
+  },
+  "chatUiCopyShareLink": {
+    "description": "Chat journey: Copy share link"
+  },
+  "chatUiCopyTheRenderedConversationAsMarkdown": {
+    "description": "Chat journey: Copy the rendered conversation as Markdown"
+  },
+  "chatUiCopyTranscript": {
+    "description": "Chat journey: Copy transcript"
+  },
+  "chatUiCreateOrCopyAPublicSessionLink": {
+    "description": "Chat journey: Create or copy a public session link"
+  },
+  "chatUiCurrentSession": {
+    "description": "Chat journey: Current session"
+  },
+  "chatUiDelegate": {
+    "description": "Chat journey: Delegate"
+  },
+  "chatUiDelegateThisPrompt": {
+    "description": "Chat journey: Delegate this prompt"
+  },
+  "chatUiDelegateThisPromptToAServerSubagent": {
+    "description": "Chat journey: Delegate this prompt to a server subagent"
+  },
+  "chatUiDelegatedSession": {
+    "description": "Chat journey: Delegated session"
+  },
+  "chatUiDeleteChat": {
+    "description": "Chat journey: Delete chat?"
+  },
+  "chatUiDeleteMessage": {
+    "description": "Chat journey: Delete message"
+  },
+  "chatUiDeleteThisMessage": {
+    "description": "Chat journey: Delete this message?"
+  },
+  "chatUiDescribeAChangeAskAboutThisProject": {
+    "description": "Chat journey: Describe a change, ask about this project, or paste an error."
+  },
+  "chatUiDetails": {
+    "description": "Chat journey: Details"
+  },
+  "chatUiDirectory": {
+    "description": "Chat journey: Directory"
+  },
+  "chatUiDisableTheCurrentPublicSessionLink": {
+    "description": "Chat journey: Disable the current public session link"
+  },
+  "chatUiDiscard": {
+    "description": "Chat journey: Discard"
+  },
+  "chatUiDiscardDraft": {
+    "description": "Chat journey: Discard draft"
+  },
+  "chatUiDiscardPromptChanges": {
+    "description": "Chat journey: Discard prompt changes?"
+  },
+  "chatUiDiscardQueuedDraft": {
+    "description": "Chat journey: Discard queued draft?"
+  },
+  "chatUiDismissPromptError": {
+    "description": "Chat journey: Dismiss prompt error"
+  },
+  "chatUiEachAttachmentMustBe10MBOr": {
+    "description": "Chat journey: Each attachment must be 10 MB or smaller."
+  },
+  "chatUiEdit": {
+    "description": "Chat journey: Edit"
+  },
+  "chatUiEditDraft": {
+    "description": "Chat journey: Edit draft"
+  },
+  "chatUiEditTheCurrentPromptInAFocused": {
+    "description": "Chat journey: Edit the current prompt in a focused full-screen view"
+  },
+  "chatUiEmptySessionWasKeptBecauseOpenCodeCould": {
+    "description": "Chat journey: Empty session was kept because OpenCode could not verify or remove it."
+  },
+  "chatUiErrorDetails": {
+    "description": "Chat journey: Error details"
+  },
+  "chatUiExpandReasoning": {
+    "description": "Chat journey: Expand reasoning"
+  },
+  "chatUiExpandReasoningDetails": {
+    "description": "Chat journey: Expand reasoning details"
+  },
+  "chatUiExpandedUnderEachAnswer": {
+    "description": "Chat journey: Expanded under each answer"
+  },
+  "chatUiExplainThisProject": {
+    "description": "Chat journey: Explain this project"
+  },
+  "chatUiExplored": {
+    "description": "Chat journey: Explored"
+  },
+  "chatUiExploring": {
+    "description": "Chat journey: Exploring"
+  },
+  "chatUiExportSessionTranscript": {
+    "description": "Chat journey: Export session transcript"
+  },
+  "chatUiExportTranscript": {
+    "description": "Chat journey: Export transcript"
+  },
+  "chatUiFILE": {
+    "description": "Chat journey: FILE"
+  },
+  "chatUiFetchPage": {
+    "description": "Chat journey: Fetch page"
+  },
+  "chatUiFileEditsMadeInThisSessionWill": {
+    "description": "Chat journey: File edits made in this session will be listed here."
+  },
+  "chatUiFiles": {
+    "description": "Chat journey: Files"
+  },
+  "chatUiFilesAreUnavailableInThisPreview": {
+    "description": "Chat journey: Files are unavailable in this preview."
+  },
+  "chatUiFindACommandOrAction": {
+    "description": "Chat journey: Find a command or action"
+  },
+  "chatUiFindAMessageJumpToItOr": {
+    "description": "Chat journey: Find a message, jump to it, or fork from a prompt"
+  },
+  "chatUiFindASubagent": {
+    "description": "Chat journey: Find a subagent"
+  },
+  "chatUiFindAndFixABug": {
+    "description": "Chat journey: Find and fix a bug"
+  },
+  "chatUiFindFiles": {
+    "description": "Chat journey: Find files"
+  },
+  "chatUiFindSessionsAcrossEveryOpenCodeProject": {
+    "description": "Chat journey: Find sessions across every OpenCode project"
+  },
+  "chatUiFollowAndroidOrChooseTheNativeLight": {
+    "description": "Chat journey: Follow Android or choose the native light or dark theme"
+  },
+  "chatUiForkFromPrompt": {
+    "description": "Chat journey: Fork from prompt"
+  },
+  "chatUiForkFromThisPrompt": {
+    "description": "Chat journey: Fork from this prompt"
+  },
+  "chatUiForkSession": {
+    "description": "Chat journey: Fork session"
+  },
+  "chatUiFromToolCall": {
+    "description": "Chat journey: From tool call"
+  },
+  "chatUiGeneratedFile": {
+    "description": "Chat journey: Generated file"
+  },
+  "chatUiHiddenToKeepTheTranscriptQuiet": {
+    "description": "Chat journey: Hidden to keep the transcript quiet"
+  },
+  "chatUiHideTimestamps": {
+    "description": "Chat journey: Hide timestamps"
+  },
+  "chatUiImageDataIsUnavailable": {
+    "description": "Chat journey: Image data is unavailable."
+  },
+  "chatUiInputRequested": {
+    "description": "Chat journey: Input requested"
+  },
+  "chatUiInspectGitLanguageServicesAndFormattersFor": {
+    "description": "Chat journey: Inspect Git, language services, and formatters for this project"
+  },
+  "chatUiInspectMCPStatusAuthenticationAndResources": {
+    "description": "Chat journey: Inspect MCP status, authentication, and resources"
+  },
+  "chatUiInspectCurrentTokensCacheCostAndContext": {
+    "description": "Chat journey: Inspect current tokens, cache, cost, and context usage"
+  },
+  "chatUiInspectToolsCallableByTheActiveProvider": {
+    "description": "Chat journey: Inspect tools callable by the active provider and model"
+  },
+  "chatUiItsTextReturnsToTheComposerAs": {
+    "description": "Chat journey: Its text returns to the composer as a draft."
+  },
+  "chatUiJumpAnywhereInThisConversation": {
+    "description": "Chat journey: Jump anywhere in this conversation."
+  },
+  "chatUiJumpAnywhereForkRestoresAPromptFor": {
+    "description": "Chat journey: Jump anywhere. Fork restores a prompt for editing."
+  },
+  "chatUiJumpToLatest": {
+    "description": "Chat journey: Jump to latest"
+  },
+  "chatUiKeepAsking": {
+    "description": "Chat journey: Keep asking"
+  },
+  "chatUiKeepItPending": {
+    "description": "Chat journey: Keep it pending"
+  },
+  "chatUiKeepItQueued": {
+    "description": "Chat journey: Keep it queued"
+  },
+  "chatUiLanguageServer": {
+    "description": "Chat journey: Language server"
+  },
+  "chatUiList": {
+    "description": "Chat journey: List"
+  },
+  "chatUiListWhatSInThisDirectory": {
+    "description": "Chat journey: List what's in this directory"
+  },
+  "chatUiLoadingSubagents": {
+    "description": "Chat journey: Loading subagents…"
+  },
+  "chatUiLongReasoningCollapsedInTheTranscript": {
+    "description": "Chat journey: Long reasoning collapsed in the transcript"
+  },
+  "chatUiMCPServers": {
+    "description": "Chat journey: MCP servers"
+  },
+  "chatUiManageProviderAndIntegrationAuthentication": {
+    "description": "Chat journey: Manage provider and integration authentication"
+  },
+  "chatUiManageSavedGrantsInSettingsSavedPermissions": {
+    "description": "Chat journey: Manage saved grants in Settings → Saved permissions."
+  },
+  "chatUiMessage": {
+    "description": "Chat journey: Message"
+  },
+  "chatUiMessageActions": {
+    "description": "Chat journey: Message actions"
+  },
+  "chatUiMessageDeleted": {
+    "description": "Chat journey: Message deleted"
+  },
+  "chatUiMessageTextCopied": {
+    "description": "Chat journey: Message text copied"
+  },
+  "chatUiMessageTimeline": {
+    "description": "Chat journey: Message timeline"
+  },
+  "chatUiMessageTimestampsHidden": {
+    "description": "Chat journey: Message timestamps hidden"
+  },
+  "chatUiMessageTimestampsShown": {
+    "description": "Chat journey: Message timestamps shown"
+  },
+  "chatUiMessagesAndFileChangesAfterTheMost": {
+    "description": "Chat journey: Messages and file changes after the most recent prompt will be rolled back."
+  },
+  "chatUiMobileActionsAndCommandsFromThisServer": {
+    "description": "Chat journey: Mobile actions and commands from this server"
+  },
+  "chatUiModel": {
+    "description": "Chat journey: Model"
+  },
+  "chatUiModelAndAgent": {
+    "description": "Chat journey: Model and agent"
+  },
+  "chatUiMore": {
+    "description": "Chat journey: More"
+  },
+  "chatUiMoveSession": {
+    "description": "Chat journey: Move session"
+  },
+  "chatUiMoveThisSessionToAnotherProjectDirectory": {
+    "description": "Chat journey: Move this session to another project directory"
+  },
+  "chatUiMoved": {
+    "description": "Chat journey: Moved"
+  },
+  "chatUiNavigate": {
+    "description": "Chat journey: Navigate"
+  },
+  "chatUiNeedsYou": {
+    "description": "Chat journey: Needs you"
+  },
+  "chatUiNoAnswer": {
+    "description": "Chat journey: No answer"
+  },
+  "chatUiNoChatsYet": {
+    "description": "Chat journey: No chats yet"
+  },
+  "chatUiNoFileChangesYet": {
+    "description": "Chat journey: No file changes yet"
+  },
+  "chatUiNoMatchingCommands": {
+    "description": "Chat journey: No matching commands"
+  },
+  "chatUiNoMatchingMessages": {
+    "description": "Chat journey: No matching messages"
+  },
+  "chatUiNoShareLinkWasReturned": {
+    "description": "Chat journey: No share link was returned"
+  },
+  "chatUiNoSubagentsAvailableFromThisServer": {
+    "description": "Chat journey: No subagents available from this server"
+  },
+  "chatUiNoTodosInThisSession": {
+    "description": "Chat journey: No todos in this session"
+  },
+  "chatUiNotConnected": {
+    "description": "Chat journey: Not connected"
+  },
+  "chatUiNotConnectedToTheServerRightNow": {
+    "description": "Chat journey: Not connected to the server right now."
+  },
+  "chatUiNotRun": {
+    "description": "Chat journey: Not run"
+  },
+  "chatUiOpenFullScreenPromptEditor": {
+    "description": "Chat journey: Open full-screen prompt editor"
+  },
+  "chatUiOpenParentSession": {
+    "description": "Chat journey: Open parent session"
+  },
+  "chatUiOpenPersistentWorkspaceTerminals": {
+    "description": "Chat journey: Open persistent workspace terminals"
+  },
+  "chatUiOpenProviders": {
+    "description": "Chat journey: Open providers"
+  },
+  "chatUiOpenSubagentSession": {
+    "description": "Chat journey: Open subagent session"
+  },
+  "chatUiOpenCodeCommandsAreUnavailableOffline": {
+    "description": "Chat journey: OpenCode commands are unavailable offline."
+  },
+  "chatUiOpenCodeCouldNotCompleteThisPrompt": {
+    "description": "Chat journey: OpenCode could not complete this prompt."
+  },
+  "chatUiOpenCodeIsReconnecting": {
+    "description": "Chat journey: OpenCode is reconnecting."
+  },
+  "chatUiOpenCodeIsReconnectingTryAgainShortly": {
+    "description": "Chat journey: OpenCode is reconnecting. Try again shortly."
+  },
+  "chatUiOpenCodeIsReconnectingTryAgainWhenThe": {
+    "description": "Chat journey: OpenCode is reconnecting. Try again when the server is online."
+  },
+  "chatUiOpenCodeIsReconnectingTryAgain": {
+    "description": "Chat journey: OpenCode is reconnecting. Try again."
+  },
+  "chatUiOpenCodeNeedsInput": {
+    "description": "Chat journey: OpenCode needs input"
+  },
+  "chatUiOpenCodeServerCommand": {
+    "description": "Chat journey: OpenCode server command"
+  },
+  "chatUiOutputPruned": {
+    "description": "Chat journey: Output pruned"
+  },
+  "chatUiPendingChange": {
+    "description": "Chat journey: Pending change"
+  },
+  "chatUiPreviewAttachment": {
+    "description": "Chat journey: Preview attachment"
+  },
+  "chatUiProjectFiles": {
+    "description": "Chat journey: Project files"
+  },
+  "chatUiProjectHealth": {
+    "description": "Chat journey: Project health"
+  },
+  "chatUiProjectReference": {
+    "description": "Chat journey: Project reference"
+  },
+  "chatUiProjectReferences": {
+    "description": "Chat journey: Project references"
+  },
+  "chatUiProjectsAndWorkspaces": {
+    "description": "Chat journey: Projects and workspaces"
+  },
+  "chatUiPromptEditor": {
+    "description": "Chat journey: Prompt editor"
+  },
+  "chatUiPromptFromParentAgent": {
+    "description": "Chat journey: Prompt from parent agent"
+  },
+  "chatUiPromptTools": {
+    "description": "Chat journey: Prompt tools"
+  },
+  "chatUiQuestion": {
+    "description": "Chat journey: Question"
+  },
+  "chatUiQuestions": {
+    "description": "Chat journey: Questions"
+  },
+  "chatUiQueue": {
+    "description": "Chat journey: Queue"
+  },
+  "chatUiQueueAfterThisRun": {
+    "description": "Chat journey: Queue after this run"
+  },
+  "chatUiQueuedRunsAfterThisTurn": {
+    "description": "Chat journey: Queued · runs after this turn"
+  },
+  "chatUiQueuedWillSendWhenReconnected": {
+    "description": "Chat journey: Queued — will send when reconnected"
+  },
+  "chatUiRead": {
+    "description": "Chat journey: Read"
+  },
+  "chatUiReasoningExpandedInTheTranscript": {
+    "description": "Chat journey: Reasoning expanded in the transcript"
+  },
+  "chatUiRecordsAndTranscribesOnThisDevice": {
+    "description": "Chat journey: Records and transcribes on this device"
+  },
+  "chatUiReferenceKeptForYourNextPromptCommands": {
+    "description": "Chat journey: Reference kept for your next prompt — commands do not carry it."
+  },
+  "chatUiReferencesKeptForYourNextPromptCommands": {
+    "description": "Chat journey: References kept for your next prompt — commands do not carry them."
+  },
+  "chatUiReject": {
+    "description": "Chat journey: Reject"
+  },
+  "chatUiReject1": {
+    "description": "Chat journey: Reject…"
+  },
+  "chatUiReloadMessages": {
+    "description": "Chat journey: Reload messages"
+  },
+  "chatUiRemovesItFromTheConversationPermanently": {
+    "description": "Chat journey: Removes it from the conversation permanently"
+  },
+  "chatUiRename": {
+    "description": "Chat journey: Rename"
+  },
+  "chatUiRenameChat": {
+    "description": "Chat journey: Rename chat"
+  },
+  "chatUiRenameSession": {
+    "description": "Chat journey: Rename session"
+  },
+  "chatUiRestoreMessages": {
+    "description": "Chat journey: Restore messages"
+  },
+  "chatUiRestoreRevertedPrompt": {
+    "description": "Chat journey: Restore reverted prompt"
+  },
+  "chatUiRestoreTheCurrentlyRevertedSessionState": {
+    "description": "Chat journey: Restore the currently reverted session state"
+  },
+  "chatUiResult": {
+    "description": "Chat journey: Result"
+  },
+  "chatUiRetryImagePreview": {
+    "description": "Chat journey: Retry image preview"
+  },
+  "chatUiRetryLastPrompt": {
+    "description": "Chat journey: Retry last prompt"
+  },
+  "chatUiRetryServerCommands": {
+    "description": "Chat journey: Retry server commands"
+  },
+  "chatUiRetrying": {
+    "description": "Chat journey: Retrying"
+  },
+  "chatUiRevert": {
+    "description": "Chat journey: Revert"
+  },
+  "chatUiRevertFromThisPrompt": {
+    "description": "Chat journey: Revert from this prompt?"
+  },
+  "chatUiRevertLastPrompt": {
+    "description": "Chat journey: Revert last prompt"
+  },
+  "chatUiReviewCommentAddedToThePrompt": {
+    "description": "Chat journey: Review comment added to the prompt"
+  },
+  "chatUiReviewHandledAppErrorsAndSendA": {
+    "description": "Chat journey: Review handled app errors and send a redacted report"
+  },
+  "chatUiReviewTheActualDiffForThisSession": {
+    "description": "Chat journey: Review the actual diff for this session"
+  },
+  "chatUiRollBackMessagesAndFileChangesAfter": {
+    "description": "Chat journey: Roll back messages and file changes after the prompt"
+  },
+  "chatUiRunOnYourComputer": {
+    "description": "Chat journey: Run on your computer"
+  },
+  "chatUiRunShellCommand": {
+    "description": "Chat journey: Run shell command"
+  },
+  "chatUiRunningTools": {
+    "description": "Chat journey: Running tools"
+  },
+  "chatUiSaveTheConversationAsAMarkdownFile": {
+    "description": "Chat journey: Save the conversation as a Markdown file"
+  },
+  "chatUiScope": {
+    "description": "Chat journey: Scope"
+  },
+  "chatUiSearchMessages": {
+    "description": "Chat journey: Search messages"
+  },
+  "chatUiSearchMobileActionsAndServerProvidedCommands": {
+    "description": "Chat journey: Search mobile actions and server-provided commands"
+  },
+  "chatUiSearchText": {
+    "description": "Chat journey: Search text"
+  },
+  "chatUiSeeFullDiff": {
+    "description": "Chat journey: See full diff"
+  },
+  "chatUiSelectAModelBeforeCompactingThisSession": {
+    "description": "Chat journey: Select a model before compacting this session."
+  },
+  "chatUiSend": {
+    "description": "Chat journey: Send"
+  },
+  "chatUiSendAfterThisRun": {
+    "description": "Chat journey: Send after this run"
+  },
+  "chatUiSendNowAndSteerInstead": {
+    "description": "Chat journey: Send now and steer instead"
+  },
+  "chatUiSendNowAndSteerTheCurrentRun": {
+    "description": "Chat journey: Send now and steer the current run"
+  },
+  "chatUiSendNowAndSteerThisRun": {
+    "description": "Chat journey: Send now and steer this run"
+  },
+  "chatUiSendRejection": {
+    "description": "Chat journey: Send rejection"
+  },
+  "chatUiSendSteersTheCurrentRun": {
+    "description": "Chat journey: Send steers the current run"
+  },
+  "chatUiSendWaitsForThisRunToFinish": {
+    "description": "Chat journey: Send waits for this run to finish"
+  },
+  "chatUiSendsAfterThisRunFinishes": {
+    "description": "Chat journey: Sends after this run finishes"
+  },
+  "chatUiServerCommands": {
+    "description": "Chat journey: Server commands"
+  },
+  "chatUiServerCommandsCouldNotBeRefreshed": {
+    "description": "Chat journey: Server commands could not be refreshed"
+  },
+  "chatUiServerMessage": {
+    "description": "Chat journey: Server message"
+  },
+  "chatUiServerStatus": {
+    "description": "Chat journey: Server status"
+  },
+  "chatUiSessionChanges": {
+    "description": "Chat journey: Session changes"
+  },
+  "chatUiSessionContext": {
+    "description": "Chat journey: Session context"
+  },
+  "chatUiSessionIsNoLongerShared": {
+    "description": "Chat journey: Session is no longer shared"
+  },
+  "chatUiSessionMenu": {
+    "description": "Chat journey: Session menu"
+  },
+  "chatUiSessionSharedCopyTheVisibleLinkManually": {
+    "description": "Chat journey: Session shared. Copy the visible link manually."
+  },
+  "chatUiShareLinkCopied": {
+    "description": "Chat journey: Share link copied"
+  },
+  "chatUiShareSession": {
+    "description": "Chat journey: Share session"
+  },
+  "chatUiShareThisSession": {
+    "description": "Chat journey: Share this session?"
+  },
+  "chatUiSharedAnyoneWithTheLinkCanView": {
+    "description": "Chat journey: Shared: anyone with the link can view"
+  },
+  "chatUiShowAllCommands": {
+    "description": "Chat journey: Show all commands"
+  },
+  "chatUiShowAllSubagentSessions": {
+    "description": "Chat journey: Show all subagent sessions"
+  },
+  "chatUiShowAllSubagents": {
+    "description": "Chat journey: Show all subagents"
+  },
+  "chatUiShowFullPrompt": {
+    "description": "Chat journey: Show full prompt"
+  },
+  "chatUiShowLess": {
+    "description": "Chat journey: Show less"
+  },
+  "chatUiShowTimestamps": {
+    "description": "Chat journey: Show timestamps"
+  },
+  "chatUiSkill": {
+    "description": "Chat journey: Skill ·"
+  },
+  "chatUiSkills": {
+    "description": "Chat journey: Skills"
+  },
+  "chatUiSlashCommandsAndAgents": {
+    "description": "Chat journey: Slash commands and agents"
+  },
+  "chatUiStartACleanSessionInThisWorkspace": {
+    "description": "Chat journey: Start a clean session in this workspace"
+  },
+  "chatUiStartANewSessionWithThisPrompt": {
+    "description": "Chat journey: Start a new session with this prompt in the composer"
+  },
+  "chatUiStartCoding": {
+    "description": "Chat journey: Start coding"
+  },
+  "chatUiStartOne": {
+    "description": "Chat journey: Start one"
+  },
+  "chatUiSteer": {
+    "description": "Chat journey: Steer"
+  },
+  "chatUiSteeringAtTheNextStep": {
+    "description": "Chat journey: Steering at the next step"
+  },
+  "chatUiStopSharing": {
+    "description": "Chat journey: Stop sharing"
+  },
+  "chatUiSubagent": {
+    "description": "Chat journey: Subagent"
+  },
+  "chatUiSubagentFailed": {
+    "description": "Chat journey: Subagent failed."
+  },
+  "chatUiSubagentWorking": {
+    "description": "Chat journey: Subagent working…"
+  },
+  "chatUiSubagentsCouldNotBeLoaded": {
+    "description": "Chat journey: Subagents could not be loaded"
+  },
+  "chatUiSummarizeTheSessionUsingTheSelectedModel": {
+    "description": "Chat journey: Summarize the session using the selected model"
+  },
+  "chatUiSwitchOrganization": {
+    "description": "Chat journey: Switch organization"
+  },
+  "chatUiSwitchProjectDirectoryOrWorktree": {
+    "description": "Chat journey: Switch project, directory, or worktree"
+  },
+  "chatUiSystemUpdate": {
+    "description": "Chat journey: System update"
+  },
+  "chatUiTellTheAgentWhyOrWhatTo": {
+    "description": "Chat journey: Tell the agent why, or what to do instead (optional)"
+  },
+  "chatUiThatMessageIsNoLongerInThis": {
+    "description": "Chat journey: That message is no longer in this session."
+  },
+  "chatUiTheFileHasNoContentToAttach": {
+    "description": "Chat journey: The file has no content to attach."
+  },
+  "chatUiTheFileHasNoContentToSave": {
+    "description": "Chat journey: The file has no content to save."
+  },
+  "chatUiTheFormOrProjectChangedReopenThe": {
+    "description": "Chat journey: The form or project changed. Reopen the current request."
+  },
+  "chatUiTheGeneratedFileIsNotAvailableFrom": {
+    "description": "Chat journey: The generated file is not available from this server."
+  },
+  "chatUiTheMessageAndAllOfItsParts": {
+    "description": "Chat journey: The message and all of its parts are permanently removed from the conversation, so future replies no longer see them. File changes it made are not reverted."
+  },
+  "chatUiTheServerReturnedEmptyImageData": {
+    "description": "Chat journey: The server returned empty image data."
+  },
+  "chatUiThisDraftHasNotBeenSentTo": {
+    "description": "Chat journey: This draft has not been sent to OpenCode."
+  },
+  "chatUiThisDraftIsTooLargeToQueue": {
+    "description": "Chat journey: This draft is too large to queue, or the queue is full of newer drafts. Remove an attachment, or clear queued prompts in Settings."
+  },
+  "chatUiThisPromptCannotBeRestoredBecauseAn": {
+    "description": "Chat journey: This prompt cannot be restored because an attachment is unavailable."
+  },
+  "chatUiThisPromptCannotBeRetriedBecauseAn": {
+    "description": "Chat journey: This prompt cannot be retried because an attachment is unavailable."
+  },
+  "chatUiTimeTokensAndCostUnderEachMessage": {
+    "description": "Chat journey: Time, tokens and cost under each message"
+  },
+  "chatUiTimeline": {
+    "description": "Chat journey: Timeline"
+  },
+  "chatUiTimestampsUsage": {
+    "description": "Chat journey: Timestamps & usage"
+  },
+  "chatUiTipTypeForCommandsTap": {
+    "description": "Chat journey: Tip: type / for commands · tap "
+  },
+  "chatUiTitle": {
+    "description": "Chat journey: Title"
+  },
+  "chatUiTodoList": {
+    "description": "Chat journey: Todo list"
+  },
+  "chatUiTodos": {
+    "description": "Chat journey: Todos"
+  },
+  "chatUiToggleCreationTimesBesideTranscriptEntries": {
+    "description": "Chat journey: Toggle creation times beside transcript entries"
+  },
+  "chatUiToggleLongReasoningDetailsAcrossTheTranscript": {
+    "description": "Chat journey: Toggle long reasoning details across the transcript"
+  },
+  "chatUiToolFailed": {
+    "description": "Chat journey: Tool failed."
+  },
+  "chatUiTools": {
+    "description": "Chat journey: Tools"
+  },
+  "chatUiToolsAndCapabilities": {
+    "description": "Chat journey: Tools and capabilities"
+  },
+  "chatUiTranscript": {
+    "description": "Chat journey: Transcript"
+  },
+  "chatUiTranscriptCopiedAsMarkdown": {
+    "description": "Chat journey: Transcript copied as Markdown"
+  },
+  "chatUiTranscriptDisplay": {
+    "description": "Chat journey: Transcript display"
+  },
+  "chatUiTranscriptSaved": {
+    "description": "Chat journey: Transcript saved"
+  },
+  "chatUiViews": {
+    "description": "Chat journey: Views"
+  },
+  "chatUiVoiceConversationWasInterrupted": {
+    "description": "Chat journey: Voice conversation was interrupted."
+  },
+  "chatUiVoiceInput": {
+    "description": "Chat journey: Voice input"
+  },
+  "chatUiVoiceInputIsUnavailable": {
+    "description": "Chat journey: Voice input is unavailable."
+  },
+  "chatUiWaitForTheCurrentRunToFinish": {
+    "description": "Chat journey: Wait for the current run to finish, then send"
+  },
+  "chatUiWaitForThisRunInstead": {
+    "description": "Chat journey: Wait for this run instead"
+  },
+  "chatUiWaitingForThisRunToFinish": {
+    "description": "Chat journey: Waiting for this run to finish"
+  },
+  "chatUiWebSearch": {
+    "description": "Chat journey: Web search"
+  },
+  "chatUiWhatChangedRecently": {
+    "description": "Chat journey: What changed recently?"
+  },
+  "chatUiWhenTheAssistantPlansWorkAsA": {
+    "description": "Chat journey: When the assistant plans work as a todo list, the items appear here."
+  },
+  "chatUiWrite": {
+    "description": "Chat journey: Write"
+  },
+  "chatUiWriteYourOpenCodePrompt": {
+    "description": "Chat journey: Write your OpenCode prompt…"
+  },
+  "chatUiYou": {
+    "description": "Chat journey: You"
+  },
+  "chatUiYourOriginalComposerDraftAndAttachmentsWill": {
+    "description": "Chat journey: Your original composer draft and attachments will stay unchanged."
+  },
+  "chatUiInThisChat": {
+    "description": "Chat journey: in this chat"
+  },
+  "chatUiIncludesStepsNotRun": {
+    "description": "Chat journey: includes steps not run"
+  },
+  "chatUiNewFile": {
+    "description": "Chat journey: new file"
+  },
+  "chatUiOpencodeAssistant": {
+    "description": "Chat journey: opencode assistant"
+  },
+  "chatUiSearchedOnce": {
+    "description": "Chat journey: searched once"
+  },
+  "chatUiYouUser": {
+    "description": "Chat journey: you user"
+  },
+  "chatUiQueuedWithEviction": {
+    "description": "Chat journey: Queued — will send when reconnected. {detail}",
+    "placeholders": {
+      "detail": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiCommandUnavailable": {
+    "description": "Chat journey: /{command} is not available right now.",
+    "placeholders": {
+      "command": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiAttachmentCountLimit": {
+    "description": "Chat journey: You can attach up to {count} files.",
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiQueuedSent": {
+    "description": "Chat journey: {count, plural, one{Sent 1 queued prompt} other{Sent {count} queued prompts}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiOtherDraftsWaitingSuffix": {
+    "description": "Chat journey:  · {count, plural, one{1 draft waiting for other servers} other{{count} drafts waiting for other servers}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiNextTurnsModel": {
+    "description": "Chat journey: Next turns in this session use {model}.",
+    "placeholders": {
+      "model": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiReferenceAlreadyAdded": {
+    "description": "Chat journey: @{name} is already in the prompt",
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiFileAttached": {
+    "description": "Chat journey: {filename} attached. Add your comment.",
+    "placeholders": {
+      "filename": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiSaveFile": {
+    "description": "Chat journey: Save {filename}",
+    "placeholders": {
+      "filename": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiFileSaved": {
+    "description": "Chat journey: {filename} saved to your device.",
+    "placeholders": {
+      "filename": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiDraftsQueued": {
+    "description": "Chat journey: {count, plural, one{1 draft queued to send on reconnect.} other{{count} drafts queued to send on reconnect.}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiOtherDraftsWaiting": {
+    "description": "Chat journey: {count, plural, one{1 draft waiting for other servers.} other{{count} drafts waiting for other servers.}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiQuestionCount": {
+    "description": "Chat journey: {count, plural, one{1 question} other{{count} questions}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiPermissionNeeded": {
+    "description": "Chat journey: Permission needed: {title}",
+    "placeholders": {
+      "title": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiQuestionLabel": {
+    "description": "Chat journey: Question: {title}",
+    "placeholders": {
+      "title": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiQuestionsSummary": {
+    "description": "Chat journey: {question} · {count, plural, one{1 question} other{{count} questions}}",
+    "placeholders": {
+      "question": {
+        "type": "Object"
+      },
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiRateLimitRetry": {
+    "description": "Chat journey: Rate limited. Retrying{attempt}…",
+    "placeholders": {
+      "attempt": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiRateLimitCountdown": {
+    "description": "Chat journey: Rate limited. Retrying{attempt} in {time}",
+    "placeholders": {
+      "attempt": {
+        "type": "Object"
+      },
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiReferencesAttachedNotice": {
+    "description": "Chat journey: {count, plural, one{1 reference is added as text when you send. Not saved with your draft.} other{{count} references are added as text when you send. Not saved with your draft.}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiAttachedCount": {
+    "description": "Chat journey: {count} attached",
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiModelAndAgentHint": {
+    "description": "Chat journey: Model and agent: {model}. Tap to change.{cost}",
+    "placeholders": {
+      "model": {
+        "type": "Object"
+      },
+      "cost": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiContextPercentFull": {
+    "description": "Chat journey: Context {percent}% full",
+    "placeholders": {
+      "percent": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiRemoveReferenceName": {
+    "description": "Chat journey: Remove reference @{name}",
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiRemoveAttachmentName": {
+    "description": "Chat journey: Remove attachment {name}",
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiReferenceName": {
+    "description": "Chat journey: Reference @{name}",
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiPreviewAttachmentName": {
+    "description": "Chat journey: Preview attachment {name}",
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiProjectReferenceName": {
+    "description": "Chat journey: Project reference @{name}",
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiPreviewName": {
+    "description": "Chat journey: Preview {name}",
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiRemoveContextReference": {
+    "description": "Chat journey: Remove reference {name}",
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiContextPercentUsed": {
+    "description": "Chat journey: Context window {percent} percent used",
+    "placeholders": {
+      "percent": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiExplainProject": {
+    "description": "Chat journey: Explain the {name} project",
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiEarlierMessageCount": {
+    "description": "Chat journey: {count, plural, one{1 earlier message} other{{count} earlier messages}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiPreviouslyValue": {
+    "description": "Chat journey: Previously {value}",
+    "placeholders": {
+      "value": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiToolGroupSemantics": {
+    "description": "Chat journey: {title}, {count, plural, one{1 step} other{{count} steps}}, {status}",
+    "placeholders": {
+      "title": {
+        "type": "Object"
+      },
+      "count": {
+        "type": "num"
+      },
+      "status": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiTokenCount": {
+    "description": "Chat journey: {count} tok",
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiAttachmentType": {
+    "description": "Chat journey: {type} · prompt attachment",
+    "placeholders": {
+      "type": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiPositionOfTotal": {
+    "description": "Chat journey: {position} of {total}",
+    "placeholders": {
+      "position": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiSubagentCount": {
+    "description": "Chat journey: Subagent · {count}",
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiSharedLink": {
+    "description": "Chat journey: Shared session link {url}",
+    "placeholders": {
+      "url": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiAttachmentCount": {
+    "description": "Chat journey: {count, plural, one{1 attachment} other{{count} attachments}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiFailedDetail": {
+    "description": "Chat journey: Failed: {error}",
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiQueuedDraftLabel": {
+    "description": "Chat journey: Queued draft. {label}",
+    "placeholders": {
+      "label": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiPendingSendLabel": {
+    "description": "Chat journey: Pending send. {label}",
+    "placeholders": {
+      "label": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiPermissionContext": {
+    "description": "Chat journey: Context: {permission} {context}",
+    "placeholders": {
+      "permission": {
+        "type": "Object"
+      },
+      "context": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiPermissionRequested": {
+    "description": "Chat journey: The agent wants to use {permission}.",
+    "placeholders": {
+      "permission": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiReplyFailed": {
+    "description": "Chat journey: Reply failed: {error}",
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiCopyResource": {
+    "description": "Chat journey: Copy {resource}",
+    "placeholders": {
+      "resource": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiPriorityLabel": {
+    "description": "Chat journey: {priority} priority",
+    "placeholders": {
+      "priority": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiDeleteChatBody": {
+    "description": "Chat journey: “{title}” and its history will be permanently removed.",
+    "placeholders": {
+      "title": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiChangedFilesSuffix": {
+    "description": "Chat journey:  · {count, plural, one{1 file} other{{count} files}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiToolsSummary": {
+    "description": "Chat journey: Tools: {tools}",
+    "placeholders": {
+      "tools": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiFromLine": {
+    "description": "Chat journey: from {line}",
+    "placeholders": {
+      "line": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiLineCount": {
+    "description": "Chat journey: {count, plural, one{1 line} other{{count} lines}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiLineRange": {
+    "description": "Chat journey: L{start}–{end}",
+    "placeholders": {
+      "start": {
+        "type": "Object"
+      },
+      "end": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiEntryCount": {
+    "description": "Chat journey: {count, plural, one{1 entry} other{{count} entries}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiFoundCount": {
+    "description": "Chat journey: {count} found",
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiMatchCount": {
+    "description": "Chat journey: {count, plural, one{1 match} other{{count} matches}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiExitCode": {
+    "description": "Chat journey: exit {code}",
+    "placeholders": {
+      "code": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiFileCount": {
+    "description": "Chat journey: {count, plural, one{1 file} other{{count} files}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiProviderSearch": {
+    "description": "Chat journey: {provider} search",
+    "placeholders": {
+      "provider": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiResultCount": {
+    "description": "Chat journey: {count, plural, one{1 result} other{{count} results}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiCompletedCount": {
+    "description": "Chat journey: {done}/{total} completed",
+    "placeholders": {
+      "done": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiAnsweredCount": {
+    "description": "Chat journey: {count} answered",
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiAskedCount": {
+    "description": "Chat journey: {count} asked",
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiDurationMinutesSeconds": {
+    "description": "Chat journey: {minutes}m {seconds}s",
+    "placeholders": {
+      "minutes": {
+        "type": "Object"
+      },
+      "seconds": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiDurationSeconds": {
+    "description": "Chat journey: {seconds}s",
+    "placeholders": {
+      "seconds": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiFileLoadFailed": {
+    "description": "Chat journey: Could not load this file from the OpenCode server: {error}",
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiMoreEntries": {
+    "description": "Chat journey: {total} total · more available",
+    "placeholders": {
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiEntryTotal": {
+    "description": "Chat journey: {total} entries",
+    "placeholders": {
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiSeeAllLines": {
+    "description": "Chat journey: See all · {count, plural, one{1 line} other{{count} lines}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiAnsweredDetail": {
+    "description": "Chat journey: Answered: {answer}",
+    "placeholders": {
+      "answer": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiLoadingFile": {
+    "description": "Chat journey: Loading {filename}",
+    "placeholders": {
+      "filename": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiPreviewGeneratedImage": {
+    "description": "Chat journey: Preview generated image {filename}",
+    "placeholders": {
+      "filename": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiOpenGeneratedFile": {
+    "description": "Chat journey: Open generated file {filename}",
+    "placeholders": {
+      "filename": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiParentSession": {
+    "description": "Chat journey: Parent · {title}",
+    "placeholders": {
+      "title": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiRunningAgentCount": {
+    "description": "Chat journey: {count, plural, one{1 agent running} other{{count} agents running}}",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiChooseOption": {
+    "description": "Chat journey: Choose: {option}",
+    "placeholders": {
+      "option": {
+        "type": "Object"
+      }
+    }
+  },
+  "chatUiConversation": {
+    "description": "Chat journey: Conversation"
+  },
+  "chatUiDisplayAndContext": {
+    "description": "Chat journey: Display and context"
+  },
+  "chatUiSessionActions": {
+    "description": "Chat journey: Session actions"
+  },
+  "chatUiResults": {
+    "description": "Chat journey: Results"
+  },
+  "chatUiPermissionFallback": {
+    "description": "Chat journey: a permission"
+  },
+  "chatUiUntitledChat": {
+    "description": "Chat journey: Untitled chat"
+  },
+  "chatUiMainSession": {
+    "description": "Chat journey: Main session"
+  },
+  "chatUiTodo": {
+    "description": "Chat journey: To do"
+  },
+  "chatUiBackgroundResult": {
+    "description": "Chat journey: Background result"
+  },
+  "chatUiBackgroundComplete": {
+    "description": "Chat journey: Completed"
+  },
+  "chatUiBackgroundError": {
+    "description": "Chat journey: Failed"
+  },
+  "chatUiBackgroundCancelled": {
+    "description": "Chat journey: Cancelled"
+  },
+  "chatUiResultDetails": {
+    "description": "Chat journey: Result details"
+  },
+  "chatUiResultSourceDetails": {
+    "description": "Chat journey: Server message details"
+  },
+  "chatUiResultOpenChild": {
+    "description": "Chat journey: Open subagent session"
+  },
+  "chatUiNoResultText": {
+    "description": "Chat journey: The server returned no result text."
+  },
+  "chatUiBackground": {
+    "description": "Chat journey: Background"
+  },
+  "chatUiTimedOut": {
+    "description": "Chat journey: Timed out"
+  },
+  "chatUiKilled": {
+    "description": "Chat journey: Stopped"
+  },
+  "chatUiTruncated": {
+    "description": "Chat journey: Truncated"
+  },
+  "chatUiUpdated": {
+    "description": "Chat journey: Updated"
+  },
+  "chatUiPending": {
+    "description": "Chat journey: Pending"
+  },
+  "chatUiRunning": {
+    "description": "Chat journey: Running"
+  },
+  "chatUiCompleted": {
+    "description": "Chat journey: Completed"
+  },
+  "chatUiError": {
+    "description": "Chat journey: Error"
+  },
+  "chatUiUnknownStatus": {
+    "description": "Chat journey: Unknown status"
+  },
+  "chatUiAssistant": {
+    "description": "Chat journey: Assistant"
+  },
+  "chatUiUser": {
+    "description": "Chat journey: User"
+  },
+  "chatUiOpenCodeSession": {
+    "description": "Chat journey: OpenCode session"
+  },
+  "chatUiTool": {
+    "description": "Chat journey: Tool"
+  },
+  "chatUiFile": {
+    "description": "Chat journey: file"
+  },
+  "chatUiSeparator": {
+    "description": "Chat journey: , "
+  },
+  "chatUiReadFiles": {
+    "description": "Completed tool group summary segment",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiSearched": {
+    "description": "Completed tool group summary segment",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiListedFolders": {
+    "description": "Completed tool group summary segment",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiEditedFiles": {
+    "description": "Completed tool group summary segment",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiRanCommands": {
+    "description": "Completed tool group summary segment",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiFetchedPages": {
+    "description": "Completed tool group summary segment",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiDelegatedTasks": {
+    "description": "Completed tool group summary segment",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiOtherCalls": {
+    "description": "Completed tool group summary segment",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "chatUiStepsNotRun": {
+    "description": "Completed tool group summary segment",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  }
+}

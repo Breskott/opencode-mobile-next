@@ -1,4 +1,5 @@
 import '../../api/models.dart' show Session;
+import '../../l10n/app_localizations.dart';
 
 /// The placeholder the server assigns before it names a session, e.g.
 /// `New session - 2026-09-02T14:47:06.902Z`. The timestamp is server-side
@@ -14,9 +15,16 @@ final RegExp _placeholderTitle = RegExp(
 String presentedSessionTitle(
   Session? session, {
   String fallback = 'New session',
+  AppLocalizations? l10n,
 }) {
   final title = session?.title?.trim() ?? '';
-  if (title.isEmpty) return fallback;
-  if (_placeholderTitle.hasMatch(title)) return 'New session';
+  if (title.isEmpty) {
+    return fallback == 'New session'
+        ? l10n?.workspaceNewSession ?? fallback
+        : fallback;
+  }
+  if (_placeholderTitle.hasMatch(title)) {
+    return l10n?.workspaceNewSession ?? 'New session';
+  }
   return title;
 }

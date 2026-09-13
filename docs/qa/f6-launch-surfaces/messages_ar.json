@@ -1,0 +1,9 @@
+{
+  "launchUiPinnedUntitled": "جلسة بلا عنوان",
+  "launchUiSessionWaiting": "جارٍ الاتصال بالخادم المحفوظ. ستُفتح الجلسة عندما يصبح جاهزًا.",
+  "launchUiSessionNoServer": "اختر خادمًا، ثم افتح الجلسة من قائمته.",
+  "launchUiSessionReentry": "أدخل بيانات اعتماد الخادم المحفوظ، ثم افتح الجلسة من قائمته.",
+  "launchUiSessionConnectionFailed": "تعذّر الاتصال بالخادم المحفوظ. اختر خادمًا أو أصلحه، ثم افتح الجلسة من قائمته.",
+  "launchUiSessionOtherServer": "هذا الاختصار يخص خادمًا آخر. اتصل بذلك الخادم، ثم افتح الجلسة من قائمته.",
+  "launchUiActivityNoServer": "اختر خادمًا لترى ما يحتاج إلى انتباهك."
+}

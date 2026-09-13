@@ -113,13 +113,83 @@
     "evidence": [
       "/tmp/oc-ui-audit-20260909/02-latest-workspace.png",
       "/home/eslam/Storage/Code/oc_app-ui-workspace/lib/ui/screens/workspace_screen.dart:765",
-      "docs/qa/workspace-page-2026-09-09/before-dark-1x.png"
+      "docs/qa/workspace-page-2026-09-09/before-dark-1x.png",
+      "test/workspace_hierarchy_test.dart",
+      "docs/qa/e7-workspace/README.md"
     ],
     "observed": "Recent sessions use EntranceReveal with staggered index-based entry.",
     "impact": "Newly materialized rows may appear to arrive after scrolling; no frame evidence confirms this here.",
-    "proposal": "Coordinate the page with shared motion policy and profile actual scroll behavior before changing timings.",
-    "status": "deferred",
-    "verification": "Deferred: no real-device scroll/frame-time evidence. Static fixtures are not runtime performance proof.",
+    "proposal": "Render recent session rows immediately, matching other inventory sections; retain shared dock and busy-state motion.",
+    "status": "implemented",
+    "verification": "Regression test scrolls 40 sessions away and back and verifies the returning row is immediately rendered without an entrance reveal. Native frame-time measurement remains an integration gate; this does not claim an FPS improvement.",
+    "commit": null
+  },
+  {
+    "id": "WORKSPACE-07",
+    "page": "Workspace",
+    "title": "Repeated partial-inventory notices compete with sessions",
+    "priority": "P2",
+    "dimension": "density",
+    "evidence": [
+      "docs/qa/e7-workspace/README.md",
+      "docs/qa/oc2-setup/native/delivered-cold-restart-ready.png"
+    ],
+    "observed": "Return brief, recent empty state and footer repeated loaded/incomplete status; partial archive rows added a third loaded count.",
+    "impact": "One inventory condition dominates the session-first page.",
+    "proposal": "Keep loading/error/continuation truth in the footer and preserve separate stale/read-state warnings.",
+    "status": "implemented",
+    "verification": "Focused English/RTL tests and captures are recorded in the slice evidence; final integration/native checks are separate.",
+    "commit": null
+  },
+  {
+    "id": "WORKSPACE-08",
+    "page": "Workspace",
+    "title": "Global search and loaded-folder filters imply the same scope",
+    "priority": "P2",
+    "dimension": "flow",
+    "evidence": [
+      "docs/qa/e7-workspace/README.md",
+      "docs/qa/oc2-setup/native/delivered-cold-restart-ready.png"
+    ],
+    "observed": "A server-wide title search opens from Recent; folder chips narrow only loaded global results.",
+    "impact": "Users may mistake loaded matches for complete project history.",
+    "proposal": "Name every-project title search and label partial summaries and folder filtering as loaded results.",
+    "status": "implemented",
+    "verification": "Focused English/RTL tests and captures are recorded in the slice evidence; final integration/native checks are separate.",
+    "commit": null
+  },
+  {
+    "id": "WORKSPACE-09",
+    "page": "Workspace",
+    "title": "RTL reverses path punctuation and fixed filters clip scaled text",
+    "priority": "P2",
+    "dimension": "accessibility",
+    "evidence": [
+      "docs/qa/e7-workspace/README.md",
+      "docs/qa/oc2-setup/native/delivered-cold-restart-ready.png"
+    ],
+    "observed": "A font-loaded RTL capture paints /work/shop as work/shop/; global filter rows assume 48dp height.",
+    "impact": "Paths become misleading and filters crowd user-scaled labels.",
+    "proposal": "Keep path-only values LTR and derive filter height from user text scale.",
+    "status": "implemented",
+    "verification": "Focused English/RTL tests and captures are recorded in the slice evidence; final integration/native checks are separate.",
+    "commit": null
+  },
+  {
+    "id": "WORKSPACE-10",
+    "page": "Workspace",
+    "title": "Unsupported stale form state marks return brief stale",
+    "priority": "P2",
+    "dimension": "flow",
+    "evidence": [
+      "docs/qa/e7-workspace/README.md",
+      "docs/qa/oc2-setup/native/delivered-cold-restart-ready.png"
+    ],
+    "observed": "Old forms loading/error flags contribute stale status without checking forms support.",
+    "impact": "A connection that cannot provide forms reports uncertainty for an irrelevant feature.",
+    "proposal": "Gate form stale state on its capability while preserving supported request failures.",
+    "status": "implemented",
+    "verification": "Focused English/RTL tests and captures are recorded in the slice evidence; final integration/native checks are separate.",
     "commit": null
   }
 ]

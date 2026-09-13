@@ -6,6 +6,8 @@ import 'package:opencode_mobile/api2/client.dart';
 import 'package:opencode_mobile/api2/gateway_operations.dart';
 import 'package:opencode_mobile/domain/background_work.dart';
 
+import 'support/v2_subagent_fixture.dart';
+
 import 'api2_interaction_gateway_test.dart'
     show withServer, writeJson, writeNoContent;
 
@@ -69,6 +71,59 @@ void main() {
       ['task', 'shell'],
     );
   });
+
+  test(
+    'native v2 foreground progress is eligible without treating progress as detachment',
+    () {
+      MessageWithParts native(ToolState state) => MessageWithParts(
+        info: MessageInfo(
+          id: 'msg_v2',
+          sessionID: 'ses_parent',
+          role: 'assistant',
+        ),
+        parts: [Part(type: 'tool', toolName: 'subagent', toolState: state)],
+      );
+      final foreground = native(
+        v2SubagentState(status: 'running', background: false),
+      );
+      final variants = [
+        foreground,
+        native(v2SubagentState(status: 'running')),
+        native(v2SubagentState(status: 'streaming', background: false)),
+        native(v2SubagentState()),
+        native(v2SubagentState(childStatus: 'completed', background: false)),
+        native(
+          v2SubagentState(
+            status: 'running',
+            background: false,
+            executed: false,
+          ),
+        ),
+        native(v2SubagentState(status: 'error', background: false)),
+      ];
+      expect(
+        foregroundBackgroundableParts(
+          variants,
+          BackgroundWorkSupport.subagentsAndShells,
+        ),
+        [foreground.parts.single],
+      );
+      expect(
+        foregroundBackgroundableParts(
+          variants,
+          BackgroundWorkSupport.subagents,
+        ),
+        isEmpty,
+      );
+      expect(
+        foregroundBackgroundableParts(
+          variants,
+          BackgroundWorkSupport.unavailable,
+        ),
+        isEmpty,
+      );
+    },
+  );
 
   test(
     'v1 capability and promotion use the scoped experimental API, including false',

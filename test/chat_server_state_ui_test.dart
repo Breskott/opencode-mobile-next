@@ -206,7 +206,7 @@ void main() {
       await tester.pump();
       expect(find.byKey(const ValueKey('retry-banner')), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('retry-banner-stop')));
+      await tester.tap(find.byKey(const Key('chat-stop-button')));
       await tester.pump();
       await tester.pump();
       expect(api.abortCalls, 1);

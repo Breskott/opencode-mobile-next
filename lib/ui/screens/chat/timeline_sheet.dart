@@ -84,13 +84,15 @@ class _TimelineSheetState extends State<_TimelineSheet> {
         .whereType<String>()
         .where((name) => name.isNotEmpty)
         .toList();
-    if (tools.isNotEmpty) return 'Tools: ${tools.join(', ')}';
+    if (tools.isNotEmpty) {
+      return _chatL10n(context).chatUiToolsSummary(tools.join(', '));
+    }
 
     final reasoning = message.parts
         .where((part) => part.type == 'reasoning')
         .map((part) => part.text.trim())
         .firstWhere((text) => text.isNotEmpty, orElse: () => '');
-    return reasoning.isNotEmpty ? reasoning : 'Message';
+    return reasoning.isNotEmpty ? reasoning : _chatL10n(context).chatUiMessage;
   }
 
   bool _isForkable(MessageWithParts message) =>
@@ -120,8 +122,8 @@ class _TimelineSheetState extends State<_TimelineSheet> {
       if (query.isEmpty) return true;
       if (!widget.forkMode) return matchingIDs.contains(message.info.id);
       final role = message.info.role == 'user'
-          ? 'you user'
-          : 'opencode assistant';
+          ? _chatL10n(context).chatUiYouUser
+          : _chatL10n(context).chatUiOpencodeAssistant;
       return '$role ${_preview(message)}'.toLowerCase().contains(query);
     }).toList();
 
@@ -137,7 +139,7 @@ class _TimelineSheetState extends State<_TimelineSheet> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 10, 8),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 10, 8),
               child: Row(
                 children: [
                   Expanded(
@@ -146,18 +148,24 @@ class _TimelineSheetState extends State<_TimelineSheet> {
                       children: [
                         Text(
                           widget.forkMode
-                              ? 'Fork from prompt'
-                              : 'Message timeline',
+                              ? _chatL10n(context).chatUiForkFromPrompt
+                              : _chatL10n(context).chatUiMessageTimeline,
                           style: theme.textTheme.titleLarge,
                         ),
                         if (!largeText) ...[
                           const SizedBox(height: 2),
                           Text(
                             widget.forkMode
-                                ? 'Choose a prompt to restore it in a new session.'
+                                ? _chatL10n(
+                                    context,
+                                  ).chatUiChooseAPromptToRestoreItIn
                                 : widget.forkAvailable
-                                ? 'Jump anywhere. Fork restores a prompt for editing.'
-                                : 'Jump anywhere in this conversation.',
+                                ? _chatL10n(
+                                    context,
+                                  ).chatUiJumpAnywhereForkRestoresAPromptFor
+                                : _chatL10n(
+                                    context,
+                                  ).chatUiJumpAnywhereInThisConversation,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -167,7 +175,7 @@ class _TimelineSheetState extends State<_TimelineSheet> {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Close timeline',
+                    tooltip: _chatL10n(context).chatUiCloseTimeline,
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(AppIconography.close),
                   ),
@@ -175,14 +183,14 @@ class _TimelineSheetState extends State<_TimelineSheet> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 10),
               child: TextField(
                 key: const ValueKey('timeline-search'),
                 controller: _search,
                 onChanged: (_) => setState(() {}),
                 textInputAction: TextInputAction.search,
-                decoration: const InputDecoration(
-                  hintText: 'Search messages',
+                decoration: InputDecoration(
+                  hintText: _chatL10n(context).chatUiSearchMessages,
                   prefixIcon: Icon(AppIconography.search),
                   isDense: true,
                 ),
@@ -222,7 +230,7 @@ class _TimelineSheetState extends State<_TimelineSheet> {
               child: visible.isEmpty
                   ? Center(
                       child: Text(
-                        'No matching messages',
+                        _chatL10n(context).chatUiNoMatchingMessages,
                         style: TextStyle(color: AppTheme.mutedOf(theme)),
                       ),
                     )
@@ -232,7 +240,12 @@ class _TimelineSheetState extends State<_TimelineSheet> {
                       // it stops covering the list.
                       keyboardDismissBehavior:
                           ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 20),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        8,
+                        0,
+                        8,
+                        20,
+                      ),
                       itemCount: visible.length,
                       separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, index) {
@@ -240,8 +253,9 @@ class _TimelineSheetState extends State<_TimelineSheet> {
                         final isUser = message.info.role == 'user';
                         final created = message.info.time?.created;
                         final footer = [
-                          isUser ? 'You' : 'OpenCode',
-                          if (created != null) _fmtSessionTime(created),
+                          isUser ? _chatL10n(context).chatUiYou : 'OpenCode',
+                          if (created != null)
+                            _fmtSessionTime(created, context),
                         ].join('  ·  ');
                         return ListTile(
                           key: ValueKey('timeline-row-${message.info.id}'),
@@ -278,7 +292,9 @@ class _TimelineSheetState extends State<_TimelineSheet> {
                                         key: ValueKey(
                                           'timeline-fork-${message.info.id}',
                                         ),
-                                        tooltip: 'Fork from this prompt',
+                                        tooltip: _chatL10n(
+                                          context,
+                                        ).chatUiForkFromThisPrompt,
                                         onPressed: () => Navigator.pop(
                                           context,
                                           _TimelineSelection(

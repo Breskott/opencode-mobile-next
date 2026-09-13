@@ -51,12 +51,13 @@ class AttentionOverviewScreen extends StatelessWidget {
           controller.profileDataChanges,
         ]),
         builder: (context, _) {
+          final l10n = lookupAppLocalizations(Localizations.localeOf(context));
           final overview = AttentionOverview.fromController(controller);
           if (overview.items.isEmpty) {
-            return const ProductEmptyState(
+            return ProductEmptyState(
               icon: AppIconography.server,
-              title: 'No saved servers',
-              message: 'Add a server from Home to see it here.',
+              title: l10n.e7ProjectAttentionNoServers,
+              message: l10n.e7ProjectAttentionNoServersDetail,
             );
           }
           return ListView.builder(
@@ -83,6 +84,7 @@ class AttentionOverviewScreen extends StatelessWidget {
 
   Widget _profileCard(BuildContext context, AttentionItem item) {
     final theme = Theme.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -92,40 +94,40 @@ class AttentionOverviewScreen extends StatelessWidget {
           children: [
             Text(
               item.profileName.trim().isEmpty
-                  ? 'Saved server'
+                  ? l10n.e7ProjectAttentionSavedServer
                   : item.profileName,
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            Text(item.isSelected ? 'Selected server' : 'Inactive server'),
+            Text(
+              item.isSelected
+                  ? l10n.e7ProjectAttentionSelected
+                  : l10n.e7ProjectAttentionInactive,
+            ),
             const SizedBox(height: 8),
             Text(
               item.hasConnectionCache
-                  ? 'Source: selected connection’s local cache. '
-                        'Scope: currently loaded location and sessions. '
-                        'Last refreshed: unknown.'
-                  : 'Source: saved profile only. '
-                        'Attention status: unknown. Last checked: unknown.',
+                  ? l10n.e7ProjectAttentionCacheSource
+                  : l10n.e7ProjectAttentionProfileSource,
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
             Text(
               item.pendingRequests == null
-                  ? 'Pending requests: unknown'
-                  : 'Last-known pending requests: ${item.pendingRequests}',
+                  ? l10n.e7ProjectAttentionPendingUnknown
+                  : l10n.e7ProjectAttentionPendingKnown(item.pendingRequests!),
             ),
             const SizedBox(height: 4),
             Text(
               item.runningSessions == null
-                  ? 'Running sessions: unknown'
-                  : 'Last-known running or retrying sessions: '
-                        '${item.runningSessions}',
+                  ? l10n.e7ProjectAttentionRunningUnknown
+                  : l10n.e7ProjectAttentionRunningKnown(item.runningSessions!),
             ),
             const SizedBox(height: 4),
             Text(
               item.unreadSessions == null
-                  ? 'Unread sessions: unknown'
-                  : 'Last-known unread sessions: ${item.unreadSessions}',
+                  ? l10n.e7ProjectAttentionUnreadUnknown
+                  : l10n.e7ProjectAttentionUnreadKnown(item.unreadSessions!),
             ),
             const SizedBox(height: 12),
             if (onOpenProfile == null) ...[
@@ -151,7 +153,11 @@ class AttentionOverviewScreen extends StatelessWidget {
                         onOpenProfile!(item.profileID);
                       }
                     },
-              child: Text(item.isSelected ? 'Open server' : 'Choose server…'),
+              child: Text(
+                item.isSelected
+                    ? l10n.e7ProjectAttentionOpen
+                    : l10n.e7ProjectAttentionChoose,
+              ),
             ),
           ],
         ),

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/draft_attachments.dart';
+import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/prompt_shelf.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -175,6 +176,11 @@ Future<void> settleConstructorMonitors(ConnectionController controller) {
   ]);
 }
 
+/// Every secret a deletion of profile `a` sweeps: its password and the AI
+/// Team plugin's per-profile secrets (TEAM-105; the plugin joins the
+/// existing profile-deletion sweep whether or not it was ever on).
+final _profileASecrets = ['pw.a', ...OrchestrationStore.secretKeys('a')];
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const secureChannel = MethodChannel(
@@ -302,7 +308,7 @@ void main() {
       expect(restarted.promptStash.single.text, 'Synthetic unsent work');
       final result = await restarted.deleteProfileAndLocalData('a');
       expect(result.complete, isTrue);
-      expect(secureDeletes, ['pw.a']);
+      expect(secureDeletes, _profileASecrets);
       expect(await stashRoot.files(), isEmpty);
       expect(await disk.onDisk(_marker('a')), isNull);
       expect(await disk.onDisk(_key('a', 'saved')), isNull);
@@ -756,7 +762,7 @@ void main() {
         release.complete();
         await rejected;
         expect((await deletion).complete, isTrue);
-        expect(secureDeletes, ['pw.a']);
+        expect(secureDeletes, _profileASecrets);
         expect(await stashRoot.files(), isEmpty);
         expect(await disk.onDisk(_marker('a')), isNull);
         expect(await disk.onDisk(_key('a', 'pending')), isNull);
@@ -802,7 +808,7 @@ void main() {
       SharedPreferences.resetStatic();
       final restarted = await boot(stashVault: _Vault(stashRoot));
       expect((await restarted.deleteProfileAndLocalData('a')).complete, isTrue);
-      expect(secureDeletes, ['pw.a']);
+      expect(secureDeletes, _profileASecrets);
       expect(await disk.onDisk(_marker('a')), isNull);
       expect(await stashRoot.files(), hasLength(1));
       await restarted.store.setActiveId('b');
@@ -871,7 +877,7 @@ void main() {
         (await controller.deleteProfileAndLocalData('a')).complete,
         isTrue,
       );
-      expect(secureDeletes, ['pw.a']);
+      expect(secureDeletes, _profileASecrets);
       expect(await stashRoot.files(), isEmpty);
     },
   );
@@ -926,7 +932,7 @@ void main() {
         (await controller.deleteProfileAndLocalData('a')).complete,
         isTrue,
       );
-      expect(secureDeletes, ['pw.a']);
+      expect(secureDeletes, _profileASecrets);
     },
   );
 
@@ -947,7 +953,7 @@ void main() {
       vault.collectGate!.complete();
       expect((await deletion).complete, isTrue);
       expect(await stashRoot.files(), isEmpty);
-      expect(secureDeletes, ['pw.a']);
+      expect(secureDeletes, _profileASecrets);
     },
   );
 }

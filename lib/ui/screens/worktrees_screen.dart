@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+
 import '../../api/models.dart';
 import '../../api/product_repository.dart';
 import '../../state/connection.dart';
@@ -49,7 +51,9 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
     if (!mounted || generation != _loadGeneration) return;
     if (repository == null) {
       setState(() {
-        _loadError = 'OpenCode is reconnecting. Try again shortly.';
+        _loadError = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryOpenCodeIsReconnectingTryAgainShortly;
       });
       return;
     }
@@ -101,7 +105,11 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
         _failures.remove(directory);
         _replaceKnownWorktree(directory);
       });
-      _showMessage('${_basename(directory)} is ready');
+      _showMessage(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryIsReady((_basename(directory)).toString()),
+      );
       return;
     }
     final message = event.properties['message']?.toString().trim();
@@ -109,7 +117,9 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
       _preparing.remove(directory);
       _failures[directory] = message?.isNotEmpty == true
           ? message!
-          : 'OpenCode could not prepare this worktree.';
+          : lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryOpenCodeCouldNotPrepareThisWorktree;
     });
   }
 
@@ -153,17 +163,23 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
     if (!mounted || !_preparing.contains(directory)) return;
     setState(() => _preparing.remove(directory));
     _showMessage(
-      '${_basename(directory)} was created. Its setup status is not yet confirmed.',
+      lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryWasCreatedItsSetupStatusIsNot(
+        (_basename(directory)).toString(),
+      ),
     );
   }
 
   Future<ServerOperationsGateway> _repository() async {
+    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
     final repository = await widget.controller.prepareActionRepository();
     if (repository != null) return repository;
-    throw const ProductException('OpenCode is reconnecting. Try again.');
+    throw ProductException(actionL10n.e7LibraryOpenCodeIsReconnectingTryAgain);
   }
 
   Future<void> _create() async {
+    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_creating || !widget.controller.capabilities.worktreeCreate) return;
     final name = await showDialog<String>(
       context: context,
@@ -193,7 +209,11 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
         const Duration(seconds: 45),
         () => _markPreparationUnconfirmed(created.directory),
       );
-      _showMessage('${created.name} created. OpenCode is preparing it.');
+      _showMessage(
+        actionL10n.e7LibraryCreatedOpenCodeIsPreparingIt(
+          (created.name).toString(),
+        ),
+      );
     } catch (error) {
       if (mounted) _showError(error);
     } finally {
@@ -204,7 +224,11 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
   Future<void> _open(String directory) async {
     if (_busyDirectory != null) return;
     if (_preparing.contains(directory)) {
-      _showMessage('Wait for OpenCode to finish preparing this worktree.');
+      _showMessage(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryWaitForOpenCodeToFinishPreparingThis,
+      );
       return;
     }
     setState(() => _busyDirectory = directory);
@@ -212,7 +236,11 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
       await widget.controller.selectLocation(directory: directory);
       if (!mounted) return;
       if (widget.controller.directory != directory) {
-        throw const ProductException('OpenCode did not switch locations.');
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryOpenCodeDidNotSwitchLocations,
+        );
       }
       Navigator.of(context).pop(true);
     } catch (error) {
@@ -231,7 +259,12 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
     } catch (error) {
       if (mounted) {
         _showError(
-          'Could not verify ${worktree.name} before this destructive action: $error',
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryCouldNotVerifyBeforeThisDestructiveAction(
+            (worktree.name).toString(),
+            (error).toString(),
+          ),
         );
       }
       return null;
@@ -259,7 +292,11 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
         await widget.controller.selectLocation(directory: worktree.directory);
       }
       if (!mounted) return;
-      _showMessage('${worktree.name} reset to the default branch');
+      _showMessage(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryResetToTheDefaultBranch((worktree.name).toString()),
+      );
       await _load();
     } catch (error) {
       if (mounted) _showError(error);
@@ -269,6 +306,7 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
   }
 
   Future<void> _remove(WorktreeInfo worktree) async {
+    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_busyDirectory != null) return;
     final changes = await _inspect(worktree);
     if (!mounted || changes == null) return;
@@ -290,7 +328,9 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
       _preparing.remove(worktree.directory);
       _failures.remove(worktree.directory);
       if (!mounted) return;
-      _showMessage('${worktree.name} and its branch were removed');
+      _showMessage(
+        actionL10n.e7LibraryAndItsBranchWereRemoved((worktree.name).toString()),
+      );
       await _load();
     } catch (error) {
       if (mounted) _showError(error);
@@ -306,7 +346,11 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
       (await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Reset ${worktree.name}?'),
+          title: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryReset((worktree.name).toString()),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -314,8 +358,10 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
               children: [
                 _ChangeWarning(changes: changes),
                 const SizedBox(height: 12),
-                const Text(
-                  'This permanently discards tracked changes and deletes all untracked and ignored files. Submodules are also reset and cleaned. This cannot be undone.',
+                Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryThisPermanentlyDiscardsTrackedChangesAndDeletes,
                 ),
               ],
             ),
@@ -323,7 +369,11 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).projectFolderCancel,
+              ),
             ),
             FilledButton(
               key: const ValueKey('confirm-reset-worktree'),
@@ -331,7 +381,11 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
                 backgroundColor: Theme.of(context).colorScheme.error,
               ),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Reset worktree'),
+              child: Text(
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryResetWorktree,
+              ),
             ),
           ],
         ),
@@ -354,10 +408,16 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
     final worktrees = _worktrees;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Worktrees'),
+        title: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryWorktrees,
+        ),
         actions: [
           IconButton(
-            tooltip: 'Refresh worktrees',
+            tooltip: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryRefreshWorktrees,
             onPressed: _busyDirectory == null && !_creating ? _load : null,
             icon: const Icon(AppIconography.retry),
           ),
@@ -365,7 +425,9 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
       ),
       // Create is offered only where the create call is contract-proven
       // (`worktreeCreate`); listing, opening and inspection stay available.
-      floatingActionButton: widget.controller.capabilities.worktreeCreate
+      floatingActionButton:
+          widget.controller.capabilities.worktreeCreate &&
+              MediaQuery.textScalerOf(context).scale(14) <= 20
           ? FloatingActionButton.extended(
               key: const ValueKey('create-worktree'),
               onPressed: _creating ? null : _create,
@@ -375,7 +437,33 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(AppIconography.add),
-              label: const Text('New worktree'),
+              label: Text(
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryNewWorktree,
+              ),
+            )
+          : null,
+      bottomNavigationBar:
+          widget.controller.capabilities.worktreeCreate &&
+              MediaQuery.textScalerOf(context).scale(14) > 20
+          ? SafeArea(
+              minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: FilledButton.icon(
+                key: const ValueKey('create-worktree'),
+                onPressed: _creating ? null : _create,
+                icon: _creating
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(AppIconography.add),
+                label: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryNewWorktree,
+                ),
+              ),
             )
           : null,
       body: RefreshIndicator(
@@ -385,7 +473,11 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.only(bottom: 104),
           children: [
-            const SectionLabel('Primary'),
+            SectionLabel(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryPrimary,
+            ),
             _LocationTile(
               key: const ValueKey('primary-worktree'),
               name: _basename(widget.project.directory),
@@ -401,14 +493,15 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
             else if (_loadError != null)
               ProductErrorState(message: _loadError!, onRetry: _load)
             else if (worktrees!.isEmpty)
-              const ProductInlineEmpty(
+              ProductInlineEmpty(
                 key: ValueKey('no-worktrees'),
                 icon: AppIconography.branch,
-                title: 'No isolated worktrees yet',
-                message:
-                    'Use isolated branches for parallel coding without mixing '
-                    'changes. Create one when you want OpenCode to work on a '
-                    'separate branch.',
+                title: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryNoIsolatedWorktreesYet,
+                message: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryUseIsolatedBranchesForParallelCodingWithout,
               )
             else
               for (var index = 0; index < worktrees.length; index++) ...[
@@ -482,9 +575,13 @@ class _LocationTile extends StatelessWidget {
   Widget build(BuildContext context) => ListTile(
     selected: current,
     leading: Icon(primary ? AppIconography.projects : AppIconography.branch),
-    title: Text(name),
+    title: Text(name, textDirection: TextDirection.ltr),
     subtitle: Text(
-      primary ? 'Default project · $directory' : directory,
+      primary
+          ? lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryDefaultProject((directory).toString())
+          : directory,
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     ),
@@ -517,14 +614,16 @@ class _WorktreesSectionLabel extends StatelessWidget {
       fontWeight: FontWeight.w600,
     );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 16, 12, 4),
+      padding: const EdgeInsetsDirectional.fromSTEB(14, 16, 12, 4),
       child: Row(
         children: [
           Expanded(
             child: Align(
               alignment: AlignmentDirectional.centerStart,
               child: InfoLabel(
-                '${Glossary.worktree.term.toUpperCase()}S',
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryWorktrees,
                 key: const ValueKey('worktrees-section-label'),
                 explanation: Glossary.worktree.explanation,
                 style: style,
@@ -569,9 +668,13 @@ class _WorktreeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = failure != null
-        ? 'Setup failed · $failure'
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibrarySetupFailed((failure).toString())
         : preparing
-        ? 'Preparing files and project tasks…'
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryPreparingFilesAndProjectTasks
         : worktree.branch?.isNotEmpty == true
         ? worktree.branch!
         : worktree.directory;
@@ -589,7 +692,7 @@ class _WorktreeTile extends StatelessWidget {
                   ? null
                   : Theme.of(context).colorScheme.error,
             ),
-      title: Text(worktree.name),
+      title: Text(worktree.name, textDirection: TextDirection.ltr),
       subtitle: Text(status, maxLines: 2, overflow: TextOverflow.ellipsis),
       onTap: busy || preparing || current ? null : onOpen,
       trailing: Row(
@@ -597,11 +700,13 @@ class _WorktreeTile extends StatelessWidget {
         children: [
           if (current)
             const Padding(
-              padding: EdgeInsets.only(right: 2),
+              padding: EdgeInsetsDirectional.only(end: 2),
               child: Icon(AppIconography.checkCircle, size: 20),
             ),
           PopupMenuButton<String>(
-            tooltip: 'Worktree actions',
+            tooltip: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryWorktreeActions,
             enabled: !busy,
             onSelected: (action) {
               if (action == 'open') onOpen();
@@ -610,10 +715,31 @@ class _WorktreeTile extends StatelessWidget {
             },
             itemBuilder: (context) => [
               if (!current && !preparing && failure == null)
-                const PopupMenuItem(value: 'open', child: Text('Open')),
+                PopupMenuItem(
+                  value: 'open',
+                  child: Text(
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).globalSessionsOpen,
+                  ),
+                ),
               if (resetAvailable && !preparing && failure == null)
-                const PopupMenuItem(value: 'reset', child: Text('Reset')),
-              const PopupMenuItem(value: 'remove', child: Text('Remove')),
+                PopupMenuItem(
+                  value: 'reset',
+                  child: Text(
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryReset2,
+                  ),
+                ),
+              PopupMenuItem(
+                value: 'remove',
+                child: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).capsuleRemove,
+                ),
+              ),
             ],
           ),
         ],
@@ -628,20 +754,26 @@ class _WorktreeTile extends StatelessWidget {
               if (!current && !preparing && failure == null)
                 ContextMenuAction(
                   menuKey: const ValueKey('worktree-menu-open'),
-                  label: 'Open',
+                  label: lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).globalSessionsOpen,
                   icon: AppIconography.externalLink,
                   onSelected: onOpen,
                 ),
               if (resetAvailable && !preparing && failure == null)
                 ContextMenuAction(
                   menuKey: const ValueKey('worktree-menu-reset'),
-                  label: 'Reset',
+                  label: lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryReset2,
                   icon: AppIconography.restart,
                   onSelected: onReset,
                 ),
               ContextMenuAction(
                 menuKey: const ValueKey('worktree-menu-remove'),
-                label: 'Remove',
+                label: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).capsuleRemove,
                 icon: AppIconography.delete,
                 destructive: true,
                 onSelected: onRemove,
@@ -671,8 +803,12 @@ class _ChangeWarning extends StatelessWidget {
         Expanded(
           child: Text(
             clean
-                ? 'No changed files were detected.'
-                : '${changes.length} changed ${changes.length == 1 ? 'file was' : 'files were'} detected.',
+                ? lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryNoChangedFilesWereDetected
+                : lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryChangedFilesDetected(changes.length),
           ),
         ),
       ],
@@ -692,14 +828,23 @@ class _CreateWorktreeDialogState extends State<_CreateWorktreeDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('New worktree'),
+    // Title and content share one scroll view: at 2.5x text on a 320dp
+    // phone the title alone can take a third of the screen.
+    scrollable: true,
+    title: Text(
+      lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryNewWorktree,
+    ),
     content: SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'OpenCode will create an isolated Git branch and working directory. Project startup tasks run automatically.',
+          Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryOpenCodeWillCreateAnIsolatedGitBranch,
           ),
           const SizedBox(height: 16),
           TextField(
@@ -707,10 +852,14 @@ class _CreateWorktreeDialogState extends State<_CreateWorktreeDialog> {
             controller: _controller,
             autofocus: true,
             textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              labelText: 'Name (optional)',
+            decoration: InputDecoration(
+              labelText: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryNameOptional,
               hintText: 'mobile-review',
-              helperText: 'OpenCode makes the name URL-safe and unique.',
+              helperText: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryOpenCodeMakesTheNameURLSafeAnd,
             ),
             onSubmitted: (value) => Navigator.pop(context, value.trim()),
           ),
@@ -720,12 +869,20 @@ class _CreateWorktreeDialogState extends State<_CreateWorktreeDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).projectFolderCancel,
+        ),
       ),
       FilledButton(
         key: const ValueKey('confirm-create-worktree'),
         onPressed: () => Navigator.pop(context, _controller.text.trim()),
-        child: const Text('Create'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).projectFolderCreateAction,
+        ),
       ),
     ],
   );
@@ -752,7 +909,11 @@ class _RemoveWorktreeDialogState extends State<_RemoveWorktreeDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text('Remove ${widget.worktree.name}?'),
+    title: Text(
+      lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryRemove((widget.worktree.name).toString()),
+    ),
     content: SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -760,15 +921,19 @@ class _RemoveWorktreeDialogState extends State<_RemoveWorktreeDialog> {
         children: [
           _ChangeWarning(changes: widget.changes),
           const SizedBox(height: 12),
-          const Text(
-            'The worktree directory and its Git branch will be permanently deleted. Existing chats remain in history, but their working directory will no longer exist.',
+          Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryTheWorktreeDirectoryAndItsGitBranch,
           ),
           const SizedBox(height: 16),
           TextField(
             key: const ValueKey('remove-worktree-confirmation'),
             controller: _controller,
             decoration: InputDecoration(
-              labelText: 'Type ${widget.worktree.name} to confirm',
+              labelText: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryTypeToConfirm((widget.worktree.name).toString()),
             ),
             onChanged: (_) => setState(() {}),
           ),
@@ -778,7 +943,11 @@ class _RemoveWorktreeDialogState extends State<_RemoveWorktreeDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context, false),
-        child: const Text('Cancel'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).projectFolderCancel,
+        ),
       ),
       FilledButton(
         key: const ValueKey('confirm-remove-worktree'),
@@ -788,7 +957,11 @@ class _RemoveWorktreeDialogState extends State<_RemoveWorktreeDialog> {
         onPressed: _controller.text == widget.worktree.name
             ? () => Navigator.pop(context, true)
             : null,
-        child: const Text('Remove permanently'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryRemovePermanently,
+        ),
       ),
     ],
   );

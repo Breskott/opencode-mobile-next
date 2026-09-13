@@ -18,15 +18,30 @@ enum VoiceModelState {
   error,
 }
 
+enum VoicePackUnsupported { abi, memory, storage }
+
 class VoicePackSupport {
-  const VoicePackSupport({required this.supported, this.reason});
+  const VoicePackSupport({required this.supported, this.reason, this.kind});
+
+  final VoicePackUnsupported? kind;
 
   final bool supported;
   final String? reason;
 }
 
 class VoiceModelPreflightException implements Exception {
-  const VoiceModelPreflightException(this.message);
+  const VoiceModelPreflightException(
+    this.message, {
+    this.support,
+    this.pack,
+    this.memoryMb,
+    this.requiredBytes,
+  });
+
+  final VoicePackSupport? support;
+  final VoiceModelPack? pack;
+  final int? memoryMb;
+  final int? requiredBytes;
 
   final String message;
 
@@ -138,6 +153,7 @@ class VoiceModelManager extends ChangeNotifier {
         !deviceInfo.supportedAbis.any(runtimeAbis.contains)) {
       return VoicePackSupport(
         supported: false,
+        kind: VoicePackUnsupported.abi,
         reason: 'No bundled voice runtime supports this device ABI.',
       );
     }
@@ -145,6 +161,7 @@ class VoiceModelManager extends ChangeNotifier {
     if (memory != null && memory < pack.minimumMemoryMb) {
       return VoicePackSupport(
         supported: false,
+        kind: VoicePackUnsupported.memory,
         reason:
             '${pack.label} needs at least ${pack.minimumMemoryMb} MB of app memory; this device reports $memory MB.',
       );
@@ -155,6 +172,7 @@ class VoiceModelManager extends ChangeNotifier {
         available < requiredStorageBytes(pack)) {
       return VoicePackSupport(
         supported: false,
+        kind: VoicePackUnsupported.storage,
         reason:
             '${pack.label} needs ${formatModelBytes(requiredStorageBytes(pack))} free, including a safety margin.',
       );
@@ -220,7 +238,13 @@ class VoiceModelManager extends ChangeNotifier {
     if (!support.supported) {
       if (!_isCurrent(generation)) return;
       _preparingDownload = false;
-      error = VoiceModelPreflightException(support.reason!);
+      error = VoiceModelPreflightException(
+        support.reason!,
+        support: support,
+        pack: pack,
+        memoryMb: deviceInfo.memoryClassMb,
+        requiredBytes: requiredStorageBytes(pack),
+      );
       state = VoiceModelState.error;
       _notify();
       return;

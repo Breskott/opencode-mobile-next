@@ -444,6 +444,34 @@ enum MessageErrorKind {
   }
 }
 
+/// Readable text for a session failure whose server message is empty,
+/// chosen by the error's [MessageErrorKind]. OpenCode 2 beta-18600 sends
+/// `{type: 'provider.auth', message: ''}` when a provider rejects the
+/// model's credentials; an empty banner tells the user nothing.
+String sessionErrorFallbackText(String? name) {
+  final kind = MessageErrorKind.fromName(name) ?? MessageErrorKind.unknown;
+  return switch (kind) {
+    MessageErrorKind.providerAuth =>
+      'The provider rejected this model\'s credentials. Sign in to the '
+          'provider again under Library › Providers, then retry.',
+    MessageErrorKind.contextOverflow =>
+      'The conversation no longer fits the model\'s context window. '
+          'Compact the session or start a new one.',
+    MessageErrorKind.outputLength =>
+      'The model stopped because its reply reached the output limit.',
+    MessageErrorKind.contentFilter =>
+      'The provider\'s content filter blocked this reply.',
+    MessageErrorKind.aborted => 'The run was stopped before it finished.',
+    MessageErrorKind.modelNotFound =>
+      'The selected model is not available on this server. Choose another '
+          'model.',
+    MessageErrorKind.unknown =>
+      name == null || name.trim().isEmpty
+          ? 'The session run failed.'
+          : 'The session run failed ($name).',
+  };
+}
+
 /// The first meaningful line of an error, without the stack trace a server
 /// may append. What the user reads; the full text stays behind Details.
 String errorHeadline(String text) {
@@ -830,8 +858,22 @@ class ToolState {
       startedAt: _asDateTime(time['start']),
       completedAt: _asDateTime(time['end']),
       pruned: _asInt(time['compacted']) != null || v['pruned'] == true,
-      executed: v['executed'] != false,
+      executed: _toolRan(v, time),
     );
+  }
+
+  /// Whether the tool actually ran. beta-18600 stamps `executed: false` on
+  /// tools it plainly ran (status completed, `time.ran` set, output present)
+  /// — the flag marks provider-side execution, not "never ran" — so the
+  /// outcome wins over the flag: a finished or failed call, or one with a
+  /// run timestamp, counts as executed. Only a call that never progressed
+  /// past pending/running with `executed: false` reads as not run.
+  static bool _toolRan(Map<String, dynamic> v, Map time) {
+    if (v['executed'] != false) return true;
+    final status = v['status']?.toString();
+    if (status == 'completed' || status == 'error') return true;
+    return _asDateTime(time['start']) != null ||
+        _asDateTime(time['end']) != null;
   }
 
   /// Parses the ordered `contentSegments` list the v2 mapper attaches; v1
@@ -878,6 +920,10 @@ class Part {
   final String? url;
   final bool synthetic;
 
+  /// A small, allowlisted presentation contract for server-authored notices.
+  /// It contains no arbitrary provider/configuration metadata.
+  final Map<String, String> noticeMetadata;
+
   Part({
     this.id,
     required this.type,
@@ -890,6 +936,7 @@ class Part {
     this.filename,
     this.url,
     this.synthetic = false,
+    this.noticeMetadata = const {},
   }) : toolState = toolState ?? ToolState(status: 'pending');
 
   bool get isRenderable =>
@@ -1551,6 +1598,12 @@ DateTime? _asDateTime(dynamic v) {
   final added = aLines.length - p - s;
   return (added: added, removed: removed);
 }
+
+/// [ApiException.errorTag] for a health route that answered with something
+/// other than a JSON object. An OpenCode 2 host serves its web UI on the
+/// OpenCode 1 health path (HTTP 200, text/html), so this is a wrong-generation
+/// signal, not a broken server.
+const unexpectedHealthShapeTag = 'UnexpectedHealthShape';
 
 class ApiException implements Exception {
   final String message;

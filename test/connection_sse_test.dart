@@ -828,7 +828,7 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('confirmed stale project falls back and clears saved location', (
+  testWidgets('empty project catalog preserves the selected location', (
     tester,
   ) async {
     final store = await _store();
@@ -851,14 +851,16 @@ void main() {
     await connect;
     await tester.pump();
 
-    expect(controller.directory, isNull);
+    expect(controller.directory, '/deleted/worktree');
     expect(controller.workspace, isNull);
-    expect(controller.locationNotice, contains('no longer available'));
-    expect(store.locationFor('server'), isNull);
+    expect(controller.locationNotice, contains('Your selection was kept'));
+    expect(store.locationFor('server')?.directory, '/deleted/worktree');
     controller.dispose();
   });
 
-  testWidgets('missing workspace restores its project locally', (tester) async {
+  testWidgets('missing workspace retains the selected remote scope', (
+    tester,
+  ) async {
     final store = await _store();
     await store.setLocation(
       'server',
@@ -895,10 +897,13 @@ void main() {
     await tester.pump();
 
     expect(controller.directory, '/work/acme');
-    expect(controller.workspace, isNull);
-    expect(controller.locationNotice, contains('opened locally'));
+    expect(controller.workspace, 'deleted-workspace');
+    expect(
+      controller.locationNotice,
+      contains('Couldn’t verify this workspace'),
+    );
     expect(store.locationFor('server')?.directory, '/work/acme');
-    expect(store.locationFor('server')?.workspace, isNull);
+    expect(store.locationFor('server')?.workspace, 'deleted-workspace');
     controller.dispose();
   });
 

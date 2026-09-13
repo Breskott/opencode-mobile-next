@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'delimited_file_preview.dart';
 import 'svg_file_preview.dart';
 import 'pdf_file_preview.dart';
 import 'markdown.dart';
+import 'reader_preferences.dart';
 import 'product_states.dart';
 import '../app_theme.dart';
 
@@ -246,14 +248,18 @@ class _FilePreviewSheetState extends State<_FilePreviewSheet> {
         await action();
       } else {
         final savedPath = await FilePicker.saveFile(
-          dialogTitle: 'Save ${widget.data.name}',
+          dialogTitle: readerL10n(context).readerUiSaveNamed(widget.data.name),
           fileName: widget.data.name,
           bytes: bytes,
         );
         if (mounted && savedPath != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('${widget.data.name} saved.')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                readerL10n(context).readerUiSaved(widget.data.name),
+              ),
+            ),
+          );
         }
       }
     } catch (error) {
@@ -298,7 +304,7 @@ class _FilePreviewSheetState extends State<_FilePreviewSheet> {
                         ),
                       ),
                       Text(
-                        _metadata(data),
+                        _metadata(context, data),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelSmall?.copyWith(
@@ -310,14 +316,14 @@ class _FilePreviewSheetState extends State<_FilePreviewSheet> {
                 ),
                 if (data.copyText != null)
                   IconButton(
-                    tooltip: 'Copy file contents',
+                    tooltip: readerL10n(context).readerUiCopyContents,
                     onPressed: () => _copy(data.copyText!),
                     icon: const Icon(AppIcons.copy, size: 19),
                   ),
                 if (widget.onAttach != null)
                   IconButton(
                     key: const Key('file-preview-attach'),
-                    tooltip: 'Attach to prompt',
+                    tooltip: readerL10n(context).readerUiAttachPrompt,
                     onPressed: _attaching ? null : _attach,
                     icon: _attaching
                         ? const SizedBox.square(
@@ -329,7 +335,7 @@ class _FilePreviewSheetState extends State<_FilePreviewSheet> {
                 if (data.exportBytes != null)
                   IconButton(
                     key: const Key('file-preview-download'),
-                    tooltip: 'Save to device',
+                    tooltip: readerL10n(context).readerUiSaveDevice,
                     onPressed: _downloading ? null : _download,
                     icon: _downloading
                         ? const SizedBox.square(
@@ -339,7 +345,7 @@ class _FilePreviewSheetState extends State<_FilePreviewSheet> {
                         : const Icon(AppIconography.download, size: 20),
                   ),
                 IconButton(
-                  tooltip: 'Close preview',
+                  tooltip: readerL10n(context).readerUiClosePreview,
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(AppIconography.close),
                 ),
@@ -367,8 +373,18 @@ class FilePreviewBody extends StatelessWidget {
     if (data.error != null) {
       return _PreviewNotice(
         icon: AppIconography.hidden,
-        title: 'Preview unavailable',
-        message: data.error!,
+        title: readerL10n(context).readerUiPreviewUnavailable,
+        message: switch (data.error!) {
+          'The attachment content is not included in this message.' =>
+            readerL10n(context).readerUiAttachmentMissing,
+          'Remote attachment previews are not available.' => readerL10n(
+            context,
+          ).readerUiRemoteAttachment,
+          'The attachment data could not be decoded.' => readerL10n(
+            context,
+          ).readerUiAttachmentInvalid,
+          final message => message,
+        },
       );
     }
     if (data.isRasterImage && data.bytes?.isNotEmpty == true) {
@@ -386,10 +402,10 @@ class FilePreviewBody extends StatelessWidget {
                     data.bytes!,
                     key: const Key('file-preview-image'),
                     fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const _PreviewNotice(
+                    errorBuilder: (_, _, _) => _PreviewNotice(
                       icon: AppIconography.imageBroken,
-                      title: 'Image could not be displayed',
-                      message: 'The file data is not a supported image.',
+                      title: readerL10n(context).readerUiImageFailed,
+                      message: readerL10n(context).readerUiImageUnsupported,
                     ),
                   ),
                 ),
@@ -404,10 +420,10 @@ class FilePreviewBody extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(color: theme.colorScheme.outlineVariant),
                 ),
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   child: Text(
-                    'Pinch to zoom',
+                    readerL10n(context).readerUiPinchZoom,
                     style: TextStyle(fontSize: AppTheme.captionFontSize),
                   ),
                 ),
@@ -482,11 +498,12 @@ class FilePreviewBody extends StatelessWidget {
     }
     return _PreviewNotice(
       icon: AppIconography.file,
-      title: 'Preview unavailable',
+      title: readerL10n(context).readerUiPreviewUnavailable,
       message: [
-        data.mimeType ?? 'Unknown file type',
-        if (data.byteLength != null) '${data.byteLength} bytes',
-        'This format cannot be rendered in the app yet.',
+        data.mimeType ?? readerL10n(context).readerUiUnknownType,
+        if (data.byteLength != null)
+          readerL10n(context).readerUiBytes(data.byteLength!),
+        readerL10n(context).readerUiFormatUnsupported,
       ].join('\n'),
     );
   }
@@ -507,7 +524,6 @@ class _FocusedSourcePreviewState extends State<_FocusedSourcePreview> {
 
   /// Gutter (line numbers), gap, and a little breathing room after the
   /// longest line.
-  static const _gutterWidth = 54.0 + 12.0;
   static const _trailingPadding = 24.0;
 
   late List<String> _lines = widget.text.split('\n');
@@ -523,6 +539,7 @@ class _FocusedSourcePreviewState extends State<_FocusedSourcePreview> {
 
   /// The measured width of the widest line, cached until the content, the
   /// text style, or the text scale changes — never guessed per character.
+  bool _positioned = false;
   double? _widestLineWidth;
   TextStyle? _measuredStyle;
   TextScaler? _measuredScaler;
@@ -533,6 +550,7 @@ class _FocusedSourcePreviewState extends State<_FocusedSourcePreview> {
     if (oldWidget.text != widget.text) {
       _lines = widget.text.split('\n');
       _widestLineWidth = null;
+      _positioned = false;
     }
   }
 
@@ -574,72 +592,138 @@ class _FocusedSourcePreviewState extends State<_FocusedSourcePreview> {
     final widest = codeStyle == null ? 0.0 : _widestLine(codeStyle, scaler);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final contentWidth = (widest + _gutterWidth + _trailingPadding).clamp(
-          constraints.maxWidth,
-          double.infinity,
-        );
-        return Scrollbar(
-          controller: _horizontal,
-          child: SingleChildScrollView(
-            controller: _horizontal,
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: contentWidth,
-              height: constraints.maxHeight,
-              // One selection area over the whole list so a drag can take
-              // several lines at once; each line is plain text inside it.
-              child: SelectionArea(
-                child: ListView.builder(
-                  key: const Key('file-preview-focused-source'),
-                  controller: _vertical,
-                  itemExtent: _lineHeight,
-                  itemCount: _lines.length,
-                  itemBuilder: (context, index) {
-                    final selected = index + 1 == _targetLine;
-                    return ColoredBox(
-                      key: selected
-                          ? const Key('file-preview-target-line')
-                          : null,
-                      color: selected
-                          ? theme.colorScheme.primaryContainer.withValues(
-                              alpha: .45,
-                            )
-                          : Colors.transparent,
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 54,
-                            child: SelectionContainer.disabled(
-                              child: Text(
-                                '${index + 1}',
-                                textAlign: TextAlign.right,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  fontFamily: AppTheme.monoFamily,
-                                  color: selected
-                                      ? theme.colorScheme.primary
-                                      : theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text.rich(
-                            TextSpan(
-                              text: _lines[index].isEmpty ? ' ' : _lines[index],
-                            ),
-                            maxLines: 1,
-                            softWrap: false,
-                            overflow: TextOverflow.clip,
-                            style: codeStyle,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
+        final wrap =
+            ReaderPreferencesScope.maybeOf(context)?.value.wrapCode ?? false;
+        final lineHeight = scaler.scale(14) * 1.35 + 8;
+        final gutterPainter = TextPainter(
+          text: TextSpan(
+            text: '${_lines.length}',
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontFamily: AppTheme.monoFamily,
             ),
           ),
+          textDirection: TextDirection.ltr,
+          textScaler: scaler,
+        )..layout();
+        final gutter = gutterPainter.width + 20;
+        gutterPainter.dispose();
+        final contentWidth = wrap
+            ? constraints.maxWidth
+            : (widest + gutter + _trailingPadding).clamp(
+                constraints.maxWidth,
+                double.infinity,
+              );
+        final codeWidth = (contentWidth - gutter - 12).clamp(
+          1.0,
+          double.infinity,
+        );
+        final heights = <double>[];
+        for (final line in _lines) {
+          if (!wrap) {
+            heights.add(lineHeight);
+            continue;
+          }
+          final painter = TextPainter(
+            text: TextSpan(text: line.isEmpty ? ' ' : line, style: codeStyle),
+            textDirection: TextDirection.ltr,
+            textScaler: scaler,
+          )..layout(maxWidth: codeWidth);
+          heights.add((painter.height + 8).clamp(lineHeight, double.infinity));
+          painter.dispose();
+        }
+        if (!_positioned) {
+          _positioned = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || !_vertical.hasClients || _targetLine == 0) return;
+            double sum(Iterable<double> values) =>
+                values.fold<double>(0, (a, b) => a + b);
+            final targetTop = sum(heights.take(_targetLine - 1));
+            final targetHeight = heights[_targetLine - 1];
+            final context = sum(
+              heights.skip((_targetLine - 3).clamp(0, heights.length)).take(2),
+            );
+            // Show two rows of context above the target, but never at the
+            // cost of pushing the target itself out of the viewport: wrapped
+            // rows at large text scales can each fill most of the screen.
+            final position = _vertical.position;
+            final offset = math.max(
+              targetTop - context,
+              targetTop + targetHeight - position.viewportDimension,
+            );
+            _vertical.jumpTo(
+              offset.clamp(0.0, math.min(targetTop, position.maxScrollExtent)),
+            );
+          });
+        }
+        final list = SelectionArea(
+          child: ListView.builder(
+            key: const Key('file-preview-focused-source'),
+            controller: _vertical,
+            itemExtentBuilder: (index, _) => heights[index],
+            itemCount: _lines.length,
+            itemBuilder: (context, index) {
+              final selected = index + 1 == _targetLine;
+              return ColoredBox(
+                key: selected ? const Key('file-preview-target-line') : null,
+                color: selected
+                    ? theme.colorScheme.primaryContainer.withValues(alpha: .45)
+                    : Colors.transparent,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: gutter,
+                      child: SelectionContainer.disabled(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            '${index + 1}',
+                            textAlign: TextAlign.right,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontFamily: AppTheme.monoFamily,
+                              color: selected
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text(
+                          _lines[index].isEmpty ? ' ' : _lines[index],
+                          softWrap: wrap,
+                          maxLines: wrap ? null : 1,
+                          textDirection: TextDirection.ltr,
+                          style: codeStyle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: wrap
+              ? list
+              : Scrollbar(
+                  controller: _horizontal,
+                  child: SingleChildScrollView(
+                    controller: _horizontal,
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: contentWidth,
+                      height: constraints.maxHeight,
+                      child: list,
+                    ),
+                  ),
+                ),
         );
       },
     );
@@ -743,7 +827,7 @@ class _SmartTextPreviewState extends State<SmartTextPreview> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Align(
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerEnd,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHigh,
@@ -757,14 +841,14 @@ class _SmartTextPreviewState extends State<SmartTextPreview> {
                     onPressed: _rawMarkdown
                         ? () => setState(() => _rawMarkdown = false)
                         : null,
-                    child: const Text('Rendered'),
+                    child: Text(readerL10n(context).readerUiRendered),
                   ),
                   TextButton(
                     key: const Key('file-preview-raw-mode'),
                     onPressed: _rawMarkdown
                         ? null
                         : () => setState(() => _rawMarkdown = true),
-                    child: const Text('Raw'),
+                    child: Text(readerL10n(context).readerUiRaw),
                   ),
                 ],
               ),
@@ -832,7 +916,11 @@ class _PreviewNotice extends StatelessWidget {
   );
 }
 
-String _metadata(FilePreviewData data) => [
-  data.mimeType ?? 'Unknown file type',
-  if (data.byteLength != null) '${data.byteLength} bytes',
+String _metadata(BuildContext context, FilePreviewData data) => [
+  data.mimeType ?? readerL10n(context).readerUiUnknownType,
+  if (data.byteLength != null)
+    readerL10n(context).readerUiBytes(data.byteLength!),
 ].join(' · ');
+
+AppLocalizations readerL10n(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));

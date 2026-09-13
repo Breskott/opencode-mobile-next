@@ -65,6 +65,38 @@ void main() {
       expect(session.shareUrl, isNull);
       expect(session.time?.created, isNotNull);
     });
+
+    test('the server\'s "default" variant reads as the app\'s no-variant', () {
+      // Captured live from beta-18600 on 2026-09-10: setting a model with
+      // no variant comes back as variant "default", which the picker used
+      // to treat as a different choice ("no longer available").
+      final session = mapApi2Session(
+        Api2Session.fromJson({
+          'id': 'ses_default',
+          'projectID': 'p',
+          'agent': 'build',
+          'model': {
+            'id': 'glm-5.3-flash',
+            'providerID': 'zai-coding-plan',
+            'variant': 'default',
+          },
+          'time': {'created': 1, 'updated': 1},
+          'location': {'directory': '/w'},
+        })!,
+      );
+      expect(session.selection!.variant, "");
+      expect(session.selection!.model?.modelID, "glm-5.3-flash");
+      final explicit = mapApi2Session(
+        Api2Session.fromJson({
+          'id': 'ses_high',
+          'projectID': 'p',
+          'model': {'id': 'm', 'providerID': 'p', 'variant': 'high'},
+          'time': {'created': 1, 'updated': 1},
+          'location': {'directory': '/w'},
+        })!,
+      );
+      expect(explicit.selection!.variant, "high");
+    });
   });
 
   group('messages → parts round-trip', () {

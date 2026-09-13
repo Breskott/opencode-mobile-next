@@ -16,8 +16,12 @@ class ReturnBriefCard extends StatelessWidget {
     required this.onDismiss,
     this.saving = false,
     this.saveFailed = false,
+    this.inventoryStatusInParent = false,
   });
 
+  /// The surrounding inventory already describes its paging/loading status.
+  /// This changes presentation only, never the summary or acknowledgement.
+  final bool inventoryStatusInParent;
   final ReturnBrief brief;
   final bool stale;
   final bool saving;
@@ -31,7 +35,7 @@ class ReturnBriefCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (brief.isEmpty &&
         brief.readStateKnown &&
-        !brief.inventoryPartial &&
+        (!brief.inventoryPartial || inventoryStatusInParent) &&
         !stale) {
       return const SizedBox.shrink();
     }
@@ -155,7 +159,7 @@ class ReturnBriefCard extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(l10n.returnBriefUnknown),
               ),
-            if (brief.inventoryPartial)
+            if (brief.inventoryPartial && !inventoryStatusInParent)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(l10n.returnBriefPartial),

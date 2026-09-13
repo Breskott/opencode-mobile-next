@@ -56,6 +56,7 @@ class _ConnectionHelpScreenState extends State<ConnectionHelpScreen> {
           const SizedBox(height: 16),
           TextField(
             controller: _address,
+            textDirection: TextDirection.ltr,
             decoration: InputDecoration(
               labelText: l10n.connectionHelpAddress,
               border: const OutlineInputBorder(),
@@ -128,7 +129,9 @@ class _ConnectionHelpScreenState extends State<ConnectionHelpScreen> {
       padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          Expanded(child: SelectableText(example)),
+          Expanded(
+            child: SelectableText(example, textDirection: TextDirection.ltr),
+          ),
           IconButton(
             tooltip: l10n.connectionHelpCopyExample,
             icon: const Icon(AppIconography.copy),

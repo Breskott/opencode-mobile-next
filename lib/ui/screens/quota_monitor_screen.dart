@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../domain/provider_quota.dart';
 import '../../l10n/app_localizations.dart';
@@ -124,7 +124,12 @@ class _SourceState extends State<_Source> {
           ),
           style: Theme.of(context).textTheme.titleMedium,
         ),
-        Text(_sourceOrigin(profile.baseUrl, l10n.quotaUnknownSource)),
+        Text(
+          _sourceOrigin(profile.baseUrl, l10n.quotaUnknownSource),
+          textDirection: Uri.tryParse(profile.baseUrl)?.hasScheme == true
+              ? TextDirection.ltr
+              : null,
+        ),
         const SizedBox(height: 8),
         Text(switch (observation.status) {
           QuotaMonitorStatus.disabled => l10n.quotaMonitorDisabled,
@@ -139,7 +144,9 @@ class _SourceState extends State<_Source> {
         if (snapshot != null) ...[
           Text(
             l10n.quotaChecked(
-              DateFormat.yMMMd().add_jm().format(snapshot.fetchedAt.toLocal()),
+              DateFormat.yMMMd(
+                Localizations.localeOf(context).toLanguageTag(),
+              ).add_jm().format(snapshot.fetchedAt.toLocal()),
             ),
           ),
           for (var i = 0; i < snapshot.windows.length; i++) ...[
@@ -159,7 +166,9 @@ class _SourceState extends State<_Source> {
               snapshot.windows[i].resetsAt == null
                   ? l10n.quotaResetUnknown
                   : l10n.quotaResetAt(
-                      DateFormat.yMMMd().add_jm().format(
+                      DateFormat.yMMMd(
+                        Localizations.localeOf(context).toLanguageTag(),
+                      ).add_jm().format(
                         snapshot.windows[i].resetsAt!.toLocal(),
                       ),
                     ),

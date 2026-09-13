@@ -374,7 +374,7 @@ class _MonitorProfileState extends State<_MonitorProfile> {
           subtitle: Text(
             supported
                 ? l10n.monitorOptInDetail
-                : ProfileMonitor.unsupportedProfileMessage,
+                : l10n.e7ProjectMonitorUnsupported,
           ),
           value: rules.enabled,
           onChanged: !supported || _saving
@@ -432,7 +432,7 @@ class _MonitorProfileState extends State<_MonitorProfile> {
           if (rules.quietStart != null && rules.quietEnd != null) ...[
             ListTile(
               title: Text(l10n.monitorQuietStart),
-              trailing: Text(
+              subtitle: Text(
                 TimeOfDay(
                   hour: rules.quietStart! ~/ 60,
                   minute: rules.quietStart! % 60,
@@ -442,7 +442,7 @@ class _MonitorProfileState extends State<_MonitorProfile> {
             ),
             ListTile(
               title: Text(l10n.monitorQuietEnd),
-              trailing: Text(
+              subtitle: Text(
                 TimeOfDay(
                   hour: rules.quietEnd! ~/ 60,
                   minute: rules.quietEnd! % 60,
@@ -479,6 +479,7 @@ class _MonitorProfileState extends State<_MonitorProfile> {
                 Text(l10n.monitorCheckInAfter),
                 DropdownButton<int>(
                   isExpanded: true,
+                  itemHeight: null,
                   key: ValueKey('monitor-check-in-after-${widget.profile.id}'),
                   value:
                       ProfileNotifyRules.checkInChoices.contains(

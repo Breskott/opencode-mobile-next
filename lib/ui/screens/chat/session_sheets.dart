@@ -20,11 +20,13 @@ class _TodosSheetState extends State<_TodosSheet> {
   }
 
   Future<void> _fetch() async {
+    // Runs from initState, so inherited lookups are not yet allowed.
+    final strings = earlyAppLocalizations(context);
     if (_error != null) setState(() => _error = null);
     try {
       final api = await widget.conn.prepareActionTransport();
       if (api == null) {
-        throw const ProductException('OpenCode is reconnecting. Try again.');
+        throw ProductException(strings.chatUiOpenCodeIsReconnectingTryAgain);
       }
       final t = await api.todos(widget.sessionID);
       if (mounted) setState(() => _todos = t);
@@ -50,17 +52,16 @@ class _TodosSheetState extends State<_TodosSheet> {
             : _todos == null
             ? const SizedBox(height: 240, child: LoadingList(rows: 4))
             : _todos!.isEmpty
-            ? const ProductInlineEmpty(
+            ? ProductInlineEmpty(
                 icon: AppIconography.checklist,
-                title: 'No todos in this session',
-                message:
-                    'When the assistant plans work as a todo list, the items appear here.',
+                title: _chatL10n(context).chatUiNoTodosInThisSession,
+                message: _chatL10n(context).chatUiWhenTheAssistantPlansWorkAsA,
               )
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SectionLabel.inline('Todo list'),
+                  SectionLabel.inline(_chatL10n(context).chatUiTodoList),
                   Flexible(
                     child: ListView(
                       shrinkWrap: true,
@@ -87,7 +88,9 @@ class _TodosSheetState extends State<_TodosSheet> {
                                       if (t.status != 'pending')
                                         t.status.replaceAll('_', ' '),
                                       if (t.priority != null)
-                                        '${t.priority} priority',
+                                        _chatL10n(
+                                          context,
+                                        ).chatUiPriorityLabel(t.priority ?? ''),
                                     ].join(' · '),
                                     style: theme.textTheme.labelSmall?.copyWith(
                                       color: AppTheme.mutedOf(theme),
@@ -125,11 +128,12 @@ class _DiffSheetState extends State<_DiffSheet> {
   }
 
   Future<void> _fetch() async {
+    final strings = _chatL10n(context);
     if (_error != null) setState(() => _error = null);
     try {
       final api = await widget.conn.prepareActionTransport();
       if (api == null) {
-        throw const ProductException('OpenCode is reconnecting. Try again.');
+        throw ProductException(strings.chatUiOpenCodeIsReconnectingTryAgain);
       }
       final d = await api.diff(widget.sessionID);
       if (mounted) setState(() => _diffs = d);
@@ -154,17 +158,18 @@ class _DiffSheetState extends State<_DiffSheet> {
               : _diffs == null
               ? const LoadingList(rows: 6)
               : _diffs!.isEmpty
-              ? const ProductInlineEmpty(
+              ? ProductInlineEmpty(
                   icon: AppIconography.review,
-                  title: 'No file changes yet',
-                  message:
-                      'File edits made in this session will be listed here.',
+                  title: _chatL10n(context).chatUiNoFileChangesYet,
+                  message: _chatL10n(
+                    context,
+                  ).chatUiFileEditsMadeInThisSessionWill,
                 )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SectionLabel.inline('Changes'),
+                    SectionLabel.inline(_chatL10n(context).chatUiChanges),
                     Expanded(
                       child: ListView.builder(
                         itemCount: _diffs!.length,

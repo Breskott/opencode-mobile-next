@@ -8,6 +8,7 @@ import '../../state/connection.dart';
 import '../widgets/product_states.dart';
 import '../widgets/session_handoff.dart';
 import '../app_iconography.dart';
+import '../early_l10n.dart';
 
 class SessionRelationsScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -48,7 +49,9 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
       _generation++;
       setState(
         () => _error = StateError(
-          'Session location changed. Return and reopen related sessions.',
+          _sharedCopy(
+            context,
+          ).e7SharedSessionLocationChangedReturnAndReopenRelated,
         ),
       );
       return;
@@ -94,6 +97,8 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
       (_children?.any((session) => session.id == id) ?? false);
 
   Future<void> _load() async {
+    // Runs from initState, so inherited lookups are not yet allowed.
+    final copy = earlyAppLocalizations(context);
     if (!mounted) return;
     final controller = widget.controller;
     final sessionID = widget.sessionID;
@@ -106,7 +111,7 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
       if (!_routeIsCurrent(routeGeneration, controller, sessionID)) return;
       _scope.check(controller);
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting. Try again.');
+        throw ProductException(copy.e7SharedOpenCodeIsReconnectingTryAgain);
       }
       final current = await repository.getSessionDetails(sessionID);
       if (!_routeIsCurrent(routeGeneration, controller, sessionID)) return;
@@ -138,6 +143,7 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
   }
 
   Future<void> _select(Session session) async {
+    final copy = _sharedCopy(context);
     if (_selecting) return;
     final controller = widget.controller;
     final sessionID = widget.sessionID;
@@ -152,25 +158,25 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
       if (!routeIsCurrent()) return;
       scope.check(controller);
       if (repository == null) {
-        throw StateError('OpenCode is reconnecting. Try again.');
+        throw StateError(copy.e7SharedOpenCodeIsReconnectingTryAgain);
       }
       final current = await repository.getSessionDetails(session.id);
       if (!routeIsCurrent()) return;
       scope.check(controller);
       if (!_relationIsListed(session.id)) {
-        throw StateError('Session is no longer related to this session.');
+        throw StateError(copy.e7SharedSessionIsNoLongerRelatedToThis);
       }
       if (current.id != session.id ||
           current.directory != session.directory ||
           current.workspaceID != session.workspaceID) {
-        throw StateError('Session location changed. Return and try again.');
+        throw StateError(copy.e7SharedSessionLocationChangedReturnAndTryAgain);
       }
       if (mounted) Navigator.of(context).pop(current);
     } catch (_) {
       if (routeIsCurrent()) {
         setState(
           () => _error = StateError(
-            'Session unavailable or location changed. Return or refresh to try again.',
+            copy.e7SharedSessionUnavailableOrLocationChangedReturnOr,
           ),
         );
       }
@@ -180,6 +186,7 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
   }
 
   Future<void> _pin(Session session) async {
+    final copy = _sharedCopy(context);
     final controller = widget.controller;
     final sessionID = widget.sessionID;
     final routeGeneration = _routeOperationGeneration;
@@ -192,18 +199,18 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
       if (!routeIsCurrent()) return;
       scope.check(controller);
       if (repository == null) {
-        throw StateError('OpenCode is reconnecting. Try again.');
+        throw StateError(copy.e7SharedOpenCodeIsReconnectingTryAgain);
       }
       final current = await repository.getSessionDetails(session.id);
       if (!routeIsCurrent()) return;
       scope.check(controller);
       if (!_relationIsListed(session.id)) {
-        throw StateError('Session is no longer related to this session.');
+        throw StateError(copy.e7SharedSessionIsNoLongerRelatedToThis);
       }
       if (current.id != session.id ||
           current.directory != session.directory ||
           current.workspaceID != session.workspaceID) {
-        throw StateError('Session location changed. Return and try again.');
+        throw StateError(copy.e7SharedSessionLocationChangedReturnAndTryAgain);
       }
       // Recheck immediately before the mutating call. A route replacement or
       // location change during the identity read must not pin the new route's
@@ -217,10 +224,7 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
       );
     } catch (_) {
       if (mounted && routeIsCurrent()) {
-        showProductError(
-          context,
-          'Could not update the pin. Return and try again.',
-        );
+        showProductError(context, copy.e7SharedCouldNotUpdateThePinReturnAnd);
       }
     }
   }
@@ -228,10 +232,10 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Subagent sessions'),
+      title: Text(_sharedCopy(context).usageSubagents),
       actions: [
         IconButton(
-          tooltip: 'Refresh subagent sessions',
+          tooltip: _sharedCopy(context).e7SharedRefreshSubagentSessions,
           onPressed: _load,
           icon: const Icon(AppIconography.retry),
         ),
@@ -260,7 +264,7 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             _SessionFamilyHeader(parent: parent, childCount: children.length),
-            const SectionLabel('Parent session'),
+            SectionLabel(_sharedCopy(context).e7SharedParentSession),
             _SessionRelationTile(
               session: parent,
               current: widget.sessionID == parent.id,
@@ -281,20 +285,21 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
             ),
             const Divider(height: 1, indent: 64),
             SectionLabel(
-              'Subagents',
+              _sharedCopy(context).e7SharedSubagents,
               trailing: Text(
                 '${children.length}',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
             if (children.isEmpty)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.fromLTRB(16, 24, 16, 32),
                 child: ProductEmptyState(
                   icon: AppIconography.branch,
-                  title: 'No subagent sessions yet',
-                  message:
-                      'Delegated work will appear here without mixing child sessions into your main chat list.',
+                  title: _sharedCopy(context).e7SharedNoSubagentSessionsYet,
+                  message: _sharedCopy(
+                    context,
+                  ).e7SharedDelegatedWorkWillAppearHereWithoutMixing,
                 ),
               )
             else
@@ -328,7 +333,9 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
                 child: Text(
-                  'Refresh failed: $_error',
+                  _sharedCopy(context).e7SharedDetail514(
+                    productErrorText(_error!, l10n: _sharedCopy(context)),
+                  ),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
@@ -376,7 +383,7 @@ class _SessionFamilyHeader extends StatelessWidget {
                 Text(
                   parent.title?.trim().isNotEmpty == true
                       ? parent.title!
-                      : 'Parent session',
+                      : _sharedCopy(context).e7SharedParentSession,
                   style: theme.textTheme.titleMedium,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -384,8 +391,10 @@ class _SessionFamilyHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   childCount == 0
-                      ? 'OpenCode has not delegated work from this session.'
-                      : '$childCount delegated ${childCount == 1 ? 'session' : 'sessions'} · open any transcript directly.',
+                      ? _sharedCopy(
+                          context,
+                        ).e7SharedOpenCodeHasNotDelegatedWorkFromThis
+                      : _sharedCopy(context).e7SharedDetail517(childCount),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -430,9 +439,10 @@ class _SessionRelationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final created = session.time?.created;
     final details = <String>[
-      if (position != null && total != null) '$position of $total',
+      if (position != null && total != null)
+        _sharedCopy(context).e7SharedDetail518(position!, total!),
       if (created != null) _relativeTime(created),
-      if (busy) 'Working',
+      if (busy) _sharedCopy(context).globalSessionsWorking,
     ];
     return ListTile(
       key: ValueKey('session-relation-${session.id}'),
@@ -446,7 +456,7 @@ class _SessionRelationTile extends StatelessWidget {
       title: Text(
         session.title?.trim().isNotEmpty == true
             ? session.title!
-            : 'Untitled session',
+            : _sharedCopy(context).globalSessionsUntitled,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
@@ -472,7 +482,11 @@ class _SessionRelationTile extends StatelessWidget {
           if (onPin != null)
             PopupMenuItem(
               value: 'pin',
-              child: Text(pinned ? 'Unpin session' : 'Pin session'),
+              child: Text(
+                pinned
+                    ? _sharedCopy(context).e7SharedUnpinSession
+                    : _sharedCopy(context).e7SharedPinSession,
+              ),
             ),
         ],
       ),
@@ -491,3 +505,6 @@ String _relativeTime(int milliseconds) {
   if (age.inDays < 7) return '${age.inDays}d ago';
   return '${(age.inDays / 7).floor()}w ago';
 }
+
+AppLocalizations _sharedCopy(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));

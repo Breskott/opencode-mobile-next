@@ -1,8 +1,13 @@
+import '../../l10n/app_localizations.dart';
+import '../widgets/setup_ui_messages.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
 import '../app_theme.dart';
 import '../widgets/confirm_sheet.dart';
+
 import 'package:flutter/services.dart';
 import 'package:xterm/xterm.dart' as xterm;
 
@@ -80,7 +85,13 @@ class TerminalPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     key: const ValueKey('terminal-page'),
-    appBar: AppBar(title: const Text('Terminal')),
+    appBar: AppBar(
+      title: Text(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).libraryTerminalTitle,
+      ),
+    ),
     body: TerminalScreen(controller: controller),
   );
 }
@@ -179,7 +190,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
       final repository = await widget.controller.prepareActionRepository();
       if (!mounted || generation != _loadGeneration) return;
       if (repository == null) {
-        throw const ProductException('The server is not connected.');
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupServerDisconnected,
+        );
       }
       final processes = await repository.listTerminals();
       if (mounted && generation == _loadGeneration) {
@@ -207,7 +222,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
     final revision = _revisionOf(repository);
     try {
       final process = await repository.createTerminal(
-        title: 'Terminal ${(_processes?.length ?? 0) + 1}',
+        title: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupTerminalNumber((_processes?.length ?? 0) + 1),
       );
       if (!_isCurrentLocation(repository, revision)) return;
       await _open(process, repository);
@@ -250,21 +267,35 @@ class _TerminalScreenState extends State<TerminalScreen> {
     final title = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Rename terminal'),
+        title: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupRenameTerminal,
+        ),
         content: TextFormField(
           initialValue: process.title,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Title'),
+          decoration: InputDecoration(
+            labelText: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupTitle,
+          ),
           onChanged: (value) => editedTitle = value,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).projectFolderCancel,
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, editedTitle.trim()),
-            child: const Text('Save'),
+            child: Text(
+              lookupAppLocalizations(Localizations.localeOf(context)).fileSave,
+            ),
           ),
         ],
       ),
@@ -296,11 +327,27 @@ class _TerminalScreenState extends State<TerminalScreen> {
     final confirmed = await showConfirmSheet(
       context,
       icon: process.running ? AppIcons.stop : AppIconography.delete,
-      title: process.running ? 'Stop terminal?' : 'Remove terminal?',
+      title: process.running
+          ? lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupStopTerminal
+          : lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupRemoveTerminal,
       message: process.running
-          ? 'The running process and its child processes will be terminated.'
-          : 'This terminal record will be removed.',
-      confirmLabel: process.running ? 'Stop' : 'Remove',
+          ? lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupStopTerminalDetail
+          : lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupRemoveTerminalDetail,
+      confirmLabel: process.running
+          ? lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).voiceConversationStopReply
+          : lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).capsuleRemove,
       destructive: true,
     );
     if (!confirmed || locationRevision != widget.controller.locationRevision) {
@@ -326,7 +373,12 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
   @override
   Widget build(BuildContext context) => ProductRefreshBody(
-    message: _processes == null ? null : _error,
+    message: _processes == null || _error == null
+        ? null
+        : setupUiMessage(
+            lookupAppLocalizations(Localizations.localeOf(context)),
+            _error!,
+          ),
     onRetry: _load,
     child: _body(context),
   );
@@ -334,7 +386,13 @@ class _TerminalScreenState extends State<TerminalScreen> {
   Widget _body(BuildContext context) {
     if (_processes == null && _error == null) return const LoadingList();
     if (_error != null && _processes == null) {
-      return ProductErrorState(message: _error!, onRetry: _load);
+      return ProductErrorState(
+        message: setupUiMessage(
+          lookupAppLocalizations(Localizations.localeOf(context)),
+          _error!,
+        ),
+        onRetry: _load,
+      );
     }
     return Stack(
       children: [
@@ -343,9 +401,15 @@ class _TerminalScreenState extends State<TerminalScreen> {
             onRefresh: _load,
             child: ProductEmptyState(
               icon: AppIconography.terminal,
-              title: 'No terminal processes',
-              message: 'Start a shell in the active workspace.',
-              actionLabel: 'New terminal',
+              title: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupNoTerminals,
+              message: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupNewTerminalDetail,
+              actionLabel: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupNewTerminal,
               onAction: _create,
             ),
           )
@@ -377,8 +441,13 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   ),
                   subtitle: Text(
                     process.running
-                        ? '${process.command} - PID ${process.pid}'
-                        : '${process.command} - exited ${process.exitCode ?? ''}',
+                        ? lookupAppLocalizations(Localizations.localeOf(context)).e7SetupProcessRunning(process.command, process.pid)
+                        : lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupProcessExited(
+                            process.command,
+                            process.exitCode?.toString() ?? '',
+                          ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -387,19 +456,33 @@ class _TerminalScreenState extends State<TerminalScreen> {
                     ),
                   ),
                   trailing: PopupMenuButton<String>(
-                    tooltip: 'Terminal actions',
+                    tooltip: lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupTerminalActions,
                     onSelected: (value) {
                       if (value == 'rename') _rename(process);
                       if (value == 'remove') _remove(process);
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'rename',
-                        child: Text('Rename'),
+                        child: Text(
+                          lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupRename,
+                        ),
                       ),
                       PopupMenuItem(
                         value: 'remove',
-                        child: Text(process.running ? 'Stop' : 'Remove'),
+                        child: Text(
+                          process.running
+                              ? lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).voiceConversationStopReply
+                              : lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).capsuleRemove,
+                        ),
                       ),
                     ],
                   ),
@@ -411,19 +494,29 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   actions: () => [
                     ContextMenuAction(
                       menuKey: const ValueKey('terminal-menu-open'),
-                      label: 'Open',
+                      label: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).globalSessionsOpen,
                       icon: AppIconography.terminal,
                       onSelected: () => unawaited(_open(process)),
                     ),
                     ContextMenuAction(
                       menuKey: const ValueKey('terminal-menu-rename'),
-                      label: 'Rename',
+                      label: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupRename,
                       icon: AppIconography.edit,
                       onSelected: () => unawaited(_rename(process)),
                     ),
                     ContextMenuAction(
                       menuKey: const ValueKey('terminal-menu-remove'),
-                      label: process.running ? 'Stop' : 'Remove',
+                      label: process.running
+                          ? lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).voiceConversationStopReply
+                          : lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).capsuleRemove,
                       icon: process.running
                           ? AppIconography.stopCircle
                           : AppIconography.delete,
@@ -436,8 +529,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
               },
             ),
           ),
-        Positioned(
-          right: 16,
+        PositionedDirectional(
+          end: 16,
           bottom: 16,
           child: FloatingActionButton.extended(
             heroTag: 'new-terminal',
@@ -448,14 +541,24 @@ class _TerminalScreenState extends State<TerminalScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(AppIconography.add),
-            label: const Text('Terminal'),
+            label: Text(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).libraryTerminalTitle,
+            ),
           ),
         ),
       ],
     );
   }
 
-  void _showError(Object error) => showProductError(context, error);
+  void _showError(Object error) => showProductError(
+    context,
+    setupUiMessage(
+      lookupAppLocalizations(Localizations.localeOf(context)),
+      productErrorText(error),
+    ),
+  );
 
   @override
   void dispose() {
@@ -477,7 +580,11 @@ class _ProcessIndicator extends StatelessWidget {
       running ? AppStatusTone.ok : AppStatusTone.neutral,
     );
     return Semantics(
-      label: running ? 'Running' : 'Exited',
+      label: running
+          ? lookupAppLocalizations(Localizations.localeOf(context)).workRunning
+          : lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupExited,
       child: Container(
         width: 38,
         height: 38,
@@ -512,7 +619,13 @@ class _ProcessStatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        running ? 'Running' : 'Exited',
+        running
+            ? lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).workRunning
+            : lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupExited,
         style: theme.textTheme.labelSmall?.copyWith(color: color),
       ),
     );
@@ -635,7 +748,9 @@ class _TerminalSurfaceState extends State<TerminalSurface>
         setState(() {
           _connecting = false;
           _closed = true;
-          _error = 'The server transport is reconnecting.';
+          _error = lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupTransportReconnecting;
         });
       }
       unawaited(_closeConnection(subscription, channel).catchError((_) {}));
@@ -666,7 +781,11 @@ class _TerminalSurfaceState extends State<TerminalSurface>
         return;
       }
       if (repository == null) {
-        throw const ProductException('The server transport is reconnecting.');
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupTransportReconnecting,
+        );
       }
       _activeRepository = repository;
       _transcriptSanitizer.reset();
@@ -862,46 +981,48 @@ class _TerminalSurfaceState extends State<TerminalSurface>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final status = _lifecycleSuspended
-        ? 'Paused'
+        ? lookupAppLocalizations(Localizations.localeOf(context)).e7SetupPaused
         : _connecting
-        ? 'Connecting'
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupConnecting
         : _error != null
-        ? 'Unavailable'
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupUnavailable
         : _closed
-        ? 'Connection closed'
-        : 'Connected - PID ${widget.process.pid}';
+        ? lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupConnectionClosed
+        : lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupConnectedPid(widget.process.pid);
     final canWrite = _canWrite;
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.process.title, overflow: TextOverflow.ellipsis),
-            Semantics(
-              liveRegion: true,
-              label: 'Terminal status: $status',
-              excludeSemantics: true,
-              child: Text(
-                status,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                ),
-              ),
-            ),
-          ],
+        title: Text(
+          widget.process.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(
-            tooltip: 'Copy terminal selection or transcript',
+            tooltip: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupCopyTerminal,
             onPressed: _copyOutput,
             icon: const Icon(AppIcons.copy),
           ),
           IconButton(
             key: const Key('terminal-accessible-mode'),
             tooltip: _accessibleMode
-                ? 'Use interactive terminal'
-                : 'Use accessible transcript and input',
+                ? lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupInteractiveTerminal
+                : lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupAccessibleTerminal,
             onPressed: () => setState(() => _accessibleMode = !_accessibleMode),
             icon: Icon(
               _accessibleMode
@@ -911,7 +1032,9 @@ class _TerminalSurfaceState extends State<TerminalSurface>
           ),
           IconButton(
             key: const Key('terminal-reconnect'),
-            tooltip: 'Reconnect',
+            tooltip: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupReconnect,
             onPressed: _connecting || _lifecycleSuspended ? null : _connect,
             icon: const Icon(AppIconography.retry),
           ),
@@ -919,12 +1042,44 @@ class _TerminalSurfaceState extends State<TerminalSurface>
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 8),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Semantics(
+                liveRegion: true,
+                label: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7SetupTerminalStatus(status),
+                excludeSemantics: true,
+                child: Text(
+                  status,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.mutedOf(theme),
+                  ),
+                ),
+              ),
+            ),
+          ),
           if (_connecting) const LinearProgressIndicator(minHeight: 2),
           if (_error != null)
             MaterialBanner(
-              content: Text(_error!),
+              forceActionsBelow: true,
+              content: Text(
+                setupUiMessage(
+                  lookupAppLocalizations(Localizations.localeOf(context)),
+                  _error!,
+                ),
+              ),
               actions: [
-                TextButton(onPressed: _connect, child: const Text('Try again')),
+                TextButton(
+                  onPressed: _connect,
+                  child: Text(
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).isolatedTaskRetryOpen,
+                  ),
+                ),
               ],
             ),
           Expanded(
@@ -938,30 +1093,34 @@ class _TerminalSurfaceState extends State<TerminalSurface>
                 : ColoredBox(
                     color: const Color(0xFF0A0C0F),
                     child: Semantics(
-                      label:
-                          'Interactive terminal. Use the accessibility button for a readable transcript and labeled input.',
+                      label: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupTerminalSemantics,
                       child: ExcludeSemantics(
-                        child: xterm.TerminalView(
-                          _terminal,
-                          controller: _terminalController,
-                          scrollController: _scrollController,
-                          focusNode: _focus,
-                          autofocus: true,
-                          autoResize: true,
-                          keyboardType: TextInputType.text,
-                          keyboardAppearance: Brightness.dark,
-                          deleteDetection: true,
-                          // Desktop: hardware keys only, so a keystroke is
-                          // never delivered twice (key event + IME delta).
-                          hardwareKeyboardOnly: desktopInteractions,
-                          onKeyEvent: desktopInteractions
-                              ? _onTerminalKey
-                              : null,
-                          readOnly: !canWrite,
-                          padding: const EdgeInsets.all(10),
-                          textStyle: const xterm.TerminalStyle(
-                            fontFamily: AppTheme.monoFamily,
-                            fontSize: AppTheme.codeFontSize,
+                        child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: xterm.TerminalView(
+                            _terminal,
+                            controller: _terminalController,
+                            scrollController: _scrollController,
+                            focusNode: _focus,
+                            autofocus: true,
+                            autoResize: true,
+                            keyboardType: TextInputType.text,
+                            keyboardAppearance: Brightness.dark,
+                            deleteDetection: true,
+                            // Desktop: hardware keys only, so a keystroke is
+                            // never delivered twice (key event + IME delta).
+                            hardwareKeyboardOnly: desktopInteractions,
+                            onKeyEvent: desktopInteractions
+                                ? _onTerminalKey
+                                : null,
+                            readOnly: !canWrite,
+                            padding: const EdgeInsets.all(10),
+                            textStyle: const xterm.TerminalStyle(
+                              fontFamily: AppTheme.monoFamily,
+                              fontSize: AppTheme.codeFontSize,
+                            ),
                           ),
                         ),
                       ),
@@ -972,9 +1131,14 @@ class _TerminalSurfaceState extends State<TerminalSurface>
             top: false,
             child: Semantics(
               container: true,
-              label: 'Terminal control keys. Swipe horizontally for more.',
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupControlKeys,
               child: SizedBox(
-                height: 56,
+                height: (MediaQuery.textScalerOf(context).scale(14) + 32).clamp(
+                  56,
+                  double.infinity,
+                ),
                 child: ListView(
                   key: const Key('terminal-control-strip'),
                   scrollDirection: Axis.horizontal,
@@ -985,42 +1149,58 @@ class _TerminalSurfaceState extends State<TerminalSurface>
                   children: [
                     _TerminalKey(
                       label: 'Ctrl-C',
-                      semanticLabel: 'Interrupt, Control C',
+                      semanticLabel: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupInterruptKey,
                       onTap: canWrite ? () => _sendControl('\x03') : null,
                     ),
                     _TerminalKey(
                       label: 'Ctrl-D',
-                      semanticLabel: 'End of input, Control D',
+                      semanticLabel: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupEndInputKey,
                       onTap: canWrite ? () => _sendControl('\x04') : null,
                     ),
                     _TerminalKey(
                       label: 'Esc',
-                      semanticLabel: 'Escape key',
+                      semanticLabel: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupEscapeKey,
                       onTap: canWrite ? () => _sendControl('\x1b') : null,
                     ),
                     _TerminalKey(
                       label: 'Tab',
-                      semanticLabel: 'Tab key',
+                      semanticLabel: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupTabKey,
                       onTap: canWrite ? () => _sendControl('\t') : null,
                     ),
                     _TerminalKey(
                       label: '↑',
-                      semanticLabel: 'Up arrow key',
+                      semanticLabel: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupUpKey,
                       onTap: canWrite ? () => _sendControl('\x1b[A') : null,
                     ),
                     _TerminalKey(
                       label: '↓',
-                      semanticLabel: 'Down arrow key',
+                      semanticLabel: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupDownKey,
                       onTap: canWrite ? () => _sendControl('\x1b[B') : null,
                     ),
                     _TerminalKey(
                       label: '←',
-                      semanticLabel: 'Left arrow key',
+                      semanticLabel: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupLeftKey,
                       onTap: canWrite ? () => _sendControl('\x1b[D') : null,
                     ),
                     _TerminalKey(
                       label: '→',
-                      semanticLabel: 'Right arrow key',
+                      semanticLabel: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupRightKey,
                       onTap: canWrite ? () => _sendControl('\x1b[C') : null,
                     ),
                   ],
@@ -1069,8 +1249,12 @@ class _TerminalKey extends StatelessWidget {
       enabled: onTap != null,
       label: semanticLabel,
       hint: onTap == null
-          ? 'Unavailable while the terminal is disconnected'
-          : 'Sends this key to the terminal',
+          ? lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupKeyUnavailable
+          : lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupSendKey,
       excludeSemantics: true,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
@@ -1101,7 +1285,9 @@ class _AccessibleTerminal extends StatelessWidget {
         children: [
           Expanded(
             child: Semantics(
-              label: 'Terminal transcript',
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupTranscript,
               textField: true,
               readOnly: true,
               child: Container(
@@ -1111,7 +1297,14 @@ class _AccessibleTerminal extends StatelessWidget {
                 child: SingleChildScrollView(
                   reverse: true,
                   child: SelectableText(
-                    transcript.isEmpty ? 'No terminal output yet.' : transcript,
+                    textDirection: transcript.isEmpty
+                        ? Directionality.of(context)
+                        : TextDirection.ltr,
+                    transcript.isEmpty
+                        ? lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupNoOutput
+                        : transcript,
                     style: const TextStyle(fontFamily: AppTheme.monoFamily),
                   ),
                 ),
@@ -1124,14 +1317,21 @@ class _AccessibleTerminal extends StatelessWidget {
               Expanded(
                 child: TextField(
                   key: const Key('terminal-accessible-input'),
+                  textDirection: TextDirection.ltr,
                   controller: input,
                   enabled: enabled,
                   decoration: InputDecoration(
-                    labelText: 'Terminal command input',
-                    hintText: 'Type a command',
+                    labelText: lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupCommandInput,
+                    hintText: lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupCommandHint,
                     helperText: enabled
                         ? null
-                        : 'Input is unavailable while disconnected.',
+                        : lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupInputDisconnected,
                     border: const OutlineInputBorder(),
                   ),
                   textInputAction: TextInputAction.send,
@@ -1141,8 +1341,12 @@ class _AccessibleTerminal extends StatelessWidget {
               const SizedBox(width: 8),
               IconButton.filled(
                 tooltip: enabled
-                    ? 'Send command to terminal'
-                    : 'Terminal input unavailable',
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupSendCommand
+                    : lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupInputUnavailable,
                 onPressed: enabled ? onSend : null,
                 icon: const Icon(AppIconography.returnKey),
               ),

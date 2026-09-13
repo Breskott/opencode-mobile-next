@@ -1,0 +1,42 @@
+{
+  "revision": "a6434209d3b5f85053fb868cb45d4f6dcb9b7c05",
+  "seconds_since_tap": 2.93,
+  "visible": [
+    [
+      "Back",
+      "[11,149][137,275]"
+    ],
+    [
+      "On-device setup",
+      "[189,173][681,251]"
+    ],
+    [
+      "Preparing setup",
+      "[53,328][522,412]"
+    ],
+    [
+      "Reading setup progress",
+      "[131,443][1028,496]"
+    ],
+    [
+      "You can leave this screen and return to check progress.",
+      "[53,524][945,572]"
+    ],
+    [
+      "LIVE OUTPUT",
+      "[121,666][933,708]"
+    ],
+    [
+      "Copy output",
+      "[943,624][1070,750]"
+    ],
+    [
+      "Waiting for Termux output\u2026",
+      "[42,805][516,858]"
+    ],
+    [
+      "Setup messages will appear here when Termux responds.",
+      "[42,879][968,931]"
+    ]
+  ]
+}

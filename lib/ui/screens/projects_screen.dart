@@ -52,7 +52,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     if (repository == null) {
       setState(() {
         _loading = false;
-        _error = 'OpenCode is reconnecting. Try again shortly.';
+        _error = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7ProjectProjectsReconnect;
       });
       return;
     }
@@ -150,8 +152,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     setState(() => _busyProjectID = project.id);
     try {
       final repository = await widget.controller.prepareActionRepository();
+      if (!mounted) return;
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7ProjectProjectsReconnect,
+        );
       }
       final updated = await repository.renameProject(
         projectID: project.id,
@@ -165,9 +172,19 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             if (item.id == updated.id) updated else item,
         ]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       });
-      _showMessage('Project renamed to ${updated.name}');
+      _showMessage(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7ProjectProjectRenamed(updated.name),
+      );
     } catch (error) {
-      if (mounted) _showMessage('Could not rename project: $error');
+      if (mounted) {
+        _showMessage(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7ProjectProjectRenameFailed(productErrorText(error)),
+        );
+      }
     } finally {
       if (mounted) setState(() => _busyProjectID = null);
     }
@@ -188,6 +205,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (!widget.controller.capabilities.projectManagement) {
       final directory = widget.controller.directory;
       return Scaffold(
@@ -212,18 +230,19 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               ),
               subtitle: Text(
                 directory == null || directory.isEmpty
-                    ? 'The server’s default directory'
+                    ? l10n.e7ProjectProjectDefaultDirectory
                     : directory,
+                textDirection: directory == null || directory.isEmpty
+                    ? null
+                    : TextDirection.ltr,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const ProductEmptyState(
+            ProductEmptyState(
               icon: AppIconography.folderOpen,
-              title: 'Project switching is unavailable',
-              message:
-                  'This connection keeps the configured folder for sessions. '
-                  'Open a new task from Workspace to continue.',
+              title: l10n.e7ProjectProjectSwitchUnavailable,
+              message: l10n.e7ProjectProjectSwitchUnavailableDetail,
             ),
           ],
         ),
@@ -231,13 +250,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     }
     final projects = _projects;
     final visible = _visibleProjects;
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Projects'),
+        title: Text(l10n.e7ProjectProjectsTitle),
         actions: [
           IconButton(
-            tooltip: 'Refresh projects',
+            tooltip: l10n.e7ProjectProjectsRefresh,
             onPressed: _loading || _busyProjectID != null ? null : _load,
             icon: const Icon(AppIconography.retry),
           ),
@@ -257,12 +275,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 controller: _search,
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
-                  hintText: 'Search projects or paths',
+                  hintText: l10n.e7ProjectProjectsSearch,
                   prefixIcon: const Icon(AppIconography.search),
                   suffixIcon: _search.text.isEmpty
                       ? null
                       : IconButton(
-                          tooltip: 'Clear project search',
+                          tooltip: l10n.e7ProjectProjectsClearSearch,
                           onPressed: _search.clear,
                           icon: const Icon(AppIconography.close),
                         ),
@@ -287,8 +305,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               onTap: _openFolder,
             ),
             SectionLabel(
-              'Open projects',
-              trailing: Text('${visible.length} of ${_usableProjects.length}'),
+              l10n.e7ProjectProjectsOpened,
+              trailing: Text(
+                l10n.e7ProjectProjectsCount(
+                  visible.length,
+                  _usableProjects.length,
+                ),
+              ),
             ),
             if (_loading && projects == null)
               const LinearProgressIndicator(minHeight: 2),
@@ -298,20 +321,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               // Coherent with the Workspace chooser: the server's home folder
               // is never a project, so a fresh server starts with a new or
               // typed folder.
-              const ProductEmptyState(
+              ProductEmptyState(
                 icon: Icons.folder_off_outlined,
-                title: 'No projects opened',
-                message:
-                    'Projects opened by this server appear here; choose one '
-                    'for sessions, files, terminals, and coding tools. Create '
-                    'a new folder or open one by its path above, or open a '
-                    'project on this OpenCode server and refresh.',
+                title: l10n.e7ProjectProjectsEmpty,
+                message: l10n.e7ProjectProjectsEmptyDetail,
               )
             else if (visible.isEmpty)
-              const ProductEmptyState(
+              ProductEmptyState(
                 icon: Icons.search_off_rounded,
-                title: 'No matching projects',
-                message: 'Try a project name or a directory from the server.',
+                title: l10n.e7ProjectProjectsNoMatch,
+                message: l10n.e7ProjectProjectsNoMatchDetail,
               )
             else
               for (final project in visible)
@@ -326,10 +345,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               ListTile(
                 key: const ValueKey('project-refresh-error'),
                 leading: const Icon(AppIconography.error),
-                title: const Text('Project refresh failed'),
+                title: Text(l10n.e7ProjectProjectsRefreshFailed),
                 subtitle: Text(_error!),
                 trailing: IconButton(
-                  tooltip: 'Retry projects',
+                  tooltip: l10n.workspaceRetryProjects,
                   onPressed: _load,
                   icon: const Icon(AppIconography.retry),
                 ),
@@ -366,6 +385,7 @@ class _ProjectTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final worktreeCount = project.worktrees.length;
     return ListTile(
       key: ValueKey('project-${project.id}'),
@@ -378,19 +398,25 @@ class _ProjectTile extends StatelessWidget {
             )
           : Icon(active ? AppIconography.files : AppIconography.files),
       title: Text(project.name),
-      subtitle: Text(
-        worktreeCount == 0
-            ? project.directory
-            : '${project.directory}\n$worktreeCount ${worktreeCount == 1 ? 'worktree' : 'worktrees'}',
-        maxLines: 3,
-        overflow: TextOverflow.ellipsis,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            project.directory,
+            textDirection: TextDirection.ltr,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (worktreeCount > 0)
+            Text(l10n.e7ProjectProjectWorktrees(worktreeCount)),
+        ],
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             key: ValueKey('rename-project-${project.id}'),
-            tooltip: 'Rename ${project.name}',
+            tooltip: l10n.e7ProjectProjectRenameAction(project.name),
             onPressed: busy ? null : onRename,
             icon: const Icon(AppIconography.edit),
           ),
@@ -419,45 +445,51 @@ class _RenameProjectDialogState extends State<_RenameProjectDialog> {
   );
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Rename project'),
-    content: SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            key: const ValueKey('project-name-input'),
-            controller: _controller,
-            autofocus: true,
-            textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(labelText: 'Project name'),
-            onSubmitted: (_) => _submit(),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            widget.project.directory,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 8),
-          const Text('Clear the name to use the project folder name.'),
-        ],
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return AlertDialog(
+      title: Text(l10n.e7ProjectProjectRenameTitle),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              key: const ValueKey('project-name-input'),
+              controller: _controller,
+              autofocus: true,
+              textInputAction: TextInputAction.done,
+              decoration: InputDecoration(
+                labelText: l10n.e7ProjectProjectNameLabel,
+              ),
+              onSubmitted: (_) => _submit(),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              widget.project.directory,
+              textDirection: TextDirection.ltr,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            Text(l10n.e7ProjectProjectNameHint),
+          ],
+        ),
       ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
-      ),
-      FilledButton(
-        key: const ValueKey('confirm-rename-project'),
-        onPressed: _submit,
-        child: const Text('Save'),
-      ),
-    ],
-  );
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+        ),
+        FilledButton(
+          key: const ValueKey('confirm-rename-project'),
+          onPressed: _submit,
+          child: Text(l10n.e7ProjectProjectSave),
+        ),
+      ],
+    );
+  }
 
   void _submit() => Navigator.pop(context, _controller.text);
 

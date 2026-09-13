@@ -1,7 +1,7 @@
 name: opencode_mobile
 description: "OpenCode client for Android - connect to a remote opencode server or one running on-device via Termux."
 publish_to: "none"
-version: 1.0.37+38
+version: 1.0.42+47
 
 environment:
   sdk: ^3.10.0
@@ -71,6 +71,12 @@ dependencies:
   opencode_sdk:
     path: packages/opencode_sdk
   path_provider: 2.1.6
+  # Encoding the session handoff QR (backlog F4-S2). Pure Dart, no platform
+  # plugin, no native code and no transitive dependencies; the modules are
+  # painted by our own CustomPainter (lib/ui/widgets/session_handoff_sheets.dart).
+  # Chosen over qr_flutter, which wraps this same encoder in widgets we do not
+  # need. mobile_scanner only decodes, so nothing in the tree could encode.
+  qr: 3.0.2
   record: 7.1.1
   scrollable_positioned_list: 0.3.8
   sherpa_onnx: 1.13.7
@@ -114,6 +120,11 @@ flutter:
     # platform launcher-icon pipelines and must not be bundled.
     - assets/branding/app-icon-256.png
     - assets/branding/open-portal/mark.svg
+    # AI Team on this phone (TEAM-301): the pinned download manifest for the
+    # Android-built gc/bd/dolt and the opencode wrapper; a copy of
+    # tool/host/aiteam-manifest-<date>.json.
+    - assets/aiteam/manifest.json
+    - assets/aiteam/manifest-x86_64.json
   fonts:
     # Phosphor 2.1.0 artwork (MIT), native IconData for Flutter 3.47.2.
     - family: AppPhosphorRegular

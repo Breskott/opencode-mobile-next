@@ -38,9 +38,7 @@ class _BackgroundSettingsScreenState extends State<BackgroundSettingsScreen>
     final error = controller.backgroundLive.lastError;
     if (error != null || enabled != value) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'Android did not enable background mode.'),
-        ),
+        SnackBar(content: Text(error ?? _settingsCopy(context).e7SettingsUi22)),
       );
     }
   }
@@ -56,7 +54,7 @@ class _BackgroundSettingsScreenState extends State<BackgroundSettingsScreen>
   Widget build(BuildContext context) {
     final controller = widget.controller;
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications & background')),
+      appBar: AppBar(title: Text(_settingsCopy(context).e7SettingsUi3)),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
@@ -72,24 +70,16 @@ class _BackgroundSettingsScreenState extends State<BackgroundSettingsScreen>
                 color: Theme.of(context).colorScheme.errorContainer,
                 child: ListTile(
                   leading: const Icon(Icons.timer_off_outlined),
-                  title: const Text('Android stopped the live connection'),
-                  subtitle: const Text(
-                    'Its daily limit for background data-sync work is spent, '
-                    'so live mode turned itself off. Turn it back on to '
-                    'reconnect; the limit resets within 24 hours.',
-                  ),
+                  title: Text(_settingsCopy(context).e7SettingsUi23),
+                  subtitle: Text(_settingsCopy(context).e7SettingsUi24),
                 ),
               ),
             ),
           SwitchListTile(
             key: const ValueKey('background-live-switch'),
             secondary: const Icon(Icons.sync_lock_rounded),
-            title: const Text('Stay connected in the background'),
-            subtitle: const Text(
-              'Keeps runs updating when the app is closed and notifies you '
-              'when one needs you. Uses more battery and shows a persistent '
-              'notification.',
-            ),
+            title: Text(_settingsCopy(context).e7SettingsUi25),
+            subtitle: Text(_settingsCopy(context).e7SettingsUi26),
             value: controller.keepLiveInBackground,
             onChanged: controller.backgroundLive.busy
                 ? null
@@ -110,14 +100,13 @@ class _BackgroundSettingsScreenState extends State<BackgroundSettingsScreen>
               ),
               title: Text(
                 controller.backgroundLive.batteryOptimizationIgnored
-                    ? 'Unrestricted battery access allowed'
-                    : 'Allow unrestricted battery access',
+                    ? _settingsCopy(context).e7SettingsUi27
+                    : _settingsCopy(context).e7SettingsUi28,
               ),
               subtitle: Text(
                 controller.backgroundLive.batteryOptimizationIgnored
-                    ? 'Android may still apply its foreground-service time limit.'
-                    : 'Optional. Helps preserve the live connection during Doze. '
-                          'Android 15+ limits data-sync background work to six hours per 24 hours.',
+                    ? _settingsCopy(context).e7SettingsUi29
+                    : _settingsCopy(context).e7SettingsUi30,
               ),
               trailing: controller.backgroundLive.batteryOptimizationIgnored
                   ? const Icon(AppIconography.check)
@@ -160,12 +149,12 @@ class _BackgroundStatusRow extends StatelessWidget {
     final running = live.enabled && live.active;
     final starting = live.enabled && !live.active;
     final title = stopped
-        ? 'Stopped by Android — tap to restart'
+        ? _settingsCopy(context).e7SettingsUi31
         : running
-        ? 'Running now'
+        ? _settingsCopy(context).e7SettingsUi32
         : starting
-        ? 'Starting…'
-        : 'Off';
+        ? _settingsCopy(context).commandRunning
+        : _settingsCopy(context).quotaBudgetOff;
     final icon = stopped
         ? Icons.timer_off_outlined
         : running
@@ -182,10 +171,7 @@ class _BackgroundStatusRow extends StatelessWidget {
       key: const ValueKey('background-status-row'),
       leading: Icon(icon, color: color),
       title: Text(title, style: TextStyle(color: color)),
-      subtitle: const Text(
-        'Android 15+ allows six hours of this per 24 hours and then stops '
-        'it; the app turns the switch off and says so when that happens.',
-      ),
+      subtitle: Text(_settingsCopy(context).e7SettingsUi34),
       trailing: stopped ? const Icon(AppIconography.retry) : null,
       onTap: stopped ? onRestart : null,
     );

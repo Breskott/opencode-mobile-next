@@ -66,16 +66,19 @@ class _ChatCommand {
     action: action,
   );
 
-  factory _ChatCommand.server(CommandInfo command) => _ChatCommand._(
-    slash: command.name,
-    aliases: const [],
-    title: command.name,
-    description:
-        command.description ?? command.agent ?? 'OpenCode server command',
-    group: 'Server commands',
-    enabled: true,
-    serverCommand: command,
-  );
+  factory _ChatCommand.server(CommandInfo command, AppLocalizations strings) =>
+      _ChatCommand._(
+        slash: command.name,
+        aliases: const [],
+        title: command.name,
+        description:
+            command.description ??
+            command.agent ??
+            strings.chatUiOpenCodeServerCommand,
+        group: strings.chatUiServerCommands,
+        enabled: true,
+        serverCommand: command,
+      );
 
   final String slash;
   final List<String> aliases;
@@ -221,7 +224,7 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 10, 10),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 14, 10, 10),
               child: Row(
                 children: [
                   Expanded(
@@ -229,15 +232,19 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Composer tools',
+                          _chatL10n(context).chatUiComposerTools,
                           style: theme.textTheme.titleLarge,
                         ),
                         if (!largeText) ...[
                           const SizedBox(height: 2),
                           Text(
                             agentTab
-                                ? 'Delegate this prompt to a server subagent'
-                                : 'Mobile actions and commands from this server',
+                                ? _chatL10n(
+                                    context,
+                                  ).chatUiDelegateThisPromptToAServerSubagent
+                                : _chatL10n(
+                                    context,
+                                  ).chatUiMobileActionsAndCommandsFromThisServer,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -247,7 +254,7 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Close composer tools',
+                    tooltip: _chatL10n(context).chatUiCloseComposerTools,
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(AppIconography.close),
                   ),
@@ -257,44 +264,44 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
             TabBar(
               controller: _tabs,
               tabs: largeText
-                  ? const [
+                  ? [
                       Tab(
                         key: Key('composer-tools-commands-tab'),
-                        text: 'Commands',
+                        text: _chatL10n(context).runResultsCommandsTitle,
                       ),
                       Tab(
                         key: Key('composer-tools-agents-tab'),
-                        text: 'Delegate',
+                        text: _chatL10n(context).chatUiDelegate,
                       ),
                     ]
-                  : const [
+                  : [
                       Tab(
                         key: Key('composer-tools-commands-tab'),
                         icon: Icon(AppIcons.run),
-                        text: 'Commands',
+                        text: _chatL10n(context).runResultsCommandsTitle,
                       ),
                       Tab(
                         key: Key('composer-tools-agents-tab'),
                         icon: Icon(AppIconography.agent),
-                        text: 'Delegate',
+                        text: _chatL10n(context).chatUiDelegate,
                       ),
                     ],
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
               child: TextField(
                 key: const Key('command-launcher-search'),
                 controller: _search,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   hintText: agentTab
-                      ? 'Find a subagent'
-                      : 'Find a command or action',
+                      ? _chatL10n(context).chatUiFindASubagent
+                      : _chatL10n(context).chatUiFindACommandOrAction,
                   prefixIcon: const Icon(AppIconography.search),
                   suffixIcon: _search.text.isEmpty
                       ? null
                       : IconButton(
-                          tooltip: 'Clear search',
+                          tooltip: _chatL10n(context).commonClearSearch,
                           onPressed: () {
                             _search.clear();
                             setState(() {});
@@ -314,8 +321,8 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
             if (!agentTab && widget.error() != null)
               ListTile(
                 dense: true,
-                title: const Text(
-                  'Server commands could not be refreshed',
+                title: Text(
+                  _chatL10n(context).chatUiServerCommandsCouldNotBeRefreshed,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -325,7 +332,7 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
                   overflow: TextOverflow.ellipsis,
                 ),
                 trailing: IconButton(
-                  tooltip: 'Retry server commands',
+                  tooltip: _chatL10n(context).chatUiRetryServerCommands,
                   onPressed: _refresh,
                   icon: const Icon(AppIconography.retry),
                 ),
@@ -343,7 +350,7 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
                   : commands.isEmpty
                   ? Center(
                       child: Text(
-                        'No matching commands',
+                        _chatL10n(context).chatUiNoMatchingCommands,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -360,7 +367,12 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
                       children: [
                         for (final group in groups.entries) ...[
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
+                            padding: const EdgeInsetsDirectional.fromSTEB(
+                              16,
+                              18,
+                              16,
+                              6,
+                            ),
                             child: Text(
                               group.key,
                               style: theme.textTheme.labelMedium?.copyWith(
@@ -431,10 +443,10 @@ class _AgentPickerList extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               loading
-                  ? 'Loading subagents…'
+                  ? _chatL10n(context).chatUiLoadingSubagents
                   : error == null
-                  ? 'No subagents available from this server'
-                  : 'Subagents could not be loaded',
+                  ? _chatL10n(context).chatUiNoSubagentsAvailableFromThisServer
+                  : _chatL10n(context).chatUiSubagentsCouldNotBeLoaded,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
@@ -445,7 +457,7 @@ class _AgentPickerList extends StatelessWidget {
                 child: TextButton.icon(
                   onPressed: onRefresh,
                   icon: const Icon(AppIconography.retry),
-                  label: const Text('Refresh'),
+                  label: Text(_chatL10n(context).globalSessionsRefresh),
                 ),
               ),
           ],
@@ -481,7 +493,8 @@ class _AgentPickerList extends StatelessWidget {
             ),
             subtitle: Text(
               [
-                agent.description ?? 'Delegate this prompt',
+                agent.description ??
+                    _chatL10n(context).chatUiDelegateThisPrompt,
                 if (model != null && model.isNotEmpty) model,
               ].join('\n'),
               maxLines: 3,
@@ -595,7 +608,7 @@ class _InlineCommandSuggestions extends StatelessWidget {
             // typing, where ~30dp rows invite mis-taps.
             child: Container(
               constraints: const BoxConstraints(minHeight: 44),
-              padding: EdgeInsets.fromLTRB(
+              padding: EdgeInsetsDirectional.fromSTEB(
                 14,
                 compact ? 6 : 8,
                 12,
@@ -631,10 +644,10 @@ class _InlineCommandSuggestions extends StatelessWidget {
           ),
         if (!compact && matches.length > limit)
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: TextButton(
               onPressed: onShowAll,
-              child: const Text('Show all commands'),
+              child: Text(_chatL10n(context).chatUiShowAllCommands),
             ),
           ),
         Divider(height: 1, color: AppTheme.hairline(theme)),
@@ -688,7 +701,7 @@ class _InlineAgentSuggestions extends StatelessWidget {
             // typing, where ~30dp rows invite mis-taps.
             child: Container(
               constraints: const BoxConstraints(minHeight: 44),
-              padding: EdgeInsets.fromLTRB(
+              padding: EdgeInsetsDirectional.fromSTEB(
                 14,
                 compact ? 6 : 8,
                 12,
@@ -717,8 +730,9 @@ class _InlineAgentSuggestions extends StatelessWidget {
                   Expanded(
                     child: Text(
                       compact
-                          ? 'Delegate'
-                          : agent.description ?? 'Delegate this prompt',
+                          ? _chatL10n(context).chatUiDelegate
+                          : agent.description ??
+                                _chatL10n(context).chatUiDelegateThisPrompt,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -732,10 +746,10 @@ class _InlineAgentSuggestions extends StatelessWidget {
           ),
         if (!compact && matches.length > limit)
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: TextButton(
               onPressed: onShowAll,
-              child: const Text('Show all subagents'),
+              child: Text(_chatL10n(context).chatUiShowAllSubagents),
             ),
           ),
         Divider(height: 1, color: AppTheme.hairline(theme)),

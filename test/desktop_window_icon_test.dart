@@ -19,7 +19,8 @@ void main() {
     expect(
       pubspec,
       contains('    - $desktopWindowIconAsset'),
-      reason: 'window_manager resolves the icon out of flutter_assets, so an '
+      reason:
+          'window_manager resolves the icon out of flutter_assets, so an '
           'undeclared asset means no icon',
     );
     // 795 KB of 1024 px master in every Android build would be a real size
@@ -38,7 +39,9 @@ void main() {
       isTrue,
       reason: 'the platform launcher-icon pipelines regenerate from the master',
     );
-    expect(master.lengthSync(), greaterThan(File(desktopWindowIconAsset)
-        .lengthSync()));
+    expect(
+      master.lengthSync(),
+      greaterThan(File(desktopWindowIconAsset).lengthSync()),
+    );
   });
 }

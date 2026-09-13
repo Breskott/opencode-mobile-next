@@ -59,3 +59,11 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // ShortcutManagerCompat for the pinned-session launcher shortcuts
+    // (PinnedSessionShortcuts.kt); same major line the Flutter embedding
+    // already pulls in transitively, pinned so the compile classpath is
+    // explicit rather than inherited.
+    implementation("androidx.core:core:1.13.1")
+}

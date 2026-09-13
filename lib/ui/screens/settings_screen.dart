@@ -18,6 +18,7 @@ import '../desktop/desktop_interaction.dart';
 import '../theme_packs.dart';
 import '../../voice/notices.dart';
 import '../widgets/appearance_picker.dart';
+import '../widgets/language_picker.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/product_states.dart';
 import '../widgets/pickers.dart';
@@ -28,6 +29,8 @@ import 'host_management_screen.dart';
 import 'saved_permissions_screen.dart';
 import 'usage_screen.dart';
 import 'provider_quota_screen.dart';
+import 'settings/plugins_screen.dart';
+import '../early_l10n.dart';
 
 part 'settings/server_settings_screen.dart';
 part 'settings/coding_settings_screen.dart';
@@ -37,6 +40,10 @@ part 'settings/personal_settings_screens.dart';
 /// Settings hub: a connection summary plus one row per category, following
 /// the hub-and-spoke pattern in docs/design-inspiration.md. Every detail
 /// lives one level deeper in a focused sub-page.
+AppLocalizations _settingsCopy(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+    lookupAppLocalizations(const Locale('en'));
+
 class SettingsScreen extends StatefulWidget {
   final ConnectionController controller;
   const SettingsScreen({super.key, required this.controller});
@@ -62,6 +69,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _checkHealth() async {
+    // Runs from initState, so inherited lookups are not yet allowed.
+    final copy = earlyAppLocalizations(context);
     if (_checking) return;
     setState(() {
       _checking = true;
@@ -70,7 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final api = await widget.controller.prepareActionTransport();
       if (api == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(copy.e7SettingsUi18);
       }
       final health = await api.health();
       if (mounted) setState(() => _health = health);
@@ -83,11 +92,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// The background category's state at a glance, so the hub says whether
   /// runs keep updating after the app closes without opening the page.
-  static String _backgroundSummary(ConnectionController controller) {
+  String _backgroundSummary(ConnectionController controller) {
     final live = controller.backgroundLive;
-    if (live.stoppedByAndroidTimeout) return 'Stopped by Android';
-    if (!controller.keepLiveInBackground) return 'Off';
-    return live.active ? 'On · running now' : 'On · starting';
+    if (live.stoppedByAndroidTimeout) {
+      return _settingsCopy(context).e7SettingsUi12;
+    }
+    if (!controller.keepLiveInBackground) {
+      return _settingsCopy(context).quotaBudgetOff;
+    }
+    return live.active
+        ? _settingsCopy(context).e7SettingsUi14
+        : _settingsCopy(context).e7SettingsUi15;
   }
 
   Future<void> _open(Widget screen) async {
@@ -105,27 +120,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final id = controller.profile?.id;
     final queued = id == null ? 0 : controller.queuedPromptCountForProfile(id);
     final drafts = id == null ? 0 : controller.draftCountForProfile(id);
-    final pending = [
-      if (queued > 0) '$queued queued ${queued == 1 ? 'prompt' : 'prompts'}',
-      if (drafts > 0) '$drafts unsent ${drafts == 1 ? 'draft' : 'drafts'}',
-    ];
-    return [
-      'Live updates stop and you return to the server list. The server keeps '
-          'running; nothing on it is changed.',
-      pending.isEmpty
-          ? 'Nothing is waiting to send.'
-          : '${pending.join(' and ')} will not be sent until you connect to '
-                'this server again.',
-    ].join('\n\n');
+    return _settingsCopy(context).e7SettingsDisconnectBody(queued, drafts);
   }
 
   Future<void> _disconnect() async {
     final confirmed = await showConfirmSheet(
       context,
-      title:
-          'Disconnect from ${widget.controller.profile?.name ?? 'this server'}?',
+      title: _settingsCopy(context).e7SettingsDisconnectTitle(
+        widget.controller.profile?.name ??
+            _settingsCopy(context).e7SettingsUi16,
+      ),
       message: _disconnectDisclosure(),
-      confirmLabel: 'Disconnect',
+      confirmLabel: _settingsCopy(context).e7SettingsUi8,
       icon: AppIconography.unlink,
       destructive: true,
       sheetKey: const ValueKey('disconnect-confirm-sheet'),
@@ -144,12 +150,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final profile = controller.profile;
     final healthy = _health?.healthy == true;
     final healthLine = _checking
-        ? 'Checking server health…'
+        ? _settingsCopy(context).e7SettingsUi11
         : _healthError != null
-        ? 'Health unavailable — $_healthError'
+        ? _settingsCopy(context).e7SettingsHealthError(_healthError!)
         : healthy
-        ? 'Server healthy · ${_health?.version ?? controller.version ?? 'unknown'}'
-        : 'Version ${controller.version ?? 'unknown'}';
+        ? _settingsCopy(context).e7SettingsHealthVersion(
+            _health?.version ??
+                controller.version ??
+                _settingsCopy(context).e7SettingsUi17,
+          )
+        : _settingsCopy(context).e7SettingsVersion(
+            controller.version ?? _settingsCopy(context).e7SettingsUi17,
+          );
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -180,13 +192,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       : null,
                 ),
                 title: Text(
-                  profile?.name ?? 'OpenCode server',
+                  profile?.name ?? _settingsCopy(context).e7SettingsUi9,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 subtitle: Text(healthLine),
                 trailing: IconButton(
-                  tooltip: 'Check again',
+                  tooltip: _settingsCopy(context).activityCheckAgain,
                   onPressed: _checking ? null : _checkHealth,
                   icon: _checking
                       ? const SizedBox.square(
@@ -201,13 +213,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _CategoryRow(
               rowKey: 'settings-category-server',
               icon: AppIconography.server,
-              title: 'Server',
+              title: _settingsCopy(context).e7SettingsUi1,
               onTap: () => _open(ServerSettingsScreen(controller: controller)),
             ),
             _CategoryRow(
               rowKey: 'settings-category-coding',
               icon: AppIconography.terminal,
-              title: 'Coding defaults',
+              title: _settingsCopy(context).e7SettingsUi2,
               onTap: () => _open(CodingSettingsScreen(controller: controller)),
             ),
             // The live background service and its notifications are Android
@@ -216,7 +228,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _CategoryRow(
                 rowKey: 'settings-category-background',
                 icon: AppIconography.notificationImportant,
-                title: 'Notifications & background',
+                title: _settingsCopy(context).e7SettingsUi3,
                 subtitle: _backgroundSummary(controller),
                 onTap: () =>
                     _open(BackgroundSettingsScreen(controller: controller)),
@@ -224,16 +236,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _CategoryRow(
               rowKey: 'settings-category-appearance',
               icon: AppIconography.appearance,
-              title: 'Appearance',
+              title: _settingsCopy(context).e7AppearanceTitle,
               subtitle:
-                  '${appearanceLabel(controller.appearance.value)} · ${themePackLabels[controller.themePack.value]}',
+                  '${appearanceLabel(controller.appearance.value, context)} · ${themePackLabels[controller.themePack.value]}',
               onTap: () =>
                   _open(AppearanceSettingsScreen(controller: controller)),
             ),
             _CategoryRow(
               rowKey: 'settings-category-privacy',
               icon: AppIconography.privacy,
-              title: 'Privacy & permissions',
+              title: _settingsCopy(context).e7SettingsUi5,
               onTap: () => _open(PrivacySettingsScreen(controller: controller)),
             ),
             if (controller.supportsUsageStatistics)
@@ -260,16 +272,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _CategoryRow(
               rowKey: 'settings-category-diagnostics',
               icon: AppIconography.privacy,
-              title: 'Diagnostics',
+              title: _settingsCopy(context).e7SettingsUi6,
               onTap: () =>
                   _open(DiagnosticsSettingsScreen(controller: controller)),
             ),
             _CategoryRow(
               rowKey: 'settings-category-about',
               icon: AppIconography.info,
-              title: 'About',
+              title: _settingsCopy(context).e7SettingsUi7,
               onTap: () => _open(AboutSettingsScreen(controller: controller)),
             ),
+            // Plugins (AI Team) sits last so the rows above keep their
+            // positions for the lazy list's build window.
+            if (profile != null)
+              _CategoryRow(
+                rowKey: 'settings-category-plugins',
+                icon: AppIconography.extensions,
+                title: _settingsCopy(context).teamUiPluginsTitle,
+                subtitle: _settingsCopy(context).teamUiPluginsHubSubtitle,
+                onTap: () =>
+                    _open(PluginsSettingsScreen(controller: controller)),
+              ),
             const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -280,7 +303,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 key: const ValueKey('settings-disconnect'),
                 onPressed: _disconnect,
                 icon: const Icon(AppIconography.unlink),
-                label: const Text('Disconnect'),
+                label: Text(_settingsCopy(context).e7SettingsUi8),
               ),
             ),
           ],

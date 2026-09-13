@@ -29,7 +29,7 @@ class AttentionOverview {
               // or incomplete. Only positive observations are presented.
               pendingRequests: profile.id == selectedID && canReadCache
                   ? positive(
-                      controller.permissions.length +
+                      controller.awaitingPermissionCount +
                           controller.questions.length +
                           controller.forms.length,
                     )

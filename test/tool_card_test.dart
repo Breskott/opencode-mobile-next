@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/ui/widgets/tool_card.dart';
 
+import 'support/v2_subagent_fixture.dart';
+
 Future<void> _pumpTool(
   WidgetTester tester, {
   required String name,
@@ -27,6 +29,99 @@ Future<void> _pumpTool(
 void main() {
   _serverStateTests();
   _taskToolTests();
+  testWidgets(
+    'v2 asynchronous launch shows its agent and child route without claiming child completion',
+    (tester) async {
+      String? opened;
+      await _pumpTool(
+        tester,
+        name: 'subagent',
+        state: v2SubagentState(),
+        onOpenSession: (id) => opened = id,
+      );
+      await tester.tap(find.text('explore'));
+      await tester.pump();
+      expect(find.byKey(const Key('task-agent-chip')), findsOneWidget);
+      // The summary and expanded result share the localized status label.
+      expect(find.text('Started in background'), findsWidgets);
+      expect(find.byKey(const Key('task-background-badge')), findsOneWidget);
+      expect(find.byKey(const Key('task-working')), findsNothing);
+      expect(find.textContaining('DO NOT sleep'), findsNothing);
+      expect(find.textContaining('Work on non-overlapping'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('task-open-session')));
+      expect(opened, 'ses_child_v2');
+    },
+  );
+
+  testWidgets('v2 foreground completion unwraps the actual subagent envelope', (
+    tester,
+  ) async {
+    await _pumpTool(
+      tester,
+      name: 'subagent',
+      state: v2SubagentState(childStatus: 'completed', background: false),
+    );
+    await tester.tap(find.text('explore'));
+    await tester.pump();
+    expect(find.byKey(const Key('task-result')), findsOneWidget);
+    expect(
+      find.textContaining('Validation lives in checkout.dart.'),
+      findsWidgets,
+    );
+    expect(find.textContaining('<subagent'), findsNothing);
+    expect(find.byKey(const Key('task-working')), findsNothing);
+    expect(find.text('Started in background'), findsNothing);
+  });
+
+  testWidgets(
+    'v2 early progress remains foreground work and failures retain the child route',
+    (tester) async {
+      await _pumpTool(
+        tester,
+        name: 'subagent',
+        state: v2SubagentState(status: 'running', background: false),
+      );
+      await tester.tap(find.text('explore'));
+      await tester.pump();
+      expect(find.byKey(const Key('task-working')), findsOneWidget);
+      expect(find.byKey(const Key('task-background-badge')), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await _pumpTool(
+        tester,
+        name: 'subagent',
+        state: v2SubagentState(status: 'error', background: false),
+        onOpenSession: (_) {},
+      );
+      expect(find.textContaining('Subagent cancelled'), findsWidgets);
+      expect(find.text('running'), findsNothing);
+      expect(find.text('Error'), findsOneWidget);
+      expect(find.byKey(const ValueKey('task-open-session')), findsOneWidget);
+      expect(find.byKey(const Key('task-working')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a v2 subagent the server did not execute has no launch or child action',
+    (tester) async {
+      await _pumpTool(
+        tester,
+        name: 'subagent',
+        state: v2SubagentState(
+          status: 'running',
+          background: false,
+          executed: false,
+        ),
+        onOpenSession: (_) {},
+      );
+      await tester.tap(find.text('explore'));
+      await tester.pump();
+      expect(find.text('Not run'), findsOneWidget);
+      expect(find.text('Started in background'), findsNothing);
+      expect(find.byKey(const ValueKey('task-open-session')), findsNothing);
+      expect(find.byKey(const Key('task-working')), findsNothing);
+    },
+  );
+
   testWidgets('renders the OpenCode shell contract without generic sections', (
     tester,
   ) async {
@@ -227,7 +322,7 @@ void _serverStateTests() {
     final title = tester.widget<Text>(find.text('Shell'));
     expect(title.style?.decoration, isNot(TextDecoration.lineThrough));
     final semantics = tester.getSemantics(find.byType(InkWell).first);
-    expect(semantics.label, contains('not run'));
+    expect(semantics.label, contains('Not run'));
   });
 }
 
@@ -268,7 +363,7 @@ void _taskToolTests() {
     // child session's state as a trailing detail.
     expect(find.text('explore'), findsOneWidget);
     expect(find.text('Find X'), findsOneWidget);
-    expect(find.text('completed'), findsOneWidget);
+    expect(find.text('Completed'), findsOneWidget);
     expect(find.byKey(const Key('task-prompt')), findsNothing);
 
     await tester.tap(find.text('Find X'));
@@ -369,7 +464,7 @@ void _taskToolTests() {
         'metadata': {'sessionId': 'ses_child', 'background': true},
       }, toolName: 'task'),
     );
-    expect(find.text('background'), findsOneWidget);
+    expect(find.text('Background'), findsOneWidget);
     await tester.tap(find.text('Find X'));
     await tester.pump();
     expect(find.byKey(const Key('task-working')), findsOneWidget);

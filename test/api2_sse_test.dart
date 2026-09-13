@@ -102,14 +102,18 @@ void main() {
         connections += 1;
         final response = request.response;
         response.headers.contentType = ContentType('text', 'event-stream');
-        response.write('data: {"id":"evt_1","type":"server.connected","data":{}}\n\n');
+        response.write(
+          'data: {"id":"evt_1","type":"server.connected","data":{}}\n\n',
+        );
         response.write(': heartbeat\n\n');
         response.write(
           'data: {"id":"evt_2","type":"session.text.delta",'
           '"data":{"sessionID":"ses_1","assistantMessageID":"msg_1",'
           '"ordinal":0,"delta":"pon"}}\n\n',
         );
-        response.write('data: {"id":"evt_3","type":"totally.new.event","data":{"x":1}}\n\n');
+        response.write(
+          'data: {"id":"evt_3","type":"totally.new.event","data":{"x":1}}\n\n',
+        );
         await response.flush();
         await response.close();
       });
@@ -203,14 +207,14 @@ void main() {
         expect(queries.first['after'], '5');
         expect(queries.first['follow'], 'true');
         expect(events, hasLength(2));
-        expect(
-          (events[0].event as Api2SessionRenamedEvent).title,
-          'a',
-        );
+        expect((events[0].event as Api2SessionRenamedEvent).title, 'a');
         expect(syncedSeq, 7);
         expect(stream.lastSeq, 8);
-        expect(queries[1]['after'], '8',
-            reason: 'reconnect must resume from the last durable seq');
+        expect(
+          queries[1]['after'],
+          '8',
+          reason: 'reconnect must resume from the last durable seq',
+        );
       } finally {
         await stream.dispose();
         transport.close();

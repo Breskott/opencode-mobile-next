@@ -26,7 +26,7 @@ class _SkillActivationSheetState extends State<_SkillActivationSheet> {
 
   Future<void> _activate() async {
     if (_sending || _uncertain || _appliedElsewhere) return;
-    final l10n = AppLocalizations.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     setState(() {
       _sending = true;
       _error = null;
@@ -68,7 +68,7 @@ class _SkillActivationSheetState extends State<_SkillActivationSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final title = _sessionTitle;
     return PopScope(
       canPop: !_sending,
@@ -111,7 +111,12 @@ class _SkillActivationSheetState extends State<_SkillActivationSheet> {
                     maxHeight: MediaQuery.sizeOf(context).height * .42,
                   ),
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      16,
+                      8,
+                      16,
+                      12,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [

@@ -1,0 +1,9 @@
+{
+  "teamUiHostKindDesktop": "حاسوب مكتبي",
+  "teamUiHostKindDisclaimerLaptop": "النوم وإغلاق الغطاء يوقفان الفريق مؤقتًا؛ وتستأنف التشغيلات عند الاستيقاظ",
+  "teamUiHostKindDisclaimerWsl": "النوم وإغلاق الغطاء يوقفان الفريق مؤقتًا؛ وتستأنف التشغيلات عند الاستيقاظ. كما يتوقف WSL عند إغلاق آخر نافذة طرفية له.",
+  "teamUiHostKindHint": "لا يغيّر سوى التنبيه المعروض مع الفريق.",
+  "teamUiHostKindLabel": "نوع الحاسوب",
+  "teamUiHostKindLaptop": "حاسوب محمول",
+  "teamUiHostKindWsl": "Windows (WSL)"
+}

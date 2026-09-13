@@ -10,8 +10,10 @@ import os
 from pathlib import Path
 import secrets
 import shutil
+import signal
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from typing import Any, Iterable
 
@@ -19,25 +21,64 @@ from typing import Any, Iterable
 SCHEMA_VERSION = 1
 DEFAULT_CHUNK_SIZE = 25
 MAX_CHUNK_SIZE = 1000
+# Seconds a chunk may run before it is stopped. The local runner promises a
+# bounded run, so the default is a deadline generous enough for the slowest
+# real chunk (the whole 321-file suite takes 27-40 minutes serially, so a
+# 25-file chunk is a few minutes). `--chunk-timeout 0` is the explicit opt out.
+DEFAULT_CHUNK_TIMEOUT = 900
+TERMINATE_GRACE_SECONDS = 10
+# After SIGKILL the leader is reaped by us and its children by init; this is
+# only how long we watch the group drain before moving on, never a retry loop.
+GROUP_EXIT_SETTLE_SECONDS = 5
+WINDOWS = os.name == "nt"
 SOURCE_DIRECTORIES = (
     "assets",
     "contracts",
     "lib",
     "packages",
     "test",
+    # Tests execute helpers and inspect native/release contracts too.
+    "tool",
+    "scripts",
+    "android/app/src",
+    "ios/Runner",
+    "ios/Runner.xcodeproj",
+    "linux",
+    "macos/Runner",
+    "windows",
+    "packaging",
+    ".github",
 )
 SOURCE_FILES = (
     "analysis_options.yaml",
     "l10n.yaml",
     "pubspec.lock",
     "pubspec.yaml",
+    "android/app/build.gradle.kts",
+    "android/build.gradle.kts",
+    "android/settings.gradle.kts",
+    "android/key.properties.example",
+    "ios/Podfile",
+    "ios/Runner.xcworkspace/contents.xcworkspacedata",
+    ".gitignore",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "docs/internal/developer-skills.md",
 )
 TRANSIENT_DIRECTORY_NAMES = {
     ".dart_tool",
     ".git",
     "build",
     "runs",
+    "__pycache__",
+    ".pytest_cache",
+    "ephemeral",
 }
+# `flutter test` writes golden diffs to `test/**/failures/` when a golden
+# comparison fails. Those images are run artifacts, not source: hashing them
+# would make every resume after a golden failure refuse with "source changed".
+TEST_ARTIFACT_DIRECTORY_NAMES = {"failures"}
 
 
 class RunnerError(RuntimeError):
@@ -77,14 +118,22 @@ def relative_path(root: Path, path: Path) -> str:
     return path.relative_to(root).as_posix()
 
 
+def is_transient(root: Path, path: Path) -> bool:
+    relative_parts = path.relative_to(root).parts
+    if any(part in TRANSIENT_DIRECTORY_NAMES for part in relative_parts):
+        return True
+    return relative_parts[:1] == ("test",) and any(
+        part in TEST_ARTIFACT_DIRECTORY_NAMES for part in relative_parts[1:-1]
+    )
+
+
 def iter_directory_files(root: Path, directory: Path) -> Iterable[Path]:
     if not directory.is_dir():
         return
     for path in directory.rglob("*"):
         if not path.is_file():
             continue
-        relative_parts = path.relative_to(root).parts
-        if any(part in TRANSIENT_DIRECTORY_NAMES for part in relative_parts):
+        if is_transient(root, path):
             continue
         yield path
 
@@ -92,7 +141,11 @@ def iter_directory_files(root: Path, directory: Path) -> Iterable[Path]:
 def collect_test_manifest(root: Path) -> list[dict[str, Any]]:
     test_root = root / "test"
     paths = sorted(
-        (path for path in test_root.rglob("*_test.dart") if path.is_file()),
+        (
+            path
+            for path in test_root.rglob("*_test.dart")
+            if path.is_file() and not is_transient(root, path)
+        ),
         key=lambda path: relative_path(root, path),
     ) if test_root.is_dir() else []
     return [file_entry(root, path) for path in paths]
@@ -202,6 +255,17 @@ def parse_args() -> argparse.Namespace:
         help=f"Maximum test files per serial chunk (default: {DEFAULT_CHUNK_SIZE}).",
     )
     parser.add_argument(
+        "--chunk-timeout",
+        type=int,
+        default=None,
+        help=(
+            "Seconds a single chunk may run before it and every process it "
+            f"started are stopped and the chunk is recorded as timed_out (default: "
+            f"{DEFAULT_CHUNK_TIMEOUT}). Pass 0 to opt out of the deadline explicitly. "
+            "On resume, an explicit value overrides the one stored in run.json."
+        ),
+    )
+    parser.add_argument(
         "--output-root",
         type=Path,
         help="Directory for new run folders (default: build/traycer).",
@@ -221,6 +285,14 @@ def validate_chunk_size(size: int) -> None:
         )
 
 
+def validate_chunk_timeout(timeout: int | None) -> int:
+    if timeout is None:
+        return DEFAULT_CHUNK_TIMEOUT
+    if timeout < 0:
+        raise RunnerError(f"--chunk-timeout must be 0 or a positive number of seconds, got {timeout}")
+    return timeout
+
+
 def run_directory_for(root: Path, output_root: Path) -> Path:
     run_id = f"serial-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{secrets.token_hex(4)}"
     run_directory = output_root / run_id
@@ -232,6 +304,7 @@ def create_run(root: Path, args: argparse.Namespace, snapshot: dict[str, Any]) -
     if not args.flutter:
         raise RunnerError("--flutter is required when starting a new run")
     validate_chunk_size(args.chunk_size)
+    chunk_timeout = validate_chunk_timeout(args.chunk_timeout)
     flutter = resolve_flutter(args.flutter)
     output_root = (args.output_root or root / "build" / "traycer").resolve()
     run_directory = run_directory_for(root, output_root)
@@ -244,6 +317,7 @@ def create_run(root: Path, args: argparse.Namespace, snapshot: dict[str, Any]) -
         "created_at": utc_now(),
         "flutter": flutter,
         "chunk_size": args.chunk_size,
+        "chunk_timeout": chunk_timeout,
         "test_count": len(test_paths),
         "chunk_count": len(chunk_list),
         "chunks": [
@@ -305,6 +379,12 @@ def load_resume(root: Path, args: argparse.Namespace, snapshot: dict[str, Any]) 
         raise RunnerError(
             "Refusing to resume: --chunk-size differs from the immutable run metadata"
         )
+    # The deadline is execution policy, not part of the snapshot: an explicit
+    # value on resume wins; otherwise the stored one (or none) applies.
+    if args.chunk_timeout is not None:
+        metadata["chunk_timeout"] = validate_chunk_timeout(args.chunk_timeout)
+    else:
+        metadata["chunk_timeout"] = validate_chunk_timeout(metadata.get("chunk_timeout"))
     return run_directory, metadata
 
 
@@ -353,7 +433,144 @@ def next_attempt(run_directory: Path, chunk_index: int) -> int:
     return max(attempts, default=0) + 1
 
 
-def run_chunk(root: Path, run_directory: Path, chunk: dict[str, Any], flutter: str) -> dict[str, Any]:
+def launch_chunk(command: list[str], root: Path, log: Any) -> subprocess.Popen[Any]:
+    """Start the Flutter launcher as the sole owner of a fresh process group.
+
+    On POSIX ``start_new_session`` makes the launcher the leader of a new
+    session and process group whose id equals the launcher pid captured here.
+    Everything Flutter spawns (dart, flutter_tester, ...) inherits that group,
+    so the runner can stop the whole chunk by signalling one id it owns. It
+    never looks processes up by name or pattern.
+    """
+    return subprocess.Popen(
+        command,
+        cwd=root,
+        stdout=log,
+        stderr=subprocess.STDOUT,
+        start_new_session=not WINDOWS,
+    )
+
+
+def signal_group(pgid: int, signum: int) -> bool:
+    """Signal the captured group; False when it no longer exists."""
+    try:
+        os.killpg(pgid, signum)
+    except ProcessLookupError:
+        return False
+    return True
+
+
+def leader_has_exited(process: subprocess.Popen[Any]) -> bool:
+    """Non-reaping check so the leader pid (and thus the group id) stays reserved.
+
+    ``os.waitid`` with ``WNOWAIT`` reports the exit without collecting the
+    zombie. While the zombie exists its pid cannot be recycled, so a later
+    ``killpg`` on the same id can only ever reach our own group. CPython does
+    not expose ``waitid`` on macOS; there the check reaps, which leaves a
+    theoretical pid-reuse window between the reap and the group SIGKILL.
+    """
+    if not hasattr(os, "waitid"):
+        return process.poll() is not None
+    try:
+        return (
+            os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+            is not None
+        )
+    except ChildProcessError:
+        # Already reaped elsewhere; nothing is left to wait for.
+        return True
+
+
+def wait_leader(process: subprocess.Popen[Any], timeout: float | None) -> bool:
+    """Poll the unreaped leader; True if it exited before the deadline."""
+    deadline = None if timeout is None else time.monotonic() + timeout
+    delay = 0.005
+    while not leader_has_exited(process):
+        if deadline is not None and time.monotonic() >= deadline:
+            return False
+        time.sleep(delay)
+        delay = min(delay * 2, 0.25)
+    return True
+
+
+def wait_group_drained(pgid: int, timeout: float) -> None:
+    """Bounded courtesy wait for the group to disappear after SIGKILL."""
+    deadline = time.monotonic() + timeout
+    while signal_group(pgid, 0) and time.monotonic() < deadline:
+        time.sleep(0.02)
+
+
+def reap_group(process: subprocess.Popen[Any]) -> int:
+    """Kill any survivor in the group, then reap the leader. POSIX only.
+
+    Called whether the leader exited on its own or was stopped: a process that
+    is still alive in the group after the launcher is gone is a leak (a stray
+    flutter_tester would otherwise keep running into the next chunk or a
+    retry). SIGKILL is sent while the leader is still a zombie, so the group
+    id is guaranteed to be ours.
+    """
+    signal_group(process.pid, signal.SIGKILL)
+    exit_code = process.wait()
+    wait_group_drained(process.pid, GROUP_EXIT_SETTLE_SECONDS)
+    return exit_code
+
+
+def wait_chunk(process: subprocess.Popen[Any], timeout: float | None) -> int:
+    """Wait for the chunk; raises TimeoutExpired without reaping anything."""
+    if WINDOWS:
+        return process.wait(timeout=timeout)
+    if not wait_leader(process, timeout):
+        raise subprocess.TimeoutExpired(process.args, timeout or 0)
+    return reap_group(process)
+
+
+def stop_process(process: subprocess.Popen[Any]) -> int:
+    """Stop the chunk and everything it started; always returns an exit code.
+
+    POSIX: SIGTERM to the group, a bounded grace for the leader, then SIGKILL
+    to the group regardless of how the leader left (a child that ignores
+    SIGTERM must not survive a parent that honoured it).
+
+    Windows: the launcher (``cmd.exe`` for a ``flutter.bat``) is stopped with
+    ``taskkill /T /F /PID <pid>``, scoped to the captured pid and its
+    descendants, never a process name. Descendants whose parent has already
+    exited cannot be found by that tree walk; binding the tree with a job
+    object would need extra dependencies, so that limitation is documented in
+    tool/qa/README.md and the fallback is a plain kill of the launcher.
+    """
+    if WINDOWS:
+        return stop_process_tree_windows(process)
+    signal_group(process.pid, signal.SIGTERM)
+    wait_leader(process, TERMINATE_GRACE_SECONDS)
+    return reap_group(process)
+
+
+def stop_process_tree_windows(process: subprocess.Popen[Any]) -> int:
+    if process.poll() is None:
+        try:
+            subprocess.run(
+                ["taskkill", "/T", "/F", "/PID", str(process.pid)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=TERMINATE_GRACE_SECONDS,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    try:
+        return process.wait(timeout=TERMINATE_GRACE_SECONDS)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        return process.wait()
+
+
+def run_chunk(
+    root: Path,
+    run_directory: Path,
+    chunk: dict[str, Any],
+    flutter: str,
+    chunk_timeout: int = DEFAULT_CHUNK_TIMEOUT,
+) -> dict[str, Any]:
     index = int(chunk["index"])
     attempt = next_attempt(run_directory, index)
     chunk_directory = run_directory / "chunks"
@@ -368,27 +585,23 @@ def run_chunk(root: Path, run_directory: Path, chunk: dict[str, Any], flutter: s
     print("  " + subprocess.list2cmdline(command))
     exit_code: int | None = None
     status = "failed"
-    interrupted = False
     try:
         with log_path.open("w", encoding="utf-8", errors="replace") as log:
-            process = subprocess.Popen(
-                command,
-                cwd=root,
-                stdout=log,
-                stderr=subprocess.STDOUT,
-            )
+            process = launch_chunk(command, root, log)
             try:
-                exit_code = process.wait()
+                exit_code = wait_chunk(process, chunk_timeout or None)
+            except subprocess.TimeoutExpired:
+                status = "timed_out"
+                exit_code = stop_process(process)
+                log.write(f"\nrun_serial_tests: chunk exceeded {chunk_timeout}s and was stopped\n")
             except KeyboardInterrupt:
-                interrupted = True
-                process.terminate()
-                exit_code = process.wait()
+                status = "interrupted"
+                exit_code = stop_process(process)
+                log.write("\nrun_serial_tests: interrupted by the user\n")
     except OSError as exc:
         log_path.write_text(f"Could not start Flutter: {exc}\n", encoding="utf-8")
         exit_code = 127
-    if interrupted:
-        status = "interrupted"
-    elif exit_code == 0:
+    if status == "failed" and exit_code == 0:
         status = "passed"
     ended = datetime.now(timezone.utc)
     result = {
@@ -403,6 +616,7 @@ def run_chunk(root: Path, run_directory: Path, chunk: dict[str, Any], flutter: s
         "duration_seconds": round((ended - started).total_seconds(), 3),
         "exit_code": exit_code,
         "status": status,
+        "chunk_timeout": chunk_timeout,
         "log": log_path.relative_to(run_directory).as_posix(),
     }
     atomic_json_write(result_path, result)
@@ -444,11 +658,16 @@ def execute(root: Path, args: argparse.Namespace) -> int:
             message = "Relevant source or the recursive test manifest changed during the run"
             write_summary(run_directory, metadata, "refused_source_changed", message)
             raise RunnerError(message)
-        result = run_chunk(root, run_directory, chunk, metadata["flutter"])
-        write_summary(run_directory, metadata, "running")
+        result = run_chunk(
+            root, run_directory, chunk, metadata["flutter"], metadata.get("chunk_timeout", DEFAULT_CHUNK_TIMEOUT)
+        )
         if result["status"] != "passed":
-            write_summary(run_directory, metadata, "failed")
+            # Mirror the chunk outcome (failed / timed_out / interrupted) so a
+            # reader of summary.json knows whether to fix, split, or resume.
+            write_summary(run_directory, metadata, result["status"])
+            print(f"{result['status'].replace('_', ' ').capitalize()}: chunk {chunk['index']} ({result['log']})")
             return 1
+        write_summary(run_directory, metadata, "running")
 
     current = source_snapshot(root)
     if (

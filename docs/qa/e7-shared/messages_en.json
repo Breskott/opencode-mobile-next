@@ -1,0 +1,1100 @@
+{
+  "@e7ConnectionFailure1": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "attempts": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure1": "Tried {attempts} times. Retrying will not start a server that is not running.",
+  "e7ConnectionFailure2": "Connection token required",
+  "@e7ConnectionFailure2": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure3": "This Codex server needs a connection token before the app can connect.",
+  "@e7ConnectionFailure3": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure4": "Open server settings and enter the Codex connection token.",
+  "@e7ConnectionFailure4": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure5": "Connection token rejected",
+  "@e7ConnectionFailure5": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure6": "The Codex server answered, but it did not accept the saved connection token.",
+  "@e7ConnectionFailure6": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure7": "Open server settings and enter a current Codex connection token.",
+  "@e7ConnectionFailure7": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure8": "Codex listener unavailable",
+  "@e7ConnectionFailure8": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure9": "Codex endpoint unreachable",
+  "@e7ConnectionFailure9": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure10": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure10": "{hostLabel}:{port} is a local Codex listener, but nothing answered.",
+  "@e7ConnectionFailure11": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure11": "Nothing answered at the remote Codex endpoint {hostLabel}:{port}.",
+  "e7ConnectionFailure12": "Start the Codex listener on this device.",
+  "@e7ConnectionFailure12": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure13": "If it is behind a tunnel, keep the tunnel running and verify its local endpoint.",
+  "@e7ConnectionFailure13": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure14": "Use the Codex wss:// endpoint or an active secure tunnel.",
+  "@e7ConnectionFailure14": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure15": "Check that the remote Codex listener is reachable from this device.",
+  "@e7ConnectionFailure15": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure16": "Password rejected",
+  "@e7ConnectionFailure16": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure17": "The server answered, but it did not accept the saved password. This happens when the server was restarted with a new password.",
+  "@e7ConnectionFailure17": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure18": "Run opencode2 pair on the computer and paste the new code.",
+  "@e7ConnectionFailure18": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure19": "If you set OPENCODE_SERVER_PASSWORD by hand, copy it again.",
+  "@e7ConnectionFailure19": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure20": "Certificate not trusted",
+  "@e7ConnectionFailure20": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure21": "The server is there, but this device does not trust its HTTPS certificate, so the app refused to send the password.",
+  "@e7ConnectionFailure21": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure22": "Use a certificate from a trusted authority, or a Tailscale Serve address.",
+  "@e7ConnectionFailure22": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure23": "For a self-signed certificate, install it on this device first.",
+  "@e7ConnectionFailure23": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure24": "Nothing is listening on this device",
+  "@e7ConnectionFailure24": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure25": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure25": "{hostLabel}:{port} means the server should be running on this device, or reached through a tunnel that ends here. Neither answered.",
+  "e7ConnectionFailure26": "Running OpenCode in Termux? Open Termux and check that the server is still running.",
+  "@e7ConnectionFailure26": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure27": "Using adb reverse or an SSH forward? Check that the tunnel is still connected, then try again.",
+  "@e7ConnectionFailure27": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure28": "Connecting to another computer instead? Change the server to its HTTPS address or pair again.",
+  "@e7ConnectionFailure28": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure29": "The server did not answer in time",
+  "@e7ConnectionFailure29": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure30": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "e7ConnectionFailure30": "Something is at {hostLabel}, but it did not reply. Usually the network in between, not the server.",
+  "e7ConnectionFailure31": "Are you on the same network or VPN (for example Tailscale) as the computer?",
+  "@e7ConnectionFailure31": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure32": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure32": "Is a firewall or captive portal blocking port {port}?",
+  "e7ConnectionFailure33": "Server not reachable",
+  "@e7ConnectionFailure33": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure34": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure34": "Nothing answered at {hostLabel}:{port}. Either the server is not running or this device cannot reach that address.",
+  "e7ConnectionFailure35": "Is opencode serve still running on the computer?",
+  "@e7ConnectionFailure35": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure36": "Are you on the same network or VPN as the computer?",
+  "@e7ConnectionFailure36": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure37": "Did the address change? Pair again to pick up the new one.",
+  "@e7ConnectionFailure37": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure38": "The server answered with an error",
+  "@e7ConnectionFailure38": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure39": "The server is running but reported itself unhealthy. Its own log will say why.",
+  "@e7ConnectionFailure39": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure40": "Restart opencode serve and watch its output.",
+  "@e7ConnectionFailure40": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure41": "Check that the server version is supported by this app.",
+  "@e7ConnectionFailure41": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure42": "Could not connect",
+  "@e7ConnectionFailure42": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure43": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "e7ConnectionFailure43": "The connection to {hostLabel} failed. Details below.",
+  "e7ConnectionFailure44": "Is the Codex listener running, and is this the right address?",
+  "@e7ConnectionFailure44": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure45": "Is opencode serve running, and is this the right address?",
+  "@e7ConnectionFailure45": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7PermissionAction1": "Run a shell command",
+  "@e7PermissionAction1": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction2": "Edit a file",
+  "@e7PermissionAction2": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction3": "Read a file",
+  "@e7PermissionAction3": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction4": "Access an external directory",
+  "@e7PermissionAction4": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction5": "Continue after repeated failures",
+  "@e7PermissionAction5": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction6": "Permission needed",
+  "@e7PermissionAction6": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction7": "Use {permission}",
+  "@e7PermissionAction7": {
+    "description": "Human-readable title for a permission request",
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "e7GlossaryMcpExplanation": "Model Context Protocol. Small add-on servers that give the agent extra tools, like a browser, a database, or a design tool. You connect them once and every session can use them.",
+  "@e7GlossaryMcpExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryWorktreeTerm": "Worktree",
+  "@e7GlossaryWorktreeTerm": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryWorktreeExplanation": "A separate checkout of the same repository. Use one when you want the agent to try something on its own branch without touching the code you are working in.",
+  "@e7GlossaryWorktreeExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryProviderExplanation": "The company that hosts a model, such as Anthropic, OpenAI or a local runtime. Each one needs its own API key or login.",
+  "@e7GlossaryProviderExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryContextTerm": "Context",
+  "@e7GlossaryContextTerm": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryContextExplanation": "Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the session can continue.",
+  "@e7GlossaryContextExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryAgentTerm": "Agent",
+  "@e7GlossaryAgentTerm": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryAgentExplanation": "A named set of instructions and permissions the model works under. The default one can read and edit code. Others might only plan, or only review.",
+  "@e7GlossaryAgentExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryReasoningExplanation": "The model’s working notes before it answers. Useful for seeing why it made a choice. Hidden by default to keep the conversation short.",
+  "@e7GlossaryReasoningExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryPermissionTerm": "Permission",
+  "@e7GlossaryPermissionTerm": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryPermissionExplanation": "Before the agent runs a command or edits a file outside what it is already allowed, it asks you. Allow once, or always for that pattern.",
+  "@e7GlossaryPermissionExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryVariantTerm": "Variant",
+  "@e7GlossaryVariantTerm": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryVariantExplanation": "A speed-versus-depth setting for the model, such as how long it may think before answering.",
+  "@e7GlossaryVariantExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryGotIt": "Got it",
+  "@e7GlossaryGotIt": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryExplain": "{term}. Tap for an explanation.",
+  "@e7GlossaryExplain": {
+    "description": "Localized shared connection or glossary interface",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "e7BannerTokenRejected": "The connection token was rejected",
+  "@e7BannerTokenRejected": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerPasswordChanged": "The server password changed",
+  "@e7BannerPasswordChanged": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerReconnectPassword": "Server password changed — reconnect.",
+  "@e7BannerReconnectPassword": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerUpdatePassword": "Update password",
+  "@e7BannerUpdatePassword": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerLost": "Connection lost",
+  "@e7BannerLost": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerRetrying": "Retrying",
+  "@e7BannerRetrying": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerDetails": "Details",
+  "@e7BannerDetails": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerChangeServer": "Change server",
+  "@e7BannerChangeServer": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerReconnectPasswordNote": "Server password changed — reconnect.\n{note}",
+  "@e7BannerReconnectPasswordNote": {
+    "description": "Localized shared connection or glossary interface",
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "e7BannerReconnectingServer": "Reconnecting to {server}…",
+  "@e7BannerReconnectingServer": {
+    "description": "Localized shared connection or glossary interface",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "e7BannerReconnectingServerSemantic": "Reconnecting to {server}",
+  "@e7BannerReconnectingServerSemantic": {
+    "description": "Localized shared connection or glossary interface",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "e7BannerCheckingExplanation": "What you see stays available while OpenCode is checked. Live updates resume on their own.",
+  "@e7BannerCheckingExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerStaleExplanation": "What you see may be stale until OpenCode is reachable again.",
+  "@e7BannerStaleExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7SharedThreeStepsToYourFirstSession": "Three steps to your first session",
+  "@e7SharedThreeStepsToYourFirstSession": {
+    "description": "Shared app interface: Three steps to your first session"
+  },
+  "e7SharedOpenCodeRunsOnYourComputerThisApp": "OpenCode runs on your computer. This app is the remote. Pairing connects the two with one command — no addresses or passwords to type.",
+  "@e7SharedOpenCodeRunsOnYourComputerThisApp": {
+    "description": "Shared app interface: OpenCode runs on your computer. This app is the remote. Pairing connects the two with one command — no addresses or passwords to type."
+  },
+  "e7SharedOnYourComputerRunOneCommand": "On your computer, run one command",
+  "@e7SharedOnYourComputerRunOneCommand": {
+    "description": "Shared app interface: On your computer, run one command"
+  },
+  "e7SharedInATerminalOnTheComputerWhere": "In a terminal on the computer where OpenCode is installed:",
+  "@e7SharedInATerminalOnTheComputerWhere": {
+    "description": "Shared app interface: In a terminal on the computer where OpenCode is installed:"
+  },
+  "e7SharedItStartsTheServerAndPrintsA": "It starts the server and prints a pairing code — and a QR code you can scan.",
+  "@e7SharedItStartsTheServerAndPrintsA": {
+    "description": "Shared app interface: It starts the server and prints a pairing code — and a QR code you can scan."
+  },
+  "e7SharedScanTheQROrPasteTheCode": "Scan the QR or paste the code in this app",
+  "@e7SharedScanTheQROrPasteTheCode": {
+    "description": "Shared app interface: Scan the QR or paste the code in this app"
+  },
+  "e7SharedPasteTheCodeInThisApp": "Paste the code in this app",
+  "@e7SharedPasteTheCodeInThisApp": {
+    "description": "Shared app interface: Paste the code in this app"
+  },
+  "e7SharedOpenServersTapScanAndPointThe": "Open Servers, tap Scan and point the camera at the QR — or copy the code and tap Paste pairing code. The address, username and password fill in together.",
+  "@e7SharedOpenServersTapScanAndPointThe": {
+    "description": "Shared app interface: Open Servers, tap Scan and point the camera at the QR — or copy the code and tap Paste pairing code. The address, username and password fill in together."
+  },
+  "e7SharedCopyThePrintedCodeOpenServersAnd": "Copy the printed code, open Servers and tap Paste pairing code. The address, username and password fill in together.",
+  "@e7SharedCopyThePrintedCodeOpenServersAnd": {
+    "description": "Shared app interface: Copy the printed code, open Servers and tap Paste pairing code. The address, username and password fill in together."
+  },
+  "e7SharedStartTalking": "Start talking",
+  "@e7SharedStartTalking": {
+    "description": "Shared app interface: Start talking"
+  },
+  "e7SharedPickAProjectAndSendYourFirst": "Pick a project and send your first message. The work happens on your computer; this app shows it and lets you steer.",
+  "@e7SharedPickAProjectAndSendYourFirst": {
+    "description": "Shared app interface: Pick a project and send your first message. The work happens on your computer; this app shows it and lets you steer."
+  },
+  "e7SharedAdvanced": "Advanced",
+  "@e7SharedAdvanced": {
+    "description": "Shared app interface: Advanced"
+  },
+  "e7SharedHTTPSSSHTunnelsOlderServersTermuxInternals": "HTTPS, SSH tunnels, older servers, Termux internals",
+  "@e7SharedHTTPSSSHTunnelsOlderServersTermuxInternals": {
+    "description": "Shared app interface: HTTPS, SSH tunnels, older servers, Termux internals"
+  },
+  "e7SharedHTTPSSSHTunnelsOlderServers": "HTTPS, SSH tunnels, older servers",
+  "@e7SharedHTTPSSSHTunnelsOlderServers": {
+    "description": "Shared app interface: HTTPS, SSH tunnels, older servers"
+  },
+  "e7SharedReachAServerOverHTTPSOrA": "Reach a server over HTTPS or a tunnel",
+  "@e7SharedReachAServerOverHTTPSOrA": {
+    "description": "Shared app interface: Reach a server over HTTPS or a tunnel"
+  },
+  "e7SharedPairingWorksWhenTheAddressTheServer": "Pairing works when the address the server prints is one this device can reach. If it is not, expose the server through an HTTPS reverse proxy or an encrypted tunnel and add the resulting https:// URL by hand. Remote HTTP is intentionally blocked.",
+  "@e7SharedPairingWorksWhenTheAddressTheServer": {
+    "description": "Shared app interface: Pairing works when the address the server prints is one this device can reach. If it is not, expose the server through an HTTPS reverse proxy or an encrypted tunnel and add the resulting https:// URL by hand. Remote HTTP is intentionally blocked."
+  },
+  "e7SharedOlderServersWithoutPairing": "Older servers without pairing",
+  "@e7SharedOlderServersWithoutPairing": {
+    "description": "Shared app interface: Older servers without pairing"
+  },
+  "e7SharedServersStartedWithOpencodeServeDoNot": "Servers started with `opencode serve` do not print a pairing code. Start them on loopback with a password:",
+  "@e7SharedServersStartedWithOpencodeServeDoNot": {
+    "description": "Shared app interface: Servers started with `opencode serve` do not print a pairing code. Start them on loopback with a password:"
+  },
+  "e7SharedThenAddTheServerManuallyWithUsername": "Then add the server manually with username opencode and that password.",
+  "@e7SharedThenAddTheServerManuallyWithUsername": {
+    "description": "Shared app interface: Then add the server manually with username opencode and that password."
+  },
+  "e7SharedOnDeviceViaTermuxAutomated": "On-device via Termux (automated)",
+  "@e7SharedOnDeviceViaTermuxAutomated": {
+    "description": "Shared app interface: On-device via Termux (automated)"
+  },
+  "e7SharedUseTheOnDeviceTermuxCardOn": "Use the “On-device (Termux)” card on the Servers screen. The app installs Termux, unlocks the bridge, sets up opencode, starts the server and connects — all guided.",
+  "@e7SharedUseTheOnDeviceTermuxCardOn": {
+    "description": "Shared app interface: Use the “On-device (Termux)” card on the Servers screen. The app installs Termux, unlocks the bridge, sets up opencode, starts the server and connects — all guided."
+  },
+  "e7SharedOnlyTwoTapsNeedYouPersonallyDownloading": "Only two taps need you personally: downloading the Termux APK and pasting one unlock line inside Termux once — both required by Android’s security model, not by this app.",
+  "@e7SharedOnlyTwoTapsNeedYouPersonallyDownloading": {
+    "description": "Shared app interface: Only two taps need you personally: downloading the Termux APK and pasting one unlock line inside Termux once — both required by Android’s security model, not by this app."
+  },
+  "e7SharedPreferManualInsideTermuxRun": "Prefer manual? Inside Termux run:",
+  "@e7SharedPreferManualInsideTermuxRun": {
+    "description": "Shared app interface: Prefer manual? Inside Termux run:"
+  },
+  "e7SharedTheChrootSharesTheNetworkStackSo": "The chroot shares the network stack, so http://127.0.0.1:4096 works from this app. Run `termux-wake-lock` to keep it alive.",
+  "@e7SharedTheChrootSharesTheNetworkStackSo": {
+    "description": "Shared app interface: The chroot shares the network stack, so http://127.0.0.1:4096 works from this app. Run `termux-wake-lock` to keep it alive."
+  },
+  "e7SharedSecurityNotes": "Security notes",
+  "@e7SharedSecurityNotes": {
+    "description": "Shared app interface: Security notes"
+  },
+  "e7SharedAlwaysSetOPENCODESERVERPASSWORDWhenBinding": "Always set OPENCODE_SERVER_PASSWORD when binding beyond localhost.",
+  "@e7SharedAlwaysSetOPENCODESERVERPASSWORDWhenBinding": {
+    "description": "Shared app interface: Always set OPENCODE_SERVER_PASSWORD when binding beyond localhost."
+  },
+  "e7SharedPasswordsAreStoredInTheAndroidKeystore": "Passwords are stored in the Android Keystore on this device only.",
+  "@e7SharedPasswordsAreStoredInTheAndroidKeystore": {
+    "description": "Shared app interface: Passwords are stored in the Android Keystore on this device only."
+  },
+  "e7SharedTheServerCanExecuteCommandsOnIts": "The server can execute commands on its host — treat access like SSH access.",
+  "@e7SharedTheServerCanExecuteCommandsOnIts": {
+    "description": "Shared app interface: The server can execute commands on its host — treat access like SSH access."
+  },
+  "e7SharedCopied": "Copied",
+  "@e7SharedCopied": {
+    "description": "Shared app interface: Copied"
+  },
+  "e7SharedOpenCodeIsReconnectingTryAgain": "OpenCode is reconnecting. Try again.",
+  "@e7SharedOpenCodeIsReconnectingTryAgain": {
+    "description": "Shared app interface: OpenCode is reconnecting. Try again."
+  },
+  "e7SharedSessionContext": "Session context",
+  "@e7SharedSessionContext": {
+    "description": "Shared app interface: Session context"
+  },
+  "e7SharedRefreshContext": "Refresh context",
+  "@e7SharedRefreshContext": {
+    "description": "Shared app interface: Refresh context"
+  },
+  "e7SharedNoContextUsageYet": "No context usage yet",
+  "@e7SharedNoContextUsageYet": {
+    "description": "Shared app interface: No context usage yet"
+  },
+  "e7SharedSendAPromptAndWaitForAn": "Send a prompt and wait for an assistant response. OpenCode will then report token usage for this session.",
+  "@e7SharedSendAPromptAndWaitForAn": {
+    "description": "Shared app interface: Send a prompt and wait for an assistant response. OpenCode will then report token usage for this session."
+  },
+  "e7SharedCurrentModelRequest": "Current model request",
+  "@e7SharedCurrentModelRequest": {
+    "description": "Shared app interface: Current model request"
+  },
+  "e7SharedEstimatedInputMakeup": "Estimated input makeup",
+  "@e7SharedEstimatedInputMakeup": {
+    "description": "Shared app interface: Estimated input makeup"
+  },
+  "e7SharedSessionTotals": "Session totals",
+  "@e7SharedSessionTotals": {
+    "description": "Shared app interface: Session totals"
+  },
+  "e7SharedUsageComesFromTheLatestCompletedAssistant": "Usage comes from the latest completed assistant message. The makeup is an estimate from visible prompt, response, and tool text; Other includes system instructions, tool definitions, and provider overhead.",
+  "@e7SharedUsageComesFromTheLatestCompletedAssistant": {
+    "description": "Shared app interface: Usage comes from the latest completed assistant message. The makeup is an estimate from visible prompt, response, and tool text; Other includes system instructions, tool definitions, and provider overhead."
+  },
+  "e7SharedModelUnavailable": "Model unavailable",
+  "@e7SharedModelUnavailable": {
+    "description": "Shared app interface: Model unavailable"
+  },
+  "e7SharedContextLimitUnavailable": "Context limit unavailable",
+  "@e7SharedContextLimitUnavailable": {
+    "description": "Shared app interface: Context limit unavailable"
+  },
+  "e7SharedLatestAssistantRequestIncludingCacheActivity": "Latest assistant request, including cache activity",
+  "@e7SharedLatestAssistantRequestIncludingCacheActivity": {
+    "description": "Shared app interface: Latest assistant request, including cache activity"
+  },
+  "e7SharedContextLimit": "Context limit",
+  "@e7SharedContextLimit": {
+    "description": "Shared app interface: Context limit"
+  },
+  "e7SharedUnavailable": "Unavailable",
+  "@e7SharedUnavailable": {
+    "description": "Shared app interface: Unavailable"
+  },
+  "e7SharedMessages": "Messages",
+  "@e7SharedMessages": {
+    "description": "Shared app interface: Messages"
+  },
+  "e7SharedUserAssistant": "User / assistant",
+  "@e7SharedUserAssistant": {
+    "description": "Shared app interface: User / assistant"
+  },
+  "e7SharedAccumulatedCostReportedByServer": "Accumulated cost · reported by server",
+  "@e7SharedAccumulatedCostReportedByServer": {
+    "description": "Shared app interface: Accumulated cost · reported by server"
+  },
+  "e7SharedAccumulatedCost": "Accumulated cost",
+  "@e7SharedAccumulatedCost": {
+    "description": "Shared app interface: Accumulated cost"
+  },
+  "e7SharedSessionTokensReportedByServer": "Session tokens · reported by server",
+  "@e7SharedSessionTokensReportedByServer": {
+    "description": "Shared app interface: Session tokens · reported by server"
+  },
+  "e7SharedUserPrompts": "User prompts",
+  "@e7SharedUserPrompts": {
+    "description": "Shared app interface: User prompts"
+  },
+  "e7SharedAssistantText": "Assistant text",
+  "@e7SharedAssistantText": {
+    "description": "Shared app interface: Assistant text"
+  },
+  "e7SharedToolCallsAndResults": "Tool calls and results",
+  "@e7SharedToolCallsAndResults": {
+    "description": "Shared app interface: Tool calls and results"
+  },
+  "e7SharedOtherContext": "Other context",
+  "@e7SharedOtherContext": {
+    "description": "Shared app interface: Other context"
+  },
+  "e7SharedMove": "Move",
+  "@e7SharedMove": {
+    "description": "Shared app interface: Move"
+  },
+  "e7SharedSessionLocationChangedCloseAndReopenThis": "Session location changed. Close and reopen this sheet.",
+  "@e7SharedSessionLocationChangedCloseAndReopenThis": {
+    "description": "Shared app interface: Session location changed. Close and reopen this sheet."
+  },
+  "e7SharedOpenCodeIsReconnecting": "OpenCode is reconnecting.",
+  "@e7SharedOpenCodeIsReconnecting": {
+    "description": "Shared app interface: OpenCode is reconnecting."
+  },
+  "e7SharedTheSessionProjectIsNotAvailableOn": "The session project is not available on this server.",
+  "@e7SharedTheSessionProjectIsNotAvailableOn": {
+    "description": "Shared app interface: The session project is not available on this server."
+  },
+  "e7SharedLocalProject": "Local project",
+  "@e7SharedLocalProject": {
+    "description": "Shared app interface: Local project"
+  },
+  "e7SharedTheAppCouldNotInspectWorkingChanges": "The app could not inspect working changes. For safety, this continues without transferring changes.",
+  "@e7SharedTheAppCouldNotInspectWorkingChanges": {
+    "description": "Shared app interface: The app could not inspect working changes. For safety, this continues without transferring changes."
+  },
+  "e7SharedMoveWithChanges": "Move with changes",
+  "@e7SharedMoveWithChanges": {
+    "description": "Shared app interface: Move with changes"
+  },
+  "e7SharedCopyChangesAndMove": "Copy changes and move",
+  "@e7SharedCopyChangesAndMove": {
+    "description": "Shared app interface: Copy changes and move"
+  },
+  "e7SharedMoveSession": "Move session",
+  "@e7SharedMoveSession": {
+    "description": "Shared app interface: Move session"
+  },
+  "e7SharedChooseAnotherDirectoryInThisProject": "Choose another directory in this project.",
+  "@e7SharedChooseAnotherDirectoryInThisProject": {
+    "description": "Shared app interface: Choose another directory in this project."
+  },
+  "e7SharedChooseAConnectedWorkspaceOrReturnTo": "Choose a connected workspace, or return to the local project.",
+  "@e7SharedChooseAConnectedWorkspaceOrReturnTo": {
+    "description": "Shared app interface: Choose a connected workspace, or return to the local project."
+  },
+  "e7SharedFilterDestinations": "Filter destinations",
+  "@e7SharedFilterDestinations": {
+    "description": "Shared app interface: Filter destinations"
+  },
+  "e7SharedNoOtherDestinationsAreAvailable": "No other destinations are available.",
+  "@e7SharedNoOtherDestinationsAreAvailable": {
+    "description": "Shared app interface: No other destinations are available."
+  },
+  "e7SharedNoDestinationsMatchThisFilter": "No destinations match this filter.",
+  "@e7SharedNoDestinationsMatchThisFilter": {
+    "description": "Shared app interface: No destinations match this filter."
+  },
+  "e7SharedCurrent": "Current",
+  "@e7SharedCurrent": {
+    "description": "Shared app interface: Current"
+  },
+  "e7SharedSwitchOrganization": "Switch organization?",
+  "@e7SharedSwitchOrganization": {
+    "description": "Shared app interface: Switch organization?"
+  },
+  "e7SharedSwitch": "Switch",
+  "@e7SharedSwitch": {
+    "description": "Shared app interface: Switch"
+  },
+  "e7SharedSwitchOrganization462": "Switch organization",
+  "@e7SharedSwitchOrganization462": {
+    "description": "Shared app interface: Switch organization"
+  },
+  "e7SharedNoSwitchableOpenCodeConsoleOrganizationsWereReturned": "No switchable OpenCode Console organizations were returned.",
+  "@e7SharedNoSwitchableOpenCodeConsoleOrganizationsWereReturned": {
+    "description": "Shared app interface: No switchable OpenCode Console organizations were returned."
+  },
+  "e7SharedSessionLocationChangedReturnAndReopenRelated": "Session location changed. Return and reopen related sessions.",
+  "@e7SharedSessionLocationChangedReturnAndReopenRelated": {
+    "description": "Shared app interface: Session location changed. Return and reopen related sessions."
+  },
+  "e7SharedSessionIsNoLongerRelatedToThis": "Session is no longer related to this session.",
+  "@e7SharedSessionIsNoLongerRelatedToThis": {
+    "description": "Shared app interface: Session is no longer related to this session."
+  },
+  "e7SharedSessionLocationChangedReturnAndTryAgain": "Session location changed. Return and try again.",
+  "@e7SharedSessionLocationChangedReturnAndTryAgain": {
+    "description": "Shared app interface: Session location changed. Return and try again."
+  },
+  "e7SharedSessionUnavailableOrLocationChangedReturnOr": "Session unavailable or location changed. Return or refresh to try again.",
+  "@e7SharedSessionUnavailableOrLocationChangedReturnOr": {
+    "description": "Shared app interface: Session unavailable or location changed. Return or refresh to try again."
+  },
+  "e7SharedCouldNotUpdateThePinReturnAnd": "Could not update the pin. Return and try again.",
+  "@e7SharedCouldNotUpdateThePinReturnAnd": {
+    "description": "Shared app interface: Could not update the pin. Return and try again."
+  },
+  "e7SharedRefreshSubagentSessions": "Refresh subagent sessions",
+  "@e7SharedRefreshSubagentSessions": {
+    "description": "Shared app interface: Refresh subagent sessions"
+  },
+  "e7SharedParentSession": "Parent session",
+  "@e7SharedParentSession": {
+    "description": "Shared app interface: Parent session"
+  },
+  "e7SharedSubagents": "Subagents",
+  "@e7SharedSubagents": {
+    "description": "Shared app interface: Subagents"
+  },
+  "e7SharedNoSubagentSessionsYet": "No subagent sessions yet",
+  "@e7SharedNoSubagentSessionsYet": {
+    "description": "Shared app interface: No subagent sessions yet"
+  },
+  "e7SharedDelegatedWorkWillAppearHereWithoutMixing": "Delegated work will appear here without mixing child sessions into your main chat list.",
+  "@e7SharedDelegatedWorkWillAppearHereWithoutMixing": {
+    "description": "Shared app interface: Delegated work will appear here without mixing child sessions into your main chat list."
+  },
+  "e7SharedOpenCodeHasNotDelegatedWorkFromThis": "OpenCode has not delegated work from this session.",
+  "@e7SharedOpenCodeHasNotDelegatedWorkFromThis": {
+    "description": "Shared app interface: OpenCode has not delegated work from this session."
+  },
+  "e7SharedUnpinSession": "Unpin session",
+  "@e7SharedUnpinSession": {
+    "description": "Shared app interface: Unpin session"
+  },
+  "e7SharedPinSession": "Pin session",
+  "@e7SharedPinSession": {
+    "description": "Shared app interface: Pin session"
+  },
+  "e7SharedLinkBlockedThisAppMayOpenOnly": "Link blocked. This app may open only https:// URLs, or confirmed http:// URLs.",
+  "@e7SharedLinkBlockedThisAppMayOpenOnly": {
+    "description": "Shared app interface: Link blocked. This app may open only https:// URLs, or confirmed http:// URLs."
+  },
+  "e7SharedOpenInsecureHTTPLink": "Open insecure HTTP link?",
+  "@e7SharedOpenInsecureHTTPLink": {
+    "description": "Shared app interface: Open insecure HTTP link?"
+  },
+  "e7SharedOpenExternalLink": "Open external link?",
+  "@e7SharedOpenExternalLink": {
+    "description": "Shared app interface: Open external link?"
+  },
+  "e7SharedHost": "Host",
+  "@e7SharedHost": {
+    "description": "Shared app interface: Host"
+  },
+  "e7SharedHTTPIsNotEncryptedOtherDevicesOn": "HTTP is not encrypted. Other devices on the network may read or change what you send and receive.",
+  "@e7SharedHTTPIsNotEncryptedOtherDevicesOn": {
+    "description": "Shared app interface: HTTP is not encrypted. Other devices on the network may read or change what you send and receive."
+  },
+  "e7SharedOpenHTTPLink": "Open HTTP link",
+  "@e7SharedOpenHTTPLink": {
+    "description": "Shared app interface: Open HTTP link"
+  },
+  "e7SharedOpenLink": "Open link",
+  "@e7SharedOpenLink": {
+    "description": "Shared app interface: Open link"
+  },
+  "e7SharedNoAppCouldOpenThisLink": "No app could open this link.",
+  "@e7SharedNoAppCouldOpenThisLink": {
+    "description": "Shared app interface: No app could open this link."
+  },
+  "e7SharedRequired": "Required",
+  "@e7SharedRequired": {
+    "description": "Shared app interface: Required"
+  },
+  "e7SharedDoesNotMatchTheExpectedFormat": "Does not match the expected format",
+  "@e7SharedDoesNotMatchTheExpectedFormat": {
+    "description": "Shared app interface: Does not match the expected format"
+  },
+  "e7SharedEnterAWholeNumber": "Enter a whole number",
+  "@e7SharedEnterAWholeNumber": {
+    "description": "Shared app interface: Enter a whole number"
+  },
+  "e7SharedEnterANumber": "Enter a number",
+  "@e7SharedEnterANumber": {
+    "description": "Shared app interface: Enter a number"
+  },
+  "e7SharedDismissThisRequest": "Dismiss this request?",
+  "@e7SharedDismissThisRequest": {
+    "description": "Shared app interface: Dismiss this request?"
+  },
+  "e7SharedTheAgentContinuesWithoutYourAnswers": "The agent continues without your answers.",
+  "@e7SharedTheAgentContinuesWithoutYourAnswers": {
+    "description": "Shared app interface: The agent continues without your answers."
+  },
+  "e7SharedAskedByAnMCPServer": "Asked by an MCP server",
+  "@e7SharedAskedByAnMCPServer": {
+    "description": "Shared app interface: Asked by an MCP server"
+  },
+  "e7SharedAskedByTheAgentInThisSession": "Asked by the agent in this session",
+  "@e7SharedAskedByTheAgentInThisSession": {
+    "description": "Shared app interface: Asked by the agent in this session"
+  },
+  "e7SharedInputRequested": "Input requested",
+  "@e7SharedInputRequested": {
+    "description": "Shared app interface: Input requested"
+  },
+  "e7SharedOther": "Other…",
+  "@e7SharedOther": {
+    "description": "Shared app interface: Other…"
+  },
+  "e7SharedYourAnswer": "Your answer",
+  "@e7SharedYourAnswer": {
+    "description": "Shared app interface: Your answer"
+  },
+  "e7SharedAddYourOwn": "Add your own",
+  "@e7SharedAddYourOwn": {
+    "description": "Shared app interface: Add your own"
+  },
+  "e7SharedAddAnswer": "Add answer",
+  "@e7SharedAddAnswer": {
+    "description": "Shared app interface: Add answer"
+  },
+  "e7SharedThisServerSentALinkThisApp": "This server sent a link this app will not open.",
+  "@e7SharedThisServerSentALinkThisApp": {
+    "description": "Shared app interface: This server sent a link this app will not open."
+  },
+  "e7SharedSendAnswers": "Send answers",
+  "@e7SharedSendAnswers": {
+    "description": "Shared app interface: Send answers"
+  },
+  "e7SharedRecommended": "Recommended",
+  "@e7SharedRecommended": {
+    "description": "Shared app interface: Recommended"
+  },
+  "e7SharedDetail307": "Step {step} of 3",
+  "@e7SharedDetail307": {
+    "description": "Shared journey: lib/ui/screens/guide_screen.dart",
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "e7SharedDetail381": "{percent} percent context used",
+  "@e7SharedDetail381": {
+    "description": "Shared journey: lib/ui/screens/session_context_screen.dart",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail385": "{count} of {limit} tokens",
+  "@e7SharedDetail385": {
+    "description": "Shared journey: lib/ui/screens/session_context_screen.dart",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail386": "{count} tokens · limit unavailable",
+  "@e7SharedDetail386": {
+    "description": "Shared journey: lib/ui/screens/session_context_screen.dart",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail409": "Could not refresh: {error}",
+  "@e7SharedDetail409": {
+    "description": "Shared journey: lib/ui/screens/session_context_screen.dart",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail428": "Moved to {destination}",
+  "@e7SharedDetail428": {
+    "description": "Shared journey: lib/ui/screens/session_destination_sheet.dart",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail429": "Move session?",
+  "@e7SharedDetail429": {
+    "description": "Shared journey: lib/ui/screens/session_destination_sheet.dart"
+  },
+  "e7SharedDetail430": "{count, plural, one {1 changed file is present.} other {{count} changed files are present.}} Choose whether those working changes should {action, select, move {move} other {be copied}} with the session.",
+  "@e7SharedDetail430": {
+    "description": "Shared journey: lib/ui/screens/session_destination_sheet.dart",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail432": "Continue to {destination}?",
+  "@e7SharedDetail432": {
+    "description": "Shared journey: lib/ui/screens/session_destination_sheet.dart",
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail435": "Move only",
+  "@e7SharedDetail435": {
+    "description": "Shared journey: lib/ui/screens/session_destination_sheet.dart"
+  },
+  "e7SharedDetail456": "Models and providers will reload using {organization}.",
+  "@e7SharedDetail456": {
+    "description": "Shared journey: lib/ui/screens/session_destination_sheet.dart",
+    "placeholders": {
+      "organization": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail460": "Switched to {organization}",
+  "@e7SharedDetail460": {
+    "description": "Shared journey: lib/ui/screens/session_destination_sheet.dart",
+    "placeholders": {
+      "organization": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail514": "Refresh failed: {error}",
+  "@e7SharedDetail514": {
+    "description": "Shared journey: lib/ui/screens/session_relations_screen.dart",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail517": "{count, plural, one {1 delegated session · open any transcript directly.} other {{count} delegated sessions · open any transcript directly.}}",
+  "@e7SharedDetail517": {
+    "description": "Shared journey: lib/ui/screens/session_relations_screen.dart",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "e7SharedDetail518": "{position} of {total}",
+  "@e7SharedDetail518": {
+    "description": "Shared journey: lib/ui/screens/session_relations_screen.dart",
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "e7SharedDetail699": "Could not open link: {error}",
+  "@e7SharedDetail699": {
+    "description": "Shared journey: lib/ui/widgets/external_link.dart",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail714": "Must be at least {count} characters",
+  "@e7SharedDetail714": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "e7SharedDetail715": "Must be at most {count} characters",
+  "@e7SharedDetail715": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "e7SharedDetail721": "Must be between {minimum} and {maximum}",
+  "@e7SharedDetail721": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "minimum": {
+        "type": "String"
+      },
+      "maximum": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail722": "Must be at least {minimum}",
+  "@e7SharedDetail722": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "minimum": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail723": "Must be at most {maximum}",
+  "@e7SharedDetail723": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "maximum": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail725": "Pick at least {count}",
+  "@e7SharedDetail725": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "e7SharedDetail726": "Pick at most {count}",
+  "@e7SharedDetail726": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "e7SharedDetail753": "Pick {minimum}–{maximum}",
+  "@e7SharedDetail753": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "minimum": {
+        "type": "int"
+      },
+      "maximum": {
+        "type": "int"
+      }
+    }
+  },
+  "e7SharedDetail754": "Pick at least {count}",
+  "@e7SharedDetail754": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "e7SharedDetail755": "Pick up to {count}",
+  "@e7SharedDetail755": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "e7SharedDetail756": "{range} · {count} selected",
+  "@e7SharedDetail756": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "range": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "e7SharedDetail764": "Opens {host} in your browser",
+  "@e7SharedDetail764": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "e7SharedDetail765": "This server sent a field type this app does not understand (\"{field}\").",
+  "@e7SharedDetail765": {
+    "description": "Shared journey: lib/ui/widgets/form_renderer.dart",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  }
+}

@@ -1,0 +1,399 @@
+{
+  "@e7ConnectionFailure1": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "attempts": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure1": "Tried {attempts} times. Retrying will not start a server that is not running.",
+  "e7ConnectionFailure2": "Connection token required",
+  "@e7ConnectionFailure2": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure3": "This Codex server needs a connection token before the app can connect.",
+  "@e7ConnectionFailure3": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure4": "Open server settings and enter the Codex connection token.",
+  "@e7ConnectionFailure4": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure5": "Connection token rejected",
+  "@e7ConnectionFailure5": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure6": "The Codex server answered, but it did not accept the saved connection token.",
+  "@e7ConnectionFailure6": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure7": "Open server settings and enter a current Codex connection token.",
+  "@e7ConnectionFailure7": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure8": "Codex listener unavailable",
+  "@e7ConnectionFailure8": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure9": "Codex endpoint unreachable",
+  "@e7ConnectionFailure9": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure10": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure10": "{hostLabel}:{port} is a local Codex listener, but nothing answered.",
+  "@e7ConnectionFailure11": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure11": "Nothing answered at the remote Codex endpoint {hostLabel}:{port}.",
+  "e7ConnectionFailure12": "Start the Codex listener on this device.",
+  "@e7ConnectionFailure12": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure13": "If it is behind a tunnel, keep the tunnel running and verify its local endpoint.",
+  "@e7ConnectionFailure13": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure14": "Use the Codex wss:// endpoint or an active secure tunnel.",
+  "@e7ConnectionFailure14": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure15": "Check that the remote Codex listener is reachable from this device.",
+  "@e7ConnectionFailure15": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure16": "Password rejected",
+  "@e7ConnectionFailure16": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure17": "The server answered, but it did not accept the saved password. This happens when the server was restarted with a new password.",
+  "@e7ConnectionFailure17": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure18": "Run opencode2 pair on the computer and paste the new code.",
+  "@e7ConnectionFailure18": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure19": "If you set OPENCODE_SERVER_PASSWORD by hand, copy it again.",
+  "@e7ConnectionFailure19": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure20": "Certificate not trusted",
+  "@e7ConnectionFailure20": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure21": "The server is there, but this device does not trust its HTTPS certificate, so the app refused to send the password.",
+  "@e7ConnectionFailure21": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure22": "Use a certificate from a trusted authority, or a Tailscale Serve address.",
+  "@e7ConnectionFailure22": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure23": "For a self-signed certificate, install it on this device first.",
+  "@e7ConnectionFailure23": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure24": "Nothing is listening on this device",
+  "@e7ConnectionFailure24": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure25": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure25": "{hostLabel}:{port} means the server should be running on this device, or reached through a tunnel that ends here. Neither answered.",
+  "e7ConnectionFailure26": "Running OpenCode in Termux? Open Termux and check that the server is still running.",
+  "@e7ConnectionFailure26": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure27": "Using adb reverse or an SSH forward? Check that the tunnel is still connected, then try again.",
+  "@e7ConnectionFailure27": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure28": "Connecting to another computer instead? Change the server to its HTTPS address or pair again.",
+  "@e7ConnectionFailure28": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure29": "The server did not answer in time",
+  "@e7ConnectionFailure29": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure30": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "e7ConnectionFailure30": "Something is at {hostLabel}, but it did not reply. Usually the network in between, not the server.",
+  "e7ConnectionFailure31": "Are you on the same network or VPN (for example Tailscale) as the computer?",
+  "@e7ConnectionFailure31": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure32": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure32": "Is a firewall or captive portal blocking port {port}?",
+  "e7ConnectionFailure33": "Server not reachable",
+  "@e7ConnectionFailure33": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure34": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "e7ConnectionFailure34": "Nothing answered at {hostLabel}:{port}. Either the server is not running or this device cannot reach that address.",
+  "e7ConnectionFailure35": "Is opencode serve still running on the computer?",
+  "@e7ConnectionFailure35": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure36": "Are you on the same network or VPN as the computer?",
+  "@e7ConnectionFailure36": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure37": "Did the address change? Pair again to pick up the new one.",
+  "@e7ConnectionFailure37": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure38": "The server answered with an error",
+  "@e7ConnectionFailure38": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure39": "The server is running but reported itself unhealthy. Its own log will say why.",
+  "@e7ConnectionFailure39": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure40": "Restart opencode serve and watch its output.",
+  "@e7ConnectionFailure40": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure41": "Check that the server version is supported by this app.",
+  "@e7ConnectionFailure41": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure42": "Could not connect",
+  "@e7ConnectionFailure42": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "@e7ConnectionFailure43": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart",
+    "placeholders": {
+      "hostLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "e7ConnectionFailure43": "The connection to {hostLabel} failed. Details below.",
+  "e7ConnectionFailure44": "Is the Codex listener running, and is this the right address?",
+  "@e7ConnectionFailure44": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7ConnectionFailure45": "Is opencode serve running, and is this the right address?",
+  "@e7ConnectionFailure45": {
+    "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
+  },
+  "e7PermissionAction1": "Run a shell command",
+  "@e7PermissionAction1": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction2": "Edit a file",
+  "@e7PermissionAction2": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction3": "Read a file",
+  "@e7PermissionAction3": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction4": "Access an external directory",
+  "@e7PermissionAction4": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction5": "Continue after repeated failures",
+  "@e7PermissionAction5": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction6": "Permission needed",
+  "@e7PermissionAction6": {
+    "description": "Human-readable title for a permission request"
+  },
+  "e7PermissionAction7": "Use {permission}",
+  "@e7PermissionAction7": {
+    "description": "Human-readable title for a permission request",
+    "placeholders": {
+      "permission": {
+        "type": "String"
+      }
+    }
+  },
+  "e7GlossaryMcpExplanation": "Model Context Protocol. Small add-on servers that give the agent extra tools, like a browser, a database, or a design tool. You connect them once and every session can use them.",
+  "@e7GlossaryMcpExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryWorktreeTerm": "Worktree",
+  "@e7GlossaryWorktreeTerm": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryWorktreeExplanation": "A separate checkout of the same repository. Use one when you want the agent to try something on its own branch without touching the code you are working in.",
+  "@e7GlossaryWorktreeExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryProviderExplanation": "The company that hosts a model, such as Anthropic, OpenAI or a local runtime. Each one needs its own API key or login.",
+  "@e7GlossaryProviderExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryContextTerm": "Context",
+  "@e7GlossaryContextTerm": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryContextExplanation": "Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the session can continue.",
+  "@e7GlossaryContextExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryAgentTerm": "Agent",
+  "@e7GlossaryAgentTerm": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryAgentExplanation": "A named set of instructions and permissions the model works under. The default one can read and edit code. Others might only plan, or only review.",
+  "@e7GlossaryAgentExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryReasoningExplanation": "The model’s working notes before it answers. Useful for seeing why it made a choice. Hidden by default to keep the conversation short.",
+  "@e7GlossaryReasoningExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryPermissionTerm": "Permission",
+  "@e7GlossaryPermissionTerm": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryPermissionExplanation": "Before the agent runs a command or edits a file outside what it is already allowed, it asks you. Allow once, or always for that pattern.",
+  "@e7GlossaryPermissionExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryVariantTerm": "Variant",
+  "@e7GlossaryVariantTerm": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryVariantExplanation": "A speed-versus-depth setting for the model, such as how long it may think before answering.",
+  "@e7GlossaryVariantExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryGotIt": "Got it",
+  "@e7GlossaryGotIt": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7GlossaryExplain": "{term}. Tap for an explanation.",
+  "@e7GlossaryExplain": {
+    "description": "Localized shared connection or glossary interface",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "e7BannerTokenRejected": "The connection token was rejected",
+  "@e7BannerTokenRejected": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerPasswordChanged": "The server password changed",
+  "@e7BannerPasswordChanged": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerReconnectPassword": "Server password changed — reconnect.",
+  "@e7BannerReconnectPassword": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerUpdatePassword": "Update password",
+  "@e7BannerUpdatePassword": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerLost": "Connection lost",
+  "@e7BannerLost": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerRetrying": "Retrying",
+  "@e7BannerRetrying": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerDetails": "Details",
+  "@e7BannerDetails": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerChangeServer": "Change server",
+  "@e7BannerChangeServer": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerReconnectPasswordNote": "Server password changed — reconnect.\n{note}",
+  "@e7BannerReconnectPasswordNote": {
+    "description": "Localized shared connection or glossary interface",
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "e7BannerReconnectingServer": "Reconnecting to {server}…",
+  "@e7BannerReconnectingServer": {
+    "description": "Localized shared connection or glossary interface",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "e7BannerReconnectingServerSemantic": "Reconnecting to {server}",
+  "@e7BannerReconnectingServerSemantic": {
+    "description": "Localized shared connection or glossary interface",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "e7BannerCheckingExplanation": "What you see stays available while OpenCode is checked. Live updates resume on their own.",
+  "@e7BannerCheckingExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  },
+  "e7BannerStaleExplanation": "What you see may be stale until OpenCode is reachable again.",
+  "@e7BannerStaleExplanation": {
+    "description": "Localized shared connection or glossary interface"
+  }
+}

@@ -11,7 +11,7 @@ class SetupTerminal extends StatelessWidget {
   final bool running;
   final ScrollController controller;
   final VoidCallback? onCopy;
-  final String copyTooltip;
+  final String? copyTooltip;
   final bool expand;
 
   const SetupTerminal({
@@ -20,7 +20,7 @@ class SetupTerminal extends StatelessWidget {
     required this.running,
     required this.controller,
     this.onCopy,
-    this.copyTooltip = 'Copy output',
+    this.copyTooltip,
     this.expand = false,
   });
 
@@ -93,9 +93,9 @@ class SetupTerminal extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.only(
-              left: 16,
-              right: 4,
+            padding: const EdgeInsetsDirectional.only(
+              start: 16,
+              end: 4,
               top: 4,
               bottom: 4,
             ),
@@ -112,7 +112,13 @@ class SetupTerminal extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    running ? 'LIVE OUTPUT' : 'LAST OUTPUT',
+                    running
+                        ? lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupLiveOutput
+                        : lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupLastOutput,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: scheme.primary,
                       fontWeight: FontWeight.w700,
@@ -127,7 +133,11 @@ class SetupTerminal extends StatelessWidget {
                     minHeight: 48,
                   ),
                   onPressed: onCopy,
-                  tooltip: copyTooltip,
+                  tooltip:
+                      copyTooltip ??
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).workCopyOutput,
                   icon: const Icon(AppIcons.copy, size: 20),
                   color: scheme.primary,
                 ),
@@ -149,7 +159,9 @@ class SetupTerminal extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                AppLocalizations.of(context).setupOutputWaiting,
+                                lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).setupOutputWaiting,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: scheme.onSurface,
                                   fontWeight: FontWeight.w600,
@@ -157,8 +169,8 @@ class SetupTerminal extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                AppLocalizations.of(
-                                  context,
+                                lookupAppLocalizations(
+                                  Localizations.localeOf(context),
                                 ).setupOutputWaitingDetail,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: scheme.onSurfaceVariant,
@@ -168,6 +180,7 @@ class SetupTerminal extends StatelessWidget {
                             ],
                           )
                         : SelectableText.rich(
+                            textDirection: TextDirection.ltr,
                             TextSpan(children: _lines(visibleOutput, theme)),
                             style: TextStyle(
                               color: scheme.onSurface,

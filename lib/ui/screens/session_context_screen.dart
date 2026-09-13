@@ -277,7 +277,9 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
       final api = await widget.controller.prepareActionTransport();
       if (!mounted || generation != _generation || !_sameLocation) return;
       if (api == null) {
-        throw const ProductException('OpenCode is reconnecting. Try again.');
+        throw ProductException(
+          _sharedCopy(context).e7SharedOpenCodeIsReconnectingTryAgain,
+        );
       }
       final page = await readHistoryAtStagedBoundary(
         api,
@@ -359,10 +361,10 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
     );
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Session context'),
+        title: Text(_sharedCopy(context).e7SharedSessionContext),
         actions: [
           IconButton(
-            tooltip: 'Refresh context',
+            tooltip: _sharedCopy(context).e7SharedRefreshContext,
             onPressed: _loading || !_sameLocation ? null : _load,
             icon: const Icon(AppIconography.retry),
           ),
@@ -417,17 +419,17 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
     if (metrics.currentMessage == null) {
       return ProductEmptyState(
         icon: AppIconography.usageRing,
-        title: 'No context usage yet',
+        title: _sharedCopy(context).e7SharedNoContextUsageYet,
         message: _error != null
             ? productErrorText(_error!)
             : _hasOlder
             ? l10n.historyLoadedOnly
-            : 'Send a prompt and wait for an assistant response. OpenCode will then report token usage for this session.',
+            : _sharedCopy(context).e7SharedSendAPromptAndWaitForAn,
         actionLabel: _olderNeedsReload
             ? l10n.historyReload
             : _olderCursor != null
             ? l10n.historyLoadOlder
-            : 'Refresh',
+            : _sharedCopy(context).globalSessionsRefresh,
         onAction: _loading
             ? null
             : _olderCursor != null
@@ -466,19 +468,24 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
               ),
             ),
           _ContextHero(metrics: metrics),
-          const SectionLabel('Current model request'),
+          SectionLabel(_sharedCopy(context).e7SharedCurrentModelRequest),
           _MetricGrid(metrics: metrics),
           if (metrics.breakdown.isNotEmpty) ...[
-            const SectionLabel('Estimated input makeup'),
+            SectionLabel(_sharedCopy(context).e7SharedEstimatedInputMakeup),
             _ContextBreakdown(segments: metrics.breakdown),
           ],
-          SectionLabel(_hasOlder ? l10n.historyLoadedTotals : 'Session totals'),
+          SectionLabel(
+            _hasOlder
+                ? l10n.historyLoadedTotals
+                : _sharedCopy(context).e7SharedSessionTotals,
+          ),
           _SessionTotals(metrics: metrics, partial: _hasOlder),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
             child: Text(
-              'Usage comes from the latest completed assistant message. '
-              'The makeup is an estimate from visible prompt, response, and tool text; Other includes system instructions, tool definitions, and provider overhead.',
+              _sharedCopy(
+                context,
+              ).e7SharedUsageComesFromTheLatestCompletedAssistant,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppTheme.mutedOf(Theme.of(context)),
                 height: 1.45,
@@ -507,7 +514,7 @@ class _ContextHero extends StatelessWidget {
     final providerID = info.providerID ?? '';
     final modelID = info.modelID ?? '';
     final wireLabel = modelID.isEmpty
-        ? 'Model unavailable'
+        ? _sharedCopy(context).e7SharedModelUnavailable
         : providerID.isEmpty
         ? modelID
         : presentedModelLabel(providerID, modelID);
@@ -517,8 +524,8 @@ class _ContextHero extends StatelessWidget {
 
     final gauge = Semantics(
       label: percent == null
-          ? 'Context limit unavailable'
-          : '${percent.toStringAsFixed(1)} percent context used',
+          ? _sharedCopy(context).e7SharedContextLimitUnavailable
+          : _sharedCopy(context).e7SharedDetail381(percent.toStringAsFixed(1)),
       child: SizedBox.square(
         dimension: 86,
         child: Stack(
@@ -560,8 +567,13 @@ class _ContextHero extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           metrics.contextLimit > 0
-              ? '${_formatNumber(metrics.contextTokens)} of ${_formatNumber(metrics.contextLimit)} tokens'
-              : '${_formatNumber(metrics.contextTokens)} tokens · limit unavailable',
+              ? _sharedCopy(context).e7SharedDetail385(
+                  _formatNumber(metrics.contextTokens),
+                  _formatNumber(metrics.contextLimit),
+                )
+              : _sharedCopy(
+                  context,
+                ).e7SharedDetail386(_formatNumber(metrics.contextTokens)),
           key: const ValueKey('session-context-token-summary'),
           style: theme.textTheme.bodyMedium?.copyWith(
             fontFeatures: const [FontFeature.tabularFigures()],
@@ -569,7 +581,9 @@ class _ContextHero extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Latest assistant request, including cache activity',
+          _sharedCopy(
+            context,
+          ).e7SharedLatestAssistantRequestIncludingCacheActivity,
           style: theme.textTheme.bodySmall?.copyWith(
             color: AppTheme.mutedOf(theme),
           ),
@@ -615,16 +629,31 @@ class _MetricGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = metrics.tokens;
     final items = <({String label, String value})>[
-      (label: 'Input', value: _formatNumber(tokens.input)),
-      (label: 'Output', value: _formatNumber(tokens.output)),
-      (label: 'Reasoning', value: _formatNumber(tokens.reasoning)),
-      (label: 'Cache read', value: _formatNumber(tokens.cacheRead)),
-      (label: 'Cache write', value: _formatNumber(tokens.cacheWrite)),
       (
-        label: 'Context limit',
+        label: _sharedCopy(context).usageInput,
+        value: _formatNumber(tokens.input),
+      ),
+      (
+        label: _sharedCopy(context).usageOutput,
+        value: _formatNumber(tokens.output),
+      ),
+      (
+        label: _sharedCopy(context).transcriptFindReasoning,
+        value: _formatNumber(tokens.reasoning),
+      ),
+      (
+        label: _sharedCopy(context).usageCacheRead,
+        value: _formatNumber(tokens.cacheRead),
+      ),
+      (
+        label: _sharedCopy(context).usageCacheWrite,
+        value: _formatNumber(tokens.cacheWrite),
+      ),
+      (
+        label: _sharedCopy(context).e7SharedContextLimit,
         value: metrics.contextLimit > 0
             ? _formatNumber(metrics.contextLimit)
-            : 'Unavailable',
+            : _sharedCopy(context).e7SharedUnavailable,
       ),
     ];
     return LayoutBuilder(
@@ -745,7 +774,14 @@ class _ContextBreakdown extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(_breakdownLabel(segments[index].kind))),
+                  Expanded(
+                    child: Text(
+                      _breakdownLabel(
+                        _sharedCopy(context),
+                        segments[index].kind,
+                      ),
+                    ),
+                  ),
                   Text(
                     '${segments[index].percent.toStringAsFixed(1)}% · ${_formatNumber(segments[index].tokens)}',
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -776,29 +812,31 @@ class _SessionTotals extends StatelessWidget {
       child: Column(
         children: [
           _MetricRow(
-            label: partial ? l10n.historyLoadedMessages : 'Messages',
+            label: partial
+                ? l10n.historyLoadedMessages
+                : _sharedCopy(context).e7SharedMessages,
             value: _formatNumber(
               metrics.userMessages + metrics.assistantMessages,
             ),
           ),
           _MetricRow(
-            label: 'User / assistant',
+            label: _sharedCopy(context).e7SharedUserAssistant,
             value:
                 '${_formatNumber(metrics.userMessages)} / ${_formatNumber(metrics.assistantMessages)}',
           ),
           _MetricRow(
             key: const ValueKey('session-context-cost'),
             label: metrics.serverCost != null
-                ? 'Accumulated cost · reported by server'
+                ? _sharedCopy(context).e7SharedAccumulatedCostReportedByServer
                 : partial
                 ? l10n.historyLoadedCost
-                : 'Accumulated cost',
+                : _sharedCopy(context).e7SharedAccumulatedCost,
             value: '\$${metrics.totalCost.toStringAsFixed(4)}',
           ),
           if (metrics.serverTokens case final tokens?)
             _MetricRow(
               key: const ValueKey('session-context-server-tokens'),
-              label: 'Session tokens · reported by server',
+              label: _sharedCopy(context).e7SharedSessionTokensReportedByServer,
               value: _formatNumber(tokens.total),
             ),
           if (metrics.reportedByServer)
@@ -841,24 +879,32 @@ class _InlineContextError extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Could not refresh: ${productErrorText(error)}',
+              _sharedCopy(context).e7SharedDetail409(
+                productErrorText(error, l10n: _sharedCopy(context)),
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall,
             ),
           ),
-          TextButton(onPressed: onRetry, child: const Text('Try again')),
+          TextButton(
+            onPressed: onRetry,
+            child: Text(_sharedCopy(context).isolatedTaskRetryOpen),
+          ),
         ],
       ),
     );
   }
 }
 
-String _breakdownLabel(SessionContextBreakdownKind kind) => switch (kind) {
-  SessionContextBreakdownKind.user => 'User prompts',
-  SessionContextBreakdownKind.assistant => 'Assistant text',
-  SessionContextBreakdownKind.tool => 'Tool calls and results',
-  SessionContextBreakdownKind.other => 'Other context',
+String _breakdownLabel(
+  AppLocalizations l10n,
+  SessionContextBreakdownKind kind,
+) => switch (kind) {
+  SessionContextBreakdownKind.user => l10n.e7SharedUserPrompts,
+  SessionContextBreakdownKind.assistant => l10n.e7SharedAssistantText,
+  SessionContextBreakdownKind.tool => l10n.e7SharedToolCallsAndResults,
+  SessionContextBreakdownKind.other => l10n.e7SharedOtherContext,
 };
 
 String _formatNumber(int value) {
@@ -870,3 +916,6 @@ String _formatNumber(int value) {
   }
   return value < 0 ? '-$buffer' : buffer.toString();
 }
+
+AppLocalizations _sharedCopy(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));

@@ -1,6 +1,8 @@
+import '../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../app_iconography.dart';
+import 'product_states.dart';
 
 /// What [openExternalLink] did, so callers can react without re-deriving it.
 enum ExternalLinkOutcome {
@@ -52,10 +54,9 @@ Future<ExternalLinkOutcome> openExternalLink(
   if (uri == null) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Link blocked. This app may open only https:// URLs, or confirmed '
-            'http:// URLs.',
+            _sharedCopy(context).e7SharedLinkBlockedThisAppMayOpenOnly,
           ),
         ),
       );
@@ -71,13 +72,15 @@ Future<ExternalLinkOutcome> openExternalLink(
         insecure ? AppIconography.warning : AppIconography.externalLink,
       ),
       title: Text(
-        insecure ? 'Open insecure HTTP link?' : 'Open external link?',
+        insecure
+            ? _sharedCopy(context).e7SharedOpenInsecureHTTPLink
+            : _sharedCopy(context).e7SharedOpenExternalLink,
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Host'),
+          Text(_sharedCopy(context).e7SharedHost),
           const SizedBox(height: 4),
           SelectableText(
             externalLinkHost(uri),
@@ -85,21 +88,22 @@ Future<ExternalLinkOutcome> openExternalLink(
           ),
           if (insecure) ...[
             const SizedBox(height: 12),
-            const Text(
-              'HTTP is not encrypted. Other devices on the network may read or '
-              'change what you send and receive.',
-            ),
+            Text(_sharedCopy(context).e7SharedHTTPIsNotEncryptedOtherDevicesOn),
           ],
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
+          child: Text(_sharedCopy(context).projectFolderCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: Text(insecure ? 'Open HTTP link' : 'Open link'),
+          child: Text(
+            insecure
+                ? _sharedCopy(context).e7SharedOpenHTTPLink
+                : _sharedCopy(context).e7SharedOpenLink,
+          ),
         ),
       ],
     ),
@@ -114,15 +118,23 @@ Future<ExternalLinkOutcome> openExternalLink(
     if (opened) return ExternalLinkOutcome.opened;
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No app could open this link.')),
+        SnackBar(
+          content: Text(_sharedCopy(context).e7SharedNoAppCouldOpenThisLink),
+        ),
       );
     }
     return ExternalLinkOutcome.noHandler;
   } catch (error) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not open link: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _sharedCopy(context).e7SharedDetail699(
+              productErrorText(error, l10n: _sharedCopy(context)),
+            ),
+          ),
+        ),
+      );
     }
     return ExternalLinkOutcome.failed;
   }
@@ -150,3 +162,6 @@ Uri? safeExternalLinkUri(String? value) {
 /// user is asked to approve.
 String externalLinkHost(Uri uri) =>
     uri.hasPort ? '${uri.host}:${uri.port}' : uri.host;
+
+AppLocalizations _sharedCopy(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));

@@ -903,6 +903,12 @@ class ServerCapabilities {
   /// with steer/queue delivery. False on v1 — [InboxGateway] is inert.
   final bool inbox;
 
+  /// The server's product has a terminal CLI that resumes a session by id
+  /// inside its project directory (`opencode --session`, `opencode2
+  /// --session`), so "Continue on computer" can show a command. False for
+  /// backends with no such CLI (Codex).
+  final bool cliSessionResume;
+
   const ServerCapabilities({
     this.clientPromptMessageID = false,
     this.agentAccount = false,
@@ -959,6 +965,7 @@ class ServerCapabilities {
     this.legacyQuestionRequests = true,
     this.forms = false,
     this.inbox = false,
+    this.cliSessionResume = true,
   });
 
   static const allV1 = ServerCapabilities(clientPromptMessageID: true);

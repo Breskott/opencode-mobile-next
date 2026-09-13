@@ -28,8 +28,8 @@ class _PromptErrorBanner extends StatelessWidget {
       liveRegion: true,
       child: Container(
         key: const ValueKey('prompt-error-banner'),
-        margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-        padding: const EdgeInsets.fromLTRB(12, 10, 4, 6),
+        margin: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 4, 6),
         decoration: BoxDecoration(
           color: scheme.errorContainer,
           borderRadius: BorderRadius.circular(14),
@@ -59,7 +59,7 @@ class _PromptErrorBanner extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Dismiss prompt error',
+                  tooltip: _chatL10n(context).chatUiDismissPromptError,
                   visualDensity: VisualDensity.compact,
                   onPressed: onDismiss,
                   icon: Icon(
@@ -85,7 +85,7 @@ class _PromptErrorBanner extends StatelessWidget {
                       onPressed: () => showDialog<void>(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('Error details'),
+                          title: Text(_chatL10n(context).chatUiErrorDetails),
                           content: SingleChildScrollView(
                             child: SelectableText(
                               message,
@@ -97,19 +97,19 @@ class _PromptErrorBanner extends StatelessWidget {
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('Close'),
+                              child: Text(_chatL10n(context).isolatedTaskClose),
                             ),
                           ],
                         ),
                       ),
-                      child: const Text('Details'),
+                      child: Text(_chatL10n(context).chatUiDetails),
                     ),
                   if (kind == MessageErrorKind.modelNotFound &&
                       onChooseModel != null)
                     FilledButton.tonal(
                       key: const ValueKey('prompt-error-choose-model'),
                       onPressed: onChooseModel,
-                      child: const Text('Choose model'),
+                      child: Text(_chatL10n(context).chatUiChooseModel),
                     ),
                 ],
               ),
@@ -128,10 +128,17 @@ class _PromptErrorBanner extends StatelessWidget {
 /// usually has no git repository), the project- and git-dependent chips are
 /// replaced with one that always works.
 @visibleForTesting
-List<String> emptyTranscriptSuggestions({required String? directory}) {
+List<String> emptyTranscriptSuggestions({
+  required String? directory,
+  AppLocalizations? l10n,
+}) {
+  final strings = l10n ?? lookupAppLocalizations(const Locale('en'));
   final trimmed = directory?.trim() ?? '';
   if (trimmed.isEmpty) {
-    return const ["List what's in this directory", 'Find and fix a bug'];
+    return [
+      strings.chatUiListWhatSInThisDirectory,
+      strings.chatUiFindAndFixABug,
+    ];
   }
   final parts = trimmed
       .replaceAll('\\', '/')
@@ -140,9 +147,9 @@ List<String> emptyTranscriptSuggestions({required String? directory}) {
       .toList();
   final name = parts.isEmpty ? trimmed : parts.last;
   return [
-    'Explain the $name project',
-    'What changed recently?',
-    'Find and fix a bug',
+    strings.chatUiExplainProject(name),
+    strings.chatUiWhatChangedRecently,
+    strings.chatUiFindAndFixABug,
   ];
 }
 
@@ -153,10 +160,10 @@ class _EmptyTranscript extends StatelessWidget {
 
   final ValueChanged<String> onSuggestion;
 
-  static const _fallbackSuggestions = [
-    'Explain this project',
-    'What changed recently?',
-    'Find and fix a bug',
+  List<String> _fallbackSuggestions(BuildContext context) => [
+    _chatL10n(context).chatUiExplainThisProject,
+    _chatL10n(context).chatUiWhatChangedRecently,
+    _chatL10n(context).chatUiFindAndFixABug,
   ];
 
   /// Resolves the chip list from the live connection when a provider scope is
@@ -168,9 +175,12 @@ class _EmptyTranscript extends StatelessWidget {
         context,
         listen: false,
       ).read(connProvider).directory;
-      return emptyTranscriptSuggestions(directory: directory);
+      return emptyTranscriptSuggestions(
+        directory: directory,
+        l10n: _chatL10n(context),
+      );
     } catch (_) {
-      return _fallbackSuggestions;
+      return _fallbackSuggestions(context);
     }
   }
 
@@ -219,11 +229,15 @@ class _EmptyTranscript extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Text('Start coding', style: theme.textTheme.titleMedium),
+                      Text(
+                        _chatL10n(context).chatUiStartCoding,
+                        style: theme.textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 6),
                       Text(
-                        'Describe a change, ask about this project, '
-                        'or paste an error.',
+                        _chatL10n(
+                          context,
+                        ).chatUiDescribeAChangeAskAboutThisProject,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
@@ -250,8 +264,10 @@ class _EmptyTranscript extends StatelessWidget {
                       Text.rich(
                         TextSpan(
                           children: [
-                            const TextSpan(
-                              text: 'Tip: type / for commands · tap ',
+                            TextSpan(
+                              text: _chatL10n(
+                                context,
+                              ).chatUiTipTypeForCommandsTap,
                             ),
                             WidgetSpan(
                               alignment: PlaceholderAlignment.middle,
@@ -261,8 +277,10 @@ class _EmptyTranscript extends StatelessWidget {
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
-                            const TextSpan(
-                              text: ' under a message for actions',
+                            TextSpan(
+                              text: _chatL10n(
+                                context,
+                              ).chatUiUnderAMessageForActions,
                             ),
                           ],
                         ),
@@ -319,7 +337,7 @@ class _JumpToLatestButton extends StatelessWidget {
         customBorder: const StadiumBorder(),
         onTap: onTap,
         child: Tooltip(
-          message: 'Jump to latest',
+          message: _chatL10n(context).chatUiJumpToLatest,
           // 48dp target: this pill floats over a scrolling list, where
           // undersized targets cause accidental transcript scrolls.
           child: Padding(
@@ -370,12 +388,12 @@ class _EarlierMessagesPill extends StatelessWidget {
         // undersized target scrolls the list instead of opening the timeline.
         child: Container(
           constraints: const BoxConstraints(minHeight: 44),
-          padding: const EdgeInsets.fromLTRB(14, 6, 10, 6),
+          padding: const EdgeInsetsDirectional.fromSTEB(14, 6, 10, 6),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '$count earlier messages',
+                _chatL10n(context).chatUiEarlierMessageCount(count),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -616,26 +634,43 @@ class V2TranscriptRow extends StatelessWidget {
     super.key,
     required this.part,
     required this.messageId,
+    this.parentSessionID,
+    this.knownSessions = const {},
+    this.onOpenChild,
   });
 
   final Part part;
   final String messageId;
+  final String? parentSessionID;
+  final Map<String, Session> knownSessions;
+  final ValueChanged<String>? onOpenChild;
 
   @override
   Widget build(BuildContext context) {
+    final result = BackgroundAgentResult.fromPart(part);
+    if (result != null) {
+      return BackgroundAgentResultCard(
+        key: ValueKey('background-result-$messageId'),
+        result: result,
+        rawText: part.text,
+        onOpenChild: result.isKnownChild(parentSessionID, knownSessions)
+            ? onOpenChild
+            : null,
+      );
+    }
     final kind = part.toolName ?? '';
     switch (part.type) {
       case 'v2:switch':
         final (icon, prefix) = switch (kind) {
-          'model' => (AppIconography.processor, 'Model'),
-          'agent' => (AppIconography.support, 'Agent'),
-          _ => (Icons.drive_file_move_outline, 'Moved'),
+          'model' => (AppIconography.processor, _chatL10n(context).chatUiModel),
+          'agent' => (AppIconography.support, _chatL10n(context).chatUiAgent),
+          _ => (Icons.drive_file_move_outline, _chatL10n(context).chatUiMoved),
         };
         final detail = kind == 'location'
             ? part.url
             : part.filename == null
             ? null
-            : 'Previously ${part.filename}';
+            : _chatL10n(context).chatUiPreviouslyValue(part.filename ?? '');
         return TranscriptMarker(
           key: ValueKey('transcript-marker-$kind-switched-$messageId'),
           icon: icon,
@@ -646,7 +681,9 @@ class V2TranscriptRow extends StatelessWidget {
         return switch (kind) {
           'running' => TranscriptMarker(
             key: ValueKey('compaction-running-$messageId'),
-            label: part.text.isEmpty ? 'Compacting conversation…' : part.text,
+            label: part.text.isEmpty
+                ? _chatL10n(context).chatUiCompactingConversation
+                : part.text,
             leading: const SizedBox.square(
               dimension: 12,
               child: CircularProgressIndicator(strokeWidth: 2),
@@ -655,14 +692,14 @@ class V2TranscriptRow extends StatelessWidget {
           'failed' => TranscriptNotice(
             key: ValueKey('compaction-failed-$messageId'),
             icon: AppIconography.collapse,
-            header: 'Compaction failed',
+            header: _chatL10n(context).chatUiCompactionFailed,
             text: part.text,
             error: true,
           ),
           _ => TranscriptNotice(
             key: ValueKey('compaction-completed-$messageId'),
             icon: AppIconography.collapse,
-            header: 'Context compacted',
+            header: _chatL10n(context).chatUiContextCompacted,
             text: part.text,
             markdown: true,
           ),
@@ -676,16 +713,24 @@ class V2TranscriptRow extends StatelessWidget {
           ),
           'synthetic' => (
             AppIconography.sparkle,
-            part.filename ?? 'Context added',
+            part.filename ?? _chatL10n(context).chatUiContextAdded,
             null,
           ),
           'system' => (
             AppIconography.settingsAdvanced,
-            part.filename ?? 'System update',
+            part.filename ?? _chatL10n(context).chatUiSystemUpdate,
             null,
           ),
-          'skill' => (AppIcons.run, 'Skill ·', part.filename ?? part.text),
-          _ => (AppIconography.server, part.filename ?? 'Server message', null),
+          'skill' => (
+            AppIcons.run,
+            _chatL10n(context).chatUiSkill,
+            part.filename ?? part.text,
+          ),
+          _ => (
+            AppIconography.server,
+            part.filename ?? _chatL10n(context).chatUiServerMessage,
+            null,
+          ),
         };
         return TranscriptNotice(
           key: ValueKey('transcript-notice-$messageId'),
@@ -833,7 +878,7 @@ List<_AssistantPartRun> _groupAssistantParts(List<Part> parts) {
 /// One human sentence for a tool group's header, e.g. "Read 3 files, edited
 /// 1, ran 2 commands". Segments follow the way a turn unfolds — look, change,
 /// run — and the file noun is elided after a read segment already names it.
-String _toolRunSentence(List<Part> parts) {
+String _toolRunSentence(List<Part> parts, AppLocalizations strings) {
   var reads = 0;
   var searches = 0;
   var lists = 0;
@@ -861,29 +906,25 @@ String _toolRunSentence(List<Part> parts) {
         commands++;
       case 'webfetch' || 'websearch':
         web++;
-      case 'task':
+      case 'task' || 'subagent':
         agents++;
       default:
         other++;
     }
   }
-  String plural(int count, String one, String many) =>
-      '$count ${count == 1 ? one : many}';
   final segments = <String>[
-    if (reads > 0) 'read ${plural(reads, 'file', 'files')}',
-    if (searches > 0)
-      searches == 1 ? 'searched once' : 'searched $searches times',
-    if (lists > 0) 'listed ${plural(lists, 'folder', 'folders')}',
-    if (edits > 0)
-      reads > 0 ? 'edited $edits' : 'edited ${plural(edits, 'file', 'files')}',
-    if (commands > 0) 'ran ${plural(commands, 'command', 'commands')}',
-    if (web > 0) 'fetched ${plural(web, 'page', 'pages')}',
-    if (agents > 0) 'delegated ${plural(agents, 'task', 'tasks')}',
-    if (other > 0) 'made ${plural(other, 'other call', 'other calls')}',
-    if (notRun > 0) '${plural(notRun, 'step was', 'steps were')} not run',
+    if (reads > 0) strings.chatUiReadFiles(reads),
+    if (searches > 0) strings.chatUiSearched(searches),
+    if (lists > 0) strings.chatUiListedFolders(lists),
+    if (edits > 0) strings.chatUiEditedFiles(edits),
+    if (commands > 0) strings.chatUiRanCommands(commands),
+    if (web > 0) strings.chatUiFetchedPages(web),
+    if (agents > 0) strings.chatUiDelegatedTasks(agents),
+    if (other > 0) strings.chatUiOtherCalls(other),
+    if (notRun > 0) strings.chatUiStepsNotRun(notRun),
   ];
   if (segments.isEmpty) return '';
-  final sentence = segments.join(', ');
+  final sentence = segments.join(strings.chatUiSeparator);
   return sentence[0].toUpperCase() + sentence.substring(1);
 }
 
@@ -991,21 +1032,26 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
         ? runningToolTicker(
             runningPart.toolName ?? 'tool',
             runningPart.toolState,
+            l10n: _chatL10n(context),
           )
-        : _toolRunSentence(widget.parts);
+        : _toolRunSentence(widget.parts, _chatL10n(context));
     final allContext = widget.parts.every(
       (part) => _contextToolNames.contains(part.toolName?.trim().toLowerCase()),
     );
     final title = allContext && !_notRun
-        ? (_running ? 'Exploring' : 'Explored')
-        : (_running ? 'Running tools' : 'Tools');
+        ? (_running
+              ? _chatL10n(context).chatUiExploring
+              : _chatL10n(context).chatUiExplored)
+        : (_running
+              ? _chatL10n(context).chatUiRunningTools
+              : _chatL10n(context).chatUiTools);
     final status = _failed
-        ? 'failed'
+        ? _chatL10n(context).chatUiBackgroundError
         : _running
-        ? 'running'
+        ? _chatL10n(context).chatUiRunning
         : _notRun
-        ? 'includes steps not run'
-        : 'complete';
+        ? _chatL10n(context).chatUiIncludesStepsNotRun
+        : _chatL10n(context).chatUiCompleted;
     return Container(
       key: const Key('tool-call-group'),
       margin: const EdgeInsets.symmetric(vertical: 3),
@@ -1019,8 +1065,9 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
           Semantics(
             button: true,
             expanded: _expanded,
-            label:
-                '$title, ${widget.parts.length} ${widget.parts.length == 1 ? 'step' : 'steps'}, $status',
+            label: _chatL10n(
+              context,
+            ).chatUiToolGroupSemantics(title, widget.parts.length, status),
             child: InkWell(
               key: const Key('tool-call-group-header'),
               onTap: _toggle,
@@ -1028,7 +1075,7 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 48),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+                  padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 8),
                   child: Row(
                     children: [
                       Icon(
@@ -1239,7 +1286,7 @@ class _AssistantMessagePart extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 6),
         child: Chip(
           avatar: const Icon(AppIconography.attach, size: 16),
-          label: Text(part.filename ?? 'Attachment'),
+          label: Text(part.filename ?? _chatL10n(context).chatUiAttachment),
         ),
       );
     }
@@ -1258,7 +1305,9 @@ class _AssistantMessagePart extends StatelessWidget {
     await Clipboard.setData(ClipboardData(text: option));
     if (!context.mounted) return;
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(content: Text('Copied. Paste it into the composer')),
+      SnackBar(
+        content: Text(_chatL10n(context).chatUiCopiedPasteItIntoTheComposer),
+      ),
     );
   }
 }
@@ -1339,10 +1388,12 @@ class _MessageView extends StatelessWidget {
     // Usage rides on the same preference as timestamps: both are detail a
     // reader opts into, and the model label alone marks a switch.
     final metaParts = <String>[
-      if (showTimestamp && createdAt != null) _fmtSessionTime(createdAt),
+      if (showTimestamp && createdAt != null)
+        _fmtSessionTime(createdAt, context),
       ?meta.modelLabel,
       if (showTimestamp) ...[
-        if (meta.turnTokens case final tokens?) '${_fmtTokens(tokens)} tok',
+        if (meta.turnTokens case final tokens?)
+          _chatL10n(context).chatUiTokenCount(_fmtTokens(tokens)),
         if (meta.turnCost case final cost?) _fmtCost(cost),
       ],
     ];
@@ -1377,8 +1428,8 @@ class _MessageView extends StatelessWidget {
             ? Duration.zero
             : const Duration(milliseconds: 180),
         padding: isUser
-            ? const EdgeInsets.fromLTRB(6, 4, 6, 10)
-            : const EdgeInsets.fromLTRB(6, 0, 6, 4),
+            ? const EdgeInsetsDirectional.fromSTEB(6, 4, 6, 10)
+            : const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 4),
         decoration: BoxDecoration(
           color: highlighted
               ? theme.colorScheme.primaryContainer.withValues(alpha: .24)
@@ -1463,7 +1514,7 @@ class _MessageView extends StatelessWidget {
             if (queued)
               Padding(
                 key: ValueKey('queued-message-${m.info.id}'),
-                padding: const EdgeInsets.only(top: 3, right: 6),
+                padding: const EdgeInsetsDirectional.only(top: 3, end: 6),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1474,7 +1525,7 @@ class _MessageView extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Queued · runs after this turn',
+                      _chatL10n(context).chatUiQueuedRunsAfterThisTurn,
                       style: theme.textTheme.labelSmall!.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -1484,7 +1535,11 @@ class _MessageView extends StatelessWidget {
               ),
             if (metaParts.isNotEmpty || onLongPress != null)
               Padding(
-                padding: const EdgeInsets.only(top: 1, left: 6, right: 6),
+                padding: const EdgeInsetsDirectional.only(
+                  top: 1,
+                  start: 6,
+                  end: 6,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1501,26 +1556,29 @@ class _MessageView extends StatelessWidget {
                     if (onLongPress != null)
                       Semantics(
                         button: true,
-                        label: 'Message actions',
+                        label: _chatL10n(context).chatUiMessageActions,
                         child: Tooltip(
-                          message: 'Message actions',
+                          message: _chatL10n(context).chatUiMessageActions,
                           child: InkWell(
                             key: ValueKey('message-actions-${m.info.id}'),
                             customBorder: const StadiumBorder(),
                             onTap: onLongPress,
-                            // The glyph stays quiet in the meta row, but the
-                            // target itself meets the 44dp floor the rest of
-                            // the product enforces.
+                            // The target keeps the 44dp floor the rest of
+                            // the product enforces. The glyph sits on a
+                            // small tonal disc so it reads as a button
+                            // instead of a bare "…" that, under the newest
+                            // reply, looked like the answer trailing off.
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(
                                 minWidth: 44,
                                 minHeight: 44,
                               ),
-                              child: Icon(
-                                AppIconography.more,
-                                size: 16,
-                                color: theme.colorScheme.onSurfaceVariant
-                                    .withValues(alpha: .8),
+                              child: Center(
+                                child: _MessageActionsDisc(
+                                  key: ValueKey(
+                                    'message-actions-disc-${m.info.id}',
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -1545,7 +1603,7 @@ class _MessageView extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 3),
                 child: Text(
-                  'Answer was cut off by the length limit',
+                  _chatL10n(context).chatUiAnswerWasCutOffByTheLength,
                   key: const Key('message-length-footer'),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: AppTheme.mutedOf(theme),
@@ -1572,6 +1630,34 @@ class _MessageView extends StatelessWidget {
   /// "essentially free" rather than a string of zeros.
   static String _fmtCost(double cost) =>
       cost < .001 ? '< \$0.001' : '\$${cost.toStringAsFixed(3)}';
+}
+
+/// The visible face of the message-actions target: a "more" glyph on a small
+/// tonal disc. The disc is what makes it read as a control; a bare glyph
+/// under the newest reply looked like the answer trailing off.
+class _MessageActionsDisc extends StatelessWidget {
+  const _MessageActionsDisc({super.key});
+
+  static const double diameter = 28;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: diameter,
+      height: diameter,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        AppIconography.more,
+        size: 16,
+        color: scheme.onSurfaceVariant,
+      ),
+    );
+  }
 }
 
 /// The assistant error row, keyed on the server's typed error: overflow,
@@ -1610,7 +1696,7 @@ class _AssistantErrorRow extends StatelessWidget {
           text: text,
           details: details,
           actionKey: const Key('error-action-choose-model'),
-          actionLabel: 'Choose model',
+          actionLabel: _chatL10n(context).chatUiChooseModel,
           onAction: onChooseModel,
         );
       case MessageErrorKind.contextOverflow:
@@ -1620,7 +1706,7 @@ class _AssistantErrorRow extends StatelessWidget {
           text: text,
           details: details,
           actionKey: const Key('error-action-compact'),
-          actionLabel: 'Compact session',
+          actionLabel: _chatL10n(context).chatUiCompactSession,
           onAction: onCompact,
         );
       case MessageErrorKind.providerAuth:
@@ -1629,7 +1715,7 @@ class _AssistantErrorRow extends StatelessWidget {
           icon: Icons.key_off_rounded,
           text: text,
           actionKey: const Key('error-action-providers'),
-          actionLabel: 'Open providers',
+          actionLabel: _chatL10n(context).chatUiOpenProviders,
           onAction: onOpenProviders,
         );
       case MessageErrorKind.outputLength:
@@ -1639,7 +1725,7 @@ class _AssistantErrorRow extends StatelessWidget {
           text: text,
           details: details,
           actionKey: const Key('error-action-continue'),
-          actionLabel: 'Continue',
+          actionLabel: _chatL10n(context).returnBriefContinue,
           onAction: onContinue,
         );
       case MessageErrorKind.aborted:
@@ -1650,7 +1736,7 @@ class _AssistantErrorRow extends StatelessWidget {
             Icon(AppIcons.stop, size: 14, color: AppTheme.mutedOf(theme)),
             const SizedBox(width: 4),
             Text(
-              'Stopped',
+              _chatL10n(context).workStopped,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: AppTheme.mutedOf(theme),
               ),
@@ -1696,7 +1782,7 @@ class _ErrorActionCard extends StatelessWidget {
   Future<void> _showDetails(BuildContext context) => showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Error details'),
+      title: Text(_chatL10n(context).chatUiErrorDetails),
       content: SingleChildScrollView(
         child: SelectableText(
           details ?? text,
@@ -1708,7 +1794,7 @@ class _ErrorActionCard extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Close'),
+          child: Text(_chatL10n(context).isolatedTaskClose),
         ),
       ],
     ),
@@ -1719,7 +1805,7 @@ class _ErrorActionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 8, 8, 6),
+      padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 6),
       decoration: BoxDecoration(
         color: scheme.errorContainer.withValues(alpha: .35),
         borderRadius: BorderRadius.circular(AppTheme.radiusControl),
@@ -1755,7 +1841,7 @@ class _ErrorActionCard extends StatelessWidget {
                   TextButton(
                     key: const Key('error-action-details'),
                     onPressed: () => _showDetails(context),
-                    child: const Text('Details'),
+                    child: Text(_chatL10n(context).chatUiDetails),
                   ),
                 if (onAction != null)
                   TextButton(
@@ -1862,14 +1948,17 @@ class _AttachmentPart extends StatelessWidget {
 
   const _AttachmentPart({required this.part});
 
-  String get _filename => part.filename?.trim().isNotEmpty == true
+  String _filename(BuildContext context) =>
+      part.filename?.trim().isNotEmpty == true
       ? part.filename!.trim()
-      : 'Attachment';
+      : _chatL10n(context).chatUiAttachment;
 
-  String get _type {
-    final dot = _filename.lastIndexOf('.');
-    if (dot < 0 || dot == _filename.length - 1) return 'FILE';
-    return _filename.substring(dot + 1).toUpperCase();
+  String _type(BuildContext context) {
+    final dot = _filename(context).lastIndexOf('.');
+    if (dot < 0 || dot == _filename(context).length - 1) {
+      return _chatL10n(context).chatUiFILE;
+    }
+    return _filename(context).substring(dot + 1).toUpperCase();
   }
 
   bool get _isReference =>
@@ -1883,7 +1972,7 @@ class _AttachmentPart extends StatelessWidget {
     void openPreview() => showFilePreviewSheet(
       context,
       FilePreviewData.fromDataUrl(
-        name: _filename,
+        name: _filename(context),
         mimeType: part.mime,
         url: part.url,
       ),
@@ -1894,13 +1983,13 @@ class _AttachmentPart extends StatelessWidget {
       button: !reference,
       excludeSemantics: true,
       label: reference
-          ? 'Reference @$_filename'
-          : 'Preview attachment $_filename',
+          ? _chatL10n(context).chatUiReferenceName(_filename(context))
+          : _chatL10n(context).chatUiPreviewAttachmentName(_filename(context)),
       onTap: reference ? null : openPreview,
       child: Tooltip(
         message: reference
-            ? 'Project reference @$_filename'
-            : 'Preview attachment',
+            ? _chatL10n(context).chatUiProjectReferenceName(_filename(context))
+            : _chatL10n(context).chatUiPreviewAttachment,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppTheme.radiusControl),
           onTap: reference ? null : openPreview,
@@ -1926,7 +2015,9 @@ class _AttachmentPart extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        reference ? '@$_filename' : _filename,
+                        reference
+                            ? '@${_filename(context)}'
+                            : _filename(context),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -1935,8 +2026,10 @@ class _AttachmentPart extends StatelessWidget {
                       ),
                       Text(
                         reference
-                            ? 'Project reference'
-                            : '$_type · prompt attachment',
+                            ? _chatL10n(context).chatUiProjectReference
+                            : _chatL10n(
+                                context,
+                              ).chatUiAttachmentType(_type(context)),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -2094,7 +2187,7 @@ class _ReasoningState extends State<_Reasoning> {
               ? KeyedSubtree(
                   key: const Key('reasoning-inline'),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 5, 4, 5),
+                    padding: const EdgeInsetsDirectional.fromSTEB(8, 5, 4, 5),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(
                         maxWidth: _proseWidthCap,
@@ -2115,8 +2208,8 @@ class _ReasoningState extends State<_Reasoning> {
                       expanded: _open,
                       excludeSemantics: true,
                       label: _open
-                          ? 'Collapse reasoning details'
-                          : 'Expand reasoning details',
+                          ? _chatL10n(context).chatUiCollapseReasoningDetails
+                          : _chatL10n(context).chatUiExpandReasoningDetails,
                       child: InkWell(
                         key: const Key('reasoning-toggle'),
                         onTap: () => setState(() {
@@ -2126,7 +2219,12 @@ class _ReasoningState extends State<_Reasoning> {
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(minHeight: 48),
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
+                            padding: const EdgeInsetsDirectional.fromSTEB(
+                              8,
+                              4,
+                              4,
+                              4,
+                            ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -2148,7 +2246,7 @@ class _ReasoningState extends State<_Reasoning> {
                                   const SizedBox(width: 4),
                                   Flexible(
                                     child: Text(
-                                      '(tap to expand)',
+                                      _chatL10n(context).chatUiTapToExpand,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: theme.textTheme.labelSmall!
@@ -2168,7 +2266,12 @@ class _ReasoningState extends State<_Reasoning> {
                     ),
                     if (_open)
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                          8,
+                          4,
+                          4,
+                          4,
+                        ),
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(
                             maxWidth: _proseWidthCap,
@@ -2205,19 +2308,19 @@ class _SubagentContextBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final count = position != null && total != null
-        ? '$position of $total'
-        : 'Delegated session';
+        ? _chatL10n(context).chatUiPositionOfTotal(position!, total!)
+        : _chatL10n(context).chatUiDelegatedSession;
     return Material(
       color: theme.colorScheme.surfaceContainerLow,
       child: Padding(
-        padding: const EdgeInsets.only(left: 16),
+        padding: const EdgeInsetsDirectional.only(start: 16),
         child: Row(
           children: [
             Icon(AppIconography.nested, color: theme.colorScheme.primary),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Subagent · $count',
+                _chatL10n(context).chatUiSubagentCount(count),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium,
@@ -2225,13 +2328,13 @@ class _SubagentContextBanner extends StatelessWidget {
             ),
             IconButton(
               key: const ValueKey('subagent-parent-session'),
-              tooltip: 'Open parent session',
+              tooltip: _chatL10n(context).chatUiOpenParentSession,
               onPressed: onParent,
               icon: const Icon(AppIconography.send),
             ),
             IconButton(
               key: const ValueKey('subagent-session-list'),
-              tooltip: 'Show all subagent sessions',
+              tooltip: _chatL10n(context).chatUiShowAllSubagentSessions,
               onPressed: onAll,
               icon: const Icon(AppIconography.branch),
             ),
@@ -2253,7 +2356,7 @@ class _SharedSessionBanner extends StatelessWidget {
     return Material(
       color: Theme.of(context).colorScheme.tertiaryContainer,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 8, 8),
         child: Row(
           children: [
             const Icon(AppIconography.globe, size: 20),
@@ -2262,9 +2365,9 @@ class _SharedSessionBanner extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Shared: anyone with the link can view'),
+                  Text(_chatL10n(context).chatUiSharedAnyoneWithTheLinkCanView),
                   Semantics(
-                    label: 'Shared session link $url',
+                    label: _chatL10n(context).chatUiSharedLink(url),
                     child: SelectableText(
                       url,
                       maxLines: 1,
@@ -2278,11 +2381,14 @@ class _SharedSessionBanner extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Copy share link',
+              tooltip: _chatL10n(context).chatUiCopyShareLink,
               onPressed: () => Clipboard.setData(ClipboardData(text: url)),
               icon: const Icon(AppIcons.copy),
             ),
-            TextButton(onPressed: onStop, child: const Text('Stop sharing')),
+            TextButton(
+              onPressed: onStop,
+              child: Text(_chatL10n(context).chatUiStopSharing),
+            ),
           ],
         ),
       ),
@@ -2366,7 +2472,7 @@ class _PendingSendsStrip extends StatelessWidget {
             children: [
               for (final entry in entries)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 2, 8, 2),
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 2, 8, 2),
                   child: entry.child,
                 ),
             ],
@@ -2412,7 +2518,7 @@ class _PendingSendBubble extends StatelessWidget {
       container: true,
       label: semanticsLabel,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 6, 6),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(14),
@@ -2435,8 +2541,7 @@ class _PendingSendBubble extends StatelessWidget {
               ),
             if (attachmentCount > 0)
               Text(
-                '$attachmentCount attachment'
-                '${attachmentCount == 1 ? '' : 's'}',
+                _chatL10n(context).chatUiAttachmentCount(attachmentCount),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -2542,10 +2647,10 @@ class _QueuedPromptBubble extends StatelessWidget {
           : l10n.queuedDeliveryUnconfirmedWithError(error);
       icon = AppIconography.question;
     } else if (error != null) {
-      label = 'Failed: $error';
+      label = _chatL10n(context).chatUiFailedDetail(error);
       icon = AppIconography.error;
     } else {
-      label = 'Queued — will send when reconnected';
+      label = _chatL10n(context).chatUiQueuedWillSendWhenReconnected;
       icon = AppIconography.clock;
     }
     return _PendingSendBubble(
@@ -2554,7 +2659,7 @@ class _QueuedPromptBubble extends StatelessWidget {
       icon: icon,
       label: label,
       error: review || (!sending && error != null),
-      semanticsLabel: 'Queued draft. $label',
+      semanticsLabel: _chatL10n(context).chatUiQueuedDraftLabel(label),
       actions: [
         if (review && !acceptedUnrecorded)
           _PendingSendAction(
@@ -2566,13 +2671,13 @@ class _QueuedPromptBubble extends StatelessWidget {
         _PendingSendAction(
           key: const ValueKey('queued-action-edit'),
           icon: AppIconography.edit,
-          tooltip: 'Edit draft',
+          tooltip: _chatL10n(context).chatUiEditDraft,
           onPressed: sending ? null : onEdit,
         ),
         _PendingSendAction(
           key: const ValueKey('queued-action-discard'),
           icon: AppIconography.delete,
-          tooltip: 'Discard draft',
+          tooltip: _chatL10n(context).chatUiDiscardDraft,
           onPressed: sending ? null : onDiscard,
         ),
       ],
@@ -2602,10 +2707,10 @@ class _InboxSendBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = !_isUser
-        ? 'Context update pending'
+        ? _chatL10n(context).chatUiContextUpdatePending
         : _steering
-        ? 'Steering at the next step'
-        : 'Waiting for this run to finish';
+        ? _chatL10n(context).chatUiSteeringAtTheNextStep
+        : _chatL10n(context).chatUiWaitingForThisRunToFinish;
     return _PendingSendBubble(
       text: _isUser ? (item.promptText ?? '') : '',
       attachmentCount: 0,
@@ -2615,7 +2720,7 @@ class _InboxSendBubble extends StatelessWidget {
           ? AppIcons.run
           : AppIcons.queue,
       label: label,
-      semanticsLabel: 'Pending send. $label',
+      semanticsLabel: _chatL10n(context).chatUiPendingSendLabel(label),
       actions: [
         // Only the flip that changes the current mode is offered; the server
         // has no reorder, so none is faked.
@@ -2624,23 +2729,151 @@ class _InboxSendBubble extends StatelessWidget {
               ? _PendingSendAction(
                   key: const ValueKey('inbox-action-queue'),
                   icon: AppIcons.queue,
-                  tooltip: 'Wait for this run instead',
+                  tooltip: _chatL10n(context).chatUiWaitForThisRunInstead,
                   onPressed: onFlipDelivery,
                 )
               : _PendingSendAction(
                   key: const ValueKey('inbox-action-steer'),
                   icon: AppIcons.run,
-                  tooltip: 'Send now and steer instead',
+                  tooltip: _chatL10n(context).chatUiSendNowAndSteerInstead,
                   onPressed: onFlipDelivery,
                 ),
         if (_isUser)
           _PendingSendAction(
             key: const ValueKey('inbox-action-cancel'),
             icon: AppIconography.close,
-            tooltip: 'Cancel and return to the composer',
+            tooltip: _chatL10n(context).chatUiCancelAndReturnToTheComposer,
             onPressed: onCancel,
           ),
       ],
+    );
+  }
+}
+
+/// A server-authored background result remains separate from the parent's own
+/// reply. The readable outcome is primary; exact protocol text is inspectable.
+class BackgroundAgentResultCard extends StatefulWidget {
+  const BackgroundAgentResultCard({
+    super.key,
+    required this.result,
+    required this.rawText,
+    this.onOpenChild,
+  });
+
+  final BackgroundAgentResult result;
+  final String rawText;
+  final ValueChanged<String>? onOpenChild;
+
+  @override
+  State<BackgroundAgentResultCard> createState() =>
+      _BackgroundAgentResultCardState();
+}
+
+class _BackgroundAgentResultCardState extends State<BackgroundAgentResultCard> {
+  bool _details = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = _chatL10n(context);
+    final theme = Theme.of(context);
+    final result = widget.result;
+    final status = switch (result.state) {
+      'completed' => strings.chatUiBackgroundComplete,
+      'error' => strings.chatUiBackgroundError,
+      _ => strings.chatUiBackgroundCancelled,
+    };
+    final color = switch (result.state) {
+      'completed' => AppTheme.successOf(theme),
+      'error' => theme.colorScheme.error,
+      _ => theme.colorScheme.onSurfaceVariant,
+    };
+    return Card.filled(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  result.state == 'completed'
+                      ? AppIconography.checkCircle
+                      : Icons.info_outline,
+                  color: color,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        strings.chatUiBackgroundResult,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        result.description.isEmpty
+                            ? result.agent
+                            : result.description,
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${result.agent} · $status',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            MarkdownText(
+              result.body.isEmpty ? strings.chatUiNoResultText : result.body,
+              selectable: false,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                if (widget.onOpenChild != null)
+                  TextButton.icon(
+                    onPressed: () => widget.onOpenChild!(result.childID),
+                    icon: const Icon(AppIconography.branch, size: 18),
+                    label: Text(strings.chatUiResultOpenChild),
+                  ),
+                TextButton.icon(
+                  onPressed: () => setState(() => _details = !_details),
+                  icon: Icon(
+                    _details ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                  ),
+                  label: Text(strings.chatUiResultSourceDetails),
+                ),
+              ],
+            ),
+            if (_details)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: SelectableText(
+                  widget.rawText,
+                  textDirection: TextDirection.ltr,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontFamily: AppTheme.monoFamily,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

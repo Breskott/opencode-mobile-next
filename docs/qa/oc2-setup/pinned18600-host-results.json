@@ -1,0 +1,122 @@
+[
+  {
+    "mode": "explicit-db",
+    "version": "opencode2 v0.0.0-beta-18600",
+    "pid": 3842588,
+    "port": 49307,
+    "environment": "constructed from allowlist; child-only HOME; four XDG roots + TMPDIR + OPENCODE_CONFIG_DIR; no inherited provider/auth config",
+    "health": {
+      "status": 200,
+      "version": "0.0.0-beta-18600",
+      "healthy": true,
+      "applicationStatus": null
+    },
+    "unauthenticatedHealthStatus": 401,
+    "expectedDatabase": "/tmp/oc2-pinned18600-check/explicit-db/database/isolated.db",
+    "databaseExists": true,
+    "databaseFiles": [
+      "database/isolated.db"
+    ],
+    "createdRoots": {
+      "home": false,
+      "data": true,
+      "cache": true,
+      "state": true,
+      "config": false,
+      "tmp": true,
+      "override-config": false
+    },
+    "databaseTableNames": [
+      "account",
+      "account_state",
+      "control_account",
+      "credential",
+      "event",
+      "event_sequence",
+      "instruction_blob",
+      "instruction_entry",
+      "instruction_state",
+      "kv",
+      "migration",
+      "permission",
+      "project",
+      "project_directory",
+      "session_inbox",
+      "session_message",
+      "session_pending",
+      "session_v2",
+      "workspace",
+      "worktree"
+    ],
+    "result": "passed",
+    "stopped": true,
+    "suppliedPasswordAppearedInStdout": false,
+    "suppliedPasswordAppearedInStderr": false,
+    "passwordLinePrinted": false,
+    "stdoutLineKinds": [
+      "server listening"
+    ],
+    "stderrLineCount": 0,
+    "listenerClosed": true
+  },
+  {
+    "mode": "default-db",
+    "version": "opencode2 v0.0.0-beta-18600",
+    "pid": 3842651,
+    "port": 48981,
+    "environment": "constructed from allowlist; child-only HOME; four XDG roots + TMPDIR + OPENCODE_CONFIG_DIR; no inherited provider/auth config",
+    "health": {
+      "status": 200,
+      "version": "0.0.0-beta-18600",
+      "healthy": true,
+      "applicationStatus": null
+    },
+    "unauthenticatedHealthStatus": 401,
+    "expectedDatabase": "/tmp/oc2-pinned18600-check/default-db/data/opencode/opencode.db",
+    "databaseExists": true,
+    "databaseFiles": [
+      "data/opencode/opencode.db"
+    ],
+    "createdRoots": {
+      "home": false,
+      "data": true,
+      "cache": true,
+      "state": true,
+      "config": false,
+      "tmp": true,
+      "override-config": false
+    },
+    "databaseTableNames": [
+      "account",
+      "account_state",
+      "control_account",
+      "credential",
+      "event",
+      "event_sequence",
+      "instruction_blob",
+      "instruction_entry",
+      "instruction_state",
+      "kv",
+      "migration",
+      "permission",
+      "project",
+      "project_directory",
+      "session_inbox",
+      "session_message",
+      "session_pending",
+      "session_v2",
+      "workspace",
+      "worktree"
+    ],
+    "result": "passed",
+    "stopped": true,
+    "suppliedPasswordAppearedInStdout": false,
+    "suppliedPasswordAppearedInStderr": false,
+    "passwordLinePrinted": false,
+    "stdoutLineKinds": [
+      "server listening"
+    ],
+    "stderrLineCount": 0,
+    "listenerClosed": true
+  }
+]

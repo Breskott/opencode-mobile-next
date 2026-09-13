@@ -1,0 +1,10 @@
+{
+  "apkSource": "a6434209d3b5f85053fb868cb45d4f6dcb9b7c05",
+  "scope": "Final cold-restarted application PID only; error severity logcat",
+  "pid": 27944,
+  "matches": {
+    "FATAL EXCEPTION": 0,
+    "Unhandled Exception": 0,
+    "A RenderFlex overflowed": 0
+  }
+}

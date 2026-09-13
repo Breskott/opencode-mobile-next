@@ -1,0 +1,26 @@
+{
+  "id": "UXPROJECT-01",
+  "page": "Workspace / project selection",
+  "title": "Selected project is replaced after restart",
+  "priority": "P1",
+  "dimension": "flow",
+  "evidence": [
+    "red-regression.txt",
+    "controller-green.txt",
+    "workspace-green.txt",
+    "supporting-checks.txt",
+    "lib/state/connection.dart:1381",
+    "lib/state/connection.dart:6912",
+    "lib/state/connection.dart:6930",
+    "lib/ui/screens/workspace_screen.dart:123",
+    "workspace-scope-and-deletion.txt",
+    "projects-final.txt"
+  ],
+  "observed": "Explicitly selecting B and restarting with a catalog containing only A restored A; Workspace could also label an unlisted active B as A.",
+  "impact": "The next session can run in a different project from the developer\u2019s last choice.",
+  "proposal": "Retain explicit directory and remote workspace independently of catalog presence and refresh success; guard automatic initialization, serialize saves with deletion, and display the actual selected folder.",
+  "status": "tested",
+  "verification": "Final scope/deletion run passed all 60 controller/SSE/deletion cases; final project UI run passed all 20 cases. Earlier Workspace hierarchy (15), profile store (8) and transport guard (2) are supporting coverage. Format/diff check passed. Integration analyzer and native relaunch remain pending.",
+  "commit": null,
+  "initial_commit": "0d406cf"
+}

@@ -9,7 +9,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Appearance')),
+      appBar: AppBar(title: Text(_settingsCopy(context).e7AppearanceTitle)),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
@@ -18,14 +18,15 @@ class AppearanceSettingsScreen extends StatelessWidget {
             builder: (context, appearance, _) => ListTile(
               key: const ValueKey('appearance-settings-entry'),
               leading: const Icon(AppIconography.contrast),
-              title: const Text('Light or dark'),
-              subtitle: Text(appearanceLabel(appearance)),
+              title: Text(_settingsCopy(context).e7SettingsUi69),
+              subtitle: Text(appearanceLabel(appearance, context)),
               trailing: const Icon(AppIconography.chevronRight),
               onTap: () =>
                   showAppearancePicker(context, controller: controller),
             ),
           ),
-          const SectionLabel('Theme'),
+          LanguageSettingsTile(controller: controller),
+          SectionLabel(_settingsCopy(context).e7SettingsUi70),
           ListenableBuilder(
             listenable: Listenable.merge([
               controller.themePack,
@@ -44,18 +45,11 @@ class AppearanceSettingsScreen extends StatelessWidget {
                       available:
                           id != ThemePackId.dynamic ||
                           harvestedDynamicPack.value != null,
-                      onSelect: () async {
-                        try {
-                          await controller.setThemePack(id);
-                        } catch (error) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Could not save the theme: $error'),
-                            ),
-                          );
-                        }
-                      },
+                      onSelect: () => showThemePackPreview(
+                        context,
+                        controller: controller,
+                        pack: id,
+                      ),
                     ),
                 ],
               );
@@ -110,7 +104,7 @@ class _ThemePackTile extends StatelessWidget {
                     Container(
                       width: 12,
                       height: 24,
-                      margin: const EdgeInsets.only(right: 2),
+                      margin: const EdgeInsetsDirectional.only(end: 2),
                       decoration: BoxDecoration(
                         color: color,
                         borderRadius: BorderRadius.circular(3),
@@ -125,10 +119,8 @@ class _ThemePackTile extends StatelessWidget {
       title: Text(themePackLabels[id]!),
       subtitle: Text(
         !available
-            ? 'Needs Android 12 or newer'
-            : pack?.tagline ?? 'This phone’s Material You colors',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+            ? _settingsCopy(context).e7AppearanceDynamicUnavailable
+            : _themeDescription(context, id),
       ),
       trailing: selected ? const Icon(AppIconography.check) : null,
       onTap: available ? onSelect : null,
@@ -174,7 +166,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
       context,
       title: title,
       message: body,
-      confirmLabel: 'Delete',
+      confirmLabel: _settingsCopy(context).promptStashDelete,
       icon: AppIconography.delete,
       destructive: true,
     );
@@ -195,7 +187,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Privacy & permissions')),
+      appBar: AppBar(title: Text(_settingsCopy(context).e7SettingsUi5)),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
@@ -252,10 +244,8 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
           ListTile(
             key: const ValueKey('saved-permissions-entry'),
             leading: const Icon(AppIconography.privacy),
-            title: const Text('Always allowed actions'),
-            subtitle: const Text(
-              'Review or revoke durable OpenCode permissions for this project',
-            ),
+            title: Text(_settingsCopy(context).e7SettingsUi74),
+            subtitle: Text(_settingsCopy(context).e7SettingsUi75),
             trailing: const Icon(AppIconography.chevronRight),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -263,7 +253,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
               ),
             ),
           ),
-          const SectionLabel('On this device'),
+          SectionLabel(_settingsCopy(context).e7SettingsUi76),
           // Queued prompts carry attachment data URLs and drafts carry
           // whatever was typed but never sent. Both are the user's content,
           // held indefinitely until a server answers, so both get a size and
@@ -285,72 +275,66 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   ListTile(
                     key: const ValueKey('local-storage-usage'),
                     leading: const Icon(Icons.sd_storage_outlined),
-                    title: const Text('Storage used'),
+                    title: Text(_settingsCopy(context).e7SettingsUi77),
                     subtitle: Text(
                       !queueReadable
                           ? l10n.queueStorageCountUnknown
-                          : '${formatBytes(queuedBytes + draftBytes)} of unsent '
-                                'work — $queued queued '
-                                '${queued == 1 ? 'prompt' : 'prompts'} '
-                                '(${formatBytes(queuedBytes)}) and $drafts '
-                                '${drafts == 1 ? 'draft' : 'drafts'} '
-                                '(${formatBytes(draftBytes)}). Queued prompts are '
-                                'discarded after '
-                                '${OfflineQueueStore.maxAge.inDays} days.',
+                          : _settingsCopy(context).e7SettingsStorageSummary(
+                              formatBytes(queuedBytes + draftBytes),
+                              queued,
+                              formatBytes(queuedBytes),
+                              drafts,
+                              formatBytes(draftBytes),
+                              OfflineQueueStore.maxAge.inDays,
+                            ),
                     ),
                   ),
                   ListTile(
                     key: const ValueKey('clear-queued-prompts'),
                     leading: const Icon(AppIconography.outbox),
-                    title: const Text('Clear queued prompts'),
+                    title: Text(_settingsCopy(context).e7SettingsUi78),
                     subtitle: Text(
                       !queueReadable
                           ? l10n.queueStorageUnreadable
                           : queued == 0
-                          ? 'Nothing is waiting to send'
-                          : 'Deletes all $queued unsent '
-                                '${queued == 1 ? 'prompt' : 'prompts'} and '
-                                'their attachments, for every server',
+                          ? _settingsCopy(context).e7SettingsUi79
+                          : _settingsCopy(
+                              context,
+                            ).e7SettingsQueueDeleteSummary(queued),
                     ),
                     enabled: (queued > 0 || !queueReadable) && !_busy,
                     onTap: () => _confirmAndClear(
-                      title: 'Delete queued prompts?',
+                      title: _settingsCopy(context).e7SettingsUi80,
                       body: !queueReadable
                           ? l10n.queueStorageDiscardUnreadable
-                          : 'This deletes $queued unsent '
-                                '${queued == 1 ? 'prompt' : 'prompts'} and any '
-                                'attachments they carry, for every server. They '
-                                'will never be sent. Nothing on the server is '
-                                'affected.',
+                          : _settingsCopy(
+                              context,
+                            ).e7SettingsQueueDeleteBody(queued),
                       clear: _controller.clearAllQueuedPrompts,
-                      cleared: 'Queued prompts deleted',
-                      failed:
-                          'Could not delete the queued prompts. Check device '
-                          'storage and try again.',
+                      cleared: _settingsCopy(context).e7SettingsUi81,
+                      failed: _settingsCopy(context).e7SettingsUi82,
                     ),
                   ),
                   ListTile(
                     key: const ValueKey('clear-session-drafts'),
                     leading: const Icon(AppIconography.editNote),
-                    title: const Text('Clear drafts'),
+                    title: Text(_settingsCopy(context).e7SettingsUi83),
                     subtitle: Text(
                       drafts == 0
-                          ? 'No saved composer text'
-                          : 'Deletes composer text saved for $drafts '
-                                '${drafts == 1 ? 'session' : 'sessions'}',
+                          ? _settingsCopy(context).e7SettingsUi84
+                          : _settingsCopy(
+                              context,
+                            ).e7SettingsDraftDeleteSummary(drafts),
                     ),
                     enabled: drafts > 0 && !_busy,
                     onTap: () => _confirmAndClear(
-                      title: 'Delete drafts?',
-                      body:
-                          'This deletes the composer text saved for $drafts '
-                          '${drafts == 1 ? 'session' : 'sessions'}. Nothing '
-                          'on the server is affected.',
+                      title: _settingsCopy(context).e7SettingsUi85,
+                      body: _settingsCopy(
+                        context,
+                      ).e7SettingsDraftDeleteBody(drafts),
                       clear: _controller.clearAllSessionDrafts,
-                      cleared: 'Drafts deleted',
-                      failed:
-                          'Could not delete the drafts. Check device storage '
-                          'and try again.',
+                      cleared: _settingsCopy(context).e7SettingsUi86,
+                      failed: _settingsCopy(context).e7SettingsUi87,
                     ),
                   ),
                 ],
@@ -371,7 +355,7 @@ class DiagnosticsSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Diagnostics')),
+      appBar: AppBar(title: Text(_settingsCopy(context).e7SettingsUi6)),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
@@ -382,11 +366,11 @@ class DiagnosticsSettingsScreen extends StatelessWidget {
               return ListTile(
                 key: const ValueKey('app-diagnostics-entry'),
                 leading: const Icon(AppIconography.privacy),
-                title: const Text('App diagnostics'),
+                title: Text(_settingsCopy(context).e7SettingsUi88),
                 subtitle: Text(
                   count == 0
-                      ? 'No captured errors'
-                      : '$count handled error${count == 1 ? '' : 's'} kept in memory',
+                      ? _settingsCopy(context).e7SettingsUi89
+                      : _settingsCopy(context).e7SettingsDiagnosticCount(count),
                 ),
                 trailing: const Icon(AppIconography.chevronRight),
                 onTap: () => Navigator.of(context).push(
@@ -412,17 +396,15 @@ class AboutSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('About')),
+      appBar: AppBar(title: Text(_settingsCopy(context).e7SettingsUi7)),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
           ListTile(
             key: const ValueKey('settings-setup-guide'),
             leading: const Icon(AppIconography.guide),
-            title: const Text('Setup guide'),
-            subtitle: const Text(
-              'Connect a computer or run OpenCode on this phone',
-            ),
+            title: Text(_settingsCopy(context).onboardingSetupGuide),
+            subtitle: Text(_settingsCopy(context).e7SettingsUi91),
             trailing: const Icon(AppIconography.chevronRight),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -432,10 +414,8 @@ class AboutSettingsScreen extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
-            title: const Text('Privacy and data use'),
-            subtitle: const Text(
-              'Servers, providers, voice, files, Termux, and updates',
-            ),
+            title: Text(_settingsCopy(context).e7SettingsUi92),
+            subtitle: Text(_settingsCopy(context).e7SettingsUi93),
             trailing: const Icon(AppIconography.chevronRight),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const AboutScreen()),
@@ -448,19 +428,15 @@ class AboutSettingsScreen extends StatelessWidget {
             ListTile(
               key: const Key('settings-voice-notices'),
               leading: const Icon(AppIconography.policy),
-              title: const Text('Voice licenses and provenance'),
-              subtitle: const Text(
-                'Whisper models, sherpa-onnx, ONNX Runtime, and record',
-              ),
+              title: Text(_settingsCopy(context).e7SettingsUi94),
+              subtitle: Text(_settingsCopy(context).e7SettingsUi95),
               trailing: const Icon(AppIconography.chevronRight),
               onTap: () => showVoiceNotices(context),
             ),
           ListTile(
             leading: const Icon(AppIconography.info),
-            title: const Text('About and open source notices'),
-            subtitle: const Text(
-              'App details, components, and license notices',
-            ),
+            title: Text(_settingsCopy(context).e7SettingsUi96),
+            subtitle: Text(_settingsCopy(context).e7SettingsUi97),
             trailing: const Icon(AppIconography.chevronRight),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
@@ -473,3 +449,11 @@ class AboutSettingsScreen extends StatelessWidget {
     );
   }
 }
+
+String _themeDescription(BuildContext context, ThemePackId id) => switch (id) {
+  ThemePackId.opencode => _settingsCopy(context).e7AppearancePackOpencode,
+  ThemePackId.catppuccin => _settingsCopy(context).e7AppearancePackCatppuccin,
+  ThemePackId.gruvbox => _settingsCopy(context).e7AppearancePackGruvbox,
+  ThemePackId.solarized => _settingsCopy(context).e7AppearancePackSolarized,
+  ThemePackId.dynamic => _settingsCopy(context).e7AppearancePackDynamic,
+};

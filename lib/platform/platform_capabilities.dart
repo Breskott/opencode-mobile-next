@@ -88,6 +88,17 @@ class PlatformCapabilities {
   /// The home-screen widget snapshot and its native redraw.
   bool get supportsHomeWidget => isAndroid;
 
+  /// Launcher shortcuts over `oc/shortcut`: the static Connect / New task
+  /// entries, and the dynamic pinned-session entries the app publishes
+  /// through `ShortcutManagerCompat`. Desktop and iOS have no launcher
+  /// long-press menu the app can write to, so nothing is published there.
+  bool get supportsLaunchShortcuts => isAndroid;
+
+  /// The Quick Settings tile: a native `TileService` that reads the cached
+  /// needs-attention count the Dart side writes. Android only; other
+  /// platforms write no cache at all.
+  bool get supportsQuickSettingsTile => isAndroid;
+
   /// Shorebird patches. Desktop builds are not Shorebird-released; they use
   /// the GitHub release check instead ([supportsDesktopReleaseCheck]).
   bool get supportsCodePush => isAndroid;

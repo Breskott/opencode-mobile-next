@@ -65,6 +65,167 @@ void main() {
         ),
   );
 
+  testWidgets('UXCHAT background eligibility updates while Tasks stays open', (
+    tester,
+  ) async {
+    final repo = FakeManagedShellRepository()..shells = [];
+    final conn = await connection(repo);
+    addTearDown(conn.dispose);
+    final changed = ValueNotifier<int>(0);
+    addTearDown(changed.dispose);
+    var support = BackgroundWorkSupport.unavailable;
+    var eligible = false;
+    await pump(
+      tester,
+      Scaffold(
+        body: RunningWorkSheet(
+          controller: conn,
+          sessionID: 'ses_a',
+          availabilityChanges: changed,
+          readBackgroundSupport: () => support,
+          canBackground: () => eligible,
+          onBackground: () async => BackgroundWorkResult.requested,
+        ),
+      ),
+    );
+    expect(find.text('Run in background'), findsNothing);
+    support = BackgroundWorkSupport.subagents;
+    eligible = true;
+    changed.value++;
+    await tester.pumpAndSettle();
+    expect(find.text('Run in background'), findsOneWidget);
+    expect(
+      find.textContaining('Results return to this chat automatically.'),
+      findsOneWidget,
+    );
+    eligible = false;
+    changed.value++;
+    await tester.pumpAndSettle();
+    expect(find.text('Run in background'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'UXCHAT child Tasks discovers uncached siblings and its own children',
+    (tester) async {
+      final repo = FakeManagedShellRepository()
+        ..shells = []
+        ..children = [
+          Session(id: 'sibling', parentID: 'parent', title: 'Sibling task'),
+          Session(id: 'grandchild', parentID: 'ses_a', title: 'Nested task'),
+        ];
+      final conn = await connection(repo)
+        ..sessionsById = {
+          'ses_a': Session(
+            id: 'ses_a',
+            parentID: 'parent',
+            title: 'Current child',
+          ),
+        };
+      addTearDown(conn.dispose);
+      await pump(
+        tester,
+        Scaffold(
+          body: RunningWorkSheet(controller: conn, sessionID: 'ses_a'),
+        ),
+      );
+      expect(repo.childrenReads.toSet(), {'ses_a', 'parent'});
+      expect(find.byKey(const Key('work-agent-sibling')), findsOneWidget);
+      expect(find.byKey(const Key('work-agent-grandchild')), findsOneWidget);
+      expect(find.text('Idle'), findsNWidgets(2));
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets('UXCHAT completed command remains accessible by known ID', (
+    tester,
+  ) async {
+    final repo = FakeManagedShellRepository()
+      ..shells = [sampleShell(status: ManagedShellStatus.exited)];
+    final conn = await connection(repo);
+    addTearDown(conn.dispose);
+    await pump(
+      tester,
+      Scaffold(
+        body: RunningWorkSheet(
+          controller: conn,
+          sessionID: 'ses_a',
+          shellIDs: const {'sh_a'},
+        ),
+      ),
+    );
+    expect(find.byKey(const Key('work-shell-sh_a')), findsOneWidget);
+    expect(find.textContaining('Exit code 0'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'UXCHAT Tasks explains unavailable background support at large text',
+    (tester) async {
+      final repo = FakeManagedShellRepository()..shells = [];
+      final conn = await connection(repo);
+      addTearDown(conn.dispose);
+      await pump(
+        tester,
+        Scaffold(
+          body: RunningWorkSheet(controller: conn, sessionID: 'ses_a'),
+        ),
+        scale: 2.5,
+      );
+      expect(find.text('Tasks'), findsOneWidget);
+      expect(find.textContaining('has not confirmed support'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('No tasks yet'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('No tasks yet'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'UXCHAT requested background promotion is not reported as confirmed',
+    (tester) async {
+      final repo = FakeManagedShellRepository()..shells = [];
+      final conn = await connection(repo);
+      addTearDown(conn.dispose);
+      var requests = 0;
+      await pump(
+        tester,
+        Scaffold(
+          body: RunningWorkSheet(
+            controller: conn,
+            sessionID: 'ses_a',
+            backgroundSupport: BackgroundWorkSupport.subagentsAndShells,
+            onBackground: () async {
+              requests++;
+              return BackgroundWorkResult.requested;
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('Run in background'));
+      await tester.pumpAndSettle();
+      expect(requests, 1);
+      expect(find.textContaining('Background work requested.'), findsOneWidget);
+      expect(
+        find.text('Subagents are continuing in the background.'),
+        findsNothing,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Run in background'),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   testWidgets(
     'a reconnect covered by a dialog reconciles when the viewer becomes visible',
     (tester) async {

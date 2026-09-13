@@ -107,7 +107,8 @@ void main() {
     expect(find.text('Connect to a server'), findsOneWidget);
     expect(find.text('Try demo'), findsOneWidget);
     expect(find.text('More setup options'), findsOneWidget);
-    expect(find.text('Run OpenCode on this phone'), findsNothing);
+    expect(find.text('Termux setup'), findsOneWidget);
+    expect(find.text('Set up OpenCode 1 or 2 on this phone.'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
     await tester.pumpAndSettle();
@@ -138,6 +139,7 @@ void main() {
       ),
     );
 
+    await tester.ensureVisible(find.text('More setup options'));
     await tester.tap(find.text('More setup options'));
     await tester.pumpAndSettle();
     final guideCard = find.byKey(const ValueKey('welcome-guide-card'));
@@ -235,6 +237,7 @@ void main() {
     expect(find.byKey(const ValueKey('first-run-welcome')), findsOneWidget);
     FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('More setup options'));
     await tester.ensureVisible(find.text('More setup options'));
     await tester.tap(find.text('More setup options'));
     await tester.pumpAndSettle();

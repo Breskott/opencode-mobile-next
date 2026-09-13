@@ -694,6 +694,11 @@ abstract final class AppIconography {
     fontFamily: 'AppPhosphorRegular',
     matchTextDirection: false,
   );
+  static const pause = IconData(
+    0xe39e,
+    fontFamily: 'AppPhosphorRegular',
+    matchTextDirection: false,
+  );
   static const play = IconData(
     0xe3d0,
     fontFamily: 'AppPhosphorRegular',

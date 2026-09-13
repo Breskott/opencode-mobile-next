@@ -1,0 +1,85 @@
+{
+  "candidate": "002ebef3138d7364abe36fad154e192880afe23c",
+  "state": "verified local checkpoint delivered privately",
+  "analyzer": "PASS - no issues on candidate (8.2s)",
+  "toolchain": "Flutter 3.47.2 e16cf749ccaa38d7050335ff305def49b1c7c84c",
+  "test_command": "python3 tool/qa/run_serial_tests.py --flutter <pinned> --chunk-size 25",
+  "budget_minutes": 12,
+  "coverage_rule": "complete recursive manifest, serial chunks; never combine incompatible source snapshots",
+  "build": {
+    "revision": "002ebef3138d7364abe36fad154e192880afe23c",
+    "command": [
+      "./android/gradlew",
+      "-p",
+      "android",
+      ":app:assembleRelease",
+      "-Ptarget-platform=android-arm64,android-x64",
+      "-Psplit-per-abi=true",
+      "-Pforce-version-code-ignoring-abi=true",
+      "-Ptarget=lib/main.dart",
+      "-Pdart-obfuscation=false",
+      "-Ptrack-widget-creation=false",
+      "-Ptree-shake-icons=true",
+      "-Dorg.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=1g -XX:ReservedCodeCacheSize=256m",
+      "--max-workers=2",
+      "--no-daemon"
+    ],
+    "exit_code": 0,
+    "seconds": 155.8,
+    "log": "/home/eslam/Storage/Code/oc_app-ui-audit-20260909/followup/local-build.log",
+    "ci": false
+  },
+  "native": {
+    "status": "PASS for scoped synthetic Android checks",
+    "proof": "followup/device-verification.json"
+  },
+  "ci": false,
+  "focused_localization_card": "21 passed",
+  "prior_candidates": [
+    {
+      "revision": "865b4cef3455dd7422b8802f804670a1c27a15a4",
+      "status": "failed in chunk 5: new background launch string bypassed localization",
+      "completed_passing_chunks": 4
+    },
+    {
+      "revision": "95375e8b9d75b4dc836035c8223f9624be4852fe",
+      "status": "failed in chunk 7: obsolete Workspace secondary-card assertion; exact directory checks passed",
+      "completed_passing_chunks": 6
+    }
+  ],
+  "focused_project_health": "9 passed",
+  "serial_suite": {
+    "status": "PASS",
+    "run_directory": "/home/eslam/Storage/Code/oc_app-ui-audit-20260909/followup/serial-suite-candidate/serial-20260909T144010Z-560c1219",
+    "files": 259,
+    "chunks": 11,
+    "passed": 2751,
+    "skipped": 6,
+    "seconds": 524.2,
+    "source_fingerprint": "fbd89ea5c5b76b751d9fe92577e43eedadb0ddbbb1c085edaac3f97cdcfb8a06",
+    "test_manifest_fingerprint": "eafd3a63b9f462406e5930f47c35ee09bf1c9aa0ba4e793c9575f2c4fea72ed7"
+  },
+  "delivery": {
+    "created_at": "2026-09-09T15:06:01.721644+00:00",
+    "revision": "002ebef3138d7364abe36fad154e192880afe23c",
+    "download_url": "http://100.126.15.6:8876/opencode-local-checkpoint-002ebef.apk",
+    "filename": "opencode-local-checkpoint-002ebef.apk",
+    "bytes": 70941047,
+    "sha256": "b6cde96ecabe3d7e4e2636b16e9fffeae6745a2477046c1dbc265da88025bc35",
+    "certificate_sha256": "1DE5BF08146F269BCD9EB5C2FFC94469CE4617D37806285955F978A62494D60C",
+    "signer": "Available local Android key; differs from stable CI certificate",
+    "updates_stable_ci_signed_app": false,
+    "package": "io.github.eslamasabry.opencode_mobile",
+    "version_code": "38",
+    "version_name": "1.0.37",
+    "target": "Android arm64",
+    "build_mode": "Local release build; local analyzer and complete Flutter suite passed; CI disabled",
+    "device_verification": "Android API34 emulator, exact installed APK hash verified; scoped synthetic chat, task navigation, Termux, restart and large-text checks passed. Real model-backed OpenCode2 execution unverified."
+  },
+  "privacy": {
+    "status": "PASS",
+    "files_scanned": 3916,
+    "committed_blobs_scanned": 748,
+    "matches": 0
+  }
+}

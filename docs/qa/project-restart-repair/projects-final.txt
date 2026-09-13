@@ -1,0 +1,22 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app-project-restart-repair/test/projects_screen_test.dart
+00:00 +0: archived pager remains reachable through an empty filtered first page
+00:00 +1: project browser and rename dialog fit compact large text
+00:01 +2: project search and reset-name use server project truth
+00:01 +3: selecting a project opens its exact local directory
+00:01 +4: workspace groups projects behind one compact context entry
+00:01 +5: workspace puts sessions above the one management route
+00:01 +6: the quick-ask pill stays reachable without scrolling
+00:01 +7: recent session end-swipe archives with an undo window
+00:01 +8: delete stays in the session menu behind a confirm
+00:02 +9: project discovery does not block already loaded conversations
+00:02 +10: failed project discovery still finds and opens a previous chat
+00:02 +11: retrying the project catalog keeps loaded conversations visible
+00:02 +12: a fresh server with zero projects asks for a project folder
+00:02 +13: a home-folder project is never opened automatically
+00:02 +14: an empty project catalog does not hide existing sessions
+00:02 +15: zero projects still allows finding and opening an older chat
+00:02 +16: zero projects keeps session errors and older pages reachable
+00:02 +17: a first session starts only after a project folder is opened by path
+00:02 +18: creating a folder on the managed server opens it
+00:03 +19: remote servers offer open by path but not create
+00:03 +20: All tests passed!

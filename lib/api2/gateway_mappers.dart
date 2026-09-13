@@ -112,7 +112,12 @@ Session mapApi2Session(Api2Session session) => Session(
             providerID: session.model!.providerID,
             modelID: session.model!.id,
           ),
-    variant: session.model?.variant ?? '',
+    // The server stores "no variant" as "default"; the app's convention is
+    // the empty string, and the picker compares the two verbatim.
+    variant: switch (session.model?.variant) {
+      null || '' || 'default' => '',
+      final variant => variant,
+    },
     agent: session.agent,
   ),
   model: session.model == null
@@ -273,6 +278,10 @@ MessageWithParts mapApi2Message(String sessionID, Api2Message message) {
         kind: 'synthetic',
         text: message.text,
         header: message.description,
+        noticeMetadata: {
+          for (final key in const ['source', 'childID', 'agent', 'state'])
+            if (message.metadata?[key] case final String value) key: value,
+        },
       );
     case Api2SystemMessage():
       final instructions =
@@ -392,6 +401,7 @@ MessageWithParts _taggedMessage(
   required String text,
   String? header,
   String? url,
+  Map<String, String> noticeMetadata = const {},
 }) => MessageWithParts(
   info: _info(
     sessionID,
@@ -408,6 +418,7 @@ MessageWithParts _taggedMessage(
       filename: header,
       url: url,
       messageID: message.id,
+      noticeMetadata: Map.unmodifiable(noticeMetadata),
     ),
   ],
 );

@@ -9,14 +9,12 @@ void main() {
     // The append-only working log carried machine paths, device names, and
     // release claims that were stale the week they were written. It is gone
     // from the tree entirely; git history keeps it for archaeology.
-    for (final path in const [
-      'HANDOFF.md',
-      'docs/internal/handoff.md',
-    ]) {
+    for (final path in const ['HANDOFF.md', 'docs/internal/handoff.md']) {
       expect(
         File(path).existsSync(),
         isFalse,
-        reason: '$path is internal scratch, not a document a public reader '
+        reason:
+            '$path is internal scratch, not a document a public reader '
             'should be handed',
       );
     }
@@ -56,7 +54,8 @@ void main() {
     expect(
       ignore.split('\n').map((line) => line.trim()),
       contains('.claude/skills/'),
-      reason: 'skill packs are third-party prompt content with their own '
+      reason:
+          'skill packs are third-party prompt content with their own '
           'licensing; committing them makes this repo responsible for it',
     );
 
@@ -72,10 +71,9 @@ void main() {
 
   test('every bundled third-party component has a license text', () {
     final notices = File('THIRD_PARTY_NOTICES.md').readAsStringSync();
-    final referenced = RegExp(r'LICENSES/([A-Za-z0-9._-]+\.txt)')
-        .allMatches(notices)
-        .map((match) => match.group(1)!)
-        .toSet();
+    final referenced = RegExp(
+      r'LICENSES/([A-Za-z0-9._-]+\.txt)',
+    ).allMatches(notices).map((match) => match.group(1)!).toSet();
     expect(referenced, isNotEmpty);
     for (final name in referenced) {
       expect(
@@ -139,10 +137,9 @@ void main() {
       '.github/ISSUE_TEMPLATE/feature_request.yml',
       'THIRD_PARTY_NOTICES.md',
     ]) {
-      final text = File(path).readAsStringSync().replaceAll(
-        RegExp(r'[>*\s]+'),
-        ' ',
-      );
+      final text = File(
+        path,
+      ).readAsStringSync().replaceAll(RegExp(r'[>*\s]+'), ' ');
       expect(
         text,
         contains(
@@ -190,7 +187,8 @@ void main() {
       expect(
         documented[entry.key],
         entry.value,
-        reason: 'THIRD_PARTY_NOTICES.md is out of date for ${entry.key}: '
+        reason:
+            'THIRD_PARTY_NOTICES.md is out of date for ${entry.key}: '
             'pubspec.lock resolves ${entry.value}, the notice says '
             '${documented[entry.key] ?? "nothing"}',
       );
@@ -198,7 +196,8 @@ void main() {
     expect(
       documented.keys.toSet().difference(resolved.keys.toSet()),
       isEmpty,
-      reason: 'the notice inventory lists a package that is no longer '
+      reason:
+          'the notice inventory lists a package that is no longer '
           'resolved in pubspec.lock',
     );
   });

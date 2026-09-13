@@ -15,8 +15,11 @@ import 'diagnostics/app_diagnostics.dart';
 import 'domain/server_gateway.dart' show ProductException;
 import 'l10n/app_localizations.dart';
 import 'platform/launch_shortcut.dart';
+import 'platform/session_link.dart';
 import 'platform/platform_capabilities.dart';
 import 'platform/share_intent.dart';
+import 'domain/session_handoff.dart';
+import 'domain/team_link.dart';
 import 'state/connection.dart';
 import 'state/profiles.dart';
 import 'update/desktop_release_check.dart';
@@ -35,6 +38,7 @@ import 'ui/screens/home_screen.dart';
 import 'ui/screens/servers_screen.dart';
 import 'ui/screens/chat_screen.dart';
 import 'ui/screens/activity_screen.dart';
+import 'ui/screens/team/run_screen.dart';
 import 'ui/screens/termux_setup_screen.dart';
 import 'ui/screens/app_diagnostics_screen.dart';
 
@@ -143,59 +147,72 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      home: Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: _loading
-                    ? const Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 18),
-                          Text('Starting OpenCode…'),
-                        ],
-                      )
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.error_outline_rounded,
-                            size: 40,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            'OpenCode could not start',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            widget.diagnostics.sanitize(
-                              _error?.toString() ?? 'Unknown startup error',
-                              limit: 300,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: _loading
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 18),
+                            Text(
+                              AppLocalizations.of(context).e7LocaleUiStarting,
                             ),
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                          const SizedBox(height: 20),
-                          FilledButton.icon(
-                            key: const ValueKey('retry-app-bootstrap'),
-                            onPressed: _load,
-                            icon: const Icon(Icons.refresh_rounded),
-                            label: const Text('Try again'),
-                          ),
-                        ],
-                      ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.error_outline_rounded,
+                              size: 40,
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              AppLocalizations.of(
+                                context,
+                              ).e7LocaleUiStartFailed,
+                              style: Theme.of(context).textTheme.headlineSmall,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              widget.diagnostics.sanitize(
+                                _error?.toString() ??
+                                    AppLocalizations.of(
+                                      context,
+                                    ).e7LocaleUiUnknownStartupError,
+                                limit: 300,
+                              ),
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                            const SizedBox(height: 20),
+                            FilledButton.icon(
+                              key: const ValueKey('retry-app-bootstrap'),
+                              onPressed: _load,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: Text(
+                                AppLocalizations.of(context).e7LocaleUiRetry,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
               ),
             ),
           ),
@@ -218,6 +235,7 @@ class OcApp extends ConsumerStatefulWidget {
     this.updateService,
     this.shareIntent,
     this.launchShortcut,
+    this.sessionLinkIntent,
   });
 
   final AppUpdateService? updateService;
@@ -228,6 +246,11 @@ class OcApp extends ConsumerStatefulWidget {
   /// Home-screen shortcut actions (Connect, New task); injectable so tests
   /// can drive it. Absent, the app owns a real [LaunchShortcut].
   final LaunchShortcut? launchShortcut;
+
+  /// Session handoff links (`opencode-mobile://session`) opened on this
+  /// phone; injectable so tests can drive it. Absent, the app owns a real
+  /// [SessionLinkIntent].
+  final SessionLinkIntent? sessionLinkIntent;
 
   @override
   ConsumerState<OcApp> createState() => _OcAppState();
@@ -249,6 +272,10 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   late final LaunchShortcut _launchShortcut;
   bool _launchRouteScheduled = false;
   bool _launchWaitingNoticeShown = false;
+  late final SessionLinkIntent _sessionLink;
+  bool _linkRouteScheduled = false;
+  bool _teamLinkRouteScheduled = false;
+  bool _linkWaitingNoticeShown = false;
   // Tracks the route on top of the shell navigator so a shortcut never
   // stacks a second servers screen over one already showing.
   final _routeTracker = _TopRouteTracker();
@@ -264,7 +291,12 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     unawaited(_share.start());
     _launchShortcut = widget.launchShortcut ?? LaunchShortcut();
     _launchShortcut.pending.addListener(_scheduleLaunchRoute);
+    _launchShortcut.pendingSession.addListener(_scheduleLaunchRoute);
     unawaited(_launchShortcut.start());
+    _sessionLink = widget.sessionLinkIntent ?? SessionLinkIntent();
+    _sessionLink.pending.addListener(_scheduleSessionLinkRoute);
+    _sessionLink.pendingTeam.addListener(_scheduleTeamLinkRoute);
+    unawaited(_sessionLink.start());
     // Only the Android build is Shorebird-released; desktop gets its update
     // news from the GitHub release check in DesktopReleaseNotice below.
     _updateService =
@@ -307,6 +339,8 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     _scheduleCodingAlertRoute();
     _scheduleShareRoute();
     _scheduleLaunchRoute();
+    _scheduleSessionLinkRoute();
+    _scheduleTeamLinkRoute();
   }
 
   /// Text shared from another app becomes the first prompt of a new session.
@@ -371,7 +405,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         if (location != _controller.locationRevision ||
             !identical(api, _controller.api) ||
             !identical(repository, _controller.repository)) {
-          throw StateError('Shared session scope changed');
+          throw ProductException(
+            AppLocalizations.of(navigator.context).e7LocaleUiShareScopeChanged,
+          );
         }
         unawaited(
           navigator.push(
@@ -443,23 +479,41 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     return _controller.lastError == null;
   }
 
-  /// A home-screen shortcut arrives as an action, never as text. Connect
-  /// opens the servers screen over whatever is showing, leaving the current
-  /// connection alone. New task waits for the saved server to become ready
-  /// and then opens an empty session; nothing is ever sent on the user's
-  /// behalf. An action that cannot complete is consumed with a notice rather
-  /// than left pending indefinitely.
+  /// A pinned-session shortcut waits under the same rule as New task, but
+  /// only for its own server: a launch stamped with another profile is
+  /// final and is dropped with a notice instead of waiting for a server that
+  /// is never going to be the active one.
+  bool _sessionLaunchWaiting(SessionLaunch launch) =>
+      _controller.profile?.id == launch.profileID && _launchNewTaskWaiting;
+
+  /// A home-screen shortcut arrives as an action or as session IDs, never
+  /// as text. Connect opens the servers screen over whatever is showing,
+  /// leaving the current connection alone. New task waits for the saved
+  /// server to become ready and then opens an empty session. A pinned
+  /// session waits the same way and then opens exactly that chat. The Quick
+  /// Settings tile opens Activity. Nothing is ever sent on the user's
+  /// behalf, and a launch that cannot complete is consumed with a notice
+  /// rather than left pending indefinitely.
   void _scheduleLaunchRoute() {
     if (_launchRouteScheduled) return;
     final action = _launchShortcut.pending.value;
-    if (action == null) return;
-    if (action == LaunchAction.newTask && _launchNewTaskWaiting) {
+    final session = _launchShortcut.pendingSession.value;
+    if (action == null && session == null) return;
+    final waiting = action == null
+        ? _sessionLaunchWaiting(session!)
+        : action == LaunchAction.newTask && _launchNewTaskWaiting;
+    if (waiting) {
       if (!_launchWaitingNoticeShown) {
         _launchWaitingNoticeShown = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final context = _navigatorKey.currentContext;
           if (!mounted || context == null) return;
-          _showLaunchNotice(AppLocalizations.of(context).launchShortcutWaiting);
+          final l10n = AppLocalizations.of(context);
+          _showLaunchNotice(
+            action == null
+                ? l10n.launchUiSessionWaiting
+                : l10n.launchShortcutWaiting,
+          );
         });
       }
       return;
@@ -471,13 +525,19 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         final navigator = _navigatorKey.currentState;
         if (navigator == null) return;
         final current = _launchShortcut.pending.value;
-        if (current == null) return;
+        if (current == null) {
+          final launch = _launchShortcut.pendingSession.value;
+          if (launch != null) _openSessionForLaunch(navigator, launch);
+          return;
+        }
         switch (current) {
           case LaunchAction.connect:
             _consumeLaunchAction(current);
             _showServersForLaunch(navigator);
           case LaunchAction.newTask:
             await _openNewTaskForLaunch(navigator, current);
+          case LaunchAction.activity:
+            _openActivityForLaunch(navigator, current);
         }
       } finally {
         _launchRouteScheduled = false;
@@ -524,7 +584,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       if (location != _controller.locationRevision ||
           !identical(api, _controller.api) ||
           !identical(repository, _controller.repository)) {
-        throw const ProductException('The connection changed.');
+        throw ProductException(l10n.e7LocaleUiConnectionChanged);
       }
       _consumeLaunchAction(action);
       unawaited(
@@ -542,11 +602,85 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     }
   }
 
+  /// Opens the exact pinned session a launcher shortcut named, by IDs only.
+  /// The chat is pushed without a draft and without any send; a launch for
+  /// another server is dropped with a notice rather than switching servers
+  /// silently, mirroring widget-row taps.
+  void _openSessionForLaunch(NavigatorState navigator, SessionLaunch launch) {
+    final l10n = AppLocalizations.of(navigator.context);
+    final profile = _controller.profile;
+    if (profile == null) {
+      _consumeSessionLaunch(launch);
+      _showServersForLaunch(navigator);
+      _showLaunchNotice(l10n.launchUiSessionNoServer);
+      return;
+    }
+    if (profile.id != launch.profileID) {
+      _consumeSessionLaunch(launch);
+      _showLaunchNotice(l10n.launchUiSessionOtherServer);
+      return;
+    }
+    if (_launchProfileNeedsReentry) {
+      _consumeSessionLaunch(launch);
+      _showServersForLaunch(navigator);
+      _showLaunchNotice(l10n.launchUiSessionReentry);
+      return;
+    }
+    if (!_launchConnectionReady) {
+      // The state moved between scheduling and this frame; the listener
+      // re-evaluates the retained launch when the connection settles.
+      if (_sessionLaunchWaiting(launch)) return;
+      _consumeSessionLaunch(launch);
+      _showServersForLaunch(navigator);
+      _showLaunchNotice(l10n.launchUiSessionConnectionFailed);
+      return;
+    }
+    _consumeSessionLaunch(launch);
+    final route = '/chat/${launch.sessionID}';
+    // A warm tap on the chat that is already showing stays where it is.
+    if (_routeTracker.topName == route) return;
+    unawaited(navigator.pushNamed(route));
+  }
+
+  /// The Quick Settings tile opens Activity — the single needs-attention
+  /// destination — over whatever is showing. Activity reflects the
+  /// connection as it settles, so the tap never waits; without a saved
+  /// server there is nothing to show and the servers screen opens instead.
+  void _openActivityForLaunch(NavigatorState navigator, LaunchAction action) {
+    _consumeLaunchAction(action);
+    if (_controller.profile == null) {
+      _showServersForLaunch(navigator);
+      _showLaunchNotice(
+        AppLocalizations.of(navigator.context).launchUiActivityNoServer,
+      );
+      return;
+    }
+    if (_routeTracker.topName == _activityLaunchRoute) return;
+    unawaited(
+      navigator.push(
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: _activityLaunchRoute),
+          builder: (_) => ActivityScreen(controller: _controller),
+        ),
+      ),
+    );
+  }
+
+  static const _activityLaunchRoute = '/activity/launch';
+
   /// Consumes [action] only if it is still the pending one, so an action that
   /// arrived while this one was being handled is not swallowed with it.
   void _consumeLaunchAction(LaunchAction action) {
     _launchWaitingNoticeShown = false;
     if (_launchShortcut.pending.value == action) _launchShortcut.take();
+  }
+
+  /// Same single-consumption rule for a pinned-session launch.
+  void _consumeSessionLaunch(SessionLaunch launch) {
+    _launchWaitingNoticeShown = false;
+    if (_launchShortcut.pendingSession.value == launch) {
+      _launchShortcut.takeSession();
+    }
   }
 
   /// Pushes the servers screen unless one is already on top. Routes beneath
@@ -564,6 +698,256 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     _messengerKey.currentState
       ?..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  ServerProfile? _savedProfile(String id) {
+    for (final profile in _controller.store.profiles) {
+      if (profile.id == id) return profile;
+    }
+    return null;
+  }
+
+  /// A session handoff link (F4-S2) names a saved server and a session and
+  /// nothing else. Known server: open that exact session with explicit
+  /// navigation, switching the connection first when the link names a
+  /// saved server other than the active one. Unknown server: an honest
+  /// banner with a way to the servers screen. Nothing is ever sent, created
+  /// or resumed on the user's behalf, and a link that cannot complete is
+  /// consumed with a notice rather than retried forever.
+  void _scheduleSessionLinkRoute() {
+    if (_linkRouteScheduled) return;
+    final link = _sessionLink.pending.value;
+    if (link == null) return;
+    final target = _savedProfile(link.profileID);
+    final targetIsActive =
+        target != null && target.id == _controller.profile?.id;
+    if (targetIsActive && _launchNewTaskWaiting) {
+      if (!_linkWaitingNoticeShown) {
+        _linkWaitingNoticeShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final context = _navigatorKey.currentContext;
+          if (!mounted || context == null) return;
+          _showLaunchNotice(AppLocalizations.of(context).handoffUiLinkWaiting);
+        });
+      }
+      return;
+    }
+    _linkRouteScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (!mounted) return;
+        final navigator = _navigatorKey.currentState;
+        if (navigator == null) return;
+        final current = _sessionLink.pending.value;
+        if (current == null) return;
+        await _openSessionForLink(navigator, current);
+      } finally {
+        _linkRouteScheduled = false;
+        if (mounted) _scheduleSessionLinkRoute();
+      }
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  Future<void> _openSessionForLink(
+    NavigatorState navigator,
+    SessionLink link,
+  ) async {
+    final l10n = AppLocalizations.of(navigator.context);
+    final target = _savedProfile(link.profileID);
+    if (target == null) {
+      _consumeSessionLink(link);
+      _showSessionLinkServerMissing(navigator, l10n);
+      return;
+    }
+    if (target.requiresPasswordReentry || target.requiresCodexTokenReentry) {
+      _consumeSessionLink(link);
+      _showServersForLaunch(navigator);
+      _showLaunchNotice(l10n.handoffUiLinkReentry);
+      return;
+    }
+    if (target.id != _controller.profile?.id) {
+      // Another saved server: switch the connection first. The servers
+      // screen does the same on a tap, then lands on home.
+      Object? failure;
+      try {
+        await _controller.connect(target);
+      } catch (error) {
+        failure = error;
+      }
+      if (!mounted) return;
+      if (failure != null || _controller.api == null) {
+        _consumeSessionLink(link);
+        _showServersForLaunch(navigator);
+        _showLaunchNotice(l10n.handoffUiLinkConnectionFailed);
+        return;
+      }
+      _consumeSessionLink(link);
+      navigator.pushNamedAndRemoveUntil('/home', (_) => false);
+      unawaited(navigator.pushNamed('/chat/${link.sessionID}'));
+      return;
+    }
+    if (!_launchConnectionReady) {
+      // The state moved between scheduling and this frame; the listener
+      // re-evaluates the retained link when the connection settles.
+      if (_launchNewTaskWaiting) return;
+      _consumeSessionLink(link);
+      _showServersForLaunch(navigator);
+      _showLaunchNotice(l10n.handoffUiLinkConnectionFailed);
+      return;
+    }
+    _consumeSessionLink(link);
+    unawaited(navigator.pushNamed('/chat/${link.sessionID}'));
+  }
+
+  /// An AI Team link (TEAM-203) names a saved server and a gate or run and
+  /// nothing else: the notification tap and the `opencode-mobile://team`
+  /// link both land here. Known, active server: Activity opens with the
+  /// exact Gate sheet (or the run screen). Another saved server: switch
+  /// first, as the session link does. Unknown server: the same honest
+  /// banner. Opening never answers anything.
+  void _scheduleTeamLinkRoute() {
+    if (_teamLinkRouteScheduled) return;
+    final link = _sessionLink.pendingTeam.value;
+    if (link == null) return;
+    final target = _savedProfile(link.profileId);
+    final targetIsActive =
+        target != null && target.id == _controller.profile?.id;
+    if (targetIsActive && _launchNewTaskWaiting) return;
+    _teamLinkRouteScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (!mounted) return;
+        final navigator = _navigatorKey.currentState;
+        if (navigator == null) return;
+        final current = _sessionLink.pendingTeam.value;
+        if (current == null) return;
+        await _openTeamLink(navigator, current);
+      } finally {
+        _teamLinkRouteScheduled = false;
+        if (mounted) _scheduleTeamLinkRoute();
+      }
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  Future<void> _openTeamLink(NavigatorState navigator, TeamLink link) async {
+    final l10n = AppLocalizations.of(navigator.context);
+    final target = _savedProfile(link.profileId);
+    if (target == null) {
+      _consumeTeamLink(link);
+      _showSessionLinkServerMissing(navigator, l10n);
+      return;
+    }
+    if (target.requiresPasswordReentry || target.requiresCodexTokenReentry) {
+      _consumeTeamLink(link);
+      _showServersForLaunch(navigator);
+      _showLaunchNotice(l10n.handoffUiLinkReentry);
+      return;
+    }
+    if (target.id != _controller.profile?.id) {
+      Object? failure;
+      try {
+        await _controller.connect(target);
+      } catch (error) {
+        failure = error;
+      }
+      if (!mounted) return;
+      if (failure != null || _controller.api == null) {
+        _consumeTeamLink(link);
+        _showServersForLaunch(navigator);
+        _showLaunchNotice(l10n.handoffUiLinkConnectionFailed);
+        return;
+      }
+      _consumeTeamLink(link);
+      navigator.pushNamedAndRemoveUntil('/home', (_) => false);
+      _pushTeamDestination(navigator, link);
+      return;
+    }
+    if (!_launchConnectionReady) {
+      if (_launchNewTaskWaiting) return;
+      _consumeTeamLink(link);
+      _showServersForLaunch(navigator);
+      _showLaunchNotice(l10n.handoffUiLinkConnectionFailed);
+      return;
+    }
+    _consumeTeamLink(link);
+    _pushTeamDestination(navigator, link);
+  }
+
+  /// Activity with the gate's sheet opening on top (it waits for the
+  /// plugin's first snapshot), or the run screen for a completed run. A
+  /// profile without the plugin gets the plain Activity list.
+  void _pushTeamDestination(NavigatorState navigator, TeamLink link) {
+    final team = _controller.orchestration;
+    switch (link.kind) {
+      case TeamLinkKind.gate:
+        navigator.push(
+          MaterialPageRoute<void>(
+            builder: (_) => ActivityScreen(
+              controller: _controller,
+              initialTeamGateId: team == null ? null : link.id,
+            ),
+          ),
+        );
+      case TeamLinkKind.run:
+        if (team == null) {
+          navigator.push(
+            MaterialPageRoute<void>(
+              builder: (_) => ActivityScreen(controller: _controller),
+            ),
+          );
+          return;
+        }
+        navigator.push(
+          MaterialPageRoute<void>(
+            builder: (_) => RunScreen(controller: team, runId: link.id),
+          ),
+        );
+    }
+  }
+
+  void _consumeTeamLink(TeamLink link) {
+    if (_sessionLink.pendingTeam.value == link) _sessionLink.takeTeam();
+  }
+
+  /// Consumes [link] only if it is still the pending one, so a link that
+  /// arrived while this one was being handled is not swallowed with it.
+  void _consumeSessionLink(SessionLink link) {
+    _linkWaitingNoticeShown = false;
+    if (_sessionLink.pending.value == link) _sessionLink.take();
+  }
+
+  void _showSessionLinkServerMissing(
+    NavigatorState navigator,
+    AppLocalizations l10n,
+  ) {
+    final messenger = _messengerKey.currentState;
+    if (messenger == null) return;
+    messenger
+      ..hideCurrentMaterialBanner()
+      ..showMaterialBanner(
+        MaterialBanner(
+          key: const Key('session-link-server-missing'),
+          content: Text(l10n.handoffUiLinkServerMissing),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _messengerKey.currentState?.hideCurrentMaterialBanner();
+              },
+              child: Text(l10n.handoffUiLinkDismiss),
+            ),
+            TextButton(
+              onPressed: () {
+                _messengerKey.currentState?.hideCurrentMaterialBanner();
+                final navigator = _navigatorKey.currentState;
+                if (navigator != null) _showServersForLaunch(navigator);
+              },
+              child: Text(l10n.handoffUiLinkOpenServers),
+            ),
+          ],
+        ),
+      );
   }
 
   void _scheduleCodingAlertRoute() {
@@ -586,6 +970,21 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       }
       final target = _controller.takePendingCodingAlertOpen();
       if (target == null) return;
+      if (target.kind.isTeam) {
+        // AI Team alerts (TEAM-203) carry a gate or run id and the saved
+        // server's id, nothing else; they route like the team deep link.
+        final link = TeamLink.tryCreate(
+          kind: target.kind == CodingAlertKind.teamCompleted
+              ? TeamLinkKind.run
+              : TeamLinkKind.gate,
+          profileId: target.profileID.isEmpty
+              ? _controller.profile?.id
+              : target.profileID,
+          id: target.sessionID,
+        );
+        if (link != null) unawaited(_openTeamLink(navigator, link));
+        return;
+      }
       if (target.kind == CodingAlertKind.quota) {
         unawaited(
           _controller.quotaMonitor
@@ -686,6 +1085,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
 
   List<DesktopCommand> _shellCommands(BuildContext context) {
     final mod = shortcutModifierLabel;
+    final l10n = AppLocalizations.of(context);
     void go(int index) {
       final navigator = _navigatorKey.currentState;
       if (navigator == null) return;
@@ -698,61 +1098,61 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
 
     return [
       DesktopCommand(
-        label: 'New session',
+        label: l10n.e7LocaleUiNewSession,
         icon: Icons.add_rounded,
-        hint: 'Start a chat in the active project',
+        hint: l10n.e7LocaleUiNewSessionHint,
         keys: '$mod + N',
         onInvoke: () => unawaited(_startNewSession()),
       ),
       DesktopCommand(
-        label: 'Workspace',
+        label: l10n.e7LocaleUiWorkspace,
         icon: Icons.workspaces_outline,
-        hint: 'Recent sessions and the active project',
+        hint: l10n.e7LocaleUiWorkspaceHint,
         keys: '$mod + 1',
         onInvoke: () => go(0),
       ),
       DesktopCommand(
-        label: 'Files',
+        label: l10n.e7LocaleUiFiles,
         icon: Icons.folder_outlined,
-        hint: 'Browse the project tree',
+        hint: l10n.e7LocaleUiFilesHint,
         keys: '$mod + 2',
         onInvoke: () => go(1),
       ),
       DesktopCommand(
-        label: 'Activity',
+        label: l10n.e7LocaleUiActivity,
         icon: Icons.notifications_outlined,
-        hint: 'Permissions, questions, and forms',
+        hint: l10n.e7LocaleUiActivityHint,
         keys: '$mod + 3',
         onInvoke: () => go(2),
       ),
       DesktopCommand(
-        label: 'More',
+        label: l10n.e7LocaleUiMore,
         icon: Icons.more_horiz_rounded,
-        hint: 'Models, providers, terminal, settings',
+        hint: l10n.e7LocaleUiMoreHint,
         keys: '$mod + 4',
         onInvoke: () => go(3),
       ),
       DesktopCommand(
-        label: 'Settings',
+        label: l10n.e7LocaleUiSettings,
         icon: Icons.settings_outlined,
         keys: '$mod + ,',
         onInvoke: _openSettings,
       ),
       DesktopCommand(
-        label: 'Keyboard shortcuts',
+        label: l10n.e7LocaleUiKeyboardShortcuts,
         icon: Icons.keyboard_outlined,
         keys: '$mod + /',
         onInvoke: () => unawaited(showShortcutsHelp(context)),
       ),
       DesktopCommand(
-        label: 'Refresh sessions',
+        label: l10n.e7LocaleUiRefreshSessions,
         icon: Icons.refresh_rounded,
         onInvoke: () => unawaited(_controller.refreshSessions()),
       ),
       DesktopCommand(
-        label: 'Diagnostics',
+        label: l10n.e7LocaleUiDiagnostics,
         icon: Icons.bug_report_outlined,
-        hint: 'Recent errors and connection detail',
+        hint: l10n.e7LocaleUiDiagnosticsHint,
         onInvoke: () => _navigatorKey.currentState?.pushNamed('/debug'),
       ),
     ];
@@ -765,6 +1165,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       builder: (context, appearance, _) => ListenableBuilder(
         listenable: Listenable.merge([
           _controller.themePack,
+          _controller.appLocale,
           harvestedDynamicPack,
         ]),
         builder: (context, _) {
@@ -779,31 +1180,37 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
               // 1.0, which users pick deliberately — and only the extreme top
               // end is capped so a runaway scale cannot break the shell.
               final scale = MediaQuery.textScalerOf(context).scale(1);
-              return MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(
-                    scale > AppTheme.maxTextScale
-                        ? AppTheme.maxTextScale
-                        : scale,
-                  ),
+              return Theme(
+                data: AppTheme.forLocale(
+                  Theme.of(context),
+                  Localizations.localeOf(context),
                 ),
-                child: ShorebirdUpdateNotice(
-                  service: _updateService,
-                  messengerKey: _messengerKey,
-                  child: DesktopReleaseNotice(
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(
+                      scale > AppTheme.maxTextScale
+                          ? AppTheme.maxTextScale
+                          : scale,
+                    ),
+                  ),
+                  child: ShorebirdUpdateNotice(
+                    service: _updateService,
                     messengerKey: _messengerKey,
-                    navigatorKey: _navigatorKey,
-                    // Desktop only. On Android this returns its child
-                    // untouched, so the touch product gains no key handling.
-                    child: AppShortcuts(
+                    child: DesktopReleaseNotice(
+                      messengerKey: _messengerKey,
                       navigatorKey: _navigatorKey,
-                      signals: _shortcutSignals,
-                      handlers: AppShortcutHandlers(
-                        onNewSession: () => unawaited(_startNewSession()),
-                        onOpenSettings: _openSettings,
-                        paletteCommands: _shellCommands,
+                      // Desktop only. On Android this returns its child
+                      // untouched, so the touch product gains no key handling.
+                      child: AppShortcuts(
+                        navigatorKey: _navigatorKey,
+                        signals: _shortcutSignals,
+                        handlers: AppShortcutHandlers(
+                          onNewSession: () => unawaited(_startNewSession()),
+                          onOpenSettings: _openSettings,
+                          paletteCommands: _shellCommands,
+                        ),
+                        child: child ?? const SizedBox.shrink(),
                       ),
-                      child: child ?? const SizedBox.shrink(),
                     ),
                   ),
                 ),
@@ -814,6 +1221,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
+            locale: _controller.appLocale.value,
             debugShowCheckedModeBanner: false,
             themeMode: switch (appearance) {
               AppAppearance.system => ThemeMode.system,
@@ -883,7 +1291,11 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     _share.pending.removeListener(_scheduleShareRoute);
     if (widget.shareIntent == null) _share.dispose();
     _launchShortcut.pending.removeListener(_scheduleLaunchRoute);
+    _launchShortcut.pendingSession.removeListener(_scheduleLaunchRoute);
     if (widget.launchShortcut == null) _launchShortcut.dispose();
+    _sessionLink.pending.removeListener(_scheduleSessionLinkRoute);
+    _sessionLink.pendingTeam.removeListener(_scheduleTeamLinkRoute);
+    if (widget.sessionLinkIntent == null) _sessionLink.dispose();
     super.dispose();
   }
 }

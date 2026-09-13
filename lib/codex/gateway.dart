@@ -61,6 +61,7 @@ const codexServerCapabilities = ServerCapabilities(
   worktreeReset: false,
   worktreeCreate: false,
   legacyQuestionRequests: false,
+  cliSessionResume: false,
   forms: false,
   inbox: false,
 );

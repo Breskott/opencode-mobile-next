@@ -36,6 +36,7 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -69,6 +70,22 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
+            <!-- Session handoff link (backlog F4-S2): the QR another phone
+                 shows encodes opencode-mobile://session?profile=…&session=…
+                 with route identifiers only. MainActivity.captureSessionLink
+                 forwards the URI text to Dart over oc/link; Dart validates
+                 it and decides whether the saved server exists here. Nothing
+                 here connects, creates a session or sends a prompt. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="opencode-mobile" android:host="session" />
+                <!-- AI Team link (TEAM-203): opencode-mobile://team/gate/<profile>/<gate>
+                     or …/run/<profile>/<run>, route identifiers only, captured
+                     by the same captureSessionLink bridge. -->
+                <data android:scheme="opencode-mobile" android:host="team" />
+            </intent-filter>
             <!-- Static launcher shortcuts (Connect, New task). The shortcut
                  intents are explicit and carry the oc.shortcut extra that
                  MainActivity whitelists and forwards to Dart. -->
@@ -89,6 +106,19 @@
         <receiver
             android:name=".LivePauseReceiver"
             android:exported="false" />
+        <!-- Quick Settings tile: reads the cached needs-attention count the
+             app writes and opens Activity on tap. The permission is what lets
+             only the system bind it. -->
+        <service
+            android:name=".AttentionTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_monochrome"
+            android:label="@string/tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
         <receiver
             android:name=".SessionsWidgetProvider"
             android:exported="true"

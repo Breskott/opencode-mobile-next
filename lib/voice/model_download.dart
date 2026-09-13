@@ -12,8 +12,28 @@ class VoiceDownloadCancelled implements Exception {
   const VoiceDownloadCancelled();
 }
 
+enum VoiceDownloadFailure {
+  unknown,
+  https,
+  closed,
+  redirect,
+  unsafeRedirect,
+  noResponse,
+  timeout,
+  checksum,
+  verification,
+  http,
+  length,
+  incomplete,
+}
+
 class VoiceDownloadException implements Exception {
-  const VoiceDownloadException(this.message);
+  const VoiceDownloadException(
+    this.message, {
+    this.failure = VoiceDownloadFailure.unknown,
+  });
+
+  final VoiceDownloadFailure failure;
 
   final String message;
 
@@ -183,10 +203,14 @@ class LocalVoiceHttpTransport implements VoiceHttpTransport {
     if (uri.scheme != 'https') {
       throw const VoiceDownloadException(
         'Voice models may only be downloaded over HTTPS.',
+        failure: VoiceDownloadFailure.https,
       );
     }
     if (_closed) {
-      throw const VoiceDownloadException('Voice download transport is closed.');
+      throw const VoiceDownloadException(
+        'Voice download transport is closed.',
+        failure: VoiceDownloadFailure.closed,
+      );
     }
     final token = cancellation ?? VoiceCancellationToken();
     token.throwIfCancelled();
@@ -226,12 +250,14 @@ class LocalVoiceHttpTransport implements VoiceHttpTransport {
         if (location == null || redirects == 5) {
           throw const VoiceDownloadException(
             'Voice model download returned an invalid redirect.',
+            failure: VoiceDownloadFailure.redirect,
           );
         }
         final redirected = current.resolve(location);
         if (redirected.scheme != 'https') {
           throw const VoiceDownloadException(
             'Voice model download redirected to a non-HTTPS URL.',
+            failure: VoiceDownloadFailure.unsafeRedirect,
           );
         }
         await _networkStep(
@@ -245,6 +271,7 @@ class LocalVoiceHttpTransport implements VoiceHttpTransport {
       if (response == null) {
         throw const VoiceDownloadException(
           'Model server returned no response.',
+          failure: VoiceDownloadFailure.noResponse,
         );
       }
       final responseHeaders = <String, String>{};
@@ -277,7 +304,10 @@ class LocalVoiceHttpTransport implements VoiceHttpTransport {
       if (!active) return;
       abort();
       result.completeError(
-        VoiceDownloadException('Timed out while $description.'),
+        VoiceDownloadException(
+          'Timed out while $description.',
+          failure: VoiceDownloadFailure.timeout,
+        ),
       );
     });
     operation.then(
@@ -419,6 +449,7 @@ class VoiceModelDownloader {
           await store.delete('$stagedPath.part');
           throw VoiceDownloadException(
             'Checksum validation failed for ${file.name}.',
+            failure: VoiceDownloadFailure.checksum,
           );
         }
         await store.move('$stagedPath.part', stagedPath);
@@ -435,6 +466,7 @@ class VoiceModelDownloader {
         )) {
           throw VoiceDownloadException(
             'Final verification failed for ${file.name}.',
+            failure: VoiceDownloadFailure.verification,
           );
         }
       }
@@ -528,6 +560,7 @@ class VoiceModelDownloader {
       response.abort?.call();
       throw VoiceDownloadException(
         'Model server returned HTTP ${response.statusCode}.',
+        failure: VoiceDownloadFailure.http,
       );
     }
     final expectedResponseLength = file.length - offset;
@@ -536,6 +569,7 @@ class VoiceModelDownloader {
       response.abort?.call();
       throw VoiceDownloadException(
         'Unexpected length for ${file.name}: ${response.contentLength} bytes.',
+        failure: VoiceDownloadFailure.length,
       );
     }
     late final VoiceByteSink sink;
@@ -561,6 +595,7 @@ class VoiceModelDownloader {
         fail(
           VoiceDownloadException(
             'Timed out waiting for ${file.name} download data.',
+            failure: VoiceDownloadFailure.timeout,
           ),
         );
       });
@@ -577,6 +612,7 @@ class VoiceModelDownloader {
               fail(
                 VoiceDownloadException(
                   '${file.name} exceeded its pinned size.',
+                  failure: VoiceDownloadFailure.length,
                 ),
               );
               return;
@@ -618,6 +654,7 @@ class VoiceModelDownloader {
     if (received != file.length) {
       throw VoiceDownloadException(
         'Incomplete ${file.name}: received $received of ${file.length} bytes.',
+        failure: VoiceDownloadFailure.incomplete,
       );
     }
   }

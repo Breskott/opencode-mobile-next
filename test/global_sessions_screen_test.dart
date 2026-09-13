@@ -152,6 +152,7 @@ Future<_FinderController> _controller(ProductRepository repository) async {
 Widget _app(
   ConnectionController controller, {
   double textScale = 1,
+  bool rtl = false,
   Map<String, WidgetBuilder> routes = const {},
 }) => MaterialApp(
   routes: routes,
@@ -160,7 +161,10 @@ Widget _app(
       data: MediaQuery.of(
         context,
       ).copyWith(textScaler: TextScaler.linear(textScale)),
-      child: GlobalSessionsScreen(controller: controller),
+      child: Directionality(
+        textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+        child: GlobalSessionsScreen(controller: controller),
+      ),
     ),
   ),
 );
@@ -178,6 +182,36 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(secureChannel, null);
   });
+
+  for (final rtl in [false, true]) {
+    testWidgets(
+      '320dp 2.5x ${rtl ? 'RTL' : 'LTR'} finder keeps filters and project paths readable',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 760);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final repository = _FinderRepository(
+          (_) async => [_result(1, directory: '/work/checkout')],
+        );
+        final controller = await _controller(repository);
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(_app(controller, textScale: 2.5, rtl: rtl));
+        await tester.pumpAndSettle();
+        final chip = find.byKey(const ValueKey('include-archived-sessions'));
+        final text = find.descendant(of: chip, matching: find.byType(Text));
+        expect(tester.getRect(chip).contains(tester.getCenter(text)), isTrue);
+        expect(
+          tester.widget<Text>(find.text('/work/checkout')).textDirection,
+          TextDirection.ltr,
+        );
+        expect(tester.takeException(), isNull);
+        await tester.tap(chip);
+        await tester.pumpAndSettle();
+        expect(repository.calls.last.includeArchived, isTrue);
+      },
+    );
+  }
 
   testWidgets('results are grouped by working directory, newest first', (
     tester,
@@ -224,7 +258,8 @@ void main() {
     // repeat it.
     expect(find.text('Project 2'), findsNWidgets(2));
     expect(find.textContaining('Project 2 ·'), findsNothing);
-    expect(find.textContaining('sessions in 2 folders'), findsOneWidget);
+    // A partial inventory counts what is loaded without claiming a total.
+    expect(find.text('3 loaded sessions · 2 folders'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('global-sessions-load-more')));
     await tester.pumpAndSettle();
@@ -237,6 +272,7 @@ void main() {
       '/work/beta',
       'Session 2',
     ]);
+    expect(find.text('4 sessions in 2 folders'), findsOneWidget);
   });
 
   testWidgets('folders with the same name are told apart by their parent', (
@@ -284,7 +320,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Worktree'), findsOneWidget);
     expect(find.text('Main checkout'), findsNothing);
-    expect(find.textContaining('1 of 2 sessions shown'), findsOneWidget);
+    expect(
+      find.textContaining('1 shown from 2 loaded sessions'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const ValueKey('global-session-folder-all')));
     await tester.pumpAndSettle();
@@ -550,7 +589,7 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('50+ sessions'), findsOneWidget);
+    expect(find.textContaining('50 loaded sessions'), findsOneWidget);
     final list = find.byKey(
       const PageStorageKey<String>('global-sessions-list'),
     );

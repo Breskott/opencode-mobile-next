@@ -165,7 +165,7 @@ class _PromptStashSheetState extends State<_PromptStashSheet> {
           child: ListView(
             key: const Key('prompt-stash-sheet'),
             shrinkWrap: true,
-            padding: EdgeInsets.fromLTRB(
+            padding: EdgeInsetsDirectional.fromSTEB(
               16,
               0,
               16,

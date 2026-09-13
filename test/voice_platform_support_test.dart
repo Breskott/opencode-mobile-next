@@ -22,16 +22,19 @@ void main() {
       _installChannel(null);
     });
 
-    test('the device probe reports capture unsupported, not a microphone', () async {
-      final info = await voiceDevicePlatform.getDeviceInfo();
-      expect(info.captureSupported, isFalse);
-      // The old code returned VoiceDeviceInfo.unknown() here, whose
-      // hasMicrophone is true — a desktop user was told the device had a
-      // microphone this app could record from.
-      expect(info.hasMicrophone, isFalse);
-      expect(info.supportedAbis, isEmpty);
-      expect(info.availableStorageBytes, isNull);
-    });
+    test(
+      'the device probe reports capture unsupported, not a microphone',
+      () async {
+        final info = await voiceDevicePlatform.getDeviceInfo();
+        expect(info.captureSupported, isFalse);
+        // The old code returned VoiceDeviceInfo.unknown() here, whose
+        // hasMicrophone is true — a desktop user was told the device had a
+        // microphone this app could record from.
+        expect(info.hasMicrophone, isFalse);
+        expect(info.supportedAbis, isEmpty);
+        expect(info.availableStorageBytes, isNull);
+      },
+    );
 
     test('microphone permission is refused, never silently granted', () async {
       expect(

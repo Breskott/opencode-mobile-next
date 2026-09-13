@@ -70,6 +70,7 @@ class _ChatComposer extends StatelessWidget {
     this.conversationMode = false,
     required this.onSend,
     required this.onStop,
+    this.stopping = false,
     required this.onChooseModel,
     required this.onRemoveAttachment,
     // UX-103 review handoff (start).
@@ -163,6 +164,7 @@ class _ChatComposer extends StatelessWidget {
   final VoidCallback onSend;
 
   final VoidCallback onStop;
+  final bool stopping;
   final VoidCallback onChooseModel;
   final ValueChanged<PromptAttachment> onRemoveAttachment;
 
@@ -179,16 +181,25 @@ class _ChatComposer extends StatelessWidget {
   final Widget? modelSwitch;
 
   Widget _modelControls(BuildContext context) => isolated
-      ? Text(_contextLabel, maxLines: 1, overflow: TextOverflow.ellipsis)
+      ? Text(
+          _contextLabel(context),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        )
       : Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Flexible(
               child: _ModelContextChip(
-                label: _contextLabel,
-                tooltip: _rawContextLabel,
+                label: _contextLabel(context),
+                tooltip: _rawContextLabel(context),
                 costLine: _costLine,
                 trailing: _contextPercent(context),
+                contextHint: contextUsage == null
+                    ? null
+                    : _chatL10n(context).chatUiContextPercentFull(
+                        (contextUsage!.clamp(0, 1) * 100).round(),
+                      ),
                 onPressed: onChooseModel,
               ),
             ),
@@ -200,6 +211,10 @@ class _ChatComposer extends StatelessWidget {
       controller.text.trim().isNotEmpty ||
       attachments.isNotEmpty ||
       references.isNotEmpty;
+
+  /// The delivery control (OpenCode 2) or queue hint (OpenCode 1) exists
+  /// only while a run is active and there is something typed to send.
+  bool get _deliveryStripShown => busy && canSendWhileBusy && _hasPrompt;
 
   void _submitFromKeyboard() {
     if (_hasPrompt && !sending && !shelfBusy && (!busy || canSendWhileBusy)) {
@@ -217,7 +232,7 @@ class _ChatComposer extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
+        padding: const EdgeInsetsDirectional.fromSTEB(10, 6, 10, 10),
         child: ListenableBuilder(
           listenable: focusNode,
           // Keep the editor mounted when a run finishes. A changing pulse
@@ -279,22 +294,29 @@ class _ChatComposer extends StatelessWidget {
                 // UX-P0-04: while a run is active the consequence of Send
                 // changes, so the choice is stated in words rather than
                 // hidden behind a long press on an unchanged arrow. The
-                // strip only exists while it applies, so the idle composer
-                // gains no density from it.
-                if (busy && canSendWhileBusy)
+                // strip only exists while it applies — a run is active AND
+                // there is something typed to send — so watching a run with
+                // an empty composer gains no density from it.
+                if (_deliveryStripShown)
                   if (canChooseDelivery && onDeliveryChanged != null)
                     _DeliveryControl(
                       delivery: delivery,
                       onChanged: onDeliveryChanged!,
+                      compact: compact,
                     )
                   else
-                    const _QueueHint(),
+                    _QueueHint(compact: compact),
                 // UX-103 review handoff (start): staged references ride
                 // above the attachment strip so the two never read as one
                 // kind of thing.
                 if (references.isNotEmpty) ...[
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      12,
+                      10,
+                      12,
+                      0,
+                    ),
                     child: SizedBox(
                       height: 48,
                       child: ListView.separated(
@@ -315,18 +337,17 @@ class _ChatComposer extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+                    padding: const EdgeInsetsDirectional.fromSTEB(14, 6, 14, 0),
                     child: Text(
                       key: const Key('composer-reference-note'),
                       // §7.4 again: staged references live in memory only, so
                       // say so here rather than letting a restart lose them
                       // silently — same promise the attachment note makes.
                       references.length == 1
-                          ? '1 reference is added as text when you send. '
-                                'Not saved with your draft.'
-                          : '${references.length} references are added as '
-                                'text when you send. Not saved with your '
-                                'draft.',
+                          ? _chatL10n(context).chatUi1ReferenceIsAddedAsTextWhen
+                          : _chatL10n(
+                              context,
+                            ).chatUiReferencesAttachedNotice(references.length),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: AppTheme.mutedOf(theme),
                       ),
@@ -336,7 +357,12 @@ class _ChatComposer extends StatelessWidget {
                 // UX-103 review handoff (end).
                 if (attachments.isNotEmpty) ...[
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      12,
+                      10,
+                      12,
+                      0,
+                    ),
                     child: SizedBox(
                       height: 56,
                       child: ListView.separated(
@@ -356,7 +382,12 @@ class _ChatComposer extends StatelessWidget {
                   // Explain local recovery once per attachment draft.
                   if (showAttachmentNote)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        14,
+                        6,
+                        14,
+                        0,
+                      ),
                       child: Text(
                         key: const Key('composer-attachment-draft-note'),
                         promptAttachmentsSupported
@@ -380,6 +411,39 @@ class _ChatComposer extends StatelessWidget {
   // One structure at every height keeps the editor and its input connection
   // in place as the keyboard opens. Only its line budget changes.
   Widget _composerBody(BuildContext context) {
+    const fieldPadding = EdgeInsetsDirectional.fromSTEB(16, 14, 16, 8);
+    var fieldLines = compact ? 3 : 6;
+    double? singleLineViewport;
+    if (maxInputHeight.isFinite) {
+      final theme = Theme.of(context);
+      final painter = TextPainter(
+        text: TextSpan(
+          text: 'M',
+          style: theme.useMaterial3
+              ? theme.textTheme.bodyLarge
+              : theme.textTheme.titleMedium,
+        ),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout();
+      try {
+        // Match the editable's line count to its viewport. Merely clipping a
+        // taller TextField lets InputDecorator position text above the field.
+        fieldLines =
+            ((maxInputHeight - fieldPadding.vertical) /
+                    painter.preferredLineHeight)
+                .floor()
+                .clamp(1, fieldLines);
+        if (fieldLines == 1) {
+          singleLineViewport = math.min(
+            maxInputHeight,
+            painter.preferredLineHeight + fieldPadding.vertical,
+          );
+        }
+      } finally {
+        painter.dispose();
+      }
+    }
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -396,7 +460,10 @@ class _ChatComposer extends StatelessWidget {
         if (shelfBusy && shelfLoading)
           const LinearProgressIndicator(minHeight: 2),
         ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxInputHeight),
+          constraints: BoxConstraints(
+            minHeight: singleLineViewport ?? 0,
+            maxHeight: singleLineViewport ?? maxInputHeight,
+          ),
           child: _ComposerField(
             isolated: isolated,
             promptAttachmentsSupported: promptAttachmentsSupported,
@@ -404,9 +471,12 @@ class _ChatComposer extends StatelessWidget {
             focusNode: focusNode,
             onContentInserted: onContentInserted,
             // Let the draft earn its space; an empty field needs one line.
-            minLines: 1,
-            maxLines: compact ? 3 : 6,
-            contentPadding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            // A single visible line remains a multiline editor. maxLines: 1
+            // would silently strip newlines from pasted or typed prompts.
+            minLines: singleLineViewport == null ? 1 : null,
+            maxLines: singleLineViewport == null ? fieldLines : null,
+            expands: singleLineViewport != null,
+            contentPadding: fieldPadding.resolve(Directionality.of(context)),
             onSubmitShortcut: _submitFromKeyboard,
             readOnly: shelfBusy,
           ),
@@ -416,7 +486,7 @@ class _ChatComposer extends StatelessWidget {
         if (contextUsage case final usage? when usage >= .7)
           _ContextMeterLine(usage: usage),
         Padding(
-          padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
+          padding: const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 6),
           child: Row(
             children: [
               if (!isolated && !conversationMode)
@@ -441,7 +511,7 @@ class _ChatComposer extends StatelessWidget {
               if (!isolated)
                 IconButton(
                   key: const Key('prompt-editor-button'),
-                  tooltip: 'Open full-screen prompt editor',
+                  tooltip: _chatL10n(context).chatUiOpenFullScreenPromptEditor,
                   onPressed: shelfBusy || conversationMode
                       ? null
                       : onOpenEditor,
@@ -463,6 +533,7 @@ class _ChatComposer extends StatelessWidget {
                 onSend: onSend,
                 canChooseDelivery: canChooseDelivery,
                 onStop: onStop,
+                stopping: stopping,
               ),
             ],
           ),
@@ -537,7 +608,7 @@ class _ChatComposer extends StatelessWidget {
   /// The chip's visible text: the presented model name, the agent only when
   /// it is not the server's default, the variant only when it is a real
   /// choice. The raw IDs stay in the tooltip.
-  String get _contextLabel {
+  String _contextLabel(BuildContext context) {
     final parts = <String>[];
     if (selectedAgent.isNotEmpty && selectedAgent != defaultAgent) {
       parts.add(selectedAgent);
@@ -554,19 +625,19 @@ class _ChatComposer extends StatelessWidget {
     final variant = selectedVariant.trim();
     if (variant.isNotEmpty && !_isDefaultVariant(variant)) parts.add(variant);
     return parts.isEmpty
-        ? selectionFallback ?? 'Choose model'
+        ? selectionFallback ?? _chatL10n(context).chatUiChooseModel
         : parts.join(' · ');
   }
 
   /// Full raw selection for the tooltip.
-  String get _rawContextLabel {
+  String _rawContextLabel(BuildContext context) {
     final parts = <String>[];
     if (selectedAgent.isNotEmpty) parts.add(selectedAgent);
     final model = selectedModel;
     if (model != null && model.modelID.isNotEmpty) parts.add(model.wireName);
     if (selectedVariant.isNotEmpty) parts.add(selectedVariant);
     return parts.isEmpty
-        ? selectionFallback ?? 'Choose model'
+        ? selectionFallback ?? _chatL10n(context).chatUiChooseModel
         : parts.join(' · ');
   }
 
@@ -609,6 +680,7 @@ class _ComposerField extends StatelessWidget {
     required this.contentPadding,
     this.onSubmitShortcut,
     this.readOnly = false,
+    this.expands = false,
     this.isolated = false,
     this.promptAttachmentsSupported = true,
   });
@@ -616,8 +688,9 @@ class _ComposerField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final ValueChanged<KeyboardInsertedContent> onContentInserted;
-  final int minLines;
-  final int maxLines;
+  final int? minLines;
+  final int? maxLines;
+  final bool expands;
   final EdgeInsets contentPadding;
 
   /// Ctrl/Cmd+Enter sends from hardware keyboards (Android with a keyboard
@@ -637,6 +710,8 @@ class _ComposerField extends StatelessWidget {
       readOnly: readOnly,
       minLines: minLines,
       maxLines: maxLines,
+      expands: expands,
+      textAlignVertical: TextAlignVertical.top,
       // Accepts images committed by the IME (Android commitContent): the
       // default allowed mime types cover the common raster image formats.
       enableInteractiveSelection: !isolated,
@@ -645,7 +720,8 @@ class _ComposerField extends StatelessWidget {
           : ContentInsertionConfiguration(onContentInserted: onContentInserted),
       textCapitalization: TextCapitalization.sentences,
       decoration: InputDecoration(
-        hintText: 'Ask OpenCode…',
+        hintText: _chatL10n(context).chatUiAskOpenCode,
+        hintMaxLines: expands ? 1 : null,
         filled: false,
         border: InputBorder.none,
         enabledBorder: InputBorder.none,
@@ -694,12 +770,12 @@ class _PromptToolsButton extends StatelessWidget {
   /// while attaching is unavailable.
   final VoidCallback? onAttach;
 
-  static const tooltipText = 'Add. Hold to attach a file';
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final label = attachmentsSupported ? tooltipText : 'Prompt tools';
+    final label = attachmentsSupported
+        ? _chatL10n(context).chatUiAddHoldToAttachAFile
+        : _chatL10n(context).chatUiPromptTools;
     // The tooltip is manual so its own long-press recognizer cannot swallow
     // the attach gesture; hover still shows it on desktop, and the message
     // stays in semantics.
@@ -773,14 +849,17 @@ class _PromptToolsSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-              child: Text('Prompt tools', style: theme.textTheme.titleMedium),
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 4),
+              child: Text(
+                _chatL10n(context).chatUiPromptTools,
+                style: theme.textTheme.titleMedium,
+              ),
             ),
             ListTile(
               key: const Key('composer-tool-commands'),
               leading: const Icon(AppIcons.run),
-              title: const Text('Commands'),
-              subtitle: const Text('Slash commands and agents'),
+              title: Text(_chatL10n(context).runResultsCommandsTitle),
+              subtitle: Text(_chatL10n(context).chatUiSlashCommandsAndAgents),
               onTap: () => Navigator.pop(context, _PromptTool.commands),
             ),
             ListTile(
@@ -797,13 +876,15 @@ class _PromptToolsSheet extends StatelessWidget {
                 key: const Key('composer-tool-attach'),
                 enabled: !attachBlocked,
                 leading: const Icon(AppIconography.attach),
-                title: const Text('Attach file'),
+                title: Text(_chatL10n(context).chatUiAttachFile),
                 subtitle: Text(
                   attachBlocked
-                      ? 'Available when the current run finishes'
+                      ? _chatL10n(
+                          context,
+                        ).chatUiAvailableWhenTheCurrentRunFinishes
                       : attachmentCount == 0
-                      ? 'Add an image or file to the prompt'
-                      : '$attachmentCount attached',
+                      ? _chatL10n(context).chatUiAddAnImageOrFileToThe
+                      : _chatL10n(context).chatUiAttachedCount(attachmentCount),
                 ),
                 onTap: attachBlocked
                     ? null
@@ -840,11 +921,15 @@ class _PromptToolsSheet extends StatelessWidget {
                 key: const Key('composer-tool-voice'),
                 enabled: !voiceBlocked,
                 leading: const Icon(AppIconography.mic),
-                title: const Text('Voice input'),
+                title: Text(_chatL10n(context).chatUiVoiceInput),
                 subtitle: Text(
                   voiceBlocked
-                      ? 'Available when the current run finishes'
-                      : 'Records and transcribes on this device',
+                      ? _chatL10n(
+                          context,
+                        ).chatUiAvailableWhenTheCurrentRunFinishes
+                      : _chatL10n(
+                          context,
+                        ).chatUiRecordsAndTranscribesOnThisDevice,
                 ),
                 onTap: voiceBlocked
                     ? null
@@ -931,6 +1016,7 @@ class _ModelContextChip extends StatelessWidget {
     required this.tooltip,
     this.costLine,
     this.trailing,
+    this.contextHint,
     required this.onPressed,
   });
 
@@ -944,40 +1030,57 @@ class _ModelContextChip extends StatelessWidget {
 
   /// Trailing slot for the context-window percentage once it matters.
   final Widget? trailing;
+  final String? contextHint;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return Tooltip(
-      message:
-          'Model and agent: $tooltip. Tap to change.'
-          '${costLine == null ? '' : '\n$costLine'}',
-      child: TextButton(
-        key: const Key('composer-model-context'),
-        style: TextButton.styleFrom(
-          foregroundColor: scheme.onSurfaceVariant,
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-          textStyle: theme.textTheme.labelLarge,
-        ),
-        onPressed: onPressed,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final iconOnly =
+            constraints.maxWidth < MediaQuery.textScalerOf(context).scale(80);
+        return Tooltip(
+          message: [
+            _chatL10n(context).chatUiModelAndAgentHint(
+              tooltip,
+              costLine == null ? '' : '\n$costLine',
             ),
-            const SizedBox(width: 2),
-            const Icon(AppIconography.chevronDown, size: 18),
-            if (trailing case final trailing?) ...[
-              const SizedBox(width: 8),
-              trailing,
-            ],
-          ],
-        ),
-      ),
+            if (iconOnly && contextHint != null) contextHint!,
+          ].join('\n'),
+          child: TextButton(
+            key: const Key('composer-model-context'),
+            style: TextButton.styleFrom(
+              foregroundColor: scheme.onSurfaceVariant,
+              minimumSize: const Size(48, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+              textStyle: theme.textTheme.labelLarge,
+            ),
+            onPressed: onPressed,
+            child: iconOnly
+                ? Icon(AppIconography.model, semanticLabel: label)
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(AppIconography.chevronDown, size: 18),
+                      if (trailing case final trailing?) ...[
+                        const SizedBox(width: 8),
+                        trailing,
+                      ],
+                    ],
+                  ),
+          ),
+        );
+      },
     );
   }
 }
@@ -993,6 +1096,7 @@ class _ComposerSubmit extends StatelessWidget {
     this.onDeliveryChanged,
     required this.onSend,
     required this.onStop,
+    this.stopping = false,
   });
 
   final bool busy;
@@ -1004,6 +1108,7 @@ class _ComposerSubmit extends StatelessWidget {
   final ValueChanged<PromptDelivery>? onDeliveryChanged;
   final VoidCallback onSend;
   final VoidCallback onStop;
+  final bool stopping;
 
   @override
   Widget build(BuildContext context) {
@@ -1050,8 +1155,8 @@ class _ComposerSubmit extends StatelessWidget {
       // v1 semantics unchanged: sending is impossible while a turn runs.
       return IconButton.filledTonal(
         key: const Key('chat-send-button'),
-        tooltip: 'Stop',
-        onPressed: _stop,
+        tooltip: _chatL10n(context).voiceConversationStopReply,
+        onPressed: stopping ? null : _stop,
         style: IconButton.styleFrom(
           foregroundColor: scheme.error,
           backgroundColor: scheme.errorContainer.withValues(alpha: .55),
@@ -1068,7 +1173,7 @@ class _ComposerSubmit extends StatelessWidget {
     if (!busy) {
       return IconButton(
         key: const Key('chat-send-button'),
-        tooltip: 'Send',
+        tooltip: _chatL10n(context).chatUiSend,
         onPressed: sending || !enabled ? null : onSend,
         style: _sendStyle(context),
         icon: icon,
@@ -1079,18 +1184,18 @@ class _ComposerSubmit extends StatelessWidget {
     // run. Stop keeps its own adjacent button so neither action hides the
     // other.
     final sendHint = !canChooseDelivery
-        ? 'Send after this run'
+        ? _chatL10n(context).chatUiSendAfterThisRun
         : delivery == PromptDelivery.queue
-        ? 'Queue after this run'
-        : 'Send now and steer this run';
+        ? _chatL10n(context).chatUiQueueAfterThisRun
+        : _chatL10n(context).chatUiSendNowAndSteerThisRun;
     return Row(
       key: const Key('chat-busy-submit-row'),
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton.filledTonal(
           key: const Key('chat-stop-button'),
-          tooltip: 'Stop',
-          onPressed: _stop,
+          tooltip: _chatL10n(context).voiceConversationStopReply,
+          onPressed: stopping ? null : _stop,
           style: IconButton.styleFrom(
             foregroundColor: scheme.error,
             backgroundColor: scheme.errorContainer.withValues(alpha: .55),
@@ -1126,7 +1231,7 @@ class _ContextPercentBadge extends StatelessWidget {
         ? AppTheme.statusColor(theme, AppStatusTone.attention)
         : AppTheme.mutedOf(theme);
     return Semantics(
-      label: 'Context $percent% full',
+      label: _chatL10n(context).chatUiContextPercentFull(percent),
       excludeSemantics: true,
       child: Text(
         '$percent%',
@@ -1150,18 +1255,25 @@ class _ContextPercentBadge extends StatelessWidget {
 /// two-segment toggle, right-aligned above the field, that only exists while
 /// it applies.
 class _DeliveryControl extends StatelessWidget {
-  const _DeliveryControl({required this.delivery, required this.onChanged});
+  const _DeliveryControl({
+    required this.delivery,
+    required this.onChanged,
+    required this.compact,
+  });
 
   final PromptDelivery delivery;
   final ValueChanged<PromptDelivery> onChanged;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final compactCopy =
+        compact && MediaQuery.textScalerOf(context).scale(14) > 18;
     return Padding(
       key: const Key('composer-delivery-control'),
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
       // A Wrap, not a Row: at large text scales the toggle drops under the
       // caption instead of pushing off the edge.
       child: Wrap(
@@ -1170,14 +1282,15 @@ class _DeliveryControl extends StatelessWidget {
         spacing: 8,
         runSpacing: 4,
         children: [
-          Text(
-            delivery == PromptDelivery.steer
-                ? 'Send steers the current run'
-                : 'Send waits for this run to finish',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
+          if (!compactCopy)
+            Text(
+              delivery == PromptDelivery.steer
+                  ? _chatL10n(context).chatUiSendSteersTheCurrentRun
+                  : _chatL10n(context).chatUiSendWaitsForThisRunToFinish,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: AppTheme.mutedOf(theme),
+              ),
             ),
-          ),
           SegmentedButton<PromptDelivery>(
             showSelectedIcon: false,
             style: ButtonStyle(
@@ -1191,18 +1304,24 @@ class _DeliveryControl extends StatelessWidget {
                 BorderSide(color: scheme.outlineVariant),
               ),
             ),
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: PromptDelivery.steer,
                 icon: Icon(AppIcons.run, size: 15),
-                label: Text('Steer', key: Key('composer-delivery-steer')),
-                tooltip: 'Send now and steer the current run',
+                label: Text(
+                  _chatL10n(context).chatUiSteer,
+                  key: Key('composer-delivery-steer'),
+                ),
+                tooltip: _chatL10n(context).chatUiSendNowAndSteerTheCurrentRun,
               ),
               ButtonSegment(
                 value: PromptDelivery.queue,
                 icon: Icon(AppIcons.queue, size: 15),
-                label: Text('Queue', key: Key('composer-delivery-queue')),
-                tooltip: 'Wait for the current run to finish, then send',
+                label: Text(
+                  _chatL10n(context).chatUiQueue,
+                  key: Key('composer-delivery-queue'),
+                ),
+                tooltip: _chatL10n(context).chatUiWaitForTheCurrentRunToFinish,
               ),
             ],
             selected: {delivery},
@@ -1216,27 +1335,38 @@ class _DeliveryControl extends StatelessWidget {
 
 /// OpenCode 1 while a run is active: the server accepts the send and runs
 /// it after the current turn, so the composer says so instead of hiding
-/// Send behind Stop.
+/// Send behind Stop. Mid-run steering is an OpenCode 2 inbox feature, and
+/// the hint says so rather than leaving the missing toggle unexplained.
 class _QueueHint extends StatelessWidget {
-  const _QueueHint();
+  const _QueueHint({required this.compact});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final muted = AppTheme.mutedOf(theme);
+    final compactCopy =
+        compact && MediaQuery.textScalerOf(context).scale(14) > 18;
+    final explanation = _chatL10n(
+      context,
+    ).chatUiQueueOnlySteeringNeedsOpenCode2;
     return Padding(
       key: const Key('composer-queue-hint'),
-      padding: const EdgeInsets.fromLTRB(14, 8, 12, 0),
+      padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 12, 0),
       child: Row(
         children: [
           Icon(AppIcons.queue, size: 14, color: muted),
           const SizedBox(width: 6),
           Expanded(
-            child: Text(
-              'Sends after this run finishes',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(color: muted),
+            child: Tooltip(
+              message: explanation,
+              child: Text(
+                compactCopy ? _chatL10n(context).chatUiQueue : explanation,
+                maxLines: compactCopy ? 1 : 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(color: muted),
+              ),
             ),
           ),
         ],
@@ -1327,8 +1457,8 @@ class _PendingAttachmentChip extends StatelessWidget {
     final theme = Theme.of(context);
     final reference = attachment.isDirectoryReference;
     final removeLabel = reference
-        ? 'Remove reference @${attachment.filename}'
-        : 'Remove attachment ${attachment.filename}';
+        ? _chatL10n(context).chatUiRemoveReferenceName(attachment.filename)
+        : _chatL10n(context).chatUiRemoveAttachmentName(attachment.filename);
     void openPreview() => showFilePreviewSheet(
       context,
       FilePreviewData.fromDataUrl(
@@ -1351,19 +1481,23 @@ class _PendingAttachmentChip extends StatelessWidget {
             button: !reference,
             excludeSemantics: true,
             label: reference
-                ? 'Reference @${attachment.filename}'
-                : 'Preview attachment ${attachment.filename}',
+                ? _chatL10n(context).chatUiReferenceName(attachment.filename)
+                : _chatL10n(
+                    context,
+                  ).chatUiPreviewAttachmentName(attachment.filename),
             onTap: reference ? null : openPreview,
             child: Tooltip(
               message: reference
-                  ? 'Project reference @${attachment.filename}'
-                  : 'Preview ${attachment.filename}',
+                  ? _chatL10n(
+                      context,
+                    ).chatUiProjectReferenceName(attachment.filename)
+                  : _chatL10n(context).chatUiPreviewName(attachment.filename),
               child: InkWell(
                 onTap: reference ? null : openPreview,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 48),
                   child: Padding(
-                    padding: const EdgeInsets.only(left: 12),
+                    padding: const EdgeInsetsDirectional.only(start: 12),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1424,7 +1558,9 @@ class _StagedReferenceChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final removeLabel = 'Remove reference ${reference.label}';
+    final removeLabel = _chatL10n(
+      context,
+    ).chatUiRemoveContextReference(reference.label);
     return Material(
       key: Key('composer-reference-${reference.id}'),
       color: scheme.secondaryContainer,
@@ -1442,7 +1578,7 @@ class _StagedReferenceChip extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 48),
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 12),
+                  padding: const EdgeInsetsDirectional.only(start: 12),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1519,7 +1655,7 @@ class _ContextMeterLine extends StatelessWidget {
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return Semantics(
       container: true,
-      label: 'Context window $percent percent used',
+      label: _chatL10n(context).chatUiContextPercentUsed(percent),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: ClipRRect(
@@ -1665,7 +1801,7 @@ class _ComposerActivityState extends State<_ComposerActivity>
                     child: Semantics(
                       container: true,
                       liveRegion: true,
-                      label: 'Assistant is working',
+                      label: _chatL10n(context).chatUiAssistantIsWorking,
                       child: CustomPaint(
                         key: const ValueKey('composer-activity'),
                         painter: _ActivityRingPainter(

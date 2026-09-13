@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+
+import '../../l10n/app_localizations.dart';
+
 import 'package:flutter/services.dart';
 
 import '../app_theme.dart';
+
+AppLocalizations _chatL10n(BuildContext context) =>
+    lookupAppLocalizations(Localizations.localeOf(context));
 
 /// Rich blocks the agent can emit inside fenced code with a reserved info
 /// string. [MarkdownText] recognises the fences `choices`, `checklist` and
@@ -66,8 +72,8 @@ class AgentChoicesBlock extends StatelessWidget {
     await Clipboard.setData(ClipboardData(text: option));
     if (!context.mounted) return;
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(
-        content: Text('Copied. Paste it into the composer'),
+      SnackBar(
+        content: Text(_chatL10n(context).chatUiCopiedPasteItIntoTheComposer),
         duration: Duration(seconds: 2),
       ),
     );
@@ -86,7 +92,7 @@ class AgentChoicesBlock extends StatelessWidget {
             padding: EdgeInsets.only(top: index == 0 ? 0 : 6),
             child: Semantics(
               button: true,
-              label: 'Choose: ${options[index]}',
+              label: _chatL10n(context).chatUiChooseOption(options[index]),
               excludeSemantics: true,
               child: Material(
                 color: Colors.transparent,
@@ -185,7 +191,8 @@ class AgentChecklistBlock extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 3),
             child: Semantics(
-              label: '${item.done ? 'Done' : 'To do'}: ${item.label}',
+              label:
+                  '${item.done ? _chatL10n(context).modelChoiceDone : _chatL10n(context).chatUiTodo}: ${item.label}',
               excludeSemantics: true,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,8 +246,8 @@ class AgentCommandBlock extends StatelessWidget {
     await Clipboard.setData(ClipboardData(text: command));
     if (!context.mounted) return;
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(
-        content: Text('Command copied'),
+      SnackBar(
+        content: Text(_chatL10n(context).termuxGuideCopied),
         duration: Duration(seconds: 1),
       ),
     );
@@ -265,16 +272,18 @@ class AgentCommandBlock extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),
+            padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 2),
             child: Row(
               children: [
                 Icon(AppIconography.terminal, size: 14, color: muted),
                 const SizedBox(width: 6),
-                Text(
-                  'Run on your computer',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: muted,
-                    letterSpacing: .3,
+                Expanded(
+                  child: Text(
+                    _chatL10n(context).chatUiRunOnYourComputer,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: muted,
+                      letterSpacing: .3,
+                    ),
                   ),
                 ),
               ],
@@ -282,7 +291,7 @@ class AgentCommandBlock extends StatelessWidget {
           ),
           for (var index = 0; index < commands.length; index++)
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 4, 0),
+              padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 4, 0),
               child: Row(
                 children: [
                   Expanded(
@@ -290,6 +299,7 @@ class AgentCommandBlock extends StatelessWidget {
                       scrollDirection: Axis.horizontal,
                       child: SelectableText(
                         commands[index],
+                        textDirection: TextDirection.ltr,
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontFamily: AppTheme.monoFamily,
                           height: 1.45,
@@ -299,7 +309,7 @@ class AgentCommandBlock extends StatelessWidget {
                   ),
                   IconButton(
                     key: Key('agent-command-copy-$index'),
-                    tooltip: 'Copy command',
+                    tooltip: _chatL10n(context).handoffCopyCommand,
                     constraints: const BoxConstraints(
                       minWidth: 48,
                       minHeight: 48,

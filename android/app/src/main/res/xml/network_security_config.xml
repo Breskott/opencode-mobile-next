@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <base-config cleartextTrafficPermitted="false" />
     <!--
-      Cleartext reaches this device and nothing else. Keep this list in step
-      with isLoopbackHost() in lib/state/profiles.dart: a host the Dart layer
-      accepts but Android does not simply fails at connect time with no
-      explanation the user can act on.
+      Plain HTTP is decided in Dart, not here: isLoopbackHost() and
+      isOrchestrationUrlAllowed() (lib/domain/loopback_host.dart,
+      lib/orchestration/adapters/gascity/gascity_probe.dart) accept http://
+      only for this device and for Tailscale addresses (100.64.0.0/10 and
+      *.ts.net). Android cannot express an address range, so the platform
+      policy is opened and the Dart layer stays the gate. Refusing here would
+      fail at connect time with no message the user can act on (that is what
+      happened on 2026-09-11 with the AI Team front at http://100.x:8373).
     -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">localhost</domain>
-        <domain includeSubdomains="false">127.0.0.1</domain>
-        <domain includeSubdomains="false">::1</domain>
-    </domain-config>
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

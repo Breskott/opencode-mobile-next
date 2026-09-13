@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/sse.dart';
 import '../../domain/server_gateway.dart' show ServerCapabilities;
 import '../../state/connection.dart';
+import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../desktop/shortcuts.dart';
 import '../widgets/connection_status_banner.dart';
@@ -130,19 +131,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final destinations = <({int id, NavigationDestination destination})>[
       (
         id: 0,
-        destination: const NavigationDestination(
+        destination: NavigationDestination(
           icon: AppGlyph(AppIconography.workspace),
           selectedIcon: AppGlyph(AppIconography.workspaceSelected),
-          label: 'Workspace',
+          label: _l10n(context).e7WorkspaceWorkspace,
         ),
       ),
       if (conn.capabilities.fileBrowsing)
         (
           id: 1,
-          destination: const NavigationDestination(
+          destination: NavigationDestination(
             icon: AppGlyph(AppIconography.files),
             selectedIcon: AppGlyph(AppIconography.filesSelected),
-            label: 'Files',
+            label: _l10n(context).e7WorkspaceFiles,
           ),
         ),
       (
@@ -153,15 +154,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             pending: pending,
             icon: AppIconography.activitySelected,
           ),
-          label: 'Activity',
+          label: _l10n(context).e7WorkspaceActivity,
         ),
       ),
       (
         id: 3,
-        destination: const NavigationDestination(
+        destination: NavigationDestination(
           icon: Icon(AppIconography.more),
           selectedIcon: Icon(AppIconography.more),
-          label: 'More',
+          label: _l10n(context).e7WorkspaceMore,
         ),
       ),
     ];
@@ -190,7 +191,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             // Settings and the shortcuts list have one entry point each, on
             // the More tab; this overflow holds only connection-level acts.
             IconButton(
-              tooltip: 'Model / agent',
+              tooltip: _l10n(context).e7WorkspaceModelAgent,
               icon: const Icon(AppIconography.settings),
               onPressed: () => showModelPicker(context),
             ),
@@ -204,10 +205,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 }
               },
               itemBuilder: (_) => [
-                const PopupMenuItem(value: 'refresh', child: Text('Refresh')),
-                const PopupMenuItem(
+                PopupMenuItem(
+                  value: 'refresh',
+                  child: Text(_l10n(context).globalSessionsRefresh),
+                ),
+                PopupMenuItem(
                   value: 'disconnect',
-                  child: Text('Disconnect'),
+                  child: Text(_l10n(context).e7WorkspaceDisconnect),
                 ),
               ],
             ),
@@ -297,8 +301,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(
-          content: Text('Press back again to exit'),
+        SnackBar(
+          content: Text(_l10n(context).e7WorkspaceBackExit),
           duration: Duration(seconds: 2),
         ),
       );
@@ -306,7 +310,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   DateTime? _lastBackAt;
 
-  static const _titles = ['Workspace', 'Files', 'Activity', 'More'];
+  List<String> get _titles => [
+    _l10n(context).e7WorkspaceWorkspace,
+    _l10n(context).e7WorkspaceFiles,
+    _l10n(context).e7WorkspaceActivity,
+    _l10n(context).e7WorkspaceMore,
+  ];
 }
 
 /// Label metrics depend on typography and available width, not connection
@@ -423,7 +432,7 @@ class _ActivityIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     if (pending <= 0) return AppGlyph(icon);
     return Semantics(
-      label: '$pending item${pending == 1 ? '' : 's'} need attention',
+      label: _l10n(context).e7WorkspaceAttentionCount(pending),
       child: Badge(
         key: const ValueKey('activity-pending-badge'),
         label: Text('$pending'),
@@ -452,7 +461,7 @@ class _WorkspaceAppBarTitle extends StatelessWidget {
     final profile = Tooltip(
       message: profileName,
       child: Semantics(
-        label: 'Server: $profileName',
+        label: _l10n(context).e7WorkspaceServerName(profileName),
         excludeSemantics: true,
         child: Text(
           profileName,
@@ -487,7 +496,10 @@ class _WorkspaceAppBarTitle extends StatelessWidget {
         children: [
           server,
           const SizedBox(height: 1),
-          Padding(padding: const EdgeInsets.only(left: 18), child: page),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 18),
+            child: page,
+          ),
         ],
       );
     }
@@ -517,13 +529,13 @@ class _StatusDot extends StatelessWidget {
     };
     final color = AppTheme.statusColor(theme, tone);
     final label = switch (status) {
-      StreamStatus.connected => 'Connected',
-      StreamStatus.connecting => 'Connecting',
-      StreamStatus.reconnecting => 'Reconnecting',
-      StreamStatus.disconnected => 'Offline',
+      StreamStatus.connected => _l10n(context).e7WorkspaceConnected,
+      StreamStatus.connecting => _l10n(context).e7WorkspaceConnecting,
+      StreamStatus.reconnecting => _l10n(context).mcpReconnecting,
+      StreamStatus.disconnected => _l10n(context).e7WorkspaceOffline,
     };
     return Semantics(
-      label: 'Server $label',
+      label: _l10n(context).e7WorkspaceServerStatus(label),
       child: Tooltip(
         message: label,
         child: pulse && !GlassSurface.reduceEffects(context)
@@ -541,3 +553,7 @@ class _StatusDot extends StatelessWidget {
     );
   }
 }
+
+AppLocalizations _l10n(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations) ??
+    lookupAppLocalizations(Localizations.localeOf(context));

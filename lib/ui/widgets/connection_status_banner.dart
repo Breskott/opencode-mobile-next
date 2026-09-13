@@ -35,7 +35,7 @@ class ConnectionStatusBanner extends StatelessWidget {
       return Semantics(
         container: true,
         liveRegion: true,
-        label: 'The connection token was rejected',
+        label: l10n.e7BannerTokenRejected,
         child: MaterialBanner(
           key: const ValueKey('connection-status-banner'),
           leading: const Icon(Icons.key_off_outlined),
@@ -59,14 +59,14 @@ class ConnectionStatusBanner extends StatelessWidget {
       return Semantics(
         container: true,
         liveRegion: true,
-        label: 'The server password changed',
+        label: l10n.e7BannerPasswordChanged,
         child: MaterialBanner(
           key: const ValueKey('connection-status-banner'),
           leading: const Icon(Icons.key_off_outlined),
           content: Text(
             note == null || note!.isEmpty
-                ? 'Server password changed — reconnect.'
-                : 'Server password changed — reconnect.\n${note!}',
+                ? l10n.e7BannerReconnectPassword
+                : l10n.e7BannerReconnectPasswordNote(note!),
           ),
           actions: [
             TextButton(
@@ -74,7 +74,7 @@ class ConnectionStatusBanner extends StatelessWidget {
               onPressed: () => Navigator.of(
                 context,
               ).pushNamed('/servers', arguments: 'edit-active'),
-              child: const Text('Update password'),
+              child: Text(l10n.e7BannerUpdatePassword),
             ),
           ],
         ),
@@ -88,11 +88,11 @@ class ConnectionStatusBanner extends StatelessWidget {
     // One line. The raw error and the secondary action live behind Details,
     // so the banner never grows into a paragraph over the content it sits on.
     final message = reconnecting
-        ? 'Reconnecting to $server…'
-        : 'Connection lost';
+        ? l10n.e7BannerReconnectingServer(server)
+        : l10n.e7BannerLost;
     final codexReconnect = controller.usesConnectionToken && reconnecting;
     final content = codexReconnect
-        ? '$message\nReview draft stays here; nothing is sent automatically.${note == null || note!.isEmpty ? '' : '\n${note!}'}'
+        ? '$message\n${l10n.codexDraftReconnectNotice}${note == null || note!.isEmpty ? '' : '\n${note!}'}'
         : note == null || note!.isEmpty
         ? message
         : '$message\n${note!}';
@@ -100,7 +100,9 @@ class ConnectionStatusBanner extends StatelessWidget {
     return Semantics(
       container: true,
       liveRegion: true,
-      label: reconnecting ? 'Reconnecting to $server' : 'Connection lost',
+      label: reconnecting
+          ? l10n.e7BannerReconnectingServerSemantic(server)
+          : l10n.e7BannerLost,
       child: MaterialBanner(
         key: const ValueKey('connection-status-banner'),
         leading: reconnecting
@@ -119,7 +121,9 @@ class ConnectionStatusBanner extends StatelessWidget {
             onPressed: manualRetry
                 ? null
                 : () => unawaited(controller.retryConnection()),
-            child: Text(manualRetry ? 'Retrying' : 'Try again'),
+            child: Text(
+              manualRetry ? l10n.e7BannerRetrying : l10n.isolatedTaskRetryOpen,
+            ),
           ),
           TextButton(
             key: const ValueKey('connection-banner-details'),
@@ -129,7 +133,7 @@ class ConnectionStatusBanner extends StatelessWidget {
               manualRetry: manualRetry,
               error: error,
             ),
-            child: const Text('Details'),
+            child: Text(l10n.e7BannerDetails),
           ),
         ],
       ),
@@ -142,6 +146,7 @@ class ConnectionStatusBanner extends StatelessWidget {
     required bool manualRetry,
     required String? error,
   }) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -157,16 +162,14 @@ class ConnectionStatusBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    reconnecting ? 'Reconnecting' : 'Connection lost',
+                    reconnecting ? l10n.mcpReconnecting : l10n.e7BannerLost,
                     style: theme.textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     reconnecting
-                        ? 'What you see stays available while OpenCode is '
-                              'checked. Live updates resume on their own.'
-                        : 'What you see may be stale until OpenCode is '
-                              'reachable again.',
+                        ? l10n.e7BannerCheckingExplanation
+                        : l10n.e7BannerStaleExplanation,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                       height: 1.35,
@@ -197,7 +200,11 @@ class ConnectionStatusBanner extends StatelessWidget {
                             Navigator.of(sheetContext).pop();
                             unawaited(controller.retryConnection());
                           },
-                    child: Text(manualRetry ? 'Retrying' : 'Try again'),
+                    child: Text(
+                      manualRetry
+                          ? l10n.e7BannerRetrying
+                          : l10n.isolatedTaskRetryOpen,
+                    ),
                   ),
                   if (showChangeServer && !manualRetry) ...[
                     const SizedBox(height: 8),
@@ -206,7 +213,7 @@ class ConnectionStatusBanner extends StatelessWidget {
                         Navigator.of(sheetContext).pop();
                         Navigator.of(context).pushNamed('/servers');
                       },
-                      child: const Text('Change server'),
+                      child: Text(l10n.e7BannerChangeServer),
                     ),
                   ],
                 ],

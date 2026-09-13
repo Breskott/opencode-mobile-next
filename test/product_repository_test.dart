@@ -633,11 +633,15 @@ void main() {
           final repository = SdkProductRepository(api.sdkClient)
             ..setLocation(directory: '/work/current', workspace: 'current');
 
-          await expectLater(repository.listGlobalSessions(cursor: 'not-a-v1-token'),
-              throwsA(isA<ProductException>()));
+          await expectLater(
+            repository.listGlobalSessions(cursor: 'not-a-v1-token'),
+            throwsA(isA<ProductException>()),
+          );
           expect(requestUri, isNull);
           final first = await repository.listGlobalSessions(
-            search: '  wake  ', includeArchived: true, limit: 37,
+            search: '  wake  ',
+            includeArchived: true,
+            limit: 37,
           );
           expect(first.nextCursor, '1700000003000');
           final results = await repository.listGlobalSessions(

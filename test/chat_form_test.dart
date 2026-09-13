@@ -146,10 +146,7 @@ void main() {
     expect(reply.$2, 'frm_1');
     expect(reply.$3, {'env': 'prod', 'confirm': false});
     expect(find.byKey(const Key('form-sheet')), findsNothing);
-    expect(
-      find.byKey(const ValueKey('form-request-card-frm_1')),
-      findsNothing,
-    );
+    expect(find.byKey(const ValueKey('form-request-card-frm_1')), findsNothing);
   });
 
   testWidgets('a 400 invalid answer keeps the form open with the banner', (

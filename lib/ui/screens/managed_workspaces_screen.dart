@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+
 import '../../api/product_repository.dart';
 import '../../state/connection.dart';
 import '../desktop/context_menu.dart';
@@ -48,7 +50,9 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
     if (repository == null) {
       setState(() {
         _loading = false;
-        _workspaceError = 'OpenCode is reconnecting. Try again shortly.';
+        _workspaceError = lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryOpenCodeIsReconnectingTryAgainShortly;
         _adapterError = _workspaceError;
       });
       return;
@@ -86,26 +90,32 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
   }
 
   Future<void> _sync() async {
+    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_syncing || _creating || _busyWorkspaceID != null) return;
     setState(() => _syncing = true);
     try {
       final repository = await widget.controller.prepareActionRepository();
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(actionL10n.e7LibraryOpenCodeIsReconnecting);
       }
       await repository.syncWorkspaceList(
         projectDirectory: widget.project.directory,
       );
       await _load();
-      if (mounted) _showMessage('Workspace discovery finished');
+      if (mounted) _showMessage(actionL10n.e7LibraryWorkspaceDiscoveryFinished);
     } catch (error) {
-      if (mounted) _showMessage('Could not discover workspaces: $error');
+      if (mounted) {
+        _showMessage(
+          actionL10n.e7LibraryCouldNotDiscoverWorkspaces((error).toString()),
+        );
+      }
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
   }
 
   Future<void> _create() async {
+    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
     final adapters = _adapters ?? const <WorkspaceAdapterInfo>[];
     if (_creating || adapters.isEmpty) return;
     final draft = await showDialog<_WorkspaceDraft>(
@@ -117,7 +127,7 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
     try {
       final repository = await widget.controller.prepareActionRepository();
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(actionL10n.e7LibraryOpenCodeIsReconnecting);
       }
       final workspace = await repository.createManagedWorkspace(
         projectDirectory: widget.project.directory,
@@ -133,7 +143,11 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
       if (locationError != null) throw ProductException(locationError);
       Navigator.of(context).pop(true);
     } catch (error) {
-      if (mounted) _showMessage('Could not create workspace: $error');
+      if (mounted) {
+        _showMessage(
+          actionL10n.e7LibraryCouldNotCreateWorkspace((error).toString()),
+        );
+      }
     } finally {
       if (mounted) setState(() => _creating = false);
     }
@@ -156,6 +170,7 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
   }
 
   Future<void> _remove(WorkspaceInfo workspace) async {
+    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_busyWorkspaceID != null || _creating || _syncing) return;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -173,16 +188,24 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
       }
       final repository = await widget.controller.prepareActionRepository();
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting.');
+        throw ProductException(actionL10n.e7LibraryOpenCodeIsReconnecting);
       }
       await repository.removeManagedWorkspace(
         projectDirectory: widget.project.directory,
         id: workspace.id,
       );
       await _load();
-      if (mounted) _showMessage('${workspace.name} was removed');
+      if (mounted) {
+        _showMessage(
+          actionL10n.e7LibraryWasRemoved((workspace.name).toString()),
+        );
+      }
     } catch (error) {
-      if (mounted) _showMessage('Could not remove workspace: $error');
+      if (mounted) {
+        _showMessage(
+          actionL10n.e7LibraryCouldNotRemoveWorkspace((error).toString()),
+        );
+      }
     } finally {
       if (mounted) setState(() => _busyWorkspaceID = null);
     }
@@ -199,11 +222,17 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
     final busy = _syncing || _creating || _busyWorkspaceID != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cloud environments'),
+        title: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryCloudEnvironments,
+        ),
         actions: [
           IconButton(
             key: const ValueKey('sync-managed-workspaces'),
-            tooltip: 'Discover existing environments',
+            tooltip: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryDiscoverExistingEnvironments,
             onPressed: busy ? null : _sync,
             icon: _syncing
                 ? const SizedBox.square(
@@ -213,13 +242,17 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
                 : const Icon(AppIconography.sync),
           ),
           IconButton(
-            tooltip: 'Refresh cloud environments',
+            tooltip: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryRefreshCloudEnvironments,
             onPressed: busy || _loading ? null : _load,
             icon: const Icon(AppIconography.retry),
           ),
         ],
       ),
-      floatingActionButton: adapters?.isNotEmpty == true
+      floatingActionButton:
+          adapters?.isNotEmpty == true &&
+              MediaQuery.textScalerOf(context).scale(14) <= 20
           ? FloatingActionButton.extended(
               key: const ValueKey('create-managed-workspace'),
               onPressed: busy ? null : _create,
@@ -229,7 +262,33 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(AppIconography.add),
-              label: const Text('New environment'),
+              label: Text(
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryNewEnvironment,
+              ),
+            )
+          : null,
+      bottomNavigationBar:
+          adapters?.isNotEmpty == true &&
+              MediaQuery.textScalerOf(context).scale(14) > 20
+          ? SafeArea(
+              minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: FilledButton.icon(
+                key: const ValueKey('create-managed-workspace'),
+                onPressed: busy ? null : _create,
+                icon: _creating
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(AppIconography.add),
+                label: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryNewEnvironment,
+                ),
+              ),
             )
           : null,
       body: RefreshIndicator(
@@ -245,18 +304,23 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
               ProductErrorState(message: _workspaceError!, onRetry: _load)
             else ...[
               SectionLabel(
-                'Environments',
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryEnvironments,
                 trailing: Text('${workspaces?.length ?? 0}'),
               ),
               if (workspaces?.isEmpty == true)
                 ProductEmptyState(
                   icon: AppIconography.cloud,
-                  title: 'No cloud environments',
+                  title: lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryNoCloudEnvironments,
                   message:
-                      'Adapter-backed environments for ${widget.project.name} '
-                      'appear here. Create one from a server adapter, or use '
-                      'Discover to register environments the adapter already '
-                      'knows.',
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryAdapterBackedEnvironmentsForAppearHereCreate(
+                        (widget.project.name).toString(),
+                      ),
                 )
               else
                 for (final workspace in workspaces ?? const <WorkspaceInfo>[])
@@ -270,35 +334,54 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
               if (_workspaceError != null && workspaces != null)
                 ListTile(
                   leading: const Icon(AppIconography.error),
-                  title: const Text('Environment refresh failed'),
+                  title: Text(
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryEnvironmentRefreshFailed,
+                  ),
                   subtitle: Text(_workspaceError!),
                   trailing: IconButton(
-                    tooltip: 'Retry cloud environments',
+                    tooltip: lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryRetryCloudEnvironments,
                     onPressed: _load,
                     icon: const Icon(AppIconography.retry),
                   ),
                 ),
             ],
-            const SectionLabel('Adapters'),
+            SectionLabel(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryAdapters,
+            ),
             if (_adapterError != null && adapters == null)
               ListTile(
                 key: const ValueKey('workspace-adapter-error'),
                 leading: const Icon(AppIconography.error),
-                title: const Text('Adapters unavailable'),
+                title: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryAdaptersUnavailable,
+                ),
                 subtitle: Text(_adapterError!),
                 trailing: IconButton(
-                  tooltip: 'Retry workspace adapters',
+                  tooltip: lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryRetryWorkspaceAdapters,
                   onPressed: _load,
                   icon: const Icon(AppIconography.retry),
                 ),
               )
             else if (adapters?.isEmpty == true)
-              const ProductInlineEmpty(
+              ProductInlineEmpty(
                 key: ValueKey('workspace-adapters-empty'),
                 icon: Icons.extension_off_outlined,
-                title: 'No workspace adapters',
-                message:
-                    'This OpenCode project does not expose managed workspace creation.',
+                title: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryNoWorkspaceAdapters,
+                message: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryThisOpenCodeProjectDoesNotExposeManaged,
               )
             else
               for (final adapter in adapters ?? const <WorkspaceAdapterInfo>[])
@@ -314,10 +397,16 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
             if (_adapterError != null && adapters != null)
               ListTile(
                 leading: const Icon(AppIconography.error),
-                title: const Text('Adapter refresh failed'),
+                title: Text(
+                  lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryAdapterRefreshFailed,
+                ),
                 subtitle: Text(_adapterError!),
                 trailing: IconButton(
-                  tooltip: 'Retry workspace adapters',
+                  tooltip: lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7LibraryRetryWorkspaceAdapters,
                   onPressed: _load,
                   icon: const Icon(AppIconography.retry),
                 ),
@@ -349,19 +438,37 @@ class _WorkspaceTile extends StatelessWidget {
     final status = workspace.status?.toLowerCase();
     final theme = Theme.of(context);
     final (icon, tone, label) = switch (status) {
-      'connected' => (AppIconography.cloudCheck, AppStatusTone.ok, 'Connected'),
+      'connected' => (
+        AppIconography.cloudCheck,
+        AppStatusTone.ok,
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryConnected,
+      ),
       'connecting' => (
         AppIconography.sync,
         AppStatusTone.progress,
-        'Connecting',
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryConnecting,
       ),
-      'error' => (AppIconography.cloudOff, AppStatusTone.failure, 'Error'),
+      'error' => (
+        AppIconography.cloudOff,
+        AppStatusTone.failure,
+        lookupAppLocalizations(Localizations.localeOf(context)).capsuleError,
+      ),
       'disconnected' => (
         AppIconography.cloudOff,
         AppStatusTone.neutral,
-        'Disconnected',
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryDisconnected,
       ),
-      _ => (AppIconography.cloud, AppStatusTone.neutral, 'Status unknown'),
+      _ => (
+        AppIconography.cloud,
+        AppStatusTone.neutral,
+        lookupAppLocalizations(Localizations.localeOf(context)).servicesUnknown,
+      ),
     };
     final color = AppTheme.statusColor(theme, tone);
     final detail = [
@@ -382,7 +489,9 @@ class _WorkspaceTile extends StatelessWidget {
       title: Text(workspace.name),
       subtitle: Text(detail, maxLines: 3, overflow: TextOverflow.ellipsis),
       trailing: PopupMenuButton<String>(
-        tooltip: 'Environment actions',
+        tooltip: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7LibraryEnvironmentActions,
         enabled: !busy,
         onSelected: (value) {
           if (value == 'open') onOpen();
@@ -391,9 +500,24 @@ class _WorkspaceTile extends StatelessWidget {
         itemBuilder: (_) => [
           PopupMenuItem(
             value: 'open',
-            child: Text(active ? 'Open again' : 'Open'),
+            child: Text(
+              active
+                  ? lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7LibraryOpenAgain
+                  : lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).globalSessionsOpen,
+            ),
           ),
-          const PopupMenuItem(value: 'remove', child: Text('Remove')),
+          PopupMenuItem(
+            value: 'remove',
+            child: Text(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).capsuleRemove,
+            ),
+          ),
         ],
       ),
       selected: active,
@@ -407,13 +531,21 @@ class _WorkspaceTile extends StatelessWidget {
           : [
               ContextMenuAction(
                 menuKey: const ValueKey('environment-menu-open'),
-                label: active ? 'Open again' : 'Open',
+                label: active
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryOpenAgain
+                    : lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).globalSessionsOpen,
                 icon: AppIconography.externalLink,
                 onSelected: onOpen,
               ),
               ContextMenuAction(
                 menuKey: const ValueKey('environment-menu-remove'),
-                label: 'Remove',
+                label: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).capsuleRemove,
                 icon: AppIconography.delete,
                 destructive: true,
                 onSelected: onRemove,
@@ -449,7 +581,14 @@ class _CreateWorkspaceDialogState extends State<_CreateWorkspaceDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('New managed workspace'),
+    // Title and content share one scroll view: at 2.5x text on a 320dp
+    // phone the title alone can take a third of the screen.
+    scrollable: true,
+    title: Text(
+      lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryNewManagedWorkspace,
+    ),
     content: SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -459,7 +598,11 @@ class _CreateWorkspaceDialogState extends State<_CreateWorkspaceDialog> {
             key: const ValueKey('workspace-adapter-picker'),
             initialValue: _type,
             isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Adapter'),
+            decoration: InputDecoration(
+              labelText: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryAdapter,
+            ),
             items: [
               for (final adapter in widget.adapters)
                 DropdownMenuItem(
@@ -477,14 +620,21 @@ class _CreateWorkspaceDialogState extends State<_CreateWorkspaceDialog> {
           TextField(
             key: const ValueKey('workspace-branch-input'),
             controller: _branch,
-            decoration: const InputDecoration(
-              labelText: 'Branch (optional)',
-              hintText: 'Use the adapter default',
+            textDirection: TextDirection.ltr,
+            decoration: InputDecoration(
+              labelText: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryBranchOptional,
+              hintText: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryUseTheAdapterDefault,
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'OpenCode configures adapter-specific details on the server. The new workspace opens here after it is ready.',
+          Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryOpenCodeConfiguresAdapterSpecificDetailsOnThe,
           ),
         ],
       ),
@@ -492,7 +642,11 @@ class _CreateWorkspaceDialogState extends State<_CreateWorkspaceDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).projectFolderCancel,
+        ),
       ),
       FilledButton(
         key: const ValueKey('confirm-create-managed-workspace'),
@@ -506,7 +660,11 @@ class _CreateWorkspaceDialogState extends State<_CreateWorkspaceDialog> {
             ),
           );
         },
-        child: const Text('Create and open'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryCreateAndOpen,
+        ),
       ),
     ],
   );
@@ -532,21 +690,29 @@ class _RemoveWorkspaceDialogState extends State<_RemoveWorkspaceDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text('Remove ${widget.workspace.name}?'),
+    title: Text(
+      lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryRemove((widget.workspace.name).toString()),
+    ),
     content: SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'The server adapter may permanently delete the remote environment or worktree. Existing chat history remains, but its workspace may no longer be reachable.',
+          Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryTheServerAdapterMayPermanentlyDeleteThe,
           ),
           const SizedBox(height: 16),
           TextField(
             key: const ValueKey('remove-managed-workspace-confirmation'),
             controller: _controller,
             decoration: InputDecoration(
-              labelText: 'Type ${widget.workspace.name} to confirm',
+              labelText: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryTypeToConfirm((widget.workspace.name).toString()),
             ),
             onChanged: (_) => setState(() {}),
           ),
@@ -556,7 +722,11 @@ class _RemoveWorkspaceDialogState extends State<_RemoveWorkspaceDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context, false),
-        child: const Text('Cancel'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).projectFolderCancel,
+        ),
       ),
       FilledButton(
         key: const ValueKey('confirm-remove-managed-workspace'),
@@ -566,7 +736,11 @@ class _RemoveWorkspaceDialogState extends State<_RemoveWorkspaceDialog> {
         onPressed: _controller.text == widget.workspace.name
             ? () => Navigator.pop(context, true)
             : null,
-        child: const Text('Remove permanently'),
+        child: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryRemovePermanently,
+        ),
       ),
     ],
   );

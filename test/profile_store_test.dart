@@ -19,6 +19,55 @@ class _ThrowingSecureStorage extends FlutterSecureStorage {
   }) => throw StateError('secure storage is unavailable');
 }
 
+/// Keystore that accepts writes and deletes without a platform.
+class _MemoryStorage extends FlutterSecureStorage {
+  const _MemoryStorage();
+
+  static final values = <String, String>{};
+
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async => values[key];
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (value == null) {
+      values.remove(key);
+    } else {
+      values[key] = value;
+    }
+  }
+
+  @override
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    values.remove(key);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -171,6 +220,68 @@ void main() {
       expect(validateCodexServerUrl('wss://codex.example/project'), isNotNull);
     },
   );
+
+  test('persists the AI Team plugin config with the profile', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final store = ProfileStore(prefs: prefs, secure: const _MemoryStorage());
+    final config = OrchestrationConfig(
+      provider: OrchestrationProvider.gascity,
+      url: 'http://100.64.0.9:8080',
+      city: 'bright-lights',
+      hostMode: OrchestrationHostMode.phone,
+      enabledAt: DateTime.utc(2026, 9, 11, 9),
+    );
+    // TEAM-206: the chosen kind of computer travels with the config.
+    const laptop = OrchestrationConfig(
+      provider: OrchestrationProvider.gascity,
+      url: 'http://100.64.0.10:8372',
+      hostKind: OrchestrationHostKind.laptop,
+    );
+    await store.upsert(
+      ServerProfile(
+        id: 'team',
+        name: 'Team host',
+        baseUrl: 'https://server.example:4096',
+        orchestration: config,
+      ),
+    );
+    await store.upsert(
+      ServerProfile(
+        id: 'laptop',
+        name: 'Laptop',
+        baseUrl: 'https://l:4096',
+        orchestration: laptop,
+      ),
+    );
+    await store.upsert(
+      ServerProfile(id: 'plain', name: 'Plain', baseUrl: 'https://p:4096'),
+    );
+
+    final reloaded = ProfileStore(prefs: prefs, secure: const _MemoryStorage());
+    final profiles = await reloaded.load();
+    expect(profiles.firstWhere((p) => p.id == 'team').orchestration, config);
+    expect(
+      profiles.firstWhere((p) => p.id == 'team').orchestration!.hostKind,
+      OrchestrationHostKind.phone,
+    );
+    expect(profiles.firstWhere((p) => p.id == 'laptop').orchestration, laptop);
+    expect(
+      profiles.firstWhere((p) => p.id == 'laptop').orchestration!.hostKind,
+      OrchestrationHostKind.laptop,
+    );
+    expect(profiles.firstWhere((p) => p.id == 'plain').orchestration, isNull);
+
+    // Turning the plugin off drops the field from the stored JSON (the
+    // laptop profile keeps its own).
+    final team = profiles.firstWhere((p) => p.id == 'team')
+      ..orchestration = null;
+    await reloaded.upsert(team);
+    final stored = prefs.getString('oc.profiles')!;
+    expect('orchestration'.allMatches(stored).length, 1);
+    expect(stored, isNot(contains('"hostMode":"phone"')));
+    expect(stored, contains('"hostKind":"laptop"'));
+  });
 
   test('validates Codex directory and token bounds without echoing input', () {
     expect(validateCodexProjectDirectory('/work/acme'), isNull);

@@ -1,4 +1,5 @@
 import 'support/complete_message_history.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -378,10 +379,14 @@ class _RelationsProductRepository extends _FakeProductRepository {
 
   final Session parent;
   final List<Session> children;
+  Future<Session> Function(String)? detailsHandler;
 
   @override
-  Future<Session> getSessionDetails(String id) async =>
-      id == parent.id ? parent : children.singleWhere((item) => item.id == id);
+  Future<Session> getSessionDetails(String id) async => detailsHandler != null
+      ? await detailsHandler!(id)
+      : id == parent.id
+      ? parent
+      : children.singleWhere((item) => item.id == id);
 
   @override
   Future<List<Session>> listSessionChildren(String id) async => children;
@@ -439,6 +444,22 @@ class _DelayedRepositoryController extends ConnectionController {
   @override
   Future<ProductRepository?> prepareActionRepository() =>
       readyRepository.future;
+}
+
+class _DelayedLocationController extends ConnectionController {
+  _DelayedLocationController(super.store);
+
+  final selection = Completer<void>();
+  bool selectionStarted = false;
+
+  @override
+  Future<void> selectLocationForExistingSession({
+    String? directory,
+    String? workspace,
+  }) async {
+    selectionStarted = true;
+    await selection.future;
+  }
 }
 
 class _StaticCatalogController extends ConnectionController {
@@ -610,6 +631,257 @@ void main() {
     id,
     'user',
     [Part(id: 'part-$id', messageID: id, type: 'text', text: text ?? id)],
+  );
+
+  testWidgets(
+    'UXCHAT uncached child Open rejects a project change during fetch',
+    (tester) async {
+      final api = _FakeOpenCodeApi();
+      final parent = Session(id: 'session-1', title: 'Parent');
+      final child = Session(
+        id: 'child',
+        parentID: parent.id,
+        title: 'Child task',
+      );
+      final pending = Completer<Session>();
+      final repo = _RelationsProductRepository(parent, [child])
+        ..detailsHandler = (id) =>
+            id == child.id ? pending.future : Future.value(parent);
+      final conn = await _controller(api, savedProfile: true)
+        ..sessionsById = {parent.id: parent};
+      await _pumpChat(
+        tester,
+        api,
+        repository: repo,
+        controller: conn,
+        reduceMotion: true,
+      );
+      await tester.tap(find.byKey(const Key('running-work-indicator')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('work-agent-child')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('work-agent-child')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      conn.directory = '/other-project';
+      conn.locationRevision++;
+      conn.notifyListeners();
+      pending.complete(child);
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<ChatScreen>(find.byType(ChatScreen)).sessionID,
+        parent.id,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets('UXCHAT child Open rejects a superseded location selection', (
+    tester,
+  ) async {
+    final api = _FakeOpenCodeApi();
+    final parent = Session(id: 'session-1', title: 'Parent');
+    final child = Session(
+      id: 'child',
+      parentID: parent.id,
+      title: 'Child task',
+      directory: '/child-project',
+    );
+    final saved = await _controller(api, savedProfile: true);
+    final conn = _DelayedLocationController(saved.store)
+      ..api = api
+      ..status = StreamStatus.connected
+      ..sessionsById = {parent.id: parent, child.id: child};
+    saved.dispose();
+    await _pumpChat(
+      tester,
+      api,
+      repository: _RelationsProductRepository(parent, [child]),
+      controller: conn,
+      reduceMotion: true,
+    );
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'Keep my draft',
+    );
+    await tester.tap(find.byKey(const Key('running-work-indicator')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('work-agent-child')));
+    await tester.pumpAndSettle();
+    expect(conn.selectionStarted, isTrue);
+    conn.directory = '/competing-project';
+    conn.locationRevision++;
+    conn.notifyListeners();
+    conn.selection.complete();
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<ChatScreen>(find.byType(ChatScreen)).sessionID,
+      parent.id,
+    );
+    expect(find.text('Keep my draft'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'UXCHAT every parent inbox delivery loads canonical server result without sending',
+    (tester) async {
+      final api = _FakeOpenCodeApi();
+      var reads = 0;
+      var delivered = 0;
+      api.messagesHandler = (_) async {
+        reads++;
+        return [
+          for (var index = 1; index <= delivered; index++)
+            _message('inbox-$index', 'assistant', [
+              Part(
+                id: 'notice-$index',
+                messageID: 'inbox-$index',
+                type: 'v2:notice',
+                toolName: 'synthetic',
+                filename: 'Background result $index',
+                text:
+                    '<subagent sessionID="child" state="completed">\nServer result $index\n</subagent>',
+              ),
+            ], created: index),
+        ];
+      };
+      final conn = await _pumpChat(tester, api, reduceMotion: true);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        'My unsent draft',
+      );
+      final before = reads;
+      conn.handleEventForTesting(
+        _event('session.inbox.delivered', {
+          'sessionID': 'other-parent',
+          'inboxID': 'unrelated',
+        }),
+      );
+      await tester.pumpAndSettle();
+      expect(reads, before);
+      for (var index = 1; index <= 2; index++) {
+        delivered = index;
+        final previousReads = reads;
+        conn.handleEventForTesting(
+          _event('session.inbox.delivered', {
+            'sessionID': 'session-1',
+            'inboxID': 'inbox-$index',
+          }),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pumpAndSettle();
+        expect(reads, greaterThan(previousReads));
+        expect(find.textContaining('Background result $index'), findsOneWidget);
+      }
+      expect(find.text('My unsent draft'), findsOneWidget);
+      expect(api.promptCalls, 0);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'UXCHAT server-returned child result appears in parent without a client prompt',
+    (tester) async {
+      final api = _FakeOpenCodeApi();
+      final conn = await _pumpChat(tester, api, reduceMotion: true);
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        'My unsent draft',
+      );
+      api.messagesHandler = (_) async => [
+        _message('server-result', 'assistant', [
+          Part(
+            id: 'server-result-text',
+            messageID: 'server-result',
+            type: 'text',
+            text: 'The delegated keyboard review is ready.',
+          ),
+        ], created: 2),
+      ];
+      conn.handleEventForTesting(
+        _event('message.updated', {
+          'info': {
+            'id': 'server-result',
+            'sessionID': 'session-1',
+            'role': 'assistant',
+            'time': {'created': 2},
+          },
+        }),
+      );
+      conn.handleEventForTesting(
+        _event('message.part.updated', {
+          'sessionID': 'session-1',
+          'part': {
+            'id': 'server-result-text',
+            'messageID': 'server-result',
+            'sessionID': 'session-1',
+            'type': 'text',
+            'text': 'The delegated keyboard review is ready.',
+          },
+        }),
+      );
+      await _pumpEvent(tester);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('The delegated keyboard review is ready.'),
+        findsOneWidget,
+      );
+      expect(find.text('My unsent draft'), findsOneWidget);
+      expect(api.promptCalls, 0);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets('UXCHAT v2 subagent tools are summarized as delegated tasks', (
+    tester,
+  ) async {
+    final api = _FakeOpenCodeApi()
+      ..messagesHandler = (_) async => [
+        _message('delegation', 'assistant', [
+          for (final id in ['a', 'b'])
+            Part(
+              id: id,
+              messageID: 'delegation',
+              type: 'tool',
+              toolName: 'subagent',
+              toolState: ToolState.fromJson({
+                'status': 'completed',
+                'input': {'description': 'Review $id'},
+                'output': 'Reviewed $id',
+              }, toolName: 'subagent'),
+            ),
+        ]),
+      ];
+    await _pumpChat(tester, api, reduceMotion: true);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Delegated 2 tasks'), findsOneWidget);
+    expect(find.textContaining('other call'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'UXCHAT single foreground Stop preserves draft and targets this session',
+    (tester) async {
+      final api = _FakeOpenCodeApi();
+      final conn = await _pumpChat(tester, api, reduceMotion: true);
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        'Keep my draft',
+      );
+      conn.busySessions.add('session-1');
+      conn.notifyListeners();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.byTooltip('Stop'), findsOneWidget);
+      await tester.tap(find.byTooltip('Stop'));
+      await tester.pump();
+      expect(api.abortCalls, 1);
+      expect(find.text('Keep my draft'), findsOneWidget);
+      expect(api.promptCalls, 0);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
   );
 
   testWidgets(
@@ -2410,6 +2682,8 @@ void main() {
 
     await tester.tap(find.byTooltip('Session menu'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Display and context'));
+    await tester.pumpAndSettle();
     expect(
       tester
           .widget<SwitchListTile>(
@@ -2430,6 +2704,8 @@ void main() {
     await _dismissSheetIfOpen(tester);
 
     await tester.tap(find.byTooltip('Session menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Display and context'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('session-view-thinking')));
     await tester.pumpAndSettle();
@@ -2495,6 +2771,8 @@ void main() {
 
     Future<void> flipGlobal() async {
       await tester.tap(find.byTooltip('Session menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Display and context'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('session-view-thinking')));
       await tester.pumpAndSettle();
@@ -2655,11 +2933,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('appearance-picker')), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('appearance-light')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('appearance-light')));
+    await tester.pumpAndSettle();
+    // Browsing previews; nothing changes until Apply.
+    expect(controller.appearance.value, isNot(AppAppearance.light));
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Apply'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
     await tester.pumpAndSettle();
 
     expect(controller.appearance.value, AppAppearance.light);
-    expect(find.text('Appearance set to Light'), findsOneWidget);
+    expect(find.byKey(const Key('appearance-picker')), findsNothing);
   });
 
   testWidgets('session todo view shows server status and priority', (
@@ -3073,6 +3358,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Session menu'));
     await tester.pumpAndSettle();
+    // The sheet scrolls at 320dp with 2x text; the chip stays reachable.
+    await tester.ensureVisible(find.text('Timeline'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Timeline'));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -3283,6 +3571,11 @@ void main() {
 
     await tester.tap(find.byTooltip('Session menu'));
     await tester.pumpAndSettle();
+    // The sheet scrolls at 320dp with 2x text; every group stays reachable.
+    await tester.ensureVisible(find.text('Display and context'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Display and context'));
+    await tester.pumpAndSettle();
     final timestamps = find.byKey(const Key('session-view-timestamps'));
     await tester.ensureVisible(timestamps);
     await tester.pumpAndSettle();
@@ -3293,6 +3586,8 @@ void main() {
     await _dismissSheetIfOpen(tester);
 
     await tester.tap(find.byTooltip('Session menu'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Timeline'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Timeline'));
     await tester.pumpAndSettle();
@@ -4100,6 +4395,8 @@ void main() {
 
     await tester.tap(find.byTooltip('Session menu'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Session actions'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Retry last prompt'));
     await tester.pumpAndSettle();
 
@@ -4120,6 +4417,8 @@ void main() {
     );
     await _pumpEvent(tester);
     await tester.tap(find.byTooltip('Session menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Session actions'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Retry last prompt'));
     await tester.pumpAndSettle();
@@ -4602,6 +4901,11 @@ void main() {
 
     await tester.tap(find.byTooltip('Session menu'));
     await tester.pumpAndSettle();
+    // The sheet scrolls at 320dp with 2x text; the groups stay reachable.
+    await tester.ensureVisible(find.text('Display and context'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Display and context'));
+    await tester.pumpAndSettle();
     expect(find.text('Timeline'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('session-view-timestamps')),
@@ -4613,8 +4917,12 @@ void main() {
 
     await tester.tap(find.byTooltip('Session menu'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Session actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Session actions'));
+    await tester.pumpAndSettle();
     expect(find.text('Retry last prompt'), findsOneWidget);
-    await tester.drag(find.text('Retry last prompt'), const Offset(0, -400));
+    await tester.ensureVisible(find.text('Reload messages'));
     await tester.pumpAndSettle();
     expect(find.text('Reload messages'), findsOneWidget);
     expect(tester.takeException(), isNull);

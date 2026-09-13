@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
+
 import '../../api/product_repository.dart';
 import '../widgets/product_states.dart';
 import '../app_iconography.dart';
@@ -56,7 +58,9 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
     final repository = await _resolveRepository();
     if (!mounted || generation != _generation) return;
     if (repository == null) {
-      const message = 'OpenCode is reconnecting. Try again shortly.';
+      final message = lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryOpenCodeIsReconnectingTryAgainShortly;
       setState(() {
         _versionControlError = message;
         _languageServicesError = message;
@@ -83,25 +87,22 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
       widget.repositoryResolver?.call() ?? widget.repository;
 
   Future<void> _initializeGit() async {
+    final actionL10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_initializingGit) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Initialize Git repository?'),
-        content: const Text(
-          'OpenCode will run git init in the current project. Existing files '
-          'will not be changed or committed. This enables branch, working-tree, '
-          'and Review features.',
-        ),
+        title: Text(actionL10n.e7LibraryInitializeGitRepository),
+        content: Text(actionL10n.e7LibraryOpenCodeWillRunGitInitInThe),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(actionL10n.projectFolderCancel),
           ),
           FilledButton(
             key: const ValueKey('confirm-git-initialization'),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Initialize Git'),
+            child: Text(actionL10n.e7LibraryInitializeGit),
           ),
         ],
       ),
@@ -114,13 +115,15 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
     try {
       final repository = await _resolveRepository();
       if (repository == null) {
-        throw const ProductException('OpenCode is reconnecting. Try again.');
+        throw ProductException(
+          actionL10n.e7LibraryOpenCodeIsReconnectingTryAgain,
+        );
       }
       await repository.initializeGitRepository();
       await _load();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Git repository initialized')),
+        SnackBar(content: Text(actionL10n.e7LibraryGitRepositoryInitialized)),
       );
     } catch (error) {
       if (mounted) {
@@ -183,10 +186,16 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Project health'),
+        title: Text(
+          lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryProjectHealth,
+        ),
         actions: [
           IconButton(
-            tooltip: 'Refresh project health',
+            tooltip: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryRefreshProjectHealth,
             onPressed: _refreshing || _initializingGit ? null : _load,
             icon: _refreshing
                 ? const SizedBox.square(
@@ -205,15 +214,25 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
           padding: const EdgeInsets.only(bottom: 24),
           children: [
             SectionLabel(
-              'Version control',
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryVersionControl,
               trailing: _versionControl == null
                   ? null
-                  : Text('${_versionControl!.changes.length} changed'),
+                  : Text(
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryChanged(
+                        (_versionControl!.changes.length).toString(),
+                      ),
+                    ),
             ),
             ..._versionControlRows(),
             if (widget.capabilities.languageServiceStatus) ...[
               SectionLabel(
-                'Language services',
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryLanguageServices,
                 trailing: _languageServices == null
                     ? null
                     : Text(
@@ -224,7 +243,9 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
             ],
             if (widget.capabilities.formatterStatus) ...[
               SectionLabel(
-                'Formatters',
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryFormatters,
                 trailing: _formatters == null
                     ? null
                     : Text(
@@ -250,30 +271,46 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
     }
     final vcs = _versionControl;
     if (vcs == null) {
-      return const [_HealthLoadingTile(label: 'version control')];
+      return [
+        _HealthLoadingTile(
+          label: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryVersionControl2,
+        ),
+      ];
     }
     if (vcs.setupState == VersionControlSetupState.absent) {
       return [
-        const ListTile(
+        ListTile(
           key: ValueKey('git-not-initialized'),
           leading: Icon(AppIconography.branch),
-          title: Text('Git is not initialized'),
+          title: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryGitIsNotInitialized,
+          ),
           subtitle: Text(
-            'Initialize this project to enable branches, working-tree changes, and Review.',
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryInitializeThisProjectToEnableBranchesWorking,
           ),
         ),
         // §7 row 19: health screens explain rather than vanish, so the action
         // stays visible and says where to run it instead.
         if (!widget.capabilities.gitInit)
-          const GatedRowTile(
+          GatedRowTile(
             feature: 'git-init',
-            title: 'Initialize Git',
-            explainer: 'Run `git init` from a terminal',
+            title: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryInitializeGit,
+            explainer: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryRunGitInitFromATerminal,
             leading: Icon(AppIconography.terminal),
           )
         else
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 8),
             child: FilledButton(
               key: const ValueKey('initialize-git-repository'),
               onPressed: _initializingGit ? null : _initializeGit,
@@ -282,13 +319,21 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
                       dimension: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Initialize Git'),
+                  : Text(
+                      lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryInitializeGit,
+                    ),
             ),
           ),
         if (_gitInitializationError != null)
           ListTile(
             leading: const Icon(AppIconography.error),
-            title: const Text('Git initialization failed'),
+            title: Text(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7LibraryGitInitializationFailed,
+            ),
             subtitle: Text(
               _gitInitializationError!,
               maxLines: 3,
@@ -296,7 +341,11 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
             ),
             trailing: TextButton(
               onPressed: _initializingGit ? null : _initializeGit,
-              child: const Text('Try again'),
+              child: Text(
+                lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).isolatedTaskRetryOpen,
+              ),
             ),
           ),
       ];
@@ -306,22 +355,39 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
     return [
       ListTile(
         leading: const Icon(AppIconography.branch),
-        title: Text(branch?.isNotEmpty == true ? branch! : 'No active branch'),
+        title: Text(
+          branch?.isNotEmpty == true
+              ? branch!
+              : lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryNoActiveBranch,
+          textDirection: branch?.isNotEmpty == true ? TextDirection.ltr : null,
+        ),
         subtitle: Text(
           defaultBranch?.isNotEmpty == true
-              ? 'Default branch: $defaultBranch'
+              ? lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryDefaultBranch((defaultBranch).toString())
               : vcs.changes.isEmpty
-              ? 'Working tree is clean'
-              : '${vcs.changes.length} changed files',
+              ? lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryWorkingTreeIsClean
+              : lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).e7LibraryChangedFiles((vcs.changes.length).toString()),
         ),
         trailing: vcs.changes.isEmpty
             ? const Icon(AppIconography.checkCircle)
             : _ChangeCounts(additions: vcs.additions, deletions: vcs.deletions),
       ),
       if (vcs.changes.isEmpty)
-        const ListTile(
+        ListTile(
           leading: Icon(AppIconography.checks),
-          title: Text('No uncommitted changes'),
+          title: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryNoUncommittedChanges,
+          ),
         )
       else
         for (final file in vcs.changes) _VersionControlFileTile(file: file),
@@ -339,15 +405,27 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
     }
     final services = _languageServices;
     if (services == null) {
-      return const [_HealthLoadingTile(label: 'language services')];
+      return [
+        _HealthLoadingTile(
+          label: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7LibraryLanguageServices2,
+        ),
+      ];
     }
     if (services.isEmpty) {
-      return const [
+      return [
         ListTile(
           leading: Icon(Icons.code_off_rounded),
-          title: Text('No active language services'),
+          title: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryNoActiveLanguageServices,
+          ),
           subtitle: Text(
-            'OpenCode activates them while it inspects supported source files during coding.',
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryOpenCodeActivatesThemWhileItInspectsSupported,
           ),
         ),
       ];
@@ -360,7 +438,7 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
                 ? AppIconography.checkCircle
                 : AppIconography.error,
           ),
-          title: Text(service.name),
+          title: Text(service.name, textDirection: TextDirection.ltr),
           subtitle: Text(
             service.root.isEmpty
                 ? service.status
@@ -386,10 +464,14 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
       return const [_HealthLoadingTile(label: 'formatters')];
     }
     if (formatters.isEmpty) {
-      return const [
+      return [
         ListTile(
           leading: Icon(AppIconography.alignLeft),
-          title: Text('No formatters configured'),
+          title: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7LibraryNoFormattersConfigured,
+          ),
         ),
       ];
     }
@@ -401,13 +483,17 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
                 ? AppIconography.checkCircle
                 : AppIconography.removeCircle,
           ),
-          title: Text(formatter.name),
+          title: Text(formatter.name, textDirection: TextDirection.ltr),
           subtitle: Text(
             formatter.extensions.isEmpty
                 ? formatter.enabled
-                      ? 'Enabled'
-                      : 'Disabled'
-                : '${formatter.enabled ? 'Enabled' : 'Disabled'} · ${formatter.extensions.join(', ')}',
+                      ? lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryEnabled
+                      : lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7LibraryDisabled
+                : '${formatter.enabled ? lookupAppLocalizations(Localizations.localeOf(context)).e7LibraryEnabled : lookupAppLocalizations(Localizations.localeOf(context)).e7LibraryDisabled} · ${formatter.extensions.join(', ')}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -431,7 +517,12 @@ class _VersionControlFileTile extends StatelessWidget {
   Widget build(BuildContext context) => ListTile(
     minTileHeight: 54,
     leading: Icon(_statusIcon(file.status), size: 20),
-    title: Text(file.path, maxLines: 1, overflow: TextOverflow.ellipsis),
+    title: Text(
+      file.path,
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
     subtitle: Text(file.status),
     trailing: _ChangeCounts(
       additions: file.additions,
@@ -480,7 +571,11 @@ class _HealthLoadingTile extends StatelessWidget {
       dimension: 20,
       child: CircularProgressIndicator(strokeWidth: 2),
     ),
-    title: Text('Loading $label'),
+    title: Text(
+      lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).e7LibraryLoading((label).toString()),
+    ),
   );
 }
 
@@ -493,8 +588,17 @@ class _HealthErrorTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListTile(
     leading: const Icon(AppIconography.error),
-    title: const Text('Status unavailable'),
+    title: Text(
+      lookupAppLocalizations(Localizations.localeOf(context)).workUnknown,
+    ),
     subtitle: Text(message, maxLines: 3, overflow: TextOverflow.ellipsis),
-    trailing: TextButton(onPressed: onRetry, child: const Text('Try again')),
+    trailing: TextButton(
+      onPressed: onRetry,
+      child: Text(
+        lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).isolatedTaskRetryOpen,
+      ),
+    ),
   );
 }
