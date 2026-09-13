@@ -248,7 +248,16 @@ void main() {
       expect(top('build'), lessThan(top('main.dart')));
       await tester.tap(find.byTooltip('File order'));
       await tester.pumpAndSettle();
-      await tester.tap(find.ancestor(of: find.text('Source first'), matching: find.byWidgetPredicate((widget) => widget is PopupMenuEntry)).first);
+      await tester.tap(
+        find
+            .ancestor(
+              of: find.text('Source first'),
+              matching: find.byWidgetPredicate(
+                (widget) => widget is PopupMenuEntry,
+              ),
+            )
+            .first,
+      );
       await tester.pumpAndSettle();
       expect(top('main.dart'), lessThan(top('build')));
       for (final name in ['build', '.git', 'main.dart', 'README.md']) {
@@ -261,7 +270,16 @@ void main() {
       await _capture(tester, 'files-source-first-rtl-320-250');
       await tester.tap(find.byTooltip('File order'));
       await tester.pumpAndSettle();
-      await tester.tap(find.ancestor(of: find.text('Default order'), matching: find.byWidgetPredicate((widget) => widget is PopupMenuEntry)).first);
+      await tester.tap(
+        find
+            .ancestor(
+              of: find.text('Default order'),
+              matching: find.byWidgetPredicate(
+                (widget) => widget is PopupMenuEntry,
+              ),
+            )
+            .first,
+      );
       await tester.pumpAndSettle();
       expect(top('build'), lessThan(top('main.dart')));
     },

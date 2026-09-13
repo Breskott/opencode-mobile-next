@@ -102,7 +102,8 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
     final observation = TermuxDiscoveryCancellation();
     _observation = observation;
     final result = await detectTermuxRunningServer(
-      profiles: widget.profiles, cancellation: observation,
+      profiles: widget.profiles,
+      cancellation: observation,
     );
     if (!mounted || epoch != _epoch) return;
     setState(() {

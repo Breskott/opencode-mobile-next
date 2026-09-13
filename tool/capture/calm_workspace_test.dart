@@ -69,6 +69,8 @@ void main() {
           'workspace-$theme-${scenario.width.toInt()}-'
           '${scenario.scale}x$suffix';
       testWidgets('calm workspace $name', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = scenario.scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
         const secure = MethodChannel(
           'plugins.it_nomads.com/flutter_secure_storage',
         );

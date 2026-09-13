@@ -4794,82 +4794,85 @@ void main() {
   });
 
   for (final percent in [25, 75]) {
-    testWidgets('context usage at $percent percent is disclosed at the right level', (
-      tester,
-    ) async {
-      final api = _FakeOpenCodeApi()
-        ..messagesHandler = (_) async => [
-          _message(
-            'assistant-1',
-            'assistant',
-            [Part(type: 'text', text: 'done')],
-            providerID: 'p',
-            modelID: 'm',
-            tokens: Tokens(input: percent * 1000, output: 0),
-          ),
-        ];
-      final controller = await _controller(api);
-      controller.catalog = const CatalogSnapshot(
-        providers: [CatalogProvider(id: 'p', name: 'Provider', enabled: true)],
-        models: [
-          CatalogModel(
-            id: 'm',
-            providerID: 'p',
-            name: 'Model',
-            enabled: true,
-            status: 'active',
-            contextLimit: 100000,
-            outputLimit: 8192,
-            reasoning: false,
-            attachments: false,
-            tools: false,
-            variants: [],
-          ),
-        ],
-        agents: [],
-      );
-      await _pumpChat(tester, api, controller: controller);
-      expect(
-        find.byKey(const ValueKey('composer-context-meter')),
-        percent >= 70 ? findsOneWidget : findsNothing,
-      );
-      expect(
-        find.text('$percent%'),
-        percent >= 70 ? findsOneWidget : findsNothing,
-      );
-      await tester.pumpAndSettle();
-      if (percent >= 70) {
+    testWidgets(
+      'context usage at $percent percent is disclosed at the right level',
+      (tester) async {
+        final api = _FakeOpenCodeApi()
+          ..messagesHandler = (_) async => [
+            _message(
+              'assistant-1',
+              'assistant',
+              [Part(type: 'text', text: 'done')],
+              providerID: 'p',
+              modelID: 'm',
+              tokens: Tokens(input: percent * 1000, output: 0),
+            ),
+          ];
+        final controller = await _controller(api);
+        controller.catalog = const CatalogSnapshot(
+          providers: [
+            CatalogProvider(id: 'p', name: 'Provider', enabled: true),
+          ],
+          models: [
+            CatalogModel(
+              id: 'm',
+              providerID: 'p',
+              name: 'Model',
+              enabled: true,
+              status: 'active',
+              contextLimit: 100000,
+              outputLimit: 8192,
+              reasoning: false,
+              attachments: false,
+              tools: false,
+              variants: [],
+            ),
+          ],
+          agents: [],
+        );
+        await _pumpChat(tester, api, controller: controller);
         expect(
-          find.bySemanticsLabel('Context window $percent percent used'),
-          findsOneWidget,
-        );
-        final fill = tester.getSize(
-          find.byKey(const ValueKey('composer-context-meter-fill')),
-        );
-        final track = tester.getSize(
           find.byKey(const ValueKey('composer-context-meter')),
+          percent >= 70 ? findsOneWidget : findsNothing,
         );
-        expect(fill.height, track.height);
         expect(
-          fill.width / track.width,
-          moreOrLessEquals(percent / 100, epsilon: .01),
+          find.text('$percent%'),
+          percent >= 70 ? findsOneWidget : findsNothing,
         );
-      }
-      // Routine usage is still reachable, with the exact value, through
-      // the same Context usage destination used for warnings.
-      await tester.tap(find.byKey(const ValueKey('session-actions-button')));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Display and context'));
-      await tester.tap(find.text('Display and context'));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Context usage'));
-      expect(find.text('Context usage').hitTestable(), findsOneWidget);
-      await tester.tap(find.text('Context usage'));
-      await tester.pumpAndSettle();
-      expect(find.byType(SessionContextScreen), findsOneWidget);
-      expect(find.text('$percent%'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        await tester.pumpAndSettle();
+        if (percent >= 70) {
+          expect(
+            find.bySemanticsLabel('Context window $percent percent used'),
+            findsOneWidget,
+          );
+          final fill = tester.getSize(
+            find.byKey(const ValueKey('composer-context-meter-fill')),
+          );
+          final track = tester.getSize(
+            find.byKey(const ValueKey('composer-context-meter')),
+          );
+          expect(fill.height, track.height);
+          expect(
+            fill.width / track.width,
+            moreOrLessEquals(percent / 100, epsilon: .01),
+          );
+        }
+        // Routine usage is still reachable, with the exact value, through
+        // the same Context usage destination used for warnings.
+        await tester.tap(find.byKey(const ValueKey('session-actions-button')));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Display and context'));
+        await tester.tap(find.text('Display and context'));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Context usage'));
+        expect(find.text('Context usage').hitTestable(), findsOneWidget);
+        await tester.tap(find.text('Context usage'));
+        await tester.pumpAndSettle();
+        expect(find.byType(SessionContextScreen), findsOneWidget);
+        expect(find.text('$percent%'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
   testWidgets('composer hides the context meter without a known limit', (
