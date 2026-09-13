@@ -192,6 +192,27 @@ Future<void> _drainNotices(WidgetTester tester) =>
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  testWidgets(
+    'a connected server without version opens home and accepts new task',
+    (tester) async {
+      final controller = await _controller(connected: true);
+      addTearDown(controller.dispose);
+      controller.version = null;
+      final api = controller.api! as _ShortcutApi;
+      final shortcut = _shortcut();
+      await tester.pumpWidget(_app(controller, shortcut));
+      await tester.pumpAndSettle();
+      expect(find.text('Opening your saved workspace.'), findsNothing);
+      expect(find.byType(ServersScreen), findsNothing);
+      shortcut.pending.value = LaunchAction.newTask;
+      await tester.pumpAndSettle();
+      expect(api.created, 1);
+      expect(find.byType(ChatScreen), findsOneWidget);
+      expect(controller.version, isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('connect opens server selection and keeps the connection', (
     tester,
   ) async {

@@ -277,6 +277,32 @@ ProductRepositoryFactory get _repositoryFactory =>
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  testWidgets(
+    'healthy versionless transport remains ready through reconnect and retires on disconnect',
+    (tester) async {
+      final api = _ControlledApi('versionless');
+      final streams = <_FakeEventStream>[];
+      final controller = ConnectionController(
+        await _store(),
+        apiFactory: (_) => api,
+        repositoryFactory: _repositoryFactory,
+        eventStreamFactory: _streamFactory(streams),
+      );
+      addTearDown(controller.dispose);
+      final connecting = controller.connect(_profile('versionless'));
+      await tester.pump();
+      expect(controller.hasConnectedServer, isFalse);
+      api.healthResult.complete(Health(healthy: true));
+      await connecting;
+      expect(controller.version, isNull);
+      expect(controller.hasConnectedServer, isTrue);
+      streams.single.emitStatus(StreamStatus.reconnecting);
+      expect(controller.hasConnectedServer, isTrue);
+      await controller.disconnect();
+      expect(controller.hasConnectedServer, isFalse);
+    },
+  );
+
   testWidgets('latest overlapping connect owns all commits and transport', (
     tester,
   ) async {

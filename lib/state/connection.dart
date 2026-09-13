@@ -545,6 +545,12 @@ class ConnectionController extends ChangeNotifier {
 
   StreamStatus status = StreamStatus.disconnected;
   String? version;
+  bool _transportReady = false;
+
+  /// A healthy gateway is usable even when its server omits version metadata.
+  /// Keep it available through SSE reconnects; retiring the gateway resets it.
+  bool get hasConnectedServer =>
+      api != null && repository != null && (_transportReady || isConnected);
   String? availableServerVersion;
   String? installedServerVersion;
   String? lastError;
@@ -8373,7 +8379,10 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _markDataRefreshReady(int generation, ServerGateway currentApi) {
-    if (_isCurrent(generation, currentApi)) dataRefreshRevision += 1;
+    if (_isCurrent(generation, currentApi)) {
+      _transportReady = true;
+      dataRefreshRevision += 1;
+    }
   }
 
   @visibleForTesting
@@ -8444,6 +8453,7 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _retireTransport() {
+    _transportReady = false;
     _cancelPermissionHydration();
     final oldEvents = _events;
     _events = null;

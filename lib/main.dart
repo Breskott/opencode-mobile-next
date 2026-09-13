@@ -353,9 +353,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       return;
     }
     final connected =
-        _controller.api != null &&
-        _controller.repository != null &&
-        _controller.version != null &&
+        _controller.hasConnectedServer &&
         !_controller.connectionLoading &&
         !_controller.locationLoading;
     if (!connected) {
@@ -451,12 +449,10 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   }
 
   /// The active connection can open a session right now: transport,
-  /// repository and version are present and nothing is mid-flight. Mirrors
+  /// repository are ready and nothing is mid-flight. Mirrors
   /// the readiness the share route waits for.
   bool get _launchConnectionReady =>
-      _controller.api != null &&
-      _controller.repository != null &&
-      _controller.version != null &&
+      _controller.hasConnectedServer &&
       !_controller.connectionLoading &&
       !_controller.locationLoading;
 
@@ -954,9 +950,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     if (_codingAlertRouteScheduled ||
         _controller.pendingCodingAlertOpen == null ||
         (_controller.pendingCodingAlertOpen?.monitorToken.isEmpty != false &&
-            (_controller.api == null ||
-                _controller.repository == null ||
-                _controller.version == null))) {
+            !_controller.hasConnectedServer)) {
       return;
     }
     _codingAlertRouteScheduled = true;
@@ -1358,13 +1352,16 @@ class _RootState extends ConsumerState<_Root> {
     if (!mounted) return;
     // A successful connect resets the streak, so the next failure after a
     // long healthy session starts its count from one again.
-    if (_controller.api != null && _controller.version != null) _attempts = 0;
+    if (_controller.hasConnectedServer) _attempts = 0;
     setState(() {});
   }
 
   void _connectSaved() {
     if (_started) return;
     final conn = _controller;
+    // A connection may already be in flight (for example a launch intent).
+    // Mounting the root must not replace its gateway while health is pending.
+    if (conn.api != null) return;
     final profile = conn.profile;
     if (profile == null ||
         profile.requiresPasswordReentry ||
@@ -1380,7 +1377,7 @@ class _RootState extends ConsumerState<_Root> {
   Widget build(BuildContext context) {
     final conn = ref.watch(connProvider);
     if (conn.profile == null) return const ServersScreen();
-    if (conn.api != null && conn.repository != null && conn.version != null) {
+    if (conn.hasConnectedServer) {
       return const HomeScreen();
     }
     if (conn.profile!.requiresPasswordReentry ||
