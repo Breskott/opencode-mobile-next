@@ -565,6 +565,11 @@ class ConnectionController extends ChangeNotifier {
 
   int connectionRevision = 0;
 
+  /// Identifies the user/lifecycle operation owning a connection bootstrap.
+  /// Unlike transport generations, this survives internal flavor correction
+  /// and restoration of a saved location within the same connect call.
+  int connectionAttemptRevision = 0;
+
   /// Advances whenever a usable transport is ready and screen-owned data
   /// should be rehydrated. This also advances after an SSE reconnection so
   /// events missed during a network handoff are reconciled from REST.
@@ -1710,9 +1715,14 @@ class ConnectionController extends ChangeNotifier {
   /// correct a stale cached [ServerProfile.flavor] (a server swapped between
   /// `opencode serve` generations) before giving up; the corrected retry runs
   /// with it false so detection can never loop.
-  Future<void> connect(
+  Future<void> connect(ServerProfile profile, {bool redetectOnFailure = true}) {
+    return _connectProfile(profile, redetectOnFailure: redetectOnFailure);
+  }
+
+  Future<void> _connectProfile(
     ServerProfile profile, {
     bool redetectOnFailure = true,
+    bool preserveConnectionAttempt = false,
   }) async {
     if (isIsolated) {
       throw StateError('An isolated session cannot connect to a server.');
@@ -1734,14 +1744,16 @@ class ConnectionController extends ChangeNotifier {
             password: profile.password,
           );
     if (validationError != null) {
-      _beginGeneration();
+      _beginGeneration(preserveConnectionAttempt: preserveConnectionAttempt);
       _retireTransport();
       status = StreamStatus.disconnected;
       lastError = validationError;
       notifyListeners();
       return;
     }
-    final generation = _beginGeneration();
+    final generation = _beginGeneration(
+      preserveConnectionAttempt: preserveConnectionAttempt,
+    );
     _retireTransport();
     // The folder edited in a Codex connection is authoritative on connect.
     // Restoring an older OpenCode-style selection would undo that user edit.
@@ -1798,7 +1810,11 @@ class ConnectionController extends ChangeNotifier {
         if (!_isCurrent(generation, currentApi)) return;
         if (corrected != null) {
           if (corrected.ok) {
-            await connect(profile, redetectOnFailure: false);
+            await _connectProfile(
+              profile,
+              redetectOnFailure: false,
+              preserveConnectionAttempt: true,
+            );
           } else {
             _failCurrentConnection(
               corrected.message ?? 'Cannot reach ${profile.baseUrl}: $e',
@@ -1835,6 +1851,7 @@ class ConnectionController extends ChangeNotifier {
     _restoringSavedLocation = false;
     if (savedLocation != null) {
       await _selectLocation(
+        preserveConnectionAttempt: true,
         directory: savedLocation.directory,
         workspace: savedLocation.workspace,
         preserveNotice: true,
@@ -7499,6 +7516,7 @@ class ConnectionController extends ChangeNotifier {
     String? workspace,
     bool preserveNotice = false,
     bool allowProtectedDirectory = false,
+    bool preserveConnectionAttempt = false,
   }) async {
     final profile = _connectedProfile;
     if (profile == null ||
@@ -7550,7 +7568,9 @@ class ConnectionController extends ChangeNotifier {
       return;
     }
 
-    final generation = _beginGeneration();
+    final generation = _beginGeneration(
+      preserveConnectionAttempt: preserveConnectionAttempt,
+    );
     final previousVersion = version;
     _retireTransport();
     // Rebuild through the flavor-aware builder: a v2 profile must not be
@@ -8372,7 +8392,8 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
-  int _beginGeneration() {
+  int _beginGeneration({bool preserveConnectionAttempt = false}) {
+    if (!preserveConnectionAttempt) connectionAttemptRevision++;
     _generation += 1;
     connectionRevision = _generation;
     return _generation;

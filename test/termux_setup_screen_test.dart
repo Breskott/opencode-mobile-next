@@ -21,6 +21,7 @@ class _MemoryProfileStore extends ProfileStore {
   final savedProfiles = <ServerProfile>[];
   String? selectedID;
   Completer<void>? pendingSave;
+  Completer<void>? pendingSelection;
 
   @override
   List<ServerProfile> get profiles => List.unmodifiable(savedProfiles);
@@ -41,6 +42,7 @@ class _MemoryProfileStore extends ProfileStore {
 
   @override
   Future<void> setActiveId(String? id) async {
+    await pendingSelection?.future;
     selectedID = id;
   }
 }
@@ -50,14 +52,43 @@ class _LocalConnectionController extends ConnectionController {
 
   int retryCalls = 0;
   int retriesToFail = 0;
+  int connectCalls = 0;
+  int attempt = 0;
+  Completer<void>? pendingConnect;
+  bool failConnect = false;
+  bool restoreLocation = false;
+
+  @override
+  bool get hasConnectedServer =>
+      api != null && status == StreamStatus.connected;
 
   @override
   Future<void> connect(
     ServerProfile profile, {
     bool redetectOnFailure = true,
   }) async {
-    await store.setActiveId(profile.id);
+    final currentAttempt = ++attempt;
+    connectionRevision++;
+    connectionAttemptRevision++;
+    connectCalls++;
     api = OpenCodeApi(baseUrl: profile.baseUrl);
+    status = StreamStatus.connecting;
+    notifyListeners();
+    await store.setActiveId(profile.id);
+    if (restoreLocation) {
+      // Restoring a saved folder replaces the gateway within this attempt.
+      connectionRevision++;
+      api = OpenCodeApi(baseUrl: profile.baseUrl);
+    }
+    await pendingConnect?.future;
+    if (currentAttempt != attempt) return;
+    if (failConnect) {
+      api = null;
+      status = StreamStatus.disconnected;
+      lastError = 'Could not connect to the phone server.';
+      notifyListeners();
+      return;
+    }
     version = '1.18.21';
     status = StreamStatus.connected;
     notifyListeners();
@@ -68,6 +99,9 @@ class _LocalConnectionController extends ConnectionController {
     bool keepActive = false,
     bool silent = false,
   }) async {
+    attempt++;
+    connectionRevision++;
+    connectionAttemptRevision++;
     api = null;
     version = null;
     status = StreamStatus.disconnected;
@@ -77,6 +111,8 @@ class _LocalConnectionController extends ConnectionController {
 
   @override
   Future<void> retryConnection() async {
+    connectionRevision++;
+    connectionAttemptRevision++;
     retryCalls++;
     if (retryCalls <= retriesToFail) {
       api = null;
@@ -291,6 +327,8 @@ __OC_SETUP_OUTPUT__
     double textScale = 1,
     bool rtl = false,
     DateTime Function()? now,
+    GlobalKey? captureKey,
+    ThemeData? theme,
   }) async {
     const channel = MethodChannel('oc/termux');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -307,22 +345,28 @@ __OC_SETUP_OUTPUT__
           connProvider.overrideWithValue(connection),
         ],
         child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: theme,
           // RTL cases flip direction only and keep the English catalog, so
           // the literal expectations below stay readable; the Arabic copy
           // itself is exercised by the e7 layout suites.
           locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: TextScaler.linear(textScale)),
-            child: Directionality(
-              textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
-              child: child!,
+          builder: (context, child) => RepaintBoundary(
+            key: captureKey,
+            child: MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.linear(textScale)),
+              child: Directionality(
+                textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+                child: child!,
+              ),
             ),
           ),
           routes: {
+            '/home': (_) => const Scaffold(body: Text('App home')),
             '/servers': (_) =>
                 const Scaffold(body: Text('Server address entry')),
           },
@@ -341,6 +385,39 @@ Future<_SetupProgressFixture> _setupFixture() async {
   return _SetupProgressFixture(
     _MemoryProfileStore(prefs: await SharedPreferences.getInstance()),
   );
+}
+
+/// Shared synthetic journey for the opt-in, real-font screenshot runner.
+Future<VoidCallback> showReadyHandoffCapture(
+  WidgetTester tester, {
+  required GlobalKey captureKey,
+  required ThemeData theme,
+  double textScale = 1,
+  bool connected = false,
+}) async {
+  final fixture = await _setupFixture();
+  await fixture.mount(
+    tester,
+    captureKey: captureKey,
+    theme: theme,
+    textScale: textScale,
+  );
+  await _revealGuideTarget(tester, find.text('Install & start'));
+  await tester.tap(find.text('Install & start'));
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 1));
+  final pending = Completer<void>();
+  if (!connected) fixture.connection.pendingConnect = pending;
+  fixture.statusOutput =
+      'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\n'
+      'runtime=opencode1\npid=123\n__OC_SETUP_OUTPUT__\n'
+      '[oc] authenticated server ready on 127.0.0.1:4096\n';
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pump(const Duration(milliseconds: 300));
+  await _scrollToTop(tester);
+  return () {
+    if (!pending.isCompleted) pending.complete();
+  };
 }
 
 Future<void> _revealGuideTarget(WidgetTester tester, Finder finder) async {
@@ -372,6 +449,239 @@ Future<void> _scrollToTop(WidgetTester tester) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('oc/termux');
+
+  testWidgets(
+    'late version save cannot replace a newer same-profile connection',
+    (tester) async {
+      final fixture = await _setupFixture();
+      final phone = ServerProfile(
+        id: 'phone',
+        name: 'This phone',
+        baseUrl: TermuxBridge.managedServerUrl,
+        password: 'synthetic-test-secret',
+      );
+      fixture.store.savedProfiles.add(phone);
+      fixture.store.selectedID = phone.id;
+      fixture.statusOutput =
+          'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\n'
+          'runtime=opencode1\npid=123\n__OC_SETUP_OUTPUT__\n';
+      await fixture.mount(tester);
+      final pending = Completer<void>();
+      fixture.store.pendingSave = pending;
+      await _revealGuideTarget(tester, find.text('Connect to OpenCode 1'));
+      await tester.tap(find.text('Connect to OpenCode 1'));
+      await tester.pump();
+      expect(fixture.connection.connectCalls, 0);
+      await fixture.connection.connect(phone);
+      pending.complete();
+      await tester.pumpAndSettle();
+      expect(fixture.connection.connectCalls, 1);
+      expect(fixture.connection.hasConnectedServer, isTrue);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  for (final selectionPending in [true, false]) {
+    testWidgets(
+      selectionPending
+          ? 'cancel owns transport before active profile persistence completes'
+          : 'cancel preserves a newer connection to the same phone profile',
+      (tester) async {
+        final fixture = await _setupFixture();
+        final phone = ServerProfile(
+          id: 'phone',
+          name: 'This phone',
+          baseUrl: TermuxBridge.managedServerUrl,
+          password: 'synthetic-test-secret',
+        );
+        fixture.store.savedProfiles.add(phone);
+        fixture.statusOutput =
+            'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\n'
+            'runtime=opencode1\npid=123\n__OC_SETUP_OUTPUT__\n';
+        await fixture.mount(tester);
+        final pending = Completer<void>();
+        if (selectionPending) {
+          fixture.store.pendingSelection = pending;
+        } else {
+          fixture.connection.pendingConnect = pending;
+          fixture.connection.restoreLocation = true;
+        }
+        await _revealGuideTarget(tester, find.text('Connect to OpenCode 1'));
+        await tester.tap(find.text('Connect to OpenCode 1'));
+        await tester.pump();
+        if (!selectionPending) {
+          fixture.connection.pendingConnect = null;
+          await fixture.connection.connect(phone);
+          await tester.pump();
+        } else {
+          expect(fixture.store.selectedID, isNull);
+          expect(fixture.connection.api, isNotNull);
+        }
+        await _revealGuideTarget(tester, find.text('Cancel connection'));
+        await tester.tap(find.text('Cancel connection'));
+        await tester.pumpAndSettle();
+        expect(fixture.connection.hasConnectedServer, !selectionPending);
+        pending.complete();
+        await tester.pumpAndSettle();
+        expect(fixture.connection.hasConnectedServer, !selectionPending);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets('cancel releases monitoring before old storage work completes', (
+    tester,
+  ) async {
+    final fixture = await _setupFixture();
+    await fixture.mount(tester);
+    await _revealGuideTarget(tester, find.text('Install & start'));
+    await tester.tap(find.text('Install & start'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    fixture.store.selectedID = fixture.store.savedProfiles.single.id;
+    final pending = Completer<void>();
+    fixture.store.pendingSave = pending;
+    fixture.statusOutput =
+        'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\n'
+        'runtime=opencode1\npid=123\n__OC_SETUP_OUTPUT__\n';
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    await _revealGuideTarget(tester, find.text('Cancel connection'));
+    await tester.tap(find.text('Cancel connection'));
+    await tester.pumpAndSettle();
+    fixture.store.pendingSave = null;
+    fixture.statusOutput = null;
+    final before = fixture.statusReads;
+    await _revealGuideTarget(tester, find.text('Restart local server'));
+    await tester.tap(find.text('Restart local server'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Restart'));
+    await tester.pumpAndSettle();
+    expect(fixture.restartCalls, 1);
+    expect(fixture.statusReads, greaterThan(before));
+    await _scrollToTop(tester);
+    expect(find.text('Continue to app'), findsOneWidget);
+    pending.complete();
+    await tester.pumpAndSettle();
+    expect(fixture.connection.connectCalls, 0);
+    expect(fixture.connection.hasConnectedServer, isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  for (final waitFor in ['storage', 'connection']) {
+    testWidgets('ready server replaces setup log while waiting for $waitFor', (
+      tester,
+    ) async {
+      final fixture = await _setupFixture();
+      await fixture.mount(tester);
+      await _revealGuideTarget(tester, find.text('Install & start'));
+      await tester.tap(find.text('Install & start'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      final pending = Completer<void>();
+      if (waitFor == 'storage') {
+        fixture.store.pendingSave = pending;
+      } else {
+        fixture.connection.pendingConnect = pending;
+      }
+      fixture.statusOutput =
+          'phase=ready\nmessage=OpenCode is ready\nport=4096\n'
+          'runner=proot\nversion=1.18.29\nruntime=opencode1\npid=123\n'
+          '__OC_SETUP_OUTPUT__\n[oc] authenticated server ready on 127.0.0.1:4096\n';
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+      expect(find.text('OpenCode is running on this phone.'), findsOneWidget);
+      expect(find.byKey(const Key('setup-live-output')), findsNothing);
+      expect(find.text('Continue to app'), findsNothing);
+      expect(find.textContaining('Connecting to'), findsOneWidget);
+      await _revealGuideTarget(tester, find.text('Cancel connection'));
+      expect(fixture.connection.connectCalls, waitFor == 'storage' ? 0 : 1);
+
+      pending.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('Cancel connection'), findsNothing);
+      await _scrollToTop(tester);
+      await _revealGuideTarget(tester, find.text('Continue to app'));
+      await tester.tap(find.text('Continue to app'));
+      await tester.pumpAndSettle();
+      expect(find.text('App home'), findsOneWidget);
+    });
+
+    testWidgets(
+      'cancel during $waitFor retains ready server and ignores completion',
+      (tester) async {
+        final fixture = await _setupFixture();
+        await fixture.mount(tester);
+        await _revealGuideTarget(tester, find.text('Install & start'));
+        await tester.tap(find.text('Install & start'));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        final pending = Completer<void>();
+        if (waitFor == 'storage') {
+          fixture.store.pendingSave = pending;
+        } else {
+          fixture.connection.pendingConnect = pending;
+        }
+        fixture.statusOutput =
+            'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\n'
+            'runtime=opencode1\npid=123\n__OC_SETUP_OUTPUT__\n';
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump();
+        await _revealGuideTarget(tester, find.text('Cancel connection'));
+        await tester.tap(find.text('Cancel connection'));
+        await tester.pumpAndSettle();
+        expect(find.text('Cancel connection'), findsNothing);
+        await _scrollToTop(tester);
+        expect(find.text('OpenCode is running on this phone.'), findsOneWidget);
+        expect(fixture.restartCalls, 0);
+        expect(fixture.launchCalls, 1);
+        pending.complete();
+        await tester.pumpAndSettle();
+        expect(find.text('Continue to app'), findsNothing);
+        expect(fixture.connection.hasConnectedServer, isFalse);
+        expect(fixture.connection.connectCalls, waitFor == 'storage' ? 0 : 1);
+        fixture.store.pendingSave = null;
+        fixture.connection.pendingConnect = null;
+        await _revealGuideTarget(tester, find.text('Connect to OpenCode 1'));
+        await tester.tap(find.text('Connect to OpenCode 1'));
+        await tester.pumpAndSettle();
+        expect(find.text('Continue to app'), findsOneWidget);
+        expect(fixture.launchCalls, 1);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets(
+    'client failure keeps the ready server and offers connection retry',
+    (tester) async {
+      final fixture = await _setupFixture();
+      fixture.connection.failConnect = true;
+      await fixture.mount(tester);
+      await _revealGuideTarget(tester, find.text('Install & start'));
+      await tester.tap(find.text('Install & start'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      fixture.statusOutput =
+          'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\n'
+          'runtime=opencode1\npid=123\n__OC_SETUP_OUTPUT__\n';
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(find.text('OpenCode is running on this phone.'), findsOneWidget);
+      expect(
+        find.text('Could not connect to the phone server.'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('setup-live-output')), findsNothing);
+      fixture.connection.failConnect = false;
+      await _revealGuideTarget(tester, find.text('Connect to OpenCode 1'));
+      await tester.tap(find.text('Connect to OpenCode 1'));
+      await tester.pumpAndSettle();
+      expect(find.text('Continue to app'), findsOneWidget);
+      expect(fixture.launchCalls, 1);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   // 2.5x is covered by the phone-space test below; at that scale nothing
   // fits "first" on a 320dp screen and the journey is about reachability.

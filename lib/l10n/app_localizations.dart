@@ -98,6 +98,12 @@ abstract class AppLocalizations {
     Locale('en'),
   ];
 
+  /// No description provided for @setupCancelConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel connection'**
+  String get setupCancelConnection;
+
   /// No description provided for @servicesTitle.
   ///
   /// In en, this message translates to:

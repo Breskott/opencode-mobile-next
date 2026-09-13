@@ -1,0 +1,15 @@
+# Termux ready handoff
+
+Finish line: authenticated manager readiness exits the setup log, presents the running server and a reachable app connection action, and permits safe cancellation/retry without reinstalling or restarting the server. Non-goal: runtime installation, npm upgrades, Gas City completion or new server capabilities.
+
+The reported last line was `[oc] authenticated server ready on 127.0.0.1:4096`. The manager writes its ready state before this line. Previously the screen stopped polling, then awaited observed-version persistence and the complete client bootstrap before changing its installing phase. Saved location and provider reads could leave the user looking at a successful log with no next action. The exact pending request on the maintainer's phone was not inspected.
+
+The ready handoff now renders immediately. Client progress and Cancel connection are separate from native setup; only a matching, usable connection enables Continue. Client failures retain the running-server controls and offer another connection attempt. Cancellation releases the screen's monitoring wait and retires only the owned connection intent. Connection intent survives internal flavor correction and saved-location transport replacements, while a new connection/lifecycle/location operation supersedes it. A late storage or connection completion cannot revive a canceled screen attempt. Passive inspection no longer waits to persist optional version metadata; guarded connection saves the observed version.
+
+Focused validation: 110 tests passed across termux_setup_screen_test, connection_location_restore_test, connection_transport_factory_guard_test, connection_failure_test, settings_server_updates_test and host_management_screen_test. Coverage includes pending secure storage, pending active-profile persistence, delayed bootstrap, later same-profile connection preservation, cancellation followed by restart before old storage finishes, connection failure/retry, and retained cancellation ownership through real saved-location restoration. Existing setup/restart/recovery scenarios remain passing.
+
+Follow-up regression passed: a late observed-version save cannot replace a newer same-profile connection. Final analyzer: no issues. Format and diff checks are clean. Local logs are /tmp/oc-termux-ready-focused.log, /tmp/oc-termux-ready-late-save.log and /tmp/oc-termux-ready-analyze.log.
+
+Four opt-in real-font screenshot scenarios passed at 390dp and 320dp with 2x text. Images in ../qa/termux-ready-handoff show connecting/cancel and ready/Continue. These are synthetic Flutter renders with mocked native operations; no phone server was restarted or cleaned. English/Arabic cancellation copy is localized, and the action remains reachable at large text.
+
+Base candidate: 78f860a5d91d10b134fb9ae3212391dd9c51cf71. Its prior full-suite result does not cover this fix. The replacement APK must retain the maintainer's 2D010C21 signing lineage. New full-suite, native signed-build and public release status must be recorded separately; this source change is not delivered in build 48.

@@ -1,4 +1,5 @@
 {
+  "setupCancelConnection": "إلغاء الاتصال",
   "@@locale": "ar",
   "servicesTitle": "خدمات التطوير",
   "servicesCopy": "نسخ الأمر",

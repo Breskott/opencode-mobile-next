@@ -84,6 +84,10 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   int _statusEpoch = 0;
   String? _launchMessage;
   bool _busy = false;
+  bool _connecting = false;
+  int _connectionAttempt = 0;
+  Completer<void>? _connectionCancelled;
+  int? _ownedConnectionAttempt;
   bool _refreshing = false;
   bool _polling = false;
   bool _monitoringFailed = false;
@@ -123,14 +127,14 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       // before its resume callback. Inactive alone can be a permission dialog.
       if (_openedTermux) {
         if (!_termuxWentToBackground) return;
-        if (_busy) {
+        if (_busy || _connecting) {
           _verifyOnReturn = true;
           return;
         }
         _verifyAfterTermuxReturn();
         return;
       }
-      if (_busy) return;
+      if (_busy || _connecting) return;
       unawaited(_refresh());
     }
   }
@@ -148,7 +152,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     // Off Android the build below is the unsupported card; there is no state
     // worth polling for and no channel to poll.
     if (!platformCapabilities.supportsTermux) return;
-    if (_refreshing || _launching || _busy) return;
+    if (_refreshing || _launching || _busy || _connecting) return;
     final epoch = _statusEpoch;
     _refreshing = true;
     try {
@@ -224,7 +228,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _openTermuxAndCopy() async {
-    if (_busy) return;
+    if (_busy || _connecting) return;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     setState(() {
       _busy = true;
@@ -293,7 +297,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _verifyUnlock({bool requestPermission = true}) async {
-    if (_busy) return;
+    if (_busy || _connecting) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -386,7 +390,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _confirmRuntimeSwitch(TermuxRuntime target) async {
-    if (_busy || _status?.isRunning == true) return;
+    if (_busy || _connecting || _status?.isRunning == true) return;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final confirmed = await showConfirmSheet(
       context,
@@ -502,7 +506,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
             runSpacing: 8,
             children: [
               FilledButton(
-                onPressed: _busy
+                onPressed: _busy || _connecting
                     ? null
                     : () => _confirmRuntimeSwitch(status!.switchTarget!),
                 child: Text(
@@ -511,7 +515,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
               ),
               if (status.switchTarget != status.switchPrevious)
                 OutlinedButton(
-                  onPressed: _busy
+                  onPressed: _busy || _connecting
                       ? null
                       : () => _confirmRuntimeSwitch(status.switchPrevious!),
                   child: Text(
@@ -527,7 +531,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         ] else if (_runtime == TermuxRuntime.openCode1 || canReturn)
           OutlinedButton.icon(
             key: const Key('switch-managed-runtime'),
-            onPressed: _busy ? null : () => _confirmRuntimeSwitch(target),
+            onPressed: _busy || _connecting
+                ? null
+                : () => _confirmRuntimeSwitch(target),
             icon: const Icon(AppIconography.sync),
             label: Text(
               target == TermuxRuntime.openCode1
@@ -546,7 +552,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _installAndStart() async {
-    if (_busy || _phase == _Phase.installing) return;
+    if (_busy || _connecting || _phase == _Phase.installing) return;
     _selectedRuntime = _runtime;
     _switchOperationID = null;
     _connectRequested = true;
@@ -740,7 +746,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     ServerProfile profile, {
     bool startExisting = false,
   }) async {
-    if (_busy || (!startExisting && _phase != _Phase.connected)) return;
+    if (_busy ||
+        _connecting ||
+        (!startExisting && _phase != _Phase.connected)) {
+      return;
+    }
     final runtime = _runtime;
     _startingExisting = startExisting;
     _statusEpoch++;
@@ -894,8 +904,6 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
       } else if (snapshot.status.isReady) {
         final profile = _localProfile();
         if (profile == null) return false;
-        await _saveObservedRuntimeVersion(profile);
-        if (!mounted) return true;
         final active = ref.read(connProvider).profile;
         if ((!_connectRequested && !_restarting) ||
             (active != null && active.baseUrl != localUrl)) {
@@ -1078,8 +1086,6 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
           });
           return;
         }
-        await _saveObservedRuntimeVersion(profile);
-        if (!mounted) return;
         final active = ref.read(connProvider).profile;
         if ((!_connectRequested && !_restarting) ||
             (active != null && active.baseUrl != localUrl)) {
@@ -1196,7 +1202,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _resumeLiveOutput() async {
-    if (_busy) return;
+    if (_busy || _connecting) return;
     setState(() {
       _phase = _Phase.installing;
       _error = null;
@@ -1234,16 +1240,102 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     }
   }
 
-  Future<void> _finishConnect(ServerProfile profile) async {
-    await _saveObservedRuntimeVersion(profile);
-    if (!mounted) return;
-    _connectRequested = false;
-    await ref.read(connProvider).connect(profile);
-    if (!mounted) return;
-    final connection = ref.read(connProvider);
-    if (connection.api == null) {
+  Future<void> _readyHandoff(Future<void> Function(int attempt) connect) async {
+    if (_connecting) return;
+    final attempt = ++_connectionAttempt;
+    final cancelled = Completer<void>();
+    _connectionCancelled = cancelled;
+    _ownedConnectionAttempt = null;
+    setState(() {
+      // Native readiness is confirmed; storage and client bootstrap must not
+      // leave the user on the installation log while they finish.
+      _phase = _Phase.connected;
+      _busy = true;
+      _connecting = true;
+      _error = null;
+    });
+    try {
+      await Future.any([connect(attempt), cancelled.future]);
+    } catch (error) {
+      if (!mounted || !_currentConnectionAttempt(attempt)) return;
       setState(() {
-        _phase = _Phase.failed;
+        _phase = _Phase.connected;
+        _error = error is TermuxBridgeException
+            ? error.message
+            : lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupAuthFailed;
+      });
+    } finally {
+      if (_currentConnectionAttempt(attempt)) {
+        setState(() {
+          _connecting = false;
+          _connectionCancelled = null;
+          _busy = false;
+        });
+      }
+    }
+  }
+
+  bool _currentConnectionAttempt(int attempt) =>
+      mounted && attempt == _connectionAttempt;
+
+  void _cancelConnection(ServerProfile profile) {
+    if (!_connecting) return;
+    _connectionCancelled?.complete();
+    _connectionCancelled = null;
+    ++_connectionAttempt;
+    _connectRequested = false;
+    _restarting = false;
+    _startingExisting = false;
+    final connection = ref.read(connProvider);
+    // Retire only this phone's transport, never a server selected elsewhere
+    // while persistence was pending. Disconnect invalidates its generation.
+    if (_ownedConnectionAttempt != null &&
+        connection.connectionAttemptRevision == _ownedConnectionAttempt) {
+      unawaited(connection.disconnect(keepActive: true));
+    }
+    setState(() {
+      _connecting = false;
+      _busy = false;
+      _phase = _Phase.connected;
+    });
+  }
+
+  Future<void> _finishConnect(ServerProfile profile) =>
+      _readyHandoff((attempt) => _connectReadyProfile(profile, attempt));
+
+  Future<void> _startOwnedConnection(Future<void> Function() start) {
+    final connection = ref.read(connProvider);
+    final previousRevision = connection.connectionAttemptRevision;
+    final future = start();
+    // The attempt survives internal flavor and saved-location generations.
+    // A shared lifecycle retry remains owned by its original caller.
+    if (connection.connectionAttemptRevision != previousRevision) {
+      _ownedConnectionAttempt = connection.connectionAttemptRevision;
+    }
+    return future;
+  }
+
+  Future<void> _connectReadyProfile(ServerProfile profile, int attempt) async {
+    final previousActive = ref.read(connProvider).profile?.id;
+    final previousIntent = ref.read(connProvider).connectionAttemptRevision;
+    await _saveObservedRuntimeVersion(profile);
+    if (!mounted || !_currentConnectionAttempt(attempt)) return;
+    if (ref.read(connProvider).connectionAttemptRevision != previousIntent) {
+      return;
+    }
+    if (ref.read(connProvider).profile?.id != previousActive) return;
+    _connectRequested = false;
+    await _startOwnedConnection(() => ref.read(connProvider).connect(profile));
+    if (!mounted || !_currentConnectionAttempt(attempt)) return;
+    final connection = ref.read(connProvider);
+    if (connection.connectionAttemptRevision != _ownedConnectionAttempt) {
+      return;
+    }
+    if (!connection.hasConnectedServer) {
+      setState(() {
+        _phase = _Phase.connected;
         _error =
             connection.lastError ??
             lookupAppLocalizations(
@@ -1258,9 +1350,19 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     });
   }
 
-  Future<void> _finishRestart(ServerProfile profile) async {
+  Future<void> _finishRestart(ServerProfile profile) =>
+      _readyHandoff((attempt) => _reconnectReadyProfile(profile, attempt));
+
+  Future<void> _reconnectReadyProfile(
+    ServerProfile profile,
+    int attempt,
+  ) async {
+    final previousIntent = ref.read(connProvider).connectionAttemptRevision;
     await _saveObservedRuntimeVersion(profile);
-    if (!mounted) return;
+    if (!mounted || !_currentConnectionAttempt(attempt)) return;
+    if (ref.read(connProvider).connectionAttemptRevision != previousIntent) {
+      return;
+    }
     final status = _status;
     if (status == null) return;
     _validateRestartSnapshot(status);
@@ -1284,24 +1386,26 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     }
     if (_startingExisting) {
       _startingExisting = false;
-      await _finishConnect(profile);
+      await _connectReadyProfile(profile, attempt);
       return;
     }
     if (!_restartProfileStillActive(profile)) return;
     final connection = ref.read(connProvider);
-    await connection.retryConnection();
-    if (!mounted) return;
+    await _startOwnedConnection(connection.retryConnection);
+    if (!mounted || !_currentConnectionAttempt(attempt)) return;
     if (!_restartProfileStillActive(profile)) return;
     // A lifecycle resume may already have owned the first retry while the
     // server was still down. Once it completes, make one fresh attempt
     // against the manager's authenticated-ready server.
-    if (connection.api == null) await connection.retryConnection();
-    if (!mounted) return;
+    if (!connection.hasConnectedServer) {
+      await _startOwnedConnection(connection.retryConnection);
+    }
+    if (!mounted || !_currentConnectionAttempt(attempt)) return;
     if (!_restartProfileStillActive(profile)) return;
-    if (connection.api == null) {
+    if (!connection.hasConnectedServer) {
       setState(() {
         _restarting = false;
-        _phase = _Phase.failed;
+        _phase = _Phase.connected;
         _error =
             connection.lastError ??
             lookupAppLocalizations(
@@ -1350,15 +1454,20 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   Widget _teamPhoneBlock(ServerProfile profile) {
     final connection = ref.read(connProvider);
     final activeHere =
-        connection.profile?.id == profile.id && connection.api != null;
+        connection.profile?.id == profile.id && connection.hasConnectedServer;
     return TeamPhoneOnboardingBlock(
       key: ValueKey('team-phone-block-${profile.id}'),
       connection: connection,
       profile: profile,
       onOpenWorkspace: () async {
+        if (_busy || _connecting) return;
         if (!activeHere) {
           await _finishConnect(profile);
-          if (!mounted || _phase != _Phase.connected) return;
+          if (!mounted ||
+              connection.profile?.id != profile.id ||
+              !connection.hasConnectedServer) {
+            return;
+          }
         }
         _continueToApp();
       },
@@ -1366,7 +1475,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _stopServer() async {
-    if (_busy) return;
+    if (_busy || _connecting) return;
     final runtime = _runtime;
     _stopPolling();
     setState(() {
@@ -1432,7 +1541,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _retry() async {
-    if (_busy) return;
+    if (_busy || _connecting) return;
     setState(() => _busy = true);
     var stopped = true;
     try {
@@ -1662,7 +1771,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                               if (_returnedFromTermux) ...[
                                 FilledButton.icon(
                                   key: const Key('termux-verify-unlock'),
-                                  onPressed: _busy ? null : _verifyUnlock,
+                                  onPressed: _busy || _connecting
+                                      ? null
+                                      : _verifyUnlock,
                                   icon: _busy && !_copyingToTermux
                                       ? const SizedBox.square(
                                           dimension: 18,
@@ -1683,7 +1794,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                                 ),
                                 OutlinedButton.icon(
                                   key: const Key('termux-copy-open'),
-                                  onPressed: _busy ? null : _openTermuxAndCopy,
+                                  onPressed: _busy || _connecting
+                                      ? null
+                                      : _openTermuxAndCopy,
                                   icon: const Icon(AppIconography.externalLink),
                                   label: Text(
                                     _copyingToTermux
@@ -1696,7 +1809,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                               ] else ...[
                                 FilledButton.icon(
                                   key: const Key('termux-copy-open'),
-                                  onPressed: _busy ? null : _openTermuxAndCopy,
+                                  onPressed: _busy || _connecting
+                                      ? null
+                                      : _openTermuxAndCopy,
                                   icon: const Icon(AppIconography.externalLink),
                                   label: Text(
                                     _copyingToTermux
@@ -1708,7 +1823,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                                 ),
                                 OutlinedButton(
                                   key: const Key('termux-verify-unlock'),
-                                  onPressed: _busy ? null : _verifyUnlock,
+                                  onPressed: _busy || _connecting
+                                      ? null
+                                      : _verifyUnlock,
                                   child: Text(
                                     _busy && !_copyingToTermux
                                         ? lookupAppLocalizations(
@@ -1721,7 +1838,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                                 ),
                               ],
                               TextButton(
-                                onPressed: _busy
+                                onPressed: _busy || _connecting
                                     ? null
                                     : TermuxBridge.openAppSettings,
                                 child: Text(
@@ -1832,7 +1949,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                           _localProfile() != null) ...[
                         Text(l10n.setupSwitchReady),
                         TextButton(
-                          onPressed: _busy
+                          onPressed: _busy || _connecting
                               ? null
                               : () => _finishConnect(_localProfile()!),
                           child: Text(
@@ -1845,7 +1962,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                         runSpacing: 8,
                         children: [
                           FilledButton.icon(
-                            onPressed: _busy ? null : _continueToApp,
+                            onPressed: _busy || _connecting
+                                ? null
+                                : _continueToApp,
                             icon: const Icon(AppIconography.forward),
                             label: Text(
                               lookupAppLocalizations(
@@ -1855,7 +1974,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                           ),
                           OutlinedButton.icon(
                             key: const Key('restart-managed-opencode'),
-                            onPressed: _busy ? null : _confirmRestart,
+                            onPressed: _busy || _connecting
+                                ? null
+                                : _confirmRestart,
                             icon: const Icon(AppIconography.restart),
                             label: Text(
                               _restarting
@@ -1865,7 +1986,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                           ),
                           OutlinedButton.icon(
                             key: const Key('update-managed-opencode'),
-                            onPressed: _busy ? null : _confirmUpdate,
+                            onPressed: _busy || _connecting
+                                ? null
+                                : _confirmUpdate,
                             icon: const Icon(AppIconography.systemDownload),
                             label: Text(
                               lookupAppLocalizations(
@@ -1874,7 +1997,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                             ),
                           ),
                           OutlinedButton.icon(
-                            onPressed: _busy ? null : _stopServer,
+                            onPressed: _busy || _connecting
+                                ? null
+                                : _stopServer,
                             icon: const Icon(AppIcons.stop),
                             label: Text(
                               _busy
@@ -1933,7 +2058,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                           runSpacing: 8,
                           children: [
                             FilledButton.icon(
-                              onPressed: _busy ? null : _resumeLiveOutput,
+                              onPressed: _busy || _connecting
+                                  ? null
+                                  : _resumeLiveOutput,
                               icon: const Icon(AppIconography.sync),
                               label: Text(
                                 lookupAppLocalizations(
@@ -1942,7 +2069,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                               ),
                             ),
                             OutlinedButton(
-                              onPressed: _busy ? null : _retry,
+                              onPressed: _busy || _connecting ? null : _retry,
                               child: Text(
                                 lookupAppLocalizations(
                                   Localizations.localeOf(context),
@@ -1953,7 +2080,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                         )
                       else
                         FilledButton.icon(
-                          onPressed: _busy ? null : _retry,
+                          onPressed: _busy || _connecting ? null : _retry,
                           icon: const Icon(AppIconography.retry),
                           label: Text(
                             lookupAppLocalizations(
@@ -1980,11 +2107,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     final pending = status?.switchPending == true;
     final running = status?.isReady == true && !pending;
     final profile = _localProfile();
-    final connection = ref.read(connProvider);
+    final connection = ref.watch(connProvider);
     final activeHere =
         profile != null &&
         connection.profile?.id == profile.id &&
-        connection.api != null;
+        connection.hasConnectedServer;
     final observedVersion = status?.version.isNotEmpty == true
         ? status!.version
         : _installation?.openCodeVersion;
@@ -2035,7 +2162,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
               const SizedBox(height: 16),
               if (running && profile != null)
                 FilledButton.icon(
-                  onPressed: _busy
+                  onPressed: activeHere && _connecting
+                      ? _continueToApp
+                      : _busy || _connecting
                       ? null
                       : activeHere
                       ? _continueToApp
@@ -2051,12 +2180,22 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                 )
               else if (!pending && profile != null)
                 FilledButton.icon(
-                  onPressed: _busy ? null : _startInstalled,
+                  onPressed: _busy || _connecting ? null : _startInstalled,
                   icon: const Icon(AppIconography.play),
                   label: Text(l10n.setupStartInstalled),
                 )
               else if (!pending)
                 Text(l10n.setupMissingCredential),
+              if (_connecting && profile != null) ...[
+                const SizedBox(height: 12),
+                _ProgressLine(
+                  text: l10n.e7SetupConnectingProfile(profile.name),
+                ),
+                TextButton(
+                  onPressed: () => _cancelConnection(profile),
+                  child: Text(l10n.setupCancelConnection),
+                ),
+              ],
               if (!pending) const SizedBox(height: 12),
               _runtimeSwitchChoices(showHeading: false),
               if (_error != null) ...[
@@ -2079,13 +2218,13 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                   children: [
                     OutlinedButton.icon(
                       key: const Key('restart-managed-opencode'),
-                      onPressed: _busy ? null : _confirmRestart,
+                      onPressed: _busy || _connecting ? null : _confirmRestart,
                       icon: const Icon(AppIconography.restart),
                       label: Text(l10n.termuxRestartServer),
                     ),
                     OutlinedButton.icon(
                       key: const Key('update-managed-opencode'),
-                      onPressed: _busy ? null : _confirmUpdate,
+                      onPressed: _busy || _connecting ? null : _confirmUpdate,
                       icon: const Icon(AppIconography.systemDownload),
                       label: Text(
                         lookupAppLocalizations(
@@ -2094,7 +2233,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                       ),
                     ),
                     OutlinedButton.icon(
-                      onPressed: _busy ? null : _stopServer,
+                      onPressed: _busy || _connecting ? null : _stopServer,
                       icon: const Icon(AppIcons.stop),
                       label: Text(
                         lookupAppLocalizations(
@@ -2197,7 +2336,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
 
   Future<void> _startInstalled() async {
     final profile = _localProfile();
-    if (_busy || profile == null) return;
+    if (_busy || _connecting || profile == null) return;
     final confirmed = await showConfirmSheet(
       context,
       title: lookupAppLocalizations(
@@ -2233,7 +2372,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         else if (_installationError != null) ...[
           Text(_installationError!),
           TextButton.icon(
-            onPressed: _busy ? null : _checkInstallation,
+            onPressed: _busy || _connecting ? null : _checkInstallation,
             icon: const Icon(AppIconography.retry),
             label: Text(
               lookupAppLocalizations(
@@ -2261,7 +2400,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
           const SizedBox(height: 8),
           if (installed.openCodeVersion != null && _localProfile() != null)
             FilledButton.icon(
-              onPressed: _busy ? null : _startInstalled,
+              onPressed: _busy || _connecting ? null : _startInstalled,
               icon: const Icon(AppIconography.play),
               label: Text(
                 lookupAppLocalizations(
@@ -2286,7 +2425,12 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
             RadioGroup<TermuxRuntime>(
               groupValue: _selectedRuntime,
               onChanged: (value) {
-                if (_busy || _checkingInstallation || value == null) return;
+                if (_busy ||
+                    _connecting ||
+                    _checkingInstallation ||
+                    value == null) {
+                  return;
+                }
                 setState(() => _selectedRuntime = value);
               },
               child: Column(
@@ -2360,7 +2504,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _reviewInstallChoice() async {
-    if (_busy || _checkingInstallation) return;
+    if (_busy || _connecting || _checkingInstallation) return;
     final installedVersion = _installation?.openCodeVersion;
     if (installedVersion != null) {
       final l10n = lookupAppLocalizations(Localizations.localeOf(context));
@@ -2409,7 +2553,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
-          onPressed: _busy
+          onPressed: _busy || _connecting
               ? null
               : () => Navigator.of(context).pushNamed('/servers'),
           icon: const Icon(AppIconography.link),

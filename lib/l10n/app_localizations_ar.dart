@@ -9,6 +9,9 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
+  String get setupCancelConnection => 'إلغاء الاتصال';
+
+  @override
   String get servicesTitle => 'خدمات التطوير';
 
   @override

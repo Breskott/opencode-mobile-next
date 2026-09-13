@@ -467,17 +467,31 @@ void main() {
   testWidgets('relaunch restores the saved directory', (tester) async {
     final store = await _store();
     await store.setLocation('server', directory: '/work/acme');
+    int? attempt;
+    int? transport;
     final controller = await _connect(
       tester,
       store,
       _ServerScript(
         currentProjects: {'/work/acme': _project('acme', '/work/acme')},
       ),
+      duringConnect: (controller) async {
+        attempt = controller.connectionAttemptRevision;
+        transport = controller.connectionRevision;
+      },
     );
 
     expect(controller.directory, '/work/acme');
     expect(controller.locationNotice, isNull);
     expect(store.locationFor('server')?.directory, '/work/acme');
+    expect(controller.connectionRevision, greaterThan(transport!));
+    expect(
+      controller.connectionAttemptRevision,
+      attempt,
+      reason: 'Saved-location bootstrap remains cancelable by its caller',
+    );
+    await controller.disconnect(keepActive: true);
+    expect(controller.connectionAttemptRevision, greaterThan(attempt!));
     controller.dispose();
   });
 
