@@ -516,9 +516,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('1 changed file'), findsOneWidget);
-      expect(find.text('Modified · +8 −2'), findsOneWidget);
+      expect(find.text('Modified'), findsOneWidget);
       expect(find.text('gone.txt'), findsOneWidget);
-      expect(find.text('Deleted · −12'), findsOneWidget);
+      expect(find.text('Deleted'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await tester.ensureVisible(find.text('gone.txt'));
@@ -556,7 +556,7 @@ void main() {
       await tester.tap(find.text('lib'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Added · +34'), findsOneWidget);
+      expect(find.text('Added'), findsOneWidget);
       expect(repository.statusLoads, greaterThanOrEqualTo(2));
       expect(tester.takeException(), isNull);
     },
@@ -740,15 +740,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // UX-102: the card summarises the changed set above the tree.
+    // Browsing keeps the review entry visible; totals wait for that choice.
     expect(find.byKey(const ValueKey('files-changes-card')), findsOneWidget);
     expect(find.text('2 changed files'), findsOneWidget);
-    expect(find.text('+42 −2'), findsOneWidget);
+    expect(find.textContaining('+42 −2'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('files-changes-card')));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('files-changes-sheet')), findsOneWidget);
+    expect(find.text('2 files · +42 −2'), findsOneWidget);
+    expect(find.text('lib/main.dart · +34 −0'), findsOneWidget);
     expect(find.text('Modified · 1'), findsOneWidget);
     expect(find.text('Added · 1'), findsOneWidget);
     expect(find.byKey(const ValueKey('review-all-changes')), findsOneWidget);
@@ -859,7 +861,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('file-status-notice')), findsNothing);
-    expect(find.text('Modified · +1'), findsOneWidget);
+    expect(find.text('Modified'), findsOneWidget);
     expect(repository.statusLoads, 2);
   });
 
@@ -1201,7 +1203,17 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Symbols'));
+    expect(find.text('Symbols'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('file-surface-selector')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.ancestor(
+        of: find.text('Symbols'),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is PopupMenuEntry<Object?>,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'ProjectHealth');
     await tester.testTextInput.receiveAction(TextInputAction.search);
@@ -1244,7 +1256,16 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Symbols'));
+    await tester.tap(find.byKey(const ValueKey('file-surface-selector')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.ancestor(
+        of: find.text('Symbols'),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is PopupMenuEntry<Object?>,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'MissingSymbol');
@@ -1284,7 +1305,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('README.md'), findsOneWidget);
 
-    await tester.tap(find.text('Symbols'));
+    await tester.tap(find.byKey(const ValueKey('file-surface-selector')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.ancestor(
+        of: find.text('Symbols'),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is PopupMenuEntry<Object?>,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Missing');
     await tester.testTextInput.receiveAction(TextInputAction.search);
@@ -1294,7 +1324,16 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.text('Files'));
+    await tester.tap(find.byKey(const ValueKey('file-surface-selector')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.ancestor(
+        of: find.text('Files'),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is PopupMenuEntry<Object?>,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('README.md'), findsOneWidget);
   });

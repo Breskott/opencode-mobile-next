@@ -22,8 +22,10 @@ import '../app_theme.dart';
 /// and content viewer.
 enum _FileSurface { files, symbols }
 
-typedef ProjectFileAttachment =
-    Future<void> Function(String path, FilePreviewData data);
+typedef ProjectFileAttachment = Future<void> Function(
+  String path,
+  FilePreviewData data,
+);
 typedef ProjectReviewPrompt = void Function(String prompt);
 
 /// Lets a containing navigation shell offer Back to its active Files tab.
@@ -763,47 +765,6 @@ class _FilesScreenState extends State<FilesScreen> {
 
     return Column(
       children: [
-        if (widget.controller.capabilities.workspaceSymbols)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              key: const ValueKey('file-surface-selector'),
-              children: [
-                for (final surface in _FileSurface.values)
-                  Expanded(
-                    child: Semantics(
-                      selected: _surface == surface,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
-                              color: _surface == surface
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.outlineVariant,
-                              width: _surface == surface ? 2 : 1,
-                            ),
-                          ),
-                        ),
-                        child: TextButton(
-                          onPressed: () => _selectSurface(surface),
-                          style: TextButton.styleFrom(
-                            foregroundColor: _surface == surface
-                                ? theme.colorScheme.onSurface
-                                : theme.colorScheme.onSurfaceVariant,
-                            minimumSize: const Size(48, 48),
-                          ),
-                          child: Text(
-                            surface == _FileSurface.files
-                                ? readerL10n(context).readerUiFiles
-                                : readerL10n(context).readerUiSymbols,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: TextField(
@@ -812,7 +773,40 @@ class _FilesScreenState extends State<FilesScreen> {
             focusNode: _searchFocus,
             decoration: InputDecoration(
               isDense: true,
-              prefixIcon: const Icon(AppIconography.search, size: 20),
+              prefixIcon: widget.controller.capabilities.workspaceSymbols
+                  ? PopupMenuButton<_FileSurface>(
+                      key: const ValueKey('file-surface-selector'),
+                      tooltip: _surface == _FileSurface.symbols
+                          ? l10n.readerUiSearchSymbols
+                          : l10n.readerUiSearchFiles,
+                      initialValue: _surface,
+                      onSelected: _selectSurface,
+                      itemBuilder: (context) => [
+                        for (final surface in _FileSurface.values)
+                          CheckedPopupMenuItem(
+                            value: surface,
+                            checked: _surface == surface,
+                            child: Text(
+                              surface == _FileSurface.files
+                                  ? l10n.readerUiFiles
+                                  : l10n.readerUiSymbols,
+                            ),
+                          ),
+                      ],
+                      icon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _surface == _FileSurface.symbols
+                                ? Icons.code_rounded
+                                : AppIconography.search,
+                            size: 20,
+                          ),
+                          const Icon(Icons.arrow_drop_down, size: 16),
+                        ],
+                      ),
+                    )
+                  : const Icon(AppIconography.search, size: 20),
               hintText: _surface == _FileSurface.symbols
                   ? readerL10n(context).readerUiSearchSymbols
                   : readerL10n(context).readerUiSearchFiles,
@@ -1405,11 +1399,6 @@ class _FilesScreenState extends State<FilesScreen> {
     }
     if (change != null) {
       details.add(_fileStatusLabel(context, change.status));
-      final counts = <String>[
-        if (change.additions > 0) '+${change.additions}',
-        if (change.deletions > 0) '−${change.deletions}',
-      ];
-      if (counts.isNotEmpty) details.add(counts.join(' '));
     } else if (descendantChanges > 0) {
       details.add(readerL10n(context).readerUiChangedCount(descendantChanges));
     }
@@ -1584,8 +1573,6 @@ class _ChangesCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final files = changes.length;
-    final added = changes.fold<int>(0, (sum, file) => sum + file.additions);
-    final removed = changes.fold<int>(0, (sum, file) => sum + file.deletions);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Material(
@@ -1601,24 +1588,11 @@ class _ChangesCard extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: Wrap(
-                      spacing: 12,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          readerL10n(context).readerUiChangedCount(files),
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        Text(
-                          '+$added −$removed',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      readerL10n(context).readerUiChangedCount(files),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1682,9 +1656,8 @@ class _ChangesSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  readerL10n(
-                    context,
-                  ).readerUiChangeSummary(changes.length, added, removed),
+                  readerL10n(context)
+                      .readerUiChangeSummary(changes.length, added, removed),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -1740,9 +1713,8 @@ class _ChangesSheet extends StatelessWidget {
                       trailing: canStage
                           ? IconButton(
                               key: ValueKey('stage-change-${change.path}'),
-                              tooltip: readerL10n(
-                                context,
-                              ).readerUiAddPath(change.path),
+                              tooltip: readerL10n(context)
+                                  .readerUiAddPath(change.path),
                               icon: const Icon(
                                 Icons.add_comment_outlined,
                                 size: 20,
@@ -1882,9 +1854,8 @@ class __FileViewerState extends State<_FileViewer> {
       _content = null;
       _previewContent = null;
       _cachedPreview = null;
-      _error = lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).filesViewerPathChanged;
+      _error = lookupAppLocalizations(Localizations.localeOf(context))
+          .filesViewerPathChanged;
     });
   }
 
@@ -1913,9 +1884,8 @@ class __FileViewerState extends State<_FileViewer> {
       _content = null;
       _previewContent = null;
       _cachedPreview = null;
-      _error = lookupAppLocalizations(
-        Localizations.localeOf(context),
-      ).filesViewerScopeChanged;
+      _error = lookupAppLocalizations(Localizations.localeOf(context))
+          .filesViewerScopeChanged;
     });
   }
 
@@ -1956,9 +1926,8 @@ class __FileViewerState extends State<_FileViewer> {
             _content = null;
             _previewContent = null;
             _cachedPreview = null;
-            _error = lookupAppLocalizations(
-              Localizations.localeOf(context),
-            ).filesViewerScopeChanged;
+            _error = lookupAppLocalizations(Localizations.localeOf(context))
+                .filesViewerScopeChanged;
           });
         }
         return;
