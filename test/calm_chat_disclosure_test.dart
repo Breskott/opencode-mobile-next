@@ -85,8 +85,11 @@ void main() {
     await tester.tap(advanced);
     await tester.pumpAndSettle();
     expect(find.text('Context capsule'), findsOneWidget);
-    await tester.tap(advanced);
+    // Tap the disclosure header, not the expanded tile's children.
+    await tester.ensureVisible(find.text('Advanced'));
+    await tester.tap(find.text('Advanced'));
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('composer-tools-sheet')), findsOneWidget);
     final prompts = find.byKey(const Key('composer-tools-prompts'));
     await tester.ensureVisible(prompts);
     await tester.tap(prompts);

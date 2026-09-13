@@ -164,6 +164,9 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('session-actions-button')));
         await tester.pumpAndSettle();
         expect(find.text(_longTitle), findsWidgets);
+        await tester.ensureVisible(find.text('Results'));
+        await tester.pumpAndSettle();
+        expect(find.text('Results').hitTestable(), findsOneWidget);
         await tester.tap(find.text('Results'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
@@ -322,6 +325,15 @@ void main() {
       final conn = await _controller(_Api(title: _longTitle));
       addTearDown(conn.dispose);
       await _pumpChat(tester, conn, size: const Size(360, 740));
+      // The shortcut is contextual now: rotate while a related task is active.
+      conn.sessionsById['child-task'] = Session(
+        id: 'child-task',
+        parentID: _sessionID,
+        title: 'Run checkout tests',
+      );
+      conn.busySessions.add('child-task');
+      conn.notifyListeners();
+      await tester.pumpAndSettle();
       await tester.enterText(_field, 'Still writing');
       await tester.pump();
       final editable = find.descendant(

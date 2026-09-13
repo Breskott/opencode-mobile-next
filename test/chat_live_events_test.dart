@@ -4794,7 +4794,7 @@ void main() {
   });
 
   for (final percent in [25, 75]) {
-    testWidgets('composer shows known context usage at $percent percent', (
+    testWidgets('context usage at $percent percent is disclosed at the right level', (
       tester,
     ) async {
       final api = _FakeOpenCodeApi()
@@ -4833,7 +4833,10 @@ void main() {
         find.byKey(const ValueKey('composer-context-meter')),
         percent >= 70 ? findsOneWidget : findsNothing,
       );
-      expect(find.text('$percent%'), findsOneWidget);
+      expect(
+        find.text('$percent%'),
+        percent >= 70 ? findsOneWidget : findsNothing,
+      );
       await tester.pumpAndSettle();
       if (percent >= 70) {
         expect(
@@ -4852,6 +4855,19 @@ void main() {
           moreOrLessEquals(percent / 100, epsilon: .01),
         );
       }
+      // Routine usage is still reachable, with the exact value, through
+      // the same Context usage destination used for warnings.
+      await tester.tap(find.byKey(const ValueKey('session-actions-button')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Display and context'));
+      await tester.tap(find.text('Display and context'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Context usage'));
+      expect(find.text('Context usage').hitTestable(), findsOneWidget);
+      await tester.tap(find.text('Context usage'));
+      await tester.pumpAndSettle();
+      expect(find.byType(SessionContextScreen), findsOneWidget);
+      expect(find.text('$percent%'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
