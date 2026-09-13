@@ -74,7 +74,12 @@ notes = (root/'artifact/RELEASE_NOTES.md').read_text()
 def flag(name):
     return os.getenv(name) == 'true'
 def release():
-    return dict(id=1, tag_name='v1.0.43+49', draft=not ((root/'published').exists() or flag('MOCK_PUBLISHED')), prerelease=flag('MOCK_PRERELEASE'), body='wrong notes' if flag('MOCK_NOTES') else notes)
+    assets = [dict(id=1, name='opencode-mobile-1.0.43+49.apk'), dict(id=2, name='SHA256SUMS')]
+    if flag('MOCK_UNEXPECTED_APK'):
+        assets.append(dict(id=3, name='unverified.apk'))
+    if flag('MOCK_DUPLICATE_ASSET'):
+        assets.append(dict(id=4, name='opencode-mobile-1.0.43+49.apk'))
+    return dict(id=1, tag_name='v1.0.43+49', assets=assets, draft=not ((root/'published').exists() or flag('MOCK_PUBLISHED')), prerelease=flag('MOCK_PRERELEASE'), body='wrong notes' if flag('MOCK_NOTES') else notes)
 if args[0] == 'api':
     path = args[1]
     assert path.startswith('repos/Eslamasabry/opencode-mobile-next/')
@@ -166,6 +171,8 @@ run_case fail publish MOCK_PRERELEASE=true
 run_case fail publish MOCK_NOTES=true
 run_case fail publish MOCK_DRAFT_DIFFERENT=true
 run_case fail publish MOCK_BAD_CHECKSUM=true
+run_case fail publish MOCK_UNEXPECTED_APK=true
+run_case fail publish MOCK_DUPLICATE_ASSET=true
 run_case fail publish MOCK_CERT=2D010C2103CB2F78ABAACA690EAD4D45F8003A6C0A02082CD2A2AE62FD18D0EC
 run_case fail publish MOCK_PACKAGE=other.application
 run_case fail publish MOCK_CODE=48

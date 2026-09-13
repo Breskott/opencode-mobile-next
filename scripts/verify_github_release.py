@@ -56,6 +56,15 @@ def main():
     release = read_json(root, "release.json")
     require(release.get("tag_name") == f"v{version}", "Release tag mismatch")
     require(isinstance(release.get("id"), int) and release["id"] > 0, "Missing release identity")
+    expected_assets = {f"opencode-mobile-{version}.apk", "SHA256SUMS"}
+    assets = release.get("assets")
+    require(isinstance(assets, list), "Release asset inventory is missing")
+    require(
+        len(assets) == len(expected_assets)
+        and all(isinstance(asset, dict) for asset in assets)
+        and {asset.get("name") for asset in assets} == expected_assets,
+        "Release must contain exactly one candidate APK and one SHA256SUMS asset",
+    )
     if action == "preflight":
         previous = root / "release-verified.json"
         if previous.exists():
