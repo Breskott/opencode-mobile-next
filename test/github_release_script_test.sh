@@ -79,7 +79,7 @@ def release():
         assets.append(dict(id=3, name='unverified.apk'))
     if flag('MOCK_DUPLICATE_ASSET'):
         assets.append(dict(id=4, name='opencode-mobile-1.0.43+49.apk'))
-    return dict(id=1, tag_name='v1.0.43+49', assets=assets, draft=not ((root/'published').exists() or flag('MOCK_PUBLISHED')), prerelease=flag('MOCK_PRERELEASE'), body='wrong notes' if flag('MOCK_NOTES') else notes)
+    return dict(id=int(os.getenv('MOCK_PAYLOAD_ID', '1')), tag_name=os.getenv('MOCK_RELEASE_TAG', 'v1.0.43+49'), assets=assets, draft=not ((root/'published').exists() or flag('MOCK_PUBLISHED')), prerelease=flag('MOCK_PRERELEASE'), body='wrong notes' if flag('MOCK_NOTES') else notes)
 if args[0] == 'api':
     path = args[1]
     assert path.startswith('repos/Eslamasabry/opencode-mobile-next/')
@@ -89,7 +89,18 @@ if args[0] == 'api':
     elif '/actions/runs/' in path:
         workflow = 'android-quality' if path.endswith('/101') else 'android-release'
         print(json.dumps(dict(head_sha=head, path=f'.github/workflows/{workflow}.yml', status='completed', conclusion='failure' if flag('MOCK_CI_FAILED') else 'success', event='workflow_dispatch')))
-    elif '/releases/' in path:
+    elif '/releases/tags/' in path:
+        print('HTTP 404: draft releases are not visible through the tag endpoint', file=sys.stderr)
+        raise SystemExit(1)
+    elif path.endswith('/releases/1'):
+        counter = root/'release-fetch-count'
+        count = int(counter.read_text())+1 if counter.exists() else 1
+        counter.write_text(str(count))
+        data = release()
+        if count > 1 and flag('MOCK_RECHECK_ID_MISMATCH'):
+            data['id'] = 2
+        print(json.dumps(data))
+    elif path.endswith('/releases/latest'):
         print(json.dumps(release()))
     else:
         raise RuntimeError(path)
@@ -109,7 +120,13 @@ elif args[:2] in (['run', 'download'], ['release', 'download']):
 elif args[:2] == ['release', 'view']:
     if flag('MOCK_RELEASE_ABSENT'):
         raise SystemExit(1)
-    print(json.dumps(dict(isDraft=not flag('MOCK_PUBLISHED'))))
+    if args[args.index('--json')+1] == 'databaseId':
+        assert args[2] == 'v1.0.43+49'
+        assert args[args.index('--repo')+1] == 'Eslamasabry/opencode-mobile-next'
+        assert args[args.index('--jq')+1] == '.databaseId'
+        print(os.getenv('MOCK_RELEASE_ID', '1'))
+    else:
+        print(json.dumps(dict(isDraft=not flag('MOCK_PUBLISHED'))))
 elif args[:2] == ['release', 'edit']:
     if '--draft=false' in args:
         assert all(value in args for value in ['--prerelease=false', '--latest'])
@@ -135,7 +152,7 @@ run_case() {
   local expected="$1" mode="$2"
   shift 2
   case_number=$((case_number + 1))
-  rm -f "$task_root/published"
+  rm -f "$task_root/published" "$task_root/release-fetch-count"
   : > "$task_root/commands.log"
   local result=0
   local publish_args=()
@@ -151,10 +168,16 @@ run_case() {
   fi
   if [[ "$expected" == pass && "$mode" == publish ]]; then
     [[ -f "$task_root/published" ]] || { echo 'Publication did not occur'; exit 1; }
+    [[ "$(cat "$task_root/release-fetch-count")" == 3 ]] || { echo 'Release ID was not rechecked through publication'; exit 1; }
+    [[ "$(grep -c -- '--json databaseId' "$task_root/commands.log")" == 1 ]] || { echo 'Release ID was resolved more than once'; exit 1; }
   else
     [[ ! -f "$task_root/published" ]] || { echo 'Unexpected publication'; exit 1; }
   fi
+  if grep -q '/releases/tags/' "$task_root/commands.log"; then
+    echo 'Draft lookup used the published-only tag endpoint'; exit 1
+  fi
 }
+# Both success cases run against a mock whose by-tag release endpoint is 404.
 run_case pass dry
 run_case pass publish
 run_case fail publish MOCK_BRANCH=dev
@@ -177,6 +200,14 @@ run_case fail publish MOCK_CERT=2D010C2103CB2F78ABAACA690EAD4D45F8003A6C0A02082C
 run_case fail publish MOCK_PACKAGE=other.application
 run_case fail publish MOCK_CODE=48
 run_case fail publish OC_RELEASE_BUILD_RUN_ID=
+run_case fail publish MOCK_RELEASE_ID=0
+run_case fail publish MOCK_RELEASE_ID=-1
+run_case fail publish MOCK_RELEASE_ID=null
+run_case fail publish MOCK_RELEASE_ID=1.5
+run_case fail publish MOCK_RELEASE_ID=
+run_case fail publish MOCK_PAYLOAD_ID=2
+run_case fail publish MOCK_RECHECK_ID_MISMATCH=true
+run_case fail publish MOCK_RELEASE_TAG=v1.0.42+47
 # Execute the actual workflow draft-staging shell with the same no-network gh.
 python3 - "$repo_root" "$task_root" <<'PYWORKFLOW'
 from pathlib import Path

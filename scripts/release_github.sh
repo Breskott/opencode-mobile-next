@@ -33,10 +33,29 @@ release_github() (
   trap 'rm -rf -- "$scratch"' EXIT
   mkdir "$scratch/ci" "$scratch/draft"
   apk_name="opencode-mobile-$VERSION.apk"
+  # GitHub's by-tag REST endpoint does not expose drafts. Resolve the draft
+  # through gh, then pin every metadata check to the same database identity.
+  local release_id
+  release_id="$(gh release view "$RELEASE_TAG" --repo "$repo" --json databaseId --jq .databaseId)" ||
+    fail "Cannot resolve the candidate GitHub release."
+  [[ "$release_id" =~ ^[1-9][0-9]*$ ]] ||
+    fail "GitHub release database ID must be a positive integer."
+  fetch_candidate_release() {
+    gh api "repos/$repo/releases/$release_id" > "$scratch/release.json"
+    python3 - "$scratch/release.json" "$release_id" <<'PYRELEASE'
+import json
+import sys
+
+with open(sys.argv[1]) as source:
+    actual = json.load(source).get("id")
+if type(actual) is not int or actual != int(sys.argv[2]):
+    raise SystemExit("ERROR: GitHub release identity differs from the resolved draft")
+PYRELEASE
+  }
   gh api "repos/$repo/actions/runs/$build_run" > "$scratch/build.json"
   gh api "repos/$repo/actions/runs/$quality_run" > "$scratch/quality.json"
   gh api "repos/$repo/actions/runs/$quality_run/jobs?per_page=100" > "$scratch/jobs.json"
-  gh api "repos/$repo/releases/tags/$RELEASE_TAG" > "$scratch/release.json"
+  fetch_candidate_release
   python3 scripts/verify_github_release.py preflight "$scratch" "$head" "$VERSION"
 
   gh run download "$build_run" --repo "$repo" \
@@ -62,13 +81,13 @@ release_github() (
   [[ "$(git rev-parse --verify 'FETCH_HEAD^{commit}')" == "$head" &&
      "$(git rev-parse --verify "refs/tags/${RELEASE_TAG}^{commit}")" == "$head" ]] ||
     fail "Candidate tag changed during verification."
-  gh api "repos/$repo/releases/tags/$RELEASE_TAG" > "$scratch/release.json"
+  fetch_candidate_release
   python3 scripts/verify_github_release.py preflight "$scratch" "$head" "$VERSION"
   python3 scripts/verify_github_release.py artifacts "$scratch" "$head" "$VERSION"
   gh release edit "$RELEASE_TAG" --repo "$repo" \
     --draft=false --prerelease=false --latest \
     --title "OpenCode Mobile $VERSION" --notes-file "$scratch/ci/RELEASE_NOTES.md"
-  gh api "repos/$repo/releases/tags/$RELEASE_TAG" > "$scratch/release.json"
+  fetch_candidate_release
   gh api "repos/$repo/releases/latest" > "$scratch/latest.json"
   python3 scripts/verify_github_release.py published "$scratch" "$head" "$VERSION"
   echo "==> Published https://github.com/$repo/releases/tag/$RELEASE_TAG"
