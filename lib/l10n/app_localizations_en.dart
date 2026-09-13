@@ -15168,7 +15168,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termuxStorageIntro =>
-      'See what the phone server uses and clean build caches and scratch folders without SSH. Your projects, OpenCode\'s sign-ins and session history are never removed from here.';
+      'See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and session history stay in place.';
 
   @override
   String get termuxStorageScanning => 'Measuring storage';
@@ -15188,7 +15188,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String termuxStorageTotal(String size) {
-    return '$size used by the phone server';
+    return '$size measured in Termux';
   }
 
   @override
@@ -15214,35 +15214,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termuxStorageNoteBuildCaches =>
-      'Gradle, pub, npm and analyzer caches. Safe to remove; the next build will download these again.';
+      'Gradle caches and npm’s downloaded content cache only. Downloads may be needed again, so offline builds can be affected. Stop builds and package installs before cleaning.';
 
   @override
   String get termuxStorageCatAgentScratch => 'Agent scratch';
 
   @override
   String get termuxStorageNoteAgentScratch =>
-      'Temporary folders agents made under /tmp/opencode, plus Termux\'s tmp. Safe to remove while no agent is working.';
+      'Temporary folders may contain unfinished work or files used by other tools. Their sizes are shown for reference; they cannot be removed here.';
 
   @override
-  String get termuxStorageCatProjectBuildOutputs => 'Project build outputs';
+  String get termuxStorageCatProjectBuildOutputs =>
+      'Folders with build-related names';
 
   @override
   String get termuxStorageNoteProjectBuildOutputs =>
-      'build/, .dart_tool/, node_modules/ and target/ inside your projects. Your source files stay; the next build recreates these.';
+      'Folders named build, .dart_tool, node_modules or target may also contain your files. Names alone cannot prove they are disposable, so they cannot be removed here.';
 
   @override
   String get termuxStorageCatToolchains => 'Toolchains';
 
   @override
   String get termuxStorageNoteToolchains =>
-      'Android SDK, Java and Flutter SDK copies. Remove them only if you do not build Android apps on this phone; getting them back is a long download.';
+      'Android SDK, Java and Flutter installations. These may support other projects and cannot be removed here.';
 
   @override
   String get termuxStorageCatAiTeam => 'AI Team';
 
   @override
   String get termuxStorageNoteAiTeam =>
-      'City folders, the Dolt store and the gc, bd and dolt binaries. Turn the team off before removing them.';
+      'Team folders, databases and tools may contain work you need to keep. They cannot be removed here, even when the team is stopped.';
 
   @override
   String get termuxStorageCatOpenCode => 'OpenCode itself';
@@ -15282,7 +15283,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termuxStorageCleanConfirmBody =>
-      'Only the paths listed under the category go. The next build will download or rebuild them again.';
+      'Remove only the listed Gradle and npm content caches? Downloads may be needed again and offline builds can be affected. Stop builds and package installs first. Scan again afterward to update the measured sizes.';
 
   @override
   String termuxStorageCleanConfirm(String size) {
@@ -15297,7 +15298,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String termuxStorageFreed(String size) {
-    return 'Freed $size';
+    return 'Removed $size';
   }
 
   @override
@@ -15315,7 +15316,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String termuxStorageProjectBuild(String size, String build) {
-    return '$size · $build in build output';
+    return '$size · $build in build-related folders';
   }
 
   @override
@@ -15809,4 +15810,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String teamUiPhoneFailedNoSpace(String detail) {
     return 'Not enough space on this phone. $detail Free some space (Storage on this phone can clean build caches), then try again.';
   }
+
+  @override
+  String get calmMoreToolsAndHelp => 'Tools & help';
+
+  @override
+  String get calmCodeOptions => 'Code options';
+
+  @override
+  String get termuxRunningDetected => 'Server found on this phone';
+
+  @override
+  String get termuxRunningConnect => 'Connect to running server';
+
+  @override
+  String get termuxRunningDetails => 'Server details';
+
+  @override
+  String get termuxRunningPermission =>
+      'Allow Termux access in phone setup to check for a server.';
+
+  @override
+  String get termuxRunningUnavailable =>
+      'Could not check the server on this phone.';
+
+  @override
+  String get termuxStorageCatSharedCaches => 'Other caches and package data';
+
+  @override
+  String get termuxStorageNoteSharedCaches =>
+      'Shared caches, package installs and download folders may support other tools or contain files worth keeping. They cannot be removed here.';
+
+  @override
+  String get termuxStorageRescanRequired =>
+      'Previous scan · Scan again before cleaning more';
 }

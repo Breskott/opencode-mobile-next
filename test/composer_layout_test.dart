@@ -289,7 +289,9 @@ void main() {
       await tester.enterText(field, 'Original draft');
       await tester.tap(find.byKey(const Key('composer-tools-button')));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byKey(const Key('composer-tools-prompts')));
+      await tester.ensureVisible(
+        find.byKey(const Key('composer-tools-prompts')),
+      );
       await tester.tap(find.byKey(const Key('composer-tools-prompts')));
       await tester.pumpAndSettle();
       final clearText = find.byKey(const Key('composer-tool-clear'));
@@ -332,7 +334,9 @@ void main() {
       await tester.enterText(field, 'Keep this');
       await tester.tap(find.byKey(const Key('composer-tools-button')));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byKey(const Key('composer-tools-prompts')));
+      await tester.ensureVisible(
+        find.byKey(const Key('composer-tools-prompts')),
+      );
       await tester.tap(find.byKey(const Key('composer-tools-prompts')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('composer-tool-history')));
@@ -399,7 +403,9 @@ void main() {
       );
       await tester.tap(find.byKey(const Key('composer-tools-button')));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byKey(const Key('composer-tools-prompts')));
+      await tester.ensureVisible(
+        find.byKey(const Key('composer-tools-prompts')),
+      );
       await tester.tap(find.byKey(const Key('composer-tools-prompts')));
       await tester.pumpAndSettle();
       final history = find.byKey(const Key('composer-tool-history'));

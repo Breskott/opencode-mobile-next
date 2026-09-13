@@ -931,86 +931,101 @@ class _PromptToolsSheet extends StatelessWidget {
               key: const Key('composer-tools-advanced'),
               title: Text(_chatL10n(context).e7SharedAdvanced),
               children: [
-            ListTile(
-              leading: const Icon(AppIconography.layers),
-              title: Text(_chatL10n(context).capsuleTitle),
-              subtitle: Text(_chatL10n(context).capsuleEntry),
-              enabled: !voiceBlocked,
-              onTap: voiceBlocked
-                  ? null
-                  : () => Navigator.pop(context, _PromptTool.contextCapsule),
-            ),
-            if (webSourcesSupported)
-              ListTile(
-                enabled: !attachBlocked,
-                leading: const Icon(AppIconography.link),
-                title: Text(_chatL10n(context).webSourcesTitle),
-                subtitle: Text(_chatL10n(context).webSourcesEntryDetail),
-                onTap: attachBlocked
-                    ? null
-                    : () => Navigator.pop(context, _PromptTool.webSources),
-              ),
-            if (platformCapabilities.supportsVoiceConversation)
-              ListTile(
-                key: const Key('composer-tool-conversation'),
-                enabled: !voiceBlocked,
-                leading: const Icon(AppIconography.speakUser),
-                title: Text(_chatL10n(context).voiceConversationTitle),
-                subtitle: Text(_chatL10n(context).voiceConversationDescription),
-                onTap: voiceBlocked
-                    ? null
-                    : () => Navigator.pop(context, _PromptTool.conversation),
-              ),
+                ListTile(
+                  leading: const Icon(AppIconography.layers),
+                  title: Text(_chatL10n(context).capsuleTitle),
+                  subtitle: Text(_chatL10n(context).capsuleEntry),
+                  enabled: !voiceBlocked,
+                  onTap: voiceBlocked
+                      ? null
+                      : () =>
+                            Navigator.pop(context, _PromptTool.contextCapsule),
+                ),
+                if (webSourcesSupported)
+                  ListTile(
+                    enabled: !attachBlocked,
+                    leading: const Icon(AppIconography.link),
+                    title: Text(_chatL10n(context).webSourcesTitle),
+                    subtitle: Text(_chatL10n(context).webSourcesEntryDetail),
+                    onTap: attachBlocked
+                        ? null
+                        : () => Navigator.pop(context, _PromptTool.webSources),
+                  ),
+                if (platformCapabilities.supportsVoiceConversation)
+                  ListTile(
+                    key: const Key('composer-tool-conversation'),
+                    enabled: !voiceBlocked,
+                    leading: const Icon(AppIconography.speakUser),
+                    title: Text(_chatL10n(context).voiceConversationTitle),
+                    subtitle: Text(
+                      _chatL10n(context).voiceConversationDescription,
+                    ),
+                    onTap: voiceBlocked
+                        ? null
+                        : () =>
+                              Navigator.pop(context, _PromptTool.conversation),
+                  ),
               ],
             ),
-            if (canReusePrompt || canOpenStash || hasLegacyDrafts || canClearText)
+            if (canReusePrompt ||
+                canOpenStash ||
+                hasLegacyDrafts ||
+                canClearText)
               ExpansionTile(
                 key: const Key('composer-tools-prompts'),
                 title: Text(_chatL10n(context).usagePrompts),
                 children: [
-            if (canReusePrompt)
-              ListTile(
-                key: const Key('composer-tool-history'),
-                leading: const Icon(AppIconography.history),
-                title: Text(_chatL10n(context).composerReuseTitle),
-                subtitle: Text(_chatL10n(context).composerReuseSubtitle),
-                onTap: () => Navigator.pop(context, _PromptTool.history),
-              ),
-            if (hasLegacyDrafts)
-              ListTile(
-                key: const Key('composer-tool-legacy-drafts'),
-                leading: const Icon(Icons.restore_page_outlined),
-                title: Text(_chatL10n(context).legacyDraftsTitle),
-                subtitle: Text(_chatL10n(context).legacyDraftsDescription),
-                onTap: () => Navigator.pop(context, _PromptTool.legacyDrafts),
-              ),
-            if (canOpenStash) ...[
-              ListTile(
-                key: const Key('composer-tool-stash'),
-                enabled: canStash,
-                leading: const Icon(AppIconography.package),
-                title: Text(_chatL10n(context).promptStashAction),
-                subtitle: Text(_chatL10n(context).promptStashDescription),
-                onTap: canStash
-                    ? () => Navigator.pop(context, _PromptTool.stash)
-                    : null,
-              ),
-              ListTile(
-                key: const Key('composer-tool-saved'),
-                leading: const Icon(AppIconography.bookmarks),
-                title: Text(_chatL10n(context).promptStashTitle),
-                subtitle: Text(_chatL10n(context).promptStashListDescription),
-                onTap: () => Navigator.pop(context, _PromptTool.saved),
-              ),
-            ],
-            if (canClearText)
-              ListTile(
-                key: const Key('composer-tool-clear'),
-                leading: const Icon(AppIconography.textSnippet),
-                title: Text(_chatL10n(context).composerClearTextTitle),
-                subtitle: Text(_chatL10n(context).composerClearTextSubtitle),
-                onTap: () => Navigator.pop(context, _PromptTool.clearText),
-              ),
+                  if (canReusePrompt)
+                    ListTile(
+                      key: const Key('composer-tool-history'),
+                      leading: const Icon(AppIconography.history),
+                      title: Text(_chatL10n(context).composerReuseTitle),
+                      subtitle: Text(_chatL10n(context).composerReuseSubtitle),
+                      onTap: () => Navigator.pop(context, _PromptTool.history),
+                    ),
+                  if (hasLegacyDrafts)
+                    ListTile(
+                      key: const Key('composer-tool-legacy-drafts'),
+                      leading: const Icon(Icons.restore_page_outlined),
+                      title: Text(_chatL10n(context).legacyDraftsTitle),
+                      subtitle: Text(
+                        _chatL10n(context).legacyDraftsDescription,
+                      ),
+                      onTap: () =>
+                          Navigator.pop(context, _PromptTool.legacyDrafts),
+                    ),
+                  if (canOpenStash) ...[
+                    ListTile(
+                      key: const Key('composer-tool-stash'),
+                      enabled: canStash,
+                      leading: const Icon(AppIconography.package),
+                      title: Text(_chatL10n(context).promptStashAction),
+                      subtitle: Text(_chatL10n(context).promptStashDescription),
+                      onTap: canStash
+                          ? () => Navigator.pop(context, _PromptTool.stash)
+                          : null,
+                    ),
+                    ListTile(
+                      key: const Key('composer-tool-saved'),
+                      leading: const Icon(AppIconography.bookmarks),
+                      title: Text(_chatL10n(context).promptStashTitle),
+                      subtitle: Text(
+                        _chatL10n(context).promptStashListDescription,
+                      ),
+                      onTap: () => Navigator.pop(context, _PromptTool.saved),
+                    ),
+                  ],
+                  if (canClearText)
+                    ListTile(
+                      key: const Key('composer-tool-clear'),
+                      leading: const Icon(AppIconography.textSnippet),
+                      title: Text(_chatL10n(context).composerClearTextTitle),
+                      subtitle: Text(
+                        _chatL10n(context).composerClearTextSubtitle,
+                      ),
+                      onTap: () =>
+                          Navigator.pop(context, _PromptTool.clearText),
+                    ),
                 ],
               ),
             const SizedBox(height: 8),

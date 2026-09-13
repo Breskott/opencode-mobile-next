@@ -131,6 +131,22 @@ Finder _horizontal() => find.byWidgetPredicate(
       axisDirectionToAxis(w.axisDirection) == Axis.horizontal,
 );
 
+Future<void> _chooseCodeAction(WidgetTester tester, String label) async {
+  await tester.tap(find.byTooltip('Code options').first);
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find
+        .ancestor(
+          of: find.text(label),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is PopupMenuEntry,
+          ),
+        )
+        .first,
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -206,9 +222,9 @@ void main() {
       _RefusingPreferences(),
       const Scaffold(body: CodeBlock(code: 'code')),
     );
-    await tester.tap(find.byTooltip('Wrap lines'));
+    await _chooseCodeAction(tester, 'Wrap lines');
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Wrap lines'), findsOneWidget);
+    expect(_horizontal(), findsOneWidget);
     expect(
       find.text('Could not save reader preferences. Try again.'),
       findsOneWidget,
@@ -232,7 +248,7 @@ void main() {
       expect(top('build'), lessThan(top('main.dart')));
       await tester.tap(find.byTooltip('File order'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Source first'));
+      await tester.tap(find.ancestor(of: find.text('Source first'), matching: find.byWidgetPredicate((widget) => widget is PopupMenuEntry)).first);
       await tester.pumpAndSettle();
       expect(top('main.dart'), lessThan(top('build')));
       for (final name in ['build', '.git', 'main.dart', 'README.md']) {
@@ -245,7 +261,7 @@ void main() {
       await _capture(tester, 'files-source-first-rtl-320-250');
       await tester.tap(find.byTooltip('File order'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Default order'));
+      await tester.tap(find.ancestor(of: find.text('Default order'), matching: find.byWidgetPredicate((widget) => widget is PopupMenuEntry)).first);
       await tester.pumpAndSettle();
       expect(top('build'), lessThan(top('main.dart')));
     },
@@ -268,10 +284,10 @@ void main() {
         scale: 2.5,
       );
       expect(_horizontal(), findsOneWidget);
-      await tester.tap(find.byTooltip('Wrap lines'));
+      await _chooseCodeAction(tester, 'Wrap lines');
       await tester.pumpAndSettle();
       expect(_horizontal(), findsNothing);
-      await tester.tap(find.byTooltip('Full screen'));
+      await _chooseCodeAction(tester, 'Full screen');
       await tester.pumpAndSettle();
       expect(find.byTooltip('Scroll lines'), findsOneWidget);
       expect(_horizontal(), findsNothing);
@@ -311,9 +327,9 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       const home = Scaffold(body: CodeBlock(code: 'code'));
       await _pump(tester, prefs, home);
-      expect(find.byTooltip('Scroll lines'), findsOneWidget);
+      expect(_horizontal(), findsNothing);
       await _pump(tester, prefs, home, profile: 'b');
-      expect(find.byTooltip('Wrap lines'), findsOneWidget);
+      expect(_horizontal(), findsOneWidget);
     },
   );
 

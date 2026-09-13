@@ -22,10 +22,8 @@ import '../app_theme.dart';
 /// and content viewer.
 enum _FileSurface { files, symbols }
 
-typedef ProjectFileAttachment = Future<void> Function(
-  String path,
-  FilePreviewData data,
-);
+typedef ProjectFileAttachment =
+    Future<void> Function(String path, FilePreviewData data);
 typedef ProjectReviewPrompt = void Function(String prompt);
 
 /// Lets a containing navigation shell offer Back to its active Files tab.
@@ -1656,8 +1654,9 @@ class _ChangesSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  readerL10n(context)
-                      .readerUiChangeSummary(changes.length, added, removed),
+                  readerL10n(
+                    context,
+                  ).readerUiChangeSummary(changes.length, added, removed),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -1713,8 +1712,9 @@ class _ChangesSheet extends StatelessWidget {
                       trailing: canStage
                           ? IconButton(
                               key: ValueKey('stage-change-${change.path}'),
-                              tooltip: readerL10n(context)
-                                  .readerUiAddPath(change.path),
+                              tooltip: readerL10n(
+                                context,
+                              ).readerUiAddPath(change.path),
                               icon: const Icon(
                                 Icons.add_comment_outlined,
                                 size: 20,
@@ -1854,8 +1854,9 @@ class __FileViewerState extends State<_FileViewer> {
       _content = null;
       _previewContent = null;
       _cachedPreview = null;
-      _error = lookupAppLocalizations(Localizations.localeOf(context))
-          .filesViewerPathChanged;
+      _error = lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).filesViewerPathChanged;
     });
   }
 
@@ -1884,8 +1885,9 @@ class __FileViewerState extends State<_FileViewer> {
       _content = null;
       _previewContent = null;
       _cachedPreview = null;
-      _error = lookupAppLocalizations(Localizations.localeOf(context))
-          .filesViewerScopeChanged;
+      _error = lookupAppLocalizations(
+        Localizations.localeOf(context),
+      ).filesViewerScopeChanged;
     });
   }
 
@@ -1926,8 +1928,9 @@ class __FileViewerState extends State<_FileViewer> {
             _content = null;
             _previewContent = null;
             _cachedPreview = null;
-            _error = lookupAppLocalizations(Localizations.localeOf(context))
-                .filesViewerScopeChanged;
+            _error = lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).filesViewerScopeChanged;
           });
         }
         return;

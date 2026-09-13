@@ -55,8 +55,12 @@ void main() {
     expect(find.textContaining('No matching tools'), findsOneWidget);
     await tester.tap(find.byTooltip('Clear search'));
     await tester.pumpAndSettle();
-    expect(find.text('Providers'), findsOneWidget);
+    expect(find.text('Providers'), findsNothing);
     expect(find.text('Models & agents'), findsOneWidget);
+    await tester.enterText(search, 'provider');
+    await tester.pumpAndSettle();
+    expect(find.text('Providers'), findsOneWidget);
+    expect(find.text('Tools & help'), findsOneWidget);
   });
 
   testWidgets(
@@ -95,34 +99,42 @@ void main() {
     },
   );
 
-  testWidgets('More uses compact rows with Models & agents first', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final controller = await _controller();
-    addTearDown(controller.dispose);
+  testWidgets(
+    'More keeps daily destinations visible and reveals tools on demand',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = await _controller();
+      addTearDown(controller.dispose);
 
-    await tester.pumpWidget(_app(controller));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(_app(controller));
+      await tester.pumpAndSettle();
 
-    // UX-P0-01: pending work lives on the Activity destination alone, so the
-    // hub no longer repeats it as Mission Control or Requests.
-    expect(find.text('Mission Control'), findsNothing);
-    expect(find.text('Requests'), findsNothing);
-    expect(find.byKey(const ValueKey('library-mission-control')), findsNothing);
+      // UX-P0-01: pending work lives on the Activity destination alone, so the
+      // hub no longer repeats it as Mission Control or Requests.
+      expect(find.text('Mission Control'), findsNothing);
+      expect(find.text('Requests'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('library-mission-control')),
+        findsNothing,
+      );
 
-    final card = find.widgetWithText(ListTile, 'Models & agents');
-    final cardRect = tester.getRect(card);
-    final providersRect = tester.getRect(
-      find.widgetWithText(ListTile, 'Providers'),
-    );
-    expect(cardRect.bottom, lessThanOrEqualTo(providersRect.top));
-    expect(cardRect.height, greaterThanOrEqualTo(72));
-    expect(cardRect.left, providersRect.left);
-  });
+      final card = find.widgetWithText(ListTile, 'Models & agents');
+      final cardRect = tester.getRect(card);
+      expect(find.text('Settings').hitTestable(), findsOneWidget);
+      expect(find.text('Terminal').hitTestable(), findsOneWidget);
+      expect(find.text('Providers'), findsNothing);
+      expect(find.text('MCP'), findsNothing);
+      expect(cardRect.height, greaterThanOrEqualTo(72));
+      await tester.tap(find.text('Tools & help'));
+      await tester.pumpAndSettle();
+      expect(find.text('Providers'), findsOneWidget);
+      expect(find.text('MCP'), findsOneWidget);
+      expect(find.text('Commands & tools'), findsOneWidget);
+    },
+  );
 
   testWidgets('group separators align with destination text, not icon slots', (
     tester,
@@ -133,7 +145,7 @@ void main() {
     await tester.pumpAndSettle();
     final divider = find.byType(Divider).first;
     final shape = tester.widget<Divider>(divider);
-    final titleX = tester.getTopLeft(find.text('Providers')).dx;
+    final titleX = tester.getTopLeft(find.text('Models & agents')).dx;
     expect(tester.getTopLeft(divider).dx + (shape.indent ?? 0), titleX);
     expect(shape.endIndent, greaterThanOrEqualTo(16));
     expect(find.byKey(const ValueKey('library-active-setup')), findsNothing);

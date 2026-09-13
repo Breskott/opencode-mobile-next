@@ -307,10 +307,14 @@ void main() {
       await _pumpChat(tester, api, voice: voice);
       await tester.tap(find.byKey(const Key('composer-tools-button')));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byKey(const Key('composer-tools-advanced')));
+      await tester.ensureVisible(
+        find.byKey(const Key('composer-tools-advanced')),
+      );
       await tester.tap(find.byKey(const Key('composer-tools-advanced')));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byKey(const Key('composer-tool-conversation')));
+      await tester.ensureVisible(
+        find.byKey(const Key('composer-tool-conversation')),
+      );
       await tester.tap(find.byKey(const Key('composer-tool-conversation')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));

@@ -521,8 +521,16 @@ void main() {
     );
     expect(find.byTooltip('Mission Control'), findsNothing);
     expect(find.byTooltip('Pending requests'), findsNothing);
-    // The tune/model action stays per the audit.
-    expect(find.byTooltip('Model / agent'), findsOneWidget);
+    // Model selection is a secondary shell action, available from overflow.
+    expect(find.byTooltip('Model / agent'), findsNothing);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byType(PopupMenuButton<String>),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Model / agent'), findsOneWidget);
   });
 
   testWidgets('the Activity tab shows cross-session sections', (tester) async {

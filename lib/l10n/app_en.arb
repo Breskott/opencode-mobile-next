@@ -16252,7 +16252,7 @@
   "@termuxStorageRescanAction": {
     "description": "Button that starts a fresh scan when a report exists"
   },
-  "termuxStorageIntro": "See what the phone server uses and clean build caches and scratch folders without SSH. Your projects, OpenCode's sign-ins and session history are never removed from here.",
+  "termuxStorageIntro": "See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and session history stay in place.",
   "@termuxStorageIntro": {
     "description": "Storage screen: paragraph before the first scan"
   },
@@ -16276,7 +16276,7 @@
   "@termuxStorageFailed": {
     "description": "Status line after a failed scan"
   },
-  "termuxStorageTotal": "{size} used by the phone server",
+  "termuxStorageTotal": "{size} measured in Termux",
   "@termuxStorageTotal": {
     "description": "Storage report headline",
     "placeholders": {
@@ -16320,7 +16320,7 @@
   "@termuxStorageCatBuildCaches": {
     "description": "Storage category"
   },
-  "termuxStorageNoteBuildCaches": "Gradle, pub, npm and analyzer caches. Safe to remove; the next build will download these again.",
+  "termuxStorageNoteBuildCaches": "Gradle caches and npm’s downloaded content cache only. Downloads may be needed again, so offline builds can be affected. Stop builds and package installs before cleaning.",
   "@termuxStorageNoteBuildCaches": {
     "description": "Storage category note"
   },
@@ -16328,15 +16328,15 @@
   "@termuxStorageCatAgentScratch": {
     "description": "Storage category"
   },
-  "termuxStorageNoteAgentScratch": "Temporary folders agents made under /tmp/opencode, plus Termux's tmp. Safe to remove while no agent is working.",
+  "termuxStorageNoteAgentScratch": "Temporary folders may contain unfinished work or files used by other tools. Their sizes are shown for reference; they cannot be removed here.",
   "@termuxStorageNoteAgentScratch": {
     "description": "Storage category note"
   },
-  "termuxStorageCatProjectBuildOutputs": "Project build outputs",
+  "termuxStorageCatProjectBuildOutputs": "Folders with build-related names",
   "@termuxStorageCatProjectBuildOutputs": {
     "description": "Storage category"
   },
-  "termuxStorageNoteProjectBuildOutputs": "build/, .dart_tool/, node_modules/ and target/ inside your projects. Your source files stay; the next build recreates these.",
+  "termuxStorageNoteProjectBuildOutputs": "Folders named build, .dart_tool, node_modules or target may also contain your files. Names alone cannot prove they are disposable, so they cannot be removed here.",
   "@termuxStorageNoteProjectBuildOutputs": {
     "description": "Storage category note"
   },
@@ -16344,7 +16344,7 @@
   "@termuxStorageCatToolchains": {
     "description": "Storage category"
   },
-  "termuxStorageNoteToolchains": "Android SDK, Java and Flutter SDK copies. Remove them only if you do not build Android apps on this phone; getting them back is a long download.",
+  "termuxStorageNoteToolchains": "Android SDK, Java and Flutter installations. These may support other projects and cannot be removed here.",
   "@termuxStorageNoteToolchains": {
     "description": "Storage category note"
   },
@@ -16352,7 +16352,7 @@
   "@termuxStorageCatAiTeam": {
     "description": "Storage category"
   },
-  "termuxStorageNoteAiTeam": "City folders, the Dolt store and the gc, bd and dolt binaries. Turn the team off before removing them.",
+  "termuxStorageNoteAiTeam": "Team folders, databases and tools may contain work you need to keep. They cannot be removed here, even when the team is stopped.",
   "@termuxStorageNoteAiTeam": {
     "description": "Storage category note"
   },
@@ -16412,7 +16412,7 @@
       }
     }
   },
-  "termuxStorageCleanConfirmBody": "Only the paths listed under the category go. The next build will download or rebuild them again.",
+  "termuxStorageCleanConfirmBody": "Remove only the listed Gradle and npm content caches? Downloads may be needed again and offline builds can be affected. Stop builds and package installs first. Scan again afterward to update the measured sizes.",
   "@termuxStorageCleanConfirmBody": {
     "description": "Two-step confirmation body for cleaning"
   },
@@ -16433,7 +16433,7 @@
   "@termuxStorageCleaning": {
     "description": "Status while a clean runs"
   },
-  "termuxStorageFreed": "Freed {size}",
+  "termuxStorageFreed": "Removed {size}",
   "@termuxStorageFreed": {
     "description": "Result line after a clean",
     "placeholders": {
@@ -16464,7 +16464,7 @@
       }
     }
   },
-  "termuxStorageProjectBuild": "{size} · {build} in build output",
+  "termuxStorageProjectBuild": "{size} · {build} in build-related folders",
   "@termuxStorageProjectBuild": {
     "description": "Project row subtitle",
     "placeholders": {
@@ -17191,5 +17191,15 @@
         "example": "420 MB free, 900 MB needed."
       }
     }
-  }
+  },
+  "calmMoreToolsAndHelp": "Tools & help",
+  "calmCodeOptions": "Code options",
+  "termuxRunningDetected": "Server found on this phone",
+  "termuxRunningConnect": "Connect to running server",
+  "termuxRunningDetails": "Server details",
+  "termuxRunningPermission": "Allow Termux access in phone setup to check for a server.",
+  "termuxRunningUnavailable": "Could not check the server on this phone.",
+  "termuxStorageCatSharedCaches": "Other caches and package data",
+  "termuxStorageNoteSharedCaches": "Shared caches, package installs and download folders may support other tools or contain files worth keeping. They cannot be removed here.",
+  "termuxStorageRescanRequired": "Previous scan · Scan again before cleaning more"
 }

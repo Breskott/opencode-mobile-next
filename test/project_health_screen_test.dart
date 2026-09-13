@@ -423,7 +423,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('current-project-entry')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const ValueKey('manage-project-entry')));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('manage-project-entry')),
+    );
     await tester.tap(find.byKey(const ValueKey('manage-project-entry')));
     await tester.pumpAndSettle();
 

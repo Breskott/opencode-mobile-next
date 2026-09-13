@@ -291,10 +291,7 @@ void main() {
         find.byKey(const ValueKey('current-project-entry')),
         findsOneWidget,
       );
-      expect(
-        find.byKey(const ValueKey('manage-project-entry')),
-        findsNothing,
-      );
+      expect(find.byKey(const ValueKey('manage-project-entry')), findsNothing);
       await _expectAccessible(tester);
     });
 

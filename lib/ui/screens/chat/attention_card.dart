@@ -542,6 +542,7 @@ class SessionMenuSheet extends StatelessWidget {
   /// Per-session approval settings; off only where a session cannot be
   /// asked for permissions (the isolated demo).
   final bool approvalsAvailable;
+
   /// Session handoff (backlog F4): the terminal resume command for the
   /// computer that runs the server, and the QR link for another phone.
   /// Both pop a value; the chat screen builds the sheet and never sends.
@@ -560,7 +561,10 @@ class SessionMenuSheet extends StatelessWidget {
             if (conversationTitle case final title?)
               Padding(
                 padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 8),
-                child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
             SectionLabel(_chatL10n(context).chatUiConversation),
             // Views are the frequent destinations, so they take a compact

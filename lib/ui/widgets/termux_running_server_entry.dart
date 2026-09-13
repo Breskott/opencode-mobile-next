@@ -126,12 +126,16 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
     if (!server.isRunning) {
       return ListTile(
         contentPadding: EdgeInsets.zero,
-        title: Text(server.state == TermuxRunningServerState.denied
-            ? l10n.termuxRunningPermission
-            : l10n.termuxRunningUnavailable),
+        title: Text(
+          server.state == TermuxRunningServerState.denied
+              ? l10n.termuxRunningPermission
+              : l10n.termuxRunningUnavailable,
+        ),
         trailing: IconButton(
           tooltip: l10n.managedHealthCheck,
-          onPressed: widget.busy || _checking ? null : () => unawaited(_check()),
+          onPressed: widget.busy || _checking
+              ? null
+              : () => unawaited(_check()),
           icon: const Icon(AppIconography.retry),
         ),
       );
@@ -180,7 +184,9 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
               children: [
                 FilledButton.icon(
                   key: const ValueKey('termux-running-server-connect'),
-                  style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                  ),
                   onPressed: widget.busy || _checking
                       ? null
                       : () async {
@@ -202,9 +208,12 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
                           }
                           if (!fresh.isRunning) return;
                           final saved = savedProfileForTermuxServer(
-                            widget.profiles, fresh,
+                            widget.profiles,
+                            fresh,
                           );
-                          if (saved == null || fresh.needsCredentials || saved.requiresPasswordReentry) {
+                          if (saved == null ||
+                              fresh.needsCredentials ||
+                              saved.requiresPasswordReentry) {
                             widget.onEnterCredentials(fresh, saved);
                           } else {
                             widget.onConnect(saved);
@@ -235,11 +244,13 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
                 if (observedAt != null)
                   Align(
                     alignment: AlignmentDirectional.centerStart,
-                    child: Text(l10n.managedHealthObserved(
-                      MaterialLocalizations.of(context).formatTimeOfDay(
-                        TimeOfDay.fromDateTime(observedAt),
+                    child: Text(
+                      l10n.managedHealthObserved(
+                        MaterialLocalizations.of(
+                          context,
+                        ).formatTimeOfDay(TimeOfDay.fromDateTime(observedAt)),
                       ),
-                    )),
+                    ),
                   ),
               ],
             ),

@@ -17,28 +17,34 @@ Future<ServerProbeResult> _probeLoopback({
   String? username,
   String? password,
 }) async {
-  final dio = Dio(BaseOptions(
-    // Deliberately ignore supplied addresses: discovery cannot become a scan.
-    baseUrl: TermuxBridge.managedServerUrl,
-    followRedirects: false,
-    connectTimeout: const Duration(seconds: 3),
-    receiveTimeout: const Duration(seconds: 3),
-    validateStatus: (status) => status != null,
-    headers: {
-      if (password != null && password.isNotEmpty)
-        'Authorization': 'Basic ${base64Encode(utf8.encode('${username == null || username.isEmpty ? 'opencode' : username}:$password'))}',
-    },
-  ));
+  final dio = Dio(
+    BaseOptions(
+      // Deliberately ignore supplied addresses: discovery cannot become a scan.
+      baseUrl: TermuxBridge.managedServerUrl,
+      followRedirects: false,
+      connectTimeout: const Duration(seconds: 3),
+      receiveTimeout: const Duration(seconds: 3),
+      validateStatus: (status) => status != null,
+      headers: {
+        if (password != null && password.isNotEmpty)
+          'Authorization':
+              'Basic ${base64Encode(utf8.encode('${username == null || username.isEmpty ? 'opencode' : username}:$password'))}',
+      },
+    ),
+  );
   try {
     for (final path in ['/api/health', '/global/health']) {
       final response = await dio.get<Object?>(path);
       if (response.statusCode == 401) {
         return const ServerProbeResult.failure(
-          'Authentication required', needsPassword: true,
+          'Authentication required',
+          needsPassword: true,
         );
       }
       final body = response.data;
-      if (response.statusCode == 200 && body is Map && body['healthy'] == true) {
+      if (response.statusCode == 200 &&
+          body is Map &&
+          body['healthy'] == true) {
         return ServerProbeResult.success(body['version']?.toString());
       }
     }
@@ -130,9 +136,8 @@ class TermuxRunningServer {
   bool get isRunning => state == TermuxRunningServerState.running;
 
   /// The profile generation that speaks to [runtime].
-  ServerFlavor get flavor => runtime == TermuxRuntime.openCode2
-      ? ServerFlavor.v2
-      : ServerFlavor.v1;
+  ServerFlavor get flavor =>
+      runtime == TermuxRuntime.openCode2 ? ServerFlavor.v2 : ServerFlavor.v1;
 }
 
 /// Reads whether the app-managed OpenCode server is running in Termux.
@@ -179,8 +184,12 @@ Future<TermuxRunningServer> detectTermuxRunningServer({
       status.port == TermuxBridge.managedServerPort) {
     final observed = TermuxRunningServer.running(
       runtime: status.runtime,
-      version: RegExp(r'^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$')
-          .hasMatch(status.version.trim()) ? status.version.trim() : '',
+      version:
+          RegExp(
+            r'^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$',
+          ).hasMatch(status.version.trim())
+          ? status.version.trim()
+          : '',
       observedAt: now(),
     );
     final profile = savedProfileForTermuxServer(profiles, observed);
@@ -196,8 +205,10 @@ Future<TermuxRunningServer> detectTermuxRunningServer({
       ).timeout(const Duration(seconds: 10));
       if (health.ok || health.needsPassword) {
         return TermuxRunningServer.running(
-          runtime: observed.runtime!, version: observed.version,
-          observedAt: now(), needsCredentials: health.needsPassword,
+          runtime: observed.runtime!,
+          version: observed.version,
+          observedAt: now(),
+          needsCredentials: health.needsPassword,
         );
       }
     } catch (_) {

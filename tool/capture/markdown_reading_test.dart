@@ -16,6 +16,22 @@ const _sample =
     '  if (basket.isNotEmpty) showCheckout(basket);\n'
     '}\n```';
 
+Future<void> _chooseCodeAction(WidgetTester tester, String label) async {
+  await tester.tap(find.byTooltip('Code options').first);
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find
+        .ancestor(
+          of: find.text(label),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is PopupMenuEntry,
+          ),
+        )
+        .first,
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadCaptureFonts);
@@ -95,21 +111,21 @@ void main() {
           )
           .first;
       await tester.scrollUntilVisible(
-        find.byTooltip('Wrap lines'),
+        find.byTooltip('Code options'),
         250,
         scrollable: find
             .descendant(of: scroll, matching: find.byType(Scrollable))
             .first,
       );
-      await tester.tap(find.byTooltip('Wrap lines'));
+      await _chooseCodeAction(tester, 'Wrap lines');
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       await writePng(
         'docs/qa/markdown-reading-2026-09-08/$mode-wrap.png',
         await capturePng(tester, key),
       );
-      await tester.ensureVisible(find.byTooltip('Full screen'));
-      await tester.tap(find.byTooltip('Full screen'));
+      await tester.ensureVisible(find.byTooltip('Code options'));
+      await _chooseCodeAction(tester, 'Full screen');
       await tester.pumpAndSettle();
       expect(find.text('Code reader'), findsOneWidget);
       expect(tester.takeException(), isNull);

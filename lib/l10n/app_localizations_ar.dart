@@ -15446,7 +15446,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get termuxStorageIntro =>
-      'اطّلع على ما يستخدمه خادم الهاتف ونظّف ذاكرات البناء المؤقتة ومجلدات العمل المؤقتة دون SSH. لا تُحذف مشاريعك ولا تسجيلات دخول OpenCode ولا سجل الجلسات من هنا أبدًا.';
+      'اعرض مساحة التخزين التي يستخدمها Termux، بما فيها الخادم المحلي والأدوات الأخرى. وسّع أي فئة للاطلاع على تفاصيلها. يمكن تنظيف ملفات تخزين مؤقت محددة قابلة لإعادة الإنشاء فقط؛ وتبقى المشاريع وبيانات الفريق وتسجيلات الدخول وسجل الجلسات محفوظة.';
 
   @override
   String get termuxStorageScanning => 'جارٍ قياس التخزين';
@@ -15466,7 +15466,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String termuxStorageTotal(String size) {
-    return '$size يستخدمها خادم الهاتف';
+    return 'تم قياس $size في Termux';
   }
 
   @override
@@ -15492,35 +15492,36 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get termuxStorageNoteBuildCaches =>
-      'ذاكرات Gradle وpub وnpm والمحلّل المؤقتة. حذفها آمن؛ وسيعيد البناء التالي تنزيلها.';
+      'ملفات Gradle المؤقتة وذاكرة المحتوى المنزّل لـ npm فقط. قد يلزم تنزيل الملفات مجددًا، مما قد يؤثر في البناء دون اتصال. أوقف عمليات البناء وتثبيت الحزم قبل التنظيف.';
 
   @override
   String get termuxStorageCatAgentScratch => 'مجلدات عمل الوكلاء المؤقتة';
 
   @override
   String get termuxStorageNoteAgentScratch =>
-      'مجلدات مؤقتة أنشأها الوكلاء تحت ‎/tmp/opencode‎، إضافة إلى tmp في Termux. حذفها آمن ما دام لا يعمل أي وكيل.';
+      'قد تحتوي المجلدات المؤقتة على عمل غير مكتمل أو ملفات تستخدمها أدوات أخرى. تُعرض أحجامها للاطلاع فقط ولا يمكن حذفها من هنا.';
 
   @override
-  String get termuxStorageCatProjectBuildOutputs => 'مخرجات بناء المشاريع';
+  String get termuxStorageCatProjectBuildOutputs =>
+      'مجلدات بأسماء مرتبطة بالبناء';
 
   @override
   String get termuxStorageNoteProjectBuildOutputs =>
-      '‎build/‎ و‎.dart_tool/‎ و‎node_modules/‎ و‎target/‎ داخل مشاريعك. تبقى ملفاتك المصدرية؛ وسيعيد البناء التالي إنشاءها.';
+      'قد تحتوي المجلدات المسماة build أو .dart_tool أو node_modules أو target على ملفاتك أيضًا. لا يكفي الاسم لإثبات إمكانية حذفها، لذلك لا يمكن حذفها من هنا.';
 
   @override
   String get termuxStorageCatToolchains => 'أدوات البناء';
 
   @override
   String get termuxStorageNoteToolchains =>
-      'نسخ Android SDK وJava وFlutter SDK. احذفها فقط إن كنت لا تبني تطبيقات أندرويد على هذا الهاتف؛ فاستعادتها تنزيل طويل.';
+      'تثبيتات Android SDK وJava وFlutter. قد تستخدمها مشاريع أخرى ولا يمكن حذفها من هنا.';
 
   @override
   String get termuxStorageCatAiTeam => 'فريق الذكاء الاصطناعي';
 
   @override
   String get termuxStorageNoteAiTeam =>
-      'مجلدات المدينة ومخزن Dolt وبرامج gc وbd وdolt. أوقف الفريق قبل حذفها.';
+      'قد تحتوي مجلدات الفريق وقواعد البيانات والأدوات على عمل تحتاج إلى الاحتفاظ به. لا يمكن حذفها من هنا، حتى عند إيقاف الفريق.';
 
   @override
   String get termuxStorageCatOpenCode => 'OpenCode نفسه';
@@ -15560,7 +15561,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get termuxStorageCleanConfirmBody =>
-      'تُحذف المسارات المدرجة تحت الفئة فقط. وسيعيد البناء التالي تنزيلها أو بناءها.';
+      'هل تريد حذف ملفات Gradle المؤقتة وذاكرة محتوى npm المعروضة فقط؟ قد يلزم تنزيل الملفات مجددًا وقد يتأثر البناء دون اتصال. أوقف عمليات البناء وتثبيت الحزم أولًا، ثم أعد الفحص لتحديث الأحجام المقاسة.';
 
   @override
   String termuxStorageCleanConfirm(String size) {
@@ -15575,7 +15576,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String termuxStorageFreed(String size) {
-    return 'تم تحرير $size';
+    return 'تم حذف $size';
   }
 
   @override
@@ -15593,7 +15594,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String termuxStorageProjectBuild(String size, String build) {
-    return '$size · $build في مخرجات البناء';
+    return '$size · $build في مجلدات مرتبطة بالبناء';
   }
 
   @override
@@ -16096,4 +16097,38 @@ class AppLocalizationsAr extends AppLocalizations {
   String teamUiPhoneFailedNoSpace(String detail) {
     return 'لا توجد مساحة كافية على هذا الهاتف. $detail حرّر بعض المساحة (يمكن لقسم «التخزين على هذا الهاتف» تنظيف ذاكرة البناء المؤقتة)، ثم حاول مجددًا.';
   }
+
+  @override
+  String get calmMoreToolsAndHelp => 'الأدوات والمساعدة';
+
+  @override
+  String get calmCodeOptions => 'خيارات الشفرة';
+
+  @override
+  String get termuxRunningDetected => 'تم العثور على خادم على هذا الهاتف';
+
+  @override
+  String get termuxRunningConnect => 'الاتصال بالخادم قيد التشغيل';
+
+  @override
+  String get termuxRunningDetails => 'تفاصيل الخادم';
+
+  @override
+  String get termuxRunningPermission =>
+      'اسمح بالوصول إلى Termux في إعداد الهاتف للتحقق من وجود خادم.';
+
+  @override
+  String get termuxRunningUnavailable =>
+      'تعذر التحقق من الخادم على هذا الهاتف.';
+
+  @override
+  String get termuxStorageCatSharedCaches => 'ملفات مؤقتة وبيانات حزم أخرى';
+
+  @override
+  String get termuxStorageNoteSharedCaches =>
+      'قد تستخدم أدوات أخرى الملفات المؤقتة المشتركة والحزم المثبتة ومجلدات التنزيل، أو قد تحتوي على ملفات تحتاج إلى الاحتفاظ بها. لا يمكن حذفها من هنا.';
+
+  @override
+  String get termuxStorageRescanRequired =>
+      'فحص سابق · أعد الفحص قبل تنظيف المزيد';
 }

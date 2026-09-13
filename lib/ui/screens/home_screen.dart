@@ -190,13 +190,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             // pending badge lives on the Activity destination alone.
             // Settings and the shortcuts list have one entry point each, on
             // the More tab; this overflow holds only connection-level acts.
-            IconButton(
-              tooltip: _l10n(context).e7WorkspaceModelAgent,
-              icon: const Icon(AppIconography.settings),
-              onPressed: () => showModelPicker(context),
-            ),
             PopupMenuButton<String>(
               onSelected: (v) {
+                if (v == 'model') showModelPicker(context);
                 if (v == 'refresh') conn.refreshSessions();
                 if (v == 'disconnect') {
                   conn.disconnect().then((_) {
@@ -205,6 +201,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 }
               },
               itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'model',
+                  child: Text(_l10n(context).e7WorkspaceModelAgent),
+                ),
                 PopupMenuItem(
                   value: 'refresh',
                   child: Text(_l10n(context).globalSessionsRefresh),

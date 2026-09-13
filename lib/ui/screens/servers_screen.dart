@@ -126,10 +126,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
 
   /// [detectedRunning] means the caller already knows which managed runtime
   /// is live and chose its profile, so the runtime-choice detour is moot.
-  Future<void> _connect(
-    ServerProfile p, {
-    bool detectedRunning = false,
-  }) async {
+  Future<void> _connect(ServerProfile p, {bool detectedRunning = false}) async {
     if (_busy) return;
     if (!detectedRunning &&
         _needsManagedRuntimeChoice(
@@ -211,11 +208,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           tailscale: useTailscale,
           initialUrl: initialUrl,
           openCode2Intent: openCode2Intent,
-          onSubmit: (profile) =>
-              _saveAndConnect(
-                profile, isNew: isNew, tailscale: useTailscale,
-                forceConnect: connectOnSave,
-              ),
+          onSubmit: (profile) => _saveAndConnect(
+            profile,
+            isNew: isNew,
+            tailscale: useTailscale,
+            forceConnect: connectOnSave,
+          ),
           secureStorageProbe: () =>
               ref.read(bootstrapProvider).store.secureStorageProblem(),
         ),
@@ -259,7 +257,10 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           !await store.prefs.setBool('oc.tailscale.${result.id}', true)) {
         throw StateError(copy.e7SetupGuidanceSaveFailed);
       }
-      if (wasActive || isNew || forceConnect || result.backend == ServerBackend.codex) {
+      if (wasActive ||
+          isNew ||
+          forceConnect ||
+          result.backend == ServerBackend.codex) {
         final savedProfile = store.profiles.firstWhere(
           (profile) => profile.id == result.id,
         );

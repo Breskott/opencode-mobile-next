@@ -27,6 +27,22 @@ Future<void> _pump(
   await tester.pump();
 }
 
+Future<void> _chooseCodeAction(WidgetTester tester, String label) async {
+  await tester.tap(find.byTooltip('Code options').first);
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find
+        .ancestor(
+          of: find.text(label),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is PopupMenuEntry,
+          ),
+        )
+        .first,
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   for (final scale in [1.0, 2.5]) {
     testWidgets('short code keeps a single toolbar row at ${scale}x', (
@@ -42,7 +58,7 @@ void main() {
         ),
         scale: scale,
       );
-      final actions = ['Wrap lines', 'Full screen', 'Copy code'];
+      final actions = ['Code options', 'Copy code'];
       final top = tester.getTopLeft(find.byTooltip(actions.first)).dy;
       for (final label in actions) {
         final action = find.byTooltip(label);
@@ -75,7 +91,7 @@ void main() {
     expect(state.position.axisDirection, AxisDirection.right);
     expect(state.position.pixels, state.position.minScrollExtent);
     expect(state.position.maxScrollExtent, greaterThan(0));
-    await tester.tap(find.byTooltip('Full screen'));
+    await _chooseCodeAction(tester, 'Full screen');
     await tester.pumpAndSettle();
     final readerState = tester.state<ScrollableState>(horizontal);
     expect(readerState.position.axisDirection, AxisDirection.right);
@@ -100,7 +116,7 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.byTooltip('Full screen'));
+    await _chooseCodeAction(tester, 'Full screen');
     await tester.pumpAndSettle();
     enabled.value = false;
     await tester.pumpAndSettle();
@@ -124,7 +140,7 @@ void main() {
             value ? const CodeBlock(code: 'snapshot') : const SizedBox(),
       ),
     );
-    await tester.tap(find.byTooltip('Full screen'));
+    await _chooseCodeAction(tester, 'Full screen');
     await tester.pumpAndSettle();
     visible.value = false;
     await tester.pumpAndSettle();
@@ -202,7 +218,7 @@ void main() {
         tester,
         const MarkdownText('  ~~~dart\r\n  final a = 1;  \r\n  \r\n  ~~~'),
       );
-      await tester.tap(find.byTooltip('Wrap lines'));
+      await _chooseCodeAction(tester, 'Wrap lines');
       await tester.pump();
       await tester.tap(find.byTooltip('Copy code'));
       await tester.pump();
@@ -255,6 +271,7 @@ void main() {
     );
     expect(find.byTooltip('Copy code'), findsNothing);
     expect(find.byTooltip('Full screen'), findsNothing);
+    expect(find.byTooltip('Code options'), findsNothing);
     expect(find.byTooltip('Wrap lines'), findsNothing);
     final ignored = find.ancestor(
       of: find.byType(SelectableText),
@@ -408,7 +425,7 @@ void main() {
           builder: (_, text, _) => MarkdownText(text),
         ),
       );
-      await tester.tap(find.byTooltip('Full screen'));
+      await _chooseCodeAction(tester, 'Full screen');
       await tester.pumpAndSettle();
       expect(find.text('Code reader'), findsOneWidget);
       expect(find.textContaining('Snapshot of the code'), findsOneWidget);
@@ -460,16 +477,16 @@ void main() {
       scroll.jumpTo(100);
       await tester.pump();
       final before = scroll.offset;
-      for (final label in ['Wrap lines', 'Full screen', 'Copy code']) {
+      for (final label in ['Code options', 'Copy code']) {
         expect(
           tester.getSize(find.byTooltip(label)).height,
           greaterThanOrEqualTo(48),
         );
       }
-      await tester.tap(find.byTooltip('Wrap lines'));
+      await _chooseCodeAction(tester, 'Wrap lines');
       await tester.pump();
       expect(scroll.offset, before);
-      await tester.tap(find.byTooltip('Full screen'));
+      await _chooseCodeAction(tester, 'Full screen');
       await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();

@@ -134,7 +134,10 @@ void main() {
             // isolated action is a labelled button above the primary.
             expect(find.text('Isolated task'), findsOneWidget);
           }
-          expect(find.byKey(const ValueKey('manage-project-entry')), findsNothing);
+          expect(
+            find.byKey(const ValueKey('manage-project-entry')),
+            findsNothing,
+          );
           expect(find.textContaining(r'$0.42'), findsNothing);
           expect(find.text('Review status unknown'), findsNothing);
           await writePng(
@@ -142,11 +145,16 @@ void main() {
             await capturePng(tester, boundary, pixelRatio: 1),
           );
           if (!scenario.end && scenario.name == 'shopfront') {
-            await tester.tap(find.byKey(const ValueKey('current-project-entry')));
+            await tester.tap(
+              find.byKey(const ValueKey('current-project-entry')),
+            );
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 600));
             expect(find.text('Review status unknown'), findsOneWidget);
-            expect(find.byKey(const ValueKey('manage-project-entry')), findsOneWidget);
+            expect(
+              find.byKey(const ValueKey('manage-project-entry')),
+              findsOneWidget,
+            );
             expect(tester.takeException(), isNull);
             await writePng(
               'docs/qa/calm-workspace-2026-09-13/$name-project-details.png',

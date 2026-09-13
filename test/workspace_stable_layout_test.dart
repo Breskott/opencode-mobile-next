@@ -385,7 +385,9 @@ void main() {
     expect(tester.getTopRight(_isolated).dx, 390 - 16);
     expect(tester.getSize(_primary).height, greaterThanOrEqualTo(48));
   });
-  testWidgets('session details disclose usage without cluttering the list', (tester) async {
+  testWidgets('session details disclose usage without cluttering the list', (
+    tester,
+  ) async {
     _phone(tester, 390);
     final controller = await _controller();
     addTearDown(controller.dispose);
@@ -393,8 +395,16 @@ void main() {
     await _pumpFrames(tester);
     expect(find.textContaining(r'$0.42'), findsNothing);
     expect(find.textContaining('+120'), findsNothing);
-    expect(find.textContaining('https://example.test/shared/checkout'), findsNothing);
-    await tester.tap(find.descendant(of: _row('busy'), matching: find.byType(PopupMenuButton<String>)));
+    expect(
+      find.textContaining('https://example.test/shared/checkout'),
+      findsNothing,
+    );
+    await tester.tap(
+      find.descendant(
+        of: _row('busy'),
+        matching: find.byType(PopupMenuButton<String>),
+      ),
+    );
     await _pumpFrames(tester);
     expect(find.text('Rename'), findsOneWidget);
     await tester.tap(find.text('Details'));
@@ -402,10 +412,12 @@ void main() {
     expect(find.textContaining(r'$0.42'), findsOneWidget);
     expect(find.textContaining('+120'), findsOneWidget);
     expect(find.textContaining('6 files'), findsOneWidget);
-    expect(find.textContaining('https://example.test/shared/checkout'), findsOneWidget);
+    expect(
+      find.textContaining('https://example.test/shared/checkout'),
+      findsOneWidget,
+    );
     expect(find.text(_directory), findsOneWidget);
     expect(controller.createCalls, 0);
     expect(tester.takeException(), isNull);
   });
-
 }

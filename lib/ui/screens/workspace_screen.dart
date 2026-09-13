@@ -956,14 +956,17 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   sheetContext,
                 ).pop(const _ContextChoice.switchProject()),
               ),
-              if (ManageProjectScreen.isAvailable(widget.controller.capabilities))
+              if (ManageProjectScreen.isAvailable(
+                widget.controller.capabilities,
+              ))
                 ListTile(
                   key: const ValueKey('manage-project-entry'),
                   leading: const Icon(AppIconography.settings),
                   title: Text(_l10n(context).workspaceManageProject),
                   trailing: const Icon(AppIconography.chevronRight),
-                  onTap: () => Navigator.of(sheetContext)
-                      .pop(const _ContextChoice.manageProject()),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(const _ContextChoice.manageProject()),
                 ),
               if (_workspaces.isNotEmpty) ...[
                 SectionLabel(_l10n(context).e7WorkspaceWorkspace),
@@ -1049,19 +1052,38 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(presentedSessionTitle(session,
-                      fallback: _l10n(context).globalSessionsUntitled,
-                      l10n: _l10n(context)),
-                      style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      presentedSessionTitle(
+                        session,
+                        fallback: _l10n(context).globalSessionsUntitled,
+                        l10n: _l10n(context),
+                      ),
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     const SizedBox(height: 16),
                     if (session.directory?.isNotEmpty == true)
-                      SelectableText(session.directory!, textDirection: TextDirection.ltr),
-                    for (final label in sessionUsageLabels(session, l10n: _l10n(context)))
-                      Padding(padding: const EdgeInsets.only(top: 8), child: Text(label)),
+                      SelectableText(
+                        session.directory!,
+                        textDirection: TextDirection.ltr,
+                      ),
+                    for (final label in sessionUsageLabels(
+                      session,
+                      l10n: _l10n(context),
+                    ))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(label),
+                      ),
                     if (session.shareUrl != null)
-                      Padding(padding: const EdgeInsets.only(top: 8),
-                        child: SelectableText(_l10n(context).e7WorkspaceSharedUrl(session.shareUrl!),
-                          textDirection: TextDirection.ltr)),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: SelectableText(
+                          _l10n(
+                            context,
+                          ).e7WorkspaceSharedUrl(session.shareUrl!),
+                          textDirection: TextDirection.ltr,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -1357,11 +1379,16 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 /// workspace (`null` meaning the project's own local checkout).
 class _ContextChoice {
   const _ContextChoice.switchProject()
-    : workspace = null, switchProject = true, manageProject = false;
+    : workspace = null,
+      switchProject = true,
+      manageProject = false;
   const _ContextChoice.manageProject()
-    : workspace = null, switchProject = false, manageProject = true;
+    : workspace = null,
+      switchProject = false,
+      manageProject = true;
   const _ContextChoice.workspace(this.workspace)
-    : switchProject = false, manageProject = false;
+    : switchProject = false,
+      manageProject = false;
 
   final WorkspaceInfo? workspace;
   final bool switchProject;
@@ -1500,10 +1527,7 @@ class _SessionRow extends StatelessWidget {
           onSelected: (value) =>
               value == 'pin' ? togglePin() : onAction(value, session),
           itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'details',
-              child: Text(l10n.chatUiDetails),
-            ),
+            PopupMenuItem(value: 'details', child: Text(l10n.chatUiDetails)),
             if (controller.canPinSessions)
               PopupMenuItem(
                 value: 'pin',
@@ -1707,7 +1731,11 @@ class _ProjectHeader extends StatelessWidget {
                 child: Text(
                   name,
                   key: const ValueKey('current-project-name'),
-                  style: nameStyle(context, name, maxWidth: constraints.maxWidth - 64),
+                  style: nameStyle(
+                    context,
+                    name,
+                    maxWidth: constraints.maxWidth - 64,
+                  ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -2241,7 +2269,9 @@ class _WorkspaceFolderChooser extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           notice ?? l10n.e7WorkspaceChooseFolderToStart,
-          key: notice == null ? null : const ValueKey('location-recovery-notice'),
+          key: notice == null
+              ? null
+              : const ValueKey('location-recovery-notice'),
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 20),
@@ -2272,8 +2302,12 @@ class _WorkspaceFolderChooser extends StatelessWidget {
             shape: const Border(),
             collapsedShape: const Border(),
             title: Text(l10n.chatUiDetails),
-            children: [Text(l10n.projectFolderNoCreateHint,
-              style: theme.textTheme.bodySmall)],
+            children: [
+              Text(
+                l10n.projectFolderNoCreateHint,
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
           ),
         ],
         if (projectError != null) ...[

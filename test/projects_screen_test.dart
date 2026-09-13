@@ -727,7 +727,10 @@ void main() {
       expect(find.text('Project list unavailable'), findsNothing);
       expect(find.text('No projects opened'), findsNothing);
       expect(find.text('/work/app'), findsNothing);
-    expect(find.byKey(const ValueKey('current-project-entry')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('current-project-entry')),
+        findsOneWidget,
+      );
       expect(find.text('Swipe target'), findsOneWidget);
       expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
     },
@@ -742,7 +745,8 @@ void main() {
       ProfileStore(prefs: await SharedPreferences.getInstance()),
       repository,
     );
-    const notice = 'The saved home folder is not a project. Choose a project folder.';
+    const notice =
+        'The saved home folder is not a project. Choose a project folder.';
     controller.locationNotice = notice;
     addTearDown(controller.dispose);
     await tester.pumpWidget(
@@ -760,7 +764,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.text(notice), findsOneWidget);
-    expect(find.byKey(const ValueKey('location-recovery-notice')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('location-recovery-notice')),
+      findsOneWidget,
+    );
     expect(find.text('Choose a project folder'), findsOneWidget);
     expect(find.byKey(const ValueKey('workspace-open-folder')), findsOneWidget);
     expect(find.byKey(const ValueKey('workspace-quick-ask')), findsNothing);

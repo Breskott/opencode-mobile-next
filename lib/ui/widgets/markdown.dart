@@ -1281,33 +1281,60 @@ class _CodeBlockState extends State<CodeBlock> {
                   ),
                 ),
                 if (enabled) ...[
-                  Semantics(
-                    toggled: wrap,
-                    child: IconButton(
-                      tooltip: wrap
-                          ? l10n.markdownScrollCode
-                          : l10n.markdownWrapCode,
+                  if (widget.canExpand)
+                    PopupMenuButton<String>(
+                      tooltip: l10n.calmCodeOptions,
                       style: _toolbarStyle(theme),
-                      onPressed: () {
+                      padding: EdgeInsets.zero,
+                      iconSize: 19,
+                      icon: const Icon(AppIconography.more),
+                      onSelected: (action) {
                         if (!_interactive) return;
-                        if (preferences != null) {
+                        if (action == 'expand') {
+                          _openReader();
+                        } else if (preferences != null) {
                           saveReaderPreferences(context, wrapCode: !wrap);
                         } else {
                           setState(() => _wrap = !wrap);
                         }
                       },
-                      icon: Icon(
-                        Icons.wrap_text_rounded,
-                        color: wrap ? theme.colorScheme.primary : null,
+                      itemBuilder: (_) => [
+                        CheckedPopupMenuItem(
+                          value: 'wrap',
+                          checked: wrap,
+                          child: Text(
+                            wrap
+                                ? l10n.markdownScrollCode
+                                : l10n.markdownWrapCode,
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'expand',
+                          child: Text(l10n.markdownExpandCode),
+                        ),
+                      ],
+                    )
+                  else
+                    Semantics(
+                      toggled: wrap,
+                      child: IconButton(
+                        tooltip: wrap
+                            ? l10n.markdownScrollCode
+                            : l10n.markdownWrapCode,
+                        style: _toolbarStyle(theme),
+                        onPressed: () {
+                          if (!_interactive) return;
+                          if (preferences != null) {
+                            saveReaderPreferences(context, wrapCode: !wrap);
+                          } else {
+                            setState(() => _wrap = !wrap);
+                          }
+                        },
+                        icon: Icon(
+                          Icons.wrap_text_rounded,
+                          color: wrap ? theme.colorScheme.primary : null,
+                        ),
                       ),
-                    ),
-                  ),
-                  if (widget.canExpand)
-                    IconButton(
-                      tooltip: l10n.markdownExpandCode,
-                      style: _toolbarStyle(theme),
-                      onPressed: _openReader,
-                      icon: const Icon(AppIconography.expand),
                     ),
                   IconButton(
                     tooltip: l10n.markdownCopyCode,

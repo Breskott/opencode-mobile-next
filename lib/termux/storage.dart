@@ -60,7 +60,8 @@ class TermuxStorageCategory {
   final List<TermuxStoragePath> paths;
 
   /// Old or untrusted reports cannot expose cleanup for protected categories.
-  bool get canClean => deletable && known == TermuxStorageCategoryKey.buildCaches;
+  bool get canClean =>
+      deletable && known == TermuxStorageCategoryKey.buildCaches;
 
   TermuxStorageCategoryKey? get known => TermuxStorageCategoryKey.parse(key);
 

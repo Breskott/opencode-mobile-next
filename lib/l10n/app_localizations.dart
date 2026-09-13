@@ -24507,7 +24507,7 @@ abstract class AppLocalizations {
   /// Storage screen: paragraph before the first scan
   ///
   /// In en, this message translates to:
-  /// **'See what the phone server uses and clean build caches and scratch folders without SSH. Your projects, OpenCode\'s sign-ins and session history are never removed from here.'**
+  /// **'See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and session history stay in place.'**
   String get termuxStorageIntro;
 
   /// Storage screen: heading while a scan runs
@@ -24543,7 +24543,7 @@ abstract class AppLocalizations {
   /// Storage report headline
   ///
   /// In en, this message translates to:
-  /// **'{size} used by the phone server'**
+  /// **'{size} measured in Termux'**
   String termuxStorageTotal(String size);
 
   /// Storage report: sum of the deletable categories
@@ -24579,7 +24579,7 @@ abstract class AppLocalizations {
   /// Storage category note
   ///
   /// In en, this message translates to:
-  /// **'Gradle, pub, npm and analyzer caches. Safe to remove; the next build will download these again.'**
+  /// **'Gradle caches and npm’s downloaded content cache only. Downloads may be needed again, so offline builds can be affected. Stop builds and package installs before cleaning.'**
   String get termuxStorageNoteBuildCaches;
 
   /// Storage category
@@ -24591,19 +24591,19 @@ abstract class AppLocalizations {
   /// Storage category note
   ///
   /// In en, this message translates to:
-  /// **'Temporary folders agents made under /tmp/opencode, plus Termux\'s tmp. Safe to remove while no agent is working.'**
+  /// **'Temporary folders may contain unfinished work or files used by other tools. Their sizes are shown for reference; they cannot be removed here.'**
   String get termuxStorageNoteAgentScratch;
 
   /// Storage category
   ///
   /// In en, this message translates to:
-  /// **'Project build outputs'**
+  /// **'Folders with build-related names'**
   String get termuxStorageCatProjectBuildOutputs;
 
   /// Storage category note
   ///
   /// In en, this message translates to:
-  /// **'build/, .dart_tool/, node_modules/ and target/ inside your projects. Your source files stay; the next build recreates these.'**
+  /// **'Folders named build, .dart_tool, node_modules or target may also contain your files. Names alone cannot prove they are disposable, so they cannot be removed here.'**
   String get termuxStorageNoteProjectBuildOutputs;
 
   /// Storage category
@@ -24615,7 +24615,7 @@ abstract class AppLocalizations {
   /// Storage category note
   ///
   /// In en, this message translates to:
-  /// **'Android SDK, Java and Flutter SDK copies. Remove them only if you do not build Android apps on this phone; getting them back is a long download.'**
+  /// **'Android SDK, Java and Flutter installations. These may support other projects and cannot be removed here.'**
   String get termuxStorageNoteToolchains;
 
   /// Storage category
@@ -24627,7 +24627,7 @@ abstract class AppLocalizations {
   /// Storage category note
   ///
   /// In en, this message translates to:
-  /// **'City folders, the Dolt store and the gc, bd and dolt binaries. Turn the team off before removing them.'**
+  /// **'Team folders, databases and tools may contain work you need to keep. They cannot be removed here, even when the team is stopped.'**
   String get termuxStorageNoteAiTeam;
 
   /// Storage category
@@ -24693,7 +24693,7 @@ abstract class AppLocalizations {
   /// Two-step confirmation body for cleaning
   ///
   /// In en, this message translates to:
-  /// **'Only the paths listed under the category go. The next build will download or rebuild them again.'**
+  /// **'Remove only the listed Gradle and npm content caches? Downloads may be needed again and offline builds can be affected. Stop builds and package installs first. Scan again afterward to update the measured sizes.'**
   String get termuxStorageCleanConfirmBody;
 
   /// Two-step confirmation button
@@ -24717,7 +24717,7 @@ abstract class AppLocalizations {
   /// Result line after a clean
   ///
   /// In en, this message translates to:
-  /// **'Freed {size}'**
+  /// **'Removed {size}'**
   String termuxStorageFreed(String size);
 
   /// Result line after a clean that removed nothing
@@ -24741,7 +24741,7 @@ abstract class AppLocalizations {
   /// Project row subtitle
   ///
   /// In en, this message translates to:
-  /// **'{size} · {build} in build output'**
+  /// **'{size} · {build} in build-related folders'**
   String termuxStorageProjectBuild(String size, String build);
 
   /// Action that opens the process screen
@@ -25505,6 +25505,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not enough space on this phone. {detail} Free some space (Storage on this phone can clean build caches), then try again.'**
   String teamUiPhoneFailedNoSpace(String detail);
+
+  /// No description provided for @calmMoreToolsAndHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools & help'**
+  String get calmMoreToolsAndHelp;
+
+  /// No description provided for @calmCodeOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Code options'**
+  String get calmCodeOptions;
+
+  /// No description provided for @termuxRunningDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Server found on this phone'**
+  String get termuxRunningDetected;
+
+  /// No description provided for @termuxRunningConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to running server'**
+  String get termuxRunningConnect;
+
+  /// No description provided for @termuxRunningDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Server details'**
+  String get termuxRunningDetails;
+
+  /// No description provided for @termuxRunningPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Termux access in phone setup to check for a server.'**
+  String get termuxRunningPermission;
+
+  /// No description provided for @termuxRunningUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check the server on this phone.'**
+  String get termuxRunningUnavailable;
+
+  /// No description provided for @termuxStorageCatSharedCaches.
+  ///
+  /// In en, this message translates to:
+  /// **'Other caches and package data'**
+  String get termuxStorageCatSharedCaches;
+
+  /// No description provided for @termuxStorageNoteSharedCaches.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared caches, package installs and download folders may support other tools or contain files worth keeping. They cannot be removed here.'**
+  String get termuxStorageNoteSharedCaches;
+
+  /// No description provided for @termuxStorageRescanRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous scan · Scan again before cleaning more'**
+  String get termuxStorageRescanRequired;
 }
 
 class _AppLocalizationsDelegate

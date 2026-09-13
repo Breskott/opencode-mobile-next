@@ -88,6 +88,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         final group0 = <_DestinationRow>[
           if (controller.capabilities.serverCatalog) ...[
             _DestinationRow(
+              primary: true,
               icon: AppIconography.model,
               title: l10n.libraryModelsAgentsTitle,
               subtitle: l10n.settingsDiscoveryNewChatsModel(
@@ -152,6 +153,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           if (controller.capabilities.terminal)
             _DestinationRow(
               key: const ValueKey('library-terminal'),
+              primary: true,
               icon: AppIconography.terminal,
               title: l10n.libraryTerminalTitle,
               keywords: lookupAppLocalizations(
@@ -176,6 +178,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   _open(context, SessionImportScreen(controller: controller)),
             ),
           _DestinationRow(
+            primary: true,
             icon: AppIconography.settings,
             title: l10n.librarySettingsTitle,
             keywords: lookupAppLocalizations(
@@ -260,11 +263,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
               ...phoneTools,
               _DestinationGroup(
                 title: l10n.libraryBrowseSection,
-                cards: group0,
+                cards: [
+                  ...group1.where((row) => row.primary),
+                  ...group0.where((row) => row.primary),
+                ],
               ),
               _DestinationGroup(
-                title: l10n.libraryManageSection,
-                cards: group1,
+                title: l10n.calmMoreToolsAndHelp,
+                collapsible: _query.isEmpty,
+                cards: [
+                  ...group0.where((row) => !row.primary),
+                  ...group1.where((row) => !row.primary),
+                ],
               ),
               if (_query.isNotEmpty)
                 Padding(
@@ -314,13 +324,32 @@ String _defaultModelLabel(
 class _DestinationGroup extends StatelessWidget {
   final List<_DestinationRow> cards;
   final String title;
+  final bool collapsible;
 
-  const _DestinationGroup({required this.cards, required this.title});
+  const _DestinationGroup({
+    required this.cards,
+    required this.title,
+    this.collapsible = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final matches = cards;
     if (matches.isEmpty) return const SizedBox.shrink();
+    if (collapsible) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: ExpansionTile(
+          key: const PageStorageKey('library-tools-and-help'),
+          title: Text(title),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: const EdgeInsets.only(bottom: 8),
+          shape: const Border(),
+          collapsedShape: const Border(),
+          children: matches,
+        ),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -357,6 +386,7 @@ class _DestinationRow extends StatelessWidget {
   final String keywords;
   final String? subtitle;
   final VoidCallback onTap;
+  final bool primary;
 
   const _DestinationRow({
     super.key,
@@ -364,6 +394,7 @@ class _DestinationRow extends StatelessWidget {
     required this.title,
     this.keywords = '',
     this.subtitle,
+    this.primary = false,
     required this.onTap,
   });
 
