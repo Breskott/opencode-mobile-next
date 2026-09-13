@@ -10,6 +10,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
+import 'package:opencode_mobile/ui/screens/global_sessions_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_folder_actions.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -616,8 +617,15 @@ void main() {
     );
     await tester.pump();
     expect(find.text('Swipe target'), findsOneWidget);
-    expect(find.text('Search all sessions'), findsOneWidget);
+    expect(find.text('All sessions'), findsOneWidget);
+    expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    // The one remaining search action works while project discovery is pending.
+    await tester.tap(find.byKey(const ValueKey('search-all-sessions')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(GlobalSessionsScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(GlobalSessionsScreen))).pop();
     pending.complete(const []);
     await tester.pumpAndSettle();
     expect(find.text('Swipe target'), findsOneWidget);

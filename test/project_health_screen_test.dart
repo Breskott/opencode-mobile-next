@@ -469,7 +469,15 @@ void main() {
     ]);
     expect(find.byKey(const ValueKey('current-project-entry')), findsOneWidget);
     expect(find.text('runtime-probe'), findsOneWidget);
+    expect(find.text('/tmp/runtime-probe'), findsNothing);
+    expect(find.text('OpenCode Mobile'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('current-project-entry')));
+    await tester.pumpAndSettle();
     expect(find.text('/tmp/runtime-probe'), findsOneWidget);
     expect(find.text('OpenCode Mobile'), findsNothing);
+    expect(controller.directory, '/tmp/runtime-probe');
+    expect(controller.locations, [
+      (directory: '/tmp/runtime-probe', workspace: null),
+    ]);
   });
 }
