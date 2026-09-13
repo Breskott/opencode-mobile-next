@@ -7,6 +7,8 @@ import android.graphics.drawable.Icon
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
+import androidx.core.service.quicksettings.PendingIntentActivityWrapper
+import androidx.core.service.quicksettings.TileServiceCompat
 import org.json.JSONObject
 
 /**
@@ -90,19 +92,16 @@ class AttentionTileService : TileService() {
                 Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra(MainActivity.EXTRA_LAUNCH_ACTION, LAUNCH_ACTION_ACTIVITY)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startActivityAndCollapse(
-                PendingIntent.getActivity(
-                    this,
-                    0,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
+        TileServiceCompat.startActivityAndCollapse(
+            this,
+            PendingIntentActivityWrapper(
+                this,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT,
+                false // The launch intent is immutable on every supported API.
             )
-        } else {
-            @Suppress("DEPRECATION")
-            startActivityAndCollapse(intent)
-        }
+        )
     }
 
     companion object {
