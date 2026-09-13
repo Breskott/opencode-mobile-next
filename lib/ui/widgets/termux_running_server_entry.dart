@@ -59,6 +59,7 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
   bool _checking = false;
   bool _recheckQueued = false;
   int _epoch = 0;
+  TermuxDiscoveryCancellation? _observation;
 
   @override
   void initState() {
@@ -81,6 +82,8 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _epoch++;
+    _observation?.cancel();
     super.dispose();
   }
 
@@ -96,7 +99,11 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
     }
     final epoch = ++_epoch;
     setState(() => _checking = true);
-    final result = await detectTermuxRunningServer(profiles: widget.profiles);
+    final observation = TermuxDiscoveryCancellation();
+    _observation = observation;
+    final result = await detectTermuxRunningServer(
+      profiles: widget.profiles, cancellation: observation,
+    );
     if (!mounted || epoch != _epoch) return;
     setState(() {
       _server = result;
@@ -193,8 +200,11 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
                           // A tap revalidates the observation before selecting
                           // a profile; stale discovery must not switch runtime.
                           setState(() => _checking = true);
+                          final observation = TermuxDiscoveryCancellation();
+                          _observation = observation;
                           final fresh = await detectTermuxRunningServer(
                             profiles: widget.profiles,
+                            cancellation: observation,
                           );
                           if (!mounted) return;
                           setState(() {

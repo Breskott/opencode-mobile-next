@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -10,46 +11,115 @@ import 'profiles.dart';
 
 /// Test seam for this scoped, non-redirecting loopback health check.
 @visibleForTesting
-ServerProbe termuxRunningServerProbe = _probeLoopback;
+TermuxRunningServerProbe termuxRunningServerProbe = _probeLoopback;
+
+typedef TermuxRunningServerProbe = Future<ServerProbeResult> Function({
+  required String baseUrl,
+  String? username,
+  String? password,
+  TermuxDiscoveryCancellation? cancellation,
+});
+
+/// Owns this screen observation's deadlines and in-flight HTTP request.
+/// Native method-channel calls cannot be recalled, but late replies are ignored
+/// and never initiate the next discovery stage after cancellation.
+class TermuxDiscoveryCancellation {
+  bool _cancelled = false;
+  final _callbacks = <VoidCallback>{};
+
+  void cancel() {
+    if (_cancelled) return;
+    _cancelled = true;
+    final callbacks = _callbacks.toList();
+    _callbacks.clear();
+    for (final callback in callbacks) {
+      callback();
+    }
+  }
+
+  void _add(VoidCallback callback) {
+    if (_cancelled) {
+      callback();
+    } else {
+      _callbacks.add(callback);
+    }
+  }
+
+  Future<T> wait<T>(Future<T> Function() start, Duration timeout) async {
+    if (_cancelled) throw const _DiscoveryCancelled();
+    final completer = Completer<T>();
+    final timer = Timer(timeout, () {
+      if (!completer.isCompleted) {
+        completer.completeError(TimeoutException('Termux discovery timed out'));
+      }
+    });
+    void abort() {
+      timer.cancel();
+      if (!completer.isCompleted) {
+        completer.completeError(const _DiscoveryCancelled());
+      }
+    }
+    _add(abort);
+    try {
+      // Start through Future.sync so a synchronous plugin/probe failure follows
+      // the same cleanup path as an asynchronous failure.
+      unawaited(Future<T>.sync(start).then<void>((value) {
+        if (!completer.isCompleted) completer.complete(value);
+      }, onError: (Object error, StackTrace stack) {
+        if (!completer.isCompleted) completer.completeError(error, stack);
+      }));
+      return await completer.future;
+    } finally {
+      timer.cancel();
+      _callbacks.remove(abort);
+    }
+  }
+}
+
+class _DiscoveryCancelled implements Exception {
+  const _DiscoveryCancelled();
+}
 
 Future<ServerProbeResult> _probeLoopback({
   required String baseUrl,
   String? username,
   String? password,
+  TermuxDiscoveryCancellation? cancellation,
 }) async {
-  final dio = Dio(
-    BaseOptions(
-      // Deliberately ignore supplied addresses: discovery cannot become a scan.
-      baseUrl: TermuxBridge.managedServerUrl,
-      followRedirects: false,
-      connectTimeout: const Duration(seconds: 3),
-      receiveTimeout: const Duration(seconds: 3),
-      validateStatus: (status) => status != null,
-      headers: {
-        if (password != null && password.isNotEmpty)
-          'Authorization':
-              'Basic ${base64Encode(utf8.encode('${username == null || username.isEmpty ? 'opencode' : username}:$password'))}',
-      },
-    ),
-  );
+  final dio = Dio(BaseOptions(
+    // Deliberately ignore supplied addresses: discovery cannot become a scan.
+    baseUrl: TermuxBridge.managedServerUrl,
+    followRedirects: false,
+    connectTimeout: const Duration(seconds: 3),
+    receiveTimeout: const Duration(seconds: 3),
+    validateStatus: (status) => status != null,
+    headers: {
+      if (password != null && password.isNotEmpty)
+        'Authorization': 'Basic ${base64Encode(utf8.encode('${username == null || username.isEmpty ? 'opencode' : username}:$password'))}',
+    },
+  ));
+  final cancelToken = CancelToken();
+  void cancelRequest() {
+    cancelToken.cancel('Discovery disposed');
+    dio.close(force: true);
+  }
+  cancellation?._add(cancelRequest);
   try {
     for (final path in ['/api/health', '/global/health']) {
-      final response = await dio.get<Object?>(path);
+      final response = await dio.get<Object?>(path, cancelToken: cancelToken);
       if (response.statusCode == 401) {
         return const ServerProbeResult.failure(
-          'Authentication required',
-          needsPassword: true,
+          'Authentication required', needsPassword: true,
         );
       }
       final body = response.data;
-      if (response.statusCode == 200 &&
-          body is Map &&
-          body['healthy'] == true) {
+      if (response.statusCode == 200 && body is Map && body['healthy'] == true) {
         return ServerProbeResult.success(body['version']?.toString());
       }
     }
     return const ServerProbeResult.failure('No healthy OpenCode response');
   } finally {
+    cancellation?._callbacks.remove(cancelRequest);
     dio.close(force: true);
   }
 }
@@ -136,8 +206,9 @@ class TermuxRunningServer {
   bool get isRunning => state == TermuxRunningServerState.running;
 
   /// The profile generation that speaks to [runtime].
-  ServerFlavor get flavor =>
-      runtime == TermuxRuntime.openCode2 ? ServerFlavor.v2 : ServerFlavor.v1;
+  ServerFlavor get flavor => runtime == TermuxRuntime.openCode2
+      ? ServerFlavor.v2
+      : ServerFlavor.v1;
 }
 
 /// Reads whether the app-managed OpenCode server is running in Termux.
@@ -153,70 +224,76 @@ class TermuxRunningServer {
 Future<TermuxRunningServer> detectTermuxRunningServer({
   Iterable<ServerProfile> profiles = const [],
   DateTime Function() now = DateTime.now,
+  TermuxDiscoveryCancellation? cancellation,
 }) async {
-  if (!platformCapabilities.supportsTermux) {
-    return const TermuxRunningServer.unsupported();
-  }
-  TermuxCapabilities capabilities;
+  final observation = cancellation ?? TermuxDiscoveryCancellation();
   try {
-    capabilities = await TermuxBridge.capabilities().timeout(
-      const Duration(seconds: 5),
-    );
-  } catch (_) {
-    return const TermuxRunningServer.unavailable();
-  }
-  if (!capabilities.platformSupported || !capabilities.installed) {
-    return const TermuxRunningServer.absent();
-  }
-  if (!capabilities.serviceAvailable ||
-      !capabilities.protocolSupported ||
-      !capabilities.permissionGranted) {
-    return const TermuxRunningServer.denied();
-  }
-  TermuxSetupStatus status;
-  try {
-    status = await TermuxBridge.status().timeout(const Duration(seconds: 8));
-  } catch (_) {
-    return const TermuxRunningServer.unavailable();
-  }
-  if (status.isReady &&
-      !status.switchPending &&
-      status.port == TermuxBridge.managedServerPort) {
-    final observed = TermuxRunningServer.running(
-      runtime: status.runtime,
-      version:
-          RegExp(
-            r'^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$',
-          ).hasMatch(status.version.trim())
-          ? status.version.trim()
-          : '',
-      observedAt: now(),
-    );
-    final profile = savedProfileForTermuxServer(profiles, observed);
-    try {
-      // Probe only the app-authored loopback address. Never trust a persisted
-      // ready phase alone, scan ports, follow arbitrary profile URLs, or log
-      // credentials. A password challenge confirms a live server but leaves
-      // authentication to the explicit Connect flow.
-      final health = await termuxRunningServerProbe(
-        baseUrl: TermuxBridge.managedServerUrl,
-        username: profile?.username,
-        password: profile?.password,
-      ).timeout(const Duration(seconds: 10));
-      if (health.ok || health.needsPassword) {
-        return TermuxRunningServer.running(
-          runtime: observed.runtime!,
-          version: observed.version,
-          observedAt: now(),
-          needsCredentials: health.needsPassword,
-        );
-      }
-    } catch (_) {
-      // Transport, parse and plugin failures must not escape into the UI.
+    if (!platformCapabilities.supportsTermux) {
+      return const TermuxRunningServer.unsupported();
     }
-    return const TermuxRunningServer.unavailable();
+    TermuxCapabilities capabilities;
+    try {
+      capabilities = await observation.wait(
+        TermuxBridge.capabilities, const Duration(seconds: 5),
+      );
+    } catch (_) {
+      return const TermuxRunningServer.unavailable();
+    }
+    if (!capabilities.platformSupported || !capabilities.installed) {
+      return const TermuxRunningServer.absent();
+    }
+    if (!capabilities.serviceAvailable ||
+        !capabilities.protocolSupported ||
+        !capabilities.permissionGranted) {
+      return const TermuxRunningServer.denied();
+    }
+    TermuxSetupStatus status;
+    try {
+      status = await observation.wait(
+        TermuxBridge.status, const Duration(seconds: 8),
+      );
+    } catch (_) {
+      return const TermuxRunningServer.unavailable();
+    }
+    if (status.isReady &&
+        !status.switchPending &&
+        status.port == TermuxBridge.managedServerPort) {
+      final observed = TermuxRunningServer.running(
+        runtime: status.runtime,
+        version: RegExp(r'^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$')
+            .hasMatch(status.version.trim()) ? status.version.trim() : '',
+        observedAt: now(),
+      );
+      final profile = savedProfileForTermuxServer(profiles, observed);
+      try {
+        // Probe only the app-authored loopback address. Never trust a persisted
+        // ready phase alone, scan ports, follow arbitrary profile URLs, or log
+        // credentials. A password challenge confirms a live server but leaves
+        // authentication to the explicit Connect flow.
+        final health = await observation.wait(
+          () => termuxRunningServerProbe(
+            baseUrl: TermuxBridge.managedServerUrl,
+            username: profile?.username,
+            password: profile?.password,
+            cancellation: observation,
+          ),
+          const Duration(seconds: 10),
+        );
+        if (health.ok || health.needsPassword) {
+          return TermuxRunningServer.running(
+            runtime: observed.runtime!, version: observed.version,
+            observedAt: now(), needsCredentials: health.needsPassword,
+          );
+        }
+      } catch (_) {
+        // Transport, parse and plugin failures must not escape into the UI.
+      }
+      return const TermuxRunningServer.unavailable();
+    }
+    return TermuxRunningServer.absent(phase: status.phase);
+  } finally {
+    observation.cancel();
   }
-  return TermuxRunningServer.absent(phase: status.phase);
 }
 
 /// The saved profile that already holds the running server's credential, or

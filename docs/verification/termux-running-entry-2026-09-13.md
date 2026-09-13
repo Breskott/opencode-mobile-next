@@ -31,3 +31,9 @@ flutter test --concurrency=1 --dart-define=TERMUX_ENTRY_CAPTURE_DIR=/tmp/termux-
 ```
 
 Tests/captures are authored but not yet executed. Real Termux permission, manager and authenticated-server behavior remains a coordinator device check; no fake screenshot is claimed as device verification. No server or credential was accessed during implementation.
+
+## Discovery lifetime correction
+
+Coordinator integration ran the initial 15 running-server tests successfully but exposed pending five-second discovery timers in all nine existing profile-editor tests. Discovery now owns cancellable deadlines instead of `Future.timeout`: widget disposal cancels them immediately, closes the production Dio request, and prevents late capability/status replies from starting another stage. Native method-channel operations already submitted cannot be recalled; they remain read-only and their late replies are ignored.
+
+Six new regression cases dispose while capabilities, status, or health are pending, each both without a reply and with a late reply. The no-reply cases deliberately leave the fake platform future unresolved, allowing Flutter's pending-timer invariant to verify cleanup. Editor fixtures now explicitly report that Termux is absent. This correction has source/diff validation only; coordinator must rerun the 21 running-entry and nine editor tests serially.

@@ -96,6 +96,21 @@ Future<void> _openEditor(WidgetTester tester) async {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  const termuxChannel = MethodChannel('oc/termux');
+  setUp(() {
+    // These editor tests have no local Termux installation. Discovery must
+    // receive a concrete platform answer instead of an unanswered channel.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(termuxChannel, (call) async {
+          expect(call.method, 'getCapabilities');
+          return {'installed': false};
+        });
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(termuxChannel, null);
+  });
   testWidgets(
     'Tailscale reaches existing authentication, retains draft through handoff, and retries a failed probe',
     (tester) async {
