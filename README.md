@@ -11,24 +11,23 @@ changes from your Android phone. OpenCode Mobile connects to
 [OpenCode](https://opencode.ai) running on your computer or on the phone
 itself through Termux.
 
-**[Android release history](https://github.com/Eslamasabry/opencode-mobile-next/releases)**
+**[Download Android APK — 1.0.43+49](https://github.com/Eslamasabry/opencode-mobile-next/releases/download/v1.0.43%2B49/opencode-mobile-1.0.43%2B49.apk)**
+· [Release notes](https://github.com/Eslamasabry/opencode-mobile-next/releases/tag/v1.0.43%2B49)
 · [Set up your connection](#getting-started)
-· [Watch the demo](video/public/opencode-mobile-demo.mp4)
+· [See the current UI](#screenshots)
 · [Get help](SUPPORT.md)
 
-> **Release status (September 7, 2026):**
-> [1.0.34+35 is marked BROKEN](https://github.com/Eslamasabry/opencode-mobile-next/releases/tag/v1.0.34%2B35):
-> a connected server with no opened projects can hide access to existing sessions.
-> The focused **1.0.35+36 CI APK** was delivered with the same stable CI signer;
-> [build and verification evidence](docs/verification/empty-project-session-recovery-2026-09-07.md).
-> Current `dev` source declares **1.0.36+37 and is unreleased**. Its changes are
-> not included in that earlier APK. This source batch does not build or publish an APK.
-
-> **Public alpha.** Android is the primary target; desktop builds are experimental.
-> OpenCode Mobile is an independent community project. It is not built,
-> maintained, endorsed by, or affiliated with the official OpenCode team.
-> It is built heavily with AI assistance. See [compatibility](#compatibility) and the release notes
-> before installing. Report problems from **More → Report a bug** in the app.
+> **Stable Android release: 1.0.43+49 (September 13, 2026).**
+> Primary actions are easier to find across workspace, chat and files. A detected
+> Termux server offers a visible connection action, and completed setup separates
+> server readiness from app connection progress, with cancellation and retry.
+> [Release verification](docs/verification/stable-1.0.43-2026-09-13.md).
+>
+> Android is the supported release platform. Web support is in active development;
+> desktop and AI Team / Gas City remain experimental.
+> OpenCode Mobile is an independent community project, built with substantial AI
+> assistance. It is not affiliated with or endorsed by the official OpenCode team.
+> Report problems from **More → Tools & help → Report a bug** in the app.
 
 ## What it is like to use
 
@@ -94,9 +93,12 @@ home-screen widget that shows your sessions.
 
 ## Screenshots
 
-| Welcome | Streaming answer | Permission card | Diff |
+Current production widgets with sample data; these screenshots illustrate the UI,
+not a live model run or physical-phone storage cleanup.
+
+| Workspace | Chat | Files | Phone setup |
 | --- | --- | --- | --- |
-| ![Welcome](video/public/shots/01-welcome.png) | ![Chat, answer streaming](video/public/shots/03-chat-streaming.png) | ![Permission card above the composer](video/public/shots/04-permission-card.png) | ![Diff view](video/public/shots/05-diff.png) |
+| ![Workspace with recent conversations](docs/qa/calm-workspace-2026-09-13/workspace-light-390-1.0x.png) | ![Conversation with extra controls disclosed on demand](docs/qa/calm-chat-2026-09-13/light-idle.png) | ![Project file browser](docs/qa/calm-files/after/files-light-2x-populated.png) | ![Ready phone server with Continue to app action](docs/qa/termux-ready-handoff/390-continue.png) |
 
 ### Model selection on Android
 
@@ -113,7 +115,7 @@ to a local OpenCode server.
 | --- | --- | --- |
 | ![Linux desktop workspace with the session list](video/public/shots/desktop-01-workspace.png) | ![Linux desktop chat with the permission card above the composer](video/public/shots/desktop-02-chat-permission.png) | ![Linux desktop review workspace, split diff](video/public/shots/desktop-05-review.png) |
 
-**Full demo (51 s, 1080p, with sound):** [opencode-mobile-demo.mp4](video/public/opencode-mobile-demo.mp4). Phone footage uses production widgets with sample data; the Linux desktop scene was recorded live.
+**Earlier UI demo (51 s, 1080p, with sound; predates 1.0.43):** [opencode-mobile-demo.mp4](video/public/opencode-mobile-demo.mp4). Phone footage uses production widgets with sample data; the Linux desktop scene was recorded live.
 
 ![Demo](video/public/demo.gif)
 
@@ -128,9 +130,9 @@ and provider do the work.
 
 ### Connect to your computer
 
-1. **Install a verified APK matching your installed signer.** Check the
-   [release status above](#opencode-mobile); do not choose the broken 1.0.34+35
-   release. Android warns about sideloading outside the Play Store.
+1. **Download the [stable Android APK](https://github.com/Eslamasabry/opencode-mobile-next/releases/download/v1.0.43%2B49/opencode-mobile-1.0.43%2B49.apk).**
+   For an existing installation, check the signer in **Settings → About** and
+   choose a matching update. Android warns about sideloading outside the Play Store.
 2. **With OpenCode 2 installed on your computer, start pairing.**
    ```bash
    opencode2 pair
@@ -165,13 +167,15 @@ the server as a service on a Linux box are all covered in
 
 ## Compatibility
 
-| Surface | Public-alpha status |
+| Surface | Release status |
 |---|---|
-| Android | Primary target; arm64 sideload APK |
+| Android | Stable 1.0.43+49; arm64 sideload APK |
 | OpenCode 1 | Supported against the current 1.18.x line |
 | OpenCode 2 | Beta support targets the captured `0.0.0-beta-18600` contract; newer betas may differ |
 | Linux x64 | Experimental; CI-built tarball and Debian package |
 | Windows x64 | Experimental; CI artifact, no installer |
+| Web | Active development; not included in this Android release |
+| AI Team / Gas City | Experimental |
 | iOS / macOS | Not available |
 
 The client connects directly to a server you choose. It does not provide a
@@ -179,29 +183,33 @@ hosted OpenCode account or model subscription.
 
 ## Where things stand
 
-This is an alpha. Here is what that means, plainly:
+The stable release covers Android. Platform and server support have these limits:
 
-- **Android is the real target.** It is tested on devices and emulators, with
-  more than 1,200 automated tests behind it.
+- **Android is the supported target.** The exact release candidate passed the
+  full local and CI Flutter suites: 3,805 tests passed and 12 were skipped. Both
+  maintainer and public APK upgrades preserved the saved profile and draft on
+  Android emulators. This is not a claim of physical-phone Termux coverage.
 - **The Linux build has now been run, on a virtual display.** It was launched
   on Xvfb at 1440x900 against a live OpenCode server and captured; see the
   [Linux desktop screenshots](#linux-desktop-screenshots) above. Nobody has
   run the Windows build yet. If you try it, you are the first. Please tell us
   what happened.
-- **English only** for now. The plan to change that is written down in
+- **English and Arabic** are available. Localization work is tracked in
   [docs/localization-todo.md](docs/localization-todo.md).
 - **Public releases and CI artifacts have different signing histories.**
   The historical `v1.0.33+34` public signer was
   `8F51FBCA8101DE600C0E878DF7E2CC65DFA29ADD58A1771D776908349CD82053`;
-  its private key was lost. The broken `v1.0.34+35` public release used
+  its private key was lost. Current public APKs retain the certificate
+  introduced in `v1.0.34+35`:
   `842284B27AA297FB74CF831779FD16498517E1BC2104451459FEC2EA7AC11D1C`.
-  The maintainer's installed app and delivered `1.0.35+36` update use the stable
+  The maintainer's installed app and delivered `1.0.43+49` update use the stable
   CI signer **`2D010C2103CB2F78ABAACA690EAD4D45F8003A6C0A02082CD2A2AE62FD18D0EC`**.
   Replacement APKs for that installation must always retain this signer; never
   substitute or rotate it. Android updates in place require matching package ID
   and signer. Verify **Settings → About** before choosing an update.
 - **Automated checks run in GitHub Actions** on `master` and `dev`. Android CI
-  uploads a short-lived, non-production APK to prove the release build compiles.
+  uploads a short-lived maintainer APK. Public downloads are built and verified
+  separately against the public signer before publication.
 
 ## Your data
 
