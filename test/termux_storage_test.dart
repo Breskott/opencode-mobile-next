@@ -77,6 +77,7 @@ _Phone _phoneWithCaches() {
   phone.file(r, 'root/.cache/d');
   phone.file(r, 'root/.dartServer/e');
   phone.file(phone.home, '.npm/f');
+  phone.file(phone.home, '.npm/_cacache/content-v2/cache');
   phone.file(phone.home, '.cache/g');
   phone.file(r, 'tmp/opencode/scratch-1/h');
   phone.file(r, 'tmp/opencode/scratch-2/i');
@@ -135,18 +136,26 @@ void main() {
         'ai_team',
         'opencode',
         'projects',
+        'shared_caches',
       ]);
       expect(_relative(phone, cats['build_caches']!.paths), {
         '$rfs/root/.gradle/caches',
+        '/home/.npm/_cacache',
+      });
+      expect(cats['build_caches']!.canClean, isTrue);
+      expect(cats['build_caches']!.bytes, greaterThanOrEqualTo(2 * 2048));
+      for (final key in cats.keys.where((key) => key != 'build_caches')) {
+        expect(cats[key]!.deletable, isFalse, reason: key);
+        expect(cats[key]!.canClean, isFalse, reason: key);
+      }
+      expect(_relative(phone, cats['shared_caches']!.paths), {
         '$rfs/root/.gradle/wrapper',
         '$rfs/root/.pub-cache',
         '$rfs/root/.cache',
         '$rfs/root/.dartServer',
-        '/home/.npm',
+        '/home/.npm/f',
         '/home/.cache',
       });
-      expect(cats['build_caches']!.deletable, isTrue);
-      expect(cats['build_caches']!.bytes, greaterThanOrEqualTo(7 * 2048));
       expect(_relative(phone, cats['agent_scratch']!.paths), {
         '$rfs/tmp/opencode/scratch-1',
         '$rfs/tmp/opencode/scratch-2',
@@ -209,6 +218,11 @@ void main() {
       expect(_relative(phone, _byKey(report)['build_caches']!.paths), {
         '/prefix/var/lib/proot-distro/installed-rootfs/opencode-ubuntu/root/.gradle/caches',
       });
+      final result = TermuxStorageCleanResult.parse(
+        phone.run(['storage-clean', 'build_caches']).stdout as String,
+      );
+      expect(result.removed, hasLength(1));
+      expect(result.refused, isEmpty);
     });
 
     test('a cancel file stops the scan before it measures anything', () {
@@ -285,96 +299,183 @@ void main() {
         isTrue,
       );
       expect(File('$r/usr/lib/jvm/l').existsSync(), isTrue);
-      // A second clean of the same category is a no-op.
+      // A second clean must rescan instead of trusting pre-clean measurements.
       final again = TermuxStorageCleanResult.parse(
         phone.run(['storage-clean', 'build_caches']).stdout as String,
       );
       expect(again.freedBytes, 0);
       expect(again.removed, isEmpty);
+      expect(again.rescanRequired, isTrue);
     });
 
-    test('project build outputs go, project sources stay', () {
+    test('protected inventory categories refuse even direct calls', () {
       final phone = _phoneWithCaches();
       _scan(phone);
-      final result = TermuxStorageCleanResult.parse(
-        phone.run(['storage-clean', 'project_build_outputs']).stdout as String,
-      );
-      expect(result.refused, isEmpty);
-      expect(result.removed, hasLength(4));
-      final r = phone.rootfs.path;
-      expect(
-        Directory('$r/root/projects/IPTV_King/build').existsSync(),
-        isFalse,
-      );
-      expect(
-        Directory('$r/root/projects/IPTV_King/node_modules').existsSync(),
-        isFalse,
-      );
-      expect(
-        File('$r/root/projects/IPTV_King/lib/main.dart').existsSync(),
-        isTrue,
-      );
-      expect(File('$r/root/projects/notes/README.md').existsSync(), isTrue);
-    });
-
-    test('agent scratch empties Termux tmp instead of removing it', () {
-      final phone = _phoneWithCaches();
-      _scan(phone);
-      final result = TermuxStorageCleanResult.parse(
-        phone.run(['storage-clean', 'agent_scratch']).stdout as String,
-      );
-      expect(result.removed, hasLength(3));
-      expect(Directory('${phone.prefix.path}/tmp').existsSync(), isTrue);
-      expect(Directory('${phone.prefix.path}/tmp').listSync(), isEmpty);
-      expect(
-        Directory('${phone.rootfs.path}/tmp/opencode/scratch-1').existsSync(),
-        isFalse,
-      );
-      // The toolchain copies under /tmp/opencode belong to another category.
-      expect(
-        Directory('${phone.rootfs.path}/tmp/opencode/flutter').existsSync(),
-        isTrue,
-      );
-    });
-
-    test('refuses a category a live process is using, naming it', () {
-      final phone = _phoneWithCaches();
-      _scan(phone);
-      phone.processes(
-        '  300     1  1.0 02:00:00 300000 7200 java java -Xmx2g org.gradle.launcher.daemon.bootstrap.GradleDaemon 8.5\n'
-        '  400     1  0.0 00:00:10 20000 1000 gc /prefix/bin/gc start\n'
-        '  401   400  0.0 00:00:05 40000 900 dolt dolt sql-server\n'
-        '  402   400  0.5 00:00:07 50000 800 opencode opencode acp\n',
-      );
       for (final category in [
-        'build_caches',
-        'project_build_outputs',
-        'toolchains',
+        'project_build_outputs', 'agent_scratch', 'toolchains', 'ai_team',
+        'shared_caches',
       ]) {
         final result = TermuxStorageCleanResult.parse(
           phone.run(['storage-clean', category]).stdout as String,
         );
-        expect(result.inUse, isNotNull, reason: category);
-        expect(result.inUse!.processes, ['java'], reason: category);
         expect(result.removed, isEmpty);
+        expect(result.refused.single.reason, 'never_deletable');
       }
-      final team = TermuxStorageCleanResult.parse(
-        phone.run(['storage-clean', 'ai_team']).stdout as String,
+      for (final path in [
+        '${phone.rootfs.path}/root/projects/IPTV_King/build/app.apk',
+        '${phone.rootfs.path}/root/projects/IPTV_King/node_modules/z',
+        '${phone.rootfs.path}/tmp/opencode/scratch-1/h',
+        '${phone.prefix.path}/tmp/j',
+        '${phone.home.path}/.cache/g',
+        '${phone.home.path}/.oc/aiteam/city/rig',
+        '${phone.rootfs.path}/usr/lib/jvm/l',
+      ]) {
+        expect(File(path).existsSync(), isTrue, reason: path);
+      }
+    });
+
+    test('refuses caches while a build is running', () {
+      final phone = _phoneWithCaches();
+      _scan(phone);
+      phone.processes(
+        '300 1 1.0 02:00:00 300000 7200 java java org.gradle.launcher.daemon.bootstrap.GradleDaemon\n',
       );
-      expect(team.inUse!.processes, containsAll(['gc', 'dolt']));
-      final scratch = TermuxStorageCleanResult.parse(
-        phone.run(['storage-clean', 'agent_scratch']).stdout as String,
+      final result = TermuxStorageCleanResult.parse(
+        phone.run(['storage-clean', 'build_caches']).stdout as String,
       );
-      expect(scratch.inUse!.processes, ['opencode']);
-      // Nothing was touched.
-      expect(
-        File('${phone.rootfs.path}/root/.gradle/caches/a.jar').existsSync(),
-        isTrue,
+      expect(result.inUse!.processes, ['java']);
+      expect(result.removed, isEmpty);
+      expect(File('${phone.rootfs.path}/root/.gradle/caches/a.jar').existsSync(), isTrue);
+    });
+
+    test('plain Termux without Ubuntu only cleans its npm content cache', () {
+      final phone = _phoneWithCaches();
+      phone.rootfs.deleteSync(recursive: true);
+      final report = _scan(phone);
+      expect(_relative(phone, _byKey(report)['build_caches']!.paths), {'/home/.npm/_cacache'});
+      final result = TermuxStorageCleanResult.parse(
+        phone.run(['storage-clean', 'build_caches']).stdout as String,
       );
-      expect(
-        File('${phone.home.path}/.oc/aiteam/city/rig').existsSync(),
-        isTrue,
+      expect(result.removed, hasLength(1));
+      expect(File('${phone.home.path}/.npm/f').existsSync(), isTrue);
+      expect(File('${phone.home.path}/.cache/g').existsSync(), isTrue);
+    });
+
+    test('active operation blocks cleanup and scanning', () {
+      final phone = _phoneWithCaches();
+      _scan(phone);
+      final lock = Directory('${phone.ocDir.path}/storage-operation.lock')..createSync();
+      File('${lock.path}/pid').writeAsStringSync('$pid\n');
+      expect(phone.run(['storage-clean', 'build_caches']).exitCode, 75);
+      expect(phone.run(['storage-scan']).exitCode, 75);
+      expect(File('${phone.rootfs.path}/root/.gradle/caches/a.jar').existsSync(), isTrue);
+    });
+
+    test('wrong-owner cache refuses instead of removing it', () {
+      final phone = _phoneWithCaches();
+      _scan(phone);
+      final stub = File('${phone.bin.path}/stat')..writeAsStringSync('#!/bin/bash\nprintf 99999999\n');
+      Process.runSync('chmod', ['+x', stub.path]);
+      final result = TermuxStorageCleanResult.parse(
+        phone.run(['storage-clean', 'build_caches']).stdout as String,
       );
+      expect(result.removed, isEmpty);
+      expect(result.freedBytes, 0);
+      expect(result.refused, hasLength(2));
+      expect(File('${phone.rootfs.path}/root/.gradle/caches/a.jar').existsSync(), isTrue);
+    });
+
+    test('legacy reports require a fresh scan', () {
+      final phone = _phoneWithCaches();
+      _scan(phone);
+      final file = File('${phone.ocDir.path}/storage-scan.json');
+      file.writeAsStringSync(file.readAsStringSync().replaceAll(',"cleanup_policy":2,"stale":false', ''));
+      final result = TermuxStorageCleanResult.parse(
+        phone.run(['storage-clean', 'build_caches']).stdout as String,
+      );
+      expect(result.rescanRequired, isTrue);
+      expect(result.removed, isEmpty);
+      expect(TermuxStorageReport.parse(file.readAsStringSync()).isStale, isTrue);
+    });
+
+    test('forged cache entries cannot remove broad or project paths', () {
+      final phone = _phoneWithCaches();
+      _scan(phone);
+      final protected = [
+        '${phone.home.path}/.cache',
+        '${phone.prefix.path}/tmp',
+        '${phone.home.path}/.oc/aiteam',
+        '${phone.rootfs.path}/root/projects/IPTV_King/build',
+        '${phone.rootfs.path}/root/.pub-cache',
+        '${phone.rootfs.path}/root/.gradle/wrapper',
+        '${phone.rootfs.path}/usr/lib/jvm',
+      ];
+      final manifest = File('${phone.ocDir.path}/storage-scan.paths');
+      manifest.writeAsStringSync(protected.map((path) => 'build_caches\ttrue\t999999\t$path\n').join());
+      final result = TermuxStorageCleanResult.parse(
+        phone.run(['storage-clean', 'build_caches']).stdout as String,
+      );
+      expect(result.freedBytes, 0);
+      expect(result.removed, isEmpty);
+      expect(result.refused, hasLength(protected.length));
+      for (final path in protected) {
+        expect(Directory(path).existsSync(), isTrue, reason: path);
+        expect(manifest.readAsStringSync(), contains(path));
+      }
+    });
+
+    test('replaced cache ancestor symlink is refused and retained', () {
+      final phone = _phoneWithCaches();
+      _scan(phone);
+      final gradle = Directory('${phone.rootfs.path}/root/.gradle');
+      final moved = '${phone.root.path}/personal-gradle';
+      gradle.renameSync(moved);
+      Link(gradle.path).createSync(moved);
+      final result = TermuxStorageCleanResult.parse(
+        phone.run(['storage-clean', 'build_caches']).stdout as String,
+      );
+      expect(result.refused.single.reason, 'protected');
+      expect(File('$moved/caches/a.jar').existsSync(), isTrue);
+      expect(File('${phone.ocDir.path}/storage-scan.paths').readAsStringSync(), contains('${gradle.path}/caches'));
+    });
+
+    test('freed bytes use current measurements and invalidate persisted report', () {
+      final phone = _phoneWithCaches();
+      final report = _scan(phone);
+      phone.file(phone.rootfs, 'root/.gradle/caches/new.jar', bytes: 9000);
+      final result = TermuxStorageCleanResult.parse(
+        phone.run(['storage-clean', 'build_caches']).stdout as String,
+      );
+      expect(result.freedBytes, greaterThan(report.deletableBytes));
+      expect(result.rescanRequired, isTrue);
+      final status = TermuxStorageScanStatus.parse(phone.run(['storage-status']).stdout as String);
+      expect(status.state, TermuxStorageScanState.stale);
+      expect(status.report!.isStale, isTrue);
+      expect(TermuxStorageSummary.parse(phone.run(['storage-summary']).stdout as String).totalBytes, isNull);
+      expect(_scan(phone).isStale, isFalse);
+    });
+
+    test('partial removal counts observed shrinkage and preserves refused entry', () {
+      final phone = _phoneWithCaches();
+      phone.file(phone.rootfs, 'root/.gradle/caches/keep.jar', bytes: 4000);
+      _scan(phone);
+      final stub = File('${phone.bin.path}/rm')..writeAsStringSync(
+        '#!/bin/bash\n'
+        'for arg in "\$@"; do\n'
+        '  case "\$arg" in */.gradle/caches) /bin/rm -- "\$arg/a.jar"; exit 1 ;; esac\n'
+        'done\n'
+        'exec /bin/rm "\$@"\n',
+      );
+      Process.runSync('chmod', ['+x', stub.path]);
+      final result = TermuxStorageCleanResult.parse(
+        phone.run(['storage-clean', 'build_caches']).stdout as String,
+      );
+      expect(result.refused.single.reason, 'remove_failed');
+      expect(result.freedBytes, greaterThan(0));
+      expect(result.removed.any((p) => p.path.endsWith('/.gradle/caches')), isFalse);
+      expect(File('${phone.rootfs.path}/root/.gradle/caches/keep.jar').existsSync(), isTrue);
+      expect(File('${phone.ocDir.path}/storage-scan.paths').readAsStringSync(), contains('/.gradle/caches'));
+      expect(result.rescanRequired, isTrue);
     });
 
     test('never offers OpenCode itself or project sources', () {
@@ -514,7 +615,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 60));
       await tester.pump(const Duration(milliseconds: 60));
       expect(find.byKey(const Key('termux-storage-total')), findsOneWidget);
-      expect(find.text('46 GB used by the phone server'), findsOneWidget);
+      expect(find.text('46 GB measured in Termux'), findsOneWidget);
       expect(find.text('Build caches'), findsOneWidget);
       expect(find.text('Projects (your files)'), findsWidgets);
       expect(
@@ -549,7 +650,7 @@ void main() {
       expect(find.text('What Clean removes'), findsOneWidget);
       expect(find.text('ubuntu:/root/.gradle/caches'), findsOneWidget);
       expect(
-        find.textContaining('the next build will download these again'),
+        find.textContaining('Downloads may be needed again'),
         findsOneWidget,
       );
       await tester.ensureVisible(
@@ -571,63 +672,61 @@ void main() {
       );
       await tester.pumpAndSettle();
       fixture.cleanResult = jsonEncode({
+        'rescan_required': true,
         'freed_bytes': 8700000000,
         'removed': [
           {'path': _rootfs('/root/.gradle/caches'), 'bytes': 8000000000},
-          {'path': _rootfs('/root/.gradle/wrapper'), 'bytes': 700000000},
+          {'path': '/data/data/com.termux/files/home/.npm/_cacache', 'bytes': 700000000},
         ],
         'refused': <Object>[],
       });
       await tester.tap(find.byKey(const Key('termux-storage-confirm-remove')));
       await tester.pumpAndSettle();
       expect(fixture.cleans, ['build_caches']);
-      expect(find.text('Freed 8.1 GB'), findsOneWidget);
-      // The category and the total shrink by what went.
-      expect(find.text('37.9 GB used by the phone server'), findsOneWidget);
-      expect(find.text('ubuntu:/root/.gradle/caches'), findsNothing);
+      expect(find.text('Removed 8.1 GB'), findsOneWidget);
+      // Keep the previous scan visibly stale until it is measured again.
+      expect(find.text('46 GB measured in Termux'), findsOneWidget);
+      expect(find.textContaining('Scan again before cleaning more'), findsOneWidget);
+      expect(tester.widget<FilledButton>(find.byKey(const Key('termux-storage-clean-build_caches'))).onPressed, isNull);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets(
-      'a small category cleans in one tap; in-use refusals name the process',
-      (tester) async {
-        fixture.state = 'done';
-        fixture.report = _fixtureReport();
-        await fixture.mount(tester);
-        await tester.pump(const Duration(milliseconds: 60));
-        await tester.tap(find.byKey(const Key('termux-storage-cat-ai_team')));
-        await tester.pumpAndSettle();
-        fixture.cleanResult = jsonEncode({
-          'freed_bytes': 0,
-          'removed': <Object>[],
-          'refused': [
-            {
-              'path': '',
-              'reason': 'in_use',
-              'processes': ['dolt', 'gc'],
-            },
-          ],
-        });
-        await tester.ensureVisible(
-          find.byKey(const Key('termux-storage-clean-ai_team')),
-        );
-        await tester.tap(find.byKey(const Key('termux-storage-clean-ai_team')));
-        await tester.pumpAndSettle();
-        expect(find.byKey(const Key('termux-storage-confirm')), findsNothing);
-        expect(fixture.cleans, ['ai_team']);
-        expect(
-          find.text('In use by dolt, gc. Stop it under Running now first.'),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(const Key('termux-storage-open-running')),
-          findsOneWidget,
-        );
-        // Still listed: nothing was removed.
-        expect(find.text('~/.oc/aiteam'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      },
-    );
+    testWidgets('small caches also require confirmation; in-use names the process', (tester) async {
+      fixture.state = 'done';
+      final report = jsonDecode(_fixtureReport()) as Map<String, dynamic>;
+      (report['categories'] as List).first['bytes'] = 600000;
+      fixture.report = jsonEncode(report);
+      await fixture.mount(tester);
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.tap(find.byKey(const Key('termux-storage-cat-build_caches')));
+      await tester.pumpAndSettle();
+      fixture.cleanResult = jsonEncode({
+        'freed_bytes': 0, 'removed': <Object>[],
+        'refused': [{'path': '', 'reason': 'in_use', 'processes': ['java']}],
+      });
+      await tester.ensureVisible(find.byKey(const Key('termux-storage-clean-build_caches')));
+      await tester.tap(find.byKey(const Key('termux-storage-clean-build_caches')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('termux-storage-confirm')), findsOneWidget);
+      expect(fixture.cleans, isEmpty);
+      await tester.tap(find.byKey(const Key('termux-storage-confirm-remove')));
+      await tester.pumpAndSettle();
+      expect(fixture.cleans, ['build_caches']);
+      expect(find.text('In use by java. Stop it under Running now first.'), findsOneWidget);
+      expect(find.byKey(const Key('termux-storage-open-running')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('legacy destructive flags never expose protected clean actions', (tester) async {
+      fixture.state = 'done';
+      fixture.report = _fixtureReport();
+      await fixture.mount(tester);
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.tap(find.byKey(const Key('termux-storage-cat-ai_team')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('termux-storage-clean-ai_team')), findsNothing);
+      expect(find.text('~/.oc/aiteam'), findsOneWidget);
+    });
 
     for (final rtl in [false, true]) {
       testWidgets('report fits 320dp at 2.5x text ${rtl ? 'RTL' : 'LTR'}', (
@@ -674,6 +773,8 @@ String _rootfs(String path) =>
 
 String _fixtureReport() => jsonEncode({
   'scanned_at': 1788800000,
+  'cleanup_policy': 2,
+  'stale': false,
   'total_bytes': 46 * 1024 * 1024 * 1024,
   'categories': [
     {
@@ -684,7 +785,7 @@ String _fixtureReport() => jsonEncode({
       'note_key': 'termuxStorageNoteBuildCaches',
       'paths': [
         {'path': _rootfs('/root/.gradle/caches'), 'bytes': 8000000000},
-        {'path': _rootfs('/root/.gradle/wrapper'), 'bytes': 700000000},
+        {'path': '/data/data/com.termux/files/home/.npm/_cacache', 'bytes': 700000000},
       ],
     },
     {

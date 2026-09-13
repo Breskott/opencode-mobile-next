@@ -3,15 +3,15 @@
 ///
 /// The scan runs in the background inside Termux and writes a log the UI
 /// tails plus a JSON report; [TermuxStorage.status] reads both. Cleaning is
-/// per category and only ever removes the paths the last scan listed, so
-/// what the user saw is exactly what goes.
+/// limited to explicit regenerable caches from a current scan. A clean makes
+/// the report stale; another scan is required before further cleanup.
 library;
 
 import 'dart:convert';
 
 import 'bridge.dart';
 
-enum TermuxStorageScanState { idle, running, done, cancelled, failed }
+enum TermuxStorageScanState { idle, running, done, cancelled, failed, stale }
 
 /// Category keys in the order the screen shows them; the script emits the
 /// same keys, and an unknown one stays visible under its raw key.
@@ -22,7 +22,8 @@ enum TermuxStorageCategoryKey {
   toolchains('toolchains'),
   aiTeam('ai_team'),
   opencode('opencode'),
-  projects('projects');
+  projects('projects'),
+  sharedCaches('shared_caches');
 
   const TermuxStorageCategoryKey(this.wireName);
   final String wireName;
@@ -58,6 +59,9 @@ class TermuxStorageCategory {
   final bool deletable;
   final List<TermuxStoragePath> paths;
 
+  /// Old or untrusted reports cannot expose cleanup for protected categories.
+  bool get canClean => deletable && known == TermuxStorageCategoryKey.buildCaches;
+
   TermuxStorageCategoryKey? get known => TermuxStorageCategoryKey.parse(key);
 
   TermuxStorageCategory without(Set<String> removed) {
@@ -92,20 +96,31 @@ class TermuxStorageReport {
     required this.totalBytes,
     required this.categories,
     required this.projects,
+    this.isStale = false,
   });
 
   final int? scannedAtEpochSeconds;
   final int totalBytes;
   final List<TermuxStorageCategory> categories;
   final List<TermuxStorageProject> projects;
+  final bool isStale;
 
   DateTime? get scannedAt => scannedAtEpochSeconds == null
       ? null
       : DateTime.fromMillisecondsSinceEpoch(scannedAtEpochSeconds! * 1000);
 
+  TermuxStorageReport asStale() => TermuxStorageReport(
+    scannedAtEpochSeconds: scannedAtEpochSeconds,
+    totalBytes: totalBytes,
+    categories: categories,
+    projects: projects,
+    isStale: true,
+  );
+
   /// Everything a clean may remove, in bytes.
-  int get deletableBytes =>
-      categories.where((c) => c.deletable).fold(0, (sum, c) => sum + c.bytes);
+  int get deletableBytes => isStale
+      ? 0
+      : categories.where((c) => c.canClean).fold(0, (sum, c) => sum + c.bytes);
 
   TermuxStorageCategory? category(TermuxStorageCategoryKey key) {
     for (final c in categories) {
@@ -130,6 +145,7 @@ class TermuxStorageReport {
           if (c.key == key) c.without(gone) else c,
       ],
       projects: projects,
+      isStale: true,
     );
   }
 
@@ -184,6 +200,7 @@ class TermuxStorageReport {
       totalBytes: _int(decoded['total_bytes']),
       categories: categories,
       projects: projects,
+      isStale: decoded['stale'] == true || decoded['cleanup_policy'] != 2,
     );
   }
 }
@@ -215,6 +232,7 @@ class TermuxStorageScanStatus {
       'done' => TermuxStorageScanState.done,
       'cancelled' => TermuxStorageScanState.cancelled,
       'failed' => TermuxStorageScanState.failed,
+      'stale' => TermuxStorageScanState.stale,
       _ => TermuxStorageScanState.idle,
     };
     var log = '';
@@ -232,6 +250,7 @@ class TermuxStorageScanStatus {
     if (json.isNotEmpty) {
       try {
         report = TermuxStorageReport.parse(json);
+        if (state != TermuxStorageScanState.done) report = report.asStale();
       } on FormatException {
         report = null;
       }
@@ -273,6 +292,7 @@ class TermuxStorageSummary {
         'done' => TermuxStorageScanState.done,
         'cancelled' => TermuxStorageScanState.cancelled,
         'failed' => TermuxStorageScanState.failed,
+        'stale' => TermuxStorageScanState.stale,
         _ => TermuxStorageScanState.idle,
       },
       totalBytes: total == null || total < 0 ? null : total,
@@ -299,8 +319,10 @@ class TermuxStorageCleanResult {
     required this.freedBytes,
     required this.removed,
     required this.refused,
+    this.rescanRequired = false,
   });
 
+  final bool rescanRequired;
   final int freedBytes;
   final List<TermuxStoragePath> removed;
   final List<TermuxStorageRefusal> refused;
@@ -322,6 +344,7 @@ class TermuxStorageCleanResult {
     }
     return TermuxStorageCleanResult(
       freedBytes: _int(decoded['freed_bytes']),
+      rescanRequired: decoded['rescan_required'] == true,
       removed: [
         for (final raw in decoded['removed'] as List? ?? const [])
           if (raw is Map)

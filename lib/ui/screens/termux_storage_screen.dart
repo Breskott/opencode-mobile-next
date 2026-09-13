@@ -1,7 +1,7 @@
 /// Settings › Termux server › Storage (TEAM-304): what the phone server
 /// uses, per category, with the exact paths a Clean removes, a background
 /// scan that shows the same live-output panel as install and can be
-/// cancelled, and per-category cleaning that is two-step above a gigabyte.
+/// cancelled, and explicit confirmation before every cache cleanup.
 ///
 /// Projects and OpenCode itself are listed with their sizes and never
 /// offered for cleaning; the script refuses those paths as well.
@@ -48,6 +48,7 @@ String termuxStorageCategoryLabel(
   TermuxStorageCategoryKey.aiTeam => l10n.termuxStorageCatAiTeam,
   TermuxStorageCategoryKey.opencode => l10n.termuxStorageCatOpenCode,
   TermuxStorageCategoryKey.projects => l10n.termuxStorageCatProjects,
+  TermuxStorageCategoryKey.sharedCaches => l10n.termuxStorageCatSharedCaches,
   null => category.key,
 };
 
@@ -63,6 +64,7 @@ String? termuxStorageCategoryNote(
   TermuxStorageCategoryKey.aiTeam => l10n.termuxStorageNoteAiTeam,
   TermuxStorageCategoryKey.opencode => l10n.termuxStorageNoteOpenCode,
   TermuxStorageCategoryKey.projects => l10n.termuxStorageNoteProjects,
+  TermuxStorageCategoryKey.sharedCaches => l10n.termuxStorageNoteSharedCaches,
   null => null,
 };
 
@@ -78,9 +80,6 @@ class TermuxStorageScreen extends StatefulWidget {
 
   /// How often a running scan's log is re-read.
   final Duration pollInterval;
-
-  /// Cleaning more than this goes through the two-step confirmation.
-  static const twoStepBytes = 1024 * 1024 * 1024;
 
   @override
   State<TermuxStorageScreen> createState() => _TermuxStorageScreenState();
@@ -178,23 +177,22 @@ class _TermuxStorageScreenState extends State<TermuxStorageScreen> {
   }
 
   Future<void> _clean(TermuxStorageCategory category) async {
+    if (!category.canClean || _report?.isStale != false || _busy) return;
     final l10n = _copy(context);
     final size = formatTermuxBytes(l10n, category.bytes);
     final label = termuxStorageCategoryLabel(l10n, category);
-    if (category.bytes > TermuxStorageScreen.twoStepBytes) {
-      final confirmed = await showConfirmSheet(
-        context,
-        title: l10n.termuxStorageCleanConfirmTitle(size, label),
-        message: l10n.termuxStorageCleanConfirmBody,
-        confirmLabel: l10n.termuxStorageCleanConfirm(size),
-        cancelLabel: l10n.termuxStorageKeep,
-        icon: AppIconography.delete,
-        destructive: true,
-        sheetKey: const Key('termux-storage-confirm'),
-        confirmKey: const Key('termux-storage-confirm-remove'),
-      );
-      if (!confirmed || !mounted) return;
-    }
+    final confirmed = await showConfirmSheet(
+      context,
+      title: l10n.termuxStorageCleanConfirmTitle(size, label),
+      message: l10n.termuxStorageCleanConfirmBody,
+      confirmLabel: l10n.termuxStorageCleanConfirm(size),
+      cancelLabel: l10n.termuxStorageKeep,
+      icon: AppIconography.delete,
+      destructive: true,
+      sheetKey: const Key('termux-storage-confirm'),
+      confirmKey: const Key('termux-storage-confirm-remove'),
+    );
+    if (!confirmed || !mounted) return;
     setState(() {
       _busy = true;
       _cleaningKey = category.key;
@@ -219,11 +217,7 @@ class _TermuxStorageScreenState extends State<TermuxStorageScreen> {
               ? freed
               : '$freed · ${l10n.termuxStorageRefusedCount(result.refused.length)}';
           _resultIsProblem = false;
-          _report = _report?.afterClean(
-            category.key,
-            result.removed.map((p) => p.path),
-            result.freedBytes,
-          );
+          if (result.rescanRequired) _report = _report?.asStale();
         }
       });
     } on TermuxBridgeException catch (error) {
@@ -428,9 +422,12 @@ class _TermuxStorageScreenState extends State<TermuxStorageScreen> {
             const SizedBox(height: 4),
             Text(
               [
-                l10n.termuxStorageDeletableTotal(
-                  formatTermuxBytes(l10n, report.deletableBytes),
-                ),
+                if (report.isStale)
+                  l10n.termuxStorageRescanRequired
+                else
+                  l10n.termuxStorageDeletableTotal(
+                    formatTermuxBytes(l10n, report.deletableBytes),
+                  ),
                 if (scannedAt != null) _scanAge(l10n, scannedAt),
               ].join(' · '),
               style: theme.textTheme.bodySmall?.copyWith(
@@ -482,7 +479,7 @@ class _TermuxStorageScreenState extends State<TermuxStorageScreen> {
         _CategoryTile(
           category: category,
           cleaning: _cleaningKey == category.key,
-          enabled: !_busy,
+          enabled: !_busy && !report.isStale,
           onClean: () => _clean(category),
         ),
       if (report.projects.isNotEmpty) ...[
@@ -544,7 +541,7 @@ class _CategoryTile extends StatelessWidget {
     final size = formatTermuxBytes(l10n, category.bytes);
     final note = termuxStorageCategoryNote(l10n, category);
     final empty = category.paths.isEmpty;
-    final canClean = category.deletable && !empty;
+    final canClean = category.canClean && !empty;
     return ExpansionTile(
       key: Key('termux-storage-cat-${category.key}'),
       tilePadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -554,7 +551,7 @@ class _CategoryTile extends StatelessWidget {
       subtitle: Text(
         empty
             ? l10n.termuxStorageNothingHere
-            : category.deletable
+            : category.canClean
             ? size
             : '$size · ${l10n.termuxStorageNotDeletable}',
         key: Key('termux-storage-size-${category.key}'),
@@ -573,7 +570,7 @@ class _CategoryTile extends StatelessWidget {
           ),
         if (!empty) ...[
           Text(
-            category.deletable
+            category.canClean
                 ? l10n.termuxStorageWillRemove
                 : l10n.termuxStorageNotDeletable,
             style: theme.textTheme.labelMedium?.copyWith(

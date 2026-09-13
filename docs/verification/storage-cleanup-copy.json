@@ -1,0 +1,42 @@
+{
+  "replace": {
+    "en": {
+      "termuxStorageIntro": "See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and session history stay in place.",
+      "termuxStorageTotal": "{size} measured in Termux",
+      "termuxStorageNoteBuildCaches": "Gradle caches and npm’s downloaded content cache only. Downloads may be needed again, so offline builds can be affected. Stop builds and package installs before cleaning.",
+      "termuxStorageNoteAgentScratch": "Temporary folders may contain unfinished work or files used by other tools. Their sizes are shown for reference; they cannot be removed here.",
+      "termuxStorageCatProjectBuildOutputs": "Folders with build-related names",
+      "termuxStorageNoteProjectBuildOutputs": "Folders named build, .dart_tool, node_modules or target may also contain your files. Names alone cannot prove they are disposable, so they cannot be removed here.",
+      "termuxStorageNoteToolchains": "Android SDK, Java and Flutter installations. These may support other projects and cannot be removed here.",
+      "termuxStorageNoteAiTeam": "Team folders, databases and tools may contain work you need to keep. They cannot be removed here, even when the team is stopped.",
+      "termuxStorageCleanConfirmBody": "Remove only the listed Gradle and npm content caches? Downloads may be needed again and offline builds can be affected. Stop builds and package installs first. Scan again afterward to update the measured sizes.",
+      "termuxStorageProjectBuild": "{size} · {build} in build-related folders",
+      "termuxStorageFreed": "Removed {size}"
+    },
+    "ar": {
+      "termuxStorageIntro": "اعرض مساحة التخزين التي يستخدمها Termux، بما فيها الخادم المحلي والأدوات الأخرى. وسّع أي فئة للاطلاع على تفاصيلها. يمكن تنظيف ملفات تخزين مؤقت محددة قابلة لإعادة الإنشاء فقط؛ وتبقى المشاريع وبيانات الفريق وتسجيلات الدخول وسجل الجلسات محفوظة.",
+      "termuxStorageTotal": "تم قياس {size} في Termux",
+      "termuxStorageNoteBuildCaches": "ملفات Gradle المؤقتة وذاكرة المحتوى المنزّل لـ npm فقط. قد يلزم تنزيل الملفات مجددًا، مما قد يؤثر في البناء دون اتصال. أوقف عمليات البناء وتثبيت الحزم قبل التنظيف.",
+      "termuxStorageNoteAgentScratch": "قد تحتوي المجلدات المؤقتة على عمل غير مكتمل أو ملفات تستخدمها أدوات أخرى. تُعرض أحجامها للاطلاع فقط ولا يمكن حذفها من هنا.",
+      "termuxStorageCatProjectBuildOutputs": "مجلدات بأسماء مرتبطة بالبناء",
+      "termuxStorageNoteProjectBuildOutputs": "قد تحتوي المجلدات المسماة build أو .dart_tool أو node_modules أو target على ملفاتك أيضًا. لا يكفي الاسم لإثبات إمكانية حذفها، لذلك لا يمكن حذفها من هنا.",
+      "termuxStorageNoteToolchains": "تثبيتات Android SDK وJava وFlutter. قد تستخدمها مشاريع أخرى ولا يمكن حذفها من هنا.",
+      "termuxStorageNoteAiTeam": "قد تحتوي مجلدات الفريق وقواعد البيانات والأدوات على عمل تحتاج إلى الاحتفاظ به. لا يمكن حذفها من هنا، حتى عند إيقاف الفريق.",
+      "termuxStorageCleanConfirmBody": "هل تريد حذف ملفات Gradle المؤقتة وذاكرة محتوى npm المعروضة فقط؟ قد يلزم تنزيل الملفات مجددًا وقد يتأثر البناء دون اتصال. أوقف عمليات البناء وتثبيت الحزم أولًا، ثم أعد الفحص لتحديث الأحجام المقاسة.",
+      "termuxStorageProjectBuild": "{size} · {build} في مجلدات مرتبطة بالبناء",
+      "termuxStorageFreed": "تم حذف {size}"
+    }
+  },
+  "new": {
+    "en": {
+      "termuxStorageCatSharedCaches": "Other caches and package data",
+      "termuxStorageNoteSharedCaches": "Shared caches, package installs and download folders may support other tools or contain files worth keeping. They cannot be removed here.",
+      "termuxStorageRescanRequired": "Previous scan · Scan again before cleaning more"
+    },
+    "ar": {
+      "termuxStorageCatSharedCaches": "ملفات مؤقتة وبيانات حزم أخرى",
+      "termuxStorageNoteSharedCaches": "قد تستخدم أدوات أخرى الملفات المؤقتة المشتركة والحزم المثبتة ومجلدات التنزيل، أو قد تحتوي على ملفات تحتاج إلى الاحتفاظ بها. لا يمكن حذفها من هنا.",
+      "termuxStorageRescanRequired": "فحص سابق · أعد الفحص قبل تنظيف المزيد"
+    }
+  }
+}

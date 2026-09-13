@@ -2275,7 +2275,7 @@ scan_projects() {
     log "Project $name"
     bytes=$(path_bytes "$dir")
     build_bytes=0
-    # Build output directories at any depth under the project, never sources.
+    # Names are inventory hints only: a folder named build may contain sources.
     while IFS= read -r sub; do
       [ -n "$sub" ] || continue
       kind=$(path_bytes "$sub")
@@ -2304,14 +2304,32 @@ write_scan_result() {
     [ -z "${CAT_NOTE[$index]}" ] || json+=",\"note_key\":\"${CAT_NOTE[$index]}\""
     json+=",\"paths\":[$paths]}"
   done
-  printf '{"scanned_at":%s,"total_bytes":%s,"categories":[%s],"projects":[%s]}\n' \
+  printf '{"scanned_at":%s,"total_bytes":%s,"categories":[%s],"projects":[%s],"cleanup_policy":2,"stale":false}\n' \
     "$(now_epoch)" "$total" "$json" "$PROJECT_JSON" > "$SCAN_JSON.tmp.$$"
   printf '%s' "$manifest" > "$SCAN_MANIFEST.tmp.$$"
   mv "$SCAN_MANIFEST.tmp.$$" "$SCAN_MANIFEST"
   mv "$SCAN_JSON.tmp.$$" "$SCAN_JSON"
 }
 
+# Scans and cleans share one lock so a scan cannot publish pre-clean sizes
+# during removal. A dead owner is recoverable without touching user data.
+storage_operation_lock() {
+  local lock="$OC_DIR/storage-operation.lock" owner=''
+  if ! mkdir "$lock" 2>/dev/null; then
+    [ ! -L "$lock" ] || return 1
+    read -r owner < "$lock/pid" 2>/dev/null || return 1
+    case "$owner" in ''|*[!0-9]*) return 1 ;; esac
+    kill -0 "$owner" 2>/dev/null && return 1
+    rm -f -- "$lock/pid"
+    rmdir -- "$lock" 2>/dev/null || return 1
+    mkdir "$lock" 2>/dev/null || return 1
+  fi
+  printf '%s\n' "$$" > "$lock/pid"
+  trap 'rm -f -- "$OC_DIR/storage-operation.lock/pid"; rmdir -- "$OC_DIR/storage-operation.lock" 2>/dev/null || true' EXIT
+}
+
 storage_scan() {
+  storage_operation_lock || { echo 'storage-busy' >&2; return 75; }
   # The dispatcher clears a stale cancel file before launching; one placed
   # after that (or before the first measurement) stops the scan early.
   printf '%s\n' "$$" > "$SCAN_PID"
@@ -2328,7 +2346,7 @@ storage_scan() {
 }
 
 storage_scan_body() {
-  local rootfs i_build i_scratch i_outputs i_tool i_team i_oc i_projects dir total
+  local rootfs i_build i_scratch i_outputs i_tool i_team i_oc i_projects i_shared dir total
   log 'Measuring storage on this phone'
   rootfs=$(rootfs_dir || true)
   SCAN_ROOTFS=$rootfs
@@ -2339,22 +2357,34 @@ storage_scan_body() {
   fi
 
   new_category build_caches true termuxStorageNoteBuildCaches; i_build=$NEW_INDEX
-  new_category agent_scratch true termuxStorageNoteAgentScratch; i_scratch=$NEW_INDEX
-  new_category project_build_outputs true termuxStorageNoteProjectBuildOutputs; i_outputs=$NEW_INDEX
-  new_category toolchains true termuxStorageNoteToolchains; i_tool=$NEW_INDEX
-  new_category ai_team true termuxStorageNoteAiTeam; i_team=$NEW_INDEX
+  new_category agent_scratch false termuxStorageNoteAgentScratch; i_scratch=$NEW_INDEX
+  new_category project_build_outputs false termuxStorageNoteProjectBuildOutputs; i_outputs=$NEW_INDEX
+  new_category toolchains false termuxStorageNoteToolchains; i_tool=$NEW_INDEX
+  new_category ai_team false termuxStorageNoteAiTeam; i_team=$NEW_INDEX
   new_category opencode false termuxStorageNoteOpenCode; i_oc=$NEW_INDEX
   new_category projects false termuxStorageNoteProjects; i_projects=$NEW_INDEX
 
+  new_category shared_caches false termuxStorageNoteSharedCaches; i_shared=$NEW_INDEX
+
   log 'Build caches'
   if [ -n "$rootfs" ]; then
-    for dir in "$rootfs/root/.gradle/caches" "$rootfs/root/.gradle/wrapper" \
-               "$rootfs/root/.pub-cache" "$rootfs/root/.cache" "$rootfs/root/.dartServer"; do
-      add_path "$i_build" "$dir"
+    add_path "$i_build" "$rootfs/root/.gradle/caches"
+    add_path "$i_build" "$rootfs/root/.npm/_cacache"
+  fi
+  add_path "$i_build" "$HOME/.npm/_cacache"
+
+  log 'Other caches and package data (read only)'
+  if [ -n "$rootfs" ]; then
+    for dir in "$rootfs/root/.gradle/wrapper" "$rootfs/root/.pub-cache" \
+               "$rootfs/root/.cache" "$rootfs/root/.dartServer"; do
+      add_path "$i_shared" "$dir"
     done
   fi
-  add_path "$i_build" "$HOME/.npm"
-  add_path "$i_build" "$HOME/.cache"
+  add_path "$i_shared" "$HOME/.cache"
+  # npm may contain configuration and other user data outside _cacache.
+  for dir in "$HOME/.npm"/* "$HOME/.npm"/.[!.]*; do
+    [ "${dir##*/}" = _cacache ] || add_path "$i_shared" "$dir"
+  done
 
   log 'Agent scratch'
   if [ -n "$rootfs" ] && [ -d "$rootfs/tmp/opencode" ]; then
@@ -2445,6 +2475,7 @@ storage_summary() {
   state=$(cat "$SCAN_STATE" 2>/dev/null || printf idle)
   if [ "$state" = running ] && ! scan_pid_alive; then state=failed; fi
   printf 'state=%s\n' "$state"
+  [ "$state" != stale ] || return 0
   [ -f "$SCAN_JSON" ] || return 0
   sed -n 's/^{"scanned_at":\([0-9]*\),"total_bytes":\([0-9]*\),.*/scanned_at=\1\ntotal_bytes=\2/p' "$SCAN_JSON"
 }
@@ -2477,7 +2508,7 @@ process_users() {
     case "$category" in
       build_caches|project_build_outputs|toolchains)
         case "$args" in
-          *GradleDaemon*|*gradle*wrapper*|*"gradle "*|*KotlinCompileDaemon*|*analysis_server*|*frontend_server*|*"flutter "*|*"flutter_tools"*)
+          *GradleDaemon*|*gradle*wrapper*|*"gradle "*|*KotlinCompileDaemon*|*analysis_server*|*frontend_server*|*"flutter "*|*"flutter_tools"*|*npm-cli.js*|*npx-cli.js*|*"npm install"*|*"npm ci"*|*"npm cache"*)
             printf '%s\n' "$comm" ;;
         esac ;;
       agent_scratch)
@@ -2494,17 +2525,58 @@ process_users() {
   done < <(list_processes)
 }
 
+# Exact regenerable caches only. Never authorize by basename, category flag,
+# or a broad HOME/PREFIX prefix from a previous scan.
+clean_path_allowed() {
+  local path="$1" rootfs="$2" canonical expected base
+  case "$path" in
+    "$HOME/.npm/_cacache")
+      base=$(realpath -e -- "$HOME" 2>/dev/null) || return 1
+      expected="$base/.npm/_cacache" ;;
+    *)
+      [ -n "$rootfs" ] || return 1
+      case "$path" in
+        "$rootfs/root/.gradle/caches"|"$rootfs/root/.npm/_cacache") ;;
+        *) return 1 ;;
+      esac
+      base=$(realpath -e -- "$PREFIX" 2>/dev/null) || return 1
+      expected="$base${path#"$PREFIX"}" ;;
+  esac
+  # Android may alias /data/data and /data/user/0. Resolve the trusted Termux
+  # anchors, then refuse replaced parents, rootfs or cache symlinks beneath them.
+  canonical=$(realpath -e -- "$path" 2>/dev/null) || return 1
+  [ "$canonical" = "$expected" ] && [ -d "$path" ] && [ ! -L "$path" ] || return 1
+  [ "$(stat -c %u -- "$path" 2>/dev/null)" = "$(id -u)" ]
+}
+
+# A failed measurement must never become zero in destructive accounting.
+clean_path_bytes() {
+  local out
+  out=$(du -sb -- "$1" 2>/dev/null) || return 1
+  out=${out%%$'\t'*}
+  case "$out" in ''|*[!0-9]*) return 1 ;; esac
+  printf '%s' "$out"
+}
+
 storage_clean() {
   local category="${1:-}" rootfs users line manifest_key deletable bytes path freed=0 reason
-  local removed='' refused='' first_removed=1 first_refused=1 seen=0
+  local removed='' refused='' kept='' before after
   case "$category" in
-    build_caches|agent_scratch|project_build_outputs|toolchains|ai_team) ;;
-    opencode|projects)
+    build_caches) ;;
+    agent_scratch|project_build_outputs|toolchains|ai_team|opencode|projects|shared_caches)
       printf '{"freed_bytes":0,"removed":[],"refused":[{"path":"","reason":"never_deletable"}]}\n'
       return 0 ;;
     *) echo 'unknown-category' >&2; return 64 ;;
   esac
+  storage_operation_lock || { echo 'storage-busy' >&2; return 75; }
   [ -f "$SCAN_MANIFEST" ] || { echo 'no-scan' >&2; return 65; }
+  # Legacy reports do not carry the narrower policy. Interrupted cleanups and
+  # scans cannot supply an actionable report either.
+  if [ "$(cat "$SCAN_STATE" 2>/dev/null)" != done ] ||
+     ! grep -q '"cleanup_policy":2,"stale":false' "$SCAN_JSON" 2>/dev/null; then
+    printf '{"freed_bytes":0,"removed":[],"refused":[{"path":"","reason":"rescan_required"}],"rescan_required":true}\n'
+    return 0
+  fi
   rootfs=$(rootfs_dir || true)
   users=''
   while IFS= read -r line; do
@@ -2516,56 +2588,44 @@ storage_clean() {
     printf '{"freed_bytes":0,"removed":[],"refused":[{"path":"","reason":"in_use","processes":[%s]}]}\n' "$users"
     return 0
   fi
-  while IFS=$'\t' read -r manifest_key deletable bytes path; do
-    [ "$manifest_key" = "$category" ] || continue
-    seen=1
-    [ "$deletable" = true ] || continue
-    [ -n "$path" ] || continue
-    # Guard rails: never a project source, OpenCode auth/sessions, Termux
-    # packages, or anything outside the measured roots.
+  # Invalidate before mutation so crashes cannot leave a fresh-looking report.
+  printf stale > "$SCAN_STATE"
+  sed 's/"stale":false/"stale":true/' "$SCAN_JSON" > "$SCAN_JSON.tmp.$$" || return 1
+  mv "$SCAN_JSON.tmp.$$" "$SCAN_JSON" || return 1
+  while IFS= read -r line; do
+    IFS=$'\t' read -r manifest_key deletable bytes path <<< "$line"
+    if [ "$manifest_key" != "$category" ]; then
+      kept+="$line"$'\n'
+      continue
+    fi
     reason=''
-    case "$path" in
-      "$PREFIX"/*|"$HOME"/*) ;;
-      *) reason=outside_roots ;;
-    esac
-    case "$path" in
-      */root/projects/*)
-        case "${path##*/}" in build|.dart_tool|node_modules|target) ;; *) reason=protected ;; esac ;;
-      */.local/share/opencode*|*/usr/local/lib/node_modules*|"$OC_DIR"/server.password|"$OC_DIR"/state|"$PREFIX"/lib/*|"$PREFIX"/etc/*|"$PREFIX"/var/lib/dpkg*|"$PREFIX"/var/lib/proot-distro/*/rootfs|"$PREFIX"/var/lib/proot-distro/installed-rootfs/*)
-        reason=protected ;;
-    esac
-    if [ -n "$reason" ]; then
-      [ "$first_refused" = 1 ] || refused+=','
-      first_refused=0
-      refused+="{\"path\":$(json_str "$path"),\"reason\":\"$reason\"}"
-      continue
-    fi
-    if [ ! -e "$path" ]; then continue; fi
-    if [ "$path" = "$PREFIX/tmp" ]; then
-      # Termux needs its tmp directory; empty it instead of removing it.
-      find "$path" -mindepth 1 -delete 2>/dev/null || true
-    elif [ "$path" = "$HOME/.cache" ]; then
-      find "$path" -mindepth 1 -delete 2>/dev/null || true
+    if [ "$deletable" != true ] || ! clean_path_allowed "$path" "$rootfs"; then
+      reason=protected
+    elif ! before=$(clean_path_bytes "$path"); then
+      reason=measure_failed
     else
-      rm -rf -- "$path" 2>/dev/null || true
+      rm -rf --one-file-system -- "$path" 2>/dev/null || true
+      if [ -e "$path" ] || [ -L "$path" ]; then
+        # Keep the entry on partial failure, and count only measured shrinkage.
+        reason=remove_failed
+        if after=$(clean_path_bytes "$path") && [ "$after" -lt "$before" ]; then
+          freed=$((freed + before - after))
+        fi
+      else
+        freed=$((freed + before))
+        [ -z "$removed" ] || removed+=','
+        removed+="{\"path\":$(json_str "$path"),\"bytes\":$before}"
+      fi
     fi
-    if [ -e "$path" ] && [ "$(path_bytes "$path")" -ge "$bytes" ] && [ "$bytes" -gt 0 ]; then
-      [ "$first_refused" = 1 ] || refused+=','
-      first_refused=0
-      refused+="{\"path\":$(json_str "$path"),\"reason\":\"remove_failed\"}"
-      continue
+    if [ -n "$reason" ]; then
+      kept+="$line"$'\n'
+      [ -z "$refused" ] || refused+=','
+      refused+="{\"path\":$(json_str "$path"),\"reason\":\"$reason\"}"
     fi
-    freed=$((freed + bytes))
-    [ "$first_removed" = 1 ] || removed+=','
-    first_removed=0
-    removed+="{\"path\":$(json_str "$path"),\"bytes\":$bytes}"
   done < "$SCAN_MANIFEST"
-  # Drop the removed entries from the manifest so a second clean is a no-op.
-  if [ "$seen" = 1 ]; then
-    grep -v "^$category"$'\t' "$SCAN_MANIFEST" > "$SCAN_MANIFEST.tmp.$$" || true
-    mv "$SCAN_MANIFEST.tmp.$$" "$SCAN_MANIFEST"
-  fi
-  printf '{"freed_bytes":%s,"removed":[%s],"refused":[%s]}\n' "$freed" "$removed" "$refused"
+  printf '%s' "$kept" > "$SCAN_MANIFEST.tmp.$$"
+  mv "$SCAN_MANIFEST.tmp.$$" "$SCAN_MANIFEST"
+  printf '{"freed_bytes":%s,"removed":[%s],"refused":[%s],"rescan_required":true}\n' "$freed" "$removed" "$refused"
 }
 
 # -------------------------------------------------------------- processes --
