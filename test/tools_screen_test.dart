@@ -259,7 +259,10 @@ void main() {
       _app(Scaffold(body: LibraryScreen(controller: controller))),
     );
 
-    // Tools now lives inside the tabbed Commands & tools destination.
+    // Occasional tools are disclosed through the More hub.
+    expect(find.text('Commands & tools'), findsNothing);
+    await tester.tap(find.text('Tools & help'));
+    await tester.pumpAndSettle();
     expect(find.text('Commands & tools'), findsOneWidget);
     await tester.tap(find.text('Commands & tools'));
     await tester.pumpAndSettle();

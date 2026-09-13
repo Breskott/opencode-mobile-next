@@ -102,13 +102,9 @@ void main() {
               await tester.pump(const Duration(milliseconds: 100));
             }
             expect(find.text('Shopfront'), findsOneWidget);
-            expect(find.text('Review status unknown'), findsOneWidget);
+            expect(find.text('Review status unknown'), findsNothing);
             expect(find.text('New session'), findsOneWidget);
-            expect(tester.getTopLeft(find.text('Shopfront')).dx, 60);
-            expect(
-              tester.getTopLeft(find.text('Review status unknown')).dx,
-              60,
-            );
+            expect(tester.getTopLeft(find.text('Shopfront')).dx, 16);
             if (!empty) {
               expect(
                 tester

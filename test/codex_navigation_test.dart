@@ -246,6 +246,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Models & agents'), findsOneWidget);
+    expect(find.text('Providers'), findsNothing);
+    await tester.tap(find.text('Tools & help'));
+    await tester.pumpAndSettle();
     expect(find.text('Providers'), findsOneWidget);
     expect(find.text('MCP'), findsOneWidget);
     expect(find.text('Commands & tools'), findsOneWidget);
