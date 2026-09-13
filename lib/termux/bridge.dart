@@ -2314,17 +2314,38 @@ write_scan_result() {
 # Scans and cleans share one lock so a scan cannot publish pre-clean sizes
 # during removal. A dead owner is recoverable without touching user data.
 storage_operation_lock() {
-  local lock="$OC_DIR/storage-operation.lock" owner=''
-  if ! mkdir "$lock" 2>/dev/null; then
-    [ ! -L "$lock" ] || return 1
-    read -r owner < "$lock/pid" 2>/dev/null || return 1
-    case "$owner" in ''|*[!0-9]*) return 1 ;; esac
-    kill -0 "$owner" 2>/dev/null && return 1
+  local lock="$OC_DIR/storage-operation.lock" owner='' modified now identity claim
+  if [ -e "$lock" ] || [ -L "$lock" ]; then
+    [ -d "$lock" ] && [ ! -L "$lock" ] || return 1
+    identity=$(stat -c '%d:%i:%Y' -- "$lock" 2>/dev/null) || return 1
+    read -r owner < "$lock/pid" 2>/dev/null || true
+    case "$owner" in
+      '')
+        # Older tools could crash between mkdir and writing the PID. Never
+        # reclaim a fresh directory: its creator may still be initializing it.
+        modified=${identity##*:}
+        now=$(now_epoch)
+        case "$modified:$now" in *[!0-9:]*) return 1 ;; esac
+        [ "$((now - modified))" -ge 60 ] || return 1
+        [ ! -L "$lock/pid" ] && [ ! -s "$lock/pid" ] || return 1 ;;
+      *[!0-9]*) return 1 ;;
+      *) kill -0 "$owner" 2>/dev/null && return 1 ;;
+    esac
+    # Another caller may have recovered this lock while it was inspected.
+    [ "$(stat -c '%d:%i:%Y' -- "$lock" 2>/dev/null)" = "$identity" ] || return 1
+    [ "$(cat "$lock/pid" 2>/dev/null)" = "$owner" ] || return 1
     rm -f -- "$lock/pid"
     rmdir -- "$lock" 2>/dev/null || return 1
-    mkdir "$lock" 2>/dev/null || return 1
   fi
-  printf '%s\n' "$$" > "$lock/pid"
+  # Publish a complete directory atomically. A competing complete lock is
+  # nonempty, so mv -T cannot replace it. There is no new empty-PID window.
+  claim=$(mktemp -d "$OC_DIR/storage-operation-claim.XXXXXX") || return 1
+  if ! printf '%s\n' "$$" > "$claim/pid" ||
+     ! mv -T -- "$claim" "$lock" 2>/dev/null; then
+    rm -f -- "$claim/pid"
+    rmdir -- "$claim" 2>/dev/null || true
+    return 1
+  fi
   trap 'rm -f -- "$OC_DIR/storage-operation.lock/pid"; rmdir -- "$OC_DIR/storage-operation.lock" 2>/dev/null || true' EXIT
 }
 
@@ -2493,10 +2514,10 @@ storage_cancel() {
   printf '{"cancelled":true}\n'
 }
 
-# process_users <category> <rootfs>: prints the names of processes that are
-# using a category right now, one per line.
+# process_users <category> <snapshot>: classifies a successfully captured
+# process snapshot, printing users of a category one per line.
 process_users() {
-  local category="$1" rootfs="$2" line pid comm args
+  local category="$1" snapshot="$2" line pid comm args
   while IFS= read -r line; do
     set -- $line
     pid=${1:-}
@@ -2522,7 +2543,7 @@ process_users() {
       opencode)
         case "$args" in *"opencode serve"*|*"opencode2 serve"*|*node*) printf '%s\n' "$comm" ;; esac ;;
     esac
-  done < <(list_processes)
+  done <<< "$snapshot"
 }
 
 # Exact regenerable caches only. Never authorize by basename, category flag,
@@ -2560,7 +2581,7 @@ clean_path_bytes() {
 
 storage_clean() {
   local category="${1:-}" rootfs users line manifest_key deletable bytes path freed=0 reason
-  local removed='' refused='' kept='' before after
+  local removed='' refused='' kept='' before after snapshot process_names
   case "$category" in
     build_caches) ;;
     agent_scratch|project_build_outputs|toolchains|ai_team|opencode|projects|shared_caches)
@@ -2578,12 +2599,19 @@ storage_clean() {
     return 0
   fi
   rootfs=$(rootfs_dir || true)
+  # Process substitution hides its producer's exit status. Capture and check
+  # discovery and classification before changing any report or cache path.
+  if ! snapshot=$(list_processes) ||
+     ! process_names=$(process_users "$category" "$snapshot" | sort -u); then
+    printf '{"freed_bytes":0,"removed":[],"refused":[{"path":"","reason":"process_check_failed"}]}\n'
+    return 0
+  fi
   users=''
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     [ -z "$users" ] || users+=','
     users+=$(json_str "$line")
-  done < <(process_users "$category" "$rootfs" | sort -u)
+  done <<< "$process_names"
   if [ -n "$users" ]; then
     printf '{"freed_bytes":0,"removed":[],"refused":[{"path":"","reason":"in_use","processes":[%s]}]}\n' "$users"
     return 0

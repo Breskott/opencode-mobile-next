@@ -354,6 +354,52 @@ void main() {
       );
     });
 
+    test('failed process discovery preserves caches and the current report', () {
+      final phone = _phoneWithCaches();
+      _scan(phone);
+      final reportFile = File('${phone.ocDir.path}/storage-scan.json');
+      final manifestFile = File('${phone.ocDir.path}/storage-scan.paths');
+      final beforeReport = reportFile.readAsStringSync();
+      final beforeManifest = manifestFile.readAsStringSync();
+      phone.ps.writeAsStringSync(
+        '#!/bin/bash\n'
+        'echo "unsupported process columns" >&2\n'
+        'exit 1\n',
+      );
+      final result = TermuxStorageCleanResult.parse(
+        phone.run(['storage-clean', 'build_caches']).stdout as String,
+      );
+      expect(result.refused.single.reason, 'process_check_failed');
+      expect(result.freedBytes, 0);
+      expect(result.removed, isEmpty);
+      expect(result.rescanRequired, isFalse);
+      expect(reportFile.readAsStringSync(), beforeReport);
+      expect(manifestFile.readAsStringSync(), beforeManifest);
+      expect(File('${phone.ocDir.path}/storage-scan.state').readAsStringSync(), 'done');
+      expect(File('${phone.rootfs.path}/root/.gradle/caches/a.jar').existsSync(), isTrue);
+      expect(File('${phone.home.path}/.npm/_cacache/content-v2/cache').existsSync(), isTrue);
+    });
+
+    for (final emptyPid in [false, true]) {
+      test('incomplete lock stays busy while fresh and recovers after aging (empty PID: $emptyPid)', () {
+        final phone = _phoneWithCaches();
+        _scan(phone);
+        final lock = Directory('${phone.ocDir.path}/storage-operation.lock')..createSync();
+        if (emptyPid) File('${lock.path}/pid').writeAsStringSync('');
+        expect(phone.run(['storage-clean', 'build_caches']).exitCode, 75);
+        expect(phone.run(['storage-scan']).exitCode, 75);
+        expect(File('${phone.rootfs.path}/root/.gradle/caches/a.jar').existsSync(), isTrue);
+        final aged = Process.runSync('touch', ['-m', '-t', '202001010000', lock.path]);
+        expect(aged.exitCode, 0);
+        final result = TermuxStorageCleanResult.parse(
+          phone.run(['storage-clean', 'build_caches']).stdout as String,
+        );
+        expect(result.refused, isEmpty);
+        expect(result.removed, hasLength(2));
+        expect(lock.existsSync(), isFalse);
+      });
+    }
+
     test('plain Termux without Ubuntu only cleans its npm content cache', () {
       final phone = _phoneWithCaches();
       phone.rootfs.deleteSync(recursive: true);
