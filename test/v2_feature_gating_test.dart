@@ -310,6 +310,8 @@ void main() {
     // Audit UX-101 moved every management destination behind one labelled
     // "Manage project" route; the gating rule now applies inside it.
     Future<void> openManageProject(WidgetTester tester) async {
+      await tester.tap(find.byKey(const ValueKey('current-project-entry')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('manage-project-entry')));
       await tester.pumpAndSettle();
     }
@@ -344,7 +346,7 @@ void main() {
       // The route itself survives: switching projects and project health
       // have a backend on every generation, so it is never a dead end.
       expect(
-        find.byKey(const ValueKey('manage-project-entry')),
+        find.byKey(const ValueKey('current-project-entry')),
         findsOneWidget,
       );
       await openManageProject(tester);

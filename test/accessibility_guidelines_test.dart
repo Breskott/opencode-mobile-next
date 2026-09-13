@@ -293,7 +293,7 @@ void main() {
       );
       expect(
         find.byKey(const ValueKey('manage-project-entry')),
-        findsOneWidget,
+        findsNothing,
       );
       await _expectAccessible(tester);
     });

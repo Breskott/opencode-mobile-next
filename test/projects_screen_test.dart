@@ -454,14 +454,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Management is a labelled action on the project row itself, above the
-    // sessions, so it reads as part of the project rather than as a session.
+    // The current project is one entry; management is disclosed in its sheet.
     double topOf(Key key) => tester.getTopLeft(find.byKey(key)).dy;
     final context = topOf(const ValueKey('current-project-entry'));
     final session = topOf(const ValueKey('session-dismiss-session-1'));
-    final manage = topOf(const ValueKey('manage-project-entry'));
     expect(context, lessThan(session));
-    expect(manage, lessThan(session));
+    expect(find.byKey(const ValueKey('manage-project-entry')), findsNothing);
 
     // Management destinations no longer sit on the sessions screen at all.
     expect(find.byKey(const ValueKey('worktrees-entry')), findsNothing);
@@ -471,6 +469,8 @@ void main() {
       findsNothing,
     );
 
+    await tester.tap(find.byKey(const ValueKey('current-project-entry')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('manage-project-entry')));
     await tester.pumpAndSettle();
 
@@ -622,7 +622,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Swipe target'), findsOneWidget);
     expect(find.text('No projects opened'), findsNothing);
-    expect(find.text('/work/app'), findsOneWidget);
+    expect(find.text('/work/app'), findsNothing);
+    expect(find.byKey(const ValueKey('current-project-entry')), findsOneWidget);
   });
 
   testWidgets(
@@ -725,7 +726,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Project list unavailable'), findsNothing);
       expect(find.text('No projects opened'), findsNothing);
-      expect(find.text('/work/app'), findsOneWidget);
+      expect(find.text('/work/app'), findsNothing);
+    expect(find.byKey(const ValueKey('current-project-entry')), findsOneWidget);
       expect(find.text('Swipe target'), findsOneWidget);
       expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
     },
@@ -740,6 +742,8 @@ void main() {
       ProfileStore(prefs: await SharedPreferences.getInstance()),
       repository,
     );
+    const notice = 'The saved home folder is not a project. Choose a project folder.';
+    controller.locationNotice = notice;
     addTearDown(controller.dispose);
     await tester.pumpWidget(
       MaterialApp(
@@ -755,6 +759,8 @@ void main() {
       find.byKey(const ValueKey('workspace-folder-chooser')),
       findsOneWidget,
     );
+    expect(find.text(notice), findsOneWidget);
+    expect(find.byKey(const ValueKey('location-recovery-notice')), findsOneWidget);
     expect(find.text('Choose a project folder'), findsOneWidget);
     expect(find.byKey(const ValueKey('workspace-open-folder')), findsOneWidget);
     expect(find.byKey(const ValueKey('workspace-quick-ask')), findsNothing);
@@ -817,7 +823,8 @@ void main() {
 
     expect(find.text('No projects opened'), findsNothing);
     expect(find.byKey(const ValueKey('current-project-entry')), findsOneWidget);
-    expect(find.text('/work/app'), findsOneWidget);
+    expect(find.text('/work/app'), findsNothing);
+    expect(find.byKey(const ValueKey('current-project-entry')), findsOneWidget);
     expect(find.text('Swipe target'), findsOneWidget);
     await tester.tap(find.text('Swipe target'));
     await tester.pumpAndSettle();
@@ -1078,6 +1085,9 @@ void main() {
 
     expect(find.byKey(const ValueKey('workspace-create-folder')), findsNothing);
     expect(find.byKey(const ValueKey('workspace-open-folder')), findsOneWidget);
+    expect(find.textContaining('cannot create folders'), findsNothing);
+    await tester.tap(find.text('Details'));
+    await tester.pumpAndSettle();
     expect(find.textContaining('cannot create folders'), findsOneWidget);
   });
 }

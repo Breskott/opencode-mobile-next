@@ -298,6 +298,50 @@ void main() {
     },
   );
 
+  testWidgets('unknown review details can move to the parent without hiding stale state', (tester) async {
+    final c = await briefController();
+    addTearDown(c.dispose);
+    c.known = false;
+    c.sessionsById.clear();
+    await tester.pumpWidget(briefApp(c, home: ReturnBriefPanel(
+      controller: c, unknownStatusInParent: true,
+    )));
+    await frames(tester);
+    expect(find.byType(ReturnBriefCard), findsNothing);
+    expect(find.text('Review status unknown'), findsNothing);
+    c.permissionsError = 'Permission refresh failed';
+    c.publish();
+    await frames(tester);
+    expect(find.byType(ReturnBriefCard), findsOneWidget);
+    expect(find.textContaining('Last observed state.'), findsOneWidget);
+  });
+
+  testWidgets('parent review details never hide an actionable request', (tester) async {
+    final c = await briefController(requests: true);
+    addTearDown(c.dispose);
+    c.known = false;
+    await tester.pumpWidget(briefApp(c, home: SingleChildScrollView(
+      child: ReturnBriefPanel(controller: c, unknownStatusInParent: true),
+    )));
+    await frames(tester);
+    expect(inBrief('Answer'), findsOneWidget);
+    expect((c.api as BriefApi).formReplies, isEmpty);
+  });
+
+  testWidgets('partial inventory preserves the status panel unless parent owns it', (tester) async {
+    final c = await briefController();
+    addTearDown(c.dispose);
+    c.known = false;
+    c.partial = true;
+    c.sessionsById.clear();
+    await tester.pumpWidget(briefApp(c, home: ReturnBriefPanel(
+      controller: c, unknownStatusInParent: true,
+    )));
+    await frames(tester);
+    expect(find.byType(ReturnBriefCard), findsOneWidget);
+    expect(find.text('Review status unknown'), findsOneWidget);
+  });
+
   testWidgets('unsupported form state does not make the return brief stale', (
     tester,
   ) async {

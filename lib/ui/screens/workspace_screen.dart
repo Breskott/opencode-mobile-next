@@ -53,6 +53,10 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   int _dataRefreshRevision = 0;
   final Set<String> _pendingArchive = {};
 
+  bool get _hasProjectDetails =>
+      widget.controller.capabilities.projectManagement &&
+      (_projects?.isNotEmpty == true || _selectedDirectory != null);
+
   @override
   void initState() {
     super.initState();
@@ -387,7 +391,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         .toList();
     final archived = widget.controller.archivedSessions();
     final capabilities = widget.controller.capabilities;
-    final largeProjectText = MediaQuery.textScalerOf(context).scale(14) > 18;
     final partial =
         widget.controller.hasMoreSessions ||
         widget.controller.sessionsLoading ||
@@ -451,24 +454,13 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                       if (capabilities.projectManagement &&
                           _projects == null &&
                           _projectError == null)
+                        // A transient state: the caption's search stays
+                        // reachable below, so no second search button here.
                         Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Semantics(
-                                label: _l10n(
-                                  context,
-                                ).e7WorkspaceLoadingProjects,
-                                child: const LinearProgressIndicator(),
-                              ),
-                              if (capabilities.globalSessionSearch)
-                                TextButton.icon(
-                                  onPressed: _openAllSessions,
-                                  icon: const Icon(AppIconography.searchList),
-                                  label: Text(l10n.workspaceSearchAllSessions),
-                                ),
-                            ],
+                          child: Semantics(
+                            label: _l10n(context).e7WorkspaceLoadingProjects,
+                            child: const LinearProgressIndicator(),
                           ),
                         ),
                       if (capabilities.projectManagement &&
@@ -533,82 +525,19 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                                 : null,
                           ),
                         )
-                      // At large text the header stacks: the name takes the
-                      // whole row (a trailing Manage and chevron left a
-                      // nine-letter name breaking mid-word at 320dp/2.5x),
-                      // the folder line carries the switch affordance, and
-                      // the actions sit beneath as labelled targets.
-                      else if (capabilities.projectManagement &&
-                          largeProjectText &&
-                          (_projects?.isNotEmpty == true ||
-                              _selectedDirectory != null))
-                        _CompactProjectHeader(
+                      // The project is context, not a control panel: the
+                      // name owns its row at every text size, and a
+                      // single chevron opens the project sheet containing
+                      // the full folder path. Switching, managing
+                      // and the review-state caveat live in that sheet.
+                      else if (_hasProjectDetails)
+                        _ProjectHeader(
                           key: const ValueKey('current-project-entry'),
                           name:
                               _selectedProject?.name ??
                               (_selectedDirectory == null
                                   ? _l10n(context).e7WorkspaceChooseProject
                                   : _basename(_selectedDirectory!)),
-                          detail: _contextSubtitle,
-                          detailDirection: _selectedDirectory == null
-                              ? null
-                              : TextDirection.ltr,
-                          onTap: _openContextSheet,
-                          onSwitchProject: _openProjects,
-                          manage: ManageProjectScreen.isAvailable(capabilities)
-                              ? _manageProjectAction(l10n, alignLeading: true)
-                              : null,
-                        )
-                      else if (capabilities.projectManagement &&
-                          (_projects?.isNotEmpty == true ||
-                              _selectedDirectory != null))
-                        ListTile(
-                          key: const ValueKey('current-project-entry'),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          minLeadingWidth: 32,
-                          horizontalTitleGap: 12,
-                          leading: const SizedBox.square(
-                            dimension: 32,
-                            child: Icon(AppIconography.files, size: 24),
-                          ),
-                          title: Text(
-                            _selectedProject?.name ??
-                                (_selectedDirectory == null
-                                    ? _l10n(context).e7WorkspaceChooseProject
-                                    : _basename(_selectedDirectory!)),
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          subtitle: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _contextSubtitle,
-                                textDirection: _selectedDirectory == null
-                                    ? null
-                                    : TextDirection.ltr,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                    ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (ManageProjectScreen.isAvailable(capabilities))
-                                _manageProjectAction(l10n),
-                              const Icon(AppIconography.unfoldMore),
-                            ],
-                          ),
                           onTap: _openContextSheet,
                         ),
                       // Still context, not management: the session is running
@@ -681,6 +610,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   child: ReturnBriefPanel(
                     controller: widget.controller,
                     inventoryStatusInParent: true,
+                    unknownStatusInParent: _hasProjectDetails,
                   ),
                 ),
                 // The AI Team plugin's card sits below the project context
@@ -901,27 +831,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     );
   }
 
-  Widget _manageProjectAction(
-    AppLocalizations l10n, {
-    bool alignLeading = false,
-  }) => Tooltip(
-    message: l10n.workspaceManageProjectHint,
-    child: TextButton(
-      key: const ValueKey('manage-project-entry'),
-      onPressed: _openManageProject,
-      style: TextButton.styleFrom(
-        minimumSize: const Size(48, 48),
-        padding: alignLeading
-            ? EdgeInsets.zero
-            : const EdgeInsets.symmetric(horizontal: 10),
-        alignment: alignLeading
-            ? AlignmentDirectional.centerStart
-            : Alignment.center,
-      ),
-      child: Text(l10n.workspaceManage),
-    ),
-  );
-
   Future<void> _showDirectoryDetails(String directory) => showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
@@ -1028,6 +937,11 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 ),
               ),
               const Divider(height: 1),
+              if (!widget.controller.supportsSessionReadState)
+                ListTile(
+                  leading: const Icon(AppIconography.info),
+                  title: Text(_l10n(context).returnBriefStatusUnknown),
+                ),
               ListTile(
                 key: const ValueKey('context-switch-project'),
                 leading: const Icon(AppIconography.swap),
@@ -1042,6 +956,15 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   sheetContext,
                 ).pop(const _ContextChoice.switchProject()),
               ),
+              if (ManageProjectScreen.isAvailable(widget.controller.capabilities))
+                ListTile(
+                  key: const ValueKey('manage-project-entry'),
+                  leading: const Icon(AppIconography.settings),
+                  title: Text(_l10n(context).workspaceManageProject),
+                  trailing: const Icon(AppIconography.chevronRight),
+                  onTap: () => Navigator.of(sheetContext)
+                      .pop(const _ContextChoice.manageProject()),
+                ),
               if (_workspaces.isNotEmpty) ...[
                 SectionLabel(_l10n(context).e7WorkspaceWorkspace),
                 ListTile(
@@ -1087,6 +1010,10 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       ),
     );
     if (!mounted || choice == null) return;
+    if (choice.manageProject) {
+      await _openManageProject();
+      return;
+    }
     if (choice.switchProject) {
       await _openProjects();
       return;
@@ -1110,6 +1037,37 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     final failureMessage = _l10n(context).e7WorkspaceNoShareLink;
     try {
       switch (action) {
+        case 'details':
+          await showModalBottomSheet<void>(
+            context: context,
+            showDragHandle: true,
+            isScrollControlled: true,
+            builder: (context) => SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(presentedSessionTitle(session,
+                      fallback: _l10n(context).globalSessionsUntitled,
+                      l10n: _l10n(context)),
+                      style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 16),
+                    if (session.directory?.isNotEmpty == true)
+                      SelectableText(session.directory!, textDirection: TextDirection.ltr),
+                    for (final label in sessionUsageLabels(session, l10n: _l10n(context)))
+                      Padding(padding: const EdgeInsets.only(top: 8), child: Text(label)),
+                    if (session.shareUrl != null)
+                      Padding(padding: const EdgeInsets.only(top: 8),
+                        child: SelectableText(_l10n(context).e7WorkspaceSharedUrl(session.shareUrl!),
+                          textDirection: TextDirection.ltr)),
+                  ],
+                ),
+              ),
+            ),
+          );
+          return;
         case 'rename':
           await _rename(session);
           break;
@@ -1398,11 +1356,16 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 /// What the context sheet was dismissed with: switch project, or move to a
 /// workspace (`null` meaning the project's own local checkout).
 class _ContextChoice {
-  const _ContextChoice.switchProject() : workspace = null, switchProject = true;
-  const _ContextChoice.workspace(this.workspace) : switchProject = false;
+  const _ContextChoice.switchProject()
+    : workspace = null, switchProject = true, manageProject = false;
+  const _ContextChoice.manageProject()
+    : workspace = null, switchProject = false, manageProject = true;
+  const _ContextChoice.workspace(this.workspace)
+    : switchProject = false, manageProject = false;
 
   final WorkspaceInfo? workspace;
   final bool switchProject;
+  final bool manageProject;
 }
 
 class _SessionRow extends StatelessWidget {
@@ -1518,8 +1481,6 @@ class _SessionRow extends StatelessWidget {
                   : null,
               maxLines: largeText ? 3 : 2,
               rest: [
-                if (session.shareUrl != null)
-                  _l10n(context).e7WorkspaceSharedUrl(session.shareUrl!),
                 if (updated != null) relativeTimeLabel(updated, l10n: l10n),
                 // The folder only earns its place when it differs from the
                 // open project, e.g. a worktree; otherwise every row would
@@ -1530,10 +1491,6 @@ class _SessionRow extends StatelessWidget {
                       controller.directory,
                     ))
                   _basename(session.directory!),
-                // Server-reported usage, when the server sends it: what the run
-                // cost and how much it touched, so a row answers "was that
-                // worth it?" without opening the session.
-                ...sessionUsageLabels(session, l10n: l10n),
               ],
             ),
           ],
@@ -1543,6 +1500,10 @@ class _SessionRow extends StatelessWidget {
           onSelected: (value) =>
               value == 'pin' ? togglePin() : onAction(value, session),
           itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'details',
+              child: Text(l10n.chatUiDetails),
+            ),
             if (controller.canPinSessions)
               PopupMenuItem(
                 value: 'pin',
@@ -1582,6 +1543,11 @@ class _SessionRow extends StatelessWidget {
     // mouse user actually reaches for. A pass-through off desktop.
     return ContextMenuRegion(
       actions: () => [
+        ContextMenuAction(
+          label: l10n.chatUiDetails,
+          icon: AppIconography.info,
+          onSelected: () => unawaited(onAction('details', session)),
+        ),
         if (controller.canPinSessions)
           ContextMenuAction(
             label: pinned ? l10n.sessionUnpin : l10n.sessionPin,
@@ -1677,36 +1643,11 @@ class _SessionRowSubtitle extends StatelessWidget {
   }
 }
 
-/// The project header at large text (above roughly 1.3x). The name owns the
-/// full row width; the folder line carries the folder glyph and the
-/// context-sheet chevron; Manage and Switch project sit beneath as labelled
-/// 48dp targets. The whole name-and-folder block still opens the context
-/// sheet, as the row does at normal text.
-///
-/// The name keeps the large title wherever its longest unbreakable segment
-/// fits the row at the user's scale. When it cannot (a 9-letter name is
-/// already 292dp at 320dp/2.5x), the base size steps down one rung at a
-/// time before the text would break inside a word. The user's scale is
-/// never reduced; only the base size the scale multiplies.
-class _CompactProjectHeader extends StatelessWidget {
-  const _CompactProjectHeader({
-    super.key,
-    required this.name,
-    required this.detail,
-    required this.detailDirection,
-    required this.onTap,
-    required this.onSwitchProject,
-    required this.manage,
-  });
-
+/// One project entry opens the folder, workspace and management details.
+class _ProjectHeader extends StatelessWidget {
+  const _ProjectHeader({super.key, required this.name, required this.onTap});
   final String name;
-  final String detail;
-  final TextDirection? detailDirection;
   final VoidCallback onTap;
-  final VoidCallback onSwitchProject;
-
-  /// Null when project management has no screen on this connection.
-  final Widget? manage;
 
   /// Base sizes the name may use, largest first; heights keep the title's
   /// 1.25–1.375 leading.
@@ -1752,85 +1693,33 @@ class _CompactProjectHeader extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = _l10n(context);
-    final muted = theme.colorScheme.onSurfaceVariant;
-    return LayoutBuilder(
-      builder: (context, constraints) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          MergeSemantics(
-            child: InkWell(
-              key: const ValueKey('current-project-context'),
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      name,
-                      key: const ValueKey('current-project-name'),
-                      style: nameStyle(
-                        context,
-                        name,
-                        maxWidth: constraints.maxWidth - 32,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(AppIconography.files, size: 18, color: muted),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            detail,
-                            textDirection: detailDirection,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: muted,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(AppIconography.unfoldMore, size: 20, color: muted),
-                      ],
-                    ),
-                  ],
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => Tooltip(
+      message: _l10n(context).workspaceManageProjectHint,
+      child: InkWell(
+        key: const ValueKey('current-project-context'),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  name,
+                  key: const ValueKey('current-project-name'),
+                  style: nameStyle(context, name, maxWidth: constraints.maxWidth - 64),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ),
+              const SizedBox(width: 8),
+              const Icon(AppIconography.chevronRight, size: 24),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Wrap(
-              spacing: 16,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                ?manage,
-                TextButton.icon(
-                  key: const ValueKey('workspace-switch-project'),
-                  onPressed: onSwitchProject,
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(48, 48),
-                    padding: EdgeInsets.zero,
-                    alignment: AlignmentDirectional.centerStart,
-                  ),
-                  icon: const Icon(AppIconography.swap, size: 20),
-                  label: Text(l10n.e7WorkspaceSwitchProject),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 enum _SectionAction { refresh, terminal, background }
@@ -2347,24 +2236,12 @@ class _WorkspaceFolderChooser extends StatelessWidget {
         96 + MediaQuery.paddingOf(context).bottom,
       ),
       children: [
-        if (notice != null)
-          ListTile(
-            key: const ValueKey('location-recovery-notice'),
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(AppIconography.info),
-            title: Text(notice!),
-          ),
         const SizedBox(height: 8),
-        Icon(
-          AppIconography.folderAdd,
-          size: 40,
-          color: theme.colorScheme.primary,
-        ),
-        const SizedBox(height: 12),
         Text(l10n.projectFolderChooserTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: 8),
         Text(
-          l10n.projectFolderChooserMessage,
+          notice ?? l10n.e7WorkspaceChooseFolderToStart,
+          key: notice == null ? null : const ValueKey('location-recovery-notice'),
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 20),
@@ -2383,17 +2260,20 @@ class _WorkspaceFolderChooser extends StatelessWidget {
           label: Text(l10n.projectFolderOpen),
         ),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
+        TextButton.icon(
           key: const ValueKey('workspace-browse-projects'),
           onPressed: onBrowse,
           icon: const Icon(AppIconography.folders),
           label: Text(l10n.projectFolderBrowse),
         ),
         if (!canCreate) ...[
-          const SizedBox(height: 12),
-          Text(
-            l10n.projectFolderNoCreateHint,
-            style: theme.textTheme.bodySmall,
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            shape: const Border(),
+            collapsedShape: const Border(),
+            title: Text(l10n.chatUiDetails),
+            children: [Text(l10n.projectFolderNoCreateHint,
+              style: theme.textTheme.bodySmall)],
           ),
         ],
         if (projectError != null) ...[

@@ -1,7 +1,7 @@
 // Stable workspace at phone widths and large text (2026-09-13). Returning
 // to a project and starting or resuming a session stays visually clear at
 // 320dp with 2x and 2.5x text: the header gives the project name the full
-// row with Manage and Switch project labelled beneath it; session rows keep
+// row with secondary actions in its project sheet; session rows keep
 // status and time by wrapping instead of cutting; the docked New session
 // action never clips, stacking the isolated-task action above it when the
 // label cannot share the row; and the scroll end clears the dock by its real
@@ -103,6 +103,7 @@ Session _session(
   String title,
   int updated, {
   double? cost,
+  String? shareUrl,
   SessionDiffSummary? summary,
 }) => Session(
   id: id,
@@ -110,6 +111,7 @@ Session _session(
   directory: _directory,
   time: SessionTime(created: 1, updated: updated),
   cost: cost,
+  shareUrl: shareUrl,
   summary: summary,
 );
 
@@ -129,6 +131,7 @@ Future<_Controller> _controller({String projectName = 'shopfront'}) async {
       'Fix flaky checkout test',
       100,
       cost: 0.42,
+      shareUrl: "https://example.test/shared/checkout",
       summary: const SessionDiffSummary(
         additions: 120,
         deletions: 34,
@@ -182,7 +185,7 @@ Finder _row(String id) => find.byKey(ValueKey('session-dismiss-$id'));
 final _header = find.byKey(const ValueKey('current-project-entry'));
 final _name = find.byKey(const ValueKey('current-project-name'));
 final _manage = find.byKey(const ValueKey('manage-project-entry'));
-final _switch = find.byKey(const ValueKey('workspace-switch-project'));
+final _switch = find.byKey(const ValueKey('context-switch-project'));
 final _pill = find.byKey(const ValueKey('workspace-quick-ask'));
 final _isolated = find.byKey(const ValueKey('workspace-isolated-task'));
 final _primary = find.widgetWithText(FilledButton, 'New session');
@@ -204,34 +207,16 @@ void main() {
         await _pumpFrames(tester);
         expect(tester.takeException(), isNull);
 
-        // The name owns the full row between the 16dp rails: nothing trails
-        // it that could squeeze a nine-letter name into a mid-word break.
+        // One project entry keeps secondary controls off the conversation list.
         expect(_header, findsOneWidget);
         expect(_name, findsOneWidget);
         expect(tester.getTopLeft(_name).dx, 16);
-        expect(tester.getSize(_name).width, 288);
+        expect(tester.getSize(_name).width, 256);
         expect(tester.widget<Text>(_name).maxLines, 3);
-        final path = find.descendant(
-          of: _header,
-          matching: find.text(_directory),
-        );
-        expect(path, findsOneWidget);
-        expect(tester.widget<Text>(path).maxLines, 1);
-
-        // Manage and Switch project are labelled 48dp targets beneath the
-        // name, not trailing controls beside it.
-        for (final action in [_manage, _switch]) {
-          expect(action, findsOneWidget);
-          expect(tester.getSize(action).height, greaterThanOrEqualTo(48));
-          expect(
-            tester.getTopLeft(action).dy,
-            greaterThanOrEqualTo(tester.getBottomLeft(_name).dy),
-          );
-        }
-        expect(
-          find.descendant(of: _switch, matching: find.text('Switch project')),
-          findsOneWidget,
-        );
+        expect(find.text(_directory), findsNothing);
+        expect(_manage, findsNothing);
+        expect(_switch, findsNothing);
+        expect(find.textContaining(r'$0.42'), findsNothing);
 
         // The working row's facts wrap to three lines at large text rather
         // than cutting "Working · 2m ago · $0.42 …" to one.
@@ -294,16 +279,16 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(_name, findsOneWidget);
     expect(tester.getTopRight(_name).dx, 320 - 16);
-    expect(tester.getSize(_name).width, 288);
-    expect(_switch, findsOneWidget);
-    expect(_manage, findsOneWidget);
+    expect(tester.getSize(_name).width, 256);
+    expect(_switch, findsNothing);
+    expect(_manage, findsNothing);
     expect(_primary, findsOneWidget);
     expect(tester.getSize(_primary).width, 288);
     expect(_isolated, findsOneWidget);
   });
 
   // The test font paints every glyph 1em wide. At 2.5x the rungs are 60, 50
-  // and 40dp per glyph; a 307dp phone gives the name a 275dp row, so four
+  // and 40dp per glyph; a 339dp phone gives the name a 275dp row, so four
   // letters fit the large title, a five-letter segment ("shop-") only the
   // middle rung, and nine letters no rung at all, each with a 25dp margin.
   for (final (name, fontSize) in [
@@ -312,10 +297,10 @@ void main() {
     ('shopfront', 16.0),
   ]) {
     testWidgets(
-      '307dp 2.5x: "$name" keeps the largest title size whose longest '
+      '339dp 2.5x: "$name" keeps the largest title size whose longest '
       'segment fits the row ($fontSize)',
       (tester) async {
-        _phone(tester, 307);
+        _phone(tester, 339);
         final controller = await _controller(projectName: name);
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(controller, textScale: 2.5));
@@ -341,6 +326,8 @@ void main() {
     await tester.pumpWidget(_app(controller, textScale: 2));
     await _pumpFrames(tester);
 
+    await tester.tap(_name);
+    await _pumpFrames(tester);
     await tester.tap(_switch);
     await _pumpFrames(tester);
     expect(find.byType(ProjectsScreen), findsOneWidget);
@@ -370,12 +357,11 @@ void main() {
     await _pumpFrames(tester);
     expect(tester.takeException(), isNull);
 
-    // Normal text: the ListTile header with Manage trailing; no stacked
-    // header, no extra switch button.
+    // Normal text uses the same single project entry as enlarged text.
     expect(_header, findsOneWidget);
-    expect(_name, findsNothing);
+    expect(_name, findsOneWidget);
     expect(_switch, findsNothing);
-    expect(_manage, findsOneWidget);
+    expect(_manage, findsNothing);
     expect(
       find.descendant(of: _header, matching: find.text('shopfront')),
       findsOneWidget,
@@ -399,4 +385,27 @@ void main() {
     expect(tester.getTopRight(_isolated).dx, 390 - 16);
     expect(tester.getSize(_primary).height, greaterThanOrEqualTo(48));
   });
+  testWidgets('session details disclose usage without cluttering the list', (tester) async {
+    _phone(tester, 390);
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await _pumpFrames(tester);
+    expect(find.textContaining(r'$0.42'), findsNothing);
+    expect(find.textContaining('+120'), findsNothing);
+    expect(find.textContaining('https://example.test/shared/checkout'), findsNothing);
+    await tester.tap(find.descendant(of: _row('busy'), matching: find.byType(PopupMenuButton<String>)));
+    await _pumpFrames(tester);
+    expect(find.text('Rename'), findsOneWidget);
+    await tester.tap(find.text('Details'));
+    await _pumpFrames(tester);
+    expect(find.textContaining(r'$0.42'), findsOneWidget);
+    expect(find.textContaining('+120'), findsOneWidget);
+    expect(find.textContaining('6 files'), findsOneWidget);
+    expect(find.textContaining('https://example.test/shared/checkout'), findsOneWidget);
+    expect(find.text(_directory), findsOneWidget);
+    expect(controller.createCalls, 0);
+    expect(tester.takeException(), isNull);
+  });
+
 }

@@ -16,8 +16,15 @@ class ReturnBriefPanel extends StatefulWidget {
     super.key,
     required this.controller,
     this.inventoryStatusInParent = false,
+    this.unknownStatusInParent = false,
   });
   final bool inventoryStatusInParent;
+
+  /// The parent shows "Review status unknown" itself, in its project
+  /// details, so an otherwise empty brief adds no row above the sessions.
+  /// Presentation only: a brief with requests, or a stale snapshot, still
+  /// renders here, and the acknowledgement logic is untouched.
+  final bool unknownStatusInParent;
   final ConnectionController controller;
   @override
   State<ReturnBriefPanel> createState() => _ReturnBriefPanelState();
@@ -133,6 +140,13 @@ class _ReturnBriefPanelState extends State<ReturnBriefPanel> {
         },
         ack: c.returnBriefAcknowledgement,
       );
+      if (widget.unknownStatusInParent &&
+          brief.isEmpty &&
+          !stale &&
+          (!partial || widget.inventoryStatusInParent) &&
+          !brief.readStateKnown) {
+        return const SizedBox.shrink();
+      }
       return ReturnBriefCard(
         brief: brief,
         inventoryStatusInParent: widget.inventoryStatusInParent,

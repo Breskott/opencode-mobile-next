@@ -414,13 +414,16 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
-    // Management sits on the project row at the top of the list.
+    // Open the project sheet to disclose management.
     await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('manage-project-entry')),
+      find.byKey(const ValueKey('current-project-entry')),
       -160,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('current-project-entry')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('manage-project-entry')));
     await tester.tap(find.byKey(const ValueKey('manage-project-entry')));
     await tester.pumpAndSettle();
 

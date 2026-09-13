@@ -341,10 +341,10 @@ void main() {
         find.descendant(of: context, matching: find.text('OpenCode Mobile')),
         findsNothing,
       );
-      expect(
-        find.descendant(of: context, matching: find.text('/work/selected-b')),
-        findsOneWidget,
-      );
+      expect(find.text('/work/selected-b'), findsNothing);
+      await tester.tap(context);
+      await _pumpFrames(tester);
+      expect(find.text('/work/selected-b'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
       controller.dispose();
     },
@@ -360,11 +360,8 @@ void main() {
       await tester.pumpWidget(_app(controller));
       await _pumpFrames(tester);
       final project = find.byKey(const ValueKey('current-project-entry'));
-      final pathText = find.descendant(of: project, matching: find.text(path));
-      expect(tester.widget<Text>(pathText).maxLines, 1);
-      await tester.tap(
-        find.descendant(of: project, matching: find.text('OpenCode Mobile')),
-      );
+      expect(find.text(path), findsNothing);
+      await tester.tap(project);
       await _pumpFrames(tester);
       expect(find.byType(SelectableText), findsOneWidget);
       expect(
