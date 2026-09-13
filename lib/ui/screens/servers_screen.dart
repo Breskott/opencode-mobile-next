@@ -21,6 +21,7 @@ import '../widgets/confirm_sheet.dart';
 import '../widgets/managed_server_health.dart';
 import '../widgets/product_states.dart';
 import '../widgets/team_host_form.dart';
+import '../widgets/termux_running_server_entry.dart';
 import 'demo_screen.dart';
 import 'attention_overview_screen.dart';
 import 'agent_account_screen.dart';
@@ -53,6 +54,10 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   /// rows in the same verdict style the editor uses — never a red snackbar
   /// carrying a raw exception.
   String? _listFailure;
+
+  /// Bumped after Termux setup returns so the running-server entry re-reads
+  /// the phone instead of trusting what it saw before the user left.
+  int _termuxRevision = 0;
 
   @override
   void didChangeDependencies() {
@@ -89,19 +94,56 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       );
   }
 
-  Future<void> _connect(ServerProfile p) async {
+  Future<void> _openTermuxSetup() async {
+    await Navigator.pushNamed(context, '/termux-setup');
+    if (mounted) setState(() => _termuxRevision++);
+  }
+
+  /// The detected running-server entry for [profiles]: it decides on its own
+  /// whether anything is shown, so both the welcome and the list embed it
+  /// unconditionally and stay platform-gated through it.
+  Widget _runningServerEntry(
+    List<ServerProfile> profiles,
+    ConnectionController connection,
+  ) {
+    return TermuxRunningServerEntry(
+      profiles: profiles,
+      busy: _busy,
+      revision: _termuxRevision,
+      connectedProfileID: connection.api == null
+          ? null
+          : connection.profile?.id,
+      onConnect: (profile) => _connect(profile, detectedRunning: true),
+      onEnterCredentials: (server, existing) => _edit(
+        existing: existing,
+        connectOnSave: true,
+        initialUrl: TermuxBridge.managedServerUrl,
+        focusPassword: true,
+        openCode2Intent: server.flavor == ServerFlavor.v2,
+      ),
+    );
+  }
+
+  /// [detectedRunning] means the caller already knows which managed runtime
+  /// is live and chose its profile, so the runtime-choice detour is moot.
+  Future<void> _connect(
+    ServerProfile p, {
+    bool detectedRunning = false,
+  }) async {
     if (_busy) return;
-    if (_needsManagedRuntimeChoice(
-      p,
-      ref.read(bootstrapProvider).store.profiles,
-    )) {
-      await Navigator.pushNamed(context, '/termux-setup');
+    if (!detectedRunning &&
+        _needsManagedRuntimeChoice(
+          p,
+          ref.read(bootstrapProvider).store.profiles,
+        )) {
+      await _openTermuxSetup();
       return;
     }
     if (p.requiresPasswordReentry || p.requiresCodexTokenReentry) {
       await _edit(
         existing: p,
         focusPassword: p.backend == ServerBackend.openCode,
+        connectOnSave: detectedRunning,
       );
       return;
     }
@@ -143,6 +185,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     bool tailscale = false,
     String? initialUrl,
     bool openCode2Intent = false,
+    bool connectOnSave = false,
   }) async {
     final isNew = existing == null;
     final useTailscale =
@@ -162,20 +205,24 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         builder: (_) => _ProfileEditorScreen(
           existing: existing,
           reconnectOnSave:
+              connectOnSave ||
               existing?.id == ref.read(bootstrapProvider).store.activeId,
           focusPassword: focusPassword,
           tailscale: useTailscale,
           initialUrl: initialUrl,
           openCode2Intent: openCode2Intent,
           onSubmit: (profile) =>
-              _saveAndConnect(profile, isNew: isNew, tailscale: useTailscale),
+              _saveAndConnect(
+                profile, isNew: isNew, tailscale: useTailscale,
+                forceConnect: connectOnSave,
+              ),
           secureStorageProbe: () =>
               ref.read(bootstrapProvider).store.secureStorageProblem(),
         ),
       ),
     );
     if (result == null || !mounted) return;
-    if (isNew || result.backend == ServerBackend.codex) {
+    if (isNew || connectOnSave || result.backend == ServerBackend.codex) {
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
     }
   }
@@ -195,6 +242,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     ServerProfile result, {
     required bool isNew,
     bool tailscale = false,
+    bool forceConnect = false,
   }) async {
     final copy = lookupAppLocalizations(Localizations.localeOf(context));
     final store = ref.read(bootstrapProvider).store;
@@ -211,7 +259,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           !await store.prefs.setBool('oc.tailscale.${result.id}', true)) {
         throw StateError(copy.e7SetupGuidanceSaveFailed);
       }
-      if (wasActive || isNew || result.backend == ServerBackend.codex) {
+      if (wasActive || isNew || forceConnect || result.backend == ServerBackend.codex) {
         final savedProfile = store.profiles.firstWhere(
           (profile) => profile.id == result.id,
         );
@@ -383,10 +431,14 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           if (store.profiles.isEmpty) {
             return _WelcomeView(
               busy: _busy,
+              runningServer: _runningServerEntry(
+                store.profiles,
+                accountConnection,
+              ),
               onConnect: () => _edit(),
               onConnectOpenCode2: () => _edit(openCode2Intent: true),
               onTailscale: _tailscale,
-              onTermux: () => Navigator.pushNamed(context, '/termux-setup'),
+              onTermux: _openTermuxSetup,
               onGuide: () => Navigator.pushNamed(context, '/guide'),
               onDemo: _demo,
               onExternalAgents: _externalAgents,
@@ -479,6 +531,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                     ),
                   ),
                 ),
+              _runningServerEntry(store.profiles, accountConnection),
               for (final p in store.profiles)
                 Card.filled(
                   margin: const EdgeInsets.symmetric(vertical: 4),
@@ -631,7 +684,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                         (p) => TermuxBridge.managesServerUrl(p.baseUrl),
                       )
                       .id,
-                  onManage: () => Navigator.pushNamed(context, '/termux-setup'),
+                  onManage: _openTermuxSetup,
                 ),
               OutlinedButton.icon(
                 onPressed: _busy ? null : () => _edit(),
@@ -655,9 +708,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
               if (platformCapabilities.supportsTermux)
                 _TermuxEntry(
                   key: const ValueKey('quick-add-termux-card'),
-                  onTap: _busy
-                      ? null
-                      : () => Navigator.pushNamed(context, '/termux-setup'),
+                  onTap: _busy ? null : _openTermuxSetup,
                 ),
               _SetupOptions(
                 busy: _busy,
@@ -676,6 +727,10 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
 /// First run has two immediate jobs: connect an existing server or try safely.
 class _WelcomeView extends StatelessWidget {
   final bool busy;
+
+  /// The detected on-device server, above every generic choice. It renders
+  /// nothing unless a running server was actually observed.
+  final Widget runningServer;
   final VoidCallback onConnect;
   final VoidCallback onConnectOpenCode2;
   final VoidCallback onTailscale;
@@ -686,6 +741,7 @@ class _WelcomeView extends StatelessWidget {
 
   const _WelcomeView({
     required this.busy,
+    required this.runningServer,
     required this.onConnect,
     required this.onConnectOpenCode2,
     required this.onTailscale,
@@ -725,6 +781,7 @@ class _WelcomeView extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 32),
+                      runningServer,
                       FilledButton(
                         key: const ValueKey('welcome-connect-card'),
                         onPressed: busy ? null : onConnect,

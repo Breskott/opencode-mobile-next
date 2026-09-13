@@ -1,0 +1,16 @@
+{
+  "en": {
+    "termuxRunningDetected": "Server found on this phone",
+    "termuxRunningConnect": "Connect to running server",
+    "termuxRunningDetails": "Server details",
+    "termuxRunningPermission": "Allow Termux access in phone setup to check for a server.",
+    "termuxRunningUnavailable": "Could not check the server on this phone."
+  },
+  "ar": {
+    "termuxRunningDetected": "تم العثور على خادم على هذا الهاتف",
+    "termuxRunningConnect": "الاتصال بالخادم قيد التشغيل",
+    "termuxRunningDetails": "تفاصيل الخادم",
+    "termuxRunningPermission": "اسمح بالوصول إلى Termux في إعداد الهاتف للتحقق من وجود خادم.",
+    "termuxRunningUnavailable": "تعذر التحقق من الخادم على هذا الهاتف."
+  }
+}
