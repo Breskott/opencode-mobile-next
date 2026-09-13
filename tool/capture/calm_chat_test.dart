@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+
 import '../../test/support/setup_capture_preferences.dart';
 
 import 'fixtures.dart';
@@ -130,9 +131,7 @@ void main() {
       });
     }
 
-    testWidgets('calm chat $mode 320dp keyboard busy at 2.5x', (
-      tester,
-    ) async {
+    testWidgets('calm chat $mode 320dp keyboard busy at 2.5x', (tester) async {
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       tester.platformDispatcher.textScaleFactorTestValue = 2.5;
