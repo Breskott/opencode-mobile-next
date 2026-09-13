@@ -397,8 +397,8 @@ void main() {
     expect(wrapper, contains('gradle-9.5.0-all.zip'));
     expect(example, contains('storeFile=/absolute/path/'));
     expect(example, contains('keyAlias=upload'));
-    expect(workflow, contains('Create draft GitHub prerelease'));
-    expect(workflow, contains('--draft --prerelease'));
+    expect(workflow, contains('Create draft stable GitHub release'));
+    expect(workflow, contains('--draft --prerelease=false'));
     expect(workflow, contains('dist/SHA256SUMS'));
     expect(workflow, contains('Signer SHA-256'));
   });
@@ -628,6 +628,12 @@ void main() {
         overrides: [connProvider.overrideWithValue(controller)],
         child: _scaledApp(const ChatScreen(sessionID: 's1'), bottomInset: 180),
       ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('prompt-editor-button')), findsNothing);
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'A draft to expand and finish',
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('prompt-editor-button')));
