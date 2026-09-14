@@ -159,7 +159,7 @@ jobs:
               sed -n 's/.*SHA256: //p' | tr -d ':[:space:]')
             expected=2D010C2103CB2F78ABAACA690EAD4D45F8003A6C0A02082CD2A2AE62FD18D0EC
             test "$actual" = "$expected"
-          elif [[ "${{ github.event_name }}" == pull_request ]]; then
+          elif [[ "${{ github.event_name }}" == pull_request || "${{ github.repository }}" != "Eslamasabry/opencode-mobile-next" ]]; then
             CI_KEYSTORE_PASSWORD=ci-not-for-distribution
             keytool -genkeypair -noprompt \
               -keystore "$CI_KEYSTORE" \
