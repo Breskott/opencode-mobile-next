@@ -1216,6 +1216,20 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             locale: _controller.appLocale.value,
+            // Supported locales are [ar, en], so Flutter's default resolution
+            // falls back to supportedLocales.first (Arabic) for any device
+            // locale that matches neither — e.g. pt-BR. Resolve matches first
+            // and fall back to English instead.
+            localeListResolutionCallback: (locales, supported) {
+              for (final locale in locales ?? const <Locale>[]) {
+                for (final candidate in supported) {
+                  if (candidate.languageCode == locale.languageCode) {
+                    return candidate;
+                  }
+                }
+              }
+              return const Locale('en');
+            },
             debugShowCheckedModeBanner: false,
             themeMode: switch (appearance) {
               AppAppearance.system => ThemeMode.system,
