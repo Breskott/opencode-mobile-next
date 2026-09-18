@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 
+import 'models.dart';
+
 /// Transport layer for the OpenCode 2 server API (`/api/...`).
 ///
 /// Owns base-URL normalization, HTTP Basic auth (username is always
@@ -334,7 +336,7 @@ class Api2Transport {
 
 /// Readiness payload. The beta v2 shape is `GET /api/health` →
 /// `{healthy, version, pid}`; the 2.x health answer is only `{healthy:true}`
-/// and the version then comes from [Api2ServerInfo].
+/// and the version then comes from `Api2ServerInfo` (`GET /api/info`).
 class Api2Health {
   final bool healthy;
   final String? version;
@@ -345,24 +347,6 @@ class Api2Health {
     healthy: j['healthy'] == true,
     version: j['version']?.toString(),
     pid: j['pid'] is num ? (j['pid'] as num).toInt() : null,
-  );
-}
-
-/// `GET /api/info` payload — the readiness/identity surface of opencode
-/// 2.0.5+ (`{version, pid, urls, paths:{tmp}}`). Answered successfully it
-/// means the server is up, so callers treat it as healthy.
-class Api2ServerInfo {
-  final String? version;
-  final int? pid;
-  final List<String> urls;
-  Api2ServerInfo({this.version, this.pid, this.urls = const []});
-
-  factory Api2ServerInfo.fromJson(Map<String, dynamic> j) => Api2ServerInfo(
-    version: j['version']?.toString(),
-    pid: j['pid'] is num ? (j['pid'] as num).toInt() : null,
-    urls: j['urls'] is List
-        ? [for (final url in j['urls'] as List) url.toString()]
-        : const [],
   );
 }
 

@@ -35,10 +35,18 @@ List<T> _mapList<T>(dynamic v, T? Function(Map<String, dynamic>) parse) {
 
 class Api2ServerInfo {
   final List<String> urls;
-  Api2ServerInfo({this.urls = const []});
 
-  factory Api2ServerInfo.fromJson(Map<String, dynamic> j) =>
-      Api2ServerInfo(urls: _asStringList(j['urls']));
+  /// Present on opencode 2.0.5+, where `GET /api/info` replaced
+  /// `GET /api/server` and carries the version and pid alongside the urls.
+  final String? version;
+  final int? pid;
+  Api2ServerInfo({this.urls = const [], this.version, this.pid});
+
+  factory Api2ServerInfo.fromJson(Map<String, dynamic> j) => Api2ServerInfo(
+    urls: _asStringList(j['urls']),
+    version: _asString(j['version']),
+    pid: j['pid'] is num ? (j['pid'] as num).toInt() : null,
+  );
 }
 
 class Api2Project {
