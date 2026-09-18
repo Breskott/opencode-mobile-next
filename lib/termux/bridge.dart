@@ -1685,11 +1685,11 @@ start_server() {
   local installed_version="$1"
   local starting_phase="${2:-starting_server}"
   local password
-  local runtime health_path
+  local runtime health_paths
   runtime=$(managed_runtime) || return 64
   case "$runtime" in
-    opencode1) health_path=/global/health ;;
-    opencode2) health_path=/api/health ;;
+    opencode1) health_paths=/global/health ;;
+    opencode2) health_paths='/api/info /api/health' ;;
   esac
   if [ -n "${CURRENT_RECOVERY:-}" ]; then
     recovery_permitted "$CURRENT_RECOVERY" || fail_setup 'Automatic recovery was disabled' "$CURRENT_PORT"
@@ -1728,11 +1728,18 @@ start_server() {
       exec 3<&-
       local auth_codes
       auth_codes=$(proot-distro login "$PROOT_NAME" -- env \
-        OC_PORT="$CURRENT_PORT" OC_PASSWORD="$password" OC_HEALTH_PATH="$health_path" bash -s <<'OC_AUTH_CHECK'
-unauth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
-  "http://127.0.0.1:$OC_PORT$OC_HEALTH_PATH" || true)
-auth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
-  -u "opencode:$OC_PASSWORD" "http://127.0.0.1:$OC_PORT$OC_HEALTH_PATH" || true)
+        OC_PORT="$CURRENT_PORT" OC_PASSWORD="$password" OC_HEALTH_PATHS="$health_paths" bash -s <<'OC_AUTH_CHECK'
+# Readiness routes differ by v2 build: opencode 2.0.5-2.0.7 serves
+# /api/info only (it dropped /api/health from the protocol), while the earlier
+# v2 betas serve /api/health. Probe every candidate and stop at the first that
+# answers 200 with the password; a build without the route answers 404.
+for path in $OC_HEALTH_PATHS; do
+  unauth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
+    "http://127.0.0.1:$OC_PORT$path" || true)
+  auth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
+    -u "opencode:$OC_PASSWORD" "http://127.0.0.1:$OC_PORT$path" || true)
+  if [ "$auth" = '200' ]; then break; fi
+done
 printf '%s %s' "$unauth" "$auth"
 OC_AUTH_CHECK
 )

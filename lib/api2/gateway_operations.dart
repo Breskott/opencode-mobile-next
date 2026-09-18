@@ -366,13 +366,24 @@ class Api2OperationsGateway extends ProductRepository
   @override
   Future<String?> managedShellServerIdentity() =>
       _guard('Could not identify the server', () async {
-        final health = await _transport.getJson(
-          '/health',
+        // Both readiness surfaces carry `pid`: the beta v2 `GET /api/health`
+        // (`{healthy, version, pid}`) and the 2.0.5+ `GET /api/info`
+        // (`{version, pid, urls, paths}`). A build that dropped /api/health
+        // answers 404 there, so fall through instead of reporting the server
+        // as unidentifiable.
+        Future<dynamic> readiness(String path) => _transport.getJson(
+          path,
           receiveTimeout: const Duration(seconds: 8),
         );
-        return health is Map && health['pid'] is num
-            ? health['pid'].toString()
-            : null;
+        dynamic json;
+        try {
+          json = await readiness('/health');
+        } on Api2Error catch (error) {
+          if (!const [404, 405, 501].contains(error.statusCode)) rethrow;
+          json = await readiness('/info');
+        }
+        final pid = json is Map ? json['pid'] : null;
+        return pid is num ? pid.toString() : null;
       });
 
   @override

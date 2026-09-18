@@ -116,7 +116,7 @@ Future<ServerProbeResult> _probeLoopback({
 
   cancellation?._add(cancelRequest);
   try {
-    for (final path in ['/api/health', '/global/health']) {
+    for (final path in ['/api/info', '/api/health', '/global/health']) {
       final response = await dio.get<Object?>(path, cancelToken: cancelToken);
       if (response.statusCode == 401) {
         return const ServerProbeResult.failure(
@@ -125,10 +125,13 @@ Future<ServerProbeResult> _probeLoopback({
         );
       }
       final body = response.data;
-      if (response.statusCode == 200 &&
-          body is Map &&
-          body['healthy'] == true) {
-        return ServerProbeResult.success(body['version']?.toString());
+      if (response.statusCode == 200 && body is Map) {
+        // opencode 2.0.5+ answers `/api/info` with `{version, pid, urls,
+        // paths}` — no `healthy` key at all — so a reported version is the
+        // readiness signal there; the health shapes carry `healthy`.
+        if (body['healthy'] == true || body['version'] != null) {
+          return ServerProbeResult.success(body['version']?.toString());
+        }
       }
     }
     return const ServerProbeResult.failure('No healthy OpenCode response');

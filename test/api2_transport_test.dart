@@ -195,4 +195,44 @@ void main() {
       }
     }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
   });
+
+  test('2.0.x readiness falls back from /api/health to /api/info', () async {
+    await HttpOverrides.runZoned(() async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final paths = <String>[];
+      server.listen((request) async {
+        paths.add(request.uri.path);
+        // opencode 2.0.5+ no longer serves /api/health at all.
+        if (request.uri.path == '/api/health') {
+          request.response.statusCode = HttpStatus.notFound;
+          await request.response.close();
+          return;
+        }
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(
+          jsonEncode({
+            'version': '2.0.7',
+            'pid': 5150,
+            'urls': ['http://127.0.0.1:4096'],
+            'paths': {'tmp': '/tmp'},
+          }),
+        );
+        await request.response.close();
+      });
+      final transport = Api2Transport(
+        baseUrl: 'http://${server.address.host}:${server.port}',
+        password: 'pw',
+      );
+      try {
+        final health = await transport.checkServer();
+        expect(health.healthy, isTrue);
+        expect(health.version, '2.0.7');
+        expect(health.pid, 5150);
+        expect(paths, ['/api/health', '/api/info']);
+      } finally {
+        transport.close();
+        await server.close(force: true);
+      }
+    }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
+  });
 }

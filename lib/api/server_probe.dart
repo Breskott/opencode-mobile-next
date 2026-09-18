@@ -129,11 +129,99 @@ Future<ServerProbeResult> probeServerConnection({
   }
 }
 
-/// One-shot v2 flavor detection against `GET /api/health`. Returns null when
-/// the answer is not v2-shaped so the caller falls through to the v1 checks.
+/// One-shot v2 flavor detection. Returns null when the answer is not
+/// v2-shaped so the caller falls through to the v1 checks.
 /// Transport failures (DNS, refused, timeout) propagate as [DioException] —
 /// they mean the address itself is unreachable, not a different flavor.
+///
+/// The v2 line exposes its readiness on two different routes depending on the
+/// build, so both are probed:
+/// * `GET /api/health` — the beta-18600 shape (`{healthy, version, pid}`).
+/// * `GET /api/info` — what opencode 2.0.5–2.0.7 serves INSTEAD, after
+///   `/api/health` was dropped from the protocol (`{version, pid, urls,
+///   paths}`, anomalyco/opencode `packages/protocol/src/groups/server.ts` at
+///   tag v2.0.7). Probing only `/api/health` there reads 404 and falls through
+///   to the v1 check, which is why a healthy 2.0.x server was reported as
+///   "not an OpenCode server".
+///
+/// Detection keys on the PAYLOAD, never on a route merely answering: a v1
+/// server (verified on 1.18.25 and 1.18.30) also answers `/api/health`, with
+/// `{"healthy":true}` and no `version`. Only a payload carrying `version`
+/// counts as v2, and for `/api/info` an absent `healthy` key is required too,
+/// since that key belongs to the health shape and never to the info shape.
 Future<ServerProbeResult?> _probeV2(
+  Dio dio, {
+  required bool hasPassword,
+}) async {
+  final info = await _probeV2Info(dio, hasPassword: hasPassword);
+  if (info != null) return info;
+  return _probeV2Health(dio, hasPassword: hasPassword);
+}
+
+/// The v2 Basic-auth gate answers 401 with an EMPTY body on every route,
+/// including the ones a given build no longer serves, so a 401 is a positive
+/// v2 signal on either readiness route.
+ServerProbeResult _v2AuthVerdict({required bool hasPassword}) {
+  if (!hasPassword) {
+    return const ServerProbeResult.failure(
+      'This server requires its serve password.',
+      flavor: ServerFlavor.v2,
+      needsPassword: true,
+    );
+  }
+  return const ServerProbeResult.failure(
+    'Password rejected. Copy the current "server password" line from the '
+    'server output — it changes on every restart unless OPENCODE_PASSWORD '
+    'is set.',
+    flavor: ServerFlavor.v2,
+    needsPassword: true,
+  );
+}
+
+/// v2 answers 503 (`service_starting`) while its app layer boots.
+ServerProbeResult _v2StartingVerdict() => const ServerProbeResult.failure(
+  'The server is starting. Try again in a moment.',
+  flavor: ServerFlavor.v2,
+);
+
+/// `GET /api/info` — the identity payload of opencode 2.0.5+: the version is
+/// always present, `healthy` never is.
+Future<ServerProbeResult?> _probeV2Info(
+  Dio dio, {
+  required bool hasPassword,
+}) async {
+  final response = await dio.get<dynamic>(
+    '/api/info',
+    options: Options(
+      // Inspect every HTTP answer here; only transport failures throw.
+      validateStatus: (status) => status != null,
+      responseType: ResponseType.json,
+    ),
+  );
+  final status = response.statusCode ?? 0;
+  if (status == 401) return _v2AuthVerdict(hasPassword: hasPassword);
+  if (status >= 200 && status < 300) {
+    final data = response.data;
+    final map = data is Map ? Map<String, dynamic>.from(data) : null;
+    if (map != null && map['version'] != null && map['healthy'] == null) {
+      return ServerProbeResult.success(
+        map['version']?.toString(),
+        flavor: ServerFlavor.v2,
+      );
+    }
+    // A 2xx that is not the v2 info JSON: some other responder owns the
+    // route (or this is a v1 server echoing health). Let the next check
+    // decide.
+    return null;
+  }
+  if (status == 503) return _v2StartingVerdict();
+  // 404 and friends: no /api/info on this build — try the health route.
+  return null;
+}
+
+/// `GET /api/health` — the beta-18600 v2 shape. Returns null when the answer
+/// is not v2-shaped so the caller falls through to the v1 checks.
+Future<ServerProbeResult?> _probeV2Health(
   Dio dio, {
   required bool hasPassword,
 }) async {
@@ -146,24 +234,7 @@ Future<ServerProbeResult?> _probeV2(
     ),
   );
   final status = response.statusCode ?? 0;
-  if (status == 401) {
-    // The v2 Basic-auth gate answers 401 with an EMPTY body on every route,
-    // /api/health included — the status alone is the v2 signal.
-    if (!hasPassword) {
-      return const ServerProbeResult.failure(
-        'This server requires its serve password.',
-        flavor: ServerFlavor.v2,
-        needsPassword: true,
-      );
-    }
-    return const ServerProbeResult.failure(
-      'Password rejected. Copy the current "server password" line from the '
-      'server output — it changes on every restart unless OPENCODE_PASSWORD '
-      'is set.',
-      flavor: ServerFlavor.v2,
-      needsPassword: true,
-    );
-  }
+  if (status == 401) return _v2AuthVerdict(hasPassword: hasPassword);
   if (status >= 200 && status < 300) {
     final data = response.data;
     final map = data is Map ? Map<String, dynamic>.from(data) : null;
@@ -184,13 +255,7 @@ Future<ServerProbeResult?> _probeV2(
     // /api/health. Let the v1 check decide.
     return null;
   }
-  if (status == 503) {
-    // v2 answers 503 (`service_starting`) while its app layer boots.
-    return const ServerProbeResult.failure(
-      'The server is starting. Try again in a moment.',
-      flavor: ServerFlavor.v2,
-    );
-  }
+  if (status == 503) return _v2StartingVerdict();
   // 404 and friends: no v2 surface at this address — try the v1 route.
   return null;
 }

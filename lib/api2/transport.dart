@@ -191,16 +191,66 @@ class Api2Transport {
     }
   }
 
-  /// Reads `/api/health`. 503 while the app layer boots surfaces as
-  /// [Api2Unavailable]; a missing/denied password as [Api2AuthRequired].
+  /// Reads the server's readiness surface. opencode 2.0.5+ dropped
+  /// `/api/health` and answers `GET /api/info` instead (`{version, pid, urls,
+  /// paths}` — protocol group `server.server` at tag v2.0.7), so a missing
+  /// `/health` route falls back to `/info`; both mean "the app layer is up".
+  /// 503 while the app layer boots surfaces as [Api2Unavailable]; a
+  /// missing/denied password as [Api2AuthRequired].
   Future<Api2Health> health({CancelToken? cancelToken}) async {
-    final json = await getJson('/health', cancelToken: cancelToken);
-    return Api2Health.fromJson(json is Map<String, dynamic> ? json : const {});
+    try {
+      final json = await getJson('/health', cancelToken: cancelToken);
+      final health = Api2Health.fromJson(
+        json is Map<String, dynamic> ? json : const {},
+      );
+      // The beta health payload carries the version; the 2.x health answer is
+      // only `{healthy:true}`, so pull the version from /info when it is
+      // missing (the version string is surfaced for pinning).
+      if (health.version != null) return health;
+      final info = await _serverInfoOrNull(cancelToken: cancelToken);
+      if (info == null) return health;
+      return Api2Health(
+        healthy: health.healthy,
+        version: info.version,
+        pid: info.pid,
+      );
+    } on Api2RequestError catch (error) {
+      // 404/405/501 = this build has no /api/health at all (opencode 2.0.x).
+      if (!_isMissingRoute(error)) rethrow;
+      final info = await serverInfo(cancelToken: cancelToken);
+      return Api2Health(healthy: true, version: info.version, pid: info.pid);
+    }
   }
 
+  /// `GET /api/info` — server identity, the readiness surface of opencode
+  /// 2.0.5+. `Api2RequestError` with a 404 means the address is not a 2.0.x
+  /// server.
+  Future<Api2ServerInfo> serverInfo({CancelToken? cancelToken}) async {
+    final json = await getJson('/info', cancelToken: cancelToken);
+    return Api2ServerInfo.fromJson(
+      json is Map<String, dynamic> ? json : const {},
+    );
+  }
+
+  /// Best-effort [serverInfo] for enriching an answer that already proved the
+  /// server is up; never throws.
+  Future<Api2ServerInfo?> _serverInfoOrNull({CancelToken? cancelToken}) async {
+    try {
+      return await serverInfo(cancelToken: cancelToken);
+    } on Api2Error {
+      return null;
+    }
+  }
+
+  /// Routes an older/newer build no longer serves answer 404 (405/501 on some
+  /// proxies); callers treat those as "absent, try the other surface".
+  static bool _isMissingRoute(Api2Error error) =>
+      const [404, 405, 501].contains(error.statusCode);
+
   /// Health probe that also reports whether the server speaks the v2 API
-  /// this client targets (any `0.0.0-beta-*`/newer server that serves
-  /// `/api/health` qualifies; the version string is surfaced for pinning).
+  /// this client targets (any server that answers `/api/health` or the
+  /// 2.0.5+ `/api/info` qualifies; the version string is surfaced for
+  /// pinning).
   Future<Api2Health> checkServer({CancelToken? cancelToken}) async {
     final health = await this.health(cancelToken: cancelToken);
     if (!health.healthy) {
@@ -282,7 +332,9 @@ class Api2Transport {
   }
 }
 
-/// `GET /api/health` payload.
+/// Readiness payload. The beta v2 shape is `GET /api/health` →
+/// `{healthy, version, pid}`; the 2.x health answer is only `{healthy:true}`
+/// and the version then comes from [Api2ServerInfo].
 class Api2Health {
   final bool healthy;
   final String? version;
@@ -293,6 +345,24 @@ class Api2Health {
     healthy: j['healthy'] == true,
     version: j['version']?.toString(),
     pid: j['pid'] is num ? (j['pid'] as num).toInt() : null,
+  );
+}
+
+/// `GET /api/info` payload — the readiness/identity surface of opencode
+/// 2.0.5+ (`{version, pid, urls, paths:{tmp}}`). Answered successfully it
+/// means the server is up, so callers treat it as healthy.
+class Api2ServerInfo {
+  final String? version;
+  final int? pid;
+  final List<String> urls;
+  Api2ServerInfo({this.version, this.pid, this.urls = const []});
+
+  factory Api2ServerInfo.fromJson(Map<String, dynamic> j) => Api2ServerInfo(
+    version: j['version']?.toString(),
+    pid: j['pid'] is num ? (j['pid'] as num).toInt() : null,
+    urls: j['urls'] is List
+        ? [for (final url in j['urls'] as List) url.toString()]
+        : const [],
   );
 }
 

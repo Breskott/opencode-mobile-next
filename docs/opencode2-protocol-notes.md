@@ -22,6 +22,14 @@ Reference for porting the Flutter client from the v1 server API to the OpenCode 
 - **Password source** (server side): env `OPENCODE_PASSWORD`, falling back to `OPENCODE_SERVER_PASSWORD`; if neither is set, `opencode2 serve` generates a random 32-byte base64url password and prints `server password <pw>` on stdout. There is no CLI flag for it.
 - **Discovery contract** (how first-party clients find a local server): the background service registers itself in `$XDG_STATE_HOME/opencode/service.json` (default `~/.local/state/opencode/service.json`) as `{"id","url","pid","version","password"}`. A client reads that file, probes `GET /api/health`, and checks `body.pid === file.pid` and `body.version === file.version` before trusting it. For our app (remote server over the network) the user supplies host + password; store the password in secure storage and send Basic auth on every request.
 - `GET /api/health` (authed) → `{"healthy":true,"version":"0.0.0-beta-18600","pid":1471586}`. Status is **200** when ready, **503** while starting/stopping (with `retry-after: 1`), **500** when the app layer failed to boot. Any non-health request during boot returns 503 `{"code":"service_starting"|"service_stopping"}` or `{"code":"service_failed",...}`.
+- **opencode 2.0.5–2.0.7 dropped that route.** Checked against `anomalyco/opencode` tag `v2.0.7`: the protocol
+  group `server.server` (`packages/protocol/src/groups/server.ts`) defines **`GET /api/info`** →
+  `{"version":"2.0.7","pid":…,"urls":[…],"paths":{"tmp":"…"}}` — note there is **no `healthy` key** — and no
+  `health` group exists in that tag. A client that only probes `/api/health` reads 404 there and misreports a
+  live server. Probe `/api/info` first, then `/api/health` for the beta builds.
+- Detection must key on the payload, never on a route answering: opencode **1.x also serves `/api/health`**,
+  answering `{"healthy":true}` with no `version` (verified on 1.18.25 and 1.18.30). A later 2.x build brought
+  `/api/health` back with that same `{"healthy":true}`-only body, so it is not a usable v2 discriminator either.
 - `GET /api/server` → `{"urls":["http://127.0.0.1:4097"]}`.
 - CORS is enforced (`vary: Origin`); native clients are unaffected.
 

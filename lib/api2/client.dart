@@ -81,10 +81,21 @@ class Api2Client {
       transport.checkServer(cancelToken: cancelToken);
 
   Future<Api2ServerInfo> serverInfo() async {
-    final json = await transport.getJson('/server');
-    return Api2ServerInfo.fromJson(
-      json is Map<String, dynamic> ? json : const {},
-    );
+    // opencode 2.0.5+ dropped `/api/server`; its payload (urls, version, pid)
+    // is what `/api/info` answers now. Try the new route first and keep the
+    // old one as a fallback for the earlier v2 betas.
+    try {
+      final json = await transport.getJson('/info');
+      return Api2ServerInfo.fromJson(
+        json is Map<String, dynamic> ? json : const {},
+      );
+    } on Api2Error catch (error) {
+      if (!const [404, 405, 501].contains(error.statusCode)) rethrow;
+      final json = await transport.getJson('/server');
+      return Api2ServerInfo.fromJson(
+        json is Map<String, dynamic> ? json : const {},
+      );
+    }
   }
 
   /// Resolves the pinned location to its project.
