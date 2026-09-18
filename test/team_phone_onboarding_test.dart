@@ -836,6 +836,25 @@ void main() {
       await teardown(tester, controller);
     });
 
+    testWidgets('re-entering a failure shows its last output', (tester) async {
+      runtime.current = _status(
+        TeamRuntimePhase.failed,
+        rawPhase: 'failed:init',
+        reason: 'init',
+        verb: 'init',
+        installed: true,
+      );
+      runtime.log =
+          '[aiteam] init started\n'
+          'gc init: bead store: exec beads start: context deadline exceeded\n'
+          '[aiteam] ERROR: gc init failed\n';
+      final (controller, _) = await pumpSetup(tester);
+      final steps = find.byKey(const ValueKey('team-phone-steps'));
+      await reveal(tester, steps);
+      expect(find.textContaining('context deadline exceeded'), findsOneWidget);
+      await teardown(tester, controller);
+    });
+
     testWidgets('a team that came up while away gets its config on entry', (
       tester,
     ) async {

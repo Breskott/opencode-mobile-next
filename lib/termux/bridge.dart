@@ -117,14 +117,15 @@ class TermuxBridge {
   }) async {
     if (!supported) throw _unsupported;
     try {
-      final raw = await _channel
-          .invokeMapMethod<String, dynamic>('runInTermux', {
-            'script': script,
-            'background': background,
-            'workdir': workdir ?? termuxHome,
-            'timeoutMs': timeout.inMilliseconds,
-          });
-      final command = TermuxCommandResult.fromMap(raw ?? const {});
+      var command = await _invoke(script, background, workdir, timeout);
+      if (command.killedByServiceShutdown) {
+        // The Termux service stops itself once its last task ends and kills
+        // whatever arrives while it is going down (seen on the emulator
+        // between a `status` poll and the next verb). It comes straight
+        // back, so one retry after a short pause is enough.
+        await Future<void>.delayed(serviceShutdownRetryDelay);
+        command = await _invoke(script, background, workdir, timeout);
+      }
       if (!command.successful) {
         throw TermuxBridgeException(
           command.failureMessage,
@@ -143,6 +144,27 @@ class TermuxBridge {
         code: error.code,
       );
     }
+  }
+
+  /// How long [run] waits before its single retry after Termux killed the
+  /// execution because its service was shutting down.
+  static Duration serviceShutdownRetryDelay = const Duration(
+    milliseconds: 1500,
+  );
+
+  static Future<TermuxCommandResult> _invoke(
+    String script,
+    bool background,
+    String? workdir,
+    Duration timeout,
+  ) async {
+    final raw = await _channel.invokeMapMethod<String, dynamic>('runInTermux', {
+      'script': script,
+      'background': background,
+      'workdir': workdir ?? termuxHome,
+      'timeoutMs': timeout.inMilliseconds,
+    });
+    return TermuxCommandResult.fromMap(raw ?? const {});
   }
 
   static Future<void> verifyBridge() async {
@@ -3139,11 +3161,34 @@ REMOVED_FILE="$OC_DIR/aiteam-removed"
 MANAGER="$OC_DIR/manager.sh"
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 BIN_DIR="$PREFIX/bin"
-TMP_DIR="$PREFIX/tmp/aiteam"
+# Downloads live under the AI Team directory, not $PREFIX/tmp: the Termux
+# service clears its tmp directory asynchronously when it starts, which
+# raced the first verb after a Termux restart and deleted the folder
+# between mkdir and the first copy.
+TMP_DIR="$AITEAM_DIR/tmp"
 GC_URL="${AITEAM_URL:-http://127.0.0.1:8372}"
 HEALTH_TIMEOUT="${AITEAM_HEALTH_TIMEOUT:-120}"
 DEFAULT_CITY=phone
 INSTALL_NAMES='gc bd dolt wrapper'
+
+# Process environment the Gas City pack scripts need on Android
+# (docs/qa/ai-team/spike-phone-2026-09.md §3h). The pack's `#!/bin/sh`
+# scripts must resolve to Termux's shell, not Android's mksh: mksh marks
+# `exec 9>lockfile` close-on-exec, so the Dolt start lock (`flock -n 9`)
+# fails with EBADF and `gc init` ends in "exec beads start: context deadline
+# exceeded". termux-exec's LD_PRELOAD rewrites the shebang. Its system-linker
+# exec mode must stay off, otherwise the pack resolves the gc helper as
+# /apex/.../linker64. GC_BIN pins the helper explicitly either way.
+export TERMUX_EXEC__SYSTEM_LINKER_EXEC__MODE=disable
+export GC_BIN="$BIN_DIR/gc"
+if [ -z "${LD_PRELOAD:-}" ] && [ "$(uname -o 2>/dev/null)" = Android ]; then
+  for lib in "$PREFIX/lib/libtermux-exec.so" "$PREFIX/lib/libtermux-exec-ld-preload.so"; do
+    if [ -f "$lib" ]; then
+      export LD_PRELOAD="$lib"
+      break
+    fi
+  done
+fi
 
 # ---------------------------------------------------------------------------
 # state, config, logging
@@ -3579,10 +3624,23 @@ max_restarts = 5
 restart_window = "1h"
 shutdown_timeout = "5s"
 CITY_TOML_EOF
+  # A city from an earlier attempt may still have its supervisor or its
+  # managed Dolt server up; take them down before the directory goes, or
+  # the new city inherits a server whose store was just deleted.
+  stop_supervisor
   rm -rf "$CITY_DIR"
   (cd "$AITEAM_DIR" && gc init --file ./city.toml --name "$city" --no-start city) ||
     fail gc-init 'gc init failed'
   [ -d "$CITY_DIR" ] || fail gc-init 'gc init produced no city directory'
+  # A project that still carries the bead store of an earlier city (a team
+  # removed and set up again) cannot be initialised over or adopted: that
+  # store's Dolt database lived in the old city. It is moved aside, never
+  # deleted, and the rig starts fresh.
+  if [ -e "$project/.beads" ]; then
+    local aside="$project/.beads.before-aiteam-$(date +%Y%m%d-%H%M%S)"
+    log "project already has a bead store from an earlier city; keeping it at $aside"
+    mv "$project/.beads" "$aside" || fail gc-rig-add 'could not move the old bead store aside'
+  fi
   (cd "$CITY_DIR" && gc rig add "$project" --name "$rig") || fail gc-rig-add 'gc rig add failed'
   (cd "$CITY_DIR" && gc import install) || fail gc-import 'gc import install failed'
   # Lean profile: one polecat, the patrol agents suspended; must come after
@@ -3727,7 +3785,7 @@ remove_runtime() {
     rm -f "$BIN_DIR/opencode"
     removed+=("$BIN_DIR/opencode")
   fi
-  for path in "$HOME/.gc" "$HOME/.dolt" "$PREFIX/tmp/aiteam"; do
+  for path in "$HOME/.gc" "$HOME/.dolt" "$TMP_DIR" "$PREFIX/tmp/aiteam"; do
     [ -e "$path" ] || continue
     rm -rf "$path"
     removed+=("$path")
@@ -4025,6 +4083,12 @@ class TermuxCommandResult {
   });
 
   bool get successful => errorCode == -1 && exitCode == 0;
+
+  /// Termux's own wording when it SIGKILLs an execution because its service
+  /// is stopping (or the user cancelled it from the notification).
+  bool get killedByServiceShutdown =>
+      !successful &&
+      errorMessage.contains('android is killing the execution service');
 
   String get failureMessage {
     final details = [

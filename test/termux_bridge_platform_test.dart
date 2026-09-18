@@ -122,6 +122,84 @@ void main() {
       },
     );
 
+    test(
+      'an execution killed by the Termux service shutdown is retried once',
+      () async {
+        // Termux stops its service once the last task ends and kills whatever
+        // arrives meanwhile with exit 2 and this message; the next attempt
+        // starts the service again.
+        TermuxBridge.serviceShutdownRetryDelay = Duration.zero;
+        addTearDown(() {
+          TermuxBridge.serviceShutdownRetryDelay = const Duration(
+            milliseconds: 1500,
+          );
+        });
+        var calls = 0;
+        _installChannel((call) async {
+          expect(call.method, 'runInTermux');
+          calls++;
+          if (calls == 1) {
+            return <String, dynamic>{
+              'stdout': '',
+              'stderr': '',
+              'exitCode': 2,
+              'err': 2,
+              'errorMessage':
+                  'Error Code: `2`\nError Message:\n```\nSending SIGKILL to '
+                  'process on user request or because android is killing the '
+                  'execution service\n```',
+            };
+          }
+          return <String, dynamic>{
+            'stdout': 'aiteam-started:41\n',
+            'stderr': '',
+            'exitCode': 0,
+            'err': -1,
+            'errorMessage': '',
+          };
+        });
+        final result = await TermuxBridge.run('echo hi');
+        expect(calls, 2);
+        expect(result.stdout, 'aiteam-started:41\n');
+      },
+    );
+
+    test(
+      'a second service-shutdown kill is reported, not retried again',
+      () async {
+        TermuxBridge.serviceShutdownRetryDelay = Duration.zero;
+        addTearDown(() {
+          TermuxBridge.serviceShutdownRetryDelay = const Duration(
+            milliseconds: 1500,
+          );
+        });
+        var calls = 0;
+        _installChannel((call) async {
+          calls++;
+          return <String, dynamic>{
+            'stdout': '',
+            'stderr': '',
+            'exitCode': 2,
+            'err': 2,
+            'errorMessage':
+                'Sending SIGKILL to process on user request or because android '
+                'is killing the execution service',
+          };
+        });
+        await expectLater(
+          TermuxBridge.run('echo hi'),
+          throwsA(
+            isA<TermuxBridgeException>().having(
+              (error) => error.message,
+              'message',
+              contains('killing the execution service'),
+            ),
+          ),
+        );
+        expect(calls, 2);
+      },
+    );
+
     test('a PlatformException still surfaces its own message', () async {
       _installChannel(
         (call) async => throw PlatformException(
