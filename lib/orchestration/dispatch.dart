@@ -12,9 +12,9 @@
 /// | Routed | `bead.updated` with `metadata.gc.routed_to`, or the item carries it |
 /// | Agent starting | `session.woke` for the item's session, or for a session of the routed pool in the rig after routing (named by its template, by an agent of that pool, or by a session bead whose worktree is under the rig's `polecats/`), or such a session in the agents list |
 /// | Claimed | `bead.updated` → status `in_progress` with an `assignee` |
-/// | Working | `metadata.gc.work_dir` / `work_dir` present, or the transcript has text |
-/// | Pushed | `metadata.branch` set |
-/// | Handed to merge | assignee is the rig's refinery, or the polecat session stopped after pushing |
+/// | Working | `metadata.gc.work_dir` / `work_dir` present, `metadata.branch` set (the agent records its branch when it creates it, which can be minutes before any push), or the transcript has text |
+/// | Pushed | `metadata.branch` set and the polecat session stopped afterwards (it drains only after pushing), or the assignee is the rig's refinery |
+/// | Handed to merge | assignee is the rig's refinery, or the polecat session stopped after the branch appeared |
 /// | Merged | `bead.closed` (not cancelled), the item completed, or the run completed |
 ///
 /// Steps are reached in order: a later step known without an earlier one
@@ -201,6 +201,12 @@ class _Evidence {
   String? rig;
   bool transcriptSeen = false;
 
+  /// Whether the bead names its branch, and the earliest known time it
+  /// did. The polecat records the branch when it creates it; the push
+  /// itself leaves no field, so the branch alone means "working".
+  bool _branchSeen = false;
+  DateTime? _branchAt;
+
   /// Sessions the events stopped, by id, at when: for the handoff (a
   /// polecat that drained after pushing) and the flap count.
   final _stops = <(String, DateTime)>[];
@@ -240,9 +246,12 @@ class _Evidence {
       reach(DispatchStep.working, at);
     }
     if (_clean(_meta(raw, 'branch')) != null) {
-      reach(DispatchStep.pushed, at);
+      reach(DispatchStep.working, at);
+      _branchAt ??= at;
+      _branchSeen = true;
     }
     if (assignee != null && _isRefinery(assignee)) {
+      reach(DispatchStep.pushed, at);
       reach(DispatchStep.handedToMerge, at);
     }
     if (item.state == WorkState.completed) {
@@ -327,9 +336,12 @@ class _Evidence {
       reach(DispatchStep.working, at);
     }
     if (_clean(_text(metadata['branch'])) != null) {
-      reach(DispatchStep.pushed, at);
+      reach(DispatchStep.working, at);
+      if (_branchAt == null || at.isBefore(_branchAt!)) _branchAt = at;
+      _branchSeen = true;
     }
     if (assignee != null && _isRefinery(assignee)) {
+      reach(DispatchStep.pushed, at);
       reach(DispatchStep.handedToMerge, at);
     }
     if (event.change == BeadChange.closed) {
@@ -439,15 +451,17 @@ class _Evidence {
     }
   }
 
-  /// A polecat that drained after pushing handed the branch to the
-  /// refinery, whether or not the bead was reassigned yet.
+  /// A polecat that drained after its branch appeared pushed it and
+  /// handed it to the refinery, whether or not the bead was reassigned
+  /// yet. Without the branch a stopped session is only a stop.
   void _handoffFromDrain() {
-    final pushedAt = reached[DispatchStep.pushed];
-    if (pushedAt == null) return;
+    if (!_branchSeen) return;
+    final branchAt = _branchAt;
     for (final (id, at) in _stops) {
-      if (sessionIds.contains(id) && !at.isBefore(pushedAt)) {
-        reach(DispatchStep.handedToMerge, at);
-      }
+      if (!sessionIds.contains(id)) continue;
+      if (branchAt != null && at.isBefore(branchAt)) continue;
+      reach(DispatchStep.pushed, at);
+      reach(DispatchStep.handedToMerge, at);
     }
   }
 

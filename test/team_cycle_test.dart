@@ -442,18 +442,19 @@ void main() {
         cycle.reachedAt[DispatchStep.claimed],
         host('2026-09-10T22:46:34.459669963+04:00'),
       );
-      expect(
-        cycle.reachedAt[DispatchStep.pushed],
-        host('2026-09-10T22:51:04.568986607+04:00'),
-      );
-      // The polecat drained at 22:53:47: its session bead closed and its
-      // session stopped within the same second.
-      expect(
-        cycle.reachedAt[DispatchStep.handedToMerge]!
-            .difference(host('2026-09-10T22:53:47.695156538+04:00'))
-            .abs(),
-        lessThan(const Duration(seconds: 1)),
-      );
+      // The branch appeared at 22:51:04 (the agent records it when it
+      // creates it; on the emulator that came at the claim, minutes before
+      // any push), so the push is dated by the drain: the polecat's session
+      // bead closed and its session stopped at 22:53:47, within a second.
+      for (final step in [DispatchStep.pushed, DispatchStep.handedToMerge]) {
+        expect(
+          cycle.reachedAt[step]!
+              .difference(host('2026-09-10T22:53:47.695156538+04:00'))
+              .abs(),
+          lessThan(const Duration(seconds: 1)),
+          reason: step.name,
+        );
+      }
       // Working came with the worktree three seconds after the claim.
       final working = cycle.reachedAt[DispatchStep.working]!;
       expect(working.isAfter(cycle.reachedAt[DispatchStep.claimed]!), isTrue);
@@ -654,8 +655,10 @@ void main() {
       );
       expect(fine.stalled, isFalse);
 
-      // After the push the same words are history.
-      final pushed = deriveDispatchCycle(
+      // A branch alone is still working (the agent names it early): the
+      // words still count. Once the polecat drained after the branch, the
+      // push happened and the same words are history.
+      final branched = deriveDispatchCycle(
         item: _item(
           status: 'in_progress',
           assignee: 'gastown__polecat-bl-48k',
@@ -666,6 +669,23 @@ void main() {
         transcript: 'The usage limit has been reached',
         now: clock,
       );
+      expect(branched.step, DispatchStep.pushed);
+      expect(branched.stalled, isTrue);
+      final pushed = deriveDispatchCycle(
+        item: _item(
+          status: 'in_progress',
+          assignee: 'gastown__polecat-bl-48k',
+          sessionId: 'bl-48k',
+          branch: 'polecat/oc-loy',
+          updatedAt: t0,
+        ),
+        timeline: [
+          _session(t0.add(const Duration(minutes: 1)), SessionChange.stopped),
+        ],
+        transcript: 'The usage limit has been reached',
+        now: clock,
+      );
+      expect(pushed.isDone(DispatchStep.pushed), isTrue);
       expect(pushed.stalled, isFalse);
     });
 
