@@ -25,8 +25,9 @@ itself through Termux.
 >
 > Android is the supported release platform. Web support is in active development;
 > desktop and AI Team / Gas City remain experimental.
-> OpenCode Mobile is an independent community project, built with substantial AI
-> assistance. It is not affiliated with or endorsed by the official OpenCode team.
+> OpenCode Mobile is an independent community project. It is not built, maintained,
+> endorsed by, or affiliated with the official OpenCode team. It is built with
+> substantial AI assistance.
 > Report problems from **More → Tools & help → Report a bug** in the app.
 
 ## What it is like to use
