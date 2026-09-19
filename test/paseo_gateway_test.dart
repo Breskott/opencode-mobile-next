@@ -311,6 +311,40 @@ void main() {
     expect(defaults.model!.modelID, 'haiku');
   });
 
+  test(
+    'a daemon still listing its models is waited for, not believed',
+    () async {
+      providerWarmupInterval = Duration.zero;
+      addTearDown(
+        () => providerWarmupInterval = const Duration(milliseconds: 1500),
+      );
+      final settled = daemon.handlers['get_providers_snapshot_request']!;
+      var reads = 0;
+      daemon.handlers['get_providers_snapshot_request'] = (message) {
+        reads++;
+        if (reads < 3) {
+          return (
+            'get_providers_snapshot_response',
+            {
+              'entries': [
+                {'provider': 'claude', 'status': 'loading'},
+              ],
+              'generatedAt': '2026-09-19T03:35:27.840Z',
+            },
+          );
+        }
+        return settled(message);
+      };
+      final defaults = await gateway.loadChatDefaults();
+      expect(reads, 3);
+      expect(defaults.model?.providerID, 'claude');
+      expect(defaults.model?.modelID, 'haiku');
+      // Settled snapshots are cached; a loading one never is.
+      await gateway.providers();
+      expect(reads, 3);
+    },
+  );
+
   group('a new conversation', () {
     late Session draft;
 
