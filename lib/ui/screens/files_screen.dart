@@ -1086,9 +1086,21 @@ class _FilesScreenState extends State<FilesScreen> {
                           _openFile(node);
                         }
                       },
-                // Touch counterpart of the right-click menu: every row action,
-                // Review included, without a second control crammed into a
-                // compact file row.
+                // The visible door to the row's actions. Long press and right
+                // click stay as accelerators, but Attach, Add reference, Open
+                // review and Copy path must not be reachable only by a
+                // gesture nobody is told about (UX plan 5.8, item 2).
+                trailing: IconButton(
+                  key: ValueKey('project-file-actions-${node.path}'),
+                  tooltip: readerL10n(
+                    context,
+                  ).gestureEquivFileRowActions(node.name),
+                  color: AppTheme.mutedOf(theme),
+                  onPressed: () => unawaited(_showFileRowActions(node, change)),
+                  icon: const Icon(AppIconography.more, size: 20),
+                ),
+                // Touch accelerator for the same sheet the trailing button
+                // opens.
                 onLongPress: () => unawaited(_showFileRowActions(node, change)),
               ),
             );

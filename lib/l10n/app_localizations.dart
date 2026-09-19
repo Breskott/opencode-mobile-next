@@ -26049,6 +26049,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'connection help cannot connect troubleshooting network refused timeout'**
   String get discoverConnectionHelpAliases;
+
+  /// Files list: tooltip and accessibility label of the trailing button on a file or folder row. It opens the same actions as a long press or right click on the row.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for {name}'**
+  String gestureEquivFileRowActions(String name);
+
+  /// Keyboard shortcuts help: what F3 and Shift+F3 do.
+  ///
+  /// In en, this message translates to:
+  /// **'Next / previous match while finding in a conversation'**
+  String get gestureEquivShortcutFindMatch;
+
+  /// Keyboard shortcuts help: what Arrow Up and Arrow Down do in the message box.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier / later prompt, with the cursor at the start or end of the message box'**
+  String get gestureEquivShortcutPromptHistory;
 }
 
 class _AppLocalizationsDelegate

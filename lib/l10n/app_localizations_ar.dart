@@ -16407,4 +16407,17 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get discoverConnectionHelpAliases =>
       'connection help troubleshooting مساعدة الاتصال تعذر الاتصال استكشاف الأخطاء الشبكة';
+
+  @override
+  String gestureEquivFileRowActions(String name) {
+    return 'إجراءات $name';
+  }
+
+  @override
+  String get gestureEquivShortcutFindMatch =>
+      'التطابق التالي / السابق أثناء البحث في المحادثة';
+
+  @override
+  String get gestureEquivShortcutPromptHistory =>
+      'الطلب الأقدم / الأحدث، والمؤشر في بداية مربع الرسالة أو نهايته';
 }

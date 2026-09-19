@@ -4315,5 +4315,8 @@
   "discoverRunningNowAliases": "running processes termux يعمل الآن عمليات خدمات إيقاف على هذا الهاتف",
   "discoverStorageAliases": "storage disk space termux التخزين على هذا الهاتف مساحة القرص تنظيف",
   "discoverMonitorAliases": "monitor attention انتباه الخوادم المحفوظة مراقبة خوادم أخرى بانتظارك",
-  "discoverConnectionHelpAliases": "connection help troubleshooting مساعدة الاتصال تعذر الاتصال استكشاف الأخطاء الشبكة"
+  "discoverConnectionHelpAliases": "connection help troubleshooting مساعدة الاتصال تعذر الاتصال استكشاف الأخطاء الشبكة",
+  "gestureEquivFileRowActions": "إجراءات {name}",
+  "gestureEquivShortcutFindMatch": "التطابق التالي / السابق أثناء البحث في المحادثة",
+  "gestureEquivShortcutPromptHistory": "الطلب الأقدم / الأحدث، والمؤشر في بداية مربع الرسالة أو نهايته"
 }

@@ -16133,4 +16133,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get discoverConnectionHelpAliases =>
       'connection help cannot connect troubleshooting network refused timeout';
+
+  @override
+  String gestureEquivFileRowActions(String name) {
+    return 'Actions for $name';
+  }
+
+  @override
+  String get gestureEquivShortcutFindMatch =>
+      'Next / previous match while finding in a conversation';
+
+  @override
+  String get gestureEquivShortcutPromptHistory =>
+      'Earlier / later prompt, with the cursor at the start or end of the message box';
 }

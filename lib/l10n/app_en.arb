@@ -17373,5 +17373,11 @@
   "discoverRunningNowAliases": "running now processes termux services stop on this phone",
   "discoverStorageAliases": "storage on this phone disk space clean termux",
   "discoverMonitorAliases": "saved-server attention monitor other servers waiting server attention",
-  "discoverConnectionHelpAliases": "connection help cannot connect troubleshooting network refused timeout"
+  "discoverConnectionHelpAliases": "connection help cannot connect troubleshooting network refused timeout",
+  "gestureEquivFileRowActions": "Actions for {name}",
+  "@gestureEquivFileRowActions": {"description": "Files list: tooltip and accessibility label of the trailing button on a file or folder row. It opens the same actions as a long press or right click on the row.", "placeholders": {"name": {"type": "String"}}},
+  "gestureEquivShortcutFindMatch": "Next / previous match while finding in a conversation",
+  "@gestureEquivShortcutFindMatch": {"description": "Keyboard shortcuts help: what F3 and Shift+F3 do."},
+  "gestureEquivShortcutPromptHistory": "Earlier / later prompt, with the cursor at the start or end of the message box",
+  "@gestureEquivShortcutPromptHistory": {"description": "Keyboard shortcuts help: what Arrow Up and Arrow Down do in the message box."}
 }
