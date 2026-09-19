@@ -764,6 +764,22 @@
           "destructive": false
         },
         {
+          "id": "command-launcher-sheet-search-result",
+          "type": "list-tile",
+          "label": "<search index entry title> (In <parent screen>)",
+          "key": "command-launcher-result-<entry id>",
+          "line": 417,
+          "action": "navigate",
+          "target": null,
+          "effect": "Listed under 'Go to' while the Commands tab's search has text: searchEntries(l10n, SearchScope.of(context, controller), query). Tap pops the sheet and runs entry.open from the route below it (a settings screen is pushed over the conversation; a tab result returns to the shell).",
+          "gates": [
+            "Commands tab only",
+            "search text is not empty",
+            "each entry's own gate in lib/ui/search/search_index.dart"
+          ],
+          "destructive": false
+        },
+        {
           "id": "command-launcher-sheet-agents-refresh-gesture",
           "type": "gesture",
           "label": "[pull to refresh subagents]",
@@ -2208,6 +2224,111 @@
             "item.type == \"user\""
           ],
           "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "embedded-chat-nudge-slot",
+      "title": "[One-time tip above the composer]",
+      "kind": "overlay",
+      "file": "lib/ui/screens/chat/nudge_slot.dart",
+      "widget": "_ChatNudges._nudgeSlot",
+      "embeddedIn": [
+        "ChatScreen"
+      ],
+      "presentedBy": [],
+      "line": 73,
+      "purpose": "The single inline slot for the four conversation nudges (approvals, review changes, leave and be told, compact), drawn with the shared NudgeCard (lib/ui/widgets/nudge_card.dart). Triggers live in lib/state/conversation_nudges.dart.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "ConversationNudgeWatcher offers a nudge at its moment (third permission request of one kind answered; first finished run that changed files; 60 s wait with finished-run notifications ready; context usage >= 80%)"
+        }
+      ],
+      "gates": [
+        "registry.firstReplySeen (never during first run before the first reply)",
+        "each nudge is offered at most once ever (NudgeRegistry, oc.nudges.shown); never two at once; hidden while _nudgeSuppressed (pending permission/question/form, retry banner)",
+        "body height >= 420 dp (keyboard down)"
+      ],
+      "elements": [
+        {
+          "id": "embedded-chat-nudge-slot-approvals-action",
+          "type": "button",
+          "label": "Approvals",
+          "key": "nudge-approvals-action",
+          "line": 81,
+          "action": "open-sheet",
+          "target": "session-approvals-sheet",
+          "targetWidget": "showSessionApprovalsSheet",
+          "effect": "Card text 'Asked for “{action}” 3 times: this conversation can approve requests for you.'; dismisses the nudge, then showSessionApprovalsSheet(context, controller: _conn, sessionID).",
+          "gates": [
+            "third distinct permission request of one kind in this conversation this app run",
+            "no request pending",
+            "!_conn.autoApprovalFor(id).automatic",
+            "not the demo"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-chat-nudge-slot-review-action",
+          "type": "button",
+          "label": "Review changes",
+          "key": "nudge-review-changes-action",
+          "line": 95,
+          "action": "navigate",
+          "target": "review-workspace",
+          "targetWidget": "ReviewWorkspace",
+          "effect": "Card text 'This run changed files: review what changed before you continue.'; dismisses the nudge, then _showDiff() (the same review the app bar opens).",
+          "gates": [
+            "busy→idle edge with runChangedFiles(_messages) or session.summary.files > 0",
+            "capabilities.sessionDiff"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-chat-nudge-slot-compact-action",
+          "type": "button",
+          "label": "Compact conversation",
+          "key": "nudge-compact-action",
+          "line": 101,
+          "action": "mutate",
+          "target": null,
+          "effect": "Card text 'The context is {percent}% full: compact to keep going.'; dismisses the nudge, then _compact() (the existing compact action).",
+          "gates": [
+            "_contextWindowUsage() >= 0.8",
+            "capabilities.sessionCompact",
+            "conversation idle"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-chat-nudge-slot-leave-action",
+          "type": "button",
+          "label": "Got it",
+          "key": "nudge-leave-action",
+          "line": 108,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Card text 'You can leave: this phone tells you when the run is done.'; dismisses the nudge.",
+          "gates": [
+            "conversation open and busy for 60 s",
+            "controller.finishedRunNotificationsReady (platform, background connection on, notification permission granted, finished-run rule on, not quiet hours)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-chat-nudge-slot-dismiss",
+          "type": "icon-button",
+          "label": "Hide tip",
+          "key": "nudge-<id>-dismiss",
+          "file": "lib/ui/widgets/nudge_card.dart",
+          "line": 99,
+          "action": "dismiss",
+          "target": null,
+          "effect": "onDismiss -> NudgeRegistry.dismiss(id): records the nudge as dismissed so it never shows again (until Settings → Help → Show tips again).",
+          "gates": [],
+          "destructive": false
         }
       ]
     }

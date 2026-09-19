@@ -1549,6 +1549,22 @@
           "effect": "navigator.pushNamed('/debug') -> AppDiagnosticsScreen.",
           "gates": [],
           "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-cmd-search-index",
+          "type": "list-tile",
+          "label": "<search index entry title> (In <parent screen>)",
+          "key": null,
+          "file": "lib/main.dart",
+          "line": 1166,
+          "action": "navigate",
+          "target": null,
+          "effect": "One DesktopCommand per gated entry of searchIndex(l10n, scope) except the four tabs, Keyboard shortcuts and Diagnostics (already listed): entry.open(navigator overlay context, scope). The palette also matches the entry's hidden keywords.",
+          "gates": [
+            "desktopInteractions",
+            "each entry's own gate in lib/ui/search/search_index.dart"
+          ],
+          "destructive": false
         }
       ]
     },
@@ -1562,7 +1578,7 @@
         "showShortcutsHelp"
       ],
       "line": 548,
-      "purpose": "Read-only AlertDialog (key 'keyboard-shortcuts-sheet') listing every shortcut: Mod+K, N, F, 1…4, ',', '`', W, Enter (send prompt), C (copy transcript), F2/Shift+F2 (recent model), '/', Esc, and context-menu keys.",
+      "purpose": "Read-only AlertDialog (key 'keyboard-shortcuts-sheet') listing every shortcut: Mod+K, N, F, 1…4, ',', '`', W, Enter (send prompt), C (copy transcript), F2/Shift+F2 (recent model), Ctrl+B (move running work to background), F3/Shift+F3 (next/previous find match), ↑/↓ (prompt history), '/', Esc, and context-menu keys.",
       "reachedFrom": [
         {
           "page": "global-shortcuts",

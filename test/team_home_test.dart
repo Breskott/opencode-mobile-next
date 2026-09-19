@@ -664,8 +664,37 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('No runs yet.'), findsOneWidget);
-      expect(find.text('Start runs from the host for now.'), findsOneWidget);
+      expect(
+        find.text(
+          'A run is a job the team works through. Start one and its '
+          'progress shows here.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Runs (0)'), findsOneWidget);
+    });
+
+    testWidgets('no runs, and this phone cannot start one: no button', (
+      tester,
+    ) async {
+      final (controller, _) = await boot(
+        configure: (g) => g
+          ..runsOverride = const []
+          ..capabilitiesOverride = const OrchestrationCapabilities(
+            runs: true,
+            agents: true,
+          ),
+      );
+      await pumpHome(tester, controller);
+      final empty = find.byKey(const ValueKey('team-home-runs-empty'));
+      expect(empty, findsOneWidget);
+      expect(find.text('Start runs from the host for now.'), findsOneWidget);
+      // Hide, don't disable: no button the host could not honour.
+      expect(find.text('Start a run'), findsNothing);
+      expect(
+        find.descendant(of: empty, matching: find.byType(TextButton)),
+        findsNothing,
+      );
     });
   });
 
@@ -1142,6 +1171,11 @@ void main() {
       expect(controller.phase, OrchestrationPhase.failed);
       await pumpHome(tester, controller);
       expect(find.byKey(const ValueKey('team-home-error')), findsOneWidget);
+      // A host that could not be read is not an empty team: the failure
+      // keeps "Try again" and never claims there are no runs.
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.byKey(const ValueKey('team-home-runs-empty')), findsNothing);
+      expect(find.text('No runs yet.'), findsNothing);
       expect(
         find.text(
           'The team host can’t be reached. AI Team works over your Tailscale '

@@ -276,7 +276,10 @@ void main() {
     expect(find.byKey(const ValueKey('activity-all-clear')), findsOneWidget);
     expect(find.text('All clear here'), findsOneWidget);
     expect(
-      find.textContaining('Nothing needs you in the checked projects'),
+      find.text(
+        'Nothing needs you. Approvals and questions from running work '
+        'appear here.',
+      ),
       findsOneWidget,
     );
     expect(find.text('All conversations'), findsNothing);

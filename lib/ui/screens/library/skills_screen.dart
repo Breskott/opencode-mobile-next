@@ -127,7 +127,7 @@ class _SkillsScreenState extends State<SkillsScreen> {
             ).e7LibraryNoSkillsAvailable,
             message: lookupAppLocalizations(
               Localizations.localeOf(context),
-            ).e7LibraryProjectAndGlobalOpenCodeSkillsAppearHere,
+            ).emptyTeachSkillsMessage,
           ),
         )
       : RefreshIndicator(

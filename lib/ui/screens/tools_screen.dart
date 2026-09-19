@@ -377,7 +377,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
         message: _query.isEmpty
             ? lookupAppLocalizations(
                 Localizations.localeOf(context),
-              ).e7LibraryOpenCodeReturnedNoCallableToolsForThis
+              ).emptyTeachToolsMessage
             : lookupAppLocalizations(
                 Localizations.localeOf(context),
               ).e7LibraryTryAToolIDOrAWord,

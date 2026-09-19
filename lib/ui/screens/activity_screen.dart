@@ -1375,8 +1375,12 @@ class _ActivityStatus extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
+            // The all-clear says what would fill this list, so an empty
+            // Inbox reads as "watching" rather than "nothing here" (UX plan
+            // 5.8, item 3). The unknown state keeps its own copy: teaching
+            // there would claim a calm the app has not verified.
             known
-                ? l10n.activityCheckedLocationsClear
+                ? l10n.emptyTeachInboxMessage
                 : l10n.activityUnknownStatusDetail,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,

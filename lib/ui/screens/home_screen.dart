@@ -54,6 +54,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// Files and focuses its search field. Desktop-only in practice — nothing
   /// dispatches shortcuts off desktop.
   final _findInFiles = ValueNotifier<int>(0);
+  final _openFiles = ValueNotifier<int>(0);
   final _projectBack = ProjectHubBackController();
 
   @override
@@ -86,6 +87,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           when _tab == _projectTab &&
               ref.read(connProvider).capabilities.fileBrowsing:
         _findInFiles.value++;
+        return true;
+      // A search result that means Files or its search: both live inside the
+      // Project tab, so the tab is selected first.
+      case OpenProjectToolIntent(:final tool)
+          when ref.read(connProvider).capabilities.fileBrowsing &&
+              (tool == ProjectTool.files || tool == ProjectTool.search):
+        _selectTab(_projectTab);
+        (tool == ProjectTool.files ? _openFiles : _findInFiles).value++;
         return true;
       case OpenTerminalIntent()
           when ref.read(connProvider).capabilities.terminal:
@@ -146,6 +155,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ref.read(connProvider).removeListener(_onConnChanged);
     } catch (_) {}
     _findInFiles.dispose();
+    _openFiles.dispose();
     super.dispose();
   }
 
@@ -168,6 +178,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ProjectHub(
           controller: conn,
           focusSearchSignal: _findInFiles,
+          openFilesSignal: _openFiles,
           backController: _projectBack,
         )
       else

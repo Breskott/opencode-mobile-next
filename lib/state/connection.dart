@@ -20,6 +20,7 @@ import '../api/product_repository.dart';
 import '../api/server_probe.dart';
 import '../termux/managed_server_recovery.dart';
 import 'notification_preferences.dart';
+import 'nudges.dart';
 import 'profile_monitor.dart';
 import 'provider_quota_monitor.dart';
 import '../quota/provider_quota_client.dart';
@@ -34,6 +35,7 @@ import '../background/team_alerts.dart';
 import '../background/pinned_session_shortcuts.dart';
 import '../background/widget_snapshot.dart';
 import '../l10n/app_localizations.dart';
+import '../platform/platform_capabilities.dart';
 import '../diagnostics/app_diagnostics.dart';
 import '../termux/bridge.dart';
 import 'isolated_task_launch.dart';
@@ -286,6 +288,10 @@ class ConnectionController extends ChangeNotifier {
   /// notifies me" choices. Both monitors and this controller's own alerts
   /// read it; only the Notifications screen writes it.
   late final notificationPreferences = NotificationPreferences(store.prefs);
+
+  /// The one-time tips registry (UX plan 5.8). One instance app-wide, because
+  /// it also arbitrates the single nudge slot.
+  late final nudges = NudgeRegistry(store.prefs);
 
   /// The shared rules as they apply now: the migrated value, or what the
   /// legacy per-server records say while the migration has not run.
@@ -1265,6 +1271,21 @@ class ConnectionController extends ChangeNotifier {
       backgroundLive.notificationGranted &&
       profileMonitor.rulesFor(profile?.id ?? '').notifications &&
       !profileMonitor.rulesFor(profile?.id ?? '').quietAt(DateTime.now());
+
+  /// Whether a run finishing after the person leaves would reach them as a
+  /// notification: the background connection is on, Android granted the
+  /// permission, this server's alerts and the finished-run choice are on, and
+  /// it is not quiet hours. The same conditions [_settleSessionAttention]
+  /// checks, minus "the app is in the background", which leaving makes true.
+  bool get finishedRunNotificationsReady {
+    if (!platformCapabilities.supportsNotifications) return false;
+    final rules = profileMonitor.rulesFor(profile?.id ?? '');
+    return keepLiveInBackground &&
+        backgroundLive.notificationGranted &&
+        rules.notifications &&
+        notificationPreferences.finishedRuns &&
+        !rules.quietAt(DateTime.now());
+  }
 
   void _markSessionAttentionActive(String sessionID) {
     if (sessionID.isEmpty) return;

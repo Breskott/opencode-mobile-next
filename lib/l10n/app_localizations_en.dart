@@ -16004,4 +16004,452 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverSwitcherOpen => 'Switch server';
+
+  @override
+  String get discoverSearchGoTo => 'Go to';
+
+  @override
+  String get discoverSearchInsideSettings => 'Inside settings';
+
+  @override
+  String discoverSearchIn(String parent) {
+    return 'In $parent';
+  }
+
+  @override
+  String get discoverWorkAliases =>
+      'work home conversations sessions chats recent pinned new conversation';
+
+  @override
+  String get discoverInboxAliases =>
+      'inbox activity needs you approvals permissions questions forms waiting running finished';
+
+  @override
+  String get discoverProjectAliases =>
+      'project tools code folder files changes terminal health worktrees';
+
+  @override
+  String get discoverFilesAliases =>
+      'files browse folder tree preview code open file';
+
+  @override
+  String get discoverChangesAliases =>
+      'changes review changes diff uncommitted git edits working tree';
+
+  @override
+  String get discoverTerminalAliases =>
+      'terminal shell console command line pty';
+
+  @override
+  String get discoverHealthAliases =>
+      'project health branch changed files language services formatters lsp';
+
+  @override
+  String get discoverWorktreesAliases =>
+      'worktrees branches isolated git branch';
+
+  @override
+  String get discoverSearchFilesAliases => 'search files find file name';
+
+  @override
+  String get discoverAllConversationsAliases =>
+      'all conversations sessions chats history every project search';
+
+  @override
+  String get discoverTeamAliases =>
+      'ai team agents runs needs you orchestration plugin';
+
+  @override
+  String get discoverNotifyServersTitle => 'Notifications from saved servers';
+
+  @override
+  String get discoverNotifyWhatAliases =>
+      'finished runs approvals questions check-ins check in quota alerts what notifies';
+
+  @override
+  String get discoverNotifyQuietAliases =>
+      'quiet hours do not disturb night silence mute schedule';
+
+  @override
+  String get discoverNotifyBackgroundAliases =>
+      'background connection stay connected battery keep alive service';
+
+  @override
+  String get discoverNotifyServersAliases =>
+      'monitor saved servers attention wi-fi wifi check in the background';
+
+  @override
+  String get discoverAppearanceModeAliases =>
+      'light dark mode system appearance night';
+
+  @override
+  String get discoverLanguageAliases =>
+      'language arabic english locale translation rtl';
+
+  @override
+  String get discoverThemeAliases => 'theme colors palette pack accent';
+
+  @override
+  String get discoverSpentAliases => 'spent cost tokens usage statistics money';
+
+  @override
+  String get discoverRemainingAliases =>
+      'remaining quota limit provider plan left';
+
+  @override
+  String get discoverBudgetAliases =>
+      'budget budgets usd token budget spending limit';
+
+  @override
+  String get discoverQuotaMonitorAliases =>
+      'quota monitoring threshold alert warn low';
+
+  @override
+  String get discoverCommandsAliases => 'commands server commands slash run';
+
+  @override
+  String get discoverToolsAliases =>
+      'tools tools and capabilities inventory model tools';
+
+  @override
+  String get discoverSkillsAliases => 'skills skill instructions playbook';
+
+  @override
+  String get discoverReferencesAliases =>
+      'references reference docs sources context';
+
+  @override
+  String get discoverRunningNowAliases =>
+      'running now processes termux services stop on this phone';
+
+  @override
+  String get discoverStorageAliases =>
+      'storage on this phone disk space clean termux';
+
+  @override
+  String get discoverMonitorAliases =>
+      'saved-server attention monitor other servers waiting server attention';
+
+  @override
+  String get discoverConnectionHelpAliases =>
+      'connection help cannot connect troubleshooting network refused timeout';
+
+  @override
+  String gestureEquivFileRowActions(String name) {
+    return 'Actions for $name';
+  }
+
+  @override
+  String get gestureEquivShortcutFindMatch =>
+      'Next / previous match while finding in a conversation';
+
+  @override
+  String get gestureEquivShortcutPromptHistory =>
+      'Earlier / later prompt, with the cursor at the start or end of the message box';
+
+  @override
+  String get emptyTeachInboxMessage =>
+      'Nothing needs you. Approvals and questions from running work appear here.';
+
+  @override
+  String get emptyTeachWorkTitle => 'No conversations yet';
+
+  @override
+  String get emptyTeachWorkMessage =>
+      'Conversations you start in this project are listed here, with the ones that need you first. Start one with New conversation.';
+
+  @override
+  String get emptyTeachChangesTitle => 'No changes yet';
+
+  @override
+  String get emptyTeachChangesMessage =>
+      'Edits the agent makes show up here to review.';
+
+  @override
+  String get emptyTeachWorktreesMessage =>
+      'A worktree is a separate copy of this project on its own branch, so parallel work does not mix. Worktrees of this project appear here.';
+
+  @override
+  String get emptyTeachAllowedMessage =>
+      'When you choose Always allow on an approval in this project, it is listed here so you can take it back.';
+
+  @override
+  String get emptyTeachTeamRunsMessage =>
+      'A run is a job the team works through. Start one and its progress shows here.';
+
+  @override
+  String get emptyTeachSkillsMessage =>
+      'Skills are reusable instructions the agent can follow. Skills from this project and this server appear here.';
+
+  @override
+  String get emptyTeachToolsMessage =>
+      'Tools the agent can call with this model appear here. This model has none.';
+
+  @override
+  String get capabilityScreenTitle => 'Available on this server';
+
+  @override
+  String get capabilityScreenSubtitle => 'What this server can and cannot do';
+
+  @override
+  String get capabilityScreenAliases =>
+      'available supported not available missing feature hidden why can\'t capabilities server support shell';
+
+  @override
+  String capabilityScreenIntro(String server) {
+    return '$server decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out.';
+  }
+
+  @override
+  String get capabilityGroupAvailable => 'Available here';
+
+  @override
+  String get capabilityGroupUnavailable => 'Not available on this server';
+
+  @override
+  String get capabilityGroupDevice => 'Not available on this device';
+
+  @override
+  String get capabilityAllAvailable =>
+      'This server supports everything the app offers.';
+
+  @override
+  String get capabilityFiles => 'Files';
+
+  @override
+  String get capabilityFilesDetail =>
+      'Browse, search and preview the project\'s files';
+
+  @override
+  String get capabilityChanges => 'Changes';
+
+  @override
+  String get capabilityChangesDetail => 'Review what the agent edited';
+
+  @override
+  String get capabilityTerminal => 'Terminal';
+
+  @override
+  String get capabilityTerminalDetail => 'Run commands in the project';
+
+  @override
+  String get capabilityShell => 'Default shell';
+
+  @override
+  String get capabilityShellDetail =>
+      'Choose the shell that commands and terminals use';
+
+  @override
+  String get capabilityAttachments => 'Attachments';
+
+  @override
+  String get capabilityAttachmentsDetail =>
+      'Send files and photos with a prompt';
+
+  @override
+  String get capabilitySubagents => 'Delegate to a subagent';
+
+  @override
+  String get capabilitySubagentsDetail => 'Mention an agent with @ in a prompt';
+
+  @override
+  String get capabilityCompact => 'Compact';
+
+  @override
+  String get capabilityCompactDetail =>
+      'Summarize a long conversation to free up context';
+
+  @override
+  String get capabilityShare => 'Share';
+
+  @override
+  String get capabilityShareDetail => 'Publish a link to a conversation';
+
+  @override
+  String get capabilityFork => 'Fork';
+
+  @override
+  String get capabilityForkDetail =>
+      'Branch a conversation from an earlier message';
+
+  @override
+  String get capabilityRevert => 'Revert';
+
+  @override
+  String get capabilityRevertDetail => 'Undo a prompt and the edits it made';
+
+  @override
+  String get capabilityArchive => 'Archive';
+
+  @override
+  String get capabilityArchiveDetail =>
+      'Put finished conversations away without deleting them';
+
+  @override
+  String get capabilityTodos => 'Todos';
+
+  @override
+  String get capabilityTodosDetail =>
+      'See the agent\'s task list for a conversation';
+
+  @override
+  String get capabilityNotes => 'Note for the agent';
+
+  @override
+  String get capabilityNotesDetail =>
+      'Keep standing instructions with a conversation';
+
+  @override
+  String get capabilityImportExport => 'Import and export';
+
+  @override
+  String get capabilityImportExportDetail =>
+      'Move a conversation between servers as a file';
+
+  @override
+  String get capabilitySearchAll => 'All conversations';
+
+  @override
+  String get capabilitySearchAllDetail =>
+      'Search conversations across every project';
+
+  @override
+  String get capabilityAlwaysAllow => 'Always allowed actions';
+
+  @override
+  String get capabilityAlwaysAllowDetail =>
+      'Remember an approval so it is not asked again';
+
+  @override
+  String get capabilityModels => 'Models and providers';
+
+  @override
+  String get capabilityModelsDetail =>
+      'Browse models and sign in to providers from the app';
+
+  @override
+  String get capabilitySkills => 'Skills and commands';
+
+  @override
+  String get capabilitySkillsDetail =>
+      'List the server\'s skills, commands and references';
+
+  @override
+  String get capabilityMcp => 'MCP';
+
+  @override
+  String get capabilityMcpDetail => 'See and connect MCP servers';
+
+  @override
+  String get capabilityPlugins => 'Plugins';
+
+  @override
+  String get capabilityPluginsDetail =>
+      'See the plugins installed on the server';
+
+  @override
+  String get capabilityCloud => 'Cloud environments';
+
+  @override
+  String get capabilityCloudDetail => 'Run a project in a managed environment';
+
+  @override
+  String get capabilityProjects => 'Projects';
+
+  @override
+  String get capabilityProjectsDetail =>
+      'Switch projects and check a project\'s health';
+
+  @override
+  String get capabilityWorktrees => 'Worktrees';
+
+  @override
+  String get capabilityWorktreesDetail => 'Give a task its own isolated branch';
+
+  @override
+  String get capabilityUsage => 'Usage';
+
+  @override
+  String get capabilityUsageDetail => 'See what conversations have cost';
+
+  @override
+  String get capabilityOfflineQueue => 'Send later';
+
+  @override
+  String get capabilityOfflineQueueDetail =>
+      'Queue a prompt while offline and send it on reconnect';
+
+  @override
+  String get capabilityContinueOnComputer => 'Continue on computer';
+
+  @override
+  String get capabilityContinueOnComputerDetail =>
+      'Get a command that reopens the conversation at your desk';
+
+  @override
+  String get capabilityServerUpdates => 'Server updates';
+
+  @override
+  String get capabilityServerUpdatesDetail => 'Update the server from the app';
+
+  @override
+  String get capabilityBackgroundNotifications =>
+      'Notifications in the background';
+
+  @override
+  String get capabilityBackgroundNotificationsDetail =>
+      'Be told when work finishes or needs you while the app is closed';
+
+  @override
+  String get capabilityOnThisPhone => 'On this phone';
+
+  @override
+  String get capabilityOnThisPhoneDetail =>
+      'Run the agent\'s server on this device';
+
+  @override
+  String get capabilityVoice => 'Voice';
+
+  @override
+  String get capabilityVoiceDetail =>
+      'Dictate prompts with on-device speech models';
+
+  @override
+  String get discoverShowTipsAgain => 'Show tips again';
+
+  @override
+  String get discoverShowTipsSubtitle =>
+      'One-time tips will appear again at their moment';
+
+  @override
+  String get discoverShowTipsAliases =>
+      'tips hints nudges help reset show again tutorial';
+
+  @override
+  String get discoverShowTipsDone => 'Tips will show again.';
+
+  @override
+  String nudgeApprovals(String action) {
+    return 'Asked for “$action” 3 times: this conversation can approve requests for you.';
+  }
+
+  @override
+  String get nudgeReviewChanges =>
+      'This run changed files: review what changed before you continue.';
+
+  @override
+  String get nudgeLeave =>
+      'You can leave: this phone tells you when the run is done.';
+
+  @override
+  String nudgeCompact(String percent) {
+    return 'The context is $percent% full: compact to keep going.';
+  }
+
+  @override
+  String get nudgePin =>
+      'Pin conversations you return to from their menu; they stay at the top of Work.';
+
+  @override
+  String get nudgeDismiss => 'Hide tip';
 }

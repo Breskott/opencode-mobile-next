@@ -249,6 +249,11 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             setState(() => _completedExpanded = !_completedExpanded),
         onToggleUpkeep: (shown) => setState(() => _upkeepShown = shown),
         onOpenRun: widget.onOpenRun ?? _openRun,
+        // The same gate as the Start a run button: the capability, not the
+        // backend, decides whether the empty list may offer it.
+        onStartRun: widget.controller.capabilities.controlMessage
+            ? _startRun
+            : null,
       ),
       TeamHomeSegment.agents => _AgentsSegment(
         snapshot: snapshot,
@@ -602,15 +607,24 @@ class _Empty extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.hint,
+    this.actionLabel,
+    this.onAction,
   });
 
   final IconData icon;
   final String title;
   final String hint;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
-  Widget build(BuildContext context) =>
-      ProductInlineEmpty(icon: icon, title: title, message: hint);
+  Widget build(BuildContext context) => ProductInlineEmpty(
+    icon: icon,
+    title: title,
+    message: hint,
+    actionLabel: actionLabel,
+    onAction: onAction,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -631,7 +645,12 @@ class _RunsSegment extends StatelessWidget {
     required this.onToggleCompleted,
     required this.onToggleUpkeep,
     required this.onOpenRun,
+    required this.onStartRun,
   });
+
+  /// Opens the start-run sheet, or null when this phone cannot start a run
+  /// on this host; the empty list then keeps the "from the host" sentence.
+  final VoidCallback? onStartRun;
 
   final OrchestrationSnapshot snapshot;
   final Set<String> gated;
@@ -806,7 +825,11 @@ class _RunsSegment extends StatelessWidget {
             key: const ValueKey('team-home-runs-empty'),
             icon: AppIconography.agent,
             title: l10n.teamUiCardEmptyTitle,
-            hint: l10n.teamUiCardEmptyHint,
+            hint: onStartRun == null
+                ? l10n.teamUiCardEmptyHint
+                : l10n.emptyTeachTeamRunsMessage,
+            actionLabel: onStartRun == null ? null : l10n.teamUiStartRunFab,
+            onAction: onStartRun,
           )
         else if (visible.isEmpty)
           _Empty(

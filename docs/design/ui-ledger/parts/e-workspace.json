@@ -597,6 +597,40 @@
             "renders only when controller.hasMoreSessions || a sessions error || loading"
           ],
           "destructive": false
+        },
+        {
+          "id": "workspace-nudge-pin-got-it",
+          "type": "button",
+          "label": "Got it",
+          "key": "nudge-pin-action",
+          "file": "lib/ui/widgets/nudge_card.dart",
+          "line": 93,
+          "action": "dismiss",
+          "target": null,
+          "effect": "One-time tip above Recent (workspace_screen.dart:793): 'Pin conversations you return to from their menu; they stay at the top of Work.' -> controller.nudges.dismiss(NudgeId.pinConversations).",
+          "gates": [
+            "second distinct project directory used on this server (NudgeRegistry.noteProjectUsed)",
+            "registry.firstReplySeen (never during first run before the first reply)",
+            "Work visible and its route current",
+            "controller.canPinSessions, nothing pinned in this scope, Recent not empty",
+            "offered once ever; never while another nudge is showing"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-nudge-pin-dismiss",
+          "type": "icon-button",
+          "label": "Hide tip",
+          "key": "nudge-pin-dismiss",
+          "file": "lib/ui/widgets/nudge_card.dart",
+          "line": 99,
+          "action": "dismiss",
+          "target": null,
+          "effect": "controller.nudges.dismiss(NudgeId.pinConversations).",
+          "gates": [
+            "same as workspace-nudge-pin-got-it"
+          ],
+          "destructive": false
         }
       ]
     },
@@ -2228,6 +2262,22 @@
           "gates": [
             "widget.controller.capabilities.worktreeCreate",
             "disabled while _creating"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-empty-create",
+          "type": "button",
+          "label": "New worktree",
+          "key": null,
+          "line": 497,
+          "action": "open-dialog",
+          "target": "worktrees-create-dialog",
+          "targetWidget": "_CreateWorktreeDialog",
+          "effect": "Action of the teaching empty state (key no-worktrees): _create(), the same as worktrees-create.",
+          "gates": [
+            "the worktree list is empty (not failed)",
+            "widget.controller.capabilities.worktreeCreate"
           ],
           "destructive": false
         },

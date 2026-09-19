@@ -1,61 +1,107 @@
 part of '../settings_screen.dart';
 
+/// The parts of Appearance a search result can mean.
+enum AppearanceSection { mode, language, theme }
+
 /// Appearance category: light/dark mode plus the theme-pack picker with
 /// live swatch previews.
-class AppearanceSettingsScreen extends StatelessWidget {
+class AppearanceSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
-  const AppearanceSettingsScreen({super.key, required this.controller});
+
+  /// The part a search result means: the screen opens scrolled to it.
+  final AppearanceSection? initialSection;
+
+  const AppearanceSettingsScreen({
+    super.key,
+    required this.controller,
+    this.initialSection,
+  });
+
+  @override
+  State<AppearanceSettingsScreen> createState() =>
+      _AppearanceSettingsScreenState();
+}
+
+class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
+  final _sectionKeys = {
+    for (final section in AppearanceSection.values)
+      section: GlobalKey(debugLabel: 'appearance-${section.name}'),
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialSection case final section?) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _sectionKeys[section]?.currentContext;
+        if (mounted && target != null) Scrollable.ensureVisible(target);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return Scaffold(
       appBar: AppBar(title: Text(_settingsCopy(context).e7AppearanceTitle)),
-      body: ListView(
+      // Not a lazy list: a dozen rows, and a search result that means one
+      // part must find it laid out.
+      body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
-        children: [
-          ValueListenableBuilder<AppAppearance>(
-            valueListenable: controller.appearance,
-            builder: (context, appearance, _) => ListTile(
-              key: const ValueKey('appearance-settings-entry'),
-              leading: const Icon(AppIconography.contrast),
-              title: Text(_settingsCopy(context).e7SettingsUi69),
-              subtitle: Text(appearanceLabel(appearance, context)),
-              trailing: const Icon(AppIconography.chevronRight),
-              onTap: () =>
-                  showAppearancePicker(context, controller: controller),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ValueListenableBuilder<AppAppearance>(
+              key: _sectionKeys[AppearanceSection.mode],
+              valueListenable: controller.appearance,
+              builder: (context, appearance, _) => ListTile(
+                key: const ValueKey('appearance-settings-entry'),
+                leading: const Icon(AppIconography.contrast),
+                title: Text(_settingsCopy(context).e7SettingsUi69),
+                subtitle: Text(appearanceLabel(appearance, context)),
+                trailing: const Icon(AppIconography.chevronRight),
+                onTap: () =>
+                    showAppearancePicker(context, controller: controller),
+              ),
             ),
-          ),
-          LanguageSettingsTile(controller: controller),
-          SectionLabel(_settingsCopy(context).e7SettingsUi70),
-          ListenableBuilder(
-            listenable: Listenable.merge([
-              controller.themePack,
-              harvestedDynamicPack,
-            ]),
-            builder: (context, _) {
-              final selected = controller.themePack.value;
-              final brightness = Theme.of(context).brightness;
-              return Column(
-                children: [
-                  for (final id in ThemePackId.values)
-                    _ThemePackTile(
-                      id: id,
-                      selected: selected == id,
-                      brightness: brightness,
-                      available:
-                          id != ThemePackId.dynamic ||
-                          harvestedDynamicPack.value != null,
-                      onSelect: () => showThemePackPreview(
-                        context,
-                        controller: controller,
-                        pack: id,
+            KeyedSubtree(
+              key: _sectionKeys[AppearanceSection.language],
+              child: LanguageSettingsTile(controller: controller),
+            ),
+            KeyedSubtree(
+              key: _sectionKeys[AppearanceSection.theme],
+              child: SectionLabel(_settingsCopy(context).e7SettingsUi70),
+            ),
+            ListenableBuilder(
+              listenable: Listenable.merge([
+                controller.themePack,
+                harvestedDynamicPack,
+              ]),
+              builder: (context, _) {
+                final selected = controller.themePack.value;
+                final brightness = Theme.of(context).brightness;
+                return Column(
+                  children: [
+                    for (final id in ThemePackId.values)
+                      _ThemePackTile(
+                        id: id,
+                        selected: selected == id,
+                        brightness: brightness,
+                        available:
+                            id != ThemePackId.dynamic ||
+                            harvestedDynamicPack.value != null,
+                        onSelect: () => showThemePackPreview(
+                          context,
+                          controller: controller,
+                          pack: id,
+                        ),
                       ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

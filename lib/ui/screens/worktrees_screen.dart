@@ -501,7 +501,19 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
                 ).e7LibraryNoIsolatedWorktreesYet,
                 message: lookupAppLocalizations(
                   Localizations.localeOf(context),
-                ).e7LibraryUseIsolatedBranchesForParallelCodingWithout,
+                ).emptyTeachWorktreesMessage,
+                // Offered only where the server can create one; listing
+                // stays available without it, and a dead button would
+                // break "hide, don't disable".
+                actionLabel: widget.controller.capabilities.worktreeCreate
+                    ? lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7LibraryNewWorktree
+                    : null,
+                onAction:
+                    widget.controller.capabilities.worktreeCreate && !_creating
+                    ? _create
+                    : null,
               )
             else
               for (var index = 0; index < worktrees.length; index++) ...[

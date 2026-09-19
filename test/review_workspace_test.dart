@@ -284,7 +284,11 @@ void main() {
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('review-empty')), findsOneWidget);
-    expect(find.text('No changes to review'), findsOneWidget);
+    expect(find.text('No changes yet'), findsOneWidget);
+    expect(
+      find.text('Edits the agent makes show up here to review.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('virtualizes a large diff instead of building every line', (

@@ -408,6 +408,19 @@
           "destructive": false
         },
         {
+          "id": "files-row-actions-button",
+          "type": "icon-button",
+          "label": "Actions for {name}",
+          "key": "project-file-actions-<path>",
+          "line": 1094,
+          "action": "open-sheet",
+          "target": "files-row-actions-sheet",
+          "targetWidget": "_showFileRowActions",
+          "effect": "_showFileRowActions(node, change): the visible equivalent of the long-press and right-click on the row (gesture audit).",
+          "gates": [],
+          "destructive": false
+        },
+        {
           "id": "files-row-long-press",
           "type": "gesture",
           "label": "[long press on file row]",

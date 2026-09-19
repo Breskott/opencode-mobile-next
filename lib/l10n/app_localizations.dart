@@ -25845,6 +25845,756 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch server'**
   String get serverSwitcherOpen;
+
+  /// Header above search results that are places in the app rather than settings rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to'**
+  String get discoverSearchGoTo;
+
+  /// Header above search results that sit inside a second-level settings screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Inside settings'**
+  String get discoverSearchInsideSettings;
+
+  /// Second line of a search result: the screen that holds it.
+  ///
+  /// In en, this message translates to:
+  /// **'In {parent}'**
+  String discoverSearchIn(String parent);
+
+  /// No description provided for @discoverWorkAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'work home conversations sessions chats recent pinned new conversation'**
+  String get discoverWorkAliases;
+
+  /// No description provided for @discoverInboxAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'inbox activity needs you approvals permissions questions forms waiting running finished'**
+  String get discoverInboxAliases;
+
+  /// No description provided for @discoverProjectAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'project tools code folder files changes terminal health worktrees'**
+  String get discoverProjectAliases;
+
+  /// No description provided for @discoverFilesAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'files browse folder tree preview code open file'**
+  String get discoverFilesAliases;
+
+  /// No description provided for @discoverChangesAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'changes review changes diff uncommitted git edits working tree'**
+  String get discoverChangesAliases;
+
+  /// No description provided for @discoverTerminalAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'terminal shell console command line pty'**
+  String get discoverTerminalAliases;
+
+  /// No description provided for @discoverHealthAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'project health branch changed files language services formatters lsp'**
+  String get discoverHealthAliases;
+
+  /// No description provided for @discoverWorktreesAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'worktrees branches isolated git branch'**
+  String get discoverWorktreesAliases;
+
+  /// No description provided for @discoverSearchFilesAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'search files find file name'**
+  String get discoverSearchFilesAliases;
+
+  /// No description provided for @discoverAllConversationsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'all conversations sessions chats history every project search'**
+  String get discoverAllConversationsAliases;
+
+  /// No description provided for @discoverTeamAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'ai team agents runs needs you orchestration plugin'**
+  String get discoverTeamAliases;
+
+  /// Search result title for the saved-server monitoring section of Notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications from saved servers'**
+  String get discoverNotifyServersTitle;
+
+  /// No description provided for @discoverNotifyWhatAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'finished runs approvals questions check-ins check in quota alerts what notifies'**
+  String get discoverNotifyWhatAliases;
+
+  /// No description provided for @discoverNotifyQuietAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'quiet hours do not disturb night silence mute schedule'**
+  String get discoverNotifyQuietAliases;
+
+  /// No description provided for @discoverNotifyBackgroundAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'background connection stay connected battery keep alive service'**
+  String get discoverNotifyBackgroundAliases;
+
+  /// No description provided for @discoverNotifyServersAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'monitor saved servers attention wi-fi wifi check in the background'**
+  String get discoverNotifyServersAliases;
+
+  /// No description provided for @discoverAppearanceModeAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'light dark mode system appearance night'**
+  String get discoverAppearanceModeAliases;
+
+  /// No description provided for @discoverLanguageAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'language arabic english locale translation rtl'**
+  String get discoverLanguageAliases;
+
+  /// No description provided for @discoverThemeAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'theme colors palette pack accent'**
+  String get discoverThemeAliases;
+
+  /// No description provided for @discoverSpentAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'spent cost tokens usage statistics money'**
+  String get discoverSpentAliases;
+
+  /// No description provided for @discoverRemainingAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'remaining quota limit provider plan left'**
+  String get discoverRemainingAliases;
+
+  /// No description provided for @discoverBudgetAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'budget budgets usd token budget spending limit'**
+  String get discoverBudgetAliases;
+
+  /// No description provided for @discoverQuotaMonitorAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'quota monitoring threshold alert warn low'**
+  String get discoverQuotaMonitorAliases;
+
+  /// No description provided for @discoverCommandsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'commands server commands slash run'**
+  String get discoverCommandsAliases;
+
+  /// No description provided for @discoverToolsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'tools tools and capabilities inventory model tools'**
+  String get discoverToolsAliases;
+
+  /// No description provided for @discoverSkillsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'skills skill instructions playbook'**
+  String get discoverSkillsAliases;
+
+  /// No description provided for @discoverReferencesAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'references reference docs sources context'**
+  String get discoverReferencesAliases;
+
+  /// No description provided for @discoverRunningNowAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'running now processes termux services stop on this phone'**
+  String get discoverRunningNowAliases;
+
+  /// No description provided for @discoverStorageAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'storage on this phone disk space clean termux'**
+  String get discoverStorageAliases;
+
+  /// No description provided for @discoverMonitorAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'saved-server attention monitor other servers waiting server attention'**
+  String get discoverMonitorAliases;
+
+  /// No description provided for @discoverConnectionHelpAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'connection help cannot connect troubleshooting network refused timeout'**
+  String get discoverConnectionHelpAliases;
+
+  /// Files list: tooltip and accessibility label of the trailing button on a file or folder row. It opens the same actions as a long press or right click on the row.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for {name}'**
+  String gestureEquivFileRowActions(String name);
+
+  /// Keyboard shortcuts help: what F3 and Shift+F3 do.
+  ///
+  /// In en, this message translates to:
+  /// **'Next / previous match while finding in a conversation'**
+  String get gestureEquivShortcutFindMatch;
+
+  /// Keyboard shortcuts help: what Arrow Up and Arrow Down do in the message box.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier / later prompt, with the cursor at the start or end of the message box'**
+  String get gestureEquivShortcutPromptHistory;
+
+  /// Inbox: body of the all-clear empty state; says what will appear in the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs you. Approvals and questions from running work appear here.'**
+  String get emptyTeachInboxMessage;
+
+  /// Work tab: title of the empty state shown when the project has no conversations at all.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get emptyTeachWorkTitle;
+
+  /// Work tab: body of the empty state. It names the docked New conversation button instead of repeating it, so the label must match workspaceNewSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations you start in this project are listed here, with the ones that need you first. Start one with New conversation.'**
+  String get emptyTeachWorkMessage;
+
+  /// Project > Changes: title of the empty review.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes yet'**
+  String get emptyTeachChangesTitle;
+
+  /// Project > Changes: body of the empty review.
+  ///
+  /// In en, this message translates to:
+  /// **'Edits the agent makes show up here to review.'**
+  String get emptyTeachChangesMessage;
+
+  /// Worktrees: body of the empty list.
+  ///
+  /// In en, this message translates to:
+  /// **'A worktree is a separate copy of this project on its own branch, so parallel work does not mix. Worktrees of this project appear here.'**
+  String get emptyTeachWorktreesMessage;
+
+  /// Always allowed actions: body of the empty list.
+  ///
+  /// In en, this message translates to:
+  /// **'When you choose Always allow on an approval in this project, it is listed here so you can take it back.'**
+  String get emptyTeachAllowedMessage;
+
+  /// AI Team home, Runs: body of the empty list when this phone can start a run.
+  ///
+  /// In en, this message translates to:
+  /// **'A run is a job the team works through. Start one and its progress shows here.'**
+  String get emptyTeachTeamRunsMessage;
+
+  /// Skills: body of the empty list.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills are reusable instructions the agent can follow. Skills from this project and this server appear here.'**
+  String get emptyTeachSkillsMessage;
+
+  /// Tools: body of the empty list for the chosen model.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools the agent can call with this model appear here. This model has none.'**
+  String get emptyTeachToolsMessage;
+
+  /// Settings > Help row and screen title: what the connected server supports.
+  ///
+  /// In en, this message translates to:
+  /// **'Available on this server'**
+  String get capabilityScreenTitle;
+
+  /// No description provided for @capabilityScreenSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What this server can and cannot do'**
+  String get capabilityScreenSubtitle;
+
+  /// No description provided for @capabilityScreenAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'available supported not available missing feature hidden why can\'t capabilities server support shell'**
+  String get capabilityScreenAliases;
+
+  /// No description provided for @capabilityScreenIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out.'**
+  String capabilityScreenIntro(String server);
+
+  /// No description provided for @capabilityGroupAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available here'**
+  String get capabilityGroupAvailable;
+
+  /// No description provided for @capabilityGroupUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available on this server'**
+  String get capabilityGroupUnavailable;
+
+  /// No description provided for @capabilityGroupDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available on this device'**
+  String get capabilityGroupDevice;
+
+  /// No description provided for @capabilityAllAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This server supports everything the app offers.'**
+  String get capabilityAllAvailable;
+
+  /// No description provided for @capabilityFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get capabilityFiles;
+
+  /// No description provided for @capabilityFilesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse, search and preview the project\'s files'**
+  String get capabilityFilesDetail;
+
+  /// No description provided for @capabilityChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes'**
+  String get capabilityChanges;
+
+  /// No description provided for @capabilityChangesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Review what the agent edited'**
+  String get capabilityChangesDetail;
+
+  /// No description provided for @capabilityTerminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal'**
+  String get capabilityTerminal;
+
+  /// No description provided for @capabilityTerminalDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Run commands in the project'**
+  String get capabilityTerminalDetail;
+
+  /// No description provided for @capabilityShell.
+  ///
+  /// In en, this message translates to:
+  /// **'Default shell'**
+  String get capabilityShell;
+
+  /// No description provided for @capabilityShellDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the shell that commands and terminals use'**
+  String get capabilityShellDetail;
+
+  /// No description provided for @capabilityAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get capabilityAttachments;
+
+  /// No description provided for @capabilityAttachmentsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send files and photos with a prompt'**
+  String get capabilityAttachmentsDetail;
+
+  /// No description provided for @capabilitySubagents.
+  ///
+  /// In en, this message translates to:
+  /// **'Delegate to a subagent'**
+  String get capabilitySubagents;
+
+  /// No description provided for @capabilitySubagentsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Mention an agent with @ in a prompt'**
+  String get capabilitySubagentsDetail;
+
+  /// No description provided for @capabilityCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get capabilityCompact;
+
+  /// No description provided for @capabilityCompactDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize a long conversation to free up context'**
+  String get capabilityCompactDetail;
+
+  /// No description provided for @capabilityShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get capabilityShare;
+
+  /// No description provided for @capabilityShareDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish a link to a conversation'**
+  String get capabilityShareDetail;
+
+  /// No description provided for @capabilityFork.
+  ///
+  /// In en, this message translates to:
+  /// **'Fork'**
+  String get capabilityFork;
+
+  /// No description provided for @capabilityForkDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch a conversation from an earlier message'**
+  String get capabilityForkDetail;
+
+  /// No description provided for @capabilityRevert.
+  ///
+  /// In en, this message translates to:
+  /// **'Revert'**
+  String get capabilityRevert;
+
+  /// No description provided for @capabilityRevertDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo a prompt and the edits it made'**
+  String get capabilityRevertDetail;
+
+  /// No description provided for @capabilityArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get capabilityArchive;
+
+  /// No description provided for @capabilityArchiveDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Put finished conversations away without deleting them'**
+  String get capabilityArchiveDetail;
+
+  /// No description provided for @capabilityTodos.
+  ///
+  /// In en, this message translates to:
+  /// **'Todos'**
+  String get capabilityTodos;
+
+  /// No description provided for @capabilityTodosDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'See the agent\'s task list for a conversation'**
+  String get capabilityTodosDetail;
+
+  /// No description provided for @capabilityNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Note for the agent'**
+  String get capabilityNotes;
+
+  /// No description provided for @capabilityNotesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep standing instructions with a conversation'**
+  String get capabilityNotesDetail;
+
+  /// No description provided for @capabilityImportExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import and export'**
+  String get capabilityImportExport;
+
+  /// No description provided for @capabilityImportExportDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Move a conversation between servers as a file'**
+  String get capabilityImportExportDetail;
+
+  /// No description provided for @capabilitySearchAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All conversations'**
+  String get capabilitySearchAll;
+
+  /// No description provided for @capabilitySearchAllDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Search conversations across every project'**
+  String get capabilitySearchAllDetail;
+
+  /// No description provided for @capabilityAlwaysAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Always allowed actions'**
+  String get capabilityAlwaysAllow;
+
+  /// No description provided for @capabilityAlwaysAllowDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember an approval so it is not asked again'**
+  String get capabilityAlwaysAllowDetail;
+
+  /// No description provided for @capabilityModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Models and providers'**
+  String get capabilityModels;
+
+  /// No description provided for @capabilityModelsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse models and sign in to providers from the app'**
+  String get capabilityModelsDetail;
+
+  /// No description provided for @capabilitySkills.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills and commands'**
+  String get capabilitySkills;
+
+  /// No description provided for @capabilitySkillsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'List the server\'s skills, commands and references'**
+  String get capabilitySkillsDetail;
+
+  /// No description provided for @capabilityMcp.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP'**
+  String get capabilityMcp;
+
+  /// No description provided for @capabilityMcpDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'See and connect MCP servers'**
+  String get capabilityMcpDetail;
+
+  /// No description provided for @capabilityPlugins.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugins'**
+  String get capabilityPlugins;
+
+  /// No description provided for @capabilityPluginsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'See the plugins installed on the server'**
+  String get capabilityPluginsDetail;
+
+  /// No description provided for @capabilityCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud environments'**
+  String get capabilityCloud;
+
+  /// No description provided for @capabilityCloudDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a project in a managed environment'**
+  String get capabilityCloudDetail;
+
+  /// No description provided for @capabilityProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get capabilityProjects;
+
+  /// No description provided for @capabilityProjectsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch projects and check a project\'s health'**
+  String get capabilityProjectsDetail;
+
+  /// No description provided for @capabilityWorktrees.
+  ///
+  /// In en, this message translates to:
+  /// **'Worktrees'**
+  String get capabilityWorktrees;
+
+  /// No description provided for @capabilityWorktreesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Give a task its own isolated branch'**
+  String get capabilityWorktreesDetail;
+
+  /// No description provided for @capabilityUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get capabilityUsage;
+
+  /// No description provided for @capabilityUsageDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'See what conversations have cost'**
+  String get capabilityUsageDetail;
+
+  /// No description provided for @capabilityOfflineQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Send later'**
+  String get capabilityOfflineQueue;
+
+  /// No description provided for @capabilityOfflineQueueDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue a prompt while offline and send it on reconnect'**
+  String get capabilityOfflineQueueDetail;
+
+  /// No description provided for @capabilityContinueOnComputer.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue on computer'**
+  String get capabilityContinueOnComputer;
+
+  /// No description provided for @capabilityContinueOnComputerDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a command that reopens the conversation at your desk'**
+  String get capabilityContinueOnComputerDetail;
+
+  /// No description provided for @capabilityServerUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Server updates'**
+  String get capabilityServerUpdates;
+
+  /// No description provided for @capabilityServerUpdatesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the server from the app'**
+  String get capabilityServerUpdatesDetail;
+
+  /// No description provided for @capabilityBackgroundNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications in the background'**
+  String get capabilityBackgroundNotifications;
+
+  /// No description provided for @capabilityBackgroundNotificationsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Be told when work finishes or needs you while the app is closed'**
+  String get capabilityBackgroundNotificationsDetail;
+
+  /// No description provided for @capabilityOnThisPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'On this phone'**
+  String get capabilityOnThisPhone;
+
+  /// No description provided for @capabilityOnThisPhoneDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Run the agent\'s server on this device'**
+  String get capabilityOnThisPhoneDetail;
+
+  /// No description provided for @capabilityVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get capabilityVoice;
+
+  /// No description provided for @capabilityVoiceDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictate prompts with on-device speech models'**
+  String get capabilityVoiceDetail;
+
+  /// Settings > Help row that resets the one-time nudges.
+  ///
+  /// In en, this message translates to:
+  /// **'Show tips again'**
+  String get discoverShowTipsAgain;
+
+  /// No description provided for @discoverShowTipsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time tips will appear again at their moment'**
+  String get discoverShowTipsSubtitle;
+
+  /// No description provided for @discoverShowTipsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'tips hints nudges help reset show again tutorial'**
+  String get discoverShowTipsAliases;
+
+  /// No description provided for @discoverShowTipsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips will show again.'**
+  String get discoverShowTipsDone;
+
+  /// One-time tip above the composer after the third permission request of one kind in a conversation. {action} is the request's title, such as Edit a file. Its button opens Approvals.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked for “{action}” 3 times: this conversation can approve requests for you.'**
+  String nudgeApprovals(String action);
+
+  /// One-time tip above the composer when a run that edited files finishes. Its button opens Review changes.
+  ///
+  /// In en, this message translates to:
+  /// **'This run changed files: review what changed before you continue.'**
+  String get nudgeReviewChanges;
+
+  /// One-time tip above the composer after a run has kept the person waiting for a minute while finished-run notifications are on.
+  ///
+  /// In en, this message translates to:
+  /// **'You can leave: this phone tells you when the run is done.'**
+  String get nudgeLeave;
+
+  /// One-time tip above the composer when the conversation uses most of the model's context window. Its button compacts the conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'The context is {percent}% full: compact to keep going.'**
+  String nudgeCompact(String percent);
+
+  /// One-time tip at the top of the Work tab once a second project has been used.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin conversations you return to from their menu; they stay at the top of Work.'**
+  String get nudgePin;
+
+  /// Tooltip of the close button on a one-time tip card.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide tip'**
+  String get nudgeDismiss;
 }
 
 class _AppLocalizationsDelegate

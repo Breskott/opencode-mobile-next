@@ -766,6 +766,35 @@ void main() {
       await settle(tester);
     }
 
+    testWidgets('an empty Runs list teaches and offers Start a run', (
+      tester,
+    ) async {
+      await size(tester, const Size(400, 900));
+      final (controller, gateway) = await boot(
+        configure: (g) => g.runList = const [],
+      );
+      await pumpHome(tester, controller);
+      expect(key('team-home-runs-empty'), findsOneWidget);
+      expect(find.text('No runs yet.'), findsOneWidget);
+      expect(
+        find.text(
+          'A run is a job the team works through. Start one and its '
+          'progress shows here.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Start runs from the host for now.'), findsNothing);
+      await tester.tap(
+        find.descendant(
+          of: key('team-home-runs-empty'),
+          matching: find.text('Start a run'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(key('team-start-run-sheet'), findsOneWidget);
+      expect(gateway.calls, isEmpty);
+    });
+
     testWidgets(
       'sends objective + supervision to the Mayor, shows Planning, resolves',
       (tester) async {

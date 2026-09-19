@@ -16275,4 +16275,440 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get serverSwitcherOpen => 'تبديل الخادم';
+
+  @override
+  String get discoverSearchGoTo => 'انتقل إلى';
+
+  @override
+  String get discoverSearchInsideSettings => 'داخل الإعدادات';
+
+  @override
+  String discoverSearchIn(String parent) {
+    return 'في $parent';
+  }
+
+  @override
+  String get discoverWorkAliases =>
+      'work home conversations sessions chats recent pinned العمل الرئيسية محادثات الأخيرة المثبتة محادثة جديدة';
+
+  @override
+  String get discoverInboxAliases =>
+      'inbox activity approvals permissions questions forms الوارد النشاط بانتظارك موافقات أذونات أسئلة نماذج قيد التشغيل منتهية';
+
+  @override
+  String get discoverProjectAliases =>
+      'project tools code folder المشروع أدوات الشيفرة مجلد ملفات تغييرات طرفية';
+
+  @override
+  String get discoverFilesAliases =>
+      'files browse folder tree preview ملفات تصفح مجلد شجرة معاينة شيفرة';
+
+  @override
+  String get discoverChangesAliases =>
+      'changes review diff git تغييرات مراجعة التغييرات فروقات غير مودعة تعديلات';
+
+  @override
+  String get discoverTerminalAliases =>
+      'terminal shell console طرفية صدفة سطر الأوامر';
+
+  @override
+  String get discoverHealthAliases =>
+      'project health branch lsp صحة المشروع فرع ملفات متغيرة خدمات اللغة منسقات';
+
+  @override
+  String get discoverWorktreesAliases =>
+      'worktrees branches git أشجار العمل فروع معزولة';
+
+  @override
+  String get discoverSearchFilesAliases =>
+      'search files find بحث في الملفات اعثر على ملف اسم';
+
+  @override
+  String get discoverAllConversationsAliases =>
+      'all conversations sessions chats history كل المحادثات السجل كل المشاريع بحث';
+
+  @override
+  String get discoverTeamAliases =>
+      'ai team agents runs فريق الذكاء الاصطناعي وكلاء عمليات بانتظارك إضافة';
+
+  @override
+  String get discoverNotifyServersTitle => 'إشعارات الخوادم المحفوظة';
+
+  @override
+  String get discoverNotifyWhatAliases =>
+      'finished approvals questions check-in quota العمليات المنتهية موافقات أسئلة متابعة تنبيهات الحصص ما الذي ينبهني';
+
+  @override
+  String get discoverNotifyQuietAliases =>
+      'quiet hours do not disturb mute ساعات الهدوء عدم الإزعاج ليل كتم جدول';
+
+  @override
+  String get discoverNotifyBackgroundAliases =>
+      'background battery keep alive الخلفية البقاء متصلا بطارية خدمة';
+
+  @override
+  String get discoverNotifyServersAliases =>
+      'monitor saved servers wi-fi wifi مراقبة الخوادم المحفوظة انتباه واي فاي فحص في الخلفية';
+
+  @override
+  String get discoverAppearanceModeAliases =>
+      'light dark mode system فاتح داكن الوضع النظام ليلي';
+
+  @override
+  String get discoverLanguageAliases =>
+      'language arabic english locale اللغة العربية الإنجليزية ترجمة';
+
+  @override
+  String get discoverThemeAliases => 'theme colors palette السمة ألوان لوحة';
+
+  @override
+  String get discoverSpentAliases =>
+      'spent cost tokens usage المصروف التكلفة الرموز الاستخدام إحصاءات';
+
+  @override
+  String get discoverRemainingAliases =>
+      'remaining quota limit provider المتبقي الحصة الحد المزود الخطة';
+
+  @override
+  String get discoverBudgetAliases =>
+      'budget usd token ميزانية ميزانيات دولار رموز حد الإنفاق';
+
+  @override
+  String get discoverQuotaMonitorAliases =>
+      'quota monitoring threshold alert مراقبة الحصص حد تنبيه منخفض';
+
+  @override
+  String get discoverCommandsAliases =>
+      'commands slash أوامر أوامر الخادم تشغيل';
+
+  @override
+  String get discoverToolsAliases =>
+      'tools capabilities inventory أدوات الأدوات والإمكانات';
+
+  @override
+  String get discoverSkillsAliases => 'skills skill مهارات مهارة تعليمات';
+
+  @override
+  String get discoverReferencesAliases =>
+      'references docs sources مراجع مرجع مستندات مصادر سياق';
+
+  @override
+  String get discoverRunningNowAliases =>
+      'running processes termux يعمل الآن عمليات خدمات إيقاف على هذا الهاتف';
+
+  @override
+  String get discoverStorageAliases =>
+      'storage disk space termux التخزين على هذا الهاتف مساحة القرص تنظيف';
+
+  @override
+  String get discoverMonitorAliases =>
+      'monitor attention انتباه الخوادم المحفوظة مراقبة خوادم أخرى بانتظارك';
+
+  @override
+  String get discoverConnectionHelpAliases =>
+      'connection help troubleshooting مساعدة الاتصال تعذر الاتصال استكشاف الأخطاء الشبكة';
+
+  @override
+  String gestureEquivFileRowActions(String name) {
+    return 'إجراءات $name';
+  }
+
+  @override
+  String get gestureEquivShortcutFindMatch =>
+      'التطابق التالي / السابق أثناء البحث في المحادثة';
+
+  @override
+  String get gestureEquivShortcutPromptHistory =>
+      'الطلب الأقدم / الأحدث، والمؤشر في بداية مربع الرسالة أو نهايته';
+
+  @override
+  String get emptyTeachInboxMessage =>
+      'لا شيء يحتاج إليك. تظهر هنا طلبات الموافقة والأسئلة من الأعمال الجارية.';
+
+  @override
+  String get emptyTeachWorkTitle => 'لا توجد محادثات بعد';
+
+  @override
+  String get emptyTeachWorkMessage =>
+      'تظهر هنا المحادثات التي تبدؤها في هذا المشروع، وفي مقدمتها ما يحتاج إليك. ابدأ واحدة من «محادثة جديدة».';
+
+  @override
+  String get emptyTeachChangesTitle => 'لا توجد تغييرات بعد';
+
+  @override
+  String get emptyTeachChangesMessage =>
+      'تظهر هنا التعديلات التي يجريها الوكيل لتراجعها.';
+
+  @override
+  String get emptyTeachWorktreesMessage =>
+      'شجرة العمل نسخة منفصلة من هذا المشروع على فرع خاص بها، فلا تختلط الأعمال المتوازية. تظهر هنا أشجار عمل هذا المشروع.';
+
+  @override
+  String get emptyTeachAllowedMessage =>
+      'عندما تختار «السماح دائمًا» في طلب موافقة ضمن هذا المشروع، يظهر هنا لتتمكن من التراجع عنه.';
+
+  @override
+  String get emptyTeachTeamRunsMessage =>
+      'التشغيل مهمة يعمل عليها الفريق حتى تكتمل. ابدأ تشغيلًا ليظهر تقدّمه هنا.';
+
+  @override
+  String get emptyTeachSkillsMessage =>
+      'المهارات تعليمات قابلة لإعادة الاستخدام يتبعها الوكيل. تظهر هنا مهارات هذا المشروع وهذا الخادم.';
+
+  @override
+  String get emptyTeachToolsMessage =>
+      'تظهر هنا الأدوات التي يستطيع الوكيل استدعاءها مع هذا النموذج. لا أدوات لهذا النموذج.';
+
+  @override
+  String get capabilityScreenTitle => 'المتاح على هذا الخادم';
+
+  @override
+  String get capabilityScreenSubtitle => 'ما يستطيعه هذا الخادم وما لا يستطيعه';
+
+  @override
+  String get capabilityScreenAliases =>
+      'available supported missing feature capabilities المتاح مدعوم غير متاح ميزة مفقودة مخفية لماذا إمكانات الخادم';
+
+  @override
+  String capabilityScreenIntro(String server) {
+    return 'يحدد $server ما يظهر في هذا التطبيق. ما لا يستطيعه يُحذف من القوائم وعلامات التبويب بدل عرضه معطلا.';
+  }
+
+  @override
+  String get capabilityGroupAvailable => 'متاح هنا';
+
+  @override
+  String get capabilityGroupUnavailable => 'غير متاح على هذا الخادم';
+
+  @override
+  String get capabilityGroupDevice => 'غير متاح على هذا الجهاز';
+
+  @override
+  String get capabilityAllAvailable => 'يدعم هذا الخادم كل ما يقدمه التطبيق.';
+
+  @override
+  String get capabilityFiles => 'الملفات';
+
+  @override
+  String get capabilityFilesDetail => 'تصفح ملفات المشروع وابحث فيها وعاينها';
+
+  @override
+  String get capabilityChanges => 'التغييرات';
+
+  @override
+  String get capabilityChangesDetail => 'راجع ما عدّله الوكيل';
+
+  @override
+  String get capabilityTerminal => 'الطرفية';
+
+  @override
+  String get capabilityTerminalDetail => 'شغّل أوامر داخل المشروع';
+
+  @override
+  String get capabilityShell => 'الصدفة الافتراضية';
+
+  @override
+  String get capabilityShellDetail =>
+      'اختر الصدفة التي تستخدمها الأوامر والطرفيات';
+
+  @override
+  String get capabilityAttachments => 'المرفقات';
+
+  @override
+  String get capabilityAttachmentsDetail => 'أرسل ملفات وصورا مع الطلب';
+
+  @override
+  String get capabilitySubagents => 'التفويض إلى وكيل فرعي';
+
+  @override
+  String get capabilitySubagentsDetail => 'اذكر وكيلا بعلامة @ في الطلب';
+
+  @override
+  String get capabilityCompact => 'الضغط';
+
+  @override
+  String get capabilityCompactDetail => 'لخّص محادثة طويلة لتحرير السياق';
+
+  @override
+  String get capabilityShare => 'المشاركة';
+
+  @override
+  String get capabilityShareDetail => 'انشر رابطا لمحادثة';
+
+  @override
+  String get capabilityFork => 'التفريع';
+
+  @override
+  String get capabilityForkDetail => 'فرّع محادثة من رسالة سابقة';
+
+  @override
+  String get capabilityRevert => 'التراجع';
+
+  @override
+  String get capabilityRevertDetail => 'تراجع عن طلب وعن التعديلات التي أجراها';
+
+  @override
+  String get capabilityArchive => 'الأرشفة';
+
+  @override
+  String get capabilityArchiveDetail => 'ضع المحادثات المنتهية جانبا دون حذفها';
+
+  @override
+  String get capabilityTodos => 'المهام';
+
+  @override
+  String get capabilityTodosDetail => 'اطلع على قائمة مهام الوكيل للمحادثة';
+
+  @override
+  String get capabilityNotes => 'ملاحظة للوكيل';
+
+  @override
+  String get capabilityNotesDetail => 'احتفظ بتعليمات دائمة مع المحادثة';
+
+  @override
+  String get capabilityImportExport => 'الاستيراد والتصدير';
+
+  @override
+  String get capabilityImportExportDetail => 'انقل محادثة بين الخوادم في ملف';
+
+  @override
+  String get capabilitySearchAll => 'كل المحادثات';
+
+  @override
+  String get capabilitySearchAllDetail => 'ابحث في المحادثات عبر كل المشاريع';
+
+  @override
+  String get capabilityAlwaysAllow => 'الإجراءات المسموح بها دائما';
+
+  @override
+  String get capabilityAlwaysAllowDetail =>
+      'تذكّر موافقة حتى لا يُسأل عنها مجددا';
+
+  @override
+  String get capabilityModels => 'النماذج والمزودون';
+
+  @override
+  String get capabilityModelsDetail =>
+      'تصفح النماذج وسجّل الدخول إلى المزودين من التطبيق';
+
+  @override
+  String get capabilitySkills => 'المهارات والأوامر';
+
+  @override
+  String get capabilitySkillsDetail => 'اعرض مهارات الخادم وأوامره ومراجعه';
+
+  @override
+  String get capabilityMcp => 'MCP';
+
+  @override
+  String get capabilityMcpDetail => 'اعرض خوادم MCP واتصل بها';
+
+  @override
+  String get capabilityPlugins => 'الإضافات';
+
+  @override
+  String get capabilityPluginsDetail => 'اعرض الإضافات المثبتة على الخادم';
+
+  @override
+  String get capabilityCloud => 'البيئات السحابية';
+
+  @override
+  String get capabilityCloudDetail => 'شغّل مشروعا في بيئة مُدارة';
+
+  @override
+  String get capabilityProjects => 'المشاريع';
+
+  @override
+  String get capabilityProjectsDetail => 'بدّل بين المشاريع وافحص صحة المشروع';
+
+  @override
+  String get capabilityWorktrees => 'أشجار العمل';
+
+  @override
+  String get capabilityWorktreesDetail => 'امنح المهمة فرعا معزولا خاصا بها';
+
+  @override
+  String get capabilityUsage => 'الاستخدام';
+
+  @override
+  String get capabilityUsageDetail => 'اطلع على تكلفة المحادثات';
+
+  @override
+  String get capabilityOfflineQueue => 'الإرسال لاحقا';
+
+  @override
+  String get capabilityOfflineQueueDetail =>
+      'ضع الطلب في قائمة الانتظار دون اتصال وأرسله عند عودة الاتصال';
+
+  @override
+  String get capabilityContinueOnComputer => 'المتابعة على الحاسوب';
+
+  @override
+  String get capabilityContinueOnComputerDetail =>
+      'احصل على أمر يعيد فتح المحادثة على مكتبك';
+
+  @override
+  String get capabilityServerUpdates => 'تحديثات الخادم';
+
+  @override
+  String get capabilityServerUpdatesDetail => 'حدّث الخادم من التطبيق';
+
+  @override
+  String get capabilityBackgroundNotifications => 'الإشعارات في الخلفية';
+
+  @override
+  String get capabilityBackgroundNotificationsDetail =>
+      'تلقَّ إشعارا عند انتهاء العمل أو حاجته إليك والتطبيق مغلق';
+
+  @override
+  String get capabilityOnThisPhone => 'على هذا الهاتف';
+
+  @override
+  String get capabilityOnThisPhoneDetail => 'شغّل خادم الوكيل على هذا الجهاز';
+
+  @override
+  String get capabilityVoice => 'الصوت';
+
+  @override
+  String get capabilityVoiceDetail =>
+      'أملِ الطلبات بنماذج كلام تعمل على الجهاز';
+
+  @override
+  String get discoverShowTipsAgain => 'إظهار التلميحات مجددا';
+
+  @override
+  String get discoverShowTipsSubtitle =>
+      'ستظهر التلميحات التي تُعرض مرة واحدة من جديد في وقتها';
+
+  @override
+  String get discoverShowTipsAliases =>
+      'tips hints nudges تلميحات نصائح مساعدة إعادة تعيين إظهار مجددا';
+
+  @override
+  String get discoverShowTipsDone => 'ستظهر التلميحات مجددا.';
+
+  @override
+  String nudgeApprovals(String action) {
+    return 'طُلب «$action» 3 مرات: يمكن لهذه المحادثة الموافقة على الطلبات نيابةً عنك.';
+  }
+
+  @override
+  String get nudgeReviewChanges =>
+      'غيّر هذا التشغيل ملفات: راجع ما تغيّر قبل أن تتابع.';
+
+  @override
+  String get nudgeLeave =>
+      'يمكنك المغادرة: سيخبرك هذا الهاتف عند انتهاء التشغيل.';
+
+  @override
+  String nudgeCompact(String percent) {
+    return 'السياق ممتلئ بنسبة $percent%: اختصره لتتابع.';
+  }
+
+  @override
+  String get nudgePin =>
+      'ثبّت المحادثات التي تعود إليها من قائمتها؛ ستبقى في أعلى العمل.';
+
+  @override
+  String get nudgeDismiss => 'إخفاء التلميح';
 }

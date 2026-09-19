@@ -12,6 +12,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/paseo/gateway.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/nudges.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
@@ -210,6 +211,8 @@ void main() {
       _en.usageSectionRemaining: ['settings-category-usage'],
       _en.settingsHubPrivacyRow: ['settings-category-privacy'],
       _en.onboardingSetupGuide: ['settings-setup-guide'],
+      _en.capabilityScreenTitle: ['settings-server-capabilities'],
+      'not available': ['settings-server-capabilities'],
       _en.e7LibraryReportABug: ['library-report-bug'],
       _en.e7SettingsUi88: ['app-diagnostics-entry'],
       _en.e7SettingsUi92: ['settings-privacy-data-use'],
@@ -304,6 +307,44 @@ void main() {
     }
   });
 
+  testWidgets('Help → Show tips again puts every one-time tip back', (
+    tester,
+  ) async {
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    // A person past first run who has already seen and dismissed a tip.
+    await controller.store.prefs.setBool(NudgeRegistry.firstReplySeenKey, true);
+    final nudges = controller.nudges;
+    expect(nudges.offer(NudgeId.compact, scope: 'ses_1'), isTrue);
+    await nudges.dismiss(NudgeId.compact);
+    expect(nudges.wasShown(NudgeId.compact), isTrue);
+    expect(nudges.offer(NudgeId.compact, scope: 'ses_1'), isFalse);
+
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    final search = find.byKey(const Key('library-search'));
+    for (final query in [_en.discoverShowTipsAgain, 'tips', 'hints']) {
+      await tester.enterText(search, query);
+      await tester.pump();
+      expect(_row('settings-show-tips-again'), findsOneWidget, reason: query);
+    }
+    expect(
+      find.descendant(
+        of: _row('settings-group-help'),
+        matching: _row('settings-show-tips-again'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(_row('settings-show-tips-again'));
+    await tester.pumpAndSettle();
+    expect(find.text(_en.discoverShowTipsDone), findsOneWidget);
+    // It acts in place: no screen was pushed.
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(nudges.wasShown(NudgeId.compact), isFalse);
+    expect(nudges.offer(NudgeId.compact, scope: 'ses_1'), isTrue);
+  });
+
   testWidgets('keyboard shortcuts are a Help row on desktop only', (
     tester,
   ) async {
@@ -389,12 +430,10 @@ void main() {
           _row('default-shell-settings-entry'),
           capabilities.shellSettings ? findsOneWidget : findsNothing,
         );
-        // The one deliberate exception (port §7 row 22): disabled, with its
-        // reason, instead of absent.
-        expect(
-          _row('gated-shell-settings'),
-          capabilities.shellSettings ? findsNothing : findsOneWidget,
-        );
+        // No exception any more: the shell row is absent, not disabled, and
+        // Help → "Available on this server" says why (rule 7).
+        expect(_row('gated-shell-settings'), findsNothing);
+        expect(_row('settings-server-capabilities'), findsOneWidget);
         expect(
           _row('settings-accounts'),
           capabilities.agentAccount ? findsOneWidget : findsNothing,
