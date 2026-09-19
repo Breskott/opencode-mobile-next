@@ -43,7 +43,7 @@ void main() {
           }
           if (env.type == 'session.error') line += ' ${p['error']}';
           log.add(line);
-          // ignore: avoid_print
+
           print(line);
           if (env.type == 'session.idle' &&
               p['sessionID'] == sessionID &&
@@ -51,28 +51,25 @@ void main() {
             idle.complete();
           }
         },
-        onStatus: (s) => print('stream: $s'), // ignore: avoid_print
+        onStatus: (s) => print('stream: $s'),
       )..start();
 
       final health = await gateway.health();
-      print(health.version); // ignore: avoid_print
+      print(health.version);
       final providers = await gateway.providers();
       for (final p in providers.providers) {
-        // ignore: avoid_print
         print('provider ${p.id}: ${p.modelIDs.take(6).join(', ')}');
       }
       final agents = await gateway.agents();
-      print(
-        'modes: ${agents.map((a) => a.name).join(', ')}',
-      ); // ignore: avoid_print
+      print('modes: ${agents.map((a) => a.name).join(', ')}');
       final defaults = await gateway.loadChatDefaults();
-      // ignore: avoid_print
+
       print(
         'defaults: ${defaults.model?.providerID}/${defaults.model?.modelID} ${defaults.agent}',
       );
 
       final before = await gateway.sessions();
-      print('sessions before: ${before.length}'); // ignore: avoid_print
+      print('sessions before: ${before.length}');
 
       final session = await gateway.createSession();
       sessionID = session.id;
@@ -84,7 +81,6 @@ void main() {
               modelID: wanted.split('/').skip(1).join('/'),
             );
       addTearDown(
-        // ignore: avoid_print
         () => print('daemon said: ${gateway.transport.lastDaemonError}'),
       );
       await gateway.promptAsync(
@@ -100,7 +96,7 @@ void main() {
       final history = await gateway.messages(session.id);
       for (final m in history) {
         final part = m.parts.first;
-        // ignore: avoid_print
+
         print(
           'H ${m.info.role} ${m.info.id} ${part.type} '
           '${part.toolName ?? ''} ${part.text.replaceAll('\n', ' ')}',
