@@ -6247,6 +6247,42 @@ abstract class AppLocalizations {
   /// **'OpenCode'**
   String get openCodeConnectionLabel;
 
+  /// No description provided for @paseoExperimentalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Paseo: Claude Code, Pi (experimental)'**
+  String get paseoExperimentalLabel;
+
+  /// No description provided for @paseoAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'ws://100.64.0.1:6767 or wss://paseo.example'**
+  String get paseoAddressHint;
+
+  /// No description provided for @paseoAddressHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The Paseo daemon on your computer. ws:// works on this device and on Tailscale addresses; use wss:// elsewhere.'**
+  String get paseoAddressHelp;
+
+  /// No description provided for @paseoPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Daemon password (optional)'**
+  String get paseoPasswordLabel;
+
+  /// No description provided for @paseoPasswordHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Set one with \"paseo daemon set-password\". Stored in this device\'s secure storage.'**
+  String get paseoPasswordHelp;
+
+  /// No description provided for @paseoSetupNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Run \"paseo start --no-relay\" on the computer that has Claude Code or Pi installed. This app never uses the Paseo relay: connect on this device or over your own private network.'**
+  String get paseoSetupNotice;
+
   /// No description provided for @codexExperimentalLabel.
   ///
   /// In en, this message translates to:

@@ -114,8 +114,7 @@ class ProfileMonitor extends ChangeNotifier {
   /// Background attention needs a pollable pending-request surface. Codex
   /// sessions do not expose one, so an enabled legacy rule remains stored but
   /// is retired before any transport factory or credential path is touched.
-  bool supportsProfile(ServerProfile profile) =>
-      profile.backend != ServerBackend.codex;
+  bool supportsProfile(ServerProfile profile) => !profile.usesAgentSocket;
 
   int _beginPoll(String id) {
     final generation = (_pollGenerations[id] ?? 0) + 1;

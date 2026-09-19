@@ -3788,6 +3788,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get openCodeConnectionLabel => 'OpenCode';
 
   @override
+  String get paseoExperimentalLabel => 'Paseo: Claude Code وPi (تجريبي)';
+
+  @override
+  String get paseoAddressHint => 'ws://100.64.0.1:6767 أو wss://paseo.example';
+
+  @override
+  String get paseoAddressHelp =>
+      'خدمة Paseo على حاسوبك. يعمل ws:// على هذا الجهاز وعلى عناوين Tailscale؛ استخدم wss:// في غير ذلك.';
+
+  @override
+  String get paseoPasswordLabel => 'كلمة مرور الخدمة (اختيارية)';
+
+  @override
+  String get paseoPasswordHelp =>
+      'عيّنها بالأمر \"paseo daemon set-password\". تُحفظ في التخزين الآمن لهذا الجهاز.';
+
+  @override
+  String get paseoSetupNotice =>
+      'شغّل \"paseo start --no-relay\" على الحاسوب الذي ثُبّت عليه Claude Code أو Pi. لا يستخدم هذا التطبيق مرحّل Paseo أبدًا: اتصل من هذا الجهاز أو عبر شبكتك الخاصة.';
+
+  @override
   String get codexExperimentalLabel => 'Codex (تجريبي)';
 
   @override

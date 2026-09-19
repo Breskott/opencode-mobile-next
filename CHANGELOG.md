@@ -2,6 +2,20 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## Unreleased — Paseo backend (2026-09-19)
+
+Built and verified locally on `feat/paseo-backend-20260919`; not merged.
+
+- **Claude Code and Pi from the app, through a Paseo daemon** (experimental).
+  A third connection type next to OpenCode and Codex: the open-source Paseo
+  daemon runs beside the agent CLIs on the computer and the app drives it
+  over one WebSocket. Sessions, streamed text and tool calls, permission
+  cards (including "always allow" as the runtime's own suggested rule),
+  permission modes, models per runtime and usage work; files, git, terminal
+  and attachments are off for this backend. Plain `ws://` is accepted only on
+  this device and on Tailscale addresses, and the daemon's public relay is
+  never used. See `docs/paseo-connection.md`.
+
 ## 1.0.42+43 — Local checkpoint (2026-09-11, later)
 
 Built and verified locally; no CI, no public download.

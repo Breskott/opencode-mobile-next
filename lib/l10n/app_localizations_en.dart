@@ -3736,6 +3736,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openCodeConnectionLabel => 'OpenCode';
 
   @override
+  String get paseoExperimentalLabel => 'Paseo: Claude Code, Pi (experimental)';
+
+  @override
+  String get paseoAddressHint => 'ws://100.64.0.1:6767 or wss://paseo.example';
+
+  @override
+  String get paseoAddressHelp =>
+      'The Paseo daemon on your computer. ws:// works on this device and on Tailscale addresses; use wss:// elsewhere.';
+
+  @override
+  String get paseoPasswordLabel => 'Daemon password (optional)';
+
+  @override
+  String get paseoPasswordHelp =>
+      'Set one with \"paseo daemon set-password\". Stored in this device\'s secure storage.';
+
+  @override
+  String get paseoSetupNotice =>
+      'Run \"paseo start --no-relay\" on the computer that has Claude Code or Pi installed. This app never uses the Paseo relay: connect on this device or over your own private network.';
+
+  @override
   String get codexExperimentalLabel => 'Codex (experimental)';
 
   @override

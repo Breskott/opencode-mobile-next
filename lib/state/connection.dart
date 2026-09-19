@@ -12,6 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../api/models.dart';
 import '../codex/gateway.dart';
 import '../codex/transport.dart' show CodexFailure, CodexFailureKind;
+import '../paseo/gateway.dart';
+import '../paseo/transport.dart' show PaseoFailure, PaseoFailureKind;
 import '../api/opencode_api.dart';
 import '../api2/models.dart' show Api2Delivery, Api2FormInfo, Api2InboxItem;
 import '../api/product_repository.dart';
@@ -516,6 +518,7 @@ class ConnectionController extends ChangeNotifier {
   final ProductRepositoryFactory _repositoryFactory;
   final V2GatewayPairFactory _v2GatewayFactory;
   final V2GatewayPairFactory _codexGatewayFactory;
+  final V2GatewayPairFactory _paseoGatewayFactory;
   final EventStreamFactory _eventStreamFactory;
   final EventStreamFactory? _globalEventStreamFactory;
   final LocalWakeLockEnsurer _localWakeLockEnsurer;
@@ -953,6 +956,7 @@ class ConnectionController extends ChangeNotifier {
     ProductRepositoryFactory? repositoryFactory,
     V2GatewayPairFactory? v2GatewayFactory,
     V2GatewayPairFactory? codexGatewayFactory,
+    V2GatewayPairFactory? paseoGatewayFactory,
     EventStreamFactory? eventStreamFactory,
     EventStreamFactory? globalEventStreamFactory,
     BackgroundLiveController? backgroundLive,
@@ -972,6 +976,7 @@ class ConnectionController extends ChangeNotifier {
        _repositoryFactory = repositoryFactory ?? _createRepository,
        _v2GatewayFactory = v2GatewayFactory ?? _createV2GatewayPair,
        _codexGatewayFactory = codexGatewayFactory ?? _createCodexGatewayPair,
+       _paseoGatewayFactory = paseoGatewayFactory ?? _createPaseoGatewayPair,
        _eventStreamFactory = eventStreamFactory ?? _createEventStream,
        _globalEventStreamFactory =
            globalEventStreamFactory ??
@@ -1328,7 +1333,7 @@ class ConnectionController extends ChangeNotifier {
     if (_disposed || !keepLiveInBackground) return;
     final profile = _connectedProfile;
     if (profile == null ||
-        profile.backend == ServerBackend.codex ||
+        profile.usesAgentSocket ||
         !_isLoopbackUrl(profile.baseUrl)) {
       return;
     }
@@ -1383,6 +1388,16 @@ class ConnectionController extends ChangeNotifier {
     return (gateway: gateway, operations: gateway);
   }
 
+  static ({ServerGateway gateway, ServerOperationsGateway operations})
+  _createPaseoGatewayPair(ServerProfile profile) {
+    final gateway = PaseoGateway.connect(
+      baseUrl: profile.baseUrl,
+      password: profile.codexToken,
+      directory: profile.codexDirectory,
+    );
+    return (gateway: gateway, operations: gateway);
+  }
+
   /// Constructs the transport pair for [profile]'s cached flavor. The two
   /// v1 factories stay the injected test seams; v2 goes through
   /// [_v2GatewayFactory].
@@ -1395,6 +1410,9 @@ class ConnectionController extends ChangeNotifier {
     }
     if (profile.backend == ServerBackend.codex) {
       return _codexGatewayFactory(profile);
+    }
+    if (profile.backend == ServerBackend.paseo) {
+      return _paseoGatewayFactory(profile);
     }
     if (profile.flavor == ServerFlavor.v2) return _v2GatewayFactory(profile);
     final v1Api = _apiFactory(profile);
@@ -1459,12 +1477,14 @@ class ConnectionController extends ChangeNotifier {
   /// attaching the live gateway supplies the authoritative set.
   ServerCapabilities get capabilities =>
       api?.capabilities ??
-      ((_connectedProfile ?? profile)?.backend == ServerBackend.codex
-          ? codexServerCapabilities
-          : ServerCapabilities.allV1);
+      switch ((_connectedProfile ?? profile)?.backend) {
+        ServerBackend.codex => codexServerCapabilities,
+        ServerBackend.paseo => paseoServerCapabilities,
+        _ => ServerCapabilities.allV1,
+      };
 
   bool get usesConnectionToken =>
-      (_connectedProfile ?? profile)?.backend == ServerBackend.codex;
+      (_connectedProfile ?? profile)?.usesAgentSocket ?? false;
 
   void _acceptRunningServerVersion(String? rawVersion) {
     final next = rawVersion?.trim() ?? '';
@@ -1535,7 +1555,7 @@ class ConnectionController extends ChangeNotifier {
   /// a real project folder; the server's own working directory is never used
   /// as a workspace (see `workspace_paths.dart`).
   bool get workspaceChoiceRequired {
-    if (_connectedProfile?.backend == ServerBackend.codex) return false;
+    if (_connectedProfile?.usesAgentSocket ?? false) return false;
     if (!capabilities.projectManagement) return false;
     return isProtectedWorkspaceDirectory(directory);
   }
@@ -1731,8 +1751,15 @@ class ConnectionController extends ChangeNotifier {
     _lifecycleSuspended = false;
     _lifecycleWasBackgrounded = false;
     _lifecycleResume = null;
-    final isCodex = profile.backend == ServerBackend.codex;
-    final validationError = isCodex
+    // Codex and Paseo share the socket-style profile and its connect path.
+    final isCodex = profile.usesAgentSocket;
+    final validationError = profile.backend == ServerBackend.paseo
+        ? (profile.requiresCodexTokenReentry
+              ? 'The saved password is unavailable. Enter it again.'
+              : validatePaseoServerUrl(profile.baseUrl) ??
+                    validatePaseoPassword(profile.codexToken) ??
+                    validateCodexProjectDirectory(profile.codexDirectory))
+        : isCodex
         ? (profile.requiresCodexTokenReentry
               ? 'The saved connection token is unavailable. Enter it again.'
               : validateCodexServerUrl(profile.baseUrl) ??
@@ -2315,14 +2342,16 @@ class ConnectionController extends ChangeNotifier {
   void _noteAuthFailure(Object error) {
     if ((error is CodexFailure &&
             error.kind == CodexFailureKind.authentication) ||
+        (error is PaseoFailure &&
+            error.kind == PaseoFailureKind.authentication) ||
         error is Api2AuthRequired ||
         (error is ApiException &&
             error.statusCode == 401 &&
             (_connectedProfile?.flavor == ServerFlavor.v2 ||
-                _connectedProfile?.backend == ServerBackend.codex))) {
+                (_connectedProfile?.usesAgentSocket ?? false)))) {
       passwordRejected = true;
       final rejectedProfile = _connectedProfile;
-      if (rejectedProfile?.backend == ServerBackend.codex) {
+      if (rejectedProfile?.usesAgentSocket ?? false) {
         rejectedProfile!.requiresCodexTokenReentry = true;
       }
     }
@@ -2358,7 +2387,7 @@ class ConnectionController extends ChangeNotifier {
   /// the profile's cached flavor (persisting remote corrections), null
   /// otherwise. A managed local mismatch fails without changing its profile.
   Future<ServerProbeResult?> _redetectFlavor(ServerProfile profile) async {
-    if (profile.backend == ServerBackend.codex) return null;
+    if (profile.usesAgentSocket) return null;
     try {
       final result = await serverProbe(
         baseUrl: profile.baseUrl,
@@ -5128,7 +5157,7 @@ class ConnectionController extends ChangeNotifier {
   Future<bool> queuePrompt(QueuedPrompt prompt) =>
       _serializeQueueChange(() async {
         final target = store.profiles.where((p) => p.id == prompt.profileID);
-        if (target.any((p) => p.backend == ServerBackend.codex)) return false;
+        if (target.any((p) => p.usesAgentSocket)) return false;
         if (prompt.payloadBytes > OfflineQueueStore.maxEntryBytes) return false;
         final eviction = OfflineQueueStore.enforceLimits([..._queue, prompt]);
         // The new entry losing its own eviction pass means the queue could not
@@ -7524,7 +7553,7 @@ class ConnectionController extends ChangeNotifier {
         _deletingReadProfiles.contains(profile.id)) {
       return;
     }
-    if (profile.backend == ServerBackend.codex) {
+    if (profile.usesAgentSocket) {
       directory ??= profile.codexDirectory;
       if (workspace != null ||
           validateCodexProjectDirectory(directory) != null) {

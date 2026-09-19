@@ -7,6 +7,16 @@ writing a companion daemon? This is backlog item F10 (alternate-agent support).
 Constraint from the owner: nothing crosses the open internet. Local or
 Tailscale only. Paseo's relay is never enabled.
 
+## Status
+
+Implemented the same day as `lib/paseo/` (see `docs/paseo-connection.md`).
+Findings since the spike: the released 0.8.0 daemon lacks
+`agent.create.request`, so the app aliases its own session id to the daemon's;
+agent snapshots lag the stream, so turn events own the busy state; a wrong
+password is a 4401 close *after* a successful upgrade; and assistant text
+arrives as deltas per `messageId` while tool calls arrive as full snapshots
+per `callId`.
+
 ## Verdict
 
 Feasible, and cheap on our side. The daemon speaks plain JSON over one

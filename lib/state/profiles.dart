@@ -10,6 +10,8 @@ import '../api/models.dart' show ModelRef;
 import '../api/server_probe.dart' show ServerFlavor;
 import '../domain/loopback_host.dart';
 import '../domain/orchestration_gateway.dart' show OrchestrationHostMode;
+import '../orchestration/adapters/gascity/gascity_probe.dart'
+    show isTailnetHost;
 import '../platform/platform_capabilities.dart';
 import 'model_library.dart';
 
@@ -25,7 +27,10 @@ class SessionModelChoice {
 }
 
 /// One opencode server the user can connect to.
-enum ServerBackend { openCode, codex }
+/// Which server a profile talks to. `codex` and `paseo` are agent sockets: a
+/// WebSocket endpoint, one secret, and one project folder, stored in the
+/// shared `codexToken` / `codexDirectory` fields.
+enum ServerBackend { openCode, codex, paseo }
 
 /// Which orchestration host the AI Team plugin talks to for a profile.
 enum OrchestrationProvider {
@@ -262,13 +267,21 @@ class ServerProfile {
     this.orchestration,
   });
 
+  /// Codex app-server and the Paseo daemon share the socket-style profile:
+  /// endpoint, secret ([codexToken]) and project folder ([codexDirectory]).
+  bool get usesAgentSocket => backend != ServerBackend.openCode;
+
+  /// A Codex token is mandatory; a Paseo daemon on a private network may run
+  /// without a password.
+  bool get agentSocketSecretRequired => backend == ServerBackend.codex;
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'baseUrl': baseUrl,
     'backend': backend.name,
     'username': username,
-    if (backend == ServerBackend.codex) 'codexDirectory': codexDirectory,
+    if (usesAgentSocket) 'codexDirectory': codexDirectory,
     'flavor': flavor.name,
     if (serverVersion != null) 'serverVersion': serverVersion,
     if (orchestration != null) 'orchestration': orchestration!.toJson(),
@@ -278,9 +291,11 @@ class ServerProfile {
     id: j['id'] as String,
     name: (j['name'] ?? '').toString(),
     baseUrl: (j['baseUrl'] ?? '').toString(),
-    backend: j['backend'] == ServerBackend.codex.name
-        ? ServerBackend.codex
-        : ServerBackend.openCode,
+    backend: switch (j['backend']) {
+      'codex' => ServerBackend.codex,
+      'paseo' => ServerBackend.paseo,
+      _ => ServerBackend.openCode,
+    },
     username: (j['username'] ?? '').toString(),
     codexDirectory: (j['codexDirectory'] ?? '').toString(),
     flavor: j['flavor'] == ServerFlavor.v2.name
@@ -444,6 +459,59 @@ String? validateCodexConnectionToken(String value) {
   return null;
 }
 
+/// Normalizes a bare Paseo daemon authority. Cleartext is the default only
+/// where [validatePaseoServerUrl] allows it.
+String normalizePaseoServerUrl(String value) {
+  final raw = value.trim();
+  if (raw.isEmpty || raw.contains('://')) return raw;
+  final host = Uri.tryParse('ws://$raw')?.host ?? '';
+  return isLoopbackHost(host) || isTailnetHost(host)
+      ? 'ws://$raw'
+      : 'wss://$raw';
+}
+
+/// A Paseo daemon is reached at wss://, or at ws:// on this device or a
+/// Tailscale address. The daemon's public relay is never used.
+String? validatePaseoServerUrl(String value) {
+  final raw = value.trim();
+  if (raw.isEmpty) return 'Enter the Paseo daemon address.';
+  final uri = Uri.tryParse(raw);
+  if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+    return 'Enter a complete address, such as ws://100.64.0.1:6767.';
+  }
+  if (uri.scheme != 'wss' && uri.scheme != 'ws') {
+    return 'Paseo addresses must use ws:// or wss://.';
+  }
+  if (uri.userInfo.isNotEmpty) {
+    return 'Do not put credentials in the address. Use the password field.';
+  }
+  if (uri.query.isNotEmpty || uri.fragment.isNotEmpty) {
+    return 'Remove query parameters and fragments from the address.';
+  }
+  if (uri.path.isNotEmpty && uri.path != '/' && uri.path != '/ws') {
+    return 'Remove the path from the address.';
+  }
+  if (uri.scheme == 'ws' &&
+      !isLoopbackHost(uri.host) &&
+      !isTailnetHost(uri.host)) {
+    return 'Plain ws:// is allowed only on this device or a Tailscale '
+        'address. Use wss:// elsewhere.';
+  }
+  return null;
+}
+
+/// An empty password is valid: a daemon on a private network may run without
+/// one. The value travels in a WebSocket subprotocol, so no spaces or commas.
+String? validatePaseoPassword(String value) {
+  if (value.isEmpty) return null;
+  if (value.length > 4096 ||
+      _containsControlCharacter(value) ||
+      RegExp(r'[\s,]').hasMatch(value)) {
+    return 'The password cannot contain spaces or commas.';
+  }
+  return null;
+}
+
 enum AppAppearance { system, light, dark }
 
 /// Selectable color identity; palettes live in lib/ui/theme_packs.dart.
@@ -601,9 +669,10 @@ class ProfileStore {
     // Restore secrets.
     for (final p in _cache) {
       try {
-        if (p.backend == ServerBackend.codex) {
+        if (p.usesAgentSocket) {
           p.codexToken = await secure.read(key: '$_codexTokenKey${p.id}') ?? '';
-          p.requiresCodexTokenReentry = p.codexToken.isEmpty;
+          p.requiresCodexTokenReentry =
+              p.agentSocketSecretRequired && p.codexToken.isEmpty;
           p.password = '';
           p.requiresPasswordReentry = false;
         } else {
@@ -616,7 +685,7 @@ class ProfileStore {
         // Keystore entries can become unreadable after a device restore or a
         // lock-screen security change. Keep the non-secret profile usable so
         // the user can re-enter its password instead of failing app startup.
-        if (p.backend == ServerBackend.codex) {
+        if (p.usesAgentSocket) {
           p.codexToken = '';
           p.requiresCodexTokenReentry = true;
           p.password = '';
@@ -657,7 +726,7 @@ class ProfileStore {
       throw StateError('Could not save the server profile');
     }
     try {
-      if (profile.backend == ServerBackend.codex) {
+      if (profile.usesAgentSocket) {
         if (profile.codexToken.isEmpty) {
           await secure.delete(key: '$_codexTokenKey${profile.id}');
         } else {
@@ -785,7 +854,7 @@ class ProfileStore {
         break;
       }
     }
-    final secretKey = removedProfile?.backend == ServerBackend.codex
+    final secretKey = (removedProfile?.usesAgentSocket ?? false)
         ? '$_codexTokenKey$id'
         : '$_passwordKey$id';
     try {
