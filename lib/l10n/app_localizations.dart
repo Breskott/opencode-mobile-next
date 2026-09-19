@@ -26559,6 +26559,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tips will show again.'**
   String get discoverShowTipsDone;
+
+  /// One-time tip above the composer after the third permission request of one kind in a conversation. {action} is the request's title, such as Edit a file. Its button opens Approvals.
+  ///
+  /// In en, this message translates to:
+  /// **'Asked for “{action}” 3 times: this conversation can approve requests for you.'**
+  String nudgeApprovals(String action);
+
+  /// One-time tip above the composer when a run that edited files finishes. Its button opens Review changes.
+  ///
+  /// In en, this message translates to:
+  /// **'This run changed files: review what changed before you continue.'**
+  String get nudgeReviewChanges;
+
+  /// One-time tip above the composer after a run has kept the person waiting for a minute while finished-run notifications are on.
+  ///
+  /// In en, this message translates to:
+  /// **'You can leave: this phone tells you when the run is done.'**
+  String get nudgeLeave;
+
+  /// One-time tip above the composer when the conversation uses most of the model's context window. Its button compacts the conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'The context is {percent}% full: compact to keep going.'**
+  String nudgeCompact(String percent);
+
+  /// One-time tip at the top of the Work tab once a second project has been used.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin conversations you return to from their menu; they stay at the top of Work.'**
+  String get nudgePin;
+
+  /// Tooltip of the close button on a one-time tip card.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide tip'**
+  String get nudgeDismiss;
 }
 
 class _AppLocalizationsDelegate

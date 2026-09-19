@@ -8,12 +8,14 @@ import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
+import '../../state/nudges.dart';
 import '../../state/orchestration.dart';
 import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../navigation/chat_route.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/safety_confirms.dart';
+import '../widgets/nudge_card.dart';
 import '../widgets/product_states.dart';
 import '../widgets/relative_time.dart';
 import '../widgets/session_title.dart';
@@ -83,7 +85,44 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     super.initState();
     _dataRefreshRevision = widget.controller.dataRefreshRevision;
     widget.controller.addListener(_changed);
+    widget.controller.nudges.addListener(_nudgesChanged);
     _load();
+  }
+
+  void _nudgesChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool _nudgeCheckQueued = false;
+
+  /// The "pin" tip (UX plan 5.8): once a second project has been used, Work
+  /// is no longer one short list and pinning starts to pay. Runs after the
+  /// frame because an offer notifies listeners. [canOffer] is false while
+  /// Work is behind another tab or route, where a tip would be spent unseen.
+  void _queuePinNudge({required bool visible, required bool canOffer}) {
+    if (_nudgeCheckQueued) return;
+    _nudgeCheckQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _nudgeCheckQueued = false;
+      if (!mounted) return;
+      final controller = widget.controller;
+      final nudges = controller.nudges;
+      if (!visible) {
+        // One nudge app-wide: a tip left behind must not block the rest.
+        nudges.releaseScope(NudgeRegistry.workScope);
+        return;
+      }
+      final directory = controller.directory;
+      final profileID = controller.profile?.id ?? '';
+      if (directory != null && controller.isConnected) {
+        unawaited(
+          nudges.noteProjectUsed(profileID: profileID, directory: directory),
+        );
+      }
+      if (canOffer && nudges.secondProjectUsed) {
+        nudges.offer(NudgeId.pinConversations, scope: NudgeRegistry.workScope);
+      }
+    });
   }
 
   void _changed() {
@@ -399,6 +438,20 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         .toList();
     final archived = widget.controller.archivedSessions();
     final capabilities = widget.controller.capabilities;
+    final pinNudge = widget.controller.nudges.activeFor(
+      NudgeRegistry.workScope,
+    );
+    _queuePinNudge(
+      visible:
+          TickerMode.valuesOf(context).enabled &&
+          (ModalRoute.of(context)?.isCurrent ?? true),
+      // Only with something to pin, a way to pin it, and no pin here yet:
+      // someone who already pins has nothing to learn from the tip.
+      canOffer:
+          widget.controller.canPinSessions &&
+          widget.controller.pinnedSessionIDs.isEmpty &&
+          recent.isNotEmpty,
+    );
     final partial =
         widget.controller.hasMoreSessions ||
         widget.controller.sessionsLoading ||
@@ -732,6 +785,23 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                                 widget.controller.capabilities.sessionShare,
                             archiveAvailable:
                                 widget.controller.capabilities.sessionArchive,
+                          ),
+                        ),
+                      // The pin tip sits on the list it is about.
+                      if (pinNudge != null)
+                        SliverToBoxAdapter(
+                          child: NudgeCard(
+                            id: pinNudge.id,
+                            icon: AppIconography.pin,
+                            message: l10n.nudgePin,
+                            actionLabel: l10n.e7GlossaryGotIt,
+                            dismissTooltip: l10n.nudgeDismiss,
+                            onAction: () => unawaited(
+                              widget.controller.nudges.dismiss(pinNudge.id),
+                            ),
+                            onDismiss: () => unawaited(
+                              widget.controller.nudges.dismiss(pinNudge.id),
+                            ),
                           ),
                         ),
                       // 4. Recent sessions. Search stays a one-tap icon; the
@@ -1425,6 +1495,10 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   void dispose() {
     _loadGeneration++;
     widget.controller.removeListener(_changed);
+    widget.controller.nudges.removeListener(_nudgesChanged);
+    final nudges = widget.controller.nudges;
+    // Deferred: listeners must not rebuild while the tree is being torn down.
+    scheduleMicrotask(() => nudges.releaseScope(NudgeRegistry.workScope));
     super.dispose();
   }
 }

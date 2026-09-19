@@ -4400,5 +4400,11 @@
   "discoverShowTipsAgain": "إظهار التلميحات مجددا",
   "discoverShowTipsSubtitle": "ستظهر التلميحات التي تُعرض مرة واحدة من جديد في وقتها",
   "discoverShowTipsAliases": "tips hints nudges تلميحات نصائح مساعدة إعادة تعيين إظهار مجددا",
-  "discoverShowTipsDone": "ستظهر التلميحات مجددا."
+  "discoverShowTipsDone": "ستظهر التلميحات مجددا.",
+  "nudgeApprovals": "طُلب «{action}» 3 مرات: يمكن لهذه المحادثة الموافقة على الطلبات نيابةً عنك.",
+  "nudgeReviewChanges": "غيّر هذا التشغيل ملفات: راجع ما تغيّر قبل أن تتابع.",
+  "nudgeLeave": "يمكنك المغادرة: سيخبرك هذا الهاتف عند انتهاء التشغيل.",
+  "nudgeCompact": "السياق ممتلئ بنسبة {percent}%: اختصره لتتابع.",
+  "nudgePin": "ثبّت المحادثات التي تعود إليها من قائمتها؛ ستبقى في أعلى العمل.",
+  "nudgeDismiss": "إخفاء التلميح"
 }

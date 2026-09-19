@@ -605,6 +605,21 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       open: (context, _) => showShortcutsHelp(context),
     ),
     SearchEntry(
+      id: 'settings-show-tips-again',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.help,
+      icon: AppIconography.idea,
+      title: l10n.discoverShowTipsAgain,
+      keywords: l10n.discoverShowTipsAliases,
+      // The hub row is the control itself; from anywhere else, open Help.
+      open: _screen(
+        (scope) => SettingsScreen(
+          controller: scope.controller,
+          initialGroup: SettingsGroup.help,
+        ),
+      ),
+    ),
+    SearchEntry(
       id: 'library-report-bug',
       kind: SearchEntryKind.hubRow,
       group: SettingsGroup.help,

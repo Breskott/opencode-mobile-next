@@ -16686,4 +16686,29 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get discoverShowTipsDone => 'ستظهر التلميحات مجددا.';
+
+  @override
+  String nudgeApprovals(String action) {
+    return 'طُلب «$action» 3 مرات: يمكن لهذه المحادثة الموافقة على الطلبات نيابةً عنك.';
+  }
+
+  @override
+  String get nudgeReviewChanges =>
+      'غيّر هذا التشغيل ملفات: راجع ما تغيّر قبل أن تتابع.';
+
+  @override
+  String get nudgeLeave =>
+      'يمكنك المغادرة: سيخبرك هذا الهاتف عند انتهاء التشغيل.';
+
+  @override
+  String nudgeCompact(String percent) {
+    return 'السياق ممتلئ بنسبة $percent%: اختصره لتتابع.';
+  }
+
+  @override
+  String get nudgePin =>
+      'ثبّت المحادثات التي تعود إليها من قائمتها؛ ستبقى في أعلى العمل.';
+
+  @override
+  String get nudgeDismiss => 'إخفاء التلميح';
 }

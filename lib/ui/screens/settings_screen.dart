@@ -182,6 +182,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _showTipsAgain() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final done = _settingsCopy(context).discoverShowTipsDone;
+    await widget.controller.nudges.reset();
+    if (!mounted) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(done)));
+  }
+
   Widget _thisServerRow(ConnectionController controller) {
     final copy = _settingsCopy(context);
     final theme = Theme.of(context);
@@ -377,6 +387,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           subtitle: copy.capabilityScreenSubtitle,
         ),
         row('library-keyboard-shortcuts'),
+        // Each one-time tip fires once, at its moment. This puts them all
+        // back, for a person who dismissed one too fast (plan 5.8).
+        row(
+          'settings-show-tips-again',
+          builder: (context) => _CategoryRow(
+            rowKey: 'settings-show-tips-again',
+            icon: AppIconography.idea,
+            title: copy.discoverShowTipsAgain,
+            subtitle: copy.discoverShowTipsSubtitle,
+            chevron: false,
+            onTap: _showTipsAgain,
+          ),
+        ),
         // The bug form lives in the failure states themselves; this row is
         // the deliberate path for everything noticed outside a failure.
         row('library-report-bug'),
@@ -641,12 +664,16 @@ class _CategoryRow extends StatelessWidget {
   final String? subtitle;
   final VoidCallback onTap;
 
+  /// False for a row that acts in place instead of opening something.
+  final bool chevron;
+
   const _CategoryRow({
     required this.rowKey,
     required this.icon,
     required this.title,
     required this.onTap,
     this.subtitle,
+    this.chevron = true,
   });
 
   @override
@@ -660,7 +687,9 @@ class _CategoryRow extends StatelessWidget {
       leading: _CategoryIcon(icon: icon),
       title: Text(title),
       subtitle: subtitle == null ? null : Text(subtitle!),
-      trailing: const Icon(AppIconography.chevronRight, size: 20),
+      trailing: chevron
+          ? const Icon(AppIconography.chevronRight, size: 20)
+          : null,
       onTap: onTap,
     );
   }

@@ -16427,4 +16427,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get discoverShowTipsDone => 'Tips will show again.';
+
+  @override
+  String nudgeApprovals(String action) {
+    return 'Asked for “$action” 3 times: this conversation can approve requests for you.';
+  }
+
+  @override
+  String get nudgeReviewChanges =>
+      'This run changed files: review what changed before you continue.';
+
+  @override
+  String get nudgeLeave =>
+      'You can leave: this phone tells you when the run is done.';
+
+  @override
+  String nudgeCompact(String percent) {
+    return 'The context is $percent% full: compact to keep going.';
+  }
+
+  @override
+  String get nudgePin =>
+      'Pin conversations you return to from their menu; they stay at the top of Work.';
+
+  @override
+  String get nudgeDismiss => 'Hide tip';
 }
