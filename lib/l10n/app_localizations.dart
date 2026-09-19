@@ -26749,7 +26749,7 @@ abstract class AppLocalizations {
   /// Claude Code block, offer: honest download and disk size.
   ///
   /// In en, this message translates to:
-  /// **'About 60 MB for Node.js plus the packages; about 450 MB once installed. Needs 1.5 GB free.'**
+  /// **'About 60 MB to download for Node.js, plus the packages; about 1 GB once installed. Needs 2 GB free.'**
   String get localAgentOfferSize;
 
   /// Claude Code block, offer: the background-kill caveat.
@@ -27061,7 +27061,7 @@ abstract class AppLocalizations {
   /// Confirm sheet: what removing deletes and keeps.
   ///
   /// In en, this message translates to:
-  /// **'Stops it and deletes Node.js, Paseo and Claude Code from Ubuntu, about 450 MB. Your projects and your Claude sign-in stay.'**
+  /// **'Stops it and deletes Node.js, Paseo and Claude Code from Ubuntu, about 1 GB. Your projects and your Claude sign-in stay.'**
   String get localAgentRemoveBody;
 
   /// Confirm sheet: cancels the removal.

@@ -4142,7 +4142,13 @@ PROOT_NAME=opencode-ubuntu
 # Paths inside Ubuntu. The overrides exist for the fixture tests only.
 NODE_DIR="${OC_CLAUDE_NODE_DIR:-/opt/oc-node}"
 AGENTS_DIR="${OC_CLAUDE_AGENTS_DIR:-/opt/oc-agents}"
-UBUNTU_HOME="${OC_CLAUDE_UBUNTU_HOME:-/root}"
+# The daemon, Claude Code and the sign-in run as an ordinary Ubuntu user, not
+# as root. Claude Code refuses its permission-skipping mode under root, and
+# Paseo starts it with that mode available, so as root every turn died at
+# launch (seen on the emulator, 2026-09-19). An unprivileged user satisfies
+# the guard honestly; the alternative, the IS_SANDBOX switch, would turn the guard off.
+AGENT_USER="${OC_CLAUDE_USER:-oc}"
+UBUNTU_HOME="${OC_CLAUDE_UBUNTU_HOME:-/home/$AGENT_USER}"
 PASEO_HOME="$UBUNTU_HOME/.oc-paseo"
 PROJECTS_DIR="$UBUNTU_HOME/projects"
 PORT="${OC_CLAUDE_PORT:-6767}"
@@ -4151,7 +4157,9 @@ LISTEN="127.0.0.1:$PORT"
 HEALTH_URL="http://127.0.0.1:$PORT/api/health"
 HEALTH_TIMEOUT="${OC_CLAUDE_HEALTH_TIMEOUT:-120}"
 LOG_MAX_BYTES=2097152
-INSTALL_REQUIRED_MB=1536
+# Measured on the emulator: Node 216 MB + packages 773 MB, plus npm's cache
+# and the download while it unpacks.
+INSTALL_REQUIRED_MB=2048
 REPAIR_REQUIRED_MB=300
 UBUNTU_PATH="$AGENTS_DIR/bin:$NODE_DIR/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
@@ -4388,12 +4396,25 @@ host_path() {
   printf '%s%s' "$rootfs" "$1"
 }
 
-# in_ubuntu <command...>: runs as the manager runs OpenCode (same container,
-# same root user and home), with the app's Node and agents first on PATH.
+# in_ubuntu <command...>: runs as Ubuntu's root, in the manager's container,
+# with the app's Node and agents first on PATH. Only installation needs root
+# (it writes /opt); everything a person's code touches uses as_agent.
 # UV_USE_IO_URING=0 keeps Node's filesystem calls visible to PRoot.
 in_ubuntu() {
   proot-distro login "$PROOT_NAME" -- env \
+    PATH="$UBUNTU_PATH" HOME=/root UV_USE_IO_URING=0 "$@"
+}
+
+# as_agent <command...>: the same container as the unprivileged agent user.
+as_agent() {
+  proot-distro login --user "$AGENT_USER" "$PROOT_NAME" -- env \
     PATH="$UBUNTU_PATH" HOME="$UBUNTU_HOME" UV_USE_IO_URING=0 "$@"
+}
+
+# Idempotent, so start can call it for installs made before the user existed.
+ensure_agent_user() {
+  in_ubuntu bash -c 'id "$1" >/dev/null 2>&1 || useradd -m -s /bin/bash "$1"' \
+    oc-user "$AGENT_USER" >/dev/null 2>&1
 }
 
 ubuntu_usable() {
@@ -4535,7 +4556,7 @@ install_agents() {
   if install_present && [ "$(installed_node_version)" = "$version" ]; then
     require_space "$REPAIR_REQUIRED_MB" 'updating Claude Code'
   else
-    require_space "$INSTALL_REQUIRED_MB" 'Node.js, Paseo and Claude Code (about 450 MB installed)'
+    require_space "$INSTALL_REQUIRED_MB" 'Node.js, Paseo and Claude Code (about 1 GB installed)'
   fi
 
   CURRENT_STEP=node
@@ -4564,7 +4585,8 @@ install_agents() {
     set_config node_pty failed
     log 'warning: node-pty did not load; terminals inside Paseo may not work'
   fi
-  in_ubuntu mkdir -p "$PROJECTS_DIR" >/dev/null 2>&1 || true
+  ensure_agent_user
+  as_agent mkdir -p "$PROJECTS_DIR" >/dev/null 2>&1 || true
   set_config node_version "$version"
   set_config paseo_version "$paseo_installed"
   set_config claude_version "$claude_installed"
@@ -4616,8 +4638,12 @@ port_open() { (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; }
 run_daemon() {
   [ -s "$PASSWORD_FILE" ] || exit 66
   rotate_file "$DAEMON_LOG"
-  proot-distro login --work-dir "$PROJECTS_DIR" "$PROOT_NAME" -- env \
+  # Dictation and voice mode are off: left on, the daemon starts downloading
+  # local speech models (hundreds of MB) the moment it starts, which a phone
+  # driving a text conversation never uses.
+  proot-distro login --user "$AGENT_USER" --work-dir "$PROJECTS_DIR" "$PROOT_NAME" -- env \
     PATH="$UBUNTU_PATH" HOME="$UBUNTU_HOME" UV_USE_IO_URING=0 \
+    PASEO_DICTATION_ENABLED=false PASEO_VOICE_MODE_ENABLED=false \
     bash -c '
 IFS= read -r PASEO_PASSWORD || [ -n "${PASEO_PASSWORD:-}" ] || exit 66
 export PASEO_PASSWORD
@@ -4669,6 +4695,9 @@ stop_daemon_processes() {
 start_daemon() {
   install_present || fail not_installed 'Install Claude Code on this phone first'
   ensure_password
+  ensure_agent_user
+  # The daemon's working directory must exist before proot enters it.
+  as_agent mkdir -p "$PROJECTS_DIR" >/dev/null 2>&1 || true
   if daemon_alive && healthy; then
     write_state ready 'Claude Code is running on this phone'
     log 'daemon already running'
@@ -4804,12 +4833,13 @@ signin_terminal() {
   echo 'Signing in to Claude Code.'
   echo 'Open the link it shows, approve, and paste the code back here.'
   echo
-  if in_ubuntu claude --help 2>/dev/null | grep -Eq '^[[:space:]]+auth([[:space:]]|$)'; then
-    proot-distro login --work-dir "$UBUNTU_HOME" "$PROOT_NAME" -- env \
+  ensure_agent_user
+  if as_agent claude --help 2>/dev/null | grep -Eq '^[[:space:]]+auth([[:space:]]|$)'; then
+    proot-distro login --user "$AGENT_USER" --work-dir "$UBUNTU_HOME" "$PROOT_NAME" -- env \
       PATH="$UBUNTU_PATH" HOME="$UBUNTU_HOME" UV_USE_IO_URING=0 claude auth login || true
   else
     echo 'When Claude Code opens, follow its sign-in steps, then type /exit.'
-    proot-distro login --work-dir "$UBUNTU_HOME" "$PROOT_NAME" -- env \
+    proot-distro login --user "$AGENT_USER" --work-dir "$UBUNTU_HOME" "$PROOT_NAME" -- env \
       PATH="$UBUNTU_PATH" HOME="$UBUNTU_HOME" UV_USE_IO_URING=0 claude || true
   fi
   echo
@@ -4839,9 +4869,9 @@ list_projects() {
   [ "$found" = 0 ] || return 0
   # Nothing yet: one ready-to-use project, so the first conversation has a
   # folder and Claude Code has a repository to work in.
-  in_ubuntu bash -c 'mkdir -p "$1" && cd "$1" && { [ -d .git ] || git init -q; }' \
+  as_agent bash -c 'mkdir -p "$1" && cd "$1" && { [ -d .git ] || git init -q; }' \
     oc-project "$PROJECTS_DIR/my-first-project" >/dev/null 2>&1 ||
-    in_ubuntu mkdir -p "$PROJECTS_DIR/my-first-project" >/dev/null 2>&1 || exit 74
+    as_agent mkdir -p "$PROJECTS_DIR/my-first-project" >/dev/null 2>&1 || exit 74
   printf 'project=%s/my-first-project\n' "$PROJECTS_DIR"
 }
 
@@ -4852,7 +4882,7 @@ ensure_project() {
     *) echo 'invalid-project-path' >&2; exit 64 ;;
   esac
   case "$path/" in */../*|*/./*) echo 'invalid-project-path' >&2; exit 64 ;; esac
-  in_ubuntu mkdir -p "$path" >/dev/null 2>&1 || exit 74
+  as_agent mkdir -p "$path" >/dev/null 2>&1 || exit 74
   printf 'project=%s\n' "$path"
 }
 

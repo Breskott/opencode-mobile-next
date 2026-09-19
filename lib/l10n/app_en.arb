@@ -17587,7 +17587,7 @@
   "@localAgentOfferBody": {
     "description": "Claude Code block, offer: what setting it up does."
   },
-  "localAgentOfferSize": "About 60 MB for Node.js plus the packages; about 450 MB once installed. Needs 1.5 GB free.",
+  "localAgentOfferSize": "About 60 MB to download for Node.js, plus the packages; about 1 GB once installed. Needs 2 GB free.",
   "@localAgentOfferSize": {
     "description": "Claude Code block, offer: honest download and disk size."
   },
@@ -17839,7 +17839,7 @@
   "@localAgentRemoveTitle": {
     "description": "Confirm sheet: removing the install."
   },
-  "localAgentRemoveBody": "Stops it and deletes Node.js, Paseo and Claude Code from Ubuntu, about 450 MB. Your projects and your Claude sign-in stay.",
+  "localAgentRemoveBody": "Stops it and deletes Node.js, Paseo and Claude Code from Ubuntu, about 1 GB. Your projects and your Claude sign-in stay.",
   "@localAgentRemoveBody": {
     "description": "Confirm sheet: what removing deletes and keeps."
   },

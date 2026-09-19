@@ -16538,7 +16538,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get localAgentOfferSize =>
-      'About 60 MB for Node.js plus the packages; about 450 MB once installed. Needs 1.5 GB free.';
+      'About 60 MB to download for Node.js, plus the packages; about 1 GB once installed. Needs 2 GB free.';
 
   @override
   String get localAgentOfferWarning =>
@@ -16726,7 +16726,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get localAgentRemoveBody =>
-      'Stops it and deletes Node.js, Paseo and Claude Code from Ubuntu, about 450 MB. Your projects and your Claude sign-in stay.';
+      'Stops it and deletes Node.js, Paseo and Claude Code from Ubuntu, about 1 GB. Your projects and your Claude sign-in stay.';
 
   @override
   String get localAgentRemoveKeep => 'Keep it';

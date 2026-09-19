@@ -4432,7 +4432,7 @@
   "firstRunNotifyDecline": "ليس الآن",
   "localAgentTitle": "Claude Code على هذا الهاتف",
   "localAgentOfferBody": "شغّل Claude Code هنا من دون حاسوب. يثبّت التطبيق Node.js وخدمة Paseo وClaude Code داخل Ubuntu الذي يديره أصلًا، ويصل إليها من هذا الهاتف فقط.",
-  "localAgentOfferSize": "نحو 60 م.ب لـ Node.js إضافةً إلى الحزم؛ ونحو 450 م.ب بعد التثبيت. يلزم 1.5 غ.ب خالية.",
+  "localAgentOfferSize": "نحو 60 م.ب لـ Node.js إضافةً إلى الحزم؛ ونحو 1 غ.ب بعد التثبيت. يلزم 2 غ.ب خالية.",
   "localAgentOfferWarning": "قد يوقف أندرويد Termux في الخلفية. إعدادات البطارية التي تُبقي خادم OpenCode يعمل تُبقي هذا يعمل أيضًا.",
   "localAgentSetUp": "إعداد Claude Code",
   "localAgentNotNow": "ليس الآن",
@@ -4484,7 +4484,7 @@
   "localAgentStopBody": "يُقاطَع كل ما يفعله Claude Code على هذا الهاتف، وينقطع اتصال هذا التطبيق به. تبقى مشاريعك ومحادثاتك وتسجيل دخولك إلى Claude؛ شغّله من جديد للمتابعة.",
   "localAgentRemove": "إزالة من هذا الهاتف",
   "localAgentRemoveTitle": "إزالة Claude Code من هذا الهاتف؟",
-  "localAgentRemoveBody": "يوقفه ويحذف Node.js وPaseo وClaude Code من Ubuntu، نحو 450 م.ب. تبقى مشاريعك وتسجيل دخولك إلى Claude.",
+  "localAgentRemoveBody": "يوقفه ويحذف Node.js وPaseo وClaude Code من Ubuntu، نحو 1 غ.ب. تبقى مشاريعك وتسجيل دخولك إلى Claude.",
   "localAgentRemoveKeep": "إبقاؤه",
   "localAgentMore": "إجراءات أخرى لـ Claude Code",
   "localAgentRuntimeChoiceDetail": "يعدّ Ubuntu وخادم OpenCode أولًا، ثم يثبّت Claude Code إلى جانبه."

@@ -212,6 +212,9 @@ class _Fixture {
     'OC_CLAUDE_NODE_DIR': nodeDir,
     'OC_CLAUDE_AGENTS_DIR': agentsDir,
     'OC_CLAUDE_UBUNTU_HOME': ubuntuHome,
+    // The stub runs commands as the host user, which therefore already
+    // exists; no `useradd` runs on the test machine.
+    'OC_CLAUDE_USER': Platform.environment['USER'] ?? 'root',
     'OC_CLAUDE_PORT': '$port',
     'OC_CLAUDE_ARCH': 'x86_64',
     'OC_CLAUDE_HEALTH_TIMEOUT': '8',
@@ -318,6 +321,48 @@ void main() {
       for (final entry in pins.entries) {
         expect(file, contains('${entry.key}=${entry.value}\n'));
       }
+    });
+
+    test(
+      'the daemon runs as an ordinary user, never with the root guard off',
+      () {
+        // Claude Code refuses its permission-skipping mode under root, and the
+        // daemon makes that mode available, so as root every turn died at
+        // launch. The fix is an unprivileged user; IS_SANDBOX would instead
+        // switch Claude Code's own guard off.
+        expect(script, isNot(contains('IS_SANDBOX=')));
+        expect(script, contains(r'AGENT_USER="${OC_CLAUDE_USER:-oc}"'));
+        expect(
+          script,
+          contains(
+            r'UBUNTU_HOME="${OC_CLAUDE_UBUNTU_HOME:-/home/$AGENT_USER}"',
+          ),
+        );
+        final daemon = RegExp(
+          r'run_daemon\(\) \{.*?\n\}\n',
+          dotAll: true,
+        ).firstMatch(script)![0]!;
+        expect(daemon, contains(r'proot-distro login --user "$AGENT_USER"'));
+        final signIn = script.substring(script.indexOf('# signin:'));
+        expect(
+          RegExp(
+            r'proot-distro login --user "\$AGENT_USER"[^\n]*\n[^\n]*claude',
+          ).allMatches(signIn).length,
+          2,
+          reason:
+              'both sign-in commands must store the sign-in where the '
+              "daemon's Claude Code looks for it",
+        );
+      },
+    );
+
+    test('the daemon does not download speech models on a phone', () {
+      final daemon = RegExp(
+        r'run_daemon\(\) \{.*?\n\}\n',
+        dotAll: true,
+      ).firstMatch(script)![0]!;
+      expect(daemon, contains('PASEO_DICTATION_ENABLED=false'));
+      expect(daemon, contains('PASEO_VOICE_MODE_ENABLED=false'));
     });
 
     test('the daemon is loopback-only, relay off, and never widened', () {
@@ -481,7 +526,7 @@ void main() {
       Process.runSync('chmod', ['755', '${fx.stubs}/df']);
       status = await fx.run(['install']);
       expect(status.failureKind, LocalAgentFailureKind.noSpace);
-      expect(status.message, contains('200 MB free, 1536 MB needed'));
+      expect(status.message, contains('200 MB free, 2048 MB needed'));
     });
 
     test('a native build failure is reported, not worked around', () async {
@@ -520,6 +565,12 @@ void main() {
         'start --foreground --home ${fx.ubuntuHome}/.oc-paseo '
         '--listen 127.0.0.1:${fx.port} --no-relay --no-web-ui '
         '--no-inject-mcp',
+      );
+      expect(
+        fx.read('${fx.root.path}/proot-calls.log'),
+        contains(
+          'login --user ${Platform.environment['USER'] ?? 'root'} --work-dir',
+        ),
       );
       for (final place in [
         fx.read('${fx.root.path}/proot-calls.log'),

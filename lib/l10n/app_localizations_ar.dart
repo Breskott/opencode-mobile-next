@@ -16793,7 +16793,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get localAgentOfferSize =>
-      'نحو 60 م.ب لـ Node.js إضافةً إلى الحزم؛ ونحو 450 م.ب بعد التثبيت. يلزم 1.5 غ.ب خالية.';
+      'نحو 60 م.ب لـ Node.js إضافةً إلى الحزم؛ ونحو 1 غ.ب بعد التثبيت. يلزم 2 غ.ب خالية.';
 
   @override
   String get localAgentOfferWarning =>
@@ -16982,7 +16982,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get localAgentRemoveBody =>
-      'يوقفه ويحذف Node.js وPaseo وClaude Code من Ubuntu، نحو 450 م.ب. تبقى مشاريعك وتسجيل دخولك إلى Claude.';
+      'يوقفه ويحذف Node.js وPaseo وClaude Code من Ubuntu، نحو 1 غ.ب. تبقى مشاريعك وتسجيل دخولك إلى Claude.';
 
   @override
   String get localAgentRemoveKeep => 'إبقاؤه';
