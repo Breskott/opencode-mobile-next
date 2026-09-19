@@ -459,6 +459,9 @@
           ],
           "destructive": false
         }
+      ],
+      "states": [
+        "first run (FirstRun.landingPending): stays on Work while controller.workspaceChoiceRequired shows the folder chooser, then _openFirstConversation() creates a conversation and pushes '/chat/<id>' with ChatRouteArguments.firstRun() (keyboard up); Back returns to Work. Choosing another tab ends the steering."
       ]
     },
     {
