@@ -31,6 +31,8 @@ import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/first_run_path.dart';
+
 Directory _findFixtureRoot() {
   var dir = Directory.current;
   for (var i = 0; i < 5; i++) {
@@ -464,8 +466,7 @@ void main() {
         ),
       );
       await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
-      await tester.pumpAndSettle();
+      await openFirstRunConnect(tester);
       // The editor's entry point is meant to be there; the host form and
       // every other plugin widget are not.
       expect(

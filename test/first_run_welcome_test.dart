@@ -9,6 +9,8 @@ import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/first_run_choice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/first_run_path.dart';
+
 Future<(ProfileStore, ConnectionController)> _state() async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
@@ -312,8 +314,7 @@ void main() {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
-    await tester.pumpAndSettle();
+    await openFirstRunConnect(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -344,8 +345,7 @@ void main() {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
-    await tester.pumpAndSettle();
+    await openFirstRunConnect(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -383,8 +383,7 @@ void main() {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
-    await tester.pumpAndSettle();
+    await openFirstRunConnect(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -439,8 +438,7 @@ void main() {
         },
       ),
     );
-    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
-    await tester.pumpAndSettle();
+    await openFirstRunConnect(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -486,8 +484,7 @@ void main() {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
-    await tester.pumpAndSettle();
+    await openFirstRunConnect(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -521,8 +518,7 @@ void main() {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
-    await tester.pumpAndSettle();
+    await openFirstRunConnect(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),

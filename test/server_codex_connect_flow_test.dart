@@ -14,6 +14,8 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/first_run_path.dart';
+
 class _RecordingProfileStore extends ProfileStore {
   _RecordingProfileStore({required super.prefs});
 
@@ -72,10 +74,9 @@ Widget _app(_RecordingProfileStore store, ConnectionController controller) =>
       ),
     );
 
-Future<void> _openEditor(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
-  await tester.pumpAndSettle();
-}
+/// The first-run computer path with Codex chosen at "Which agent?".
+Future<void> _openEditor(WidgetTester tester) =>
+    openFirstRunConnect(tester, agent: 'codex');
 
 class _ProbeSocket implements CodexSocket {
   final input = StreamController<Object?>.broadcast(sync: true);
@@ -131,13 +132,10 @@ void main() {
     await tester.pumpWidget(_app(store, controller));
     await _openEditor(tester);
 
-    expect(
-      find.byKey(const ValueKey('server-backend-selector')),
-      findsOneWidget,
-    );
-    expect(find.widgetWithText(ChoiceChip, 'OpenCode 1 or 2'), findsOneWidget);
-    await tester.tap(find.text('Codex (experimental)'));
-    await tester.pump();
+    // The person already answered "Which agent?"; the selector would ask
+    // the same thing again.
+    expect(find.byKey(const ValueKey('server-backend-selector')), findsNothing);
+    expect(find.byType(ChoiceChip), findsNothing);
 
     expect(
       find.byKey(const ValueKey('codex-server-name-field')),
@@ -196,8 +194,6 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await _openEditor(tester);
-    await tester.tap(find.text('Codex (experimental)'));
-    await tester.pump();
     await tester.enterText(
       find.byKey(const ValueKey('codex-server-address-field')),
       'ws://127.0.0.1:4500',
@@ -266,7 +262,7 @@ void main() {
           const ServerProbeResult.success('2.0.0', flavor: ServerFlavor.v2);
 
       await tester.pumpWidget(_app(store, controller));
-      await _openEditor(tester);
+      await openFirstRunConnect(tester);
       await tester.enterText(
         find.byKey(const ValueKey('server-url-field')),
         'https://box.example:4097',
@@ -354,8 +350,18 @@ void main() {
       final gate = Completer<void>();
       final controller = _RecordingConnection(store, connectGate: gate);
       addTearDown(controller.dispose);
+      // The backend selector exists only off the first-run path ("Add
+      // server" beside saved servers), so that is where its freeze is shown.
+      store.saved.add(
+        ServerProfile(
+          id: 'existing',
+          name: 'Existing',
+          baseUrl: 'https://existing.example',
+        ),
+      );
       await tester.pumpWidget(_app(store, controller));
-      await _openEditor(tester);
+      await tester.tap(find.text('Add server'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Codex (experimental)'));
       await tester.pump();
       await tester.enterText(

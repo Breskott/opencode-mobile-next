@@ -11,6 +11,8 @@ import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/first_run_path.dart';
+
 class _RecordingProfileStore extends ProfileStore {
   _RecordingProfileStore({required super.prefs});
 
@@ -61,11 +63,7 @@ Widget _app(ProfileStore store, ConnectionController controller) =>
     );
 
 Future<void> _openEditor(WidgetTester tester) async {
-  final connect = find.byKey(const ValueKey('welcome-choice-computer'));
-  await tester.ensureVisible(connect);
-  await tester.pumpAndSettle();
-  await tester.tap(connect);
-  await tester.pumpAndSettle();
+  await openFirstRunConnect(tester);
 }
 
 /// The editor's own field list. `.first` because every text field carries its

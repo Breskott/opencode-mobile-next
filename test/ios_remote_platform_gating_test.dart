@@ -435,6 +435,8 @@ void main() {
 
       await tester.tap(find.text('On my computer'));
       await _pumpFrames(tester);
+      await tester.tap(find.byKey(const ValueKey('agent-choice-opencode')));
+      await _pumpFrames(tester);
       expect(find.text('Paste pairing code'), findsOneWidget);
       expect(find.text('Scan'), findsNothing);
       expect(nativeCalls, isEmpty);

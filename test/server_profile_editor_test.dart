@@ -9,6 +9,8 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/first_run_path.dart';
+
 class _RecordingProfileStore extends ProfileStore {
   _RecordingProfileStore({required super.prefs});
 
@@ -88,11 +90,7 @@ Future<void> _openEditor(WidgetTester tester) async {
   // With no saved profile the Servers screen shows the first-run welcome;
   // its connect card is the path into the editor. Large text scales can push
   // the card below the fold, so bring it fully on screen before tapping.
-  final connect = find.byKey(const ValueKey('welcome-choice-computer'));
-  await tester.ensureVisible(connect);
-  await tester.pumpAndSettle();
-  await tester.tap(connect);
-  await tester.pumpAndSettle();
+  await openFirstRunConnect(tester);
 }
 
 void main() {
@@ -301,7 +299,8 @@ void main() {
 
     expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
-    expect(find.text('Add server'), findsOneWidget);
+    // Titled with the agent chosen at "Which agent?".
+    expect(find.widgetWithText(AppBar, 'OpenCode'), findsOneWidget);
     expect(find.text('Save & connect'), findsOneWidget);
     expect(find.text('AUTHENTICATION'), findsOneWidget);
 

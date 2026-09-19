@@ -1136,8 +1136,10 @@ void main() {
         'running': true,
       });
       expect(
-        agent(const {'state': 'stopped', 'running': false}, session: live)
-            .state,
+        agent(const {
+          'state': 'stopped',
+          'running': false,
+        }, session: live).state,
         AgentState.working,
       );
       final gone = GcSession.fromJson(const {
@@ -1146,8 +1148,10 @@ void main() {
         'running': false,
       });
       expect(
-        agent(const {'state': 'stopped', 'running': false}, session: gone)
-            .state,
+        agent(const {
+          'state': 'stopped',
+          'running': false,
+        }, session: gone).state,
         AgentState.stopped,
       );
     });

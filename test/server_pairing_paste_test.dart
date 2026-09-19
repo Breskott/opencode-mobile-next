@@ -11,6 +11,8 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/first_run_path.dart';
+
 /// Stands in for a real serve password. Never a live one.
 const _password = 'fixture-not-a-live-serve-password-000000000';
 
@@ -70,8 +72,7 @@ Future<void> pumpEditor(WidgetTester tester) async {
   );
   await tester.pumpAndSettle();
   // Open the editor from the first-run welcome card.
-  await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
-  await tester.pumpAndSettle();
+  await openFirstRunConnect(tester);
   expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
 }
 

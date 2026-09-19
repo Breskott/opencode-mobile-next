@@ -23,6 +23,8 @@ import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/first_run_path.dart';
+
 import '../tool/capture/fixtures.dart'
     show loadCaptureFonts, captureTheme, capturePng, writePng;
 
@@ -334,10 +336,7 @@ void main() {
               );
               expect(find.text(l10n.teamUiHostGuideStep4), findsOneWidget);
             case 'editor':
-              await tapVisible(
-                tester,
-                find.byKey(const ValueKey('welcome-choice-computer')),
-              );
+              await openFirstRunConnect(tester);
               final section = find.byKey(
                 const ValueKey('server-editor-team-section'),
               );

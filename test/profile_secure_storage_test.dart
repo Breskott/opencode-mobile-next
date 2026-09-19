@@ -9,6 +9,8 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/first_run_path.dart';
+
 /// What flutter_secure_storage throws on a Linux desktop with no Secret
 /// Service (no GNOME Keyring or KWallet, or no desktop session).
 PlatformException _libsecretFailure() => PlatformException(
@@ -336,11 +338,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final connect = find.byKey(const ValueKey('welcome-choice-computer'));
-      await tester.ensureVisible(connect);
-      await tester.pumpAndSettle();
-      await tester.tap(connect);
-      await tester.pumpAndSettle();
+      await openFirstRunConnect(tester);
 
       // The probe ran when the editor opened: the notice sits above the form.
       final notice = find.byKey(const ValueKey('server-secure-storage-notice'));
