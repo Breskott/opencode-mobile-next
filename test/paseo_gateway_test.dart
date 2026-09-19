@@ -21,6 +21,11 @@ class FakeDaemon implements PaseoSocket {
   Map<String, dynamic>? hello;
   bool closed = false;
 
+  /// When set, `hello` is answered by closing with this code instead.
+  int? rejectWith;
+  @override
+  int? closeCode;
+
   /// Auto-replies by request type; a handler returns the response type and
   /// payload, or null to stay silent.
   final handlers =
@@ -37,6 +42,11 @@ class FakeDaemon implements PaseoSocket {
     final json = jsonDecode(message) as Map<String, dynamic>;
     if (json['type'] == 'hello') {
       hello = json;
+      if (rejectWith != null) {
+        closeCode = rejectWith;
+        scheduleMicrotask(close);
+        return;
+      }
       push('status', {'status': 'server_info', 'version': '0.8.0'});
       return;
     }
@@ -244,6 +254,30 @@ void main() {
       expect(restored.usesAgentSocket, isTrue);
       expect(restored.agentSocketSecretRequired, isFalse);
     });
+  });
+
+  test('a rejected password is an authentication failure', () async {
+    // The daemon accepts the upgrade and only then closes with 4401.
+    final rejecting = FakeDaemon()..rejectWith = PaseoTransport.closeAuthFailed;
+    final refused = PaseoGateway(
+      transport: PaseoTransport(
+        endpoint: 'ws://127.0.0.1:6767',
+        password: 'wrong',
+        socketFactory: (_, _) async => rejecting,
+      ),
+      directory: _dir,
+    );
+    addTearDown(refused.close);
+    await expectLater(
+      refused.health(),
+      throwsA(
+        isA<PaseoFailure>().having(
+          (f) => f.kind,
+          'kind',
+          PaseoFailureKind.authentication,
+        ),
+      ),
+    );
   });
 
   test('hello claims only what the client implements', () async {

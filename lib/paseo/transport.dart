@@ -91,6 +91,9 @@ Uri paseoEndpoint(String raw) {
 
 abstract interface class PaseoSocket {
   Stream<Object?> get messages;
+
+  /// The WebSocket close code once the daemon has closed, else null.
+  int? get closeCode;
   void send(String message);
   Future<void> close();
 }
@@ -104,6 +107,8 @@ class _IoPaseoSocket implements PaseoSocket {
   _IoPaseoSocket(this.socket, this.client);
   @override
   Stream<Object?> get messages => socket;
+  @override
+  int? get closeCode => socket.closeCode;
   @override
   void send(String message) => socket.add(message);
   @override
@@ -215,6 +220,9 @@ class _PendingRequest {
 }
 
 class PaseoTransport {
+  /// The daemon accepts the upgrade, then closes with this code when the
+  /// password is missing or wrong.
+  static const closeAuthFailed = 4401;
   static const maxFrameBytes = 8 * 1024 * 1024;
   static const maxPending = 64;
 
@@ -496,7 +504,13 @@ class PaseoTransport {
     final ready = _ready;
     _ready = null;
     if (ready != null && !ready.isCompleted) {
-      ready.completeError(PaseoFailure(PaseoFailureKind.disconnected));
+      ready.completeError(
+        PaseoFailure(
+          socket.closeCode == closeAuthFailed
+              ? PaseoFailureKind.authentication
+              : PaseoFailureKind.disconnected,
+        ),
+      );
     }
     unawaited(_subscription?.cancel());
     _subscription = null;
