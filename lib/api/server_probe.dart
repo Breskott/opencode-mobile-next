@@ -137,7 +137,10 @@ Future<ServerProbeResult?> _probeV2(
   Dio dio, {
   required bool hasPassword,
 }) async {
-  final response = await dio.get<dynamic>(
+  // The beta answers at /api/health. The stable line (2.0.4 and later,
+  // `@opencode/cli`) dropped that route and reports its version at /api/info,
+  // so a clean 404 on the first is followed by one look at the second.
+  var response = await dio.get<dynamic>(
     '/api/health',
     options: Options(
       // Inspect every HTTP answer here; only transport failures throw.
@@ -145,6 +148,27 @@ Future<ServerProbeResult?> _probeV2(
       responseType: ResponseType.json,
     ),
   );
+  if (response.statusCode == 404) {
+    final info = await dio.get<dynamic>(
+      '/api/info',
+      options: Options(
+        validateStatus: (status) => status != null,
+        responseType: ResponseType.json,
+      ),
+    );
+    // Only the stable line's own shape counts (`version` beside `pid` or
+    // `urls`): an OpenCode 1 server, or anything else that answers every
+    // path, must still fall through to the v1 check.
+    final body = info.data;
+    final isInfo =
+        info.statusCode == 200 &&
+        body is Map &&
+        body['version'] is String &&
+        (body['pid'] is num || body['urls'] is List);
+    if (isInfo || info.statusCode == 401 || info.statusCode == 503) {
+      response = info;
+    }
+  }
   final status = response.statusCode ?? 0;
   if (status == 401) {
     // The v2 Basic-auth gate answers 401 with an EMPTY body on every route,

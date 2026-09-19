@@ -7,7 +7,7 @@ import '../platform/platform_capabilities.dart';
 /// from a server's reported version and survives restarts in the manager state.
 enum TermuxRuntime {
   openCode1('opencode1', '1.18.29'),
-  openCode2('opencode2', '0.0.0-beta-18600');
+  openCode2('opencode2', '2.0.10');
 
   const TermuxRuntime(this.wireName, this.pinnedVersion);
   final String wireName;
@@ -1643,9 +1643,18 @@ install_opencode() {
     x64) binary_suffix=linux-x64-baseline ;;
     *) printf '[oc] ERROR: OpenCode requires a 64-bit ARM or x64 Ubuntu environment\n' >&2; return 64 ;;
   esac
+  local prefix_args=()
   if [ "${OC_RUNTIME:-opencode1}" = opencode2 ]; then
-    binary_package="@opencode-ai/cli-$binary_suffix"
-    main_package=@opencode-ai/cli
+    # OpenCode 2 is published as @opencode/cli since 2026-09-07 (the old
+    # @opencode-ai/cli name stopped at a beta). Its package installs a command
+    # named `opencode` as well as `opencode2`, which collides with OpenCode 1's
+    # own `opencode` in the shared global prefix: npm refuses with EEXIST. So
+    # it gets a prefix of its own and only `opencode2` is linked, which keeps
+    # both runtimes installed side by side and switchable.
+    binary_package="@opencode/cli-$binary_suffix"
+    main_package=@opencode/cli
+    prefix_args=(--prefix "${OC2_PREFIX:-/opt/oc2}")
+    npm uninstall -g @opencode-ai/cli "@opencode-ai/cli-$binary_suffix" >/dev/null 2>&1 || true
   else
     binary_package="opencode-$binary_suffix"
   fi
@@ -1654,6 +1663,7 @@ install_opencode() {
   # failures must not silently leave postinstall trying a musl-only fallback.
   # Keep upstream postinstall intact and visible so runtime errors are actionable.
   if npm install -g \
+    ${prefix_args[@]+"${prefix_args[@]}"} \
     --include=optional \
     --foreground-scripts \
     --cache "$npm_cache" \
@@ -1664,6 +1674,11 @@ install_opencode() {
     "$binary_package@$OC_REQUESTED_VERSION" \
     "$main_package@$OC_REQUESTED_VERSION"; then
     install_code=0
+    if [ "${OC_RUNTIME:-opencode1}" = opencode2 ]; then
+      # The overrides exist for the script tests only.
+      ln -sfn "${OC2_PREFIX:-/opt/oc2}/bin/opencode2" \
+        "${OC2_LINK_DIR:-$(npm prefix -g)/bin}/opencode2" || install_code=$?
+    fi
   else
     install_code=$?
   fi
@@ -1690,7 +1705,7 @@ setup() {
   if [ -z "$requested_version" ]; then
     case "$CURRENT_RUNTIME" in
       opencode1) requested_version=1.18.29 ;;
-      opencode2) requested_version=0.0.0-beta-18600 ;;
+      opencode2) requested_version=2.0.10 ;;
     esac
   fi
   SETUP_SUCCEEDED=0
@@ -1947,7 +1962,7 @@ switch_runtime() {
     local requested_version
     case "$target" in
       opencode1) requested_version=1.18.29 ;;
-      opencode2) requested_version=0.0.0-beta-18600 ;;
+      opencode2) requested_version=2.0.10 ;;
     esac
     install_runtime "$requested_version"
     installed_version=$(runtime_version 2>/dev/null || true)

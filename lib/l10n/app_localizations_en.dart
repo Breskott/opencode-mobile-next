@@ -3935,11 +3935,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Recommended for the widest feature support in this app.';
 
   @override
-  String get setupRuntimeTwo => 'OpenCode 2 beta';
+  String get setupRuntimeTwo => 'OpenCode 2';
 
   @override
   String get setupRuntimeTwoDetail =>
-      'Try the new server API. Some features are unavailable in this beta.';
+      'The newer server. A few features from OpenCode 1 are not available on it yet.';
 
   @override
   String setupRuntimeInstallDetail(String runtime, String version) {
@@ -12035,7 +12035,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupBootstrapCleared => 'Bootstrap state cleared';
 
   @override
-  String get e7SetupInstallingBeta => 'Installing OpenCode 2 beta';
+  String get e7SetupInstallingBeta => 'Installing OpenCode 2';
 
   @override
   String get e7SetupAuthenticationFailed => 'Authentication failed';

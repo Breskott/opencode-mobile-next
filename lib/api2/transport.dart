@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 
+import 'dialect.dart';
+
 /// Transport layer for the OpenCode 2 server API (`/api/...`).
 ///
 /// Owns base-URL normalization, HTTP Basic auth (username is always
@@ -131,21 +133,89 @@ class Api2Transport {
     CancelToken? cancelToken,
     Duration? receiveTimeout,
   }) async {
+    final known = _dialect;
+    final route = known == Api2Dialect.stable
+        ? stableRoute(method, path, query: query, body: body)
+        : Api2Route(method, path, query: query, body: body);
     try {
       final response = await _dio.request<dynamic>(
-        path,
-        data: body,
-        queryParameters: _cleanQuery(query),
+        route.path,
+        data: route.body,
+        queryParameters: _cleanQuery(route.query),
         options: Options(
-          method: method,
+          method: route.method,
           receiveTimeout: receiveTimeout ?? requestTimeout,
         ),
         cancelToken: cancelToken,
       );
-      return response.data;
+      if (known == null && path == '/health') _dialect = Api2Dialect.beta;
+      return known == Api2Dialect.stable
+          ? stableResponse(method, path, response.data)
+          : response.data;
     } on DioException catch (e) {
-      throw mapError(e, '$method $path');
+      // A 404 before the generation is known may only mean this is the
+      // stable line, where the route moved. Ask once, then send it again
+      // the way that generation expects. Health is the usual first call, so
+      // connecting settles this with no extra request on a beta server.
+      if (known == null &&
+          e.response?.statusCode == 404 &&
+          _moved(method, path, query: query, body: body) &&
+          await _detectStable()) {
+        return _send(
+          path,
+          method: method,
+          body: body,
+          query: query,
+          cancelToken: cancelToken,
+          receiveTimeout: receiveTimeout,
+        );
+      }
+      throw mapError(e, '${route.method} ${route.path}');
     }
+  }
+
+  Api2Dialect? _dialect;
+
+  /// The API generation this server speaks; null until a request settled it.
+  Api2Dialect? get dialect => _dialect;
+
+  /// Records a generation learned elsewhere (the connect-time probe reports
+  /// the server's version), so no request has to find it out again.
+  void settleDialect(Api2Dialect value) => _dialect = value;
+
+  bool _moved(
+    String method,
+    String path, {
+    Map<String, dynamic>? query,
+    Object? body,
+  }) {
+    try {
+      final route = stableRoute(method, path, query: query, body: body);
+      return route.method != method || route.path != path;
+    } on Api2RemovedInStable {
+      return true;
+    }
+  }
+
+  /// `/api/info` exists only on the stable line. Anything but a clean answer
+  /// leaves the generation unknown, so a later request can ask again.
+  Future<bool> _detectStable() async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/info',
+        options: Options(receiveTimeout: const Duration(seconds: 8)),
+      );
+      final data = response.data;
+      if (data is Map && data['version'] is String) {
+        _dialect = Api2Dialect.stable;
+        return true;
+      }
+    } on DioException catch (e) {
+      // A clean 404 is the beta answering; remember it so later 404s do not
+      // ask again. Anything else (auth, a dropped connection) settles nothing.
+      if (e.response?.statusCode == 404) _dialect = Api2Dialect.beta;
+    }
+    return false;
   }
 
   /// Raw bytes (used by `/api/fs/read/...` which has no JSON envelope).
@@ -155,17 +225,32 @@ class Api2Transport {
     CancelToken? cancelToken,
     ProgressCallback? onReceiveProgress,
   }) async {
+    final known = _dialect;
+    final route = known == Api2Dialect.stable
+        ? stableRoute('GET', path, query: query)
+        : Api2Route('GET', path, query: query);
     try {
       final response = await _dio.get<List<int>>(
-        path,
-        queryParameters: _cleanQuery(query),
+        route.path,
+        queryParameters: _cleanQuery(route.query),
         options: Options(responseType: ResponseType.bytes),
         cancelToken: cancelToken,
         onReceiveProgress: onReceiveProgress,
       );
       return response.data ?? const [];
     } on DioException catch (e) {
-      throw mapError(e, 'GET $path');
+      if (known == null &&
+          e.response?.statusCode == 404 &&
+          _moved('GET', path, query: query) &&
+          await _detectStable()) {
+        return getBytes(
+          path,
+          query: query,
+          cancelToken: cancelToken,
+          onReceiveProgress: onReceiveProgress,
+        );
+      }
+      throw mapError(e, 'GET ${route.path}');
     }
   }
 

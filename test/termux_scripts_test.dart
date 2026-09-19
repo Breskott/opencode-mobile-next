@@ -401,11 +401,12 @@ message=This belongs to the terminal
       addTearDown(() => directory.deleteSync(recursive: true));
       final calls = File('${directory.path}/calls');
       for (final runtime in TermuxRuntime.values) {
+        // OpenCode 2 moved to the @opencode scope when it left beta.
         final mainPackage = runtime == TermuxRuntime.openCode2
-            ? '@opencode-ai/cli'
+            ? '@opencode/cli'
             : 'opencode-ai';
         final binaryPrefix = runtime == TermuxRuntime.openCode2
-            ? '@opencode-ai/cli'
+            ? '@opencode/cli'
             : 'opencode';
         for (final scenario in [
           ('arm64', 0, '$binaryPrefix-linux-arm64'),
@@ -422,6 +423,7 @@ npm() {
   return "$MOCK_NPM_EXIT"
 }
 ''';
+          Directory('${directory.path}/bin').createSync(recursive: true);
           final script = '$prelude$block\ninstall_opencode\n';
           final result = Process.runSync(
             'bash',
@@ -432,6 +434,8 @@ npm() {
               'NPM_CALLS': calls.path,
               'OC_RUNTIME': runtime.wireName,
               'OC_REQUESTED_VERSION': runtime.pinnedVersion,
+              'OC2_PREFIX': '${directory.path}/oc2',
+              'OC2_LINK_DIR': '${directory.path}/bin',
             },
           );
           expect(
@@ -457,6 +461,28 @@ npm() {
               '$mainPackage@${runtime.pinnedVersion}',
             ]),
           );
+          // Both packages install a command named `opencode`; sharing the
+          // global prefix fails with EEXIST. OpenCode 2 gets its own prefix,
+          // only `opencode2` is linked, and the dead beta package is removed.
+          if (runtime == TermuxRuntime.openCode2) {
+            expect(
+              arguments,
+              containsAllInOrder(['--prefix', '${directory.path}/oc2']),
+            );
+            expect(
+              arguments,
+              containsAllInOrder(['uninstall', '-g', '@opencode-ai/cli']),
+            );
+            if (scenario.$2 == 0) {
+              expect(
+                Link('${directory.path}/bin/opencode2').targetSync(),
+                '${directory.path}/oc2/bin/opencode2',
+              );
+            }
+          } else {
+            expect(arguments, isNot(contains('--prefix')));
+            expect(arguments, isNot(contains('uninstall')));
+          }
           expect(arguments.where((value) => value.contains('musl')), isEmpty);
           expect(arguments, isNot(contains('--force')));
           final cache = arguments[arguments.indexOf('--cache') + 1];
@@ -524,7 +550,7 @@ if write_state preparing bad 4096; then exit 88; fi
       script.indexOf('\nold_runtime='),
       script.indexOf('\npassword_tmp='),
     );
-    expect(script, contains("setup '4096' '0.0.0-beta-18600'"));
+    expect(script, contains("setup '4096' '2.0.10'"));
     expect(script, contains("\"\$self_start\" 'opencode2'"));
     expect(
       script.indexOf(guard),

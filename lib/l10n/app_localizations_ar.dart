@@ -3981,11 +3981,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'موصى به للحصول على أوسع دعم لميزات هذا التطبيق.';
 
   @override
-  String get setupRuntimeTwo => 'OpenCode 2 التجريبي';
+  String get setupRuntimeTwo => 'OpenCode 2';
 
   @override
   String get setupRuntimeTwoDetail =>
-      'جرّب واجهة API الجديدة للخادم. بعض الميزات غير متاحة في هذا الإصدار التجريبي.';
+      'الخادم الأحدث. بعض ميزات OpenCode 1 غير متاحة فيه بعد.';
 
   @override
   String setupRuntimeInstallDetail(String runtime, String version) {
@@ -12235,7 +12235,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SetupBootstrapCleared => 'مُسحت حالة الإعداد الأولي';
 
   @override
-  String get e7SetupInstallingBeta => 'جارٍ تثبيت OpenCode 2 التجريبي';
+  String get e7SetupInstallingBeta => 'جارٍ تثبيت OpenCode 2';
 
   @override
   String get e7SetupAuthenticationFailed => 'فشلت المصادقة';

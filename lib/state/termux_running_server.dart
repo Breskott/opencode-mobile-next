@@ -116,7 +116,8 @@ Future<ServerProbeResult> _probeLoopback({
 
   cancellation?._add(cancelRequest);
   try {
-    for (final path in ['/api/health', '/global/health']) {
+    // /api/info is where OpenCode 2.0.4 and later report themselves.
+    for (final path in ['/api/health', '/api/info', '/global/health']) {
       final response = await dio.get<Object?>(path, cancelToken: cancelToken);
       if (response.statusCode == 401) {
         return const ServerProbeResult.failure(
@@ -127,7 +128,10 @@ Future<ServerProbeResult> _probeLoopback({
       final body = response.data;
       if (response.statusCode == 200 &&
           body is Map &&
-          body['healthy'] == true) {
+          (body['healthy'] == true ||
+              (path == '/api/info' &&
+                  body['version'] is String &&
+                  (body['pid'] is num || body['urls'] is List)))) {
         return ServerProbeResult.success(body['version']?.toString());
       }
     }
