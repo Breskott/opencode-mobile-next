@@ -380,7 +380,7 @@ if ! command -v "$binary" >/dev/null 2>&1; then
   exit 0
 fi
 version=$("$binary" --version)
-if [ "$runtime" = opencode2 ]; then version=${version#opencode2 v}; fi
+if [ "$runtime" = opencode2 ]; then version=${version#opencode2 v}; version=${version#opencode v}; fi
 printf "ubuntu=installed\nversion=%s\n" "$version"
 [ -z "$recorded_runtime" ] || printf "runtime=%s\n" "$runtime"
 ' -- "$runtime" "$command" "$recorded_runtime"
@@ -953,7 +953,7 @@ runtime_version() {
   runtime=$(managed_runtime) || return
   binary=$(runtime_command) || return
   version=$(proot-distro login "$PROOT_NAME" -- "$binary" --version) || return
-  if [ "$runtime" = opencode2 ]; then version=${version#opencode2 v}; fi
+  if [ "$runtime" = opencode2 ]; then version=${version#opencode2 v}; version=${version#opencode v}; fi
   printf '%s' "$version" | tr -d '\r\n'
 }
 
