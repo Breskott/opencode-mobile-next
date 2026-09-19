@@ -3290,7 +3290,7 @@
     }
   },
   "e7ConnectionFailure43": "The connection to {hostLabel} failed. Details below.",
-  "e7ConnectionFailure44": "Is the Codex listener running, and is this the right address?",
+  "e7ConnectionFailure44": "Is the agent server running, and is this the right address?",
   "@e7ConnectionFailure44": {
     "description": "Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart"
   },

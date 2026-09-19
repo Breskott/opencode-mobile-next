@@ -9130,7 +9130,7 @@ abstract class AppLocalizations {
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart
   ///
   /// In en, this message translates to:
-  /// **'Is the Codex listener running, and is this the right address?'**
+  /// **'Is the agent server running, and is this the right address?'**
   String get e7ConnectionFailure44;
 
   /// Connection recovery guidance shown in lib/ui/widgets/connection_failure.dart

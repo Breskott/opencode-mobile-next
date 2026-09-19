@@ -46,7 +46,7 @@ a shell.
 | Projects | `/root/projects` in Ubuntu | `my-first-project` is created with `git init` when there are none. |
 | Script, pins | `~/.oc/claude.sh`, `~/.oc/claude-pins` in Termux | Rewritten by the app on every call. |
 | State, logs, password | `~/.oc/claude/` in Termux | `state`, `config`, `install.log`, `daemon.log` (rotated at 2 MB), `password` (mode 600). |
-| Your Claude sign-in and history | `/root/.claude` in Ubuntu | Written by Claude Code itself, never by the app. |
+| Your Claude sign-in and history | `/home/oc/.claude` in Ubuntu | Written by Claude Code itself, never by the app. |
 
 The pins are one Dart constant, `TermuxBridge.localAgentsPins` in
 `lib/termux/bridge.dart`. The Node.js checksums are the
@@ -97,7 +97,7 @@ app resumes it re-reads the sign-in state.
 environment variable and stores nothing, so the daemon's Claude Code would not
 find a sign-in afterwards.
 
-The sign-in check looks for a stored sign-in (`/root/.claude/.credentials.json`)
+The sign-in check looks for a stored sign-in (`/home/oc/.claude/.credentials.json`)
 or a configured API key, without reading either out. If it cannot see a sign-in
 you know exists, **I already signed in** continues anyway.
 
@@ -119,7 +119,7 @@ second one. The connection itself is the app's normal one.
 The block's menu, **Remove from this phone**, stops the daemon and deletes
 `/opt/oc-node`, `/opt/oc-agents`, `/root/.oc-paseo` and `~/.oc/claude`.
 
-It keeps your projects and it keeps `/root/.claude`, your Claude sign-in and
+It keeps your projects and it keeps `/home/oc/.claude`, your Claude sign-in and
 history. To remove that too, run this in Termux:
 
 ```sh
@@ -169,46 +169,25 @@ re-runnable.
 
 ## Verification status
 
-**This was built and unit-tested without a phone or an emulator.** No part of
-it has run inside Termux. What exists:
+**Run for real on 2026-09-19 in an Android 14 x86_64 emulator** with genuine
+Termux 0.118 and the app-managed `opencode-ubuntu` (installed by the app's own
+setup). Everything below went through the app's buttons, not by hand:
 
-- `test/local_agent_runtime_test.dart` runs the real script with bash on a
-  development machine against fixtures: a `proot-distro` stub that runs the
-  "inside Ubuntu" commands natively, a served tarball whose `node`, `npm`,
-  `paseo` and `claude` are stubs, and a `paseo` stub that answers the health
-  check. It covers `bash -n`, the pins, checksum-before-unpack, the refusals
-  (`needs_ubuntu`, `no_space`, `download`, `checksum`, `native_build`,
-  `port_in_use`, `timeout`), a health-confirmed start, the password reaching
-  the daemon only through its environment, dead-process reconciliation, stop,
-  remove keeping `/root/.claude`, the sign-in check and the projects verbs.
-  `shellcheck` was not installed on that machine, so that test is skipped.
-- `test/local_agent_onboarding_test.dart` covers the block's views, the
-  sign-in round trip against a fake, Connect saving exactly one server, the
-  card's controls and confirm sheets, and layout at 320 dp and 2.5x text in
-  English and Arabic.
-- The Kotlin change (`openTermuxSession`) was not compiled here.
+| Check | Result |
+|---|---|
+| Install from the block (Node download, SHA-256 verify, Paseo, Claude Code) | passed, about 5 minutes; no compiler needed; `node-pty` loads under proot |
+| Installed size | about 1 GB (Node 216 MB, packages 773 MB), so the guard asks for 2 GB free |
+| "Sign in to Claude" opens a visible Termux window | passed; Claude Code printed its real sign-in link and waited for the code |
+| Start, health-confirmed, loopback only, password required | passed |
+| Connect: project chooser, one saved server `ws://127.0.0.1:6767`, lands connected | passed |
+| A turn reaches Claude Code | passed up to the account: it answers "Not logged in · Please run /login" |
+| Daemon runs as the ordinary user `oc`, not root | passed; as root every turn died because Claude Code refuses its permission-skipping mode under root. The `IS_SANDBOX` switch that turns that guard off is deliberately not used |
+| No speech-model downloads on start | passed with `PASEO_DICTATION_ENABLED=false` and `PASEO_VOICE_MODE_ENABLED=false` |
+| Both live cards in the Servers screen and the switcher | passed; Stop and Start of the OpenCode card also run against real Termux |
 
-On-device checks still owed, in order:
-
-1. **Install on an arm64 phone**: `install` finishes; note the real installed
-   size and correct the sizes above and the 1.5 GB guard if they are wrong.
-2. **`node-pty` loads under proot** (the install logs a warning if it does
-   not), and npm needed no compiler.
-3. **`claude` runs** inside Ubuntu: `claude --version`, and the daemon lists
-   Claude Code as a runtime.
-4. **The visible terminal opens** from the app (`openTermuxSession`), including
-   on Android 10+ where Termux may need the app to raise its window.
-5. **Sign-in round trip**: link, browser approval, pasted code; the app sees
-   `signed_in=yes` on resume. Confirm which command the installed version
-   offers (`claude auth login` or plain `claude`) and where it stores the
-   sign-in.
-6. **A real turn**: connect from the app, send a prompt, get a streamed reply
-   and a permission request. In particular, whether Claude Code accepts its
-   permission modes when started by a daemon running as Ubuntu's root user.
-7. **What the daemon does on its own at start**: watch `daemon.log` and disk
-   use for downloads or background work that make no sense on a phone, and
-   decide with the owner what to switch off.
-8. **Survive the app in the background for 10 minutes**, and the block's and
-   card's wording when Android does stop it.
-9. **Stop** really ends every process (health stops answering), and **Remove**
-   frees the space and leaves `/root/.claude` and the projects.
+**Still owed, on a physical arm64 phone:** the same install on arm64 (the
+packages ship arm64 builds, but it has not been run); the sign-in round trip
+with a real account and a real answered turn; ten minutes in the background
+with the daemon surviving (Android battery settings apply, as for OpenCode);
+Stop ending every process; Remove freeing the space while keeping
+`/home/oc/.claude`.
