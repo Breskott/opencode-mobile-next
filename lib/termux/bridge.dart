@@ -1759,7 +1759,9 @@ start_server() {
   runtime=$(managed_runtime) || return 64
   case "$runtime" in
     opencode1) health_path=/global/health ;;
-    opencode2) health_path=/api/health ;;
+    # OpenCode 2.0.4 and later answer at /api/info; the beta this app
+    # installed before answered at /api/health. Either one proves readiness.
+    opencode2) health_path='/api/info /api/health' ;;
   esac
   if [ -n "${CURRENT_RECOVERY:-}" ]; then
     recovery_permitted "$CURRENT_RECOVERY" || fail_setup 'Automatic recovery was disabled' "$CURRENT_PORT"
@@ -1799,10 +1801,15 @@ start_server() {
       local auth_codes
       auth_codes=$(proot-distro login "$PROOT_NAME" -- env \
         OC_PORT="$CURRENT_PORT" OC_PASSWORD="$password" OC_HEALTH_PATH="$health_path" bash -s <<'OC_AUTH_CHECK'
-unauth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
-  "http://127.0.0.1:$OC_PORT$OC_HEALTH_PATH" || true)
-auth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
-  -u "opencode:$OC_PASSWORD" "http://127.0.0.1:$OC_PORT$OC_HEALTH_PATH" || true)
+unauth=000
+auth=000
+for path in $OC_HEALTH_PATH; do
+  unauth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
+    "http://127.0.0.1:$OC_PORT$path" || true)
+  auth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
+    -u "opencode:$OC_PASSWORD" "http://127.0.0.1:$OC_PORT$path" || true)
+  [ "$unauth $auth" != '401 200' ] || break
+done
 printf '%s %s' "$unauth" "$auth"
 OC_AUTH_CHECK
 )

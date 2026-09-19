@@ -389,6 +389,19 @@ message=This belongs to the terminal
     expect(bootstrap, isNot(contains('--allow-unauthenticated')));
   });
 
+  test('OpenCode 2 readiness accepts the stable route and the beta one', () {
+    // 2.0.4 and later answer at /api/info and 404 at /api/health; the beta
+    // this app installed before is the reverse. Found live: the switch to
+    // 2.0.10 installed fine and then failed as "not ready within 30 seconds".
+    final manager = TermuxBridge.managerScriptForTesting();
+    expect(
+      manager,
+      contains("opencode2) health_path='/api/info /api/health' ;;"),
+    );
+    expect(manager, contains(r'for path in $OC_HEALTH_PATH; do'));
+    expect(manager, contains(r'''[ "$unauth $auth" != '401 200' ] || break'''));
+  });
+
   test(
     'Ubuntu npm install requires its matching pinned binary and cleans cache',
     () {
