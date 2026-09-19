@@ -28,6 +28,8 @@ import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/offline_queue.dart';
 import '../../state/connection.dart';
+import '../../state/conversation_nudges.dart';
+import '../../state/nudges.dart';
 import '../../state/review_handoff.dart';
 import '../../state/prompt_shelf.dart';
 import '../../state/session_drafts.dart';
@@ -51,6 +53,7 @@ import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/info_label.dart';
 import '../widgets/markdown.dart';
+import '../widgets/nudge_card.dart';
 import '../widgets/pickers.dart';
 import '../widgets/model_shortcuts.dart';
 import '../widgets/product_states.dart';
@@ -102,6 +105,7 @@ part 'chat/attention_card.dart';
 part 'chat/approvals_sheet.dart';
 part 'chat/read_aloud.dart';
 part 'chat/voice_conversation.dart';
+part 'chat/nudge_slot.dart';
 
 const _maxAttachmentCount = 5;
 const _maxAttachmentBytes = 10 * 1024 * 1024;
@@ -360,6 +364,14 @@ class _ChatScreenState extends State<ChatScreen>
   String? _readAloudVoiceID;
   ReadAloudFailure? _lastReadAloudFailure;
   void _updateSpeech(VoidCallback change) => setState(change);
+  // One-time nudges (UX plan 5.8): the rules live in the watcher, the screen
+  // only reports facts and renders the slot. See chat/nudge_slot.dart.
+  ConversationNudgeWatcher? _nudgeWatcher;
+  bool _nudgeObserveQueued = false;
+  void _nudgesChanged() {
+    if (mounted) setState(() {});
+  }
+
   int _promptContentRevision = 0;
   bool get _promptShelfBusy =>
       _photoBusy ||
@@ -588,6 +600,7 @@ class _ChatScreenState extends State<ChatScreen>
     unawaited(_loadRunningShells());
     _sub = _conn.events.listen(_onEvent);
     _wasBusy = _conn.busySessions.contains(widget.sessionID);
+    _startNudges();
     final injectedVoice = widget.voiceController;
     if (!_conn.isIsolated && injectedVoice != null) {
       _voice = injectedVoice;
@@ -6401,6 +6414,7 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   Widget build(BuildContext context) {
     _syncFind();
+    _queueNudgeObservation();
     final theme = Theme.of(context);
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final busy = _conn.busySessions.contains(widget.sessionID);
@@ -7008,6 +7022,22 @@ class _ChatScreenState extends State<ChatScreen>
                                 onAnswer: () =>
                                     unawaited(_openForm(pendingForm)),
                               ),
+                            // The one nudge slot: below whatever needs the
+                            // person, above the composer. It gives way to a
+                            // short (keyboard) layout like every quiet strip.
+                            // At large text the sentence is tall: it takes at
+                            // most a third of the body and scrolls, ending on
+                            // its two controls.
+                            if (bodyConstraints.maxHeight >= 420)
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight: bodyConstraints.maxHeight / 3,
+                                ),
+                                child: SingleChildScrollView(
+                                  reverse: true,
+                                  child: _nudgeSlot(context),
+                                ),
+                              ),
                             // The offline-draft half of the strip is v1-safe;
                             // only the inbox bubbles are v2-only (§7 rule 5).
                             if ((
@@ -7408,6 +7438,7 @@ class _ChatScreenState extends State<ChatScreen>
     _composer.removeListener(_scheduleDraftSave);
     WidgetsBinding.instance.removeObserver(this);
     _conn.removeListener(_onConnectionChanged);
+    _stopNudges();
     if (_conn.isIsolated) {
       _handoff.store.dispose();
     } else {

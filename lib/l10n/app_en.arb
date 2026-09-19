@@ -17335,5 +17335,39 @@
   "serverSwitcherOpen": "Switch server",
   "@serverSwitcherOpen": {
     "description": "Shell app bar: accessibility hint on the server name and status, which open the server switcher sheet."
+  },
+  "nudgeApprovals": "Asked for “{action}” 3 times: this conversation can approve requests for you.",
+  "@nudgeApprovals": {
+    "description": "One-time tip above the composer after the third permission request of one kind in a conversation. {action} is the request's title, such as Edit a file. Its button opens Approvals.",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "nudgeReviewChanges": "This run changed files: review what changed before you continue.",
+  "@nudgeReviewChanges": {
+    "description": "One-time tip above the composer when a run that edited files finishes. Its button opens Review changes."
+  },
+  "nudgeLeave": "You can leave: this phone tells you when the run is done.",
+  "@nudgeLeave": {
+    "description": "One-time tip above the composer after a run has kept the person waiting for a minute while finished-run notifications are on."
+  },
+  "nudgeCompact": "The context is {percent}% full: compact to keep going.",
+  "@nudgeCompact": {
+    "description": "One-time tip above the composer when the conversation uses most of the model's context window. Its button compacts the conversation.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "nudgePin": "Pin conversations you return to from their menu; they stay at the top of Work.",
+  "@nudgePin": {
+    "description": "One-time tip at the top of the Work tab once a second project has been used."
+  },
+  "nudgeDismiss": "Hide tip",
+  "@nudgeDismiss": {
+    "description": "Tooltip of the close button on a one-time tip card."
   }
 }

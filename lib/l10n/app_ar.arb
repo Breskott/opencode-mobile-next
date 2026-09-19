@@ -4281,5 +4281,11 @@
   "projectHubChangesSubtitle": "راجع التغييرات غير المودَعة",
   "projectHubSearchSubtitle": "اعثر على ملف باسمه",
   "serverSwitcherManage": "إدارة الخوادم",
-  "serverSwitcherOpen": "تبديل الخادم"
+  "serverSwitcherOpen": "تبديل الخادم",
+  "nudgeApprovals": "طُلب «{action}» 3 مرات: يمكن لهذه المحادثة الموافقة على الطلبات نيابةً عنك.",
+  "nudgeReviewChanges": "غيّر هذا التشغيل ملفات: راجع ما تغيّر قبل أن تتابع.",
+  "nudgeLeave": "يمكنك المغادرة: سيخبرك هذا الهاتف عند انتهاء التشغيل.",
+  "nudgeCompact": "السياق ممتلئ بنسبة {percent}%: اختصره لتتابع.",
+  "nudgePin": "ثبّت المحادثات التي تعود إليها من قائمتها؛ ستبقى في أعلى العمل.",
+  "nudgeDismiss": "إخفاء التلميح"
 }
