@@ -73,6 +73,11 @@ const paseoServerCapabilities = ServerCapabilities(
 /// The runtime a conversation uses when the composer names no model.
 const paseoDefaultProvider = 'claude';
 
+/// How long [PaseoGateway] waits for a starting daemon to finish listing its
+/// runtimes' models. Overridable so tests do not sleep.
+int providerWarmupAttempts = 8;
+Duration providerWarmupInterval = const Duration(milliseconds: 1500);
+
 /// Placeholder model id for a provider that reports no model list.
 const paseoDefaultModel = 'default';
 
@@ -749,17 +754,26 @@ class PaseoGateway implements ServerGateway, ServerOperationsGateway {
     if (cached != null) return cached;
     final scope = _scope;
     final epoch = _locationEpoch;
-    final result = await transport.request('get_providers_snapshot_request', {
-      'cwd': scope,
-    }, timeout: const Duration(seconds: 45));
-    _checkLocation(scope, epoch);
-    final entries = paseoList(
-      result['entries'],
-      max: 256,
-    ).whereType<Map<String, dynamic>>().toList();
-    // A snapshot still loading its model lists is not worth caching.
-    if (entries.every((entry) => entry['status'] != 'loading')) {
-      _providerEntries = entries;
+    // Just after the daemon starts, every runtime reports `loading` while it
+    // asks each CLI for its models. The app reads providers once per
+    // connection, so answering with that empty moment left the composer with
+    // no default model for the whole session. Wait briefly for a settled
+    // snapshot; past the limit, answer with what is ready and cache nothing.
+    var entries = const <Map<String, dynamic>>[];
+    for (var attempt = 0; attempt < providerWarmupAttempts; attempt++) {
+      if (attempt > 0) await Future<void>.delayed(providerWarmupInterval);
+      final result = await transport.request('get_providers_snapshot_request', {
+        'cwd': scope,
+      }, timeout: const Duration(seconds: 45));
+      _checkLocation(scope, epoch);
+      entries = paseoList(
+        result['entries'],
+        max: 256,
+      ).whereType<Map<String, dynamic>>().toList();
+      if (entries.every((entry) => entry['status'] != 'loading')) {
+        _providerEntries = entries;
+        break;
+      }
     }
     return entries;
   }
