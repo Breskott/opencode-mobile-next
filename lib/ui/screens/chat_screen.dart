@@ -46,7 +46,6 @@ import '../desktop/shortcuts.dart';
 import '../widgets/agent_color.dart';
 import '../widgets/appearance_picker.dart';
 import '../widgets/connection_status_banner.dart';
-import '../widgets/entrance.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
@@ -90,7 +89,6 @@ import 'web_sources_screen.dart';
 import 'context_capsule_screen.dart';
 import '../early_l10n.dart';
 
-part 'chat/sessions_tab.dart';
 part 'chat/timeline_sheet.dart';
 part 'chat/transcript_find.dart';
 part 'chat/command_launcher.dart';
