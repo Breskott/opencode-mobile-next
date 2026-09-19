@@ -422,6 +422,8 @@ void main() {
         expect(_row('settings-mcp'), findsNothing);
         expect(_row('settings-commands-tools'), findsNothing);
         expect(_row('library-terminal'), findsNothing);
+        // Neither runtime keeps a list of standing grants the app can read.
+        expect(_row('saved-permissions-entry'), findsNothing);
         expect(
           _row('library-import-session'),
           capabilities.sessionImportExport ? findsOneWidget : findsNothing,

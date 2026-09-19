@@ -26595,6 +26595,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide tip'**
   String get nudgeDismiss;
+
+  /// First-run welcome: the one question asked before any server exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Where does your coding agent run?'**
+  String get firstRunWhereQuestion;
+
+  /// First-run welcome choice and the title of the agent question screen.
+  ///
+  /// In en, this message translates to:
+  /// **'On my computer'**
+  String get firstRunOnComputer;
+
+  /// First-run welcome: one line under 'On my computer'.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to an agent that runs there.'**
+  String get firstRunOnComputerDetail;
+
+  /// First-run welcome: one line under 'On this phone'.
+  ///
+  /// In en, this message translates to:
+  /// **'Set one up here. No computer needed.'**
+  String get firstRunOnPhoneDetail;
+
+  /// First-run welcome choice that opens the simulated demo.
+  ///
+  /// In en, this message translates to:
+  /// **'Just show me'**
+  String get firstRunJustShowMe;
+
+  /// First run, computer path: the question above the three agent choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Which agent?'**
+  String get firstRunWhichAgent;
+
+  /// Agent choice title; a product name, not translated.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode'**
+  String get firstRunAgentOpenCode;
+
+  /// Agent choice title for the Paseo backend; product names are not translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code or Pi'**
+  String get firstRunAgentClaudeOrPi;
+
+  /// Agent choice: one line under 'Claude Code or Pi'.
+  ///
+  /// In en, this message translates to:
+  /// **'Through the Paseo daemon. Experimental.'**
+  String get firstRunAgentClaudeOrPiDetail;
+
+  /// Agent choice title; a product name, not translated.
+  ///
+  /// In en, this message translates to:
+  /// **'Codex'**
+  String get firstRunAgentCodex;
+
+  /// Agent choice: one line under 'Codex'.
+  ///
+  /// In en, this message translates to:
+  /// **'Through Codex app-server. Experimental.'**
+  String get firstRunAgentCodexDetail;
+
+  /// Connect screen on the first-run computer path: caption above the one command to run.
+  ///
+  /// In en, this message translates to:
+  /// **'On your computer, run:'**
+  String get firstRunRunOnComputer;
+
+  /// Connect screen, OpenCode: what to do after running the command, where a camera exists.
+  ///
+  /// In en, this message translates to:
+  /// **'Then paste or scan the code it prints.'**
+  String get firstRunPairingNextScan;
+
+  /// Connect screen, OpenCode: what to do after running the command, where there is no camera path.
+  ///
+  /// In en, this message translates to:
+  /// **'Then paste the code it prints.'**
+  String get firstRunPairingNextPaste;
+
+  /// Connect screen: plain link under the address field that opens Tailscale setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Not on the same network?'**
+  String get firstRunNotSameNetwork;
+
+  /// Connect screen: disclosure holding the other commands the setup guide lists under Advanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the commands'**
+  String get firstRunShowCommands;
+
+  /// Connect screen, Paseo: caption above the private-network start command.
+  ///
+  /// In en, this message translates to:
+  /// **'To reach it from this phone over your private network, listen on that address and set a password:'**
+  String get firstRunCommandsPaseoNetwork;
+
+  /// Connect screen, Codex: caption above the token creation commands.
+  ///
+  /// In en, this message translates to:
+  /// **'Create the connection token before you start it:'**
+  String get firstRunCommandsCodexToken;
+
+  /// Connect screen, Codex: caption above the adb reverse command.
+  ///
+  /// In en, this message translates to:
+  /// **'A phone on a USB cable reaches it with:'**
+  String get firstRunCommandsCodexUsb;
+
+  /// Conversation, first run: title of the one card shown above the composer after the first reply completes.
+  ///
+  /// In en, this message translates to:
+  /// **'Get told when it\'s done?'**
+  String get firstRunNotifyTitle;
+
+  /// Conversation, first run: what accepting the notification card turns on, including its visible cost.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the app while the agent works. You get a notification when it finishes or needs you. Android shows a small ongoing notification while it stays connected.'**
+  String get firstRunNotifyBody;
+
+  /// Conversation, first run: accepts the notification card; asks Android for notification permission and keeps the connection alive in the background.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify me'**
+  String get firstRunNotifyAccept;
+
+  /// Conversation, first run: dismisses the notification card for good; Settings, Notifications stays the place to turn it on.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get firstRunNotifyDecline;
 }
 
 class _AppLocalizationsDelegate

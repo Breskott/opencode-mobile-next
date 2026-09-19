@@ -164,6 +164,11 @@
      "widget": "_ChatScreenState._openRelatedSession (pushReplacementNamed)",
      "file": "lib/ui/screens/chat_screen.dart",
      "line": 5792
+    },
+    {
+     "page": "system",
+     "element": null,
+     "trigger": "first run: HomeScreen._openFirstConversation pushes '/chat/<id>' with ChatRouteArguments.firstRun() after the first connect of a new device (lib/ui/screens/home_screen.dart:173); focusComposer opens the keyboard"
     }
    ],
    "gates": [

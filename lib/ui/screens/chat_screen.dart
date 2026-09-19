@@ -52,6 +52,7 @@ import '../widgets/confirm_sheet.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
+import '../widgets/first_reply_notify_card.dart';
 import '../widgets/info_label.dart';
 import '../widgets/markdown.dart';
 import '../widgets/nudge_card.dart';
@@ -211,6 +212,10 @@ class ChatScreen extends StatefulWidget {
   final List<PromptAttachment> initialAttachments;
   final bool discardIfUntouched;
 
+  /// Opens with the keyboard up. Only the conversation first run lands in
+  /// asks for this; everywhere else the person chooses when to type.
+  final bool focusComposer;
+
   /// An enclosing experience can provide its own navigation and task guidance.
   /// Defaults preserve the ordinary standalone chat presentation.
   final bool showAppBar;
@@ -227,6 +232,7 @@ class ChatScreen extends StatefulWidget {
     this.initialText = '',
     this.initialAttachments = const [],
     this.discardIfUntouched = false,
+    this.focusComposer = false,
     this.showAppBar = true,
     this.emptyState,
     this.handoffStore,
@@ -592,6 +598,11 @@ class _ChatScreenState extends State<ChatScreen>
     _syncRetryTicker();
     if (!_conn.isIsolated) {
       _handoff.store.addListener(_onHandoffChanged); // UX-103 review handoff
+    }
+    if (widget.focusComposer) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focus.requestFocus();
+      });
     }
     _load();
     if (_conn.capabilities.serverCatalog) {
@@ -7232,6 +7243,20 @@ class _ChatScreenState extends State<ChatScreen>
                               ),
                             if (_voiceConversation)
                               _voiceConversationControls(),
+                            // First run's one notification question; the card
+                            // is absent for everyone it is not due for.
+                            FirstReplyNotifyCard(
+                              controller: _conn,
+                              compact: compactComposer,
+                              replyCompleted:
+                                  !_conn.busySessions.contains(
+                                    widget.sessionID,
+                                  ) &&
+                                  _messages.any(
+                                    (message) =>
+                                        message.info.role == 'assistant',
+                                  ),
+                            ),
                             Center(
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(

@@ -13,6 +13,8 @@ import 'package:opencode_mobile/ui/screens/pairing_scanner_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/first_run_path.dart';
+
 const _password = 'fixture-not-a-live-serve-password-000000000';
 
 String pairJson({List<String> urls = const ['http://127.0.0.1:4097']}) =>
@@ -210,8 +212,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
-      await tester.pumpAndSettle();
+      await openFirstRunConnect(tester);
     }
 
     testWidgets('Android offers scanning', (tester) async {

@@ -9,6 +9,8 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/first_run_path.dart';
+
 class _RecordingProfileStore extends ProfileStore {
   _RecordingProfileStore({required super.prefs});
 
@@ -88,11 +90,7 @@ Future<void> _openEditor(WidgetTester tester) async {
   // With no saved profile the Servers screen shows the first-run welcome;
   // its connect card is the path into the editor. Large text scales can push
   // the card below the fold, so bring it fully on screen before tapping.
-  final connect = find.byKey(const ValueKey('welcome-connect-card'));
-  await tester.ensureVisible(connect);
-  await tester.pumpAndSettle();
-  await tester.tap(connect);
-  await tester.pumpAndSettle();
+  await openFirstRunConnect(tester);
 }
 
 void main() {
@@ -138,6 +136,15 @@ void main() {
       addTearDown(() => serverProbe = oldProbe);
       final (store, controller) = await _state();
       addTearDown(controller.dispose);
+      // The Tailscale door left the first-run welcome (UX plan 5.4); on this
+      // screen it is offered once there are servers to manage.
+      store.saved.add(
+        ServerProfile(
+          id: 'existing',
+          name: 'Existing',
+          baseUrl: 'https://existing.example',
+        ),
+      );
       await tester.pumpWidget(_app(store, controller));
       await tester.ensureVisible(find.text('More setup options'));
       await tester.pumpAndSettle();
@@ -158,7 +165,7 @@ void main() {
       await tester.tap(find.text('Continue to authentication'));
       await tester.pumpAndSettle();
       expect(probes, 0);
-      expect(store.saved, isEmpty);
+      expect(store.saved.single.id, 'existing');
       expect(
         find.byKey(const ValueKey('server-backend-selector')),
         findsNothing,
@@ -292,7 +299,8 @@ void main() {
 
     expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
-    expect(find.text('Add server'), findsOneWidget);
+    // Titled with the agent chosen at "Which agent?".
+    expect(find.widgetWithText(AppBar, 'OpenCode'), findsOneWidget);
     expect(find.text('Save & connect'), findsOneWidget);
     expect(find.text('AUTHENTICATION'), findsOneWidget);
 

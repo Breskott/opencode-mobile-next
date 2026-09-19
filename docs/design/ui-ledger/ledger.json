@@ -1,5 +1,5 @@
 {
- "generatedFrom": "2421b1a1f4d6c11c907dafd7a2212805e83ca018",
+ "generatedFrom": "029553378604c0cd1f18d27c6d0f6e64bca8947c",
  "pages": [
   {
    "id": "system",
@@ -141,6 +141,19 @@
      "action": "open-sheet",
      "target": "shorebird-update-notice",
      "effect": "automatic: app start / resume when service.checkForUpdate() reports available or restartRequired",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "system-first-run-homescreen-openfirstconversation-pushes-chat-id-wi-to-chat",
+     "type": "gesture",
+     "label": "first run: HomeScreen._openFirstConversation pushes '/chat/<id>' with ChatRouteArguments.firstRun() after the first connect of a new device (lib/ui/screens/home_screen.dart:173); focusComposer opens the keyboard",
+     "key": null,
+     "file": "lib/main.dart",
+     "line": null,
+     "action": "navigate",
+     "target": "chat",
+     "effect": "first run: HomeScreen._openFirstConversation pushes '/chat/<id>' with ChatRouteArguments.firstRun() after the first connect of a new device (lib/ui/screens/home_screen.dart:173); focusComposer opens the keyboard",
      "gates": [],
      "destructive": false
     },
@@ -2336,6 +2349,9 @@
      ],
      "destructive": false
     }
+   ],
+   "states": [
+    "first run (FirstRun.landingPending): stays on Work while controller.workspaceChoiceRequired shows the folder chooser, then _openFirstConversation() creates a conversation and pushes '/chat/<id>' with ChatRouteArguments.firstRun() (keyboard up); Back returns to Work. Choosing another tab ends the steering."
    ]
   },
   {
@@ -7204,6 +7220,10 @@
      "element": "system-entry-alert-session"
     },
     {
+     "page": "system",
+     "element": "system-first-run-homescreen-openfirstconversation-pushes-chat-id-wi-to-chat"
+    },
+    {
      "page": "share-session-failed-banner",
      "element": "share-session-failed-banner-retry"
     },
@@ -8773,6 +8793,46 @@
      ],
      "destructive": false,
      "hostWiring": true
+    },
+    {
+     "id": "chat-first-reply-notify-decline",
+     "type": "button",
+     "label": "Not now",
+     "key": "first-reply-notify-decline",
+     "file": "lib/ui/widgets/first_reply_notify_card.dart",
+     "line": 169,
+     "action": "dismiss",
+     "target": null,
+     "effect": "_decline(): FirstRun.answerNotifyAsk(); the card is never shown again. Settings → Notifications remains the home.",
+     "gates": [
+      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
+      "this conversation holds a completed assistant reply and is not busy",
+      "platformCapabilities.supportsNotifications && supportsBackgroundService",
+      "!controller.isIsolated",
+      "!controller.keepLiveInBackground",
+      "hidden while the composer is compact (keyboard up / short window)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "chat-first-reply-notify-accept",
+     "type": "button",
+     "label": "Notify me (card: Get told when it's done?)",
+     "key": "first-reply-notify-accept",
+     "file": "lib/ui/widgets/first_reply_notify_card.dart",
+     "line": 177,
+     "action": "toggle-setting",
+     "target": null,
+     "effect": "_accept(): controller.setKeepLiveInBackground(true) (the native 'enable' call that raises POST_NOTIFICATIONS and starts the service), re-enables finished-run and request notifications if they were off, then FirstRun.answerNotifyAsk(); a refusal shows backgroundLive.lastError in a snackbar and still counts as an answer.",
+     "gates": [
+      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
+      "this conversation holds a completed assistant reply and is not busy",
+      "platformCapabilities.supportsNotifications && supportsBackgroundService",
+      "!controller.isIsolated",
+      "!controller.keepLiveInBackground",
+      "hidden while the composer is compact (keyboard up / short window)"
+     ],
+     "destructive": false
     }
    ]
   },
@@ -19681,6 +19741,72 @@
    ]
   },
   {
+   "id": "agent-choice",
+   "title": "On my computer",
+   "kind": "onboarding-step",
+   "area": "servers",
+   "file": "lib/ui/screens/agent_choice_screen.dart",
+   "widget": "AgentChoiceScreen",
+   "presentedBy": [
+    "_computerPath"
+   ],
+   "line": 11,
+   "purpose": "First run, computer path (UX plan 5.6 step 2a): asks 'Which agent?' so the connect screen opens already set to the right backend.",
+   "reachedFrom": [
+    {
+     "page": "servers-welcome",
+     "element": "servers-welcome-connect"
+    }
+   ],
+   "gates": [
+    "pushed only by ServersScreen._computerPath, from the first-run welcome"
+   ],
+   "elements": [
+    {
+     "id": "agent-choice-opencode",
+     "type": "card",
+     "label": "OpenCode — Detects OpenCode 1 or 2 automatically.",
+     "key": "agent-choice-opencode",
+     "file": "lib/ui/screens/agent_choice_screen.dart",
+     "line": 43,
+     "action": "navigate",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "onChoose(ServerBackend.openCode): ServersScreen._edit(presetBackend: ...) pushes the profile editor on top of this screen, so Back returns to the question.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "agent-choice-paseo",
+     "type": "card",
+     "label": "Claude Code or Pi — Through the Paseo daemon. Experimental.",
+     "key": "agent-choice-paseo",
+     "file": "lib/ui/screens/agent_choice_screen.dart",
+     "line": 50,
+     "action": "navigate",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "onChoose(ServerBackend.paseo): ServersScreen._edit(presetBackend: ...) pushes the profile editor on top of this screen, so Back returns to the question.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "agent-choice-codex",
+     "type": "card",
+     "label": "Codex — Through Codex app-server. Experimental.",
+     "key": "agent-choice-codex",
+     "file": "lib/ui/screens/agent_choice_screen.dart",
+     "line": 57,
+     "action": "navigate",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "onChoose(ServerBackend.codex): ServersScreen._edit(presetBackend: ...) pushes the profile editor on top of this screen, so Back returns to the question.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
    "id": "connection-help",
    "title": "Connection help",
    "kind": "screen",
@@ -19756,10 +19882,6 @@
     {
      "page": "servers",
      "element": "servers-external-agents"
-    },
-    {
-     "page": "servers-welcome",
-     "element": "servers-welcome-external-agents"
     },
     {
      "page": "settings",
@@ -21288,7 +21410,9 @@
      "target": "guide",
      "targetWidget": "/guide",
      "effect": "Navigator.pushNamed(context, '/guide').",
-     "gates": [],
+     "gates": [
+      "bootstrap.store.profiles.isNotEmpty (absent on the first-run welcome)"
+     ],
      "destructive": false
     },
     {
@@ -21594,7 +21718,7 @@
   },
   {
    "id": "profile-editor",
-   "title": "Add server | OpenCode 2 | Edit server | Re-enter password | Re-enter connection token",
+   "title": "Add server | OpenCode 2 | Edit server | Re-enter password | Re-enter connection token | OpenCode | Claude Code or Pi | Codex",
    "kind": "screen",
    "area": "servers",
    "file": "lib/ui/screens/servers_screen.dart",
@@ -21602,8 +21726,8 @@
    "presentedBy": [
     "_edit"
    ],
-   "line": 961,
-   "purpose": "Full-screen server profile editor: choose backend (OpenCode 1/2 autodetect or experimental Codex), pair by code/QR, enter address and credentials, test the connection, attach an optional AI Team host, then save (and connect).",
+   "line": 1110,
+   "purpose": "Full-screen server profile editor and, on the first-run computer path, the one connect screen for the chosen agent: the command to run, pairing, address and credentials, a connection test that runs by itself after a pause, an optional AI Team host, then save (and connect).",
    "reachedFrom": [
     {
      "page": "servers",
@@ -21622,14 +21746,6 @@
      "element": "servers-profile-row"
     },
     {
-     "page": "servers-welcome",
-     "element": "servers-welcome-connect"
-    },
-    {
-     "page": "servers-welcome",
-     "element": "servers-welcome-connect-opencode2"
-    },
-    {
      "page": "tailscale-setup",
      "element": "tailscale-setup-continue"
     },
@@ -21637,6 +21753,18 @@
      "page": "embedded-termux-running-server-entry",
      "element": null,
      "evidence": "lib/ui/widgets/termux_running_server_entry.dart:228"
+    },
+    {
+     "page": "agent-choice",
+     "element": "agent-choice-opencode"
+    },
+    {
+     "page": "agent-choice",
+     "element": "agent-choice-paseo"
+    },
+    {
+     "page": "agent-choice",
+     "element": "agent-choice-codex"
     },
     {
      "page": "server-switcher-sheet",
@@ -21651,6 +21779,21 @@
     "private route pushed only by ServersScreen._edit"
    ],
    "elements": [
+    {
+     "id": "profile-editor-command-copy",
+     "type": "icon-button",
+     "label": "Copy command",
+     "key": "connect-command",
+     "file": "lib/ui/screens/guide_screen.dart",
+     "line": 337,
+     "action": "copy",
+     "target": null,
+     "effect": "Cmd copy button: Clipboard.setData(SetupCommands.startFor(backend)) and a 'Copied' snackbar. The same button sits on each command inside 'Show the commands'.",
+     "gates": [
+      "widget.presetBackend != null (first-run computer path)"
+     ],
+     "destructive": false
+    },
     {
      "id": "profile-editor-codex-name",
      "type": "text-field",
@@ -21752,6 +21895,24 @@
      "destructive": false
     },
     {
+     "id": "profile-editor-not-same-network",
+     "type": "link",
+     "label": "Not on the same network?",
+     "key": "connect-not-same-network",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 1801,
+     "action": "navigate",
+     "target": "tailscale-setup",
+     "targetWidget": "TailscaleSetupScreen",
+     "effect": "_notSameNetwork(): OpenCode goes through _tailscaleHelp(), which writes the reviewed address back into the URL field; Paseo and Codex open TailscaleSetupScreen for guidance only (it produces https addresses, they listen on ws).",
+     "gates": [
+      "widget.presetBackend != null (first-run computer path)",
+      "platformCapabilities.supportsTailscaleHandoff",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
      "id": "profile-editor-close",
      "type": "icon-button",
      "label": "Close server editor",
@@ -21796,40 +21957,6 @@
      "effect": "_tailscaleHelp(): pushes TailscaleSetupScreen(initialAddress: current URL); a returned reviewed address replaces the URL field if it was not edited meanwhile.",
      "gates": [
       "widget.tailscale"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-editor-backend-opencode",
-     "type": "chip",
-     "label": "OpenCode 1 or 2",
-     "key": "server-backend-selector",
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": 1933,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Sets _backend = ServerBackend.openCode and invalidates the probe; shows pairing actions, Server URL, display name, username, password and the AI Team section.",
-     "gates": [
-      "widget.existing == null && !widget.tailscale",
-      "disabled while _submitting"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-editor-backend-codex",
-     "type": "chip",
-     "label": "Codex (experimental)",
-     "key": "server-backend-selector",
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": 1945,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Sets _backend = ServerBackend.codex and invalidates the probe; swaps the form to display name, server address (ws/wss), project folder and connection token; hides pairing, username/password and AI Team.",
-     "gates": [
-      "widget.existing == null && !widget.tailscale",
-      "disabled while _submitting"
      ],
      "destructive": false
     },
@@ -21934,18 +22061,56 @@
      "destructive": false
     },
     {
-     "id": "profile-editor-test-connection",
-     "type": "button",
-     "label": "Test connection | Testing…",
-     "key": "test-server-connection",
+     "id": "profile-editor-backend-opencode",
+     "type": "chip",
+     "label": "OpenCode 1 or 2",
+     "key": "server-backend-selector",
      "file": "lib/ui/screens/servers_screen.dart",
-     "line": 2188,
+     "line": 2236,
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "_testConnection(): OpenCode -> serverProbe(baseUrl, username, password) detecting flavor v1/v2 and version, verdict in server-probe-verdict (focuses password on v2 401); Codex -> _testCodexConnection() -> probeCodexConnection(baseUrl, token, directory), verdict in codex-probe-verdict.",
+     "effect": "Sets _backend = ServerBackend.openCode and invalidates the probe; shows pairing actions, Server URL, display name, username, password and the AI Team section.",
      "gates": [
-      "disabled while _testing"
+      "widget.existing == null",
+      "!widget.tailscale",
+      "widget.presetBackend == null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-backend-codex",
+     "type": "chip",
+     "label": "Codex (experimental)",
+     "key": "server-backend-selector",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 2248,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Sets _backend = ServerBackend.codex and invalidates the probe; swaps the form to display name, server address (ws/wss), project folder and connection token; hides pairing, username/password and AI Team.",
+     "gates": [
+      "widget.existing == null",
+      "!widget.tailscale",
+      "widget.presetBackend == null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-backend-paseo",
+     "type": "chip",
+     "label": "Paseo: Claude Code, Pi (experimental)",
+     "key": "server-backend-paseo",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 2260,
+     "action": "other",
+     "target": null,
+     "effect": "setState: _backend = ServerBackend.paseo; _invalidateProbe().",
+     "gates": [
+      "widget.existing == null",
+      "!widget.tailscale",
+      "widget.presetBackend == null",
+      "disabled while _submitting"
      ],
      "destructive": false
     },
@@ -22035,6 +22200,37 @@
       "disabled while _pairing"
      ],
      "destructive": false
+    },
+    {
+     "id": "profile-editor-test-connection",
+     "type": "button",
+     "label": "Test connection | Testing…",
+     "key": "test-server-connection",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 2515,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_testConnection(): serverProbe for OpenCode, socketAgentProbe for Paseo/Codex; stale results are dropped by _probeGeneration. On the first-run path the same test also runs by itself (_scheduleAutoTest, 800 ms after the fields become valid); the button stays for re-runs.",
+     "gates": [
+      "disabled while _testing"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-show-commands",
+     "type": "list-tile",
+     "label": "Show the commands",
+     "key": "connect-show-commands",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 2777,
+     "action": "other",
+     "target": null,
+     "effect": "expands the setup guide's other commands for this agent (older opencode serve; Paseo on a private network; Codex token and adb reverse).",
+     "gates": [
+      "widget.presetBackend != null (first-run computer path)"
+     ],
+     "destructive": false
     }
    ],
    "fieldsByBackend": {
@@ -22054,15 +22250,17 @@
      "approval recovery notice",
      "Test connection + codex probe verdict"
     ],
-    "Backend selector (CONNECTION TYPE chips)": "only for a new profile outside Tailscale mode; existing profiles keep their backend",
-    "Tailscale mode (widget.tailscale)": "intro text + 'Tailscale setup and recovery' button, no backend selector, no pairing actions, URL must pass isValidTailscaleAddress"
+    "Backend selector (CONNECTION TYPE chips)": "only for a new profile outside Tailscale mode and off the first-run path (widget.presetBackend == null); existing profiles keep their backend",
+    "Tailscale mode (widget.tailscale)": "intro text + 'Tailscale setup and recovery' button, no backend selector, no pairing actions, URL must pass isValidTailscaleAddress",
+    "First-run connect screen (widget.presetBackend != null)": "titled with the chosen agent; backend selector hidden; leads with _ComputerCommand (the one start command + copy, 'Show the commands' disclosure); 'Not on the same network?' under the address; the test runs by itself 800 ms after the required fields become valid (autoTestPause), a change restarts the wait and retires the probe in flight"
    },
    "states": [
     "inline save/connect failure card (server-save-failure)",
     "secure-storage notice card (server-secure-storage-notice) when the keyring cannot keep a password",
     "missing-password banner when _needsPassword",
     "pairing notice / pairing failure rows",
-    "AbsorbPointer over the whole form while _submitting"
+    "AbsorbPointer over the whole form while _submitting",
+    "first-run path: probe verdict appears without pressing Test connection; the automatic run never moves focus"
    ]
   },
   {
@@ -22367,12 +22565,12 @@
      "element": "servers-tailscale"
     },
     {
-     "page": "servers-welcome",
-     "element": "servers-welcome-tailscale"
+     "page": "profile-editor",
+     "element": "profile-editor-tailscale-help"
     },
     {
      "page": "profile-editor",
-     "element": "profile-editor-tailscale-help"
+     "element": "profile-editor-not-same-network"
     },
     {
      "page": "settings",
@@ -35597,14 +35795,6 @@
      "element": "servers-setup-guide"
     },
     {
-     "page": "servers-welcome",
-     "element": "servers-welcome-guide"
-    },
-    {
-     "page": "servers-welcome",
-     "element": "servers-welcome-setup-guide"
-    },
-    {
      "page": "profile-editor",
      "element": "profile-editor-test-guide"
     }
@@ -35698,8 +35888,8 @@
    "file": "lib/ui/screens/servers_screen.dart",
    "widget": "_WelcomeView",
    "presentedBy": [],
-   "line": 729,
-   "purpose": "First-run empty state of ServersScreen: value statement plus the primary Connect and Try demo actions and the secondary connect methods.",
+   "line": 896,
+   "purpose": "First-run body of ServersScreen (UX plan 5.6 step 1): the value sentence, then one question, 'Where does your coding agent run?', with three plain choices. No product names; Tailscale, the setup guide and External agents are reached from Settings.",
    "reachedFrom": [
     {
      "page": "system",
@@ -35730,7 +35920,7 @@
      "label": "About and open source notices",
      "key": null,
      "file": "lib/ui/screens/servers_screen.dart",
-     "line": 415,
+     "line": 584,
      "action": "navigate",
      "target": "about",
      "targetWidget": "/about",
@@ -35739,62 +35929,16 @@
      "destructive": false
     },
     {
-     "id": "servers-welcome-guide",
-     "type": "icon-button",
-     "label": "Setup guide",
-     "key": null,
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": 422,
-     "action": "navigate",
-     "target": "guide",
-     "targetWidget": "/guide",
-     "effect": "Navigator.pushNamed(context, '/guide').",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "servers-welcome-connect",
-     "type": "button",
-     "label": "Connect to a server",
-     "key": "welcome-connect-card",
+     "type": "card",
+     "label": "On my computer — Connect to an agent that runs there.",
+     "key": "welcome-choice-computer",
      "file": "lib/ui/screens/servers_screen.dart",
-     "line": 786,
+     "line": 957,
      "action": "navigate",
-     "target": "profile-editor",
-     "targetWidget": "_ProfileEditorScreen",
-     "effect": "onConnect -> _edit(): pushes the new-profile editor; a successful save connects and goes to '/home'.",
-     "gates": [
-      "disabled while _busy"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "servers-welcome-try-demo",
-     "type": "button",
-     "label": "Try demo",
-     "key": null,
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": 802,
-     "action": "navigate",
-     "target": "demo",
-     "targetWidget": "DemoScreen",
-     "effect": "onDemo -> _demo(): pushes DemoScreen ('A simulated session. No server needed.').",
-     "gates": [
-      "disabled while _busy"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "servers-welcome-connect-opencode2",
-     "type": "list-tile",
-     "label": "Connect OpenCode 2 — Use a server that is already running.",
-     "key": "connect-existing-opencode2",
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": 817,
-     "action": "navigate",
-     "target": "profile-editor",
-     "targetWidget": "_ProfileEditorScreen",
-     "effect": "onConnectOpenCode2 -> _edit(openCode2Intent: true).",
+     "target": "agent-choice",
+     "targetWidget": "AgentChoiceScreen",
+     "effect": "_computerPath() pushes AgentChoiceScreen; its answer opens the profile editor preset to that backend.",
      "gates": [
       "disabled while _busy"
      ],
@@ -35802,15 +35946,15 @@
     },
     {
      "id": "servers-welcome-termux-setup",
-     "type": "list-tile",
-     "label": "Termux setup — Set up OpenCode 1 or 2 on this phone.",
-     "key": "welcome-termux-card",
+     "type": "card",
+     "label": "On this phone — Set one up here. No computer needed.",
+     "key": "welcome-choice-phone",
      "file": "lib/ui/screens/servers_screen.dart",
-     "line": 819,
+     "line": 965,
      "action": "navigate",
      "target": "termux-setup",
      "targetWidget": "/termux-setup",
-     "effect": "onTermux -> _openTermuxSetup(): pushNamed('/termux-setup').",
+     "effect": "_openTermuxSetup(): Navigator.pushNamed(context, '/termux-setup'), then bumps _termuxRevision so the running-server entry re-reads the phone.",
      "gates": [
       "platformCapabilities.supportsTermux",
       "disabled while _busy"
@@ -35818,74 +35962,25 @@
      "destructive": false
     },
     {
-     "id": "servers-welcome-more-setup",
-     "type": "list-tile",
-     "label": "More setup options",
-     "key": null,
+     "id": "servers-welcome-try-demo",
+     "type": "card",
+     "label": "Just show me — A simulated conversation. No server needed.",
+     "key": "welcome-choice-demo",
      "file": "lib/ui/screens/servers_screen.dart",
-     "line": 928,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "ExpansionTile (_SetupOptions) expands to reveal Tailscale, Setup guide and External agents rows.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "servers-welcome-tailscale",
-     "type": "list-tile",
-     "label": "Connect with Tailscale — Reach a server over your private network",
-     "key": "welcome-tailscale-card",
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": 936,
+     "line": 972,
      "action": "navigate",
-     "target": "tailscale-setup",
-     "targetWidget": "TailscaleSetupScreen",
-     "effect": "_tailscale(): pushes TailscaleSetupScreen; when it pops with a reviewed URL, opens the profile editor via _edit(tailscale: true, initialUrl: url).",
+     "target": "demo",
+     "targetWidget": "DemoScreen",
+     "effect": "_demo() pushes DemoScreen.",
      "gates": [
-      "platformCapabilities.supportsTailscaleHandoff",
-      "inside More setup options expansion",
-      "disabled while _busy"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "servers-welcome-setup-guide",
-     "type": "list-tile",
-     "label": "Setup guide",
-     "key": "welcome-guide-card",
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": 944,
-     "action": "navigate",
-     "target": "guide",
-     "targetWidget": "/guide",
-     "effect": "Navigator.pushNamed(context, '/guide').",
-     "gates": [
-      "inside More setup options expansion",
-      "disabled while _busy"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "servers-welcome-external-agents",
-     "type": "list-tile",
-     "label": "External agents",
-     "key": null,
-     "file": "lib/ui/screens/servers_screen.dart",
-     "line": 951,
-     "action": "navigate",
-     "target": "external-agents",
-     "targetWidget": "ExternalAgentsScreen",
-     "effect": "_externalAgents(): builds an ExternalAgentStore(prefs, secure) and pushes ExternalAgentsScreen(store); disposes the store when the route returns.",
-     "gates": [
-      "inside More setup options expansion",
       "disabled while _busy"
      ],
      "destructive": false
     }
    ],
    "states": [
-    "embeds TermuxRunningServerEntry above the Connect button; it renders nothing unless a running on-device server was observed"
+    "embeds TermuxRunningServerEntry above the question; it renders nothing unless a running on-device server was observed",
+    "ServersScreen.initState records a new device through FirstRun.observeServers(hasServers: false), which arms the first-run landing in HomeScreen"
    ]
   },
   {
@@ -36902,6 +36997,11 @@
     "from": "system",
     "element": "system-automatic-app-start-resume-when-service-checkforupdate-repor-to-shorebird-update-notice",
     "to": "shorebird-update-notice"
+   },
+   {
+    "from": "system",
+    "element": "system-first-run-homescreen-openfirstconversation-pushes-chat-id-wi-to-chat",
+    "to": "chat"
    },
    {
     "from": "system",
@@ -38435,23 +38535,8 @@
    },
    {
     "from": "servers-welcome",
-    "element": "servers-welcome-guide",
-    "to": "guide"
-   },
-   {
-    "from": "servers-welcome",
     "element": "servers-welcome-connect",
-    "to": "profile-editor"
-   },
-   {
-    "from": "servers-welcome",
-    "element": "servers-welcome-try-demo",
-    "to": "demo"
-   },
-   {
-    "from": "servers-welcome",
-    "element": "servers-welcome-connect-opencode2",
-    "to": "profile-editor"
+    "to": "agent-choice"
    },
    {
     "from": "servers-welcome",
@@ -38460,18 +38545,23 @@
    },
    {
     "from": "servers-welcome",
-    "element": "servers-welcome-tailscale",
-    "to": "tailscale-setup"
+    "element": "servers-welcome-try-demo",
+    "to": "demo"
    },
    {
-    "from": "servers-welcome",
-    "element": "servers-welcome-setup-guide",
-    "to": "guide"
+    "from": "agent-choice",
+    "element": "agent-choice-opencode",
+    "to": "profile-editor"
    },
    {
-    "from": "servers-welcome",
-    "element": "servers-welcome-external-agents",
-    "to": "external-agents"
+    "from": "agent-choice",
+    "element": "agent-choice-paseo",
+    "to": "profile-editor"
+   },
+   {
+    "from": "agent-choice",
+    "element": "agent-choice-codex",
+    "to": "profile-editor"
    },
    {
     "from": "profile-editor",
@@ -38502,6 +38592,11 @@
     "from": "profile-editor",
     "element": "profile-editor-team-add",
     "to": "team-host-sheet"
+   },
+   {
+    "from": "profile-editor",
+    "element": "profile-editor-not-same-network",
+    "to": "tailscale-setup"
    },
    {
     "from": "tailscale-setup",
@@ -41335,6 +41430,10 @@
   {
    "part": "g-servers",
    "note": "AgentAccountScreen is only reachable from the servers list overflow menu (grep found no other constructor call in lib/)."
+  },
+  {
+   "part": "g-servers",
+   "note": "UX phase 3b (2026-09-19): servers-welcome reduced to one question and three choices; agent-choice added; profile-editor gained the first-run connect screen (command, Show the commands, Not on the same network?, automatic test)."
   },
   {
    "part": "h-termux",

@@ -23,6 +23,7 @@ const codexServerCapabilities = ServerCapabilities(
   sessionFork: false,
   sessionCompact: false,
   persistentPermissionGrants: false,
+  savedPermissionList: false,
   messageCompletionEndsRun: false,
   sessionRevert: false,
   sessionImportExport: false,

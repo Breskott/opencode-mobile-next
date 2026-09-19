@@ -400,6 +400,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       title: l10n.e7SettingsUi74,
       keywords: l10n.settingsHubSearchPermissionsAliases,
       pages: const ['saved-permissions'],
+      gate: (scope) => scope.controller.capabilities.savedPermissionList,
       open: _screen(
         (scope) => SavedPermissionsScreen(controller: scope.controller),
       ),

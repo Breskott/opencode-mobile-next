@@ -31,7 +31,8 @@ extension _ChatNudges on _ChatScreenState {
       _conn.permissionsForSession(widget.sessionID).isNotEmpty ||
       _conn.questionForSession(widget.sessionID) != null ||
       _conn.formForSession(widget.sessionID) != null ||
-      _retryState != null;
+      _retryState != null ||
+      FirstReplyNotifyCard.pendingFor(_conn);
 
   ConversationNudgeFacts _nudgeFacts() {
     final busy = _conn.busySessions.contains(widget.sessionID);

@@ -17486,5 +17486,97 @@
   "nudgePin": "Pin conversations you return to from their menu; they stay at the top of Work.",
   "@nudgePin": {"description": "One-time tip at the top of the Work tab once a second project has been used."},
   "nudgeDismiss": "Hide tip",
-  "@nudgeDismiss": {"description": "Tooltip of the close button on a one-time tip card."}
+  "@nudgeDismiss": {"description": "Tooltip of the close button on a one-time tip card."},
+  "firstRunWhereQuestion": "Where does your coding agent run?",
+  "@firstRunWhereQuestion": {
+    "description": "First-run welcome: the one question asked before any server exists."
+  },
+  "firstRunOnComputer": "On my computer",
+  "@firstRunOnComputer": {
+    "description": "First-run welcome choice and the title of the agent question screen."
+  },
+  "firstRunOnComputerDetail": "Connect to an agent that runs there.",
+  "@firstRunOnComputerDetail": {
+    "description": "First-run welcome: one line under 'On my computer'."
+  },
+  "firstRunOnPhoneDetail": "Set one up here. No computer needed.",
+  "@firstRunOnPhoneDetail": {
+    "description": "First-run welcome: one line under 'On this phone'."
+  },
+  "firstRunJustShowMe": "Just show me",
+  "@firstRunJustShowMe": {
+    "description": "First-run welcome choice that opens the simulated demo."
+  },
+  "firstRunWhichAgent": "Which agent?",
+  "@firstRunWhichAgent": {
+    "description": "First run, computer path: the question above the three agent choices."
+  },
+  "firstRunAgentOpenCode": "OpenCode",
+  "@firstRunAgentOpenCode": {
+    "description": "Agent choice title; a product name, not translated."
+  },
+  "firstRunAgentClaudeOrPi": "Claude Code or Pi",
+  "@firstRunAgentClaudeOrPi": {
+    "description": "Agent choice title for the Paseo backend; product names are not translated."
+  },
+  "firstRunAgentClaudeOrPiDetail": "Through the Paseo daemon. Experimental.",
+  "@firstRunAgentClaudeOrPiDetail": {
+    "description": "Agent choice: one line under 'Claude Code or Pi'."
+  },
+  "firstRunAgentCodex": "Codex",
+  "@firstRunAgentCodex": {
+    "description": "Agent choice title; a product name, not translated."
+  },
+  "firstRunAgentCodexDetail": "Through Codex app-server. Experimental.",
+  "@firstRunAgentCodexDetail": {
+    "description": "Agent choice: one line under 'Codex'."
+  },
+  "firstRunRunOnComputer": "On your computer, run:",
+  "@firstRunRunOnComputer": {
+    "description": "Connect screen on the first-run computer path: caption above the one command to run."
+  },
+  "firstRunPairingNextScan": "Then paste or scan the code it prints.",
+  "@firstRunPairingNextScan": {
+    "description": "Connect screen, OpenCode: what to do after running the command, where a camera exists."
+  },
+  "firstRunPairingNextPaste": "Then paste the code it prints.",
+  "@firstRunPairingNextPaste": {
+    "description": "Connect screen, OpenCode: what to do after running the command, where there is no camera path."
+  },
+  "firstRunNotSameNetwork": "Not on the same network?",
+  "@firstRunNotSameNetwork": {
+    "description": "Connect screen: plain link under the address field that opens Tailscale setup."
+  },
+  "firstRunShowCommands": "Show the commands",
+  "@firstRunShowCommands": {
+    "description": "Connect screen: disclosure holding the other commands the setup guide lists under Advanced."
+  },
+  "firstRunCommandsPaseoNetwork": "To reach it from this phone over your private network, listen on that address and set a password:",
+  "@firstRunCommandsPaseoNetwork": {
+    "description": "Connect screen, Paseo: caption above the private-network start command."
+  },
+  "firstRunCommandsCodexToken": "Create the connection token before you start it:",
+  "@firstRunCommandsCodexToken": {
+    "description": "Connect screen, Codex: caption above the token creation commands."
+  },
+  "firstRunCommandsCodexUsb": "A phone on a USB cable reaches it with:",
+  "@firstRunCommandsCodexUsb": {
+    "description": "Connect screen, Codex: caption above the adb reverse command."
+  },
+  "firstRunNotifyTitle": "Get told when it's done?",
+  "@firstRunNotifyTitle": {
+    "description": "Conversation, first run: title of the one card shown above the composer after the first reply completes."
+  },
+  "firstRunNotifyBody": "Leave the app while the agent works. You get a notification when it finishes or needs you. Android shows a small ongoing notification while it stays connected.",
+  "@firstRunNotifyBody": {
+    "description": "Conversation, first run: what accepting the notification card turns on, including its visible cost."
+  },
+  "firstRunNotifyAccept": "Notify me",
+  "@firstRunNotifyAccept": {
+    "description": "Conversation, first run: accepts the notification card; asks Android for notification permission and keeps the connection alive in the background."
+  },
+  "firstRunNotifyDecline": "Not now",
+  "@firstRunNotifyDecline": {
+    "description": "Conversation, first run: dismisses the notification card for good; Settings, Notifications stays the place to turn it on."
+  }
 }

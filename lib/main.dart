@@ -1280,6 +1280,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                     discardIfUntouched:
                         arguments is ChatRouteArguments &&
                         arguments.discardIfUntouched,
+                    focusComposer:
+                        arguments is ChatRouteArguments &&
+                        arguments.focusComposer,
                   ),
                 );
               }

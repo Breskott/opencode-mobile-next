@@ -21,6 +21,8 @@ import 'package:opencode_mobile/ui/widgets/file_preview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xterm/xterm.dart';
 
+import 'support/first_run_path.dart';
+
 class _TestApi extends OpenCodeApi {
   _TestApi({this.files, this.findFiles, this.contents = const {}})
     : super(baseUrl: 'http://localhost');
@@ -1644,10 +1646,10 @@ void main() {
         child: const MaterialApp(home: ServersScreen()),
       ),
     );
-    await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
-    await tester.pumpAndSettle();
+    await openFirstRunConnect(tester);
 
-    expect(find.text('Add server'), findsOneWidget);
+    // The connect screen is titled with the agent the person chose.
+    expect(find.widgetWithText(AppBar, 'OpenCode'), findsOneWidget);
     expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.text('Server URL'), findsOneWidget);

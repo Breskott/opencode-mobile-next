@@ -837,6 +837,11 @@ class ServerCapabilities {
   final bool sessionCompact;
   final bool persistentPermissionGrants;
 
+  /// Whether standing grants can be listed and revoked from the app. A
+  /// runtime can honour "always allow" for a conversation without keeping a
+  /// list the app can read back (Paseo applies the rule inside the agent).
+  final bool savedPermissionList;
+
   /// Whether a completed assistant message ends the current run.
   /// Item-based backends report run completion separately.
   final bool messageCompletionEndsRun;
@@ -923,6 +928,7 @@ class ServerCapabilities {
     this.sessionFork = true,
     this.sessionCompact = true,
     this.persistentPermissionGrants = true,
+    this.savedPermissionList = true,
     this.messageCompletionEndsRun = true,
     this.sessionRevert = true,
     this.sessionImportExport = true,

@@ -12,6 +12,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/first_run.dart';
 import 'package:opencode_mobile/state/nudges.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
@@ -306,6 +307,33 @@ void main() {
   });
 
   group('review what changed', () {
+    testWidgets(
+      'tips wait while first run still owes its notification question',
+      (tester) async {
+        final controller = await _controller(_Api(transcript: _editedRun));
+        addTearDown(controller.dispose);
+        await controller.store.prefs.setString(
+          FirstRun.notifyAskKey,
+          'pending',
+        );
+        await _pumpChat(tester, controller);
+        await tester.pumpAndSettle();
+        controller.handleEventForTesting(_status('busy'));
+        await _frames(tester);
+        controller.handleEventForTesting(_status('idle'));
+        await tester.pumpAndSettle();
+        // One question at a time: the tip is neither shown nor used up.
+        expect(_nudge(NudgeId.reviewChanges), findsNothing);
+
+        await FirstRun(controller.store.prefs).answerNotifyAsk();
+        controller.handleEventForTesting(_status('busy'));
+        await _frames(tester);
+        controller.handleEventForTesting(_status('idle'));
+        await tester.pumpAndSettle();
+        expect(_nudge(NudgeId.reviewChanges), findsOneWidget);
+      },
+    );
+
     testWidgets('a finished run that edited files opens the review', (
       tester,
     ) async {

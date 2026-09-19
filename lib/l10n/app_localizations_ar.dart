@@ -16711,4 +16711,76 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get nudgeDismiss => 'إخفاء التلميح';
+
+  @override
+  String get firstRunWhereQuestion => 'أين يعمل وكيل البرمجة لديك؟';
+
+  @override
+  String get firstRunOnComputer => 'على حاسوبي';
+
+  @override
+  String get firstRunOnComputerDetail => 'اتصل بوكيل يعمل هناك.';
+
+  @override
+  String get firstRunOnPhoneDetail => 'جهّز وكيلًا هنا. لا تحتاج إلى حاسوب.';
+
+  @override
+  String get firstRunJustShowMe => 'أرني فقط';
+
+  @override
+  String get firstRunWhichAgent => 'أي وكيل؟';
+
+  @override
+  String get firstRunAgentOpenCode => 'OpenCode';
+
+  @override
+  String get firstRunAgentClaudeOrPi => 'Claude Code أو Pi';
+
+  @override
+  String get firstRunAgentClaudeOrPiDetail => 'عبر خدمة Paseo. تجريبي.';
+
+  @override
+  String get firstRunAgentCodex => 'Codex';
+
+  @override
+  String get firstRunAgentCodexDetail => 'عبر Codex app-server. تجريبي.';
+
+  @override
+  String get firstRunRunOnComputer => 'على حاسوبك، شغّل:';
+
+  @override
+  String get firstRunPairingNextScan =>
+      'ثم الصق الرمز الذي يعرضه أو امسحه بالكاميرا.';
+
+  @override
+  String get firstRunPairingNextPaste => 'ثم الصق الرمز الذي يعرضه.';
+
+  @override
+  String get firstRunNotSameNetwork => 'لست على الشبكة نفسها؟';
+
+  @override
+  String get firstRunShowCommands => 'عرض الأوامر';
+
+  @override
+  String get firstRunCommandsPaseoNetwork =>
+      'للوصول إليه من هذا الهاتف عبر شبكتك الخاصة، استمع على ذلك العنوان وعيّن كلمة مرور:';
+
+  @override
+  String get firstRunCommandsCodexToken => 'أنشئ رمز الاتصال قبل تشغيله:';
+
+  @override
+  String get firstRunCommandsCodexUsb => 'يصل إليه هاتف موصول بكابل USB عبر:';
+
+  @override
+  String get firstRunNotifyTitle => 'هل تريد إشعارًا عند الانتهاء؟';
+
+  @override
+  String get firstRunNotifyBody =>
+      'غادر التطبيق بينما يعمل الوكيل. يصلك إشعار عندما ينتهي أو يحتاج إليك. يعرض Android إشعارًا صغيرًا دائمًا ما دام الاتصال قائمًا.';
+
+  @override
+  String get firstRunNotifyAccept => 'أشعِرني';
+
+  @override
+  String get firstRunNotifyDecline => 'ليس الآن';
 }

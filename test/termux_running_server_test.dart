@@ -466,6 +466,43 @@ void main() {
     },
   );
 
+  testWidgets('a running phone server leads the first-run question', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+    final connection = _Connection(store);
+    addTearDown(connection.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bootstrapProvider.overrideWithValue(AppBootstrap(store)),
+          connProvider.overrideWithValue(connection),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const ServersScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final card = find.byKey(const ValueKey('termux-running-server'));
+    expect(card, findsOneWidget);
+    // A live server the app found outranks every generic choice, including
+    // the question itself.
+    final cardBottom = tester.getRect(card).bottom;
+    expect(
+      tester.getRect(find.byKey(const ValueKey('welcome-question'))).top,
+      greaterThanOrEqualTo(cardBottom),
+    );
+    expect(
+      tester.getRect(find.byKey(const ValueKey('welcome-choice-computer'))).top,
+      greaterThan(cardBottom),
+    );
+  });
+
   testWidgets(
     'welcome running entry opens password editor with authored local URL',
     (tester) async {
