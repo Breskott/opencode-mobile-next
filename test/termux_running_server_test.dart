@@ -14,6 +14,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/state/local_server_controls.dart';
 import 'package:opencode_mobile/state/termux_running_server.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
@@ -211,6 +212,12 @@ void main() {
     ValueChanged<ServerProfile>? onConnect,
     void Function(TermuxRunningServer, ServerProfile?)? onCredentials,
     double textScale = 1,
+    LocalServerCardActions? actions,
+    String? connectedProfileID,
+    Future<void> Function()? onDisconnect,
+    ValueChanged<ServerProfile>? onForget,
+    VoidCallback? onManage,
+    int busyConversations = 0,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -228,6 +235,12 @@ void main() {
                   revision: 0,
                   onConnect: onConnect ?? (_) {},
                   onEnterCredentials: onCredentials ?? (_, _) {},
+                  actions: actions,
+                  connectedProfileID: connectedProfileID,
+                  onDisconnect: onDisconnect,
+                  onForget: onForget,
+                  onManage: onManage,
+                  busyConversations: busyConversations,
                 ),
               ),
             ),
@@ -301,10 +314,15 @@ void main() {
     (tester) async {
       final connected = <ServerProfile>[];
       await entry(tester, onConnect: connected.add);
-      expect(find.text('Connect to running server'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('termux-running-server-connect')),
+        findsOneWidget,
+      );
       expect(connected, isEmpty);
       expect(find.textContaining('1.18.29'), findsNothing);
-      await tester.tap(find.text('Connect to running server'));
+      await tester.tap(
+        find.byKey(const ValueKey('termux-running-server-connect')),
+      );
       await tester.pumpAndSettle();
       expect(connected, [local]);
       expect(probes, hasLength(2));
@@ -327,7 +345,9 @@ void main() {
           requested = profile;
         },
       );
-      await tester.tap(find.text('Connect to running server'));
+      await tester.tap(
+        find.byKey(const ValueKey('termux-running-server-connect')),
+      );
       await tester.pumpAndSettle();
       expect(opened, 1);
       expect(requested, same(local));
@@ -340,7 +360,9 @@ void main() {
           requested = profile;
         },
       );
-      await tester.tap(find.text('Connect to running server'));
+      await tester.tap(
+        find.byKey(const ValueKey('termux-running-server-connect')),
+      );
       await tester.pumpAndSettle();
       expect(opened, 2);
       expect(requested, isNull);
@@ -353,10 +375,15 @@ void main() {
       var connected = 0;
       await entry(tester, onConnect: (_) => connected++);
       status = 'phase=stopped\n';
-      await tester.tap(find.text('Connect to running server'));
+      await tester.tap(
+        find.byKey(const ValueKey('termux-running-server-connect')),
+      );
       await tester.pumpAndSettle();
       expect(connected, 0);
-      expect(find.text('Connect to running server'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('termux-running-server-connect')),
+        findsNothing,
+      );
     },
   );
 
@@ -366,7 +393,10 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
-    expect(find.text('Connect to running server'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('termux-running-server-connect')),
+      findsNothing,
+    );
   });
 
   testWidgets(
@@ -378,7 +408,10 @@ void main() {
         find.text('Allow Termux access in phone setup to check for a server.'),
         findsOneWidget,
       );
-      expect(find.text('Connect to running server'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('termux-running-server-connect')),
+        findsNothing,
+      );
       capabilities['permissionGranted'] = true;
       health = const ServerProbeResult.failure('unreachable');
       await tester.tap(find.byTooltip('Try again'));
@@ -416,10 +449,15 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Connect to running server'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('termux-running-server-connect')),
+        findsOneWidget,
+      );
       expect(connection.attempted, isEmpty);
       final before = jsonEncode(remote.toJson());
-      await tester.tap(find.text('Connect to running server'));
+      await tester.tap(
+        find.byKey(const ValueKey('termux-running-server-connect')),
+      );
       await tester.pumpAndSettle();
       expect(connection.attempted, [local]);
       expect(store.profiles, hasLength(2));
@@ -453,7 +491,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final connect = find.text('Connect to running server');
+      final connect = find.byKey(
+        const ValueKey('termux-running-server-connect'),
+      );
       await tester.ensureVisible(connect);
       await tester.tap(connect);
       await tester.pumpAndSettle();
@@ -478,16 +518,11 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await entry(tester, textScale: scale);
       expect(tester.takeException(), isNull);
-      final connect = find.text('Connect to running server');
-      await tester.ensureVisible(connect);
-      expect(
-        tester
-            .getSize(
-              find.ancestor(of: connect, matching: find.byType(FilledButton)),
-            )
-            .height,
-        greaterThanOrEqualTo(48),
+      final connect = find.byKey(
+        const ValueKey('termux-running-server-connect'),
       );
+      await tester.ensureVisible(connect);
+      expect(tester.getSize(connect).height, greaterThanOrEqualTo(48));
       const captureDirectory = String.fromEnvironment(
         'TERMUX_ENTRY_CAPTURE_DIR',
       );
@@ -507,4 +542,221 @@ void main() {
       }
     });
   }
+
+  group('in-place controls', () {
+    const stoppedStatus = 'phase=stopped\nport=4096\nruntime=opencode1\n';
+    Finder key(String name) =>
+        find.byKey(ValueKey('termux-running-server-$name'));
+
+    test(
+      'a stopped, set-up server is observed as stopped, not absent',
+      () async {
+        status = stoppedStatus;
+        final observed = await detectTermuxRunningServer(profiles: [local]);
+        expect(observed.state, TermuxRunningServerState.stopped);
+        expect(savedProfileForTermuxServer([remote, local], observed), local);
+        // A phone that was never set up reports no runtime and stays hidden.
+        status = 'phase=stopped\n';
+        expect(
+          (await detectTermuxRunningServer()).state,
+          TermuxRunningServerState.absent,
+        );
+        // Nothing is probed for a server that is not running.
+        expect(probes, isEmpty);
+      },
+    );
+
+    testWidgets('a stopped server offers Start in place, and only Start', (
+      tester,
+    ) async {
+      status = stoppedStatus;
+      var restarts = 0;
+      await entry(
+        tester,
+        actions: LocalServerCardActions(
+          restart: () async {
+            restarts++;
+            status =
+                'phase=ready\nport=4096\nruntime=opencode1\nversion=1.18.29\npid=12\n';
+          },
+          stop: () async {},
+        ),
+      );
+      expect(find.text('Server on this phone is stopped'), findsOneWidget);
+      expect(key('connect'), findsNothing);
+      expect(key('restart'), findsNothing);
+      expect(key('stop'), findsNothing);
+      await tester.tap(key('start'));
+      await tester.pumpAndSettle();
+      // Starting loses nothing, so it does not ask first.
+      expect(restarts, 1);
+      expect(find.text('Server found on this phone'), findsOneWidget);
+      expect(key('connect'), findsOneWidget);
+    });
+
+    testWidgets('Restart and Stop ask first and do nothing when declined', (
+      tester,
+    ) async {
+      var restarts = 0;
+      var stops = 0;
+      await entry(
+        tester,
+        busyConversations: 2,
+        actions: LocalServerCardActions(
+          restart: () async => restarts++,
+          stop: () async {
+            stops++;
+            status = stoppedStatus;
+          },
+        ),
+      );
+      await tester.tap(key('restart'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('restart-local-server-sheet')),
+        findsOneWidget,
+      );
+      // The sheet says what a restart interrupts.
+      expect(find.textContaining('2'), findsWidgets);
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(restarts, 0);
+
+      await tester.tap(key('restart'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('confirm-restart-local-server')),
+      );
+      await tester.pumpAndSettle();
+      expect(restarts, 1);
+
+      await tester.tap(key('stop'));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(stops, 0);
+
+      await tester.tap(key('stop'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stop local server').last);
+      await tester.pumpAndSettle();
+      expect(stops, 1);
+      // The card stays, now offering Start: nothing was taken away.
+      expect(key('start'), findsOneWidget);
+    });
+
+    testWidgets('a failed control says so on the card and keeps its buttons', (
+      tester,
+    ) async {
+      await entry(
+        tester,
+        actions: LocalServerCardActions(
+          restart: () async =>
+              throw const LocalServerControlFailure('proot is missing'),
+          stop: () async => throw const LocalServerControlFailure(''),
+        ),
+      );
+      await tester.tap(key('restart'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('confirm-restart-local-server')),
+      );
+      await tester.pumpAndSettle();
+      // The manager's own words when it gave any.
+      expect(find.text('proot is missing'), findsOneWidget);
+      expect(key('restart'), findsOneWidget);
+
+      await tester.tap(key('stop'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stop local server').last);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('The server could not be stopped. Try again.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'the connected server stays on the card with Open and Disconnect',
+      (tester) async {
+        final opened = <ServerProfile>[];
+        var disconnects = 0;
+        final forgotten = <ServerProfile>[];
+        var managed = 0;
+        await entry(
+          tester,
+          connectedProfileID: local.id,
+          onConnect: opened.add,
+          onDisconnect: () async => disconnects++,
+          onForget: forgotten.add,
+          onManage: () => managed++,
+        );
+        expect(
+          find.text('Connected to the server on this phone'),
+          findsOneWidget,
+        );
+        expect(find.text('Open'), findsOneWidget);
+        await tester.tap(key('connect'));
+        await tester.pumpAndSettle();
+        expect(opened, [local]);
+
+        await tester.tap(key('menu'));
+        await tester.pumpAndSettle();
+        await tester.tap(key('disconnect'));
+        await tester.pumpAndSettle();
+        expect(disconnects, 1);
+
+        await tester.tap(key('menu'));
+        await tester.pumpAndSettle();
+        await tester.tap(key('forget'));
+        await tester.pumpAndSettle();
+        expect(forgotten, [local]);
+
+        await tester.tap(key('menu'));
+        await tester.pumpAndSettle();
+        await tester.tap(key('manage'));
+        await tester.pumpAndSettle();
+        expect(managed, 1);
+      },
+    );
+
+    testWidgets(
+      'Disconnect needs a connection and Forget needs a saved server',
+      (tester) async {
+        await entry(
+          tester,
+          profiles: [remote],
+          onDisconnect: () async {},
+          onForget: (_) {},
+        );
+        await tester.tap(key('menu'));
+        await tester.pumpAndSettle();
+        expect(key('disconnect'), findsNothing);
+        expect(key('forget'), findsNothing);
+        expect(key('recheck'), findsOneWidget);
+      },
+    );
+
+    for (final scale in [1.0, 2.5]) {
+      testWidgets('all controls fit a 320 dp phone at text scale $scale', (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(const Size(320, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await entry(
+          tester,
+          textScale: scale,
+          actions: LocalServerCardActions(
+            restart: () async {},
+            stop: () async {},
+          ),
+        );
+        expect(tester.takeException(), isNull);
+        for (final name in ['connect', 'restart', 'stop', 'menu']) {
+          await tester.ensureVisible(key(name));
+          expect(tester.getSize(key(name)).height, greaterThanOrEqualTo(48));
+        }
+      });
+    }
+  });
 }

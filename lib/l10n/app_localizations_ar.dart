@@ -16041,6 +16041,53 @@ class AppLocalizationsAr extends AppLocalizations {
   String get calmCodeOptions => 'خيارات الشفرة';
 
   @override
+  String get phoneServerConnect => 'اتصال';
+
+  @override
+  String get phoneServerOpen => 'فتح';
+
+  @override
+  String get phoneServerStart => 'تشغيل';
+
+  @override
+  String get phoneServerStop => 'إيقاف';
+
+  @override
+  String get phoneServerConnected => 'متصل بالخادم على هذا الهاتف';
+
+  @override
+  String get phoneServerStopped => 'الخادم على هذا الهاتف متوقف';
+
+  @override
+  String get phoneServerStarting => 'جارٍ تشغيل الخادم على هذا الهاتف…';
+
+  @override
+  String get phoneServerRestarting => 'جارٍ إعادة تشغيل الخادم على هذا الهاتف…';
+
+  @override
+  String get phoneServerStopping => 'جارٍ إيقاف الخادم على هذا الهاتف…';
+
+  @override
+  String get phoneServerMore => 'إجراءات أخرى للخادم';
+
+  @override
+  String get phoneServerManage => 'إدارة الإعداد';
+
+  @override
+  String get phoneServerForget => 'نسيان بيانات الدخول المحفوظة';
+
+  @override
+  String get phoneServerStartFailed =>
+      'لم يبدأ تشغيل الخادم. افتح «إدارة الإعداد» لمعرفة السبب.';
+
+  @override
+  String get phoneServerRestartFailed =>
+      'لم تتم إعادة تشغيل الخادم. افتح «إدارة الإعداد» لمعرفة السبب.';
+
+  @override
+  String get phoneServerStopFailed => 'تعذّر إيقاف الخادم. أعد المحاولة.';
+
+  @override
   String get termuxRunningDetected => 'تم العثور على خادم على هذا الهاتف';
 
   @override
