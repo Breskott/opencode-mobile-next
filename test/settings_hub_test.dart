@@ -210,6 +210,8 @@ void main() {
       _en.usageSectionRemaining: ['settings-category-usage'],
       _en.settingsHubPrivacyRow: ['settings-category-privacy'],
       _en.onboardingSetupGuide: ['settings-setup-guide'],
+      _en.capabilityScreenTitle: ['settings-server-capabilities'],
+      'not available': ['settings-server-capabilities'],
       _en.e7LibraryReportABug: ['library-report-bug'],
       _en.e7SettingsUi88: ['app-diagnostics-entry'],
       _en.e7SettingsUi92: ['settings-privacy-data-use'],
@@ -389,12 +391,10 @@ void main() {
           _row('default-shell-settings-entry'),
           capabilities.shellSettings ? findsOneWidget : findsNothing,
         );
-        // The one deliberate exception (port §7 row 22): disabled, with its
-        // reason, instead of absent.
-        expect(
-          _row('gated-shell-settings'),
-          capabilities.shellSettings ? findsNothing : findsOneWidget,
-        );
+        // No exception any more: the shell row is absent, not disabled, and
+        // Help → "Available on this server" says why (rule 7).
+        expect(_row('gated-shell-settings'), findsNothing);
+        expect(_row('settings-server-capabilities'), findsOneWidget);
         expect(
           _row('settings-accounts'),
           capabilities.agentAccount ? findsOneWidget : findsNothing,

@@ -26127,6 +26127,438 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tools the agent can call with this model appear here. This model has none.'**
   String get emptyTeachToolsMessage;
+
+  /// Settings > Help row and screen title: what the connected server supports.
+  ///
+  /// In en, this message translates to:
+  /// **'Available on this server'**
+  String get capabilityScreenTitle;
+
+  /// No description provided for @capabilityScreenSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What this server can and cannot do'**
+  String get capabilityScreenSubtitle;
+
+  /// No description provided for @capabilityScreenAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'available supported not available missing feature hidden why can\'t capabilities server support shell'**
+  String get capabilityScreenAliases;
+
+  /// No description provided for @capabilityScreenIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'{server} decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out.'**
+  String capabilityScreenIntro(String server);
+
+  /// No description provided for @capabilityGroupAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available here'**
+  String get capabilityGroupAvailable;
+
+  /// No description provided for @capabilityGroupUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available on this server'**
+  String get capabilityGroupUnavailable;
+
+  /// No description provided for @capabilityGroupDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available on this device'**
+  String get capabilityGroupDevice;
+
+  /// No description provided for @capabilityAllAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This server supports everything the app offers.'**
+  String get capabilityAllAvailable;
+
+  /// No description provided for @capabilityFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get capabilityFiles;
+
+  /// No description provided for @capabilityFilesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse, search and preview the project\'s files'**
+  String get capabilityFilesDetail;
+
+  /// No description provided for @capabilityChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes'**
+  String get capabilityChanges;
+
+  /// No description provided for @capabilityChangesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Review what the agent edited'**
+  String get capabilityChangesDetail;
+
+  /// No description provided for @capabilityTerminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal'**
+  String get capabilityTerminal;
+
+  /// No description provided for @capabilityTerminalDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Run commands in the project'**
+  String get capabilityTerminalDetail;
+
+  /// No description provided for @capabilityShell.
+  ///
+  /// In en, this message translates to:
+  /// **'Default shell'**
+  String get capabilityShell;
+
+  /// No description provided for @capabilityShellDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the shell that commands and terminals use'**
+  String get capabilityShellDetail;
+
+  /// No description provided for @capabilityAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get capabilityAttachments;
+
+  /// No description provided for @capabilityAttachmentsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Send files and photos with a prompt'**
+  String get capabilityAttachmentsDetail;
+
+  /// No description provided for @capabilitySubagents.
+  ///
+  /// In en, this message translates to:
+  /// **'Delegate to a subagent'**
+  String get capabilitySubagents;
+
+  /// No description provided for @capabilitySubagentsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Mention an agent with @ in a prompt'**
+  String get capabilitySubagentsDetail;
+
+  /// No description provided for @capabilityCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get capabilityCompact;
+
+  /// No description provided for @capabilityCompactDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize a long conversation to free up context'**
+  String get capabilityCompactDetail;
+
+  /// No description provided for @capabilityShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get capabilityShare;
+
+  /// No description provided for @capabilityShareDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish a link to a conversation'**
+  String get capabilityShareDetail;
+
+  /// No description provided for @capabilityFork.
+  ///
+  /// In en, this message translates to:
+  /// **'Fork'**
+  String get capabilityFork;
+
+  /// No description provided for @capabilityForkDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch a conversation from an earlier message'**
+  String get capabilityForkDetail;
+
+  /// No description provided for @capabilityRevert.
+  ///
+  /// In en, this message translates to:
+  /// **'Revert'**
+  String get capabilityRevert;
+
+  /// No description provided for @capabilityRevertDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo a prompt and the edits it made'**
+  String get capabilityRevertDetail;
+
+  /// No description provided for @capabilityArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get capabilityArchive;
+
+  /// No description provided for @capabilityArchiveDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Put finished conversations away without deleting them'**
+  String get capabilityArchiveDetail;
+
+  /// No description provided for @capabilityTodos.
+  ///
+  /// In en, this message translates to:
+  /// **'Todos'**
+  String get capabilityTodos;
+
+  /// No description provided for @capabilityTodosDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'See the agent\'s task list for a conversation'**
+  String get capabilityTodosDetail;
+
+  /// No description provided for @capabilityNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Note for the agent'**
+  String get capabilityNotes;
+
+  /// No description provided for @capabilityNotesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep standing instructions with a conversation'**
+  String get capabilityNotesDetail;
+
+  /// No description provided for @capabilityImportExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import and export'**
+  String get capabilityImportExport;
+
+  /// No description provided for @capabilityImportExportDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Move a conversation between servers as a file'**
+  String get capabilityImportExportDetail;
+
+  /// No description provided for @capabilitySearchAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All conversations'**
+  String get capabilitySearchAll;
+
+  /// No description provided for @capabilitySearchAllDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Search conversations across every project'**
+  String get capabilitySearchAllDetail;
+
+  /// No description provided for @capabilityAlwaysAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Always allowed actions'**
+  String get capabilityAlwaysAllow;
+
+  /// No description provided for @capabilityAlwaysAllowDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember an approval so it is not asked again'**
+  String get capabilityAlwaysAllowDetail;
+
+  /// No description provided for @capabilityModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Models and providers'**
+  String get capabilityModels;
+
+  /// No description provided for @capabilityModelsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse models and sign in to providers from the app'**
+  String get capabilityModelsDetail;
+
+  /// No description provided for @capabilitySkills.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills and commands'**
+  String get capabilitySkills;
+
+  /// No description provided for @capabilitySkillsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'List the server\'s skills, commands and references'**
+  String get capabilitySkillsDetail;
+
+  /// No description provided for @capabilityMcp.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP'**
+  String get capabilityMcp;
+
+  /// No description provided for @capabilityMcpDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'See and connect MCP servers'**
+  String get capabilityMcpDetail;
+
+  /// No description provided for @capabilityPlugins.
+  ///
+  /// In en, this message translates to:
+  /// **'Plugins'**
+  String get capabilityPlugins;
+
+  /// No description provided for @capabilityPluginsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'See the plugins installed on the server'**
+  String get capabilityPluginsDetail;
+
+  /// No description provided for @capabilityCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud environments'**
+  String get capabilityCloud;
+
+  /// No description provided for @capabilityCloudDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a project in a managed environment'**
+  String get capabilityCloudDetail;
+
+  /// No description provided for @capabilityProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get capabilityProjects;
+
+  /// No description provided for @capabilityProjectsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch projects and check a project\'s health'**
+  String get capabilityProjectsDetail;
+
+  /// No description provided for @capabilityWorktrees.
+  ///
+  /// In en, this message translates to:
+  /// **'Worktrees'**
+  String get capabilityWorktrees;
+
+  /// No description provided for @capabilityWorktreesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Give a task its own isolated branch'**
+  String get capabilityWorktreesDetail;
+
+  /// No description provided for @capabilityUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get capabilityUsage;
+
+  /// No description provided for @capabilityUsageDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'See what conversations have cost'**
+  String get capabilityUsageDetail;
+
+  /// No description provided for @capabilityOfflineQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Send later'**
+  String get capabilityOfflineQueue;
+
+  /// No description provided for @capabilityOfflineQueueDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue a prompt while offline and send it on reconnect'**
+  String get capabilityOfflineQueueDetail;
+
+  /// No description provided for @capabilityContinueOnComputer.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue on computer'**
+  String get capabilityContinueOnComputer;
+
+  /// No description provided for @capabilityContinueOnComputerDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a command that reopens the conversation at your desk'**
+  String get capabilityContinueOnComputerDetail;
+
+  /// No description provided for @capabilityServerUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Server updates'**
+  String get capabilityServerUpdates;
+
+  /// No description provided for @capabilityServerUpdatesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the server from the app'**
+  String get capabilityServerUpdatesDetail;
+
+  /// No description provided for @capabilityBackgroundNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications in the background'**
+  String get capabilityBackgroundNotifications;
+
+  /// No description provided for @capabilityBackgroundNotificationsDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Be told when work finishes or needs you while the app is closed'**
+  String get capabilityBackgroundNotificationsDetail;
+
+  /// No description provided for @capabilityOnThisPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'On this phone'**
+  String get capabilityOnThisPhone;
+
+  /// No description provided for @capabilityOnThisPhoneDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Run the agent\'s server on this device'**
+  String get capabilityOnThisPhoneDetail;
+
+  /// No description provided for @capabilityVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get capabilityVoice;
+
+  /// No description provided for @capabilityVoiceDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictate prompts with on-device speech models'**
+  String get capabilityVoiceDetail;
+
+  /// Settings > Help row that resets the one-time nudges.
+  ///
+  /// In en, this message translates to:
+  /// **'Show tips again'**
+  String get discoverShowTipsAgain;
+
+  /// No description provided for @discoverShowTipsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time tips will appear again at their moment'**
+  String get discoverShowTipsSubtitle;
+
+  /// No description provided for @discoverShowTipsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'tips hints nudges help reset show again tutorial'**
+  String get discoverShowTipsAliases;
+
+  /// No description provided for @discoverShowTipsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Tips will show again.'**
+  String get discoverShowTipsDone;
 }
 
 class _AppLocalizationsDelegate

@@ -16458,4 +16458,232 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get emptyTeachToolsMessage =>
       'تظهر هنا الأدوات التي يستطيع الوكيل استدعاءها مع هذا النموذج. لا أدوات لهذا النموذج.';
+
+  @override
+  String get capabilityScreenTitle => 'المتاح على هذا الخادم';
+
+  @override
+  String get capabilityScreenSubtitle => 'ما يستطيعه هذا الخادم وما لا يستطيعه';
+
+  @override
+  String get capabilityScreenAliases =>
+      'available supported missing feature capabilities المتاح مدعوم غير متاح ميزة مفقودة مخفية لماذا إمكانات الخادم';
+
+  @override
+  String capabilityScreenIntro(String server) {
+    return 'يحدد $server ما يظهر في هذا التطبيق. ما لا يستطيعه يُحذف من القوائم وعلامات التبويب بدل عرضه معطلا.';
+  }
+
+  @override
+  String get capabilityGroupAvailable => 'متاح هنا';
+
+  @override
+  String get capabilityGroupUnavailable => 'غير متاح على هذا الخادم';
+
+  @override
+  String get capabilityGroupDevice => 'غير متاح على هذا الجهاز';
+
+  @override
+  String get capabilityAllAvailable => 'يدعم هذا الخادم كل ما يقدمه التطبيق.';
+
+  @override
+  String get capabilityFiles => 'الملفات';
+
+  @override
+  String get capabilityFilesDetail => 'تصفح ملفات المشروع وابحث فيها وعاينها';
+
+  @override
+  String get capabilityChanges => 'التغييرات';
+
+  @override
+  String get capabilityChangesDetail => 'راجع ما عدّله الوكيل';
+
+  @override
+  String get capabilityTerminal => 'الطرفية';
+
+  @override
+  String get capabilityTerminalDetail => 'شغّل أوامر داخل المشروع';
+
+  @override
+  String get capabilityShell => 'الصدفة الافتراضية';
+
+  @override
+  String get capabilityShellDetail =>
+      'اختر الصدفة التي تستخدمها الأوامر والطرفيات';
+
+  @override
+  String get capabilityAttachments => 'المرفقات';
+
+  @override
+  String get capabilityAttachmentsDetail => 'أرسل ملفات وصورا مع الطلب';
+
+  @override
+  String get capabilitySubagents => 'التفويض إلى وكيل فرعي';
+
+  @override
+  String get capabilitySubagentsDetail => 'اذكر وكيلا بعلامة @ في الطلب';
+
+  @override
+  String get capabilityCompact => 'الضغط';
+
+  @override
+  String get capabilityCompactDetail => 'لخّص محادثة طويلة لتحرير السياق';
+
+  @override
+  String get capabilityShare => 'المشاركة';
+
+  @override
+  String get capabilityShareDetail => 'انشر رابطا لمحادثة';
+
+  @override
+  String get capabilityFork => 'التفريع';
+
+  @override
+  String get capabilityForkDetail => 'فرّع محادثة من رسالة سابقة';
+
+  @override
+  String get capabilityRevert => 'التراجع';
+
+  @override
+  String get capabilityRevertDetail => 'تراجع عن طلب وعن التعديلات التي أجراها';
+
+  @override
+  String get capabilityArchive => 'الأرشفة';
+
+  @override
+  String get capabilityArchiveDetail => 'ضع المحادثات المنتهية جانبا دون حذفها';
+
+  @override
+  String get capabilityTodos => 'المهام';
+
+  @override
+  String get capabilityTodosDetail => 'اطلع على قائمة مهام الوكيل للمحادثة';
+
+  @override
+  String get capabilityNotes => 'ملاحظة للوكيل';
+
+  @override
+  String get capabilityNotesDetail => 'احتفظ بتعليمات دائمة مع المحادثة';
+
+  @override
+  String get capabilityImportExport => 'الاستيراد والتصدير';
+
+  @override
+  String get capabilityImportExportDetail => 'انقل محادثة بين الخوادم في ملف';
+
+  @override
+  String get capabilitySearchAll => 'كل المحادثات';
+
+  @override
+  String get capabilitySearchAllDetail => 'ابحث في المحادثات عبر كل المشاريع';
+
+  @override
+  String get capabilityAlwaysAllow => 'الإجراءات المسموح بها دائما';
+
+  @override
+  String get capabilityAlwaysAllowDetail =>
+      'تذكّر موافقة حتى لا يُسأل عنها مجددا';
+
+  @override
+  String get capabilityModels => 'النماذج والمزودون';
+
+  @override
+  String get capabilityModelsDetail =>
+      'تصفح النماذج وسجّل الدخول إلى المزودين من التطبيق';
+
+  @override
+  String get capabilitySkills => 'المهارات والأوامر';
+
+  @override
+  String get capabilitySkillsDetail => 'اعرض مهارات الخادم وأوامره ومراجعه';
+
+  @override
+  String get capabilityMcp => 'MCP';
+
+  @override
+  String get capabilityMcpDetail => 'اعرض خوادم MCP واتصل بها';
+
+  @override
+  String get capabilityPlugins => 'الإضافات';
+
+  @override
+  String get capabilityPluginsDetail => 'اعرض الإضافات المثبتة على الخادم';
+
+  @override
+  String get capabilityCloud => 'البيئات السحابية';
+
+  @override
+  String get capabilityCloudDetail => 'شغّل مشروعا في بيئة مُدارة';
+
+  @override
+  String get capabilityProjects => 'المشاريع';
+
+  @override
+  String get capabilityProjectsDetail => 'بدّل بين المشاريع وافحص صحة المشروع';
+
+  @override
+  String get capabilityWorktrees => 'أشجار العمل';
+
+  @override
+  String get capabilityWorktreesDetail => 'امنح المهمة فرعا معزولا خاصا بها';
+
+  @override
+  String get capabilityUsage => 'الاستخدام';
+
+  @override
+  String get capabilityUsageDetail => 'اطلع على تكلفة المحادثات';
+
+  @override
+  String get capabilityOfflineQueue => 'الإرسال لاحقا';
+
+  @override
+  String get capabilityOfflineQueueDetail =>
+      'ضع الطلب في قائمة الانتظار دون اتصال وأرسله عند عودة الاتصال';
+
+  @override
+  String get capabilityContinueOnComputer => 'المتابعة على الحاسوب';
+
+  @override
+  String get capabilityContinueOnComputerDetail =>
+      'احصل على أمر يعيد فتح المحادثة على مكتبك';
+
+  @override
+  String get capabilityServerUpdates => 'تحديثات الخادم';
+
+  @override
+  String get capabilityServerUpdatesDetail => 'حدّث الخادم من التطبيق';
+
+  @override
+  String get capabilityBackgroundNotifications => 'الإشعارات في الخلفية';
+
+  @override
+  String get capabilityBackgroundNotificationsDetail =>
+      'تلقَّ إشعارا عند انتهاء العمل أو حاجته إليك والتطبيق مغلق';
+
+  @override
+  String get capabilityOnThisPhone => 'على هذا الهاتف';
+
+  @override
+  String get capabilityOnThisPhoneDetail => 'شغّل خادم الوكيل على هذا الجهاز';
+
+  @override
+  String get capabilityVoice => 'الصوت';
+
+  @override
+  String get capabilityVoiceDetail =>
+      'أملِ الطلبات بنماذج كلام تعمل على الجهاز';
+
+  @override
+  String get discoverShowTipsAgain => 'إظهار التلميحات مجددا';
+
+  @override
+  String get discoverShowTipsSubtitle =>
+      'ستظهر التلميحات التي تُعرض مرة واحدة من جديد في وقتها';
+
+  @override
+  String get discoverShowTipsAliases =>
+      'tips hints nudges تلميحات نصائح مساعدة إعادة تعيين إظهار مجددا';
+
+  @override
+  String get discoverShowTipsDone => 'ستظهر التلميحات مجددا.';
 }

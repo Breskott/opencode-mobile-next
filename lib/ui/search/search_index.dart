@@ -26,6 +26,7 @@ import '../screens/library_screen.dart';
 import '../screens/profile_monitor_screen.dart';
 import '../screens/project_hub_screen.dart';
 import '../screens/saved_permissions_screen.dart';
+import '../screens/server_capabilities_screen.dart';
 import '../screens/session_import_screen.dart';
 import '../screens/settings/plugins_screen.dart';
 import '../screens/settings_screen.dart';
@@ -379,6 +380,9 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       icon: AppIconography.terminal,
       title: l10n.e7SettingsUi35,
       keywords: l10n.settingsHubSearchShellAliases,
+      // Rule 7: absent where the server cannot change it. "Available on this
+      // server" lists it under what this server does not offer.
+      gate: (scope) => scope.capabilities.shellSettings,
       // The hub row is its own control; from anywhere else, open the hub at
       // the group that holds it.
       open: _screen(
@@ -572,6 +576,21 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       keywords: l10n.settingsHubSearchGuideAliases,
       pages: const ['guide'],
       open: _screen((_) => GuideScreen(embedded: false)),
+    ),
+    SearchEntry(
+      id: 'settings-server-capabilities',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.help,
+      icon: AppIconography.checklist,
+      title: l10n.capabilityScreenTitle,
+      keywords: l10n.capabilityScreenAliases,
+      pages: const ['server-capabilities'],
+      // It describes the connected server, so there is nothing to show
+      // without one.
+      gate: (scope) => scope.controller.isConnected,
+      open: _screen(
+        (scope) => ServerCapabilitiesScreen(controller: scope.controller),
+      ),
     ),
     SearchEntry(
       id: 'library-keyboard-shortcuts',

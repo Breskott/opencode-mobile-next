@@ -16184,4 +16184,247 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get emptyTeachToolsMessage =>
       'Tools the agent can call with this model appear here. This model has none.';
+
+  @override
+  String get capabilityScreenTitle => 'Available on this server';
+
+  @override
+  String get capabilityScreenSubtitle => 'What this server can and cannot do';
+
+  @override
+  String get capabilityScreenAliases =>
+      'available supported not available missing feature hidden why can\'t capabilities server support shell';
+
+  @override
+  String capabilityScreenIntro(String server) {
+    return '$server decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out.';
+  }
+
+  @override
+  String get capabilityGroupAvailable => 'Available here';
+
+  @override
+  String get capabilityGroupUnavailable => 'Not available on this server';
+
+  @override
+  String get capabilityGroupDevice => 'Not available on this device';
+
+  @override
+  String get capabilityAllAvailable =>
+      'This server supports everything the app offers.';
+
+  @override
+  String get capabilityFiles => 'Files';
+
+  @override
+  String get capabilityFilesDetail =>
+      'Browse, search and preview the project\'s files';
+
+  @override
+  String get capabilityChanges => 'Changes';
+
+  @override
+  String get capabilityChangesDetail => 'Review what the agent edited';
+
+  @override
+  String get capabilityTerminal => 'Terminal';
+
+  @override
+  String get capabilityTerminalDetail => 'Run commands in the project';
+
+  @override
+  String get capabilityShell => 'Default shell';
+
+  @override
+  String get capabilityShellDetail =>
+      'Choose the shell that commands and terminals use';
+
+  @override
+  String get capabilityAttachments => 'Attachments';
+
+  @override
+  String get capabilityAttachmentsDetail =>
+      'Send files and photos with a prompt';
+
+  @override
+  String get capabilitySubagents => 'Delegate to a subagent';
+
+  @override
+  String get capabilitySubagentsDetail => 'Mention an agent with @ in a prompt';
+
+  @override
+  String get capabilityCompact => 'Compact';
+
+  @override
+  String get capabilityCompactDetail =>
+      'Summarize a long conversation to free up context';
+
+  @override
+  String get capabilityShare => 'Share';
+
+  @override
+  String get capabilityShareDetail => 'Publish a link to a conversation';
+
+  @override
+  String get capabilityFork => 'Fork';
+
+  @override
+  String get capabilityForkDetail =>
+      'Branch a conversation from an earlier message';
+
+  @override
+  String get capabilityRevert => 'Revert';
+
+  @override
+  String get capabilityRevertDetail => 'Undo a prompt and the edits it made';
+
+  @override
+  String get capabilityArchive => 'Archive';
+
+  @override
+  String get capabilityArchiveDetail =>
+      'Put finished conversations away without deleting them';
+
+  @override
+  String get capabilityTodos => 'Todos';
+
+  @override
+  String get capabilityTodosDetail =>
+      'See the agent\'s task list for a conversation';
+
+  @override
+  String get capabilityNotes => 'Note for the agent';
+
+  @override
+  String get capabilityNotesDetail =>
+      'Keep standing instructions with a conversation';
+
+  @override
+  String get capabilityImportExport => 'Import and export';
+
+  @override
+  String get capabilityImportExportDetail =>
+      'Move a conversation between servers as a file';
+
+  @override
+  String get capabilitySearchAll => 'All conversations';
+
+  @override
+  String get capabilitySearchAllDetail =>
+      'Search conversations across every project';
+
+  @override
+  String get capabilityAlwaysAllow => 'Always allowed actions';
+
+  @override
+  String get capabilityAlwaysAllowDetail =>
+      'Remember an approval so it is not asked again';
+
+  @override
+  String get capabilityModels => 'Models and providers';
+
+  @override
+  String get capabilityModelsDetail =>
+      'Browse models and sign in to providers from the app';
+
+  @override
+  String get capabilitySkills => 'Skills and commands';
+
+  @override
+  String get capabilitySkillsDetail =>
+      'List the server\'s skills, commands and references';
+
+  @override
+  String get capabilityMcp => 'MCP';
+
+  @override
+  String get capabilityMcpDetail => 'See and connect MCP servers';
+
+  @override
+  String get capabilityPlugins => 'Plugins';
+
+  @override
+  String get capabilityPluginsDetail =>
+      'See the plugins installed on the server';
+
+  @override
+  String get capabilityCloud => 'Cloud environments';
+
+  @override
+  String get capabilityCloudDetail => 'Run a project in a managed environment';
+
+  @override
+  String get capabilityProjects => 'Projects';
+
+  @override
+  String get capabilityProjectsDetail =>
+      'Switch projects and check a project\'s health';
+
+  @override
+  String get capabilityWorktrees => 'Worktrees';
+
+  @override
+  String get capabilityWorktreesDetail => 'Give a task its own isolated branch';
+
+  @override
+  String get capabilityUsage => 'Usage';
+
+  @override
+  String get capabilityUsageDetail => 'See what conversations have cost';
+
+  @override
+  String get capabilityOfflineQueue => 'Send later';
+
+  @override
+  String get capabilityOfflineQueueDetail =>
+      'Queue a prompt while offline and send it on reconnect';
+
+  @override
+  String get capabilityContinueOnComputer => 'Continue on computer';
+
+  @override
+  String get capabilityContinueOnComputerDetail =>
+      'Get a command that reopens the conversation at your desk';
+
+  @override
+  String get capabilityServerUpdates => 'Server updates';
+
+  @override
+  String get capabilityServerUpdatesDetail => 'Update the server from the app';
+
+  @override
+  String get capabilityBackgroundNotifications =>
+      'Notifications in the background';
+
+  @override
+  String get capabilityBackgroundNotificationsDetail =>
+      'Be told when work finishes or needs you while the app is closed';
+
+  @override
+  String get capabilityOnThisPhone => 'On this phone';
+
+  @override
+  String get capabilityOnThisPhoneDetail =>
+      'Run the agent\'s server on this device';
+
+  @override
+  String get capabilityVoice => 'Voice';
+
+  @override
+  String get capabilityVoiceDetail =>
+      'Dictate prompts with on-device speech models';
+
+  @override
+  String get discoverShowTipsAgain => 'Show tips again';
+
+  @override
+  String get discoverShowTipsSubtitle =>
+      'One-time tips will appear again at their moment';
+
+  @override
+  String get discoverShowTipsAliases =>
+      'tips hints nudges help reset show again tutorial';
+
+  @override
+  String get discoverShowTipsDone => 'Tips will show again.';
 }

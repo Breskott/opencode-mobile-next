@@ -249,7 +249,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   ) {
     final copy = _settingsCopy(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final capabilities = controller.capabilities;
     _HubRow? row(String id, {String? subtitle, WidgetBuilder? builder}) {
       final entry = entries[id];
       if (entry == null) return null;
@@ -306,25 +305,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'settings-model-and-mode',
           subtitle: _modelAndModeSummary(controller),
         ),
-        // §7 row 22 of the OpenCode 2 port keeps this one row visible but
-        // disabled with its reason, because a setting that was there
-        // yesterday and vanished reads as a bug. Everything else the server
-        // cannot serve is absent.
+        // Absent where the server cannot change it, like every other row
+        // (rule 7). This used to stay visible-but-disabled so a vanished
+        // setting would not read as a bug; Help → "Available on this server"
+        // now carries that explanation for every hidden row at once.
         row(
           'default-shell-settings-entry',
-          builder: (_) => capabilities.shellSettings
-              ? DefaultShellRow(controller: controller)
-              : ListTileTheme.merge(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                  minLeadingWidth: 32,
-                  horizontalTitleGap: 12,
-                  child: GatedRowTile(
-                    feature: 'shell-settings',
-                    title: copy.e7SettingsUi35,
-                    explainer: copy.e7SettingsUi40,
-                    leading: const _CategoryIcon(icon: AppIconography.terminal),
-                  ),
-                ),
+          builder: (_) => DefaultShellRow(controller: controller),
         ),
         row('saved-permissions-entry', subtitle: copy.e7SettingsUi75),
         row(
@@ -384,6 +371,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SettingsGroup.privacy: [row('settings-category-privacy')],
       SettingsGroup.help: [
         row('settings-setup-guide', subtitle: copy.e7SettingsUi91),
+        // The explanation for every row the connected server hides.
+        row(
+          'settings-server-capabilities',
+          subtitle: copy.capabilityScreenSubtitle,
+        ),
         row('library-keyboard-shortcuts'),
         // The bug form lives in the failure states themselves; this row is
         // the deliberate path for everything noticed outside a failure.
