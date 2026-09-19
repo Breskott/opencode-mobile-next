@@ -127,6 +127,35 @@ class _DestinationReleaseRepository extends _ReleaseRepository {
   ];
 }
 
+/// A chat whose session is already shared, reached the way a person does it:
+/// through the consent sheet.
+Future<void> _pumpSharedChat(
+  WidgetTester tester,
+  _ReleaseRepository repository,
+) async {
+  final controller = await _controller(repository: repository);
+  addTearDown(controller.dispose);
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [connProvider.overrideWithValue(controller)],
+      child: const MaterialApp(home: ChatScreen(sessionID: 'session-1')),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.byTooltip('Session menu'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Session actions'));
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(find.text('Share session'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Share session'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(FilledButton, 'Share session'));
+  await tester.pumpAndSettle();
+  expect(repository.shared, isTrue);
+  expect(repository.unshared, isFalse);
+}
+
 Future<ConnectionController> _controller({
   _ReleaseApi? api,
   ProductRepository? repository,
@@ -502,10 +531,93 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Stop sharing'), findsOneWidget);
+    // The banner's Stop sharing asks first; the link is live for other people.
     await tester.tap(find.text('Stop sharing'));
+    await tester.pumpAndSettle();
+    expect(find.text('Stop sharing this session?'), findsOneWidget);
+    expect(
+      find.textContaining('The link stops working for anyone who has it.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Keep sharing'));
+    await tester.pumpAndSettle();
+    expect(repository.unshared, isFalse);
+    expect(find.text('Stop sharing'), findsOneWidget);
+
+    await tester.tap(find.text('Stop sharing'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('confirm-stop-sharing')));
     await tester.pumpAndSettle();
     expect(repository.unshared, isTrue);
     semantics.dispose();
+  });
+
+  testWidgets('session menu Stop sharing waits for the confirm sheet', (
+    tester,
+  ) async {
+    final repository = _ReleaseRepository();
+    await _pumpSharedChat(tester, repository);
+
+    Future<void> chooseFromMenu() async {
+      await tester.tap(find.byTooltip('Session menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Session actions'));
+      await tester.pumpAndSettle();
+      // The banner behind the sheet carries the same label; the sheet row is
+      // the later one in the tree.
+      await tester.ensureVisible(find.text('Stop sharing').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stop sharing').last);
+      await tester.pumpAndSettle();
+    }
+
+    await chooseFromMenu();
+    expect(
+      find.byKey(const ValueKey('stop-sharing-confirm-sheet')),
+      findsOneWidget,
+    );
+    // Dismissing by the scrim counts as "no".
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('stop-sharing-confirm-sheet')),
+      findsNothing,
+    );
+    expect(repository.unshared, isFalse);
+
+    await chooseFromMenu();
+    await tester.tap(find.byKey(const ValueKey('confirm-stop-sharing')));
+    await tester.pumpAndSettle();
+    expect(repository.unshared, isTrue);
+  });
+
+  testWidgets('/unshare waits for the confirm sheet', (tester) async {
+    final repository = _ReleaseRepository();
+    await _pumpSharedChat(tester, repository);
+
+    Future<void> runSlash() async {
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        '/unshare',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('inline-command-unshare')));
+      await tester.pumpAndSettle();
+    }
+
+    await runSlash();
+    expect(
+      find.byKey(const ValueKey('stop-sharing-confirm-sheet')),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Keep sharing'));
+    await tester.pumpAndSettle();
+    expect(repository.unshared, isFalse);
+
+    await runSlash();
+    await tester.tap(find.byKey(const ValueKey('confirm-stop-sharing')));
+    await tester.pumpAndSettle();
+    expect(repository.unshared, isTrue);
   });
 
   testWidgets(

@@ -13,6 +13,7 @@ import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../navigation/chat_route.dart';
 import '../widgets/confirm_sheet.dart';
+import '../widgets/safety_confirms.dart';
 import '../widgets/product_states.dart';
 import '../widgets/relative_time.dart';
 import '../widgets/session_title.dart';
@@ -1104,6 +1105,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           if (mounted) _showMessage(_l10n(context).e7WorkspaceShareCopied);
           break;
         case 'unshare':
+          if (!await confirmStopSharing(context)) return;
           final unshareRepository = await _requireActionRepository();
           await unshareRepository.unshareSession(session.id);
           if (mounted) _showMessage(_l10n(context).e7WorkspaceUnshared);

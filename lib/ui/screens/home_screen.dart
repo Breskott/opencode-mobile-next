@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +14,7 @@ import '../widgets/connection_status_banner.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/pickers.dart';
 import '../widgets/retained_tab_view.dart';
+import '../widgets/safety_confirms.dart';
 import 'activity_screen.dart';
 import 'files_screen.dart';
 import 'library_screen.dart';
@@ -194,11 +197,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               onSelected: (v) {
                 if (v == 'model') showModelPicker(context);
                 if (v == 'refresh') conn.refreshSessions();
-                if (v == 'disconnect') {
-                  conn.disconnect().then((_) {
-                    navigator.pushNamedAndRemoveUntil('/servers', (_) => false);
-                  });
-                }
+                if (v == 'disconnect') unawaited(_disconnect(conn, navigator));
               },
               itemBuilder: (_) => [
                 PopupMenuItem(
@@ -275,6 +274,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             : null,
       ),
     );
+  }
+
+  /// Same confirmation as Settings > Disconnect: the overflow is the faster
+  /// route, so it must not also be the one that skips the warning.
+  Future<void> _disconnect(
+    ConnectionController conn,
+    NavigatorState navigator,
+  ) async {
+    if (!await confirmDisconnectServer(context, conn)) return;
+    await conn.disconnect();
+    if (!navigator.mounted) return;
+    navigator.pushNamedAndRemoveUntil('/servers', (_) => false);
   }
 
   /// Files first unwinds its local navigation, then destinations return home.

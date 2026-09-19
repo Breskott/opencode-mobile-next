@@ -20,6 +20,7 @@ import '../../voice/notices.dart';
 import '../widgets/appearance_picker.dart';
 import '../widgets/language_picker.dart';
 import '../widgets/confirm_sheet.dart';
+import '../widgets/safety_confirms.dart';
 import '../widgets/product_states.dart';
 import '../widgets/pickers.dart';
 import 'about_screen.dart';
@@ -112,31 +113,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() {});
   }
 
-  /// What disconnecting actually costs, counted rather than described in the
-  /// abstract: queued prompts and unsent drafts for this server stop moving
-  /// until it is connected again.
-  String _disconnectDisclosure() {
-    final controller = widget.controller;
-    final id = controller.profile?.id;
-    final queued = id == null ? 0 : controller.queuedPromptCountForProfile(id);
-    final drafts = id == null ? 0 : controller.draftCountForProfile(id);
-    return _settingsCopy(context).e7SettingsDisconnectBody(queued, drafts);
-  }
-
   Future<void> _disconnect() async {
-    final confirmed = await showConfirmSheet(
-      context,
-      title: _settingsCopy(context).e7SettingsDisconnectTitle(
-        widget.controller.profile?.name ??
-            _settingsCopy(context).e7SettingsUi16,
-      ),
-      message: _disconnectDisclosure(),
-      confirmLabel: _settingsCopy(context).e7SettingsUi8,
-      icon: AppIconography.unlink,
-      destructive: true,
-      sheetKey: const ValueKey('disconnect-confirm-sheet'),
-      confirmKey: const ValueKey('confirm-disconnect'),
-    );
+    final confirmed = await confirmDisconnectServer(context, widget.controller);
     if (!confirmed || !mounted) return;
     await widget.controller.disconnect();
     if (!mounted) return;

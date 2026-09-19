@@ -327,7 +327,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('an orphan stops in one tap and reports what remained', (
+    testWidgets('an orphan asks before stopping and reports what remained', (
       tester,
     ) async {
       await fixture.mount(tester);
@@ -338,9 +338,29 @@ void main() {
         'remaining': <Object>[],
         'refused': <Object>[],
       });
+      // "Orphan" is a heuristic, so even the one-tap row button confirms and
+      // says what is lost.
       await tester.tap(find.byKey(const Key('termux-proc-stop-200')));
-      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('termux-procs-confirm')), findsOneWidget);
+      expect(
+        find.textContaining('whatever it was still doing is lost'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Keep'));
+      await tester.pumpAndSettle();
+      expect(fixture.stops, isEmpty);
+
+      await tester.tap(find.byKey(const Key('termux-proc-stop-200')));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
       expect(find.byKey(const Key('termux-procs-confirm')), findsNothing);
+      expect(fixture.stops, isEmpty);
+
+      await tester.tap(find.byKey(const Key('termux-proc-stop-200')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('termux-procs-confirm-stop')));
       await tester.pumpAndSettle();
       expect(fixture.stops, ['200']);
       expect(find.text('Stopped 1 (1 needed a forced stop)'), findsOneWidget);

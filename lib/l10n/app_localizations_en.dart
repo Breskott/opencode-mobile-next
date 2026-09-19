@@ -15783,4 +15783,40 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get termuxStorageRescanRequired =>
       'Previous scan · Scan again before cleaning more';
+
+  @override
+  String get safetyStopSharingTitle => 'Stop sharing this session?';
+
+  @override
+  String get safetyStopSharingBody =>
+      'The link stops working for anyone who has it. The session itself is not changed.';
+
+  @override
+  String get safetyStopSharingKeep => 'Keep sharing';
+
+  @override
+  String get safetyStopLocalServerTitle => 'Stop the local server?';
+
+  @override
+  String get safetyStopLocalServerBody =>
+      'Anything the agent is running on this phone is interrupted, and this app disconnects from it. Your projects and conversations stay on the phone; start the server again to continue.';
+
+  @override
+  String get safetyStopLocalServerKeep => 'Keep running';
+
+  @override
+  String safetyMcpDisconnectTitle(String server) {
+    return 'Disconnect $server?';
+  }
+
+  @override
+  String get safetyMcpDisconnectBody =>
+      'Agents lose its tools until you connect it again, and a tool call in progress may fail. Its configuration stays saved.';
+
+  @override
+  String get safetyMcpDisconnectKeep => 'Stay connected';
+
+  @override
+  String get safetyStopOrphanBody =>
+      'Nothing is waiting on it, but whatever it was still doing is lost. It gets a polite stop, then a forced one after 5 seconds.';
 }

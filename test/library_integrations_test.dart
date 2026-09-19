@@ -99,6 +99,14 @@ class _IntegrationsRepository implements ProductRepository {
     mcpConnectCalls += 1;
   }
 
+  final mcpDisconnected = <String>[];
+
+  @override
+  Future<void> disconnectMcp(String name) async {
+    mcpDisconnected.add(name);
+    servers = [McpServerInfo(name: name, status: 'disabled')];
+  }
+
   @override
   Future<IntegrationAuthLaunch> startIntegrationOAuth(
     String id,
@@ -742,6 +750,46 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('Project handbook'), findsOneWidget);
+  });
+
+  testWidgets('MCP Disconnect waits for the confirm sheet', (tester) async {
+    final repository = _IntegrationsRepository()
+      ..servers = const [
+        McpServerInfo(name: 'remote-tools', status: 'connected'),
+      ];
+    await tester.pumpWidget(_app(await _controller(repository)));
+    await tester.pumpAndSettle();
+
+    Future<void> tapDisconnect() async {
+      await tester.ensureVisible(find.widgetWithText(TextButton, 'Disconnect'));
+      await tester.tap(find.widgetWithText(TextButton, 'Disconnect'));
+      await tester.pumpAndSettle();
+    }
+
+    await tapDisconnect();
+    expect(
+      find.byKey(const ValueKey('mcp-disconnect-confirm-sheet')),
+      findsOneWidget,
+    );
+    expect(find.text('Disconnect remote-tools?'), findsOneWidget);
+    expect(find.textContaining('Agents lose its tools'), findsOneWidget);
+    await tester.tap(find.text('Stay connected'));
+    await tester.pumpAndSettle();
+    expect(repository.mcpDisconnected, isEmpty);
+
+    await tapDisconnect();
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('mcp-disconnect-confirm-sheet')),
+      findsNothing,
+    );
+    expect(repository.mcpDisconnected, isEmpty);
+
+    await tapDisconnect();
+    await tester.tap(find.byKey(const ValueKey('confirm-mcp-disconnect')));
+    await tester.pumpAndSettle();
+    expect(repository.mcpDisconnected, ['remote-tools']);
   });
 
   testWidgets('MCP authentication shows the validated destination host', (
