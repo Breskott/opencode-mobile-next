@@ -259,7 +259,7 @@ void main() {
     expect(find.text('Project 2'), findsNWidgets(2));
     expect(find.textContaining('Project 2 ·'), findsNothing);
     // A partial inventory counts what is loaded without claiming a total.
-    expect(find.text('3 loaded sessions · 2 folders'), findsOneWidget);
+    expect(find.text('3 loaded conversations · 2 projects'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('global-sessions-load-more')));
     await tester.pumpAndSettle();
@@ -272,7 +272,7 @@ void main() {
       '/work/beta',
       'Session 2',
     ]);
-    expect(find.text('4 sessions in 2 folders'), findsOneWidget);
+    expect(find.text('4 conversations in 2 projects'), findsOneWidget);
   });
 
   testWidgets('folders with the same name are told apart by their parent', (
@@ -321,7 +321,7 @@ void main() {
     expect(find.text('Worktree'), findsOneWidget);
     expect(find.text('Main checkout'), findsNothing);
     expect(
-      find.textContaining('1 shown from 2 loaded sessions'),
+      find.textContaining('1 shown from 2 loaded conversations'),
       findsOneWidget,
     );
 
@@ -346,7 +346,7 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
     final more = find.byKey(const ValueKey('global-sessions-load-more'));
-    expect(find.text('No sessions yet'), findsNothing);
+    expect(find.text('No conversations yet'), findsNothing);
     for (var i = 0; i < 3; i++) {
       await tester.tap(more);
       await tester.pumpAndSettle();
@@ -417,7 +417,7 @@ void main() {
 
     expect(find.text('Session 1'), findsOneWidget);
     expect(find.text('Temporary refresh failure'), findsOneWidget);
-    expect(find.text('Could not refresh sessions.'), findsOneWidget);
+    expect(find.text('Could not refresh conversations.'), findsOneWidget);
 
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
@@ -589,7 +589,7 @@ void main() {
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('50 loaded sessions'), findsOneWidget);
+    expect(find.textContaining('50 loaded conversations'), findsOneWidget);
     final list = find.byKey(
       const PageStorageKey<String>('global-sessions-list'),
     );
@@ -598,7 +598,7 @@ void main() {
 
     expect(repository.calls, hasLength(2));
     expect(repository.calls.last.cursor, 'opaque/next+token=');
-    expect(find.textContaining('51 sessions'), findsOneWidget);
+    expect(find.textContaining('51 conversations'), findsOneWidget);
   });
 
   testWidgets('global project rows keep a useful label and tap semantics', (
@@ -851,7 +851,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await _continueHere(tester, 'ses_2');
-    expect(find.text('Continue this session here?'), findsOneWidget);
+    expect(find.text('Continue this conversation here?'), findsOneWidget);
     expect(repository.stealCalls, isEmpty);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Continue here'));
@@ -879,10 +879,13 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
     await tester.pumpAndSettle();
-    expect(find.text('New session'), findsOneWidget);
+    expect(find.text('New conversation'), findsOneWidget);
     expect(find.textContaining('2026-09-09T10:24'), findsNothing);
     await _continueHere(tester, 'ses_2');
-    expect(find.textContaining('“New session” will belong'), findsOneWidget);
+    expect(
+      find.textContaining('“New conversation” will belong'),
+      findsOneWidget,
+    );
     expect(find.textContaining('2026-09-09T10:24'), findsNothing);
     expect(result.session.title, rawTitle);
     expect(repository.stealCalls, isEmpty);
@@ -929,7 +932,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await _continueHere(tester, 'ses_2');
-    expect(find.text('Continue this session here?'), findsOneWidget);
+    expect(find.text('Continue this conversation here?'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

@@ -104,7 +104,7 @@ class _Harness {
         onOpenSettings: () => settingsOpens++,
         paletteCommands: (context) => [
           DesktopCommand(
-            label: 'New session',
+            label: 'New conversation',
             icon: AppIconography.add,
             onInvoke: () => newSessions++,
           ),
@@ -163,7 +163,7 @@ void main() {
         'diagnostics',
       );
       await tester.pumpAndSettle();
-      expect(find.text('New session'), findsNothing);
+      expect(find.text('New conversation'), findsNothing);
       expect(find.text('Open the diagnostics screen'), findsOneWidget);
 
       await tester.testTextInput.receiveAction(TextInputAction.done);

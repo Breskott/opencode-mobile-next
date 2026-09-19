@@ -62,7 +62,7 @@ void main() {
       ).writeAsBytesSync(await capturePng(tester, boundary, pixelRatio: 2));
       if (!variant.activity && variant.rtl) {
         await tester.scrollUntilVisible(
-          find.text('Load more sessions'),
+          find.text('Load more conversations'),
           180,
           scrollable: find.byType(Scrollable).first,
         );

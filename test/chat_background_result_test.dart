@@ -113,7 +113,7 @@ void main() {
     expect(find.text('explore · Completed'), findsOneWidget);
     expect(find.textContaining('Validation now reports'), findsOneWidget);
     expect(find.text(part.text), findsNothing);
-    await tester.tap(find.text('Open subagent session'));
+    await tester.tap(find.text('Open subagent conversation'));
     expect(opened, ['ses_child']);
     await tester.tap(find.text('Server message details'));
     await tester.pumpAndSettle();
@@ -138,7 +138,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Open subagent session'), findsNothing);
+      expect(find.text('Open subagent conversation'), findsNothing);
       expect(find.textContaining('Validation now reports'), findsOneWidget);
     }
   });
@@ -211,7 +211,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    await tester.ensureVisible(find.text('Open subagent session'));
+    await tester.ensureVisible(find.text('Open subagent conversation'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });

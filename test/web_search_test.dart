@@ -436,7 +436,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(WebSourcesScreen), findsOneWidget);
       expect(
-        find.text('Connection changed. Close and reopen Add web source.'),
+        find.text('Server changed. Close and reopen Add web source.'),
         findsOneWidget,
       );
       expect(find.byKey(const ValueKey('web-sources-confirm')), findsNothing);

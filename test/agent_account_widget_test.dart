@@ -216,7 +216,7 @@ void main() {
       connection.changed();
       await tester.pumpAndSettle();
       expect(find.text('TEST-1234'), findsNothing);
-      expect(find.textContaining('This connection changed.'), findsOneWidget);
+      expect(find.textContaining('This server changed.'), findsOneWidget);
       expect(gateway.opened.single.closed, isTrue);
       connection.changed();
       await tester.pumpAndSettle();

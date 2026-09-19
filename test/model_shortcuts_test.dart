@@ -133,7 +133,7 @@ void main() {
       'Previous recent model · Shift+F2',
       'Next favorite model',
     ]) {
-      await tester.tap(find.byTooltip('Switch model for this session'));
+      await tester.tap(find.byTooltip('Switch model for this conversation'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(label));
       await tester.pumpAndSettle();

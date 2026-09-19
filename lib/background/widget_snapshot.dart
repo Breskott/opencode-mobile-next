@@ -65,7 +65,7 @@ class WidgetSessionSnapshot {
           'id': session.id,
           'title': session.title?.trim().isNotEmpty == true
               ? session.title!.trim()
-              : 'Untitled session',
+              : 'Untitled conversation',
           'busy': busySessions.contains(session.id),
           'updatedAt': session.time?.updated ?? session.time?.created ?? 0,
         },

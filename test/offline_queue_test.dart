@@ -1704,7 +1704,7 @@ void main() {
       expect(
         find.text(
           'Its earlier send was never confirmed; it may already be in the '
-          'session.',
+          'conversation.',
         ),
         findsOneWidget,
       );

@@ -167,8 +167,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Subagent sessions'), findsOneWidget);
-      expect(find.textContaining('2 delegated sessions'), findsOneWidget);
+      expect(find.text('Subagent conversations'), findsOneWidget);
+      expect(find.textContaining('2 delegated conversations'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('session-relation-parent')),
         findsOneWidget,
@@ -282,7 +282,7 @@ void main() {
       await tester.pumpAndSettle();
       repository.detailsGate!.complete();
       await tester.pumpAndSettle();
-      expect(find.text('Subagent sessions'), findsOneWidget);
+      expect(find.text('Subagent conversations'), findsOneWidget);
       expect(
         tester
             .widget<ListTile>(
@@ -297,7 +297,7 @@ void main() {
       repository.detailsGate = Completer<void>();
       await tester.tap(find.byType(PopupMenuButton<String>).at(1));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Pin session'));
+      await tester.tap(find.text('Pin conversation'));
       await repository.detailsEntered!.future;
       selectedSession.value = 'parent';
       await tester.pumpAndSettle();

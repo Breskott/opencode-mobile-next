@@ -52,7 +52,9 @@ void main() {
     await tester.pump();
 
     expect(
-      find.text('No changed files in the session total; this run is unknown.'),
+      find.text(
+        'No changed files in the conversation total; this run is unknown.',
+      ),
       findsOneWidget,
     );
     expect(
@@ -75,7 +77,9 @@ void main() {
     expect(find.text('Changed files: unknown.'), findsOneWidget);
     expect(find.text('Pending decisions: unknown.'), findsOneWidget);
     expect(
-      find.text('No changed files in the session total; this run is unknown.'),
+      find.text(
+        'No changed files in the conversation total; this run is unknown.',
+      ),
       findsNothing,
     );
   });
@@ -100,7 +104,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Digest copied'), findsOneWidget);
-    expect(copied, contains('No changed files in the session total'));
+    expect(copied, contains('No changed files in the conversation total'));
     expect(copied, contains('this run is unknown'));
     expect(copied, contains('Tool outcomes and remaining tasks: unknown.'));
     expect(copied, isNot(contains('successful')));

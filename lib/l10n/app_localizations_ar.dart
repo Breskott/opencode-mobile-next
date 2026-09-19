@@ -53,7 +53,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get servicesUnavailable =>
-      'لا يتيح هذا الاتصال تشغيل أوامر التطوير وتتبّعها. يمكنك حفظ الأوامر ومراجعة روابط معاينتها هنا.';
+      'لا يتيح هذا الخادم تشغيل أوامر التطوير وتتبّعها. يمكنك حفظ الأوامر ومراجعة روابط معاينتها هنا.';
 
   @override
   String get servicesScopeChanged =>
@@ -178,7 +178,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get aboutSigningCertificate => 'بصمة شهادة التوقيع SHA-256';
 
   @override
-  String get modelSwitchSession => 'تغيير نموذج هذه الجلسة';
+  String get modelSwitchSession => 'تغيير نموذج هذه المحادثة';
 
   @override
   String get modelNextRecent => 'النموذج التالي من النماذج الأخيرة · F2';
@@ -218,27 +218,28 @@ class AppLocalizationsAr extends AppLocalizations {
   String get modelDefaultMode => 'الوضع الافتراضي';
 
   @override
-  String get modelSessionScopeNote => 'يسري على الرسائل التالية في هذه الجلسة.';
+  String get modelSessionScopeNote =>
+      'يسري على الرسائل التالية في هذه المحادثة.';
 
   @override
-  String get modelSelectionLoading => 'جارٍ تحميل اختيار الجلسة…';
+  String get modelSelectionLoading => 'جارٍ تحميل اختيار المحادثة…';
 
   @override
   String get modelServerDefault => 'إعداد الخادم الافتراضي';
 
   @override
-  String get modelSelectionSaving => 'جارٍ حفظ اختيار الجلسة…';
+  String get modelSelectionSaving => 'جارٍ حفظ اختيار المحادثة…';
 
   @override
   String get modelAgentSaveFailed => 'تعذّر حفظ الوكيل. حاول مجددًا.';
 
   @override
   String get modelUnavailableSelection =>
-      'نموذج الجلسة غير متاح في هذا الدليل. حدّث النماذج أو اختر نموذجًا آخر.';
+      'نموذج المحادثة غير متاح في هذا الدليل. حدّث النماذج أو اختر نموذجًا آخر.';
 
   @override
   String get modelScopeChanged =>
-      'تغيّر الاتصال. افتح قائمة اختيار النموذج مجددًا للمتابعة.';
+      'تغيّر الخادم. افتح قائمة اختيار النموذج مجددًا للمتابعة.';
 
   @override
   String get commonClearSearch => 'مسح البحث';
@@ -370,7 +371,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workContextChanged =>
-      'تغيّر الخادم أو مساحة العمل. أغلق هذا العرض وافتح المهام الجارية مجددًا.';
+      'تغيّر الخادم أو المشروع. أغلق هذا العرض وافتح المهام الجارية مجددًا.';
 
   @override
   String workCount(int count) {
@@ -490,19 +491,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get termuxRestartMessage =>
-      'سيتعذّر استخدام OpenCode لفترة قصيرة. سيحتفظ التطبيق بمساحة عملك الحالية ويعيد الاتصال تلقائيًا.';
+      'سيتعذّر استخدام OpenCode لفترة قصيرة. سيحتفظ التطبيق بمشروعك الحالي ويعيد الاتصال تلقائيًا.';
 
   @override
   String termuxRestartBusyMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'تولّد $count جلسة ردودًا. ستقاطعها إعادة التشغيل.',
-      many: 'تولّد $count جلسة ردودًا. ستقاطعها إعادة التشغيل.',
-      few: 'تولّد $count جلسات ردودًا. ستقاطعها إعادة التشغيل.',
-      two: 'تولّد جلستان ردودًا. ستقاطعهما إعادة التشغيل.',
-      one: 'تولّد جلسة واحدة ردًا. ستقاطعها إعادة التشغيل.',
-      zero: 'لا توجد جلسات تولّد ردودًا.',
+      other: 'تولّد $count محادثة ردودًا. ستقاطعها إعادة التشغيل.',
+      many: 'تولّد $count محادثة ردودًا. ستقاطعها إعادة التشغيل.',
+      few: 'تولّد $count محادثات ردودًا. ستقاطعها إعادة التشغيل.',
+      two: 'تولّد محادثتان ردودًا. ستقاطعهما إعادة التشغيل.',
+      one: 'تولّد محادثة واحدة ردًا. ستقاطعها إعادة التشغيل.',
+      zero: 'لا توجد محادثات تولّد ردودًا.',
     );
     return '$_temp0';
   }
@@ -556,7 +557,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get commandLocationChanged =>
-      'تغيّر الخادم أو مساحة العمل. أغلق هذا الحوار وافتح الأمر مجددًا.';
+      'تغيّر الخادم أو المشروع. أغلق هذا الحوار وافتح الأمر مجددًا.';
 
   @override
   String get refreshFailed => 'تعذّر التحديث';
@@ -578,20 +579,20 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get globalSessionsLoadMore => 'تحميل المزيد من الجلسات';
+  String get globalSessionsLoadMore => 'تحميل المزيد من المحادثات';
 
   @override
-  String get globalSessionsRefreshFailed => 'تعذّر تحديث الجلسات.';
+  String get globalSessionsRefreshFailed => 'تعذّر تحديث المحادثات.';
 
   @override
-  String get workspaceSearchAllSessions => 'البحث في كل الجلسات';
+  String get workspaceSearchAllSessions => 'البحث في كل المحادثات';
 
   @override
   String get workspaceProjectListUnavailable => 'قائمة المشاريع غير متاحة';
 
   @override
   String get workspaceProjectListFallback =>
-      'قد تبقى محادثاتك متاحة. ابحث في كل الجلسات للعثور على أعمالك السابقة.';
+      'قد تبقى محادثاتك متاحة. ابحث في كل المحادثات للعثور على أعمالك السابقة.';
 
   @override
   String get workspaceRetryProjects => 'إعادة المحاولة';
@@ -628,29 +629,29 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get historyServerTotalsNote =>
-      'تشمل الصفوف الموسومة «أبلغ عنها الخادم» الجلسة كاملة. أما أعداد الرسائل والتقديرات الأخرى فتشمل السجل المحمّل.';
+      'تشمل الصفوف الموسومة «أبلغ عنها الخادم» المحادثة كاملة. أما أعداد الرسائل والتقديرات الأخرى فتشمل السجل المحمّل.';
 
   @override
   String get sessionsLoadedOnly =>
-      'تُعرض الجلسات المحمّلة. حمّل المزيد لتضمين المحادثات الأقدم.';
+      'تُعرض المحادثات المحمّلة. حمّل المزيد لتضمين الأقدم منها.';
 
   @override
   String get sessionsDetailsUnavailable =>
-      'تعذّر تحميل تفاصيل الجلسة. حاول مجددًا.';
+      'تعذّر تحميل تفاصيل المحادثة. حاول مجددًا.';
 
   @override
-  String get sessionsLoadMore => 'تحميل المزيد من الجلسات';
+  String get sessionsLoadMore => 'تحميل المزيد من المحادثات';
 
   @override
-  String get sessionsReload => 'تحديث الجلسات الأخيرة';
+  String get sessionsReload => 'تحديث المحادثات الأخيرة';
 
   @override
   String get sessionsNoLoadedRecent =>
-      'لا توجد جلسات حديثة في النتائج المحمّلة';
+      'لا توجد محادثات حديثة في النتائج المحمّلة';
 
   @override
   String get sessionsNoLoadedArchived =>
-      'لا توجد جلسات مؤرشفة في النتائج المحمّلة';
+      'لا توجد محادثات مؤرشفة في النتائج المحمّلة';
 
   @override
   String sessionsLoadedCount(int count) {
@@ -680,13 +681,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get revertReviewChanged =>
-      'تغيّرت هذه الجلسة أو التراجع المبدئي فيها. راجع أحدث حالة قبل المتابعة.';
+      'تغيّرت هذه المحادثة أو التراجع المبدئي فيها. راجع أحدث حالة قبل المتابعة.';
 
   @override
   String get revertReviewLatest => 'مراجعة أحدث حالة';
 
   @override
-  String get revertBusy => 'انتظر حتى ينتهي الإجراء الحالي في الجلسة.';
+  String get revertBusy => 'انتظر حتى ينتهي الإجراء الحالي في المحادثة.';
 
   @override
   String get revertCancel => 'إلغاء';
@@ -764,7 +765,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sessionNoteDescription =>
-      'احفظ توجيهًا قصيرًا لهذه الجلسة. يسري حفظه أو حذفه في خطوة الوكيل التالية ويظهر عندها في سجل المحادثة. لا يؤدي ذلك إلى بدء التشغيل.';
+      'احفظ توجيهًا قصيرًا لهذه المحادثة. يسري حفظه أو حذفه في خطوة الوكيل التالية ويظهر عندها في سجل المحادثة. لا يؤدي ذلك إلى بدء التشغيل.';
 
   @override
   String get sessionNoteHint =>
@@ -790,10 +791,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sessionInstructionsApplied =>
-      'حُدّثت تعليمات الوكيل الخاصة بالجلسة لهذه الخطوة.';
+      'حُدّثت تعليمات الوكيل الخاصة بالمحادثة لهذه الخطوة.';
 
   @override
-  String get sessionNoteUnsupported => 'لا يدعم هذا الخادم ملاحظات الجلسة.';
+  String get sessionNoteUnsupported => 'لا يدعم هذا الخادم ملاحظات المحادثة.';
 
   @override
   String get sessionNoteAuthorization =>
@@ -801,7 +802,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sessionNoteChanged =>
-      'تغيّرت الجلسة أو تعليماتها. حدّث الملاحظة المحفوظة قبل الحفظ مجددًا. ستبقى مسودتك محفوظة.';
+      'تغيّرت المحادثة أو تعليماتها. حدّث الملاحظة المحفوظة قبل الحفظ مجددًا. ستبقى مسودتك محفوظة.';
 
   @override
   String get sessionNoteInvalid =>
@@ -844,7 +845,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get usageDescription =>
-      'النشاط الذي سجّله خادم OpenCode هذا عبر جلساتك.';
+      'النشاط الذي سجّله خادم OpenCode هذا عبر محادثاتك.';
 
   @override
   String get usageRefresh => 'تحديث الاستخدام';
@@ -887,7 +888,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get usageRefreshInterrupted =>
-      'تغيّر الاتصال أثناء تحميل الاستخدام. حدّث لإعادة المحاولة.';
+      'تغيّر الخادم أثناء تحميل الاستخدام. حدّث لإعادة المحاولة.';
 
   @override
   String get usageInvalidResponse =>
@@ -902,7 +903,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get usageLocationChanged =>
-      'تغيّر الخادم النشط أو الموقع. افتح الاستخدام مجددًا من الإعدادات.';
+      'تغيّر الخادم النشط أو المشروع. افتح الاستخدام مجددًا من الإعدادات.';
 
   @override
   String get usageTinyCost => 'أقل من \$0.000001';
@@ -911,10 +912,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get usageReportedCost => 'التكلفة المُبلّغ عنها · USD';
 
   @override
-  String get usageSessions => 'الجلسات';
+  String get usageSessions => 'المحادثات';
 
   @override
-  String get usageSubagents => 'جلسات الوكلاء الفرعيين';
+  String get usageSubagents => 'محادثات الوكلاء الفرعيين';
 
   @override
   String get usagePrompts => 'الطلبات';
@@ -1026,22 +1027,22 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get mcpRuntimeDescription =>
-      'يُضاف خادم MCP هذا إلى الموقع المحدّد وتُجرى محاولة الاتصال به الآن. ستتم إزالته عند إعادة تشغيل OpenCode. للإعداد الدائم، عدّل إعدادات الخادم.';
+      'يُضاف خادم MCP هذا إلى المشروع المحدّد وتُجرى محاولة الاتصال به الآن. ستتم إزالته عند إعادة تشغيل OpenCode. للإعداد الدائم، عدّل إعدادات الخادم.';
 
   @override
-  String get mcpCurrentLocation => 'الموقع الحالي';
+  String get mcpCurrentLocation => 'المشروع الحالي';
 
   @override
-  String get mcpDefaultLocation => 'الموقع الافتراضي لخادم OpenCode';
+  String get mcpDefaultLocation => 'المجلد الافتراضي لخادم OpenCode';
 
   @override
   String mcpWorkspaceLocation(String workspace) {
-    return 'مساحة العمل: $workspace';
+    return 'البيئة السحابية: $workspace';
   }
 
   @override
   String get mcpLocationChanged =>
-      'تغيّر الاتصال أو الموقع. لا تزال مسودتك هنا؛ افتح الإعداد مجددًا في الموقع المطلوب قبل الإضافة.';
+      'تغيّر الخادم أو المشروع. لا تزال مسودتك هنا؛ افتح الإعداد مجددًا في المشروع المطلوب قبل الإضافة.';
 
   @override
   String get mcpAdding => 'جارٍ إضافة خادم MCP';
@@ -1051,10 +1052,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get mcpRuntimeEmpty =>
-      'أضف أدوات للموقع الحالي حتى إعادة تشغيل OpenCode.';
+      'أضف أدوات للمشروع الحالي حتى إعادة تشغيل OpenCode.';
 
   @override
-  String get mcpRuntimeAdded => 'أُضيف خادم MCP لهذا الموقع';
+  String get mcpRuntimeAdded => 'أُضيف خادم MCP لهذا المشروع';
 
   @override
   String get sessionUnread => 'نتيجة غير مقروءة';
@@ -1085,7 +1086,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get exportJsonDescription =>
-      'تنزيل الجلسة كاملة من الخادم، بما فيها الرسائل الأقدم.';
+      'تنزيل المحادثة كاملة من الخادم، بما فيها الرسائل الأقدم.';
 
   @override
   String get exportMarkdown => 'سجل سهل القراءة · Markdown';
@@ -1122,7 +1123,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get exportChanged =>
-      'تغيّر الاتصال أو الموقع. افتح التصدير مجددًا من المحادثة المطلوبة.';
+      'تغيّر الخادم أو المشروع. افتح التصدير مجددًا من المحادثة المطلوبة.';
 
   @override
   String get exportUnsupported =>
@@ -1130,7 +1131,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get exportAuthorization =>
-      'رفض الخادم الوصول. تحقّق من بيانات اعتماد الاتصال وحاول مجددًا.';
+      'رفض الخادم الوصول. تحقّق من بيانات اعتماد الخادم وحاول مجددًا.';
 
   @override
   String get exportMissing =>
@@ -1181,18 +1182,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get importDestination => 'الاستيراد إلى';
 
   @override
-  String get importChooseDestination => 'اختيار مجلد على هذا الخادم';
+  String get importChooseDestination => 'اختيار مشروع على هذا الخادم';
 
   @override
   String get importChangeDestination => 'تغيير الوجهة';
 
   @override
   String get importNoDestinations =>
-      'لا تتوفر مجلدات مشاريع. افتح مشروعًا على هذا الخادم، ثم حاول مجددًا.';
+      'لا تتوفر مشاريع. افتح مشروعًا على هذا الخادم، ثم حاول مجددًا.';
 
   @override
   String get importDestinationFailed =>
-      'تعذّر تحميل مشاريع الوجهة أو مساحات عملها. حاول مجددًا؛ لا يزال ملفك محدّدًا.';
+      'تعذّر تحميل مشاريع الوجهة أو بيئاتها السحابية. حاول مجددًا؛ لا يزال ملفك محدّدًا.';
 
   @override
   String get importPreserves =>
@@ -1212,18 +1213,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get importOpenFailed =>
-      'استُوردت المحادثة، لكن تعذّر فتحها. ابحث عنها في «كل الجلسات» على خادم الوجهة.';
+      'استُوردت المحادثة، لكن تعذّر فتحها. ابحث عنها في «كل المحادثات» على خادم الوجهة.';
 
   @override
   String get importChanged =>
-      'تغيّر الاتصال أو الموقع. لا يزال ملفك هنا. افتح الاستيراد مجددًا على الخادم المطلوب قبل المتابعة.';
+      'تغيّر الخادم أو المشروع. لا يزال ملفك هنا. افتح الاستيراد مجددًا على الخادم المطلوب قبل المتابعة.';
 
   @override
   String get importUnsupported => 'لا يدعم هذا الخادم الاستيراد بصيغة JSON.';
 
   @override
   String get importInvalidFile =>
-      'اختر ملف OpenCode صالحًا مصدّرًا بصيغة JSON ويحتوي على معلومات الجلسة وسجلات الرسائل. لا يمكن استيراد سجلات Markdown.';
+      'اختر ملف OpenCode صالحًا مصدّرًا بصيغة JSON ويحتوي على معلومات المحادثة وسجلات الرسائل. لا يمكن استيراد سجلات Markdown.';
 
   @override
   String get importTooLarge =>
@@ -1231,11 +1232,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get importConflict =>
-      'توجد محادثة بهذا المعرّف على هذا الخادم بالفعل. لم يُستبدل شيء. ابحث عنها في «كل الجلسات»، أو استورد هذا الملف على خادم آخر.';
+      'توجد محادثة بهذا المعرّف على هذا الخادم بالفعل. لم يُستبدل شيء. ابحث عنها في «كل المحادثات»، أو استورد هذا الملف على خادم آخر.';
 
   @override
   String get importAuthorization =>
-      'رفض الخادم الوصول. تحقّق من بيانات اعتماد الاتصال. لا يزال ملفك محدّدًا.';
+      'رفض الخادم الوصول. تحقّق من بيانات اعتماد الخادم. لا يزال ملفك محدّدًا.';
 
   @override
   String get importParentMissing =>
@@ -1247,7 +1248,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get importUnconfirmed =>
-      'تعذّر تأكيد الاستيراد. تحقّق من «كل الجلسات» قبل إعادة المحاولة؛ فقد يكون الخادم قد استلمه. لم يتغيّر الملف المصدر.';
+      'تعذّر تأكيد الاستيراد. تحقّق من «كل المحادثات» قبل إعادة المحاولة؛ فقد يكون الخادم قد استلمه. لم يتغيّر الملف المصدر.';
 
   @override
   String get sessionsNoOtherRecent => 'لا توجد محادثات حديثة أخرى';
@@ -1263,7 +1264,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sessionPinFailed =>
-      'تعذّر حفظ التثبيت. تحقّق من مساحة تخزين الجهاز ومن أن موقع الجلسة لم يتغيّر، ثم حاول مجددًا.';
+      'تعذّر حفظ التثبيت. تحقّق من مساحة تخزين الجهاز ومن أن مشروع المحادثة لم يتغيّر، ثم حاول مجددًا.';
 
   @override
   String get sessionPinsLoadFailed =>
@@ -1369,19 +1370,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shareWaitingForServer =>
-      'اتصل بخادم لفتح النص المشترك في جلسة جديدة.';
+      'اتصل بخادم لفتح النص المشترك في محادثة جديدة.';
 
   @override
   String get shareSessionFailed =>
-      'احتُفظ بالنص المشترك. تعذّر فتح جلسة. أعد المحاولة عندما يكون الاتصال جاهزًا.';
+      'احتُفظ بالنص المشترك. تعذّر فتح محادثة. أعد المحاولة عندما يكون الاتصال جاهزًا.';
 
   @override
   String get webSourcesDisclosure =>
-      'لا يتاح البحث في الويب عبر بوابة التطبيق لهذا الاتصال. الصق رابطًا عامًا، ويمكنك إضافة مقتطف تريد تضمينه. لن تُجلب أي صفحة، ولن يُرسل شيء إلى النموذج هنا.';
+      'لا يتاح البحث في الويب عبر بوابة التطبيق لهذا الخادم. الصق رابطًا عامًا، ويمكنك إضافة مقتطف تريد تضمينه. لن تُجلب أي صفحة، ولن يُرسل شيء إلى النموذج هنا.';
 
   @override
   String get webSourcesScopeChanged =>
-      'تغيّر الاتصال. أغلق «إضافة مصدر ويب» وافتحه مجددًا.';
+      'تغيّر الخادم. أغلق «إضافة مصدر ويب» وافتحه مجددًا.';
 
   @override
   String get webSourcesUrl => 'رابط عام';
@@ -1427,7 +1428,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get digestEmpty =>
-      'لا تتوفر بيانات وصفية لعمليات تشغيل منتهية في هذا الموقع. حالة الخمول وحدها لا تثبت نجاح التشغيل.';
+      'لا تتوفر بيانات وصفية لعمليات تشغيل منتهية في هذا المشروع. حالة الخمول وحدها لا تثبت نجاح التشغيل.';
 
   @override
   String get digestIdle => 'سُجّل خمول الخادم · لم يُتحقَّق من النتيجة';
@@ -1445,17 +1446,17 @@ class AppLocalizationsAr extends AppLocalizations {
       count,
       locale: localeName,
       other:
-          '$count ملف متغيّر في إجمالي الجلسة؛ أما هذا التشغيل فحالته غير معروفة.',
+          '$count ملف متغيّر في إجمالي المحادثة؛ أما هذا التشغيل فحالته غير معروفة.',
       many:
-          '$count ملفًا متغيّرًا في إجمالي الجلسة؛ أما هذا التشغيل فحالته غير معروفة.',
+          '$count ملفًا متغيّرًا في إجمالي المحادثة؛ أما هذا التشغيل فحالته غير معروفة.',
       few:
-          '$count ملفات متغيّرة في إجمالي الجلسة؛ أما هذا التشغيل فحالته غير معروفة.',
+          '$count ملفات متغيّرة في إجمالي المحادثة؛ أما هذا التشغيل فحالته غير معروفة.',
       two:
-          'ملفان متغيّران في إجمالي الجلسة؛ أما هذا التشغيل فحالته غير معروفة.',
+          'ملفان متغيّران في إجمالي المحادثة؛ أما هذا التشغيل فحالته غير معروفة.',
       one:
-          'ملف واحد متغيّر في إجمالي الجلسة؛ أما هذا التشغيل فحالته غير معروفة.',
+          'ملف واحد متغيّر في إجمالي المحادثة؛ أما هذا التشغيل فحالته غير معروفة.',
       zero:
-          'لا توجد ملفات متغيّرة في إجمالي الجلسة؛ أما هذا التشغيل فحالته غير معروفة.',
+          'لا توجد ملفات متغيّرة في إجمالي المحادثة؛ أما هذا التشغيل فحالته غير معروفة.',
     );
     return '$_temp0';
   }
@@ -1509,7 +1510,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get runResultsScopeChanged =>
-      'تغيّر الاتصال أو المشروع. أغلق هذا العرض وافتح نتائج التشغيل مجددًا من المشروع المطلوب.';
+      'تغيّر الخادم أو المشروع. أغلق هذا العرض وافتح نتائج التشغيل مجددًا من المشروع المطلوب.';
 
   @override
   String get runResultsTitle => 'نتائج التشغيل';
@@ -1716,20 +1717,21 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يمكن فتح الخوادم هنا. ارجع إلى الرئيسية لاختيار خادم وعرض النشاط.';
 
   @override
-  String get handoffTitle => 'هل تريد نسخ مرجع متابعة الجلسة؟';
+  String get handoffTitle => 'هل تريد نسخ مرجع متابعة المحادثة؟';
 
   @override
   String get handoffDisclosure =>
-      'بيانات وصفية فقط، وليست أمرًا أو رابطًا. اتصل بالخادم نفسه على جهازك الآخر وابحث عن هذا المشروع وهذه الجلسة. لن يُنشر أو يُرسل شيء.\n\nستحتوي الحافظة على معرّفات الجلسة والمشروع. قد تتمكن تطبيقات أخرى من قراءتها؛ شاركها فقط مع أشخاص تثق بهم.';
+      'بيانات وصفية فقط، وليست أمرًا أو رابطًا. اتصل بالخادم نفسه على جهازك الآخر وابحث عن هذا المشروع وهذه المحادثة. لن يُنشر أو يُرسل شيء.\n\nستحتوي الحافظة على معرّفات المحادثة والمشروع. قد تتمكن تطبيقات أخرى من قراءتها؛ شاركها فقط مع أشخاص تثق بهم.';
 
   @override
   String get handoffCopy => 'نسخ المرجع';
 
   @override
-  String get handoffCopied => 'نُسخ مرجع بيانات الجلسة';
+  String get handoffCopied => 'نُسخ مرجع بيانات المحادثة';
 
   @override
-  String get handoffCopyFailed => 'تعذّر نسخ مرجع متابعة الجلسة. حاول مجددًا.';
+  String get handoffCopyFailed =>
+      'تعذّر نسخ مرجع متابعة المحادثة. حاول مجددًا.';
 
   @override
   String get sessionOpenRelated => 'فتح العناصر المرتبطة';
@@ -1738,7 +1740,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sessionCopyHandoff => 'نسخ مرجع المتابعة';
 
   @override
-  String get sessionActions => 'إجراءات الجلسة';
+  String get sessionActions => 'إجراءات المحادثة';
 
   @override
   String get attentionTitle => 'تنبيهات الخوادم';
@@ -1752,7 +1754,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get webSourcesDraftChanged =>
-      'تغيّرت المسودة أو الاتصال. احتُفظ بمسودتك الحالية؛ افتح «إضافة مصدر ويب» مجددًا لإعادة المحاولة.';
+      'تغيّرت المسودة أو الخادم. احتُفظ بمسودتك الحالية؛ افتح «إضافة مصدر ويب» مجددًا لإعادة المحاولة.';
 
   @override
   String get webSourcesDraftLabel =>
@@ -1844,11 +1846,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pendingAuthUnsupported =>
-      'لا يتيح هذا الاتصال استرداد عمليات تسجيل الدخول السابقة. تعمل عمليات تسجيل الدخول القديمة فقط ما دامت الشاشة والاتصال الأصليان متاحين.';
+      'لا يتيح هذا الخادم استرداد عمليات تسجيل الدخول السابقة. تعمل عمليات تسجيل الدخول القديمة فقط ما دامت الشاشة والاتصال الأصليان متاحين.';
 
   @override
   String get pendingAuthOtherSource =>
-      'تتبع عمليات تسجيل الدخول المعلّقة الأخرى عنوان خادم أو موقعًا آخر. ارجع إلى مصدرها الأصلي لإدارتها.';
+      'تتبع عمليات تسجيل الدخول المعلّقة الأخرى خادمًا أو مشروعًا آخر. ارجع إلى مصدرها الأصلي لإدارتها.';
 
   @override
   String get connectionHelpTitle => 'مساعدة الاتصال';
@@ -2074,7 +2076,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get commandAuthScopeChanged =>
-      'تغيّر الخادم أو المشروع. ارجع إلى الموقع الأصلي وافتح تسجيل الدخول مجددًا لإدارة محاولته.';
+      'تغيّر الخادم أو المشروع. ارجع إلى المشروع الأصلي وافتح تسجيل الدخول مجددًا لإدارة محاولته.';
 
   @override
   String get commandAuthUncertainStart =>
@@ -2214,7 +2216,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get mcpRemoveRuntimeDetail =>
-      'إزالة خادم MCP هذا من الموقع الحالي في بيئة التشغيل. لن تتاح أدواته هناك بعد ذلك. لا يمحو ذلك إعدادات الخادم الدائمة؛ وقد يعود بعد إعادة تشغيل الخادم.';
+      'إزالة خادم MCP هذا من بيئة تشغيل المشروع الحالي. لن تتاح أدواته هناك بعد ذلك. لا يمحو ذلك إعدادات الخادم الدائمة؛ وقد يعود بعد إعادة تشغيل الخادم.';
 
   @override
   String get mcpRemoveFailed =>
@@ -2290,12 +2292,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String promptStashLocation(String directory) {
-    return 'يشير هذا الطلب إلى ملفات في $directory. انتقل إلى مشروعه ومساحة عمله الأصليين قبل استعادته.';
+    return 'يشير هذا الطلب إلى ملفات في $directory. انتقل إلى مشروعه الأصلي قبل استعادته.';
   }
 
   @override
   String get promptStashScopeChanged =>
-      'تغيّر الخادم أو الموقع. أغلق الطلبات المحفوظة وافتحها مجددًا.';
+      'تغيّر الخادم أو المشروع. أغلق الطلبات المحفوظة وافتحها مجددًا.';
 
   @override
   String get transcriptFindTitle => 'البحث في المحادثة';
@@ -2385,7 +2387,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get skillLocationChanged =>
-      'تغيّر الاتصال أو المشروع. افتح المهارات مجددًا من المحادثة.';
+      'تغيّر الخادم أو المشروع. افتح المهارات مجددًا من المحادثة.';
 
   @override
   String get skillUnsupported =>
@@ -2448,7 +2450,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get activeContextChanged =>
-      'تغيّر الاتصال أو المشروع أو المحادثة. افتح أداة الفحص هذه مجددًا من المحادثة.';
+      'تغيّر الخادم أو المشروع أو المحادثة. افتح أداة الفحص هذه مجددًا من المحادثة.';
 
   @override
   String get activeContextInvalid =>
@@ -2485,7 +2487,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get activeContextCompaction => 'اختصار السياق';
 
   @override
-  String get activeContextChange => 'تغيير الجلسة';
+  String get activeContextChange => 'تغيير المحادثة';
 
   @override
   String get activeContextText => 'نص';
@@ -2693,7 +2695,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get quotaSetupDescription =>
-      'يجب على مسؤول الخادم تثبيت هذا المسار وحمايته على عنوان أصل OpenCode نفسه. تستخدم قراءته بيانات دخول الخادم لهذا الملف الشخصي. أكّد فقط إذا ثبّتّ هذه الخدمة أو كنت تثق بها. تبقى رموز مزوّد الخدمة على الخادم.';
+      'يجب على مسؤول الخادم تثبيت هذا المسار وحمايته على عنوان أصل OpenCode نفسه. تستخدم قراءته بيانات دخول هذا الخادم المحفوظ. أكّد فقط إذا ثبّتّ هذه الخدمة أو كنت تثق بها. تبقى رموز مزوّد الخدمة على الخادم.';
 
   @override
   String get quotaSetupGuide =>
@@ -2883,11 +2885,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get iosKeychainGuide =>
-      'تُحفظ كلمات مرور الخوادم في Keychain على هذا الجهاز، ولا تُخزَّن في تفضيلات الملفات الشخصية العادية.';
+      'تُحفظ كلمات مرور الخوادم في Keychain على هذا الجهاز، ولا تُخزَّن في تفضيلات التطبيق العادية.';
 
   @override
   String get platformSecureStorageGuide =>
-      'تُحفظ كلمات مرور الخوادم في مخزن بيانات الاعتماد الآمن لهذه المنصة، ولا تُخزَّن في تفضيلات الملفات الشخصية العادية.';
+      'تُحفظ كلمات مرور الخوادم في مخزن بيانات الاعتماد الآمن لهذه المنصة، ولا تُخزَّن في تفضيلات التطبيق العادية.';
 
   @override
   String get quotaClaudeAccount => 'فترات تسجيل دخول Claude';
@@ -2990,7 +2992,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pluginsDescription =>
-      'الإضافات التي أُبلغ عنها لهذا الموقع على الخادم. افحص الحالة والمصدر هنا؛ وأدِر الإضافات على الخادم.';
+      'الإضافات التي أُبلغ عنها لهذا المشروع على الخادم. افحص الحالة والمصدر هنا؛ وأدِر الإضافات على الخادم.';
 
   @override
   String get pluginsUnsupported => 'لا يدعم هذا الخادم فحص الإضافات.';
@@ -2999,7 +3001,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pluginsDisconnected => 'اتصل بخادم لفحص إضافاته.';
 
   @override
-  String get pluginsEmpty => 'لم يُبلّغ عن إضافات لهذا الموقع.';
+  String get pluginsEmpty => 'لم يُبلّغ عن إضافات لهذا المشروع.';
 
   @override
   String get pluginsLoadFailed => 'تعذّر تحميل الإضافات. أعد المحاولة.';
@@ -3055,7 +3057,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get handoffCommandDisclosure =>
-      'شغّل هذا الأمر في طرفية متوافقة مع POSIX على كمبيوتر مثبّت عليه OpenCode ويمكنه الوصول إلى هذا الخادم. اضبط OPENCODE_SERVER_PASSWORD بشكل خاص على ذلك الكمبيوتر إذا تطلّبه الخادم. ستتضمن الحافظة عنوان الخادم واسم المستخدم ومجلد المشروع ومعرّف الجلسة، دون كلمة المرور.';
+      'شغّل هذا الأمر في طرفية متوافقة مع POSIX على كمبيوتر مثبّت عليه OpenCode ويمكنه الوصول إلى هذا الخادم. اضبط OPENCODE_SERVER_PASSWORD بشكل خاص على ذلك الكمبيوتر إذا تطلّبه الخادم. ستتضمن الحافظة عنوان الخادم واسم المستخدم ومجلد المشروع ومعرّف المحادثة، دون كلمة المرور.';
 
   @override
   String get handoffCopyCommand => 'نسخ الأمر';
@@ -3065,7 +3067,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get handoffCommandUnavailable =>
-      'أمر الاستئناف غير متاح لهذا الاتصال أو مساحة العمل. تحتاج المتابعة على كمبيوتر آخر إلى أمر OpenCode مدعوم وخادم HTTPS يمكن الوصول إليه؛ يشير عنوان localhost إلى الجهاز نفسه على كل جهاز. لا يزال بإمكانك نسخ بيانات الجلسة الوصفية أدناه.';
+      'أمر الاستئناف غير متاح لهذا الخادم أو هذه البيئة السحابية. تحتاج المتابعة على كمبيوتر آخر إلى أمر OpenCode مدعوم وخادم HTTPS يمكن الوصول إليه؛ يشير عنوان localhost إلى الجهاز نفسه على كل جهاز. لا يزال بإمكانك نسخ بيانات المحادثة الوصفية أدناه.';
 
   @override
   String get quotaMiniMax => 'MiniMax';
@@ -3224,7 +3226,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get monitorScope =>
-      'تشمل الأعداد آخر موقع محدد لكل خادم، وليس جميع مشاريعه.';
+      'تشمل الأعداد آخر مشروع محدد لكل خادم، وليس جميع مشاريعه.';
 
   @override
   String get monitorDisclosure =>
@@ -3241,7 +3243,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get monitorOptInDetail =>
-      'فحص الأذونات والأسئلة والنماذج المعلّقة في آخر موقع محدد له.';
+      'فحص الأذونات والأسئلة والنماذج المعلّقة في آخر مشروع محدد له.';
 
   @override
   String get monitorNotifications => 'الإشعار عند الحاجة إلى انتباه';
@@ -3294,7 +3296,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get monitorCurrent => 'الرصد الحالي';
 
   @override
-  String get monitorAllClear => 'لا طلبات معلّقة في الموقع المفحوص';
+  String get monitorAllClear => 'لا طلبات معلّقة في المشروع المفحوص';
 
   @override
   String get monitorNoServers => 'أضف خادمًا لمراقبة ما يحتاج إلى انتباه.';
@@ -3304,20 +3306,20 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get monitorOpenFailed =>
-      'تغيّر هذا الطلب أو موقعه على الخادم. حدّث صندوق الوارد وأعد المحاولة.';
+      'تغيّر هذا الطلب أو مشروعه. حدّث صندوق الوارد وأعد المحاولة.';
 
   @override
   String get monitorSwitchTitle => 'تبديل الخادم للمراجعة؟';
 
   @override
   String get monitorSwitchDetail =>
-      'توجد عملية نشطة على الخادم المحدد. يغيّر التبديل الاتصال المعروض في هذا التطبيق، ولا يوقف عملية ذلك الخادم.';
+      'توجد عملية نشطة على الخادم المحدد. يغيّر التبديل الخادم المعروض في هذا التطبيق، ولا يوقف عملية ذلك الخادم.';
 
   @override
   String get monitorSwitch => 'تبديل الخادم';
 
   @override
-  String get monitorSession => 'جلسة';
+  String get monitorSession => 'محادثة';
 
   @override
   String get monitorPermission => 'يلزم إذن';
@@ -3364,7 +3366,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get monitorSelected => 'الموقع المحدد';
+  String get monitorSelected => 'المشروع المحدد';
 
   @override
   String get monitorNoNotifications =>
@@ -3464,7 +3466,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get managedRecoveryRevokeFailed =>
-      'تعذّر حفظ الاستعادة أو إلغاؤها. احتفظ بهذا الملف الشخصي وأعد المحاولة قبل إزالته.';
+      'تعذّر حفظ الاستعادة أو إلغاؤها. احتفظ بهذا الخادم وأعد المحاولة قبل إزالته.';
 
   @override
   String get managedRecoverySettingsUnreadable =>
@@ -3487,7 +3489,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get managedRecoveryStoppedWithCleanupError =>
-      'الخادم المحلي متوقف. تعذّر مسح إعدادات الاستعادة بالكامل؛ أعد محاولة تعطيل الاستعادة في «الخوادم» قبل إزالة الملف الشخصي.';
+      'الخادم المحلي متوقف. تعذّر مسح إعدادات الاستعادة بالكامل؛ أعد محاولة تعطيل الاستعادة في «الخوادم» قبل إزالة الخادم.';
 
   @override
   String get pluginMappingPersonal =>
@@ -3503,7 +3505,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pluginMappingDescription =>
-      'اختر الأوامر التي تربطها بهذه الإضافة. تنطبق هذه الروابط الشخصية على هذا الموقع في الخادم فقط. يفتح كل إجراء مراجعة للمحادثة والمعاملات قبل تشغيله.';
+      'اختر الأوامر التي تربطها بهذه الإضافة. تنطبق هذه الروابط الشخصية على هذا المشروع في هذا الخادم فقط. يفتح كل إجراء مراجعة للمحادثة والمعاملات قبل تشغيله.';
 
   @override
   String get pluginMappingEmpty => 'لا تتوفر أوامر خادم لربطها.';
@@ -3520,7 +3522,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pluginMappingSaveFailed =>
-      'تعذّر حفظ الروابط. تأكّد من أن هذا الموقع على الخادم ما زال محددًا وأعد المحاولة.';
+      'تعذّر حفظ الروابط. تأكّد من أن هذا المشروع ما زال محددًا وأعد المحاولة.';
 
   @override
   String get pluginMappingLoadFailed =>
@@ -3578,14 +3580,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pluginMappingClearDescription =>
-      'إزالة الروابط الشخصية بين الإضافات والأوامر لكل موقع في ملف هذا الخادم، بما في ذلك المواقع السابقة. تظل إضافات الخادم وأوامره مثبّتة.';
+      'إزالة الروابط الشخصية بين الإضافات والأوامر لكل مشروع على هذا الخادم المحفوظ، بما في ذلك المشاريع السابقة. تظل إضافات الخادم وأوامره مثبّتة.';
 
   @override
   String get pluginMappingClearConfirm => 'مسح الروابط';
 
   @override
   String get pluginMappingClearFailed =>
-      'تعذّر مسح الروابط الشخصية. تأكّد من أن ملف هذا الخادم ما زال محددًا وأعد المحاولة.';
+      'تعذّر مسح الروابط الشخصية. تأكّد من أن هذا الخادم ما زال محددًا وأعد المحاولة.';
 
   @override
   String get quotaMonitorTitle => 'مراقبة الحصص';
@@ -3680,11 +3682,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get webSearchAuthentication =>
-      'لم يسمح الخادم بالبحث على الويب. تحقّق من بيانات اعتماد هذا الاتصال.';
+      'لم يسمح الخادم بالبحث على الويب. تحقّق من بيانات اعتماد هذا الخادم.';
 
   @override
   String get webSearchInvalidResponse =>
-      'لم تطابق استجابة البحث هذا الاتصال أو التنسيق المدعوم. حدّث مزوّدي الخدمة أو الصق مصدرًا.';
+      'لم تطابق استجابة البحث هذا الخادم أو التنسيق المدعوم. حدّث مزوّدي الخدمة أو الصق مصدرًا.';
 
   @override
   String get webSearchFailed =>
@@ -3741,7 +3743,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get filesViewerScopeChanged =>
-      'تغيّر الاتصال. أغلق هذا الملف وافتحه مجددًا.';
+      'تغيّر الخادم. أغلق هذا الملف وافتحه مجددًا.';
 
   @override
   String get filesViewerPathChanged =>
@@ -3772,7 +3774,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get codexTextOnlyPrompt =>
-      'يدعم هذا الاتصال النص فقط. أزل المرفقات قبل الإرسال.';
+      'يدعم هذا الخادم النص فقط. أزل المرفقات قبل الإرسال.';
 
   @override
   String get codexOfflineDraftSaved =>
@@ -3854,7 +3856,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get connectionCredentialUnavailable =>
-      'لم تعد قراءة بيانات اعتماد اتصال محفوظة ممكنة. عدّل الخادم النشط وأعد إدخالها قبل الاتصال.';
+      'لم تعد قراءة بيانات اعتماد خادم محفوظ ممكنة. عدّل الخادم النشط وأعد إدخالها قبل الاتصال.';
 
   @override
   String get projectContextTitle => 'سياق المشروع';
@@ -3925,46 +3927,46 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get launchShortcutWaiting =>
-      'جارٍ الاتصال بالخادم المحفوظ. تُفتح المهمة الجديدة عندما يصبح جاهزًا.';
+      'جارٍ الاتصال بالخادم المحفوظ. تُفتح المحادثة الجديدة عندما يصبح جاهزًا.';
 
   @override
-  String get launchShortcutNoServer => 'اختر خادمًا، ثم ابدأ مهمة جديدة.';
+  String get launchShortcutNoServer => 'اختر خادمًا، ثم ابدأ محادثة جديدة.';
 
   @override
   String get launchShortcutReentry =>
-      'أدخل بيانات اعتماد الخادم المحفوظ، ثم ابدأ مهمة جديدة.';
+      'أدخل بيانات اعتماد الخادم المحفوظ، ثم ابدأ محادثة جديدة.';
 
   @override
   String get launchShortcutConnectionFailed =>
-      'تعذّر الاتصال بالخادم المحفوظ. اختر خادمًا أو أصلح اتصاله، ثم ابدأ مهمة جديدة.';
+      'تعذّر الاتصال بالخادم المحفوظ. اختر خادمًا أو أصلح اتصاله، ثم ابدأ محادثة جديدة.';
 
   @override
   String launchShortcutNewTaskFailed(String error) {
-    return 'تعذّر بدء مهمة جديدة. $error';
+    return 'تعذّر بدء محادثة جديدة. $error';
   }
 
   @override
-  String get launchUiPinnedUntitled => 'جلسة بلا عنوان';
+  String get launchUiPinnedUntitled => 'محادثة بلا عنوان';
 
   @override
   String get launchUiSessionWaiting =>
-      'جارٍ الاتصال بالخادم المحفوظ. ستُفتح الجلسة عندما يصبح جاهزًا.';
+      'جارٍ الاتصال بالخادم المحفوظ. ستُفتح المحادثة عندما يصبح جاهزًا.';
 
   @override
   String get launchUiSessionNoServer =>
-      'اختر خادمًا، ثم افتح الجلسة من قائمته.';
+      'اختر خادمًا، ثم افتح المحادثة من قائمته.';
 
   @override
   String get launchUiSessionReentry =>
-      'أدخل بيانات اعتماد الخادم المحفوظ، ثم افتح الجلسة من قائمته.';
+      'أدخل بيانات اعتماد الخادم المحفوظ، ثم افتح المحادثة من قائمته.';
 
   @override
   String get launchUiSessionConnectionFailed =>
-      'تعذّر الاتصال بالخادم المحفوظ. اختر خادمًا أو أصلحه، ثم افتح الجلسة من قائمته.';
+      'تعذّر الاتصال بالخادم المحفوظ. اختر خادمًا أو أصلحه، ثم افتح المحادثة من قائمته.';
 
   @override
   String get launchUiSessionOtherServer =>
-      'هذا الاختصار يخص خادمًا آخر. اتصل بذلك الخادم، ثم افتح الجلسة من قائمته.';
+      'هذا الاختصار يخص خادمًا آخر. اتصل بذلك الخادم، ثم افتح المحادثة من قائمته.';
 
   @override
   String get launchUiActivityNoServer =>
@@ -4000,7 +4002,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get queuedDiscardUnconfirmedMessage =>
-      'لم يُؤكَّد إرسالها السابق؛ ربما توجد في الجلسة بالفعل.';
+      'لم يُؤكَّد إرسالها السابق؛ ربما توجد في المحادثة بالفعل.';
 
   @override
   String get setupRuntimeTitle => 'أي إصدار من OpenCode تريد استخدامه؟';
@@ -4026,7 +4028,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String setupRuntimeUpdateDetail(String runtime, String version) {
-    return 'سيثبّت التطبيق $runtime $version، ويعيد تشغيل الخادم المحلي الذي يديره فقط، ثم يعيد اتصال هذا الملف الشخصي.';
+    return 'سيثبّت التطبيق $runtime $version، ويعيد تشغيل الخادم المحلي الذي يديره فقط، ثم يعيد الاتصال بهذا الخادم.';
   }
 
   @override
@@ -4078,7 +4080,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String isolatedTaskReady(String name) {
-    return '$name جاهزة. جارٍ فتح جلسة فارغة…';
+    return '$name جاهزة. جارٍ فتح محادثة فارغة…';
   }
 
   @override
@@ -4120,12 +4122,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String isolatedTaskOpening(String name) {
-    return 'جارٍ فتح جلسة فارغة في $name…';
+    return 'جارٍ فتح محادثة فارغة في $name…';
   }
 
   @override
   String isolatedTaskOpened(String name) {
-    return 'الجلسة جاهزة في $name. لم يُرسل شيء.';
+    return 'المحادثة جاهزة في $name. لم يُرسل شيء.';
   }
 
   @override
@@ -4156,7 +4158,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'لهذا المشروع على هذا الجهاز. يبقي التجاهل المحادثات غير مقروءة والطلبات معلّقة.';
 
   @override
-  String get returnBriefUntitled => 'جلسة بلا عنوان';
+  String get returnBriefUntitled => 'محادثة بلا عنوان';
 
   @override
   String get returnBriefStale =>
@@ -4171,14 +4173,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get returnBriefPartial =>
-      'الجلسات المحمّلة فقط. قائمة الجلسات لم تكتمل بعد.';
+      'المحادثات المحمّلة فقط. قائمة المحادثات لم تكتمل بعد.';
 
   @override
   String get returnBriefAnswer => 'إجابة';
 
   @override
   String get returnBriefUnreviewed =>
-      'جلسة لم تُراجع. افتح النتائج للتحقق من المحصلة.';
+      'محادثة لم تُراجع. افتح النتائج للتحقق من المحصلة.';
 
   @override
   String get returnBriefReview => 'مراجعة النتائج';
@@ -4188,7 +4190,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String returnBriefMore(int count) {
-    return 'عناصر إضافية: $count. تبقى دون إقرار؛ راجع الجلسات أدناه أو «النشاط».';
+    return 'عناصر إضافية: $count. تبقى دون إقرار؛ راجع المحادثات أدناه أو «النشاط».';
   }
 
   @override
@@ -4206,11 +4208,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get capsuleEntry =>
-      'اجمع الملاحظات والأخطاء ولقطات الشاشة لهذه المهمة';
+      'اجمع الملاحظات والأخطاء ولقطات الشاشة لهذه المحادثة';
 
   @override
   String get capsuleDescription =>
-      'أنشئ حزمة لهذه المهمة. تضيفها إلى مسودتك الحالية دون إرسال أي شيء. تُحفظ التعديلات غير المطبّقة ما دامت هذه الشاشة مفتوحة فقط.';
+      'أنشئ حزمة لهذه المحادثة. تضيفها إلى مسودتك الحالية دون إرسال أي شيء. تُحفظ التعديلات غير المطبّقة ما دامت هذه الشاشة مفتوحة فقط.';
 
   @override
   String get capsuleNote => 'ملاحظة';
@@ -4248,11 +4250,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get capsuleScopeChanged =>
-      'تغيّرت المهمة أو الاتصال أو المسودة. أغلق حزمة السياق هذه وافتحها مجددًا من المهمة المقصودة.';
+      'تغيّرت المحادثة أو الخادم أو المسودة. أغلق حزمة السياق هذه وافتحها مجددًا من المحادثة المقصودة.';
 
   @override
   String get capsuleTextOnly =>
-      'يقبل هذا الاتصال النص فقط. لا يزال بإمكانك جمع الملاحظات والأخطاء والشيفرة.';
+      'يقبل هذا الخادم النص فقط. لا يزال بإمكانك جمع الملاحظات والأخطاء والشيفرة.';
 
   @override
   String get capsuleImagesOnly =>
@@ -4737,7 +4739,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get agentAccountScopeLost =>
-      'تغيّر هذا الاتصال. ارجع إلى «الخوادم» وافتح الحساب للملف الشخصي المتصل.';
+      'تغيّر هذا الخادم. ارجع إلى «الخوادم» وافتح الحساب للخادم المتصل.';
 
   @override
   String get agentAccountRefresh => 'تحديث الحساب';
@@ -4782,7 +4784,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get agentAccountHostNote =>
-      'تحتفظ بيئة Codex الرسمية ببيانات اعتماد مزوّد الخدمة. تنطبق تغييرات الحساب على هذا المضيف، بما في ذلك الملفات الشخصية الأخرى المتصلة به.';
+      'تحتفظ بيئة Codex الرسمية ببيانات اعتماد مزوّد الخدمة. تنطبق تغييرات الحساب على هذا المضيف، بما في ذلك الخوادم المحفوظة الأخرى المتصلة به.';
 
   @override
   String get agentAccountUnsupportedDetail =>
@@ -4901,7 +4903,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get projectFolderChooserMessage =>
-      'لا يعمل OpenCode Mobile في المجلد الرئيسي للخادم. أنشئ مجلدًا جديدًا أو افتح مجلد مشروع لبدء الجلسات.';
+      'لا يعمل OpenCode Mobile في المجلد الرئيسي للخادم. أنشئ مجلدًا جديدًا أو افتح مجلد مشروع لبدء المحادثات.';
 
   @override
   String get projectFolderCreate => 'إنشاء مجلد جديد';
@@ -4918,7 +4920,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String projectFolderCreateMessage(String directory) {
-    return 'يُنشأ المجلد في $directory على هذا الجهاز ويُفتح كمساحة عمل.';
+    return 'يُنشأ المجلد في $directory على هذا الجهاز ويُفتح كمشروع.';
   }
 
   @override
@@ -4957,13 +4959,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get projectFolderOpenSubtitle => 'أدخل المسار الكامل لمجلد على الخادم';
 
   @override
-  String get globalSessionsTitle => 'جميع الجلسات';
+  String get globalSessionsTitle => 'جميع المحادثات';
 
   @override
-  String get globalSessionsSearchLabel => 'البحث في عناوين الجلسات';
+  String get globalSessionsSearchLabel => 'البحث في عناوين المحادثات';
 
   @override
-  String get globalSessionsSearchHint => 'في كل مجلدات هذا الخادم';
+  String get globalSessionsSearchHint => 'في كل مشاريع هذا الخادم';
 
   @override
   String get globalSessionsIncludeArchived => 'تضمين المؤرشفة';
@@ -4972,45 +4974,45 @@ class AppLocalizationsAr extends AppLocalizations {
   String get globalSessionsArchivedShort => 'مؤرشفة';
 
   @override
-  String get globalSessionsAllFolders => 'جميع المجلدات';
+  String get globalSessionsAllFolders => 'جميع المشاريع';
 
   @override
-  String get globalSessionsUnknownLocation => 'موقع غير معروف';
+  String get globalSessionsUnknownLocation => 'مشروع غير معروف';
 
   @override
   String globalSessionsSummary(String count, int folders) {
-    return 'الجلسات: $count · المجلدات: $folders';
+    return 'المحادثات: $count · المشاريع: $folders';
   }
 
   @override
   String globalSessionsSummaryOneFolder(String count) {
-    return 'الجلسات: $count في مجلد واحد';
+    return 'المحادثات: $count في مشروع واحد';
   }
 
   @override
   String globalSessionsFilteredSummary(int count, String total) {
-    return 'الجلسات المعروضة: $count من $total';
+    return 'المحادثات المعروضة: $count من $total';
   }
 
   @override
-  String get globalSessionsEmptyTitle => 'لا جلسات بعد';
+  String get globalSessionsEmptyTitle => 'لا محادثات بعد';
 
   @override
   String get globalSessionsEmptyMessage =>
-      'ستظهر هنا الجلسات من كل مجلدات هذا الخادم.';
+      'ستظهر هنا المحادثات من كل مشاريع هذا الخادم.';
 
   @override
-  String get globalSessionsNoMatchTitle => 'لا جلسات مطابقة';
+  String get globalSessionsNoMatchTitle => 'لا محادثات مطابقة';
 
   @override
   String get globalSessionsNoMatchMessage =>
-      'جرّب البحث بعنوان أقصر أو تضمين الجلسات المؤرشفة.';
+      'جرّب البحث بعنوان أقصر أو تضمين المحادثات المؤرشفة.';
 
   @override
   String get globalSessionsRefresh => 'تحديث';
 
   @override
-  String get globalSessionsLoadMoreFailed => 'تعذّر تحميل المزيد من الجلسات';
+  String get globalSessionsLoadMoreFailed => 'تعذّر تحميل المزيد من المحادثات';
 
   @override
   String get globalSessionsOpen => 'فتح';
@@ -5019,22 +5021,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get globalSessionsContinueHere => 'المتابعة هنا';
 
   @override
-  String get globalSessionsActions => 'إجراءات الجلسة';
+  String get globalSessionsActions => 'إجراءات المحادثة';
 
   @override
   String get globalSessionsWorking => 'قيد التنفيذ';
 
   @override
-  String get globalSessionsUntitled => 'جلسة بلا عنوان';
+  String get globalSessionsUntitled => 'محادثة بلا عنوان';
 
   @override
-  String get workspaceNewSession => 'جلسة جديدة';
+  String get workspaceNewSession => 'محادثة جديدة';
 
   @override
   String get workspaceIsolatedTask => 'مهمة معزولة';
 
   @override
-  String get workspaceAllSessions => 'جميع الجلسات';
+  String get workspaceAllSessions => 'جميع المحادثات';
 
   @override
   String get workspaceDismissNotice => 'تجاهل';
@@ -5131,7 +5133,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get onboardingConnect => 'الاتصال بخادم';
 
   @override
-  String get onboardingDemoNote => 'جلسة محاكاة. لا تحتاج إلى خادم.';
+  String get onboardingDemoNote => 'محادثة محاكاة. لا تحتاج إلى خادم.';
 
   @override
   String get onboardingMoreSetup => 'المزيد من خيارات الإعداد';
@@ -5165,7 +5167,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get activityCheckedLocationsClear =>
-      'لا شيء يحتاج إليك في المواقع المفحوصة.';
+      'لا شيء يحتاج إليك في المشاريع المفحوصة.';
 
   @override
   String get activityUnknownStatusDetail =>
@@ -5178,7 +5180,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get activitySavedServers => 'الخوادم المحفوظة';
 
   @override
-  String get activitySelectedLocationsOnly => 'آخر المواقع المحددة فقط';
+  String get activitySelectedLocationsOnly => 'آخر المشاريع المحددة فقط';
 
   @override
   String get activityBackgroundUpdates => 'تحديثات الخلفية';
@@ -5357,7 +5359,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get setupSwitchMissingCredential =>
-      'بيانات الاعتماد المحفوظة لبيئة التشغيل السابقة غير متاحة. تبقى بياناتها محفوظة؛ استعد الملف الشخصي المحفوظ قبل العودة.';
+      'بيانات الاعتماد المحفوظة لبيئة التشغيل السابقة غير متاحة. تبقى بياناتها محفوظة؛ استعد الخادم المحفوظ قبل العودة.';
 
   @override
   String get setupSwitchOwnDescription =>
@@ -5588,7 +5590,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7GlossaryMcpExplanation =>
-      'بروتوكول سياق النموذج (Model Context Protocol). خوادم إضافية صغيرة تمنح الوكيل أدوات أخرى، مثل متصفح أو قاعدة بيانات أو أداة تصميم. تربطها مرة واحدة ويمكن لكل جلسة استخدامها.';
+      'بروتوكول سياق النموذج (Model Context Protocol). خوادم إضافية صغيرة تمنح الوكيل أدوات أخرى، مثل متصفح أو قاعدة بيانات أو أداة تصميم. تربطها مرة واحدة ويمكن لكل محادثة استخدامها.';
 
   @override
   String get e7GlossaryWorktreeTerm => 'شجرة العمل';
@@ -5606,7 +5608,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7GlossaryContextExplanation =>
-      'كل ما يستطيع النموذج الاطلاع عليه الآن: رسائلك، والملفات التي قرأها، ونتائج الأدوات. له حد للحجم. عند امتلائه، تُلخّص الأجزاء الأقدم كي تستمر الجلسة.';
+      'كل ما يستطيع النموذج الاطلاع عليه الآن: رسائلك، والملفات التي قرأها، ونتائج الأدوات. له حد للحجم. عند امتلائه، تُلخّص الأجزاء الأقدم كي تستمر المحادثة.';
 
   @override
   String get e7GlossaryAgentTerm => 'الوكيل';
@@ -5690,7 +5692,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'قد يكون المحتوى المعروض قديمًا حتى يصبح OpenCode متاحًا مجددًا.';
 
   @override
-  String get e7SharedThreeStepsToYourFirstSession => 'ثلاث خطوات لبدء أول جلسة';
+  String get e7SharedThreeStepsToYourFirstSession =>
+      'ثلاث خطوات لبدء أول محادثة';
 
   @override
   String get e7SharedOpenCodeRunsOnYourComputerThisApp =>
@@ -5803,7 +5806,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'يعيد OpenCode الاتصال. حاول مرة أخرى.';
 
   @override
-  String get e7SharedSessionContext => 'سياق الجلسة';
+  String get e7SharedSessionContext => 'سياق المحادثة';
 
   @override
   String get e7SharedRefreshContext => 'تحديث السياق';
@@ -5813,7 +5816,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SharedSendAPromptAndWaitForAn =>
-      'أرسل طلبًا وانتظر رد المساعد. سيبلّغ OpenCode بعدها عن استخدام الرموز في هذه الجلسة.';
+      'أرسل طلبًا وانتظر رد المساعد. سيبلّغ OpenCode بعدها عن استخدام الرموز في هذه المحادثة.';
 
   @override
   String get e7SharedCurrentModelRequest => 'طلب النموذج الحالي';
@@ -5822,7 +5825,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SharedEstimatedInputMakeup => 'التركيب التقديري للمدخلات';
 
   @override
-  String get e7SharedSessionTotals => 'إجماليات الجلسة';
+  String get e7SharedSessionTotals => 'إجماليات المحادثة';
 
   @override
   String get e7SharedUsageComesFromTheLatestCompletedAssistant =>
@@ -5859,7 +5862,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SharedSessionTokensReportedByServer =>
-      'رموز الجلسة · حسب تقرير الخادم';
+      'رموز المحادثة · حسب تقرير الخادم';
 
   @override
   String get e7SharedUserPrompts => 'طلبات المستخدم';
@@ -5878,14 +5881,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SharedSessionLocationChangedCloseAndReopenThis =>
-      'تغيّر موقع الجلسة. أغلق هذه الورقة وأعد فتحها.';
+      'تغيّر مشروع المحادثة. أغلق هذه الورقة وأعد فتحها.';
 
   @override
   String get e7SharedOpenCodeIsReconnecting => 'يعيد OpenCode الاتصال.';
 
   @override
   String get e7SharedTheSessionProjectIsNotAvailableOn =>
-      'مشروع الجلسة غير متاح على هذا الخادم.';
+      'مشروع المحادثة غير متاح على هذا الخادم.';
 
   @override
   String get e7SharedLocalProject => 'مشروع محلي';
@@ -5901,7 +5904,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SharedCopyChangesAndMove => 'نسخ التغييرات ثم النقل';
 
   @override
-  String get e7SharedMoveSession => 'نقل الجلسة';
+  String get e7SharedMoveSession => 'نقل المحادثة';
 
   @override
   String get e7SharedChooseAnotherDirectoryInThisProject =>
@@ -5909,7 +5912,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SharedChooseAConnectedWorkspaceOrReturnTo =>
-      'اختر مساحة عمل متصلة، أو عُد إلى المشروع المحلي.';
+      'اختر بيئة سحابية متصلة، أو عُد إلى المشروع المحلي.';
 
   @override
   String get e7SharedFilterDestinations => 'تصفية الوجهات';
@@ -5939,49 +5942,51 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SharedSessionLocationChangedReturnAndReopenRelated =>
-      'تغيّر موقع الجلسة. عُد وأعد فتح الجلسات المرتبطة.';
+      'تغيّر مشروع المحادثة. عُد وأعد فتح المحادثات المرتبطة.';
 
   @override
   String get e7SharedSessionIsNoLongerRelatedToThis =>
-      'لم تعد الجلسة مرتبطة بهذه الجلسة.';
+      'لم تعد تلك المحادثة مرتبطة بهذه المحادثة.';
 
   @override
   String get e7SharedSessionLocationChangedReturnAndTryAgain =>
-      'تغيّر موقع الجلسة. عُد وحاول مرة أخرى.';
+      'تغيّر مشروع المحادثة. عُد وحاول مرة أخرى.';
 
   @override
   String get e7SharedSessionUnavailableOrLocationChangedReturnOr =>
-      'الجلسة غير متاحة أو تغيّر موقعها. عُد أو حدّث للمحاولة مرة أخرى.';
+      'المحادثة غير متاحة أو تغيّر مشروعها. عُد أو حدّث للمحاولة مرة أخرى.';
 
   @override
   String get e7SharedCouldNotUpdateThePinReturnAnd =>
       'تعذّر تحديث التثبيت. عُد وحاول مرة أخرى.';
 
   @override
-  String get e7SharedRefreshSubagentSessions => 'تحديث جلسات الوكلاء الفرعيين';
+  String get e7SharedRefreshSubagentSessions =>
+      'تحديث محادثات الوكلاء الفرعيين';
 
   @override
-  String get e7SharedParentSession => 'الجلسة الأصل';
+  String get e7SharedParentSession => 'المحادثة الأصل';
 
   @override
   String get e7SharedSubagents => 'الوكلاء الفرعيون';
 
   @override
-  String get e7SharedNoSubagentSessionsYet => 'لا توجد جلسات وكلاء فرعيين بعد';
+  String get e7SharedNoSubagentSessionsYet =>
+      'لا توجد محادثات وكلاء فرعيين بعد';
 
   @override
   String get e7SharedDelegatedWorkWillAppearHereWithoutMixing =>
-      'سيظهر العمل المُفوَّض هنا دون خلط الجلسات الفرعية بقائمة محادثاتك الرئيسية.';
+      'سيظهر العمل المُفوَّض هنا دون خلط محادثات الوكلاء الفرعيين بقائمتك الرئيسية.';
 
   @override
   String get e7SharedOpenCodeHasNotDelegatedWorkFromThis =>
-      'لم يفوّض OpenCode أي عمل من هذه الجلسة.';
+      'لم يفوّض OpenCode أي عمل من هذه المحادثة.';
 
   @override
-  String get e7SharedUnpinSession => 'إلغاء تثبيت الجلسة';
+  String get e7SharedUnpinSession => 'إلغاء تثبيت المحادثة';
 
   @override
-  String get e7SharedPinSession => 'تثبيت الجلسة';
+  String get e7SharedPinSession => 'تثبيت المحادثة';
 
   @override
   String get e7SharedLinkBlockedThisAppMayOpenOnly =>
@@ -6035,7 +6040,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SharedAskedByTheAgentInThisSession =>
-      'سؤال من الوكيل في هذه الجلسة';
+      'سؤال من الوكيل في هذه المحادثة';
 
   @override
   String get e7SharedInputRequested => 'مطلوب إدخال';
@@ -6093,7 +6098,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get e7SharedDetail429 => 'نقل الجلسة؟';
+  String get e7SharedDetail429 => 'نقل المحادثة؟';
 
   @override
   String e7SharedDetail430(int count, String action) {
@@ -6111,7 +6116,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'move': 'تُنقل',
       'other': 'تُنسخ',
     });
-    return '$_temp0 اختر ما إذا كانت تغييرات العمل تلك يجب أن $_temp1 مع الجلسة.';
+    return '$_temp0 اختر ما إذا كانت تغييرات العمل تلك يجب أن $_temp1 مع المحادثة.';
   }
 
   @override
@@ -6142,12 +6147,12 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count جلسة مفوَّضة · افتح أي نسخة محادثة مباشرة.',
-      many: '$count جلسة مفوَّضة · افتح أي نسخة محادثة مباشرة.',
-      few: '$count جلسات مفوَّضة · افتح أي نسخة محادثة مباشرة.',
-      two: 'جلستان مفوَّضتان · افتح أي نسخة محادثة مباشرة.',
-      one: 'جلسة مفوَّضة واحدة · افتح أي نسخة محادثة مباشرة.',
-      zero: 'لا توجد جلسات مفوَّضة.',
+      other: '$count محادثة مفوَّضة · افتح أي نسخة محادثة مباشرة.',
+      many: '$count محادثة مفوَّضة · افتح أي نسخة محادثة مباشرة.',
+      few: '$count محادثات مفوَّضة · افتح أي نسخة محادثة مباشرة.',
+      two: 'محادثتان مفوَّضتان · افتح أي نسخة محادثة مباشرة.',
+      one: 'محادثة مفوَّضة واحدة · افتح أي نسخة محادثة مباشرة.',
+      zero: 'لا توجد محادثات مفوَّضة.',
     );
     return '$_temp0';
   }
@@ -6266,7 +6271,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiRetry => 'إعادة المحاولة';
 
   @override
-  String get e7LocaleUiNewSession => 'جلسة جديدة';
+  String get e7LocaleUiNewSession => 'محادثة جديدة';
 
   @override
   String get e7LocaleUiNewSessionHint => 'ابدأ محادثة في المشروع الحالي';
@@ -6275,7 +6280,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiWorkspace => 'مساحة العمل';
 
   @override
-  String get e7LocaleUiWorkspaceHint => 'الجلسات الأخيرة والمشروع الحالي';
+  String get e7LocaleUiWorkspaceHint => 'المحادثات الأخيرة والمشروع الحالي';
 
   @override
   String get e7LocaleUiFiles => 'الملفات';
@@ -6302,7 +6307,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiKeyboardShortcuts => 'اختصارات لوحة المفاتيح';
 
   @override
-  String get e7LocaleUiRefreshSessions => 'تحديث الجلسات';
+  String get e7LocaleUiRefreshSessions => 'تحديث المحادثات';
 
   @override
   String get e7LocaleUiDiagnostics => 'التشخيص';
@@ -6342,7 +6347,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiCloseOverlay => 'إغلاق لوحة أو مربع حوار أو قائمة';
 
   @override
-  String get e7LocaleUiContextActions => 'إجراءات الرسائل والملفات والجلسات';
+  String get e7LocaleUiContextActions => 'إجراءات الرسائل والملفات والمحادثات';
 
   @override
   String get e7LocaleUiTypeCommand => 'اكتب أمرًا…';
@@ -6354,10 +6359,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiContextKeys => 'نقرة بالزر الأيمن / Shift + F10 / Menu';
 
   @override
-  String get e7LocaleUiShareScopeChanged => 'تغيّر نطاق الجلسة المشتركة';
+  String get e7LocaleUiShareScopeChanged => 'تغيّر نطاق المحادثة المشتركة';
 
   @override
-  String get e7LocaleUiConnectionChanged => 'تغيّر الاتصال.';
+  String get e7LocaleUiConnectionChanged => 'تغيّر الخادم.';
 
   @override
   String get e7AppearanceFollowAndroid => 'اتباع إعداد Android';
@@ -6380,10 +6385,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'مطابقة إعداد المظهر الفاتح أو الداكن لهذا الجهاز';
 
   @override
-  String get e7AppearanceLightDescription => 'استخدام مساحة العمل الفاتحة';
+  String get e7AppearanceLightDescription => 'استخدام المظهر الفاتح';
 
   @override
-  String get e7AppearanceDarkDescription => 'استخدام مساحة العمل الداكنة';
+  String get e7AppearanceDarkDescription => 'استخدام المظهر الداكن';
 
   @override
   String get e7AppearanceTitle => 'المظهر';
@@ -6613,7 +6618,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SettingsUi62 => 'لم تُحفظ كلمة مرور للخادم';
 
   @override
-  String get e7SettingsUi63 => 'إدارة ملفات تعريف الخوادم';
+  String get e7SettingsUi63 => 'إدارة الخوادم';
 
   @override
   String get e7SettingsUi64 =>
@@ -6824,12 +6829,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7SettingsDraftDeleteSummary(int count) {
-    return 'يحذف نص محرّر الرسائل المحفوظ في $count جلسة';
+    return 'يحذف نص محرّر الرسائل المحفوظ في $count محادثة';
   }
 
   @override
   String e7SettingsDraftDeleteBody(int count) {
-    return 'يحذف هذا الإجراء نص محرّر الرسائل المحفوظ في $count جلسة. لا يتأثر أي شيء على الخادم.';
+    return 'يحذف هذا الإجراء نص محرّر الرسائل المحفوظ في $count محادثة. لا يتأثر أي شيء على الخادم.';
   }
 
   @override
@@ -7031,7 +7036,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7ProjectProjectSwitchUnavailableDetail =>
-      'يستخدم هذا الاتصال المجلد المحدد للمحادثات. افتح مهمة جديدة من مساحة العمل للمتابعة.';
+      'يستخدم هذا الخادم المجلد المحدد للمحادثات. ابدأ محادثة جديدة من مساحة العمل للمتابعة.';
 
   @override
   String get e7ProjectProjectsTitle => 'المشاريع';
@@ -7121,11 +7126,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7ProjectAttentionCacheSource =>
-      'المصدر: البيانات المحلية المخزنة للاتصال المحدد. النطاق: الموقع والمحادثات المحمّلة حاليًا. آخر تحديث: غير معروف.';
+      'المصدر: البيانات المحلية المخزنة للخادم المحدد. النطاق: المشروع والمحادثات المحمّلة حاليًا. آخر تحديث: غير معروف.';
 
   @override
   String get e7ProjectAttentionProfileSource =>
-      'المصدر: ملف الخادم المحفوظ فقط. حالة الطلبات التي تحتاج إلى انتباه: غير معروفة. آخر فحص: غير معروف.';
+      'المصدر: الخادم المحفوظ فقط. حالة الطلبات التي تحتاج إلى انتباه: غير معروفة. آخر فحص: غير معروف.';
 
   @override
   String get e7ProjectAttentionPendingUnknown => 'الطلبات المعلّقة: غير معروفة';
@@ -7160,7 +7165,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7ProjectMonitorUnsupported =>
-      'متابعة الطلبات في الخلفية غير متاحة لهذا الاتصال. افتح المحادثة لمراجعة الطلبات الحالية.';
+      'متابعة الطلبات في الخلفية غير متاحة لهذا الخادم. افتح المحادثة لمراجعة الطلبات الحالية.';
 
   @override
   String get readerUiDisconnected => 'الخادم غير متصل.';
@@ -7235,7 +7240,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get readerUiCopyPath => 'نسخ المسار';
 
   @override
-  String get readerUiWorkspaceSymbols => 'البحث عن رموز مساحة العمل';
+  String get readerUiWorkspaceSymbols => 'البحث عن رموز المشروع';
 
   @override
   String get readerUiSymbolsHint =>
@@ -7246,7 +7251,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get readerUiSymbolsUnavailable =>
-      'جرّب اسمًا آخر. بعض خدمات اللغات لا تدعم البحث عن الرموز في مساحة العمل بأكملها.';
+      'جرّب اسمًا آخر. بعض خدمات اللغات لا تدعم البحث عن الرموز في المشروع بأكمله.';
 
   @override
   String get readerUiReviewAll => 'مراجعة جميع التغييرات';
@@ -7280,7 +7285,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get readerUiSessionScopeHint =>
-      'التغييرات المرتبطة بجلسة OpenCode هذه';
+      'التغييرات المرتبطة بمحادثة OpenCode هذه';
 
   @override
   String get readerUiWorkingScopeHint => 'تغييرات Git الحالية غير المثبّتة';
@@ -7350,7 +7355,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get readerUiNoChangesHint =>
-      'لم يغيّر OpenCode أي ملفات في هذه الجلسة.';
+      'لم يغيّر OpenCode أي ملفات في هذه المحادثة.';
 
   @override
   String get readerUiDiffUnavailable => 'محتوى التغييرات غير متاح';
@@ -7681,7 +7686,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get readerUiChanged => 'متغير';
 
   @override
-  String get readerUiSession => 'الجلسة';
+  String get readerUiSession => 'المحادثة';
 
   @override
   String get readerUiBranch => 'الفرع';
@@ -7774,22 +7779,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7WorkspaceNeedsYou => 'بانتظارك';
 
   @override
-  String get e7WorkspaceActiveSessions => 'الجلسات النشطة';
+  String get e7WorkspaceActiveSessions => 'المحادثات النشطة';
 
   @override
-  String get e7WorkspaceRecentSessions => 'الجلسات الأخيرة';
+  String get e7WorkspaceRecentSessions => 'المحادثات الأخيرة';
 
   @override
-  String get e7WorkspaceNoRecent => 'لا توجد جلسات حديثة';
+  String get e7WorkspaceNoRecent => 'لا توجد محادثات حديثة';
 
   @override
-  String get e7WorkspaceChooseFolderToStart => 'اختر مجلد مشروع لبدء جلسة.';
+  String get e7WorkspaceChooseFolderToStart => 'اختر مجلد مشروع لبدء محادثة.';
 
   @override
-  String get e7WorkspaceStartInWorkspace => 'ابدأ جلسة في مساحة العمل المحددة.';
+  String get e7WorkspaceStartInWorkspace => 'ابدأ محادثة في المشروع المحدد.';
 
   @override
-  String get e7WorkspaceArchivedSessions => 'الجلسات المؤرشفة';
+  String get e7WorkspaceArchivedSessions => 'المحادثات المؤرشفة';
 
   @override
   String get e7WorkspaceNoProjectSelected => 'لم يُحدَّد مشروع';
@@ -7810,35 +7815,35 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7WorkspaceShareCopied => 'نُسخ رابط المشاركة';
 
   @override
-  String get e7WorkspaceUnshared => 'أُوقفت مشاركة الجلسة';
+  String get e7WorkspaceUnshared => 'أُوقفت مشاركة المحادثة';
 
   @override
   String get e7WorkspaceReconnectingShortly =>
       'جارٍ إعادة الاتصال بـ OpenCode. حاول مجددًا بعد قليل.';
 
   @override
-  String get e7WorkspaceRenameSession => 'إعادة تسمية الجلسة';
+  String get e7WorkspaceRenameSession => 'إعادة تسمية المحادثة';
 
   @override
   String get e7WorkspaceTitle => 'العنوان';
 
   @override
-  String get e7WorkspaceArchiveConfirm => 'أرشفة الجلسة؟';
+  String get e7WorkspaceArchiveConfirm => 'أرشفة المحادثة؟';
 
   @override
-  String get e7WorkspaceShareConfirm => 'مشاركة هذه الجلسة؟';
+  String get e7WorkspaceShareConfirm => 'مشاركة هذه المحادثة؟';
 
   @override
-  String get e7WorkspaceDeleteConfirm => 'حذف الجلسة؟';
+  String get e7WorkspaceDeleteConfirm => 'حذف المحادثة؟';
 
   @override
   String get e7WorkspaceArchive => 'أرشفة';
 
   @override
-  String get e7WorkspaceShareSession => 'مشاركة الجلسة';
+  String get e7WorkspaceShareSession => 'مشاركة المحادثة';
 
   @override
-  String get e7WorkspaceArchivedActions => 'إجراءات الجلسة المؤرشفة';
+  String get e7WorkspaceArchivedActions => 'إجراءات المحادثة المؤرشفة';
 
   @override
   String get e7WorkspaceRename => 'إعادة تسمية';
@@ -7916,42 +7921,42 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7WorkspaceReferenceRetry =>
-      'مرجع الجلسة غير متاح. حدّث وحاول مجددًا.';
+      'مرجع المحادثة غير متاح. حدّث وحاول مجددًا.';
 
   @override
   String get e7WorkspaceLocationRetry =>
-      'موقع الجلسة غير متاح. حدّث وحاول مجددًا.';
+      'مشروع المحادثة غير متاح. حدّث وحاول مجددًا.';
 
   @override
   String get e7WorkspaceLocationChangedReturn =>
-      'تغيّر موقع الجلسة. ارجع وحاول مجددًا.';
+      'تغيّر مشروع المحادثة. ارجع وحاول مجددًا.';
 
   @override
   String get e7WorkspaceLocationChangedRetry =>
-      'تغيّر موقع الجلسة. حدّث وحاول مجددًا.';
+      'تغيّر مشروع المحادثة. حدّث وحاول مجددًا.';
 
   @override
-  String get e7WorkspaceReferenceUnavailable => 'مرجع الجلسة غير متاح.';
+  String get e7WorkspaceReferenceUnavailable => 'مرجع المحادثة غير متاح.';
 
   @override
   String get e7WorkspacePaginationStuck =>
-      'تعذّر تحميل الصفحة التالية من الجلسات. حدّث القائمة للمتابعة.';
+      'تعذّر تحميل الصفحة التالية من المحادثات. حدّث القائمة للمتابعة.';
 
   @override
-  String get e7WorkspaceContinueHereConfirm => 'متابعة هذه الجلسة هنا؟';
+  String get e7WorkspaceContinueHereConfirm => 'متابعة هذه المحادثة هنا؟';
 
   @override
   String e7WorkspaceCreateFailed(String error) {
-    return 'تعذّر إنشاء جلسة: $error';
+    return 'تعذّر إنشاء محادثة: $error';
   }
 
   @override
   String get e7WorkspaceNoProjectsSearch =>
-      'لم يُرجع الخادم أي مشاريع. ابحث في جميع الجلسات للعثور على المحادثات السابقة.';
+      'لم يُرجع الخادم أي مشاريع. ابحث في جميع المحادثات للعثور على أعمالك السابقة.';
 
   @override
   String e7WorkspaceActiveDirectory(String directory) {
-    return 'مجلد الجلسة النشطة · $directory';
+    return 'مشروع المحادثة النشطة · $directory';
   }
 
   @override
@@ -7959,12 +7964,12 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count جلسة مؤرشفة',
-      many: '$count جلسة مؤرشفة',
-      few: '$count جلسات مؤرشفة',
-      two: 'جلستان مؤرشفتان',
-      one: 'جلسة مؤرشفة واحدة',
-      zero: 'لا توجد جلسات مؤرشفة',
+      other: '$count محادثة مؤرشفة',
+      many: '$count محادثة مؤرشفة',
+      few: '$count محادثات مؤرشفة',
+      two: 'محادثتان مؤرشفتان',
+      one: 'محادثة مؤرشفة واحدة',
+      zero: 'لا توجد محادثات مؤرشفة',
     );
     return '$_temp0';
   }
@@ -7991,7 +7996,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7WorkspaceArchiveDetail(String title) {
-    return 'ستُخفى «$title» من الجلسات الأخيرة.';
+    return 'ستُخفى «$title» من المحادثات الأخيرة.';
   }
 
   @override
@@ -8071,17 +8076,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7WorkspaceSessionId(String id) {
-    return 'الجلسة $id';
+    return 'المحادثة $id';
   }
 
   @override
   String e7WorkspaceContinueHereDetail(String title) {
-    return 'ستنتمي «$title» إلى مساحة عملك الحالية عبر نظام مزامنة الخادم، ولن تنتمي بعد ذلك إلى مساحة العمل التي تعمل فيها الآن.';
+    return 'ستنتمي «$title» إلى مشروعك الحالي عبر نظام مزامنة الخادم، ولن تنتمي بعد ذلك إلى المشروع الذي تعمل فيه الآن.';
   }
 
   @override
   String e7WorkspaceMovedHere(String title) {
-    return 'أصبحت «$title» ضمن مساحة العمل هذه';
+    return 'أصبحت «$title» ضمن هذا المشروع';
   }
 
   @override
@@ -8090,14 +8095,14 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get e7WorkspaceLoadingSessions => 'جارٍ تحميل الجلسات…';
+  String get e7WorkspaceLoadingSessions => 'جارٍ تحميل المحادثات…';
 
   @override
   String get e7WorkspaceLoadedRecentEmpty => 'قد تتوفر محادثات أقدم أدناه.';
 
   @override
   String get e7WorkspaceSearchServer =>
-      'البحث في عناوين الجلسات في جميع مشاريع هذا الخادم';
+      'البحث في عناوين المحادثات في جميع مشاريع هذا الخادم';
 
   @override
   String get e7WorkspaceUnknownProject => 'مشروع غير معروف';
@@ -8143,16 +8148,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7WorkspaceFilteredLoaded(int count, int total) {
-    return 'الجلسات المحمّلة: $total · الظاهرة: $count';
+    return 'المحادثات المحمّلة: $total · الظاهرة: $count';
   }
 
   @override
   String e7WorkspaceLoadedSummary(int count, int folders) {
-    return 'الجلسات المحمّلة: $count · المجلدات: $folders';
+    return 'المحادثات المحمّلة: $count · المشاريع: $folders';
   }
 
   @override
-  String get e7WorkspaceLoadedFolders => 'المجلدات المحمّلة';
+  String get e7WorkspaceLoadedFolders => 'المشاريع المحمّلة';
 
   @override
   String get chatUiUnderAMessageForActions => ' أسفل الرسالة لعرض الإجراءات';
@@ -8212,7 +8217,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiAnyoneWithTheLinkCanViewThis =>
-      'يمكن لأي شخص لديه الرابط الاطّلاع على محادثة هذه الجلسة وسياقها المشترك. لا تشارك جلسات تتضمّن أسرارًا أو بيانات اعتماد أو ملفات خاصة.';
+      'يمكن لأي شخص لديه الرابط الاطّلاع على هذه المحادثة وسياقها المشترك. لا تشارك محادثات تتضمّن أسرارًا أو بيانات اعتماد أو ملفات خاصة.';
 
   @override
   String get chatUiAppDiagnostics => 'تشخيصات التطبيق';
@@ -8274,11 +8279,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiChangeTheTitleShownInTheSession =>
-      'تغيير العنوان الظاهر في قائمة الجلسات';
+      'تغيير العنوان الظاهر في قائمة المحادثات';
 
   @override
   String get chatUiChangeThisSessionSExperimentalWorkspace =>
-      'تغيير مساحة العمل التجريبية لهذه الجلسة';
+      'تغيير البيئة السحابية التجريبية لهذه المحادثة';
 
   @override
   String get chatUiChangedFile => 'ملف متغيّر';
@@ -8288,11 +8293,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiChooseAPromptAndContinueItIn =>
-      'اختيار طلب ومتابعته في جلسة جديدة';
+      'اختيار طلب ومتابعته في محادثة جديدة';
 
   @override
   String get chatUiChooseAPromptToRestoreItIn =>
-      'اختر طلبًا لاستعادته في جلسة جديدة.';
+      'اختر طلبًا لاستعادته في محادثة جديدة.';
 
   @override
   String get chatUiChooseAServerModelByProviderAnd =>
@@ -8337,7 +8342,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiCompactContext => 'اختصار السياق';
 
   @override
-  String get chatUiCompactSession => 'اختصار الجلسة';
+  String get chatUiCompactSession => 'اختصار المحادثة';
 
   @override
   String get chatUiCompactingConversation => 'جارٍ اختصار المحادثة…';
@@ -8402,10 +8407,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiCreateOrCopyAPublicSessionLink =>
-      'إنشاء رابط عام للجلسة أو نسخه';
+      'إنشاء رابط عام للمحادثة أو نسخه';
 
   @override
-  String get chatUiCurrentSession => 'الجلسة الحالية';
+  String get chatUiCurrentSession => 'المحادثة الحالية';
 
   @override
   String get chatUiDelegate => 'تفويض';
@@ -8418,7 +8423,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'تفويض هذا الطلب إلى وكيل فرعي على الخادم';
 
   @override
-  String get chatUiDelegatedSession => 'جلسة مفوّضة';
+  String get chatUiDelegatedSession => 'محادثة مفوّضة';
 
   @override
   String get chatUiDeleteMessage => 'حذف الرسالة';
@@ -8438,7 +8443,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiDisableTheCurrentPublicSessionLink =>
-      'تعطيل الرابط العام الحالي للجلسة';
+      'تعطيل الرابط العام الحالي للمحادثة';
 
   @override
   String get chatUiDiscard => 'تجاهل';
@@ -8472,7 +8477,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiEmptySessionWasKeptBecauseOpenCodeCould =>
-      'احتُفظ بالجلسة الفارغة لأن OpenCode لم يتمكن من التحقق منها أو إزالتها.';
+      'احتُفظ بالمحادثة الفارغة لأن OpenCode لم يتمكن من التحقق منها أو إزالتها.';
 
   @override
   String get chatUiErrorDetails => 'تفاصيل الخطأ';
@@ -8496,7 +8501,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiExploring => 'جارٍ الاستكشاف';
 
   @override
-  String get chatUiExportSessionTranscript => 'تصدير سجل الجلسة';
+  String get chatUiExportSessionTranscript => 'تصدير سجل المحادثة';
 
   @override
   String get chatUiExportTranscript => 'تصدير سجل المحادثة';
@@ -8532,7 +8537,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiFindSessionsAcrossEveryOpenCodeProject =>
-      'البحث عن جلسات في كل مشاريع OpenCode';
+      'البحث عن محادثات في كل مشاريع OpenCode';
 
   @override
   String get chatUiFollowAndroidOrChooseTheNativeLight =>
@@ -8545,7 +8550,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiForkFromThisPrompt => 'إنشاء فرع من هذا الطلب';
 
   @override
-  String get chatUiForkSession => 'إنشاء فرع من الجلسة';
+  String get chatUiForkSession => 'إنشاء فرع من المحادثة';
 
   @override
   String get chatUiFromToolCall => 'من استدعاء أداة';
@@ -8672,11 +8677,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiMore => 'المزيد';
 
   @override
-  String get chatUiMoveSession => 'نقل الجلسة';
+  String get chatUiMoveSession => 'نقل المحادثة';
 
   @override
   String get chatUiMoveThisSessionToAnotherProjectDirectory =>
-      'نقل هذه الجلسة إلى مجلد مشروع آخر';
+      'نقل هذه المحادثة إلى مشروع آخر';
 
   @override
   String get chatUiMoved => 'نُقلت';
@@ -8701,7 +8706,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يتوفر وكلاء فرعيون من هذا الخادم';
 
   @override
-  String get chatUiNoTodosInThisSession => 'لا توجد مهام في هذه الجلسة';
+  String get chatUiNoTodosInThisSession => 'لا توجد مهام في هذه المحادثة';
 
   @override
   String get chatUiNotConnectedToTheServerRightNow =>
@@ -8714,17 +8719,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiOpenFullScreenPromptEditor => 'فتح محرّر الطلب بملء الشاشة';
 
   @override
-  String get chatUiOpenParentSession => 'فتح الجلسة الأم';
+  String get chatUiOpenParentSession => 'فتح المحادثة الأم';
 
   @override
   String get chatUiOpenPersistentWorkspaceTerminals =>
-      'فتح جلسات الطرفية الدائمة لمساحة العمل';
+      'فتح جلسات الطرفية الدائمة للمشروع';
 
   @override
   String get chatUiOpenProviders => 'فتح مزوّدي الخدمة';
 
   @override
-  String get chatUiOpenSubagentSession => 'فتح جلسة الوكيل الفرعي';
+  String get chatUiOpenSubagentSession => 'فتح محادثة الوكيل الفرعي';
 
   @override
   String get chatUiOpenCodeCommandsAreUnavailableOffline =>
@@ -8777,7 +8782,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiProjectReferences => 'مراجع المشاريع';
 
   @override
-  String get chatUiProjectsAndWorkspaces => 'المشاريع ومساحات العمل';
+  String get chatUiProjectsAndWorkspaces => 'المشاريع وأشجار العمل';
 
   @override
   String get chatUiPromptEditor => 'محرّر الطلب';
@@ -8844,7 +8849,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiRename => 'إعادة تسمية';
 
   @override
-  String get chatUiRenameSession => 'إعادة تسمية الجلسة';
+  String get chatUiRenameSession => 'إعادة تسمية المحادثة';
 
   @override
   String get chatUiRestoreMessages => 'استعادة الرسائل';
@@ -8854,7 +8859,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiRestoreTheCurrentlyRevertedSessionState =>
-      'استعادة حالة الجلسة المتراجَع عنها حاليًا';
+      'استعادة حالة المحادثة المتراجَع عنها حاليًا';
 
   @override
   String get chatUiResult => 'النتيجة';
@@ -8888,7 +8893,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiReviewTheActualDiffForThisSession =>
-      'مراجعة الفروق الفعلية لهذه الجلسة';
+      'مراجعة الفروق الفعلية لهذه المحادثة';
 
   @override
   String get chatUiRollBackMessagesAndFileChangesAfter =>
@@ -8925,7 +8930,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiSelectAModelBeforeCompactingThisSession =>
-      'اختر نموذجًا قبل اختصار هذه الجلسة.';
+      'اختر نموذجًا قبل اختصار هذه المحادثة.';
 
   @override
   String get chatUiSend => 'إرسال';
@@ -8971,29 +8976,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiServerStatus => 'حالة الخادم';
 
   @override
-  String get chatUiSessionChanges => 'تغييرات الجلسة';
+  String get chatUiSessionChanges => 'تغييرات المحادثة';
 
   @override
-  String get chatUiSessionContext => 'سياق الجلسة';
+  String get chatUiSessionContext => 'سياق المحادثة';
 
   @override
-  String get chatUiSessionIsNoLongerShared => 'لم تعد الجلسة مشتركة';
+  String get chatUiSessionIsNoLongerShared => 'لم تعد المحادثة مشتركة';
 
   @override
-  String get chatUiSessionMenu => 'قائمة الجلسة';
+  String get chatUiSessionMenu => 'قائمة المحادثة';
 
   @override
   String get chatUiSessionSharedCopyTheVisibleLinkManually =>
-      'شُوركت الجلسة. انسخ الرابط الظاهر يدويًا.';
+      'شُوركت المحادثة. انسخ الرابط الظاهر يدويًا.';
 
   @override
   String get chatUiShareLinkCopied => 'نُسخ رابط المشاركة';
 
   @override
-  String get chatUiShareSession => 'مشاركة الجلسة';
+  String get chatUiShareSession => 'مشاركة المحادثة';
 
   @override
-  String get chatUiShareThisSession => 'هل تريد مشاركة هذه الجلسة؟';
+  String get chatUiShareThisSession => 'هل تريد مشاركة هذه المحادثة؟';
 
   @override
   String get chatUiSharedAnyoneWithTheLinkCanView =>
@@ -9003,7 +9008,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiShowAllCommands => 'عرض كل الأوامر';
 
   @override
-  String get chatUiShowAllSubagentSessions => 'عرض كل جلسات الوكلاء الفرعيين';
+  String get chatUiShowAllSubagentSessions => 'عرض كل محادثات الوكلاء الفرعيين';
 
   @override
   String get chatUiShowAllSubagents => 'عرض كل الوكلاء الفرعيين';
@@ -9029,11 +9034,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiStartACleanSessionInThisWorkspace =>
-      'بدء جلسة جديدة خالية من السياق في مساحة العمل هذه';
+      'بدء محادثة جديدة خالية من السياق في هذا المشروع';
 
   @override
   String get chatUiStartANewSessionWithThisPrompt =>
-      'بدء جلسة جديدة بهذا الطلب في محرّر الرسالة';
+      'بدء محادثة جديدة بهذا الطلب في محرّر الرسالة';
 
   @override
   String get chatUiStartCoding => 'بدء البرمجة';
@@ -9061,7 +9066,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiSummarizeTheSessionUsingTheSelectedModel =>
-      'تلخيص الجلسة باستخدام النموذج المحدّد';
+      'تلخيص المحادثة باستخدام النموذج المحدّد';
 
   @override
   String get chatUiSwitchOrganization => 'تبديل المؤسسة';
@@ -9079,7 +9084,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiThatMessageIsNoLongerInThis =>
-      'لم تعد تلك الرسالة في هذه الجلسة.';
+      'لم تعد تلك الرسالة في هذه المحادثة.';
 
   @override
   String get chatUiTheFileHasNoContentToAttach =>
@@ -9284,7 +9289,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String chatUiNextTurnsModel(Object model) {
-    return 'ستستخدم الأدوار التالية في هذه الجلسة $model.';
+    return 'ستستخدم الأدوار التالية في هذه المحادثة $model.';
   }
 
   @override
@@ -9519,7 +9524,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String chatUiSharedLink(Object url) {
-    return 'رابط الجلسة المشتركة $url';
+    return 'رابط المحادثة المشتركة $url';
   }
 
   @override
@@ -9759,7 +9764,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String chatUiParentSession(Object title) {
-    return 'الجلسة الأصل · $title';
+    return 'المحادثة الأصل · $title';
   }
 
   @override
@@ -9774,7 +9779,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiDisplayAndContext => 'العرض والسياق';
 
   @override
-  String get chatUiSessionActions => 'إجراءات الجلسة';
+  String get chatUiSessionActions => 'إجراءات المحادثة';
 
   @override
   String get chatUiResults => 'النتائج';
@@ -9783,7 +9788,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiPermissionFallback => 'إذن';
 
   @override
-  String get chatUiMainSession => 'الجلسة الرئيسية';
+  String get chatUiMainSession => 'المحادثة الرئيسية';
 
   @override
   String get chatUiTodo => 'المهام';
@@ -9807,7 +9812,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiResultSourceDetails => 'تفاصيل رسالة الخادم';
 
   @override
-  String get chatUiResultOpenChild => 'فتح جلسة الوكيل الفرعي';
+  String get chatUiResultOpenChild => 'فتح محادثة الوكيل الفرعي';
 
   @override
   String get chatUiNoResultText => 'لم يُرجع الخادم أي نص للنتيجة.';
@@ -9849,7 +9854,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiUser => 'المستخدم';
 
   @override
-  String get chatUiOpenCodeSession => 'جلسة OpenCode';
+  String get chatUiOpenCodeSession => 'محادثة OpenCode';
 
   @override
   String get chatUiTool => 'أداة';
@@ -10310,7 +10315,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'إنشاء فروع Git معزولة وإدارتها';
 
   @override
-  String get e7LibraryManagedWorkspaces => 'مساحات العمل المُدارة';
+  String get e7LibraryManagedWorkspaces => 'البيئات السحابية';
 
   @override
   String get e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked =>
@@ -10327,16 +10332,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LibraryOpenCodeIsReconnecting => 'يعيد OpenCode الاتصال.';
 
   @override
-  String get e7LibraryWorkspaceDiscoveryFinished => 'اكتمل اكتشاف مساحات العمل';
+  String get e7LibraryWorkspaceDiscoveryFinished => 'اكتمل اكتشاف البيئات';
 
   @override
   String e7LibraryCouldNotDiscoverWorkspaces(String detail1) {
-    return 'تعذّر اكتشاف مساحات العمل: $detail1';
+    return 'تعذّر اكتشاف البيئات: $detail1';
   }
 
   @override
   String e7LibraryCouldNotCreateWorkspace(String detail1) {
-    return 'تعذّر إنشاء مساحة العمل: $detail1';
+    return 'تعذّر إنشاء البيئة: $detail1';
   }
 
   @override
@@ -10346,7 +10351,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7LibraryCouldNotRemoveWorkspace(String detail1) {
-    return 'تعذّر حذف مساحة العمل: $detail1';
+    return 'تعذّر حذف البيئة: $detail1';
   }
 
   @override
@@ -10388,11 +10393,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LibraryRetryWorkspaceAdapters => 'إعادة المحاولة';
 
   @override
-  String get e7LibraryNoWorkspaceAdapters => 'لا توجد مهايئات لمساحات العمل';
+  String get e7LibraryNoWorkspaceAdapters => 'لا توجد مهايئات للبيئات';
 
   @override
   String get e7LibraryThisOpenCodeProjectDoesNotExposeManaged =>
-      'لا يتيح مشروع OpenCode هذا إنشاء مساحات عمل مُدارة.';
+      'لا يتيح مشروع OpenCode هذا إنشاء بيئات سحابية.';
 
   @override
   String get e7LibraryAdapterRefreshFailed => 'فشل تحديث المهايئات';
@@ -10413,7 +10418,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LibraryOpenAgain => 'فتح مجددًا';
 
   @override
-  String get e7LibraryNewManagedWorkspace => 'مساحة عمل مُدارة جديدة';
+  String get e7LibraryNewManagedWorkspace => 'بيئة سحابية جديدة';
 
   @override
   String get e7LibraryAdapter => 'المهايئ';
@@ -10427,7 +10432,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7LibraryOpenCodeConfiguresAdapterSpecificDetailsOnThe =>
-      'يضبط OpenCode التفاصيل الخاصة بالمهايئ على الخادم. تُفتح مساحة العمل الجديدة هنا عندما تصبح جاهزة.';
+      'يضبط OpenCode التفاصيل الخاصة بالمهايئ على الخادم. تُفتح البيئة الجديدة هنا عندما تصبح جاهزة.';
 
   @override
   String get e7LibraryCreateAndOpen => 'إنشاء وفتح';
@@ -10439,7 +10444,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7LibraryTheServerAdapterMayPermanentlyDeleteThe =>
-      'قد يحذف مهايئ الخادم البيئة البعيدة أو شجرة العمل نهائيًا. تبقى المحادثات السابقة، لكن قد لا تعود مساحة العمل قابلة للوصول.';
+      'قد يحذف مهايئ الخادم البيئة البعيدة أو شجرة العمل نهائيًا. تبقى المحادثات السابقة، لكن قد لا تعود البيئة قابلة للوصول.';
 
   @override
   String e7LibraryTypeToConfirm(String detail1) {
@@ -10474,7 +10479,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7LibraryOpenCodeDidNotSwitchLocations =>
-      'لم يغيّر OpenCode الموقع.';
+      'لم يغيّر OpenCode المشروع.';
 
   @override
   String e7LibraryCouldNotVerifyBeforeThisDestructiveAction(
@@ -10650,7 +10655,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get e7LibraryLocationChanged => 'تغيّر الموقع.';
+  String get e7LibraryLocationChanged => 'تغيّر المشروع.';
 
   @override
   String get e7LibraryAuthenticateFromTheServerMachine =>
@@ -11073,7 +11078,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7LibrarySearchModelAliases =>
-      'AI reasoning favorites recent ذكاء اصطناعي استدلال مفضلة حديث';
+      'AI reasoning favorites recent conversation session chat محادثة جلسة ذكاء اصطناعي استدلال مفضلة حديث';
 
   @override
   String get e7LibrarySearchProviderAliases =>
@@ -11097,11 +11102,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7LibrarySearchImportAliases =>
-      'backup restore transfer JSON conversation نسخ احتياطي استعادة نقل محادثة';
+      'backup restore transfer JSON conversation session chat جلسة نسخ احتياطي استعادة نقل محادثة';
 
   @override
   String get e7LibrarySearchSettingsAliases =>
-      'appearance theme language notifications privacy voice background server مظهر سمة لغة إشعارات خصوصية صوت خلفية خادم';
+      'appearance theme language notifications privacy voice background server profile connection ملف شخصي مظهر سمة لغة إشعارات خصوصية صوت خلفية خادم';
 
   @override
   String get e7LibrarySearchGuideAliases =>
@@ -11130,8 +11135,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SetupAccountHint => 'تسجيل الدخول بحسابك';
 
   @override
-  String get e7SetupNewTerminalDetail =>
-      'ابدأ جلسة طرفية في مساحة العمل الحالية.';
+  String get e7SetupNewTerminalDetail => 'ابدأ جلسة طرفية في المشروع الحالي.';
 
   @override
   String get e7SetupShowPassword => 'إظهار كلمة مرور الخادم';
@@ -11265,7 +11269,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SetupNewTerminal => 'طرفية جديدة';
 
   @override
-  String get e7SetupUnsavedProfile => 'لم يُحفظ ملف الخادم.';
+  String get e7SetupUnsavedProfile => 'لم يُحفظ الخادم.';
 
   @override
   String get e7SetupCheckingInstall => 'جارٍ التحقق من التثبيت الحالي…';
@@ -11784,7 +11788,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7SetupSaveFailed(String name, String detail) {
-    return 'تعذّر حفظ $name. لم يتغيّر الملف الحالي. تحقّق من مساحة تخزين الجهاز وحاول مجددًا. ($detail)';
+    return 'تعذّر حفظ $name. لم يتغيّر الخادم الحالي. تحقّق من مساحة تخزين الجهاز وحاول مجددًا. ($detail)';
   }
 
   @override
@@ -11799,7 +11803,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7SetupRemoveFailed(String name, String detail) {
-    return 'تعذّرت إزالة $name. حُفظ الملف والاتصال الحالي. تحقّق من مساحة تخزين الجهاز وحاول مجددًا. ($detail)';
+    return 'تعذّرت إزالة $name. بقي الخادم المحفوظ والاتصال الحالي. تحقّق من مساحة تخزين الجهاز وحاول مجددًا. ($detail)';
   }
 
   @override
@@ -11894,7 +11898,7 @@ class AppLocalizationsAr extends AppLocalizations {
       one: 'ستُحذف مسودة واحدة غير مرسلة.',
       zero: '',
     );
-    return 'يحذف هذا كل ما حفظه الجهاز لهذا الخادم: كلمة المرور، والنموذج والوكيل المحددين، ومساحة العمل المختارة، والجلسات المعروضة في أداة الشاشة الرئيسية.\n\n$_temp0 $_temp1\n\nلن يُحذف أي شيء على الخادم نفسه أو لدى مزوّدي الذكاء الاصطناعي.';
+    return 'يحذف هذا كل ما حفظه الجهاز لهذا الخادم: كلمة المرور، والنموذج والوكيل المحددين، والمشروع المختار، والمحادثات المعروضة في أداة الشاشة الرئيسية.\n\n$_temp0 $_temp1\n\nلن يُحذف أي شيء على الخادم نفسه أو لدى مزوّدي الذكاء الاصطناعي.';
   }
 
   @override
@@ -12274,7 +12278,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get e7SetupOpeningWorkspace => 'جارٍ فتح مساحة العمل المحفوظة.';
+  String get e7SetupOpeningWorkspace => 'جارٍ فتح المشروع المحفوظ.';
 
   @override
   String get e7SetupWhatToCheck => 'ما يجب التحقق منه';
@@ -12482,10 +12486,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7ModelUiUseModelMode => 'استخدام النموذج والوضع';
 
   @override
-  String get e7ModelUiUseSession => 'استخدام في هذه الجلسة';
+  String get e7ModelUiUseSession => 'استخدام في هذه المحادثة';
 
   @override
-  String get e7ModelUiUseNewSessions => 'استخدام في الجلسات الجديدة';
+  String get e7ModelUiUseNewSessions => 'استخدام في المحادثات الجديدة';
 
   @override
   String get e7ModelUiTools => 'الأدوات';
@@ -12906,7 +12910,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get approvalsUiMenu => 'الموافقات';
 
   @override
-  String get approvalsUiTitle => 'موافقات هذه الجلسة';
+  String get approvalsUiTitle => 'موافقات هذه المحادثة';
 
   @override
   String get approvalsUiAskTitle => 'اسأل في كل مرة';
@@ -12926,28 +12930,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get approvalsUiInheritDetail =>
-      'تتبع الجلسات الفرعية التي تبدأها هذه الجلسة الخيار نفسه ما لم يكن لها خيار خاص بها.';
+      'تتبع محادثات الوكلاء الفرعيين التي تبدأها هذه المحادثة الخيار نفسه ما لم يكن لها خيار خاص بها.';
 
   @override
   String get approvalsUiInheritUnavailable =>
       'يتاح عند تفعيل الموافقة التلقائية.';
 
   @override
-  String get approvalsUiInheritedFrom => 'موروث من الجلسة الأصل';
+  String get approvalsUiInheritedFrom => 'موروث من المحادثة الأصل';
 
   @override
   String get approvalsUiInheritedDetail =>
-      'تتبع هذه الجلسة موافقات الجلسة الأصل. تجاوز ذلك لتختار لهذه الجلسة فقط.';
+      'تتبع هذه المحادثة موافقات المحادثة الأصل. تجاوز ذلك لتختار لهذه المحادثة فقط.';
 
   @override
-  String get approvalsUiOverride => 'تجاوز لهذه الجلسة';
+  String get approvalsUiOverride => 'تجاوز لهذه المحادثة';
 
   @override
-  String get approvalsUiFollowParent => 'اتبع الجلسة الأصل مجددًا';
+  String get approvalsUiFollowParent => 'اتبع المحادثة الأصل مجددًا';
 
   @override
   String get approvalsUiServerRulesNote =>
-      'تبقى قواعد الرفض الخاصة بالخادم سارية، وتتوقف الموافقة التلقائية كلما انقطع اتصال هذا التطبيق. تسأل الجلسات الجديدة دائمًا.';
+      'تبقى قواعد الرفض الخاصة بالخادم سارية، وتتوقف الموافقة التلقائية كلما انقطع اتصال هذا التطبيق. تسأل المحادثات الجديدة دائمًا.';
 
   @override
   String get approvalsUiIndicatorOn => 'الموافقة تلقائيًا';
@@ -12980,11 +12984,11 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'تمت الموافقة تلقائيًا على $count طلبًا في هذا الاتصال',
-      few: 'تمت الموافقة تلقائيًا على $count طلبات في هذا الاتصال',
-      two: 'تمت الموافقة تلقائيًا على طلبين في هذا الاتصال',
-      one: 'تمت الموافقة تلقائيًا على طلب واحد في هذا الاتصال',
-      zero: 'لم تتم الموافقة تلقائيًا على أي طلب في هذا الاتصال بعد',
+      other: 'تمت الموافقة تلقائيًا على $count طلبًا على هذا الخادم',
+      few: 'تمت الموافقة تلقائيًا على $count طلبات على هذا الخادم',
+      two: 'تمت الموافقة تلقائيًا على طلبين على هذا الخادم',
+      one: 'تمت الموافقة تلقائيًا على طلب واحد على هذا الخادم',
+      zero: 'لم تتم الموافقة تلقائيًا على أي طلب على هذا الخادم بعد',
     );
     return '$_temp0';
   }
@@ -12994,12 +12998,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String handoffUiComputerIntro(String binary) {
-    return 'شغّل هذا الأمر في طرفية على الحاسوب الذي يعمل عليه هذا الخادم. سيفتح الجلسة نفسها في واجهة $binary. لن يُرسل أي شيء حتى تكتب بنفسك.';
+    return 'شغّل هذا الأمر في طرفية على الحاسوب الذي يعمل عليه هذا الخادم. سيفتح المحادثة نفسها في واجهة $binary. لن يُرسل أي شيء حتى تكتب بنفسك.';
   }
 
   @override
   String get handoffUiComputerDirectoryNote =>
-      'تنتمي الجلسات إلى مجلد مشروع، لذلك ينتقل الأمر أولًا إلى مجلد هذه الجلسة.';
+      'تنتمي المحادثات إلى مجلد مشروع، لذلك ينتقل الأمر أولًا إلى مجلد هذه المحادثة.';
 
   @override
   String handoffUiComputerVerify(String verified, String binary) {
@@ -13008,32 +13012,32 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get handoffUiUnavailableDirectory =>
-      'لم يُبلغ الخادم عن مجلد مشروع لهذه الجلسة، لذلك لا يوجد مجلد لفتحها فيه. أعد تحميل الجلسة وحاول مرة أخرى.';
+      'لم يُبلغ الخادم عن مجلد مشروع لهذه المحادثة، لذلك لا يوجد مجلد لفتحها فيه. أعد تحميل المحادثة وحاول مرة أخرى.';
 
   @override
   String get handoffUiUnavailableWorkspace =>
-      'تعمل هذه الجلسة داخل مساحة عمل مُدارة. مجلدها يخص مضيف مساحة العمل، لذلك لا يمكن لأمر طرفية عادي فتحها. صدّر الجلسة ثم استوردها بدلًا من ذلك.';
+      'تعمل هذه المحادثة داخل بيئة سحابية. مجلدها يخص مضيف البيئة، لذلك لا يمكن لأمر طرفية عادي فتحها. صدّر المحادثة ثم استوردها بدلًا من ذلك.';
 
   @override
   String get handoffUiUnavailableReference =>
-      'لا يمكن وضع مرجع هذه الجلسة في أمر بشكل آمن.';
+      'لا يمكن وضع مرجع هذه المحادثة في أمر بشكل آمن.';
 
   @override
   String get handoffUiExportHint =>
-      'هل تنتقل إلى خادم مختلف؟ صدّر هذه الجلسة كملف ثم استوردها هناك. هذا ينقل المحادثة نفسها، لا مجرد إشارة إليها.';
+      'هل تنتقل إلى خادم مختلف؟ صدّر هذه المحادثة كملف ثم استوردها هناك. هذا ينقل المحادثة نفسها، لا مجرد إشارة إليها.';
 
   @override
-  String get handoffUiExportAction => 'تصدير الجلسة';
+  String get handoffUiExportAction => 'تصدير المحادثة';
 
   @override
   String get handoffUiPhoneTitle => 'الفتح على هاتف آخر';
 
   @override
   String get handoffUiPhoneIntro =>
-      'امسح هذا الرمز بتطبيق OpenCode Mobile على الهاتف الآخر. لا يحمل الرمز سوى معرّف هذا الخادم المحفوظ ومعرّف الجلسة: لا رسائل ولا عنوان ولا كلمة مرور. يجب أن يكون هذا الخادم محفوظًا مسبقًا على الهاتف الآخر.';
+      'امسح هذا الرمز بتطبيق OpenCode Mobile على الهاتف الآخر. لا يحمل الرمز سوى معرّف هذا الخادم المحفوظ ومعرّف المحادثة: لا رسائل ولا عنوان ولا كلمة مرور. يجب أن يكون هذا الخادم محفوظًا مسبقًا على الهاتف الآخر.';
 
   @override
-  String get handoffUiPhoneQrLabel => 'رمز QR يفتح هذه الجلسة على هاتف آخر';
+  String get handoffUiPhoneQrLabel => 'رمز QR يفتح هذه المحادثة على هاتف آخر';
 
   @override
   String get handoffUiPhoneLinkLabel => 'الرابط';
@@ -13046,7 +13050,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get handoffUiPhoneUnavailable =>
-      'تعذّر إنشاء رابط لهذه الجلسة. أعد تحميل الجلسة وحاول مرة أخرى.';
+      'تعذّر إنشاء رابط لهذه المحادثة. أعد تحميل المحادثة وحاول مرة أخرى.';
 
   @override
   String get handoffUiLinkServerMissing =>
@@ -13059,7 +13063,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get handoffUiLinkDismiss => 'تجاهل';
 
   @override
-  String get handoffUiLinkWaiting => 'سيتم فتح الجلسة بمجرد اتصال الخادم…';
+  String get handoffUiLinkWaiting => 'سيتم فتح المحادثة بمجرد اتصال الخادم…';
 
   @override
   String get handoffUiLinkReentry =>
@@ -15382,7 +15386,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get termuxStorageIntro =>
-      'اعرض مساحة التخزين التي يستخدمها Termux، بما فيها الخادم المحلي والأدوات الأخرى. وسّع أي فئة للاطلاع على تفاصيلها. يمكن تنظيف ملفات تخزين مؤقت محددة قابلة لإعادة الإنشاء فقط؛ وتبقى المشاريع وبيانات الفريق وتسجيلات الدخول وسجل الجلسات محفوظة.';
+      'اعرض مساحة التخزين التي يستخدمها Termux، بما فيها الخادم المحلي والأدوات الأخرى. وسّع أي فئة للاطلاع على تفاصيلها. يمكن تنظيف ملفات تخزين مؤقت محددة قابلة لإعادة الإنشاء فقط؛ وتبقى المشاريع وبيانات الفريق وتسجيلات الدخول وسجل المحادثات محفوظة.';
 
   @override
   String get termuxStorageScanning => 'جارٍ قياس التخزين';
@@ -15464,7 +15468,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get termuxStorageNoteOpenCode =>
-      'الخادم وتسجيلات دخوله وسجل الجلسات. لا تُحذف من هنا؛ فللجلسات شاشتها الخاصة.';
+      'الخادم وتسجيلات دخوله وسجل المحادثات. لا تُحذف من هنا؛ فللمحادثات شاشتها الخاصة.';
 
   @override
   String get termuxStorageCatProjects => 'المشاريع (ملفاتك)';
@@ -16069,11 +16073,11 @@ class AppLocalizationsAr extends AppLocalizations {
       'فحص سابق · أعد الفحص قبل تنظيف المزيد';
 
   @override
-  String get safetyStopSharingTitle => 'إيقاف مشاركة هذه الجلسة؟';
+  String get safetyStopSharingTitle => 'إيقاف مشاركة هذه المحادثة؟';
 
   @override
   String get safetyStopSharingBody =>
-      'يتوقف الرابط عن العمل لدى كل من يملكه. لا يتغير شيء في الجلسة نفسها.';
+      'يتوقف الرابط عن العمل لدى كل من يملكه. لا يتغير شيء في المحادثة نفسها.';
 
   @override
   String get safetyStopSharingKeep => 'مواصلة المشاركة';

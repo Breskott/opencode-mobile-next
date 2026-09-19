@@ -63,6 +63,35 @@ void main() {
     expect(find.text('Tools & help'), findsOneWidget);
   });
 
+  testWidgets('search still answers to the retired nouns', (tester) async {
+    // Phase 1D renamed session/chat to conversation and profile/connection to
+    // server. A person who learned the old words must still find the rows.
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    final search = find.byKey(const Key('library-search'));
+    for (final word in ['session', 'chat', 'conversation']) {
+      await tester.enterText(search, word);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Models & agents'),
+        findsOneWidget,
+        reason: 'typing "$word" must find the default-model row',
+      );
+      expect(find.text('Settings'), findsNothing, reason: word);
+    }
+    for (final word in ['profile', 'connection', 'server']) {
+      await tester.enterText(search, word);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Settings'),
+        findsOneWidget,
+        reason: 'typing "$word" must find Settings, where servers live',
+      );
+    }
+  });
+
   testWidgets(
     'the default model uses the catalog name and explains its scope',
     (tester) async {
@@ -95,7 +124,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('Nemotron Ultra'), findsOneWidget);
       expect(find.text('opencode/nemotron-free'), findsNothing);
-      expect(find.textContaining('New chats:'), findsOneWidget);
+      expect(find.textContaining('New conversations:'), findsOneWidget);
     },
   );
 

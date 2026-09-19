@@ -142,15 +142,15 @@ Future<void> _pumpSharedChat(
     ),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.byTooltip('Session menu'));
+  await tester.tap(find.byTooltip('Conversation menu'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Session actions'));
+  await tester.tap(find.text('Conversation actions'));
   await tester.pumpAndSettle();
-  await tester.ensureVisible(find.text('Share session'));
+  await tester.ensureVisible(find.text('Share conversation'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Share session'));
+  await tester.tap(find.text('Share conversation'));
   await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(FilledButton, 'Share session'));
+  await tester.tap(find.widgetWithText(FilledButton, 'Share conversation'));
   await tester.pumpAndSettle();
   expect(repository.shared, isTrue);
   expect(repository.unshared, isFalse);
@@ -508,25 +508,27 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Session actions'));
+    await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
     // Sharing sits under Actions in the merged menu; scroll it into view on
     // the short test surface before tapping.
-    await tester.ensureVisible(find.text('Share session'));
+    await tester.ensureVisible(find.text('Share conversation'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Share session'));
+    await tester.tap(find.text('Share conversation'));
     await tester.pumpAndSettle();
-    expect(find.text('Share this session?'), findsOneWidget);
+    expect(find.text('Share this conversation?'), findsOneWidget);
     expect(find.textContaining('Anyone with the link'), findsOneWidget);
     expect(repository.shared, isFalse);
-    await tester.tap(find.widgetWithText(FilledButton, 'Share session'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Share conversation'));
     await tester.pumpAndSettle();
     expect(repository.shared, isTrue);
     expect(
       find.bySemanticsLabel(
-        RegExp('Shared session link https://share.example/session/session-1'),
+        RegExp(
+          'Shared conversation link https://share.example/session/session-1',
+        ),
       ),
       findsOneWidget,
     );
@@ -534,7 +536,7 @@ void main() {
     // The banner's Stop sharing asks first; the link is live for other people.
     await tester.tap(find.text('Stop sharing'));
     await tester.pumpAndSettle();
-    expect(find.text('Stop sharing this session?'), findsOneWidget);
+    expect(find.text('Stop sharing this conversation?'), findsOneWidget);
     expect(
       find.textContaining('The link stops working for anyone who has it.'),
       findsOneWidget,
@@ -559,9 +561,9 @@ void main() {
     await _pumpSharedChat(tester, repository);
 
     Future<void> chooseFromMenu() async {
-      await tester.tap(find.byTooltip('Session menu'));
+      await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Session actions'));
+      await tester.tap(find.text('Conversation actions'));
       await tester.pumpAndSettle();
       // The banner behind the sheet carries the same label; the sheet row is
       // the later one in the tree.
@@ -817,7 +819,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('move-session-sheet')), findsOneWidget);
-    expect(find.text('Move session'), findsOneWidget);
+    expect(find.text('Move conversation'), findsOneWidget);
     expect(
       find.byKey(const Key('move-destination-/work/acme-copy')),
       findsOneWidget,

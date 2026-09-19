@@ -401,7 +401,7 @@ void main() {
       await shortcuts.update(
         sessions: [Session(id: 'session-1', title: 'Remote session')],
         profileID: 'profile-1',
-        untitledLabel: 'Untitled session',
+        untitledLabel: 'Untitled conversation',
       );
       await shortcuts.clear();
       final tile = AttentionTileSnapshot(prefs: state.controller.store.prefs);

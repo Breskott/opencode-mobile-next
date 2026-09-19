@@ -320,14 +320,14 @@ void main() {
     await _pump(tester, _Api());
     await tester.tap(find.byTooltip('Close search'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Find in conversation'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('transcript-find-input')), findsOneWidget);
     await tester.tap(find.byTooltip('Close search'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Timeline'));
     await tester.pumpAndSettle();

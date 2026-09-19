@@ -49,7 +49,7 @@ class _ShareApi extends OpenCodeApi with CompleteMessageHistory {
     final pending = pendingCreate;
     pendingCreate = null;
     if (pending != null) return pending.future;
-    return Session(id: 'shared-$created', title: 'New session');
+    return Session(id: 'shared-$created', title: 'New conversation');
   }
 
   @override

@@ -179,7 +179,10 @@ void main() {
     expect(find.byKey(const ValueKey('mcp-scope')), findsNothing);
     expect(find.text('All projects'), findsNothing);
     expect(find.text('Until server restart'), findsOneWidget);
-    expect(find.textContaining('Workspace: workspace-mobile'), findsOneWidget);
+    expect(
+      find.textContaining('Cloud environment: workspace-mobile'),
+      findsOneWidget,
+    );
     if (preview != null) {
       File(
         preview,

@@ -126,7 +126,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('session-dismiss-session-1')),
-        matching: find.text('New session'),
+        matching: find.text('New conversation'),
       ),
       findsOneWidget,
     );
@@ -138,7 +138,7 @@ void main() {
     expect(find.textContaining('Working'), findsNothing);
     // The section says "Needs you"; the row says what it needs.
     expect(find.byKey(const ValueKey('workspace-needs-you')), findsOneWidget);
-    expect(find.text('Active sessions'), findsNothing);
+    expect(find.text('Active conversations'), findsNothing);
     final subtitle = find.textContaining('Permission needed');
     expect(subtitle, findsOneWidget);
     final theme = Theme.of(tester.element(subtitle));

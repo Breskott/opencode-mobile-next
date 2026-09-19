@@ -345,7 +345,7 @@ void main() {
     (tester) async {
       await _isolatedJourney(tester, () async {
         expect(find.byKey(const Key('composer-tools-button')), findsNothing);
-        expect(find.byTooltip('Session menu'), findsNothing);
+        expect(find.byTooltip('Conversation menu'), findsNothing);
         const input = '/new ![remote](https://example.invalid/private.png)';
         await tester.enterText(
           find.byKey(const Key('chat-composer-field')),

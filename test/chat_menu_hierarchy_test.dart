@@ -55,14 +55,14 @@ void main() {
       expect(find.byType(SessionMenuSheet), findsOneWidget);
       await tester.tap(find.text('Display and context'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Session actions'));
+      await tester.tap(find.text('Conversation actions'));
       await tester.pumpAndSettle();
       for (final title in [
         'Retry last prompt',
         'Revert last prompt',
-        'Fork session',
+        'Fork conversation',
         'Compact context',
-        'Share session',
+        'Share conversation',
         'Run shell command',
         'Commands',
         'Refresh messages',
@@ -118,8 +118,8 @@ void main() {
           '$captureDir/menu-${rtl ? 'rtl' : 'ltr'}-320-2.5x.png',
         ).writeAsBytesSync(bytes);
       }
-      await tester.ensureVisible(find.text('Session actions'));
-      await tester.tap(find.text('Session actions'));
+      await tester.ensureVisible(find.text('Conversation actions'));
+      await tester.tap(find.text('Conversation actions'));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Refresh messages'));
       await tester.pumpAndSettle();

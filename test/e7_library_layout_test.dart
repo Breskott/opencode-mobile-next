@@ -214,11 +214,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         final layoutException = tester.takeException();
-        expect(
-          layoutException,
-          isNull,
-          reason: '${entry.key}/${variant.name}',
-        );
+        expect(layoutException, isNull, reason: '${entry.key}/${variant.name}');
         if (output != null) {
           File(
             '$output/${entry.key}-${variant.name}.png',

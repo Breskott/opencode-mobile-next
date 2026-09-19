@@ -618,7 +618,9 @@ void main() {
     expect(reviewPrompt, contains('Review `README.md`'));
     expect(reviewPrompt, contains('Keep this wording precise.'));
     expect(
-      find.text('Review comment added. Return to the chat to continue.'),
+      find.text(
+        'Review comment added. Return to the conversation to continue.',
+      ),
       findsOneWidget,
     );
   });
@@ -687,7 +689,7 @@ void main() {
     expect(copiedText, contains('Review `README.md`'));
     expect(copiedText, contains('Use the approved wording.'));
     expect(
-      find.text('Review comment copied. Paste it into a chat.'),
+      find.text('Review comment copied. Paste it into a conversation.'),
       findsOneWidget,
     );
   });
@@ -1149,7 +1151,9 @@ void main() {
     expect(attachedData?.mimeType, 'text/markdown');
     expect(attachedData?.text, body);
     expect(
-      find.text('review.md attached. Return to the chat to add your comment.'),
+      find.text(
+        'review.md attached. Return to the conversation to add your comment.',
+      ),
       findsOneWidget,
     );
   });
@@ -1277,7 +1281,7 @@ void main() {
     expect(repository.queries, ['MissingSymbol']);
     expect(find.text('No symbols found'), findsOneWidget);
     expect(
-      find.textContaining('do not support workspace-wide symbol search'),
+      find.textContaining('do not support project-wide symbol search'),
       findsOneWidget,
     );
   });

@@ -207,12 +207,12 @@ void main() {
         await _pumpFrames(tester);
         expect(
           find.byTooltip(
-            'Search session titles across every project on this server',
+            'Search conversation titles across every project on this server',
           ),
           findsOneWidget,
         );
         expect(tester.takeException(), isNull);
-        await tester.tap(find.widgetWithText(FilledButton, 'New session'));
+        await tester.tap(find.widgetWithText(FilledButton, 'New conversation'));
         await _pumpFrames(tester);
         expect(find.text('Created conversation'), findsOneWidget);
       },
@@ -273,8 +273,8 @@ void main() {
         ),
       );
       await _pumpFrames(tester);
-      expect(find.text('New session'), findsOneWidget);
-      final action = find.widgetWithText(FilledButton, 'New session');
+      expect(find.text('New conversation'), findsOneWidget);
+      final action = find.widgetWithText(FilledButton, 'New conversation');
       expect(tester.getSize(action).height, greaterThanOrEqualTo(48));
       expect(tester.getTopLeft(action).dx, 16);
       expect(tester.takeException(), isNull);
@@ -428,8 +428,8 @@ void main() {
           // Section order top to bottom.
           final needsYou = _top(tester, find.text('Needs you'));
           final pinned = _top(tester, find.text('Pinned'));
-          final active = _top(tester, find.text('Active sessions'));
-          final recent = _top(tester, find.text('Recent sessions'));
+          final active = _top(tester, find.text('Active conversations'));
+          final recent = _top(tester, find.text('Recent conversations'));
           expect(needsYou, lessThan(pinned));
           expect(pinned, lessThan(active));
           expect(active, lessThan(recent));
@@ -450,7 +450,7 @@ void main() {
           );
           await _pumpFrames(tester);
           expect(tester.takeException(), isNull);
-          expect(find.text('Refresh recent sessions'), findsOneWidget);
+          expect(find.text('Refresh recent conversations'), findsOneWidget);
           expect(
             find.byKey(const ValueKey('workspace-terminal')),
             findsOneWidget,
@@ -548,7 +548,7 @@ void main() {
     );
     await _pumpFrames(tester);
     expect(find.byKey(const ValueKey('workspace-needs-you')), findsOneWidget);
-    expect(find.text('Active sessions'), findsOneWidget); // busy-working
+    expect(find.text('Active conversations'), findsOneWidget); // busy-working
     expect(
       _top(tester, _row('pinned-blocked')),
       lessThan(_top(tester, find.text('Pinned'))),
@@ -586,7 +586,7 @@ void main() {
     expect(_row('busy-blocked'), findsOneWidget);
     // Back under Pinned, first by recency among pins, as before.
     final pinnedLabel = _top(tester, find.text('Pinned'));
-    final activeLabel = _top(tester, find.text('Active sessions'));
+    final activeLabel = _top(tester, find.text('Active conversations'));
     expect(_top(tester, _row('pinned-blocked')), greaterThan(pinnedLabel));
     expect(
       _top(tester, _row('pinned-blocked')),
@@ -612,12 +612,12 @@ void main() {
     // checked with it open.
     await tester.tap(find.byKey(const ValueKey('workspace-section-menu')));
     await _pumpFrames(tester);
-    expect(find.text('Refresh recent sessions'), findsOneWidget);
+    expect(find.text('Refresh recent conversations'), findsOneWidget);
     expect(find.byKey(const ValueKey('workspace-terminal')), findsNothing);
     expect(find.text('Terminal'), findsNothing);
-    await tester.tap(find.text('Refresh recent sessions'));
+    await tester.tap(find.text('Refresh recent conversations'));
     await _pumpFrames(tester);
-    expect(find.text('Refresh recent sessions'), findsNothing);
+    expect(find.text('Refresh recent conversations'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

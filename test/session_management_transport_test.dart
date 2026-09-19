@@ -29,7 +29,7 @@ void main() {
           request.response.write(
             jsonEncode({
               'id': 'session-created',
-              'title': 'New session',
+              'title': 'New conversation',
               'directory': '/work/acme',
               'time': {'created': 1000, 'updated': 1000},
             }),
@@ -53,7 +53,7 @@ void main() {
         await api.deleteSession(created.id);
 
         expect(created.id, 'session-created');
-        expect(created.title, 'New session');
+        expect(created.title, 'New conversation');
         expect(requests.map((request) => request.method), [
           'POST',
           'PATCH',

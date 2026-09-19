@@ -283,7 +283,7 @@ void main() {
     testWidgets('session actions menu asks first', (tester) async {
       final repository = await pumpWorkspace(tester);
       await expectConfirmGates(tester, repository, () async {
-        await tester.tap(find.byTooltip('Session actions').first);
+        await tester.tap(find.byTooltip('Conversation actions').first);
         await tester.pumpAndSettle();
         await tester.tap(find.text('Stop sharing'));
         await tester.pumpAndSettle();

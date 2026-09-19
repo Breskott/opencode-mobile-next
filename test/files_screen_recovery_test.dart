@@ -174,7 +174,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Connection changed. Close and reopen this file.'),
+      find.text('Server changed. Close and reopen this file.'),
       findsOneWidget,
     );
     expect(find.text('Try again'), findsNothing);

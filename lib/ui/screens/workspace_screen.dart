@@ -1798,17 +1798,26 @@ class _SectionActions extends StatelessWidget {
               icon: const Icon(AppIconography.searchList, size: 21),
             )
           else
-            Tooltip(
-              message: l10n.e7WorkspaceSearchServer,
-              child: TextButton.icon(
-                key: const ValueKey('search-all-sessions'),
-                onPressed: onSearch,
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
+            // Flexible: "All conversations" is longer than the label it
+            // replaced, so on a 320dp phone the button gives up width and
+            // ellipsizes instead of pushing the menu off the edge.
+            Flexible(
+              child: Tooltip(
+                message: l10n.e7WorkspaceSearchServer,
+                child: TextButton.icon(
+                  key: const ValueKey('search-all-sessions'),
+                  onPressed: onSearch,
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                  ),
+                  icon: const Icon(AppIconography.searchList, size: 19),
+                  label: Text(
+                    l10n.workspaceAllSessions,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                icon: const Icon(AppIconography.searchList, size: 19),
-                label: Text(l10n.workspaceAllSessions),
               ),
             ),
         PopupMenuButton<_SectionAction>(

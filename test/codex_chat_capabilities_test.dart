@@ -122,7 +122,7 @@ void main() {
     expect(find.text('draft.txt'), findsOneWidget);
     expect(
       find.text(
-        'This connection supports text only. Remove attachments before sending.',
+        'This server supports text only. Remove attachments before sending.',
       ),
       findsOneWidget,
     );
@@ -161,21 +161,21 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Changes'), findsNothing);
-    expect(find.text('Fork session'), findsNothing);
+    expect(find.text('Fork conversation'), findsNothing);
     expect(find.text('Revert last prompt'), findsNothing);
     expect(find.text('Compact context'), findsNothing);
     expect(find.text('Run shell command'), findsNothing);
-    expect(find.text('Subagent sessions'), findsNothing);
-    expect(find.text('Share session'), findsNothing);
+    expect(find.text('Subagent conversations'), findsNothing);
+    expect(find.text('Share conversation'), findsNothing);
     // Utility actions live behind the collapsed Session actions group.
-    await tester.ensureVisible(find.text('Session actions'));
-    await tester.tap(find.text('Session actions'));
+    await tester.ensureVisible(find.text('Conversation actions'));
+    await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
-    expect(find.text('Fork session'), findsNothing);
+    expect(find.text('Fork conversation'), findsNothing);
     expect(find.text('Revert last prompt'), findsNothing);
     expect(find.text('Compact context'), findsNothing);
     expect(find.text('Run shell command'), findsNothing);
-    expect(find.text('Share session'), findsNothing);
+    expect(find.text('Share conversation'), findsNothing);
     await tester.ensureVisible(find.text('Refresh messages'));
     expect(find.text('Refresh messages'), findsOneWidget);
     // Codex has no `opencode --session` CLI, so no resume command is offered.
@@ -226,7 +226,7 @@ void main() {
       ];
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Timeline'));
     await tester.pumpAndSettle();

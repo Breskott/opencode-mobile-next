@@ -417,7 +417,7 @@ void main() {
       expect(editor.readOnly, isTrue);
       expect(save.onPressed, isNull);
       expect(
-        find.textContaining('The session or its instructions changed.'),
+        find.textContaining('The conversation or its instructions changed.'),
         findsOneWidget,
       );
       expect(find.text('Refresh saved note'), findsOneWidget);

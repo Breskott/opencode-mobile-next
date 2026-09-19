@@ -1276,7 +1276,7 @@ void main() {
             : pending.future;
       final controller = await _pumpChat(tester, api);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Session menu'));
+      await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Timeline'));
       await tester.pumpAndSettle();
@@ -1470,7 +1470,7 @@ void main() {
     expect(api.deleteCalls, isEmpty);
     expect(
       find.text(
-        'Empty session was kept because OpenCode could not verify or remove it.',
+        'Empty conversation was kept because OpenCode could not verify or remove it.',
       ),
       findsOneWidget,
     );
@@ -1660,7 +1660,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('subagent-session-list')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Subagent sessions'), findsOneWidget);
+    expect(find.text('Subagent conversations'), findsOneWidget);
     expect(find.text('Review mobile flow'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -1765,7 +1765,7 @@ void main() {
       ];
     await _pumpChat(tester, api);
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Changes'));
     await tester.pumpAndSettle();
@@ -1794,7 +1794,7 @@ void main() {
       ];
     await _pumpChat(tester, api);
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Changes'));
     await tester.pumpAndSettle();
@@ -2681,7 +2681,7 @@ void main() {
     expect(controller.transcriptReasoningExpanded, isTrue);
     expect(find.text(reasoning), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Display and context'));
     await tester.pumpAndSettle();
@@ -2704,7 +2704,7 @@ void main() {
     );
     await _dismissSheetIfOpen(tester);
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Display and context'));
     await tester.pumpAndSettle();
@@ -2771,7 +2771,7 @@ void main() {
     );
 
     Future<void> flipGlobal() async {
-      await tester.tap(find.byTooltip('Session menu'));
+      await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Display and context'));
       await tester.pumpAndSettle();
@@ -2916,7 +2916,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(GlobalSessionsScreen), findsOneWidget);
-    expect(find.text('All sessions'), findsOneWidget);
+    expect(find.text('All conversations'), findsOneWidget);
   });
 
   testWidgets('themes command opens the native appearance picker', (
@@ -2961,7 +2961,7 @@ void main() {
       ];
 
     await _pumpChat(tester, api);
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Todos'));
     await tester.pumpAndSettle();
@@ -2979,7 +2979,7 @@ void main() {
       );
 
     await _pumpChat(tester, api);
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Todos'));
     await tester.pumpAndSettle();
@@ -3004,12 +3004,12 @@ void main() {
     final api = _FakeOpenCodeApi();
 
     await _pumpChat(tester, api);
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Todos'));
     await tester.pumpAndSettle();
 
-    expect(find.text('No todos in this session'), findsOneWidget);
+    expect(find.text('No todos in this conversation'), findsOneWidget);
   });
 
   testWidgets('launcher combines mobile actions with server commands', (
@@ -3091,7 +3091,9 @@ void main() {
     await tester.tap(find.byKey(const Key('project-file-attach')));
     await tester.pumpAndSettle();
     expect(
-      find.text('review.md attached. Return to the chat to add your comment.'),
+      find.text(
+        'review.md attached. Return to the conversation to add your comment.',
+      ),
       findsOneWidget,
     );
 
@@ -3357,7 +3359,7 @@ void main() {
 
     await _pumpChat(tester, api, reduceMotion: true);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     // The sheet scrolls at 320dp with 2x text; the chip stays reachable.
     await tester.ensureVisible(find.text('Timeline'));
@@ -3427,7 +3429,7 @@ void main() {
 
     await _pumpChat(tester, api, repository: repository);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Timeline'));
     await tester.pumpAndSettle();
@@ -3472,7 +3474,7 @@ void main() {
       controller: controller,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Timeline'));
     await tester.pumpAndSettle();
@@ -3570,7 +3572,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     // The sheet scrolls at 320dp with 2x text; every group stays reachable.
     await tester.ensureVisible(find.text('Display and context'));
@@ -3586,7 +3588,7 @@ void main() {
     expect(tester.takeException(), isNull);
     await _dismissSheetIfOpen(tester);
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Timeline'));
     await tester.pumpAndSettle();
@@ -3859,7 +3861,7 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Session menu'));
+      await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Timeline'));
       await tester.pumpAndSettle();
@@ -4394,9 +4396,9 @@ void main() {
     final controller = await _pumpChat(tester, api);
     controller.selectedVariant = 'fast';
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Session actions'));
+    await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Retry last prompt'));
     await tester.pumpAndSettle();
@@ -4417,9 +4419,9 @@ void main() {
       }),
     );
     await _pumpEvent(tester);
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Session actions'));
+    await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Retry last prompt'));
     await tester.pumpAndSettle();
@@ -4828,7 +4830,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     // The sheet scrolls at 320dp with 2x text; the groups stay reachable.
     await tester.ensureVisible(find.text('Display and context'));
@@ -4844,11 +4846,11 @@ void main() {
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Session actions'));
+    await tester.ensureVisible(find.text('Conversation actions'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Session actions'));
+    await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
     expect(find.text('Retry last prompt'), findsOneWidget);
     await tester.ensureVisible(find.text('Refresh messages'));

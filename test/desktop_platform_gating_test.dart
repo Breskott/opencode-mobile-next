@@ -509,7 +509,7 @@ void main() {
       ).update(
         sessions: [Session(id: 'a', title: 'Pinned')],
         profileID: 'p',
-        untitledLabel: 'Untitled session',
+        untitledLabel: 'Untitled conversation',
       );
       expect(published, hasLength(1));
       await AttentionTileSnapshot(
@@ -535,7 +535,7 @@ void main() {
         await shortcuts.update(
           sessions: [Session(id: 'a', title: 'Pinned')],
           profileID: 'p',
-          untitledLabel: 'Untitled session',
+          untitledLabel: 'Untitled conversation',
         );
         await shortcuts.clear();
         final tile = AttentionTileSnapshot(prefs: prefs);

@@ -12,7 +12,7 @@
   "servicesUrlHint": "Use an address this phone can reach. localhost points to this phone. No ports are exposed or forwarded for you.",
   "servicesSave": "Save service",
   "servicesInvalid": "Enter a name, a foreground command, and an optional HTTP or HTTPS URL without credentials.",
-  "servicesUnavailable": "This connection cannot start and track development commands. You can save commands and review their preview links here.",
+  "servicesUnavailable": "This server cannot start and track development commands. You can save commands and review their preview links here.",
   "servicesScopeChanged": "The server or project changed. Reopen Development services from the intended project.",
   "servicesNotStarted": "Not started",
   "servicesRunning": "Running command",
@@ -98,7 +98,7 @@
   "@aboutSigningCertificate": {
     "description": "Label for the installed Android APK signer fingerprint"
   },
-  "modelSwitchSession": "Switch model for this session",
+  "modelSwitchSession": "Switch model for this conversation",
   "@modelSwitchSession": {
     "description": "Tooltip for the chat model cycling menu"
   },
@@ -123,21 +123,21 @@
   "modelOptions": "Options",
   "modelThinkingMode": "Thinking mode",
   "modelDefaultMode": "Default mode",
-  "modelSessionScopeNote": "Applies to this session's next turns.",
-  "modelSelectionLoading": "Loading session selection…",
+  "modelSessionScopeNote": "Applies to this conversation's next turns.",
+  "modelSelectionLoading": "Loading conversation selection…",
   "modelServerDefault": "Server default",
-  "modelSelectionSaving": "Saving session selection…",
+  "modelSelectionSaving": "Saving conversation selection…",
   "modelAgentSaveFailed": "Could not save the agent. Try again.",
-  "modelUnavailableSelection": "The session's model is unavailable in this catalog. Refresh models or choose another.",
-  "modelScopeChanged": "The connection changed. Reopen the model selector to continue.",
+  "modelUnavailableSelection": "The conversation's model is unavailable in this catalog. Refresh models or choose another.",
+  "modelScopeChanged": "The server changed. Reopen the model selector to continue.",
   "commonClearSearch": "Clear search",
   "commonUndo": "Undo",
   "workTitle": "Tasks",
-  "workDescription": "Agents and commands related to this chat.",
+  "workDescription": "Agents and commands related to this conversation.",
   "workAgents": "Agents",
   "workCommands": "Commands",
   "workEmpty": "No tasks yet",
-  "workEmptyDescription": "Related agents and commands will appear here when this chat starts them.",
+  "workEmptyDescription": "Related agents and commands will appear here when this conversation starts them.",
   "workRefresh": "Refresh",
   "workClose": "Close",
   "workRetry": "Try again",
@@ -171,7 +171,7 @@
   "workUnavailable": "This command is no longer available. It may have been removed or cancelled when the server restarted.",
   "workRestarted": "The server restarted and this command is no longer available. Its loaded output is shown below.",
   "workDisconnected": "Reconnecting. Output will refresh when the server is available.",
-  "workContextChanged": "The server or workspace changed. Close this view and reopen Running work.",
+  "workContextChanged": "The server or project changed. Close this view and reopen Running work.",
   "workCount": "Tasks · {count} running",
   "@workCount": {
     "placeholders": {
@@ -216,11 +216,11 @@
   "composerReuseEmpty": "No matching prompts",
   "backgroundSubagentsTitle": "Background subagents",
   "backgroundWorkTitle": "Move running work to background",
-  "backgroundWorkShortcut": "Continue this work while you use the chat · Ctrl+B",
+  "backgroundWorkShortcut": "Continue this work while you use the conversation · Ctrl+B",
   "backgroundWorkNoop": "No foreground subagents to background.",
   "backgroundWorkPromoted": "Subagents are continuing in the background.",
   "librarySearchHint": "Find settings, tools, and help",
-  "libraryDefaultModel": "Default for new chats",
+  "libraryDefaultModel": "Default for new conversations",
   "libraryNoModel": "No model selected",
   "librarySearchResults": "{count, plural, =0 {No matching tools for “{query}”.} one {1 result for “{query}”.} other {{count} results for “{query}”.}}",
   "@librarySearchResults": {
@@ -243,11 +243,11 @@
   "@termuxRestartTitle": {
     "description": "Confirmation title before restarting the managed Termux server"
   },
-  "termuxRestartMessage": "OpenCode will be briefly unavailable. The app will keep your current workspace and reconnect automatically.",
+  "termuxRestartMessage": "OpenCode will be briefly unavailable. The app will keep your current project and reconnect automatically.",
   "@termuxRestartMessage": {
     "description": "Confirmation explanation before restarting the managed Termux server"
   },
-  "termuxRestartBusyMessage": "{count, plural, =1{1 session is generating. Restarting will interrupt it.} other{{count} sessions are generating. Restarting will interrupt them.}}",
+  "termuxRestartBusyMessage": "{count, plural, =1{1 conversation is generating. Restarting will interrupt it.} other{{count} conversations are generating. Restarting will interrupt them.}}",
   "@termuxRestartBusyMessage": {
     "description": "Additional restart warning when one or more sessions are generating",
     "placeholders": {
@@ -286,13 +286,13 @@
       }
     }
   },
-  "commandDestination": "Chat",
-  "commandNewChat": "New chat",
-  "commandUntitledChat": "Untitled chat",
+  "commandDestination": "Conversation",
+  "commandNewChat": "New conversation",
+  "commandUntitledChat": "Untitled conversation",
   "commandArguments": "Arguments (optional)",
   "commandRun": "Run",
   "commandRunning": "Starting…",
-  "commandLocationChanged": "The server or workspace changed. Close this dialog and open the command again.",
+  "commandLocationChanged": "The server or project changed. Close this dialog and open the command again.",
   "refreshFailed": "Couldn’t refresh",
   "refreshRetry": "Try again",
   "filesProjectRoot": "Project root",
@@ -312,14 +312,14 @@
       }
     }
   },
-  "globalSessionsLoadMore": "Load more sessions",
-  "globalSessionsRefreshFailed": "Could not refresh sessions.",
+  "globalSessionsLoadMore": "Load more conversations",
+  "globalSessionsRefreshFailed": "Could not refresh conversations.",
   "@globalSessionsRefreshFailed": {
     "description": "Generic failure when refreshing the global session inventory"
   },
-  "workspaceSearchAllSessions": "Search all sessions",
+  "workspaceSearchAllSessions": "Search all conversations",
   "workspaceProjectListUnavailable": "Project list unavailable",
-  "workspaceProjectListFallback": "Your conversations can still be available. Search all sessions to find previous work.",
+  "workspaceProjectListFallback": "Your conversations can still be available. Search all conversations to find previous work.",
   "workspaceRetryProjects": "Try again",
   "historyLoadOlder": "Load older messages",
   "historyReload": "Refresh recent history",
@@ -330,13 +330,13 @@
   "historyCopyLoadedReply": "Copy loaded reply",
   "historyLoadedMessages": "Loaded messages",
   "historyLoadedCost": "Cost of loaded messages",
-  "historyServerTotalsNote": "Rows marked reported by server cover the session. Message counts and other estimates cover loaded history.",
-  "sessionsLoadedOnly": "Showing loaded sessions. Load more to include older conversations.",
-  "sessionsDetailsUnavailable": "Session details could not be loaded. Try again.",
-  "sessionsLoadMore": "Load more sessions",
-  "sessionsReload": "Refresh recent sessions",
-  "sessionsNoLoadedRecent": "No recent sessions in loaded results",
-  "sessionsNoLoadedArchived": "No archived sessions in loaded results",
+  "historyServerTotalsNote": "Rows marked reported by server cover the conversation. Message counts and other estimates cover loaded history.",
+  "sessionsLoadedOnly": "Showing loaded conversations. Load more to include older ones.",
+  "sessionsDetailsUnavailable": "Conversation details could not be loaded. Try again.",
+  "sessionsLoadMore": "Load more conversations",
+  "sessionsReload": "Refresh recent conversations",
+  "sessionsNoLoadedRecent": "No recent conversations in loaded results",
+  "sessionsNoLoadedArchived": "No archived conversations in loaded results",
   "sessionsLoadedCount": "{count} loaded",
   "@sessionsLoadedCount": {
     "placeholders": {
@@ -351,9 +351,9 @@
   "revertApplyFilesHint": "Applies file changes immediately when staging. Clear can restore the staged files from the saved snapshot.",
   "revertStageAction": "Stage and review",
   "revertReviewTitle": "Review staged revert",
-  "revertReviewChanged": "This session or its staged revert changed. Review the latest state before continuing.",
+  "revertReviewChanged": "This conversation or its staged revert changed. Review the latest state before continuing.",
   "revertReviewLatest": "Review latest state",
-  "revertBusy": "Wait for the current session action to finish.",
+  "revertBusy": "Wait for the current conversation action to finish.",
   "revertCancel": "Cancel",
   "revertCommitTitle": "Make this revert permanent?",
   "revertCommitDescription": "Removes the staged conversation history permanently. File changes already applied during staging will remain. You cannot clear this revert afterward.",
@@ -376,7 +376,7 @@
   "revertAttachmentPrompt": "Attachment-only prompt",
   "revertResolveBeforeSending": "Review the staged revert, then clear it or make it permanent before sending. Your draft is kept.",
   "sessionNoteTitle": "Note for the agent",
-  "sessionNoteDescription": "Keep a short instruction for this session. Saving or deleting it takes effect at the next agent step and appears in the transcript then. It does not start a run.",
+  "sessionNoteDescription": "Keep a short instruction for this conversation. Saving or deleting it takes effect at the next agent step and appears in the transcript then. It does not start a run.",
   "sessionNoteHint": "For example: Keep explanations brief and run the relevant checks before finishing.",
   "sessionNoteSave": "Save note",
   "sessionNoteRemove": "Delete saved note",
@@ -384,10 +384,10 @@
   "sessionNoteRemoved": "Note deleted",
   "sessionNotePending": "Applies at the next agent step.",
   "sessionInstructionsUpdated": "Instructions updated",
-  "sessionInstructionsApplied": "The agent's session instructions have been updated for this step.",
-  "sessionNoteUnsupported": "This server does not support session notes.",
+  "sessionInstructionsApplied": "The agent's conversation instructions have been updated for this step.",
+  "sessionNoteUnsupported": "This server does not support conversation notes.",
   "sessionNoteAuthorization": "Check this server's password and permissions, then try again. Your draft is kept.",
-  "sessionNoteChanged": "The session or its instructions changed. Refresh the saved note before saving again. Your draft is kept.",
+  "sessionNoteChanged": "The conversation or its instructions changed. Refresh the saved note before saving again. Your draft is kept.",
   "sessionNoteInvalid": "The saved note has a format this editor cannot safely change.",
   "sessionNoteTooLarge": "Shorten the note to fit the server's size limit.",
   "sessionNoteBusy": "A note change is already being saved. Try again when it finishes.",
@@ -409,7 +409,7 @@
     }
   },
   "usageTitle": "Usage and cost",
-  "usageDescription": "Activity recorded by this OpenCode server across your sessions.",
+  "usageDescription": "Activity recorded by this OpenCode server across your conversations.",
   "usageRefresh": "Refresh usage",
   "usageToday": "Today",
   "usageThirtyDays": "30 days",
@@ -422,15 +422,15 @@
   "usageUnsupported": "This server does not support aggregate usage.",
   "usageProjectUnavailable": "No current project could be identified. Choose All projects or open a project first.",
   "usageTimezoneUnavailable": "Could not read this device's timezone. Retry to load correctly dated usage.",
-  "usageRefreshInterrupted": "The connection changed while loading usage. Refresh to try again.",
+  "usageRefreshInterrupted": "The server changed while loading usage. Refresh to try again.",
   "usageInvalidResponse": "The server returned incomplete usage data. Refresh to try again.",
   "usageAuthorization": "Check this server's password and permissions, then refresh.",
   "usagePreviousResult": "Showing the previous result for these filters.",
-  "usageLocationChanged": "The active server or location changed. Reopen Usage from Settings.",
+  "usageLocationChanged": "The active server or project changed. Reopen Usage from Settings.",
   "usageTinyCost": "Less than $0.000001",
   "usageReportedCost": "Reported cost · USD",
-  "usageSessions": "Sessions",
-  "usageSubagents": "Subagent sessions",
+  "usageSessions": "Conversations",
+  "usageSubagents": "Subagent conversations",
   "usagePrompts": "Prompts",
   "usageSteps": "Agent steps",
   "usageActiveDays": "Active days",
@@ -507,10 +507,10 @@
     }
   },
   "mcpRuntimeTitle": "Until server restart",
-  "mcpRuntimeDescription": "Adds this MCP server to the selected location and tries to connect it now. It is removed when OpenCode restarts. For permanent setup, edit the server configuration.",
-  "mcpCurrentLocation": "Current location",
-  "mcpDefaultLocation": "OpenCode server’s default location",
-  "mcpWorkspaceLocation": "Workspace: {workspace}",
+  "mcpRuntimeDescription": "Adds this MCP server to the selected project and tries to connect it now. It is removed when OpenCode restarts. For permanent setup, edit the server configuration.",
+  "mcpCurrentLocation": "Current project",
+  "mcpDefaultLocation": "OpenCode server’s default directory",
+  "mcpWorkspaceLocation": "Cloud environment: {workspace}",
   "@mcpWorkspaceLocation": {
     "placeholders": {
       "workspace": {
@@ -518,11 +518,11 @@
       }
     }
   },
-  "mcpLocationChanged": "The connection or location changed. Your draft is still here; reopen setup in the intended location before adding it.",
+  "mcpLocationChanged": "The server or project changed. Your draft is still here; reopen setup in the intended project before adding it.",
   "mcpAdding": "Adding MCP server",
   "mcpAdd": "Add MCP server",
-  "mcpRuntimeEmpty": "Add tools for the current location until OpenCode restarts.",
-  "mcpRuntimeAdded": "MCP server added for this location",
+  "mcpRuntimeEmpty": "Add tools for the current project until OpenCode restarts.",
+  "mcpRuntimeAdded": "MCP server added for this project",
   "sessionUnread": "Unread result",
   "shareSessionViewsTitle": "Sync read state",
   "shareSessionViewsOn": "Let your other OpenCode clients know which completed results you have viewed.",
@@ -531,9 +531,9 @@
   "exportTitle": "Export conversation",
   "exportDescription": "Choose a format to save this conversation on your device.",
   "exportJson": "Complete conversation · JSON",
-  "exportJsonDescription": "Downloads the full session from the server, including older messages.",
+  "exportJsonDescription": "Downloads the full conversation from the server, including older messages.",
   "exportMarkdown": "Readable transcript · Markdown",
-  "exportMarkdownDescription": "Saves the messages currently loaded in this chat. Load older messages first if you need them included.",
+  "exportMarkdownDescription": "Saves the messages currently loaded in this conversation. Load older messages first if you need them included.",
   "exportRedact": "Redact sensitive data",
   "exportRedactDescription": "Replaces conversation text and sensitive fields with placeholders. Turn this off to back up the original text. Review any export before sharing.",
   "exportUnredacted": "The unredacted file may contain secrets, local paths, and private tool output.",
@@ -542,9 +542,9 @@
   "exportDownloading": "Downloading complete conversation…",
   "exportSaving": "Saving file…",
   "exportSaved": "Conversation saved",
-  "exportChanged": "The connection or location changed. Reopen export from the intended conversation.",
+  "exportChanged": "The server or project changed. Reopen export from the intended conversation.",
   "exportUnsupported": "This server does not support JSON export. You can still save the loaded Markdown transcript.",
-  "exportAuthorization": "The server denied access. Check your connection credentials and try again.",
+  "exportAuthorization": "The server denied access. Check your server credentials and try again.",
   "exportMissing": "This conversation no longer exists on the server. You can still save the loaded Markdown transcript.",
   "exportFailed": "Could not export the conversation. Check your connection and storage, then try again.",
   "importTitle": "Import conversation",
@@ -572,30 +572,30 @@
   },
   "importArchived": "This conversation is archived. Import will keep its archived status.",
   "importDestination": "Import into",
-  "importChooseDestination": "Choose a directory on this server",
+  "importChooseDestination": "Choose a project on this server",
   "importChangeDestination": "Change destination",
-  "importNoDestinations": "No project directories are available. Open a project on this server, then try again.",
-  "importDestinationFailed": "Could not load destination projects or workspaces. Try again; your file is still selected.",
+  "importNoDestinations": "No projects are available. Open a project on this server, then try again.",
+  "importDestinationFailed": "Could not load destination projects or cloud environments. Try again; your file is still selected.",
   "importPreserves": "Your source file stays unchanged. Existing conversations are never replaced, and importing does not start an agent run.",
   "importReading": "Preparing import…",
   "importSending": "Importing conversation…",
   "importSucceeded": "Conversation imported",
   "importOpen": "Open conversation",
-  "importOpenFailed": "The conversation was imported, but could not be opened. Find it in All sessions on the destination server.",
-  "importChanged": "The connection or location changed. Your file is still here. Reopen import on the intended server before continuing.",
+  "importOpenFailed": "The conversation was imported, but could not be opened. Find it in All conversations on the destination server.",
+  "importChanged": "The server or project changed. Your file is still here. Reopen import on the intended server before continuing.",
   "importUnsupported": "This server does not support JSON import.",
-  "importInvalidFile": "Choose a valid OpenCode JSON export with session information and message records. Markdown transcripts cannot be imported.",
+  "importInvalidFile": "Choose a valid OpenCode JSON export with conversation information and message records. Markdown transcripts cannot be imported.",
   "importTooLarge": "This file exceeds the mobile import limit of 128 MiB. It has not been uploaded or truncated. Use a desktop or server transfer for this file.",
-  "importConflict": "A conversation with this ID already exists on this server. Nothing was replaced. Find it in All sessions, or import this file on another server.",
-  "importAuthorization": "The server denied access. Check your connection credentials. Your file is still selected.",
+  "importConflict": "A conversation with this ID already exists on this server. Nothing was replaced. Find it in All conversations, or import this file on another server.",
+  "importAuthorization": "The server denied access. Check your server credentials. Your file is still selected.",
   "importParentMissing": "The parent conversation is missing from this server. Import the parent first, then retry this file.",
   "importRejected": "The server rejected this export format. Your file is still selected; check that it came from a compatible OpenCode server.",
-  "importUnconfirmed": "Import could not be confirmed. Check All sessions before retrying: the server may have received it. Your source file is unchanged.",
+  "importUnconfirmed": "Import could not be confirmed. Check All conversations before retrying: the server may have received it. Your source file is unchanged.",
   "sessionsNoOtherRecent": "No other recent conversations",
   "sessionPin": "Pin on this device",
   "sessionUnpin": "Unpin",
   "sessionPinned": "Pinned",
-  "sessionPinFailed": "Could not save this pin. Check device storage and that the session location has not changed, then try again.",
+  "sessionPinFailed": "Could not save this pin. Check device storage and that the conversation’s project has not changed, then try again.",
   "sessionPinsLoadFailed": "Some pinned conversations could not be loaded. Refresh to try again.",
   "promptStashSaveFailed": "Could not save this prompt. Your composer is unchanged. Check device storage and try again.",
   "promptOriginalDraft": "Restore original draft",
@@ -624,10 +624,10 @@
   "promptAttachmentsUnavailableDetail": "Missing, damaged or temporary attachments: {names}. Restore the available content and reattach these files before sending. The saved copy will stay in your stash.",
   "promptStashMigrationPending": "Some saved attachments could not be moved to local attachment storage yet. Your saved content has been kept. Free device storage and retry.",
   "commonRetry": "Try again",
-  "shareWaitingForServer": "Connect to a server and the shared text opens in a new session.",
-  "shareSessionFailed": "Shared text kept. Could not open a session. Retry when the connection is ready.",
-  "webSourcesDisclosure": "Web search is not available through this connection’s app gateway. Paste a public URL and optionally an excerpt you want to include. No page is fetched. Nothing is sent to the model here.",
-  "webSourcesScopeChanged": "Connection changed. Close and reopen Add web source.",
+  "shareWaitingForServer": "Connect to a server and the shared text opens in a new conversation.",
+  "shareSessionFailed": "Shared text kept. Could not open a conversation. Retry when the connection is ready.",
+  "webSourcesDisclosure": "Web search is not available through this server’s app gateway. Paste a public URL and optionally an excerpt you want to include. No page is fetched. Nothing is sent to the model here.",
+  "webSourcesScopeChanged": "Server changed. Close and reopen Add web source.",
   "webSourcesUrl": "Public URL",
   "webSourcesLabel": "Title (optional)",
   "webSourcesExcerpt": "Pasted excerpt (optional)",
@@ -654,7 +654,7 @@
   },
   "digestTitle": "Completion digests",
   "digestSubtitle": "On demand · cached metadata, not AI summaries",
-  "digestEmpty": "No ended-run metadata available in this location. Idle alone does not establish successful completion.",
+  "digestEmpty": "No ended-run metadata available in this project. Idle alone does not establish successful completion.",
   "digestIdle": "Server idle recorded · outcome unverified",
   "digestStatusUnverified": "Server reported idle. Success or failure is not verified.",
   "@digestStatusUnverified": {
@@ -664,7 +664,7 @@
   "@digestChangedFilesUnknown": {
     "description": "The server did not provide a session-wide changed-file total"
   },
-  "digestChangedFiles": "{count, plural, =0 {No changed files in the session total; this run is unknown.} one {1 changed file in the session total; this run is unknown.} other {{count} changed files in the session total; this run is unknown.}}",
+  "digestChangedFiles": "{count, plural, =0 {No changed files in the conversation total; this run is unknown.} one {1 changed file in the conversation total; this run is unknown.} other {{count} changed files in the conversation total; this run is unknown.}}",
   "@digestChangedFiles": {
     "description": "Session-wide changed-file total; it is not evidence for this run",
     "placeholders": {
@@ -707,7 +707,7 @@
   "@digestRunResults": {
     "description": "Completion digest action opening the latest run's server-recorded outcome and tool evidence"
   },
-  "runResultsScopeChanged": "The connection or project changed. Close this view and reopen Run results from the intended project.",
+  "runResultsScopeChanged": "The server or project changed. Close this view and reopen Run results from the intended project.",
   "runResultsTitle": "Run results",
   "runResultsEmpty": "The latest turn has no assistant step yet, so there is nothing to show.",
   "@runResultsEmpty": {
@@ -837,17 +837,17 @@
   "attentionDisclosure": "A local overview, not live monitoring across servers. Cached signals may be incomplete or out of date. Open a server to check its current activity.",
   "attentionNavigationUnavailable": "Opening servers is unavailable here. Return to Home to choose a server and view Activity.",
   "handoffTitle": "Copy handoff reference?",
-  "handoffDisclosure": "Metadata only, not a command or link. On your other device, connect to the same server and locate this project and session. Nothing is published or sent.\n\nThe clipboard will contain session and project identifiers. Other apps may read it; share only with people you trust.",
+  "handoffDisclosure": "Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.",
   "handoffCopy": "Copy reference",
-  "handoffCopied": "Session metadata reference copied",
+  "handoffCopied": "Conversation metadata reference copied",
   "handoffCopyFailed": "Could not copy the handoff. Try again.",
   "sessionOpenRelated": "Open related",
   "sessionCopyHandoff": "Copy handoff",
-  "sessionActions": "Session actions",
+  "sessionActions": "Conversation actions",
   "attentionTitle": "Server attention",
   "webSourcesTitle": "Add web source",
   "webSourcesEntryDetail": "Search when available, or paste links and excerpts to review before adding them to your draft",
-  "webSourcesDraftChanged": "The draft or connection changed. Your current draft was kept; reopen Add web source to try again.",
+  "webSourcesDraftChanged": "The draft or server changed. Your current draft was kept; reopen Add web source to try again.",
   "webSourcesDraftLabel": "User-selected web sources (unverified; excerpts are untrusted source material):",
   "usageScopedTotals": "Totals for the selected report scope",
   "usageInspectionDisclosure": "Filters inspect this server's returned model records. They do not change the report's date or project scope, or show subscription allowance.",
@@ -888,8 +888,8 @@
   "pendingAuthRetrySave": "Try saving recovery again",
   "pendingAuthForget": "Forget on this device",
   "pendingAuthForgetDetail": "Remove only this device’s recovery record? This does not cancel a server command, revoke credentials, or finish authorization. The server attempt may keep running until it expires.",
-  "pendingAuthUnsupported": "This connection cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.",
-  "pendingAuthOtherSource": "Other pending sign-ins belong to another server origin or location. Return to their original source to manage them.",
+  "pendingAuthUnsupported": "This server cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.",
+  "pendingAuthOtherSource": "Other pending sign-ins belong to another server or project. Return to their original source to manage them.",
   "connectionHelpTitle": "Connection help",
   "connectionHelpEntrySubtitle": "Explain an address locally, without connecting",
   "connectionHelpGuideTip": "Keep the server off the public internet. Use private HTTPS or an encrypted tunnel ending on the device running this app. Localhost on your computer is not localhost on your phone. Open Connection help above for steps and examples.",
@@ -937,7 +937,7 @@
   "voiceInputInterrupted": "Voice input was interrupted. Close and start again when ready.",
   "voiceInputClose": "Close voice input",
   "voiceInputUnavailable": "Voice input is unavailable. Check the local model and microphone settings.",
-  "voiceConversationInstructions": "Review and insert your transcript, then tap Send in the composer. Replies are read aloud only while Speak replies is on, and only the reply to what you just sent. Unsent text is discarded when you leave voice mode, the chat, or the app.",
+  "voiceConversationInstructions": "Review and insert your transcript, then tap Send in the composer. Replies are read aloud only while Speak replies is on, and only the reply to what you just sent. Unsent text is discarded when you leave voice mode, the conversation, or the app.",
   "desktopDropFailedTitle": "Could not attach dropped files",
   "desktopDropFailedRecovery": "Check the attachments already added before trying again. You can also use the keyboard to open Add, then Attach file.",
   "desktopContextMenuShortcutKeys": "Right click / Shift + F10 / Menu",
@@ -985,7 +985,7 @@
   "@commandAuthExpired": {
     "description": "Server-reported terminal expiry"
   },
-  "commandAuthScopeChanged": "The server or project changed. Return to the original location and reopen sign-in to manage its attempt.",
+  "commandAuthScopeChanged": "The server or project changed. Return to the original project and reopen sign-in to manage its attempt.",
   "@commandAuthScopeChanged": {
     "description": "Reject actions against the wrong provider authentication scope"
   },
@@ -1013,7 +1013,7 @@
   "@readAloudConsentTitle": {
     "description": "Consent before any system speech engine access"
   },
-  "readAloudConsentDetail": "The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software and its privacy practices apply. Code blocks and tool details are omitted. Others may hear the audio. Playback stops when this chat is covered or the app goes into the background.",
+  "readAloudConsentDetail": "The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software and its privacy practices apply. Code blocks and tool details are omitted. Others may hear the audio. Playback stops when this conversation is covered or the app goes into the background.",
   "@readAloudConsentDetail": {
     "description": "Discloses external engine access and audible output without promising network isolation"
   },
@@ -1156,7 +1156,7 @@
       }
     }
   },
-  "mcpRemoveRuntimeDetail": "Remove this MCP server from the current runtime location. Its tools will no longer be available there. This does not erase persistent server configuration; it may return after a server restart.",
+  "mcpRemoveRuntimeDetail": "Remove this MCP server from the current project’s runtime. Its tools will no longer be available there. This does not erase persistent server configuration; it may return after a server restart.",
   "@mcpRemoveRuntimeDetail": {
     "description": "Distinguishes runtime MCP removal from persistent configuration changes"
   },
@@ -1193,8 +1193,8 @@
   "promptRestoreAvailable": "Restore available content",
   "promptRestored": "Prompt restored. Review it before sending.",
   "promptStashAction": "Stash current prompt",
-  "promptStashLocation": "This prompt refers to files in {directory}. Switch to its original project and workspace before restoring it.",
-  "promptStashScopeChanged": "The server or location changed. Close and reopen Saved prompts.",
+  "promptStashLocation": "This prompt refers to files in {directory}. Switch to its original project before restoring it.",
+  "promptStashScopeChanged": "The server or project changed. Close and reopen Saved prompts.",
   "@promptStashLocation": {
     "placeholders": {
       "directory": {
@@ -1260,7 +1260,7 @@
   "skillActivationHelp": "Adds these skill instructions to this conversation. Your unsent draft stays in the composer.",
   "skillRunNow": "Run agent now",
   "skillRunHelp": "Turn off to add the skill without starting another response.",
-  "skillLocationChanged": "The connection or project changed. Reopen Skills from the conversation.",
+  "skillLocationChanged": "The server or project changed. Reopen Skills from the conversation.",
   "skillUnsupported": "Skill activation is unavailable on this server. You can still preview skills.",
   "skillStaged": "Resolve the staged revert in the conversation before adding a skill.",
   "skillBusy": "A skill is already being added to this conversation.",
@@ -1288,7 +1288,7 @@
   "activeContextNoMatches": "No active messages match these filters.",
   "activeContextNoText": "No supported text content in this entry.",
   "activeContextUnsupported": "Active context inspection is unavailable on this server.",
-  "activeContextChanged": "The connection, project or conversation changed. Reopen this inspector from the conversation.",
+  "activeContextChanged": "The server, project or conversation changed. Reopen this inspector from the conversation.",
   "activeContextInvalid": "The server returned an invalid context snapshot. Refresh to try again.",
   "activeContextRefreshFailed": "Showing the previous snapshot. Could not refresh: {error}",
   "@activeContextRefreshFailed": {
@@ -1306,7 +1306,7 @@
   "activeContextSkill": "Skill",
   "activeContextShell": "Shell",
   "activeContextCompaction": "Compaction",
-  "activeContextChange": "Session change",
+  "activeContextChange": "Conversation change",
   "activeContextText": "Text",
   "activeContextToolInput": "Tool input",
   "activeContextToolOutput": "Tool output",
@@ -1424,7 +1424,7 @@
   "@quotaSetupTitle": {
     "description": "First-visit quota setup heading; no claim of built-in OpenCode support"
   },
-  "quotaSetupDescription": "Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this profile's server sign-in. Confirm only if you installed or trust that deployment. Provider tokens stay on the server.",
+  "quotaSetupDescription": "Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this saved server's sign-in. Confirm only if you installed or trust that deployment. Provider tokens stay on the server.",
   "@quotaSetupDescription": {
     "description": "Informed consent before sending existing server authentication to an optional same-origin route"
   },
@@ -1638,11 +1638,11 @@
   "@iosRemoteSummary": {
     "description": "Truthful initial iOS remote-control scope"
   },
-  "iosKeychainGuide": "Server passwords use this device's Keychain. They are not stored in plain profile preferences.",
+  "iosKeychainGuide": "Server passwords use this device's Keychain. They are not stored in plain app preferences.",
   "@iosKeychainGuide": {
     "description": "iOS credential storage guidance"
   },
-  "platformSecureStorageGuide": "Server passwords use this platform's secure credential storage. They are not stored in plain profile preferences.",
+  "platformSecureStorageGuide": "Server passwords use this platform's secure credential storage. They are not stored in plain app preferences.",
   "@platformSecureStorageGuide": {
     "description": "Platform-neutral storage copy rather than incorrectly promising Linux libsecret everywhere"
   },
@@ -1709,10 +1709,10 @@
   "uncertainAuthForget": "Forget uncertain start",
   "uncertainAuthCloseHint": "Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.",
   "pluginsTitle": "Plugins",
-  "pluginsDescription": "Plugins reported for this server location. Inspect status and source here; manage plugins on the server.",
+  "pluginsDescription": "Plugins reported for this project on the server. Inspect status and source here; manage plugins on the server.",
   "pluginsUnsupported": "This server does not support plugin inspection.",
   "pluginsDisconnected": "Connect to a server to inspect its plugins.",
-  "pluginsEmpty": "No plugins reported for this location.",
+  "pluginsEmpty": "No plugins reported for this project.",
   "pluginsLoadFailed": "Could not load plugins. Try again.",
   "pluginsRefresh": "Refresh plugins",
   "pluginsRetry": "Try again",
@@ -1730,10 +1730,10 @@
   "demoReviewChanges": "Review changes",
   "demoSetUpServer": "Set up your own server",
   "handoffCommandTitle": "Continue on computer",
-  "handoffCommandDisclosure": "Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and session ID, but no password.",
+  "handoffCommandDisclosure": "Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and conversation ID, but no password.",
   "handoffCopyCommand": "Copy command",
   "handoffCommandCopied": "Resume command copied",
-  "handoffCommandUnavailable": "A resume command is unavailable for this connection or workspace. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the session metadata below.",
+  "handoffCommandUnavailable": "A resume command is unavailable for this server or cloud environment. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the conversation metadata below.",
   "quotaMiniMax": "MiniMax",
   "quotaMiniMaxAccount": "MiniMax subscription windows",
   "quotaMiniMaxSourceBound": "Tied to the collector's configured MiniMax Subscription Key. The quota response does not independently identify the account. Only reported general-pool percentages are shown; other limits may apply.",
@@ -1813,12 +1813,12 @@
   "usageBudgetClearAll": "Clear saved consumption budgets",
   "usageBudgetClearDescription": "Remove all current and past consumption budgets for this saved server? Provider thresholds are kept.",
   "monitorTitle": "Saved-server attention",
-  "monitorScope": "Counts cover each server’s last selected location, not every project on that server.",
+  "monitorScope": "Counts cover each server’s last selected project, not every project on that server.",
   "monitorDisclosure": "Monitoring is off until you enable it for a server. Checks run about once a minute while this app is open. Background checks run no more often than every five minutes, only while Keep live is already on and Android’s service is running. Android can stop that service; no remaining runtime is promised.",
   "monitorConfigure": "Monitoring settings",
   "monitorRefresh": "Check monitored servers",
   "monitorOptIn": "Monitor this server",
-  "monitorOptInDetail": "Check pending permissions, questions and forms in its last selected location.",
+  "monitorOptInDetail": "Check pending permissions, questions and forms in its last selected project.",
   "monitorNotifications": "Notify when attention is needed",
   "monitorWifi": "Wi-Fi only",
   "monitorWifiDetail": "Checks pause unless Android reports an active Wi-Fi network. VPN or unavailable network information may pause checks.",
@@ -1834,14 +1834,14 @@
   "monitorWifiRequired": "Waiting for Wi-Fi · attention unknown",
   "monitorPaused": "Paused in background · attention unknown",
   "monitorCurrent": "Current observation",
-  "monitorAllClear": "No pending requests in the checked location",
+  "monitorAllClear": "No pending requests in the checked project",
   "monitorNoServers": "Add a server to monitor attention.",
   "monitorSaveFailed": "Could not save monitoring settings. Try again.",
-  "monitorOpenFailed": "This request or its server location changed. Refresh the inbox and try again.",
+  "monitorOpenFailed": "This request or its project changed. Refresh the inbox and try again.",
   "monitorSwitchTitle": "Switch server to review?",
-  "monitorSwitchDetail": "A run is active on the selected server. Switching changes the connection shown in this app; it does not stop that server’s run.",
+  "monitorSwitchDetail": "A run is active on the selected server. Switching changes the server shown in this app; it does not stop that server’s run.",
   "monitorSwitch": "Switch server",
-  "monitorSession": "Session",
+  "monitorSession": "Conversation",
   "monitorPermission": "Permission needed",
   "monitorQuestion": "Answer needed",
   "monitorForm": "Form response needed",
@@ -1892,7 +1892,7 @@
       }
     }
   },
-  "monitorSelected": "Selected location",
+  "monitorSelected": "Selected project",
   "monitorNoNotifications": "Background notifications also require Keep live and notification permission in Background settings.",
   "monitorCheckIn": "Check in on long runs",
   "monitorCheckInDetail": "Shows when busy checks span the chosen time. Work may pause or restart between checks. At most one notification is attempted per observed interval, while Keep live is on.",
@@ -1958,13 +1958,13 @@
   "managedRecoveryCheck": "Check recovery status",
   "managedRecoveryReset": "Reset retry budget",
   "managedRecoverySaveFailed": "Recovery settings could not be saved. Retry.",
-  "managedRecoveryRevokeFailed": "Could not save or revoke recovery. Keep this profile and retry before removing it.",
+  "managedRecoveryRevokeFailed": "Could not save or revoke recovery. Keep this server and retry before removing it.",
   "managedRecoverySettingsUnreadable": "Recovery settings could not be read. Check the server before enabling recovery.",
   "managedRecoveryEnableFailed": "Could not enable recovery. Start the managed server, then try again.",
   "managedRecoveryOwnershipChanged": "The managed operation changed. Check the server before enabling recovery again.",
   "managedRecoveryUncertain": "Recovery paused because Termux did not confirm the result. Refresh to continue.",
   "managedRecoveryRetryDisable": "Try disabling recovery again",
-  "managedRecoveryStoppedWithCleanupError": "The local server is stopped. Recovery settings could not be fully cleared; retry disabling recovery in Servers before removing the profile.",
+  "managedRecoveryStoppedWithCleanupError": "The local server is stopped. Recovery settings could not be fully cleared; retry disabling recovery in Servers before removing the server.",
   "pluginMappingPersonal": "Your command links · not verified plugin ownership",
   "pluginMappingReview": "Review /{command}",
   "@pluginMappingReview": {
@@ -1975,12 +1975,12 @@
     }
   },
   "pluginMappingManage": "Link commands",
-  "pluginMappingDescription": "Choose commands you associate with this plugin. These personal links apply only to this server location. Each action opens a review of the chat and arguments before you run it.",
+  "pluginMappingDescription": "Choose commands you associate with this plugin. These personal links apply only to this project on this server. Each action opens a review of the conversation and arguments before you run it.",
   "pluginMappingEmpty": "No server commands are available to link.",
   "pluginMappingUnavailable": "This plugin or command is no longer available here. Refresh and review your links.",
   "pluginMappingLimit": "Choose up to 16 commands for this plugin.",
   "pluginMappingSave": "Save links",
-  "pluginMappingSaveFailed": "Links could not be saved. Check that this server location is still selected and try again.",
+  "pluginMappingSaveFailed": "Links could not be saved. Check that this project is still selected and try again.",
   "pluginMappingLoadFailed": "Commands could not be loaded. Try again when connected.",
   "mobileTasksDescription": "Server-reported tasks · mobile view",
   "mobileTasksUnfinished": "Show unfinished only",
@@ -2018,9 +2018,9 @@
   "mobileTaskPriorityLow": "Low priority",
   "pluginMappingClearAll": "Clear personal links",
   "pluginMappingClearTitle": "Clear all personal command links?",
-  "pluginMappingClearDescription": "Remove personal plugin-command links for every location in this server profile, including previous locations. Server plugins and commands stay installed.",
+  "pluginMappingClearDescription": "Remove personal plugin-command links for every project on this saved server, including previous projects. Server plugins and commands stay installed.",
   "pluginMappingClearConfirm": "Clear links",
-  "pluginMappingClearFailed": "Personal links could not be cleared. Check that this server profile is still selected and try again.",
+  "pluginMappingClearFailed": "Personal links could not be cleared. Check that this server is still selected and try again.",
   "quotaMonitorTitle": "Quota monitoring",
   "quotaMonitorConsentTitle": "Monitor this provider source?",
   "quotaMonitorConsent": "Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require the separate switch below and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.",
@@ -2047,8 +2047,8 @@
   "webSearchDisclosure": "Search sends your query to this server’s selected search provider. Review results before adding them to your editable draft. Nothing is sent to the model here.",
   "webSearchManual": "Or paste a source",
   "webSearchUnavailable": "Web search is unavailable. Configure a search provider on this server, then refresh providers. You can still paste a source below.",
-  "webSearchAuthentication": "The server did not authorize web search. Check this connection’s credentials.",
-  "webSearchInvalidResponse": "The search response did not match this connection or the supported format. Refresh providers or paste a source.",
+  "webSearchAuthentication": "The server did not authorize web search. Check this server’s credentials.",
+  "webSearchInvalidResponse": "The search response did not match this server or the supported format. Refresh providers or paste a source.",
   "webSearchFailed": "Web search could not finish. Try again or paste a source.",
   "webSearchRefresh": "Refresh providers",
   "webSearchProvider": "Search provider",
@@ -2080,7 +2080,7 @@
   "setupInstallRestart": "Install & restart",
   "queueStorageUnreadable": "Saved queued prompts could not be read. New prompts cannot be queued until this device data is cleared.",
   "queueStorageDiscardUnreadable": "This permanently deletes the unreadable queued prompts and their attachments from this device. Their contents and count are unknown. Nothing on the server is affected.",
-  "filesViewerScopeChanged": "Connection changed. Close and reopen this file.",
+  "filesViewerScopeChanged": "Server changed. Close and reopen this file.",
   "filesViewerPathChanged": "File context changed. Close and reopen this file.",
   "queueStorageCountUnknown": "Saved queued data could not be read. The number of queued prompts is unknown.",
   "codexConnectionVerified": "Connection verified. Save and connect to continue.",
@@ -2088,7 +2088,7 @@
   "connectionTokenRejected": "The connection token was rejected. Update it to reconnect.",
   "updateConnectionToken": "Update token",
   "codexDraftReconnectNotice": "Review draft stays here; nothing is sent automatically.",
-  "codexTextOnlyPrompt": "This connection supports text only. Remove attachments before sending.",
+  "codexTextOnlyPrompt": "This server supports text only. Remove attachments before sending.",
   "codexOfflineDraftSaved": "Reconnect before sending. Your draft is kept on this device.",
   "codexReconnectBeforeSending": "Reconnect before sending.",
   "connectionTypeLabel": "CONNECTION TYPE",
@@ -2113,7 +2113,7 @@
   "codexHideToken": "Hide connection token",
   "codexPasteToken": "Paste connection token",
   "connectionCloseEditor": "Close server editor",
-  "connectionCredentialUnavailable": "A saved connection credential can no longer be read. Edit the active server and re-enter it before connecting.",
+  "connectionCredentialUnavailable": "A saved server credential can no longer be read. Edit the active server and re-enter it before connecting.",
   "projectContextTitle": "Project context",
   "projectConfiguredFolder": "Configured folder",
   "termuxGuideTitle": "Connect Termux once",
@@ -2137,23 +2137,23 @@
   "termuxGuideOpenFailed": "The command was copied, but Termux could not open. Open Termux yourself or try Copy & open Termux again.",
   "termuxGuideCopyOpenFailed": "Could not copy the command or open Termux.",
   "termuxPermissionDenied": "Android denied the Termux command permission. Allow it in OpenCode app settings.",
-  "launchShortcutWaiting": "Connecting to the saved server. The new task opens when it is ready.",
+  "launchShortcutWaiting": "Connecting to the saved server. The new conversation opens when it is ready.",
   "@launchShortcutWaiting": {
     "description": "Snackbar shown once when the New task home-screen shortcut arrives while the saved server is still connecting"
   },
-  "launchShortcutNoServer": "Choose a server, then start a new task.",
+  "launchShortcutNoServer": "Choose a server, then start a new conversation.",
   "@launchShortcutNoServer": {
     "description": "Snackbar shown on the servers screen when the New task shortcut arrives with no saved server selected"
   },
-  "launchShortcutReentry": "Enter the credentials for the saved server, then start a new task.",
+  "launchShortcutReentry": "Enter the credentials for the saved server, then start a new conversation.",
   "@launchShortcutReentry": {
     "description": "Snackbar shown on the servers screen when the New task shortcut arrives while the saved server needs its password or token entered again"
   },
-  "launchShortcutConnectionFailed": "Could not connect to the saved server. Choose or fix a server, then start a new task.",
+  "launchShortcutConnectionFailed": "Could not connect to the saved server. Choose or fix a server, then start a new conversation.",
   "@launchShortcutConnectionFailed": {
     "description": "Snackbar shown on the servers screen when the New task shortcut arrives after the saved server connection failed"
   },
-  "launchShortcutNewTaskFailed": "Could not start a new task. {error}",
+  "launchShortcutNewTaskFailed": "Could not start a new conversation. {error}",
   "@launchShortcutNewTaskFailed": {
     "description": "Snackbar shown when the New task shortcut reached a connected server but creating the session failed",
     "placeholders": {
@@ -2162,27 +2162,27 @@
       }
     }
   },
-  "launchUiPinnedUntitled": "Untitled session",
+  "launchUiPinnedUntitled": "Untitled conversation",
   "@launchUiPinnedUntitled": {
     "description": "Launcher shortcut label for a pinned session that has no title yet"
   },
-  "launchUiSessionWaiting": "Connecting to the saved server. The session opens when it is ready.",
+  "launchUiSessionWaiting": "Connecting to the saved server. The conversation opens when it is ready.",
   "@launchUiSessionWaiting": {
     "description": "Snackbar shown once when a pinned-session launcher shortcut arrives while the saved server is still connecting"
   },
-  "launchUiSessionNoServer": "Choose a server, then open the session from its list.",
+  "launchUiSessionNoServer": "Choose a server, then open the conversation from its list.",
   "@launchUiSessionNoServer": {
     "description": "Snackbar shown on the servers screen when a pinned-session launcher shortcut arrives with no saved server selected"
   },
-  "launchUiSessionReentry": "Enter the credentials for the saved server, then open the session from its list.",
+  "launchUiSessionReentry": "Enter the credentials for the saved server, then open the conversation from its list.",
   "@launchUiSessionReentry": {
     "description": "Snackbar shown on the servers screen when a pinned-session launcher shortcut arrives while the saved server needs its password or token entered again"
   },
-  "launchUiSessionConnectionFailed": "Could not connect to the saved server. Choose or fix a server, then open the session from its list.",
+  "launchUiSessionConnectionFailed": "Could not connect to the saved server. Choose or fix a server, then open the conversation from its list.",
   "@launchUiSessionConnectionFailed": {
     "description": "Snackbar shown on the servers screen when a pinned-session launcher shortcut arrives after the saved server connection failed"
   },
-  "launchUiSessionOtherServer": "That shortcut belongs to another server. Connect to that server, then open the session from its list.",
+  "launchUiSessionOtherServer": "That shortcut belongs to another server. Connect to that server, then open the conversation from its list.",
   "@launchUiSessionOtherServer": {
     "description": "Snackbar shown when a pinned-session launcher shortcut names a server profile other than the active one; the app never switches servers on its own"
   },
@@ -2227,7 +2227,7 @@
   "@queuedKeepForReview": {
     "description": "Cancel label on the resend and discard dialogs for an unconfirmed queued draft; the draft stays queued for review"
   },
-  "queuedDiscardUnconfirmedMessage": "Its earlier send was never confirmed; it may already be in the session.",
+  "queuedDiscardUnconfirmedMessage": "Its earlier send was never confirmed; it may already be in the conversation.",
   "@queuedDiscardUnconfirmedMessage": {
     "description": "Discard sheet body for a queued draft whose send was never confirmed"
   },
@@ -2263,7 +2263,7 @@
       }
     }
   },
-  "setupRuntimeUpdateDetail": "The app will install {runtime} {version}, restart only the managed local server, and reconnect this profile.",
+  "setupRuntimeUpdateDetail": "The app will install {runtime} {version}, restart only the managed local server, and reconnect this server.",
   "@setupRuntimeUpdateDetail": {
     "description": "Names the selected runtime and pinned version in the update confirmation",
     "placeholders": {
@@ -2330,7 +2330,7 @@
       }
     }
   },
-  "isolatedTaskReady": "{name} is ready. Opening a blank session…",
+  "isolatedTaskReady": "{name} is ready. Opening a blank conversation…",
   "@isolatedTaskReady": {
     "description": "Status once the worktree reported ready and the session is being opened",
     "placeholders": {
@@ -2395,7 +2395,7 @@
   "@isolatedTaskCancelledUnknown": {
     "description": "Note after stopping before the create request answered"
   },
-  "isolatedTaskOpening": "Opening a blank session in {name}…",
+  "isolatedTaskOpening": "Opening a blank conversation in {name}…",
   "@isolatedTaskOpening": {
     "description": "Status while switching scope and creating the session",
     "placeholders": {
@@ -2404,7 +2404,7 @@
       }
     }
   },
-  "isolatedTaskOpened": "Session ready in {name}. Nothing has been sent.",
+  "isolatedTaskOpened": "Conversation ready in {name}. Nothing has been sent.",
   "@isolatedTaskOpened": {
     "description": "Status once the blank session exists in the worktree",
     "placeholders": {
@@ -2444,16 +2444,16 @@
   },
   "returnBriefTitle": "Unreviewed work",
   "returnBriefDescription": "For this project on this device. Dismissing keeps conversations unread and requests pending.",
-  "returnBriefUntitled": "Untitled session",
+  "returnBriefUntitled": "Untitled conversation",
   "returnBriefStale": "Last observed state. Reconnect or refresh to check current work and requests.",
   "returnBriefStatusUnknown": "Review status unknown",
   "returnBriefUnknown": "This server does not report read state. Unreviewed results are unknown.",
-  "returnBriefPartial": "Loaded sessions only. The session list is still incomplete.",
+  "returnBriefPartial": "Loaded conversations only. The conversation list is still incomplete.",
   "returnBriefAnswer": "Answer",
-  "returnBriefUnreviewed": "Unreviewed session. Open results to check the outcome.",
+  "returnBriefUnreviewed": "Unreviewed conversation. Open results to check the outcome.",
   "returnBriefReview": "Review results",
   "returnBriefContinue": "Continue",
-  "returnBriefMore": "Additional items: {count}. They remain unacknowledged; see the sessions below or Activity.",
+  "returnBriefMore": "Additional items: {count}. They remain unacknowledged; see the conversations below or Activity.",
   "@returnBriefMore": {
     "placeholders": {
       "count": {
@@ -2465,8 +2465,8 @@
   "returnBriefSaving": "Saving dismissal...",
   "returnBriefDismiss": "Dismiss shown items",
   "capsuleTitle": "Context capsule",
-  "capsuleEntry": "Collect notes, errors and screenshots for this task",
-  "capsuleDescription": "Build a bundle for this task. Applying adds it to your existing draft; nothing is sent. Unapplied edits are kept only while this screen is open.",
+  "capsuleEntry": "Collect notes, errors and screenshots for this conversation",
+  "capsuleDescription": "Build a bundle for this conversation. Applying adds it to your existing draft; nothing is sent. Unapplied edits are kept only while this screen is open.",
   "capsuleNote": "Note",
   "capsuleError": "Error",
   "capsuleCode": "Code",
@@ -2478,8 +2478,8 @@
   "capsulePreview": "Tap to preview",
   "capsuleApply": "Apply to draft",
   "capsuleApplied": "Context added to your saved draft. Review it before sending.",
-  "capsuleScopeChanged": "The task, connection or draft changed. Close this capsule and reopen it from the intended task.",
-  "capsuleTextOnly": "This connection accepts text only. You can still collect notes, errors and code.",
+  "capsuleScopeChanged": "The conversation, server or draft changed. Close this capsule and reopen it from the intended conversation.",
+  "capsuleTextOnly": "This server accepts text only. You can still collect notes, errors and code.",
   "capsuleImagesOnly": "Choose a PNG, JPEG, GIF or WebP image. Paste text into an excerpt instead.",
   "capsuleImageFailed": "Could not add that image. Use up to 5 attachments, 10 MB each and 20 MB total, including your existing draft.",
   "capsulePasteFailed": "Clipboard text is unavailable. You can type or paste into the excerpt.",
@@ -2659,7 +2659,7 @@
   "fileNext": "Next",
   "fileCancel": "Cancel",
   "agentAccountTitle": "Codex account",
-  "agentAccountScopeLost": "This connection changed. Return to Servers and open the account for the connected profile.",
+  "agentAccountScopeLost": "This server changed. Return to Servers and open the account for the connected server.",
   "agentAccountRefresh": "Refresh account",
   "agentAccountLoading": "Checking the host account",
   "agentAccountUnavailable": "Account panel unavailable",
@@ -2680,7 +2680,7 @@
       }
     }
   },
-  "agentAccountHostNote": "The official Codex runtime keeps your provider credentials. Account changes apply to this host, including other profiles connected to it.",
+  "agentAccountHostNote": "The official Codex runtime keeps your provider credentials. Account changes apply to this host, including other saved servers connected to it.",
   "agentAccountUnsupportedDetail": "This panel is verified with Codex 0.153.4. The connected runtime may not support these account methods.",
   "agentAccountReconnectDetail": "Account data and the sign-in code were cleared. Reconnect to refresh. Sign-in will not restart automatically.",
   "agentAccountSignIn": "Sign in with ChatGPT",
@@ -2754,12 +2754,12 @@
     }
   },
   "projectFolderChooserTitle": "Choose a project folder",
-  "projectFolderChooserMessage": "OpenCode Mobile does not work in the server’s home folder. Create a new folder or open a project folder to start sessions.",
+  "projectFolderChooserMessage": "OpenCode Mobile does not work in the server’s home folder. Create a new folder or open a project folder to start conversations.",
   "projectFolderCreate": "Create a new folder",
   "projectFolderOpen": "Open a project folder",
   "projectFolderBrowse": "Choose from opened projects",
   "projectFolderNoCreateHint": "This server cannot create folders from the app. Create the folder on that machine, then open it here by its path.",
-  "projectFolderCreateMessage": "The folder is created in {directory} on this device and opened as the workspace.",
+  "projectFolderCreateMessage": "The folder is created in {directory} on this device and opened as the project.",
   "@projectFolderCreateMessage": {
     "placeholders": {
       "directory": {
@@ -2791,14 +2791,14 @@
     }
   },
   "projectFolderOpenSubtitle": "Enter the full path of a folder on the server",
-  "globalSessionsTitle": "All sessions",
-  "globalSessionsSearchLabel": "Search session titles",
-  "globalSessionsSearchHint": "Across every folder on this server",
+  "globalSessionsTitle": "All conversations",
+  "globalSessionsSearchLabel": "Search conversation titles",
+  "globalSessionsSearchHint": "Across every project on this server",
   "globalSessionsIncludeArchived": "Include archived",
   "globalSessionsArchivedShort": "Archived",
-  "globalSessionsAllFolders": "All folders",
-  "globalSessionsUnknownLocation": "Unknown location",
-  "globalSessionsSummary": "{count} sessions in {folders} folders",
+  "globalSessionsAllFolders": "All projects",
+  "globalSessionsUnknownLocation": "Unknown project",
+  "globalSessionsSummary": "{count} conversations in {folders} projects",
   "@globalSessionsSummary": {
     "placeholders": {
       "count": {
@@ -2809,7 +2809,7 @@
       }
     }
   },
-  "globalSessionsSummaryOneFolder": "{count} sessions in one folder",
+  "globalSessionsSummaryOneFolder": "{count} conversations in one project",
   "@globalSessionsSummaryOneFolder": {
     "placeholders": {
       "count": {
@@ -2817,7 +2817,7 @@
       }
     }
   },
-  "globalSessionsFilteredSummary": "{count} of {total} sessions shown",
+  "globalSessionsFilteredSummary": "{count} of {total} conversations shown",
   "@globalSessionsFilteredSummary": {
     "placeholders": {
       "count": {
@@ -2828,20 +2828,20 @@
       }
     }
   },
-  "globalSessionsEmptyTitle": "No sessions yet",
-  "globalSessionsEmptyMessage": "Sessions from every folder on this server will appear here.",
-  "globalSessionsNoMatchTitle": "No matching sessions",
-  "globalSessionsNoMatchMessage": "Try a shorter title search or include archived sessions.",
+  "globalSessionsEmptyTitle": "No conversations yet",
+  "globalSessionsEmptyMessage": "Conversations from every project on this server will appear here.",
+  "globalSessionsNoMatchTitle": "No matching conversations",
+  "globalSessionsNoMatchMessage": "Try a shorter title search or include archived conversations.",
   "globalSessionsRefresh": "Refresh",
-  "globalSessionsLoadMoreFailed": "Could not load more sessions",
+  "globalSessionsLoadMoreFailed": "Could not load more conversations",
   "globalSessionsOpen": "Open",
   "globalSessionsContinueHere": "Continue here",
-  "globalSessionsActions": "Session actions",
+  "globalSessionsActions": "Conversation actions",
   "globalSessionsWorking": "Working",
-  "globalSessionsUntitled": "Untitled session",
-  "workspaceNewSession": "New session",
+  "globalSessionsUntitled": "Untitled conversation",
+  "workspaceNewSession": "New conversation",
   "workspaceIsolatedTask": "Isolated task",
-  "workspaceAllSessions": "All sessions",
+  "workspaceAllSessions": "All conversations",
   "workspaceDismissNotice": "Dismiss",
   "workspaceManageProject": "Manage project",
   "workspaceManageProjectHint": "Switch project, worktrees, and project health",
@@ -2921,7 +2921,7 @@
       }
     }
   },
-  "settingsDiscoveryNewChatsModel": "New chats: {model}",
+  "settingsDiscoveryNewChatsModel": "New conversations: {model}",
   "@settingsDiscoveryNewChatsModel": {
     "description": "More destination summary showing the model used by new chats, not an existing session.",
     "placeholders": {
@@ -2933,7 +2933,7 @@
   "onboardingValueTitle": "Keep your work moving.",
   "onboardingValueBody": "Ask your coding agent for a change, review the result, and pick up where you left off.",
   "onboardingConnect": "Connect to a server",
-  "onboardingDemoNote": "A simulated session. No server needed.",
+  "onboardingDemoNote": "A simulated conversation. No server needed.",
   "onboardingMoreSetup": "More setup options",
   "onboardingPrivateNetwork": "Reach a server over your private network",
   "onboardingRunOnPhone": "Run OpenCode here with Termux",
@@ -2944,11 +2944,11 @@
   "onboardingTermuxSetup": "On this phone",
   "activityClearHere": "All clear here",
   "activityStatusIncomplete": "Status incomplete",
-  "activityCheckedLocationsClear": "Nothing needs you in the checked locations.",
+  "activityCheckedLocationsClear": "Nothing needs you in the checked projects.",
   "activityUnknownStatusDetail": "No requests loaded. Some server activity is still unknown.",
   "activityCheckAgain": "Try again",
   "activitySavedServers": "Saved servers",
-  "activitySelectedLocationsOnly": "Last selected locations only",
+  "activitySelectedLocationsOnly": "Last selected projects only",
   "activityBackgroundUpdates": "Background updates",
   "activityBackgroundOffDetail": "Off · choose when to stay connected",
   "activityPendingCount": "{count} pending",
@@ -2991,8 +2991,8 @@
   "workBackgroundPending": "Requesting background work…",
   "workBackgroundRequested": "Background work requested. Status will update when the server reports it.",
   "workBackgroundUnavailable": "This server has not confirmed support for moving work to the background.",
-  "workBackgroundEligible": "Run in background is available while a supported agent task or command is blocking this chat.",
-  "workBackgroundAutomatic": "Ask your agent to delegate work in the background. Results return to this chat automatically.",
+  "workBackgroundEligible": "Run in background is available while a supported agent task or command is blocking this conversation.",
+  "workBackgroundAutomatic": "Ask your agent to delegate work in the background. Results return to this conversation automatically.",
   "oc2DiscoveryConnect": "Connect OpenCode 2",
   "@oc2DiscoveryConnect": {
     "description": "Opens the existing-server editor for someone looking for OpenCode 2; does not force the protocol."
@@ -3018,7 +3018,7 @@
       }
     }
   },
-  "setupSwitchConfirmDetail": "Stops this phone’s server and running tasks. Chats, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.",
+  "setupSwitchConfirmDetail": "Stops this phone’s server and running tasks. Conversations, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.",
   "setupSwitchConfirm": "Switch version",
   "setupSwitchInstalled": "On this phone: {runtime}",
   "@setupSwitchInstalled": {
@@ -3066,7 +3066,7 @@
     }
   },
   "setupSwitchReady": "The local runtime is ready. Your current remote connection is unchanged.",
-  "setupSwitchMissingCredential": "The saved credential for the previous runtime is unavailable. Its data is retained; restore the saved profile before returning.",
+  "setupSwitchMissingCredential": "The saved credential for the previous runtime is unavailable. Its data is retained; restore the saved server before returning.",
   "setupSwitchOwnDescription": "Connect an existing OpenCode 1 or OpenCode 2 server by address.",
   "setupSwitchProgressTitle": "Switching to {runtime}",
   "@setupSwitchProgressTitle": {
@@ -3076,7 +3076,7 @@
       }
     }
   },
-  "setupSwitchDataNotice": "Each version keeps its own chats and provider settings. Project files and project configuration are shared.",
+  "setupSwitchDataNotice": "Each version keeps its own conversations and provider settings. Project files and project configuration are shared.",
   "setupSwitchHelp": "Setup help",
   "setupSwitchReadyToConnect": "Ready to connect",
   "setupSwitchStopped": "Ready to start",
@@ -3347,7 +3347,7 @@
       }
     }
   },
-  "e7GlossaryMcpExplanation": "Model Context Protocol. Small add-on servers that give the agent extra tools, like a browser, a database, or a design tool. You connect them once and every session can use them.",
+  "e7GlossaryMcpExplanation": "Model Context Protocol. Small add-on servers that give the agent extra tools, like a browser, a database, or a design tool. You connect them once and every conversation can use them.",
   "@e7GlossaryMcpExplanation": {
     "description": "Localized shared connection or glossary interface"
   },
@@ -3367,7 +3367,7 @@
   "@e7GlossaryContextTerm": {
     "description": "Localized shared connection or glossary interface"
   },
-  "e7GlossaryContextExplanation": "Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the session can continue.",
+  "e7GlossaryContextExplanation": "Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the conversation can continue.",
   "@e7GlossaryContextExplanation": {
     "description": "Localized shared connection or glossary interface"
   },
@@ -3479,7 +3479,7 @@
   "@e7BannerStaleExplanation": {
     "description": "Localized shared connection or glossary interface"
   },
-  "e7SharedThreeStepsToYourFirstSession": "Three steps to your first session",
+  "e7SharedThreeStepsToYourFirstSession": "Three steps to your first conversation",
   "@e7SharedThreeStepsToYourFirstSession": {
     "description": "Shared app interface: Three steps to your first session"
   },
@@ -3599,7 +3599,7 @@
   "@e7SharedOpenCodeIsReconnectingTryAgain": {
     "description": "Shared app interface: OpenCode is reconnecting. Try again."
   },
-  "e7SharedSessionContext": "Session context",
+  "e7SharedSessionContext": "Conversation context",
   "@e7SharedSessionContext": {
     "description": "Shared app interface: Session context"
   },
@@ -3611,7 +3611,7 @@
   "@e7SharedNoContextUsageYet": {
     "description": "Shared app interface: No context usage yet"
   },
-  "e7SharedSendAPromptAndWaitForAn": "Send a prompt and wait for an assistant response. OpenCode will then report token usage for this session.",
+  "e7SharedSendAPromptAndWaitForAn": "Send a prompt and wait for an assistant response. OpenCode will then report token usage for this conversation.",
   "@e7SharedSendAPromptAndWaitForAn": {
     "description": "Shared app interface: Send a prompt and wait for an assistant response. OpenCode will then report token usage for this session."
   },
@@ -3623,7 +3623,7 @@
   "@e7SharedEstimatedInputMakeup": {
     "description": "Shared app interface: Estimated input makeup"
   },
-  "e7SharedSessionTotals": "Session totals",
+  "e7SharedSessionTotals": "Conversation totals",
   "@e7SharedSessionTotals": {
     "description": "Shared app interface: Session totals"
   },
@@ -3667,7 +3667,7 @@
   "@e7SharedAccumulatedCost": {
     "description": "Shared app interface: Accumulated cost"
   },
-  "e7SharedSessionTokensReportedByServer": "Session tokens · reported by server",
+  "e7SharedSessionTokensReportedByServer": "Conversation tokens · reported by server",
   "@e7SharedSessionTokensReportedByServer": {
     "description": "Shared app interface: Session tokens · reported by server"
   },
@@ -3691,7 +3691,7 @@
   "@e7SharedMove": {
     "description": "Shared app interface: Move"
   },
-  "e7SharedSessionLocationChangedCloseAndReopenThis": "Session location changed. Close and reopen this sheet.",
+  "e7SharedSessionLocationChangedCloseAndReopenThis": "The conversation’s project changed. Close and reopen this sheet.",
   "@e7SharedSessionLocationChangedCloseAndReopenThis": {
     "description": "Shared app interface: Session location changed. Close and reopen this sheet."
   },
@@ -3699,7 +3699,7 @@
   "@e7SharedOpenCodeIsReconnecting": {
     "description": "Shared app interface: OpenCode is reconnecting."
   },
-  "e7SharedTheSessionProjectIsNotAvailableOn": "The session project is not available on this server.",
+  "e7SharedTheSessionProjectIsNotAvailableOn": "The conversation project is not available on this server.",
   "@e7SharedTheSessionProjectIsNotAvailableOn": {
     "description": "Shared app interface: The session project is not available on this server."
   },
@@ -3719,7 +3719,7 @@
   "@e7SharedCopyChangesAndMove": {
     "description": "Shared app interface: Copy changes and move"
   },
-  "e7SharedMoveSession": "Move session",
+  "e7SharedMoveSession": "Move conversation",
   "@e7SharedMoveSession": {
     "description": "Shared app interface: Move session"
   },
@@ -3727,7 +3727,7 @@
   "@e7SharedChooseAnotherDirectoryInThisProject": {
     "description": "Shared app interface: Choose another directory in this project."
   },
-  "e7SharedChooseAConnectedWorkspaceOrReturnTo": "Choose a connected workspace, or return to the local project.",
+  "e7SharedChooseAConnectedWorkspaceOrReturnTo": "Choose a connected cloud environment, or return to the local project.",
   "@e7SharedChooseAConnectedWorkspaceOrReturnTo": {
     "description": "Shared app interface: Choose a connected workspace, or return to the local project."
   },
@@ -3763,19 +3763,19 @@
   "@e7SharedNoSwitchableOpenCodeConsoleOrganizationsWereReturned": {
     "description": "Shared app interface: No switchable OpenCode Console organizations were returned."
   },
-  "e7SharedSessionLocationChangedReturnAndReopenRelated": "Session location changed. Return and reopen related sessions.",
+  "e7SharedSessionLocationChangedReturnAndReopenRelated": "The conversation’s project changed. Return and reopen related conversations.",
   "@e7SharedSessionLocationChangedReturnAndReopenRelated": {
     "description": "Shared app interface: Session location changed. Return and reopen related sessions."
   },
-  "e7SharedSessionIsNoLongerRelatedToThis": "Session is no longer related to this session.",
+  "e7SharedSessionIsNoLongerRelatedToThis": "That conversation is no longer related to this one.",
   "@e7SharedSessionIsNoLongerRelatedToThis": {
     "description": "Shared app interface: Session is no longer related to this session."
   },
-  "e7SharedSessionLocationChangedReturnAndTryAgain": "Session location changed. Return and try again.",
+  "e7SharedSessionLocationChangedReturnAndTryAgain": "The conversation’s project changed. Return and try again.",
   "@e7SharedSessionLocationChangedReturnAndTryAgain": {
     "description": "Shared app interface: Session location changed. Return and try again."
   },
-  "e7SharedSessionUnavailableOrLocationChangedReturnOr": "Session unavailable or location changed. Return or refresh to try again.",
+  "e7SharedSessionUnavailableOrLocationChangedReturnOr": "Conversation unavailable or its project changed. Return or refresh to try again.",
   "@e7SharedSessionUnavailableOrLocationChangedReturnOr": {
     "description": "Shared app interface: Session unavailable or location changed. Return or refresh to try again."
   },
@@ -3783,11 +3783,11 @@
   "@e7SharedCouldNotUpdateThePinReturnAnd": {
     "description": "Shared app interface: Could not update the pin. Return and try again."
   },
-  "e7SharedRefreshSubagentSessions": "Refresh subagent sessions",
+  "e7SharedRefreshSubagentSessions": "Refresh subagent conversations",
   "@e7SharedRefreshSubagentSessions": {
     "description": "Shared app interface: Refresh subagent sessions"
   },
-  "e7SharedParentSession": "Parent session",
+  "e7SharedParentSession": "Parent conversation",
   "@e7SharedParentSession": {
     "description": "Shared app interface: Parent session"
   },
@@ -3795,23 +3795,23 @@
   "@e7SharedSubagents": {
     "description": "Shared app interface: Subagents"
   },
-  "e7SharedNoSubagentSessionsYet": "No subagent sessions yet",
+  "e7SharedNoSubagentSessionsYet": "No subagent conversations yet",
   "@e7SharedNoSubagentSessionsYet": {
     "description": "Shared app interface: No subagent sessions yet"
   },
-  "e7SharedDelegatedWorkWillAppearHereWithoutMixing": "Delegated work will appear here without mixing child sessions into your main chat list.",
+  "e7SharedDelegatedWorkWillAppearHereWithoutMixing": "Delegated work will appear here without mixing subagent conversations into your main list.",
   "@e7SharedDelegatedWorkWillAppearHereWithoutMixing": {
     "description": "Shared app interface: Delegated work will appear here without mixing child sessions into your main chat list."
   },
-  "e7SharedOpenCodeHasNotDelegatedWorkFromThis": "OpenCode has not delegated work from this session.",
+  "e7SharedOpenCodeHasNotDelegatedWorkFromThis": "OpenCode has not delegated work from this conversation.",
   "@e7SharedOpenCodeHasNotDelegatedWorkFromThis": {
     "description": "Shared app interface: OpenCode has not delegated work from this session."
   },
-  "e7SharedUnpinSession": "Unpin session",
+  "e7SharedUnpinSession": "Unpin conversation",
   "@e7SharedUnpinSession": {
     "description": "Shared app interface: Unpin session"
   },
-  "e7SharedPinSession": "Pin session",
+  "e7SharedPinSession": "Pin conversation",
   "@e7SharedPinSession": {
     "description": "Shared app interface: Pin session"
   },
@@ -3875,7 +3875,7 @@
   "@e7SharedAskedByAnMCPServer": {
     "description": "Shared app interface: Asked by an MCP server"
   },
-  "e7SharedAskedByTheAgentInThisSession": "Asked by the agent in this session",
+  "e7SharedAskedByTheAgentInThisSession": "Asked by the agent in this conversation",
   "@e7SharedAskedByTheAgentInThisSession": {
     "description": "Shared app interface: Asked by the agent in this session"
   },
@@ -3968,11 +3968,11 @@
       }
     }
   },
-  "e7SharedDetail429": "Move session?",
+  "e7SharedDetail429": "Move conversation?",
   "@e7SharedDetail429": {
     "description": "Shared journey: lib/ui/screens/session_destination_sheet.dart"
   },
-  "e7SharedDetail430": "{count, plural, one {1 changed file is present.} other {{count} changed files are present.}} Choose whether those working changes should {action, select, move {move} other {be copied}} with the session.",
+  "e7SharedDetail430": "{count, plural, one {1 changed file is present.} other {{count} changed files are present.}} Choose whether those working changes should {action, select, move {move} other {be copied}} with the conversation.",
   "@e7SharedDetail430": {
     "description": "Shared journey: lib/ui/screens/session_destination_sheet.dart",
     "placeholders": {
@@ -4024,7 +4024,7 @@
       }
     }
   },
-  "e7SharedDetail517": "{count, plural, one {1 delegated session · open any transcript directly.} other {{count} delegated sessions · open any transcript directly.}}",
+  "e7SharedDetail517": "{count, plural, one {1 delegated conversation · open any transcript directly.} other {{count} delegated conversations · open any transcript directly.}}",
   "@e7SharedDetail517": {
     "description": "Shared journey: lib/ui/screens/session_relations_screen.dart",
     "placeholders": {
@@ -4228,11 +4228,11 @@
   "@e7LocaleUiRetry": {
     "description": "Locale selection or app shell: Retry"
   },
-  "e7LocaleUiNewSession": "New session",
+  "e7LocaleUiNewSession": "New conversation",
   "@e7LocaleUiNewSession": {
     "description": "Locale selection or app shell: NewSession"
   },
-  "e7LocaleUiNewSessionHint": "Start a chat in the active project",
+  "e7LocaleUiNewSessionHint": "Start a conversation in the active project",
   "@e7LocaleUiNewSessionHint": {
     "description": "Locale selection or app shell: NewSessionHint"
   },
@@ -4240,7 +4240,7 @@
   "@e7LocaleUiWorkspace": {
     "description": "Locale selection or app shell: Workspace"
   },
-  "e7LocaleUiWorkspaceHint": "Recent sessions and the active project",
+  "e7LocaleUiWorkspaceHint": "Recent conversations and the active project",
   "@e7LocaleUiWorkspaceHint": {
     "description": "Locale selection or app shell: WorkspaceHint"
   },
@@ -4276,7 +4276,7 @@
   "@e7LocaleUiKeyboardShortcuts": {
     "description": "Locale selection or app shell: KeyboardShortcuts"
   },
-  "e7LocaleUiRefreshSessions": "Refresh sessions",
+  "e7LocaleUiRefreshSessions": "Refresh conversations",
   "@e7LocaleUiRefreshSessions": {
     "description": "Locale selection or app shell: RefreshSessions"
   },
@@ -4316,7 +4316,7 @@
   "@e7LocaleUiCopyTranscript": {
     "description": "App shell command menu or routing: CopyTranscript"
   },
-  "e7LocaleUiRecentModel": "Next / previous recent model in this chat",
+  "e7LocaleUiRecentModel": "Next / previous recent model in this conversation",
   "@e7LocaleUiRecentModel": {
     "description": "App shell command menu or routing: RecentModel"
   },
@@ -4328,7 +4328,7 @@
   "@e7LocaleUiCloseOverlay": {
     "description": "App shell command menu or routing: CloseOverlay"
   },
-  "e7LocaleUiContextActions": "Message, file, and session actions",
+  "e7LocaleUiContextActions": "Message, file, and conversation actions",
   "@e7LocaleUiContextActions": {
     "description": "App shell command menu or routing: ContextActions"
   },
@@ -4344,11 +4344,11 @@
   "@e7LocaleUiContextKeys": {
     "description": "App shell command menu or routing: ContextKeys"
   },
-  "e7LocaleUiShareScopeChanged": "Shared session scope changed",
+  "e7LocaleUiShareScopeChanged": "Shared conversation scope changed",
   "@e7LocaleUiShareScopeChanged": {
     "description": "App shell command menu or routing: ShareScopeChanged"
   },
-  "e7LocaleUiConnectionChanged": "The connection changed.",
+  "e7LocaleUiConnectionChanged": "The server changed.",
   "@e7LocaleUiConnectionChanged": {
     "description": "App shell command menu or routing: ConnectionChanged"
   },
@@ -4376,11 +4376,11 @@
   "@e7AppearanceFollowDeviceDescription": {
     "description": "Settings and appearance user interface."
   },
-  "e7AppearanceLightDescription": "Use the bright editorial workspace",
+  "e7AppearanceLightDescription": "Use the bright editorial theme",
   "@e7AppearanceLightDescription": {
     "description": "Settings and appearance user interface."
   },
-  "e7AppearanceDarkDescription": "Use the focused low-light workspace",
+  "e7AppearanceDarkDescription": "Use the focused low-light theme",
   "@e7AppearanceDarkDescription": {
     "description": "Settings and appearance user interface."
   },
@@ -4669,7 +4669,7 @@
   "@e7SettingsUi62": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi63": "Manage server profiles",
+  "e7SettingsUi63": "Manage servers",
   "@e7SettingsUi63": {
     "description": "Settings and appearance user interface."
   },
@@ -4911,7 +4911,7 @@
       }
     }
   },
-  "e7SettingsDraftDeleteSummary": "Deletes composer text saved for {count} sessions",
+  "e7SettingsDraftDeleteSummary": "Deletes composer text saved for {count} conversations",
   "@e7SettingsDraftDeleteSummary": {
     "description": "Settings and appearance user interface.",
     "placeholders": {
@@ -4920,7 +4920,7 @@
       }
     }
   },
-  "e7SettingsDraftDeleteBody": "This deletes the composer text saved for {count} sessions. Nothing on the server is affected.",
+  "e7SettingsDraftDeleteBody": "This deletes the composer text saved for {count} conversations. Nothing on the server is affected.",
   "@e7SettingsDraftDeleteBody": {
     "description": "Settings and appearance user interface.",
     "placeholders": {
@@ -5064,7 +5064,7 @@
   "@e7SettingsDetailUi7": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsDetailUi8": "Handled app errors are redacted and kept only in memory. Chat messages and file contents are not collected. Nothing is sent automatically.",
+  "e7SettingsDetailUi8": "Handled app errors are redacted and kept only in memory. Your messages and file contents are not collected. Nothing is sent automatically.",
   "@e7SettingsDetailUi8": {
     "description": "Settings and appearance user interface."
   },
@@ -5201,7 +5201,7 @@
   "@e7ProjectProjectSwitchUnavailable": {
     "description": "Project management unavailable heading"
   },
-  "e7ProjectProjectSwitchUnavailableDetail": "This connection keeps the configured folder for sessions. Open a new task from Workspace to continue.",
+  "e7ProjectProjectSwitchUnavailableDetail": "This server keeps the configured folder for conversations. Start a new conversation from Workspace to continue.",
   "@e7ProjectProjectSwitchUnavailableDetail": {
     "description": "Project management unavailable explanation"
   },
@@ -5241,7 +5241,7 @@
   "@e7ProjectProjectsEmpty": {
     "description": "Empty project catalog heading"
   },
-  "e7ProjectProjectsEmptyDetail": "Projects opened by this server appear here; choose one for sessions, files, terminals, and coding tools. Create a new folder or open one by its path above, or open a project on this OpenCode server and refresh.",
+  "e7ProjectProjectsEmptyDetail": "Projects opened by this server appear here; choose one for conversations, files, terminals, and coding tools. Create a new folder or open one by its path above, or open a project on this OpenCode server and refresh.",
   "@e7ProjectProjectsEmptyDetail": {
     "description": "Empty project catalog guidance"
   },
@@ -5311,11 +5311,11 @@
   "@e7ProjectAttentionInactive": {
     "description": "Attention inactive server status"
   },
-  "e7ProjectAttentionCacheSource": "Source: selected connection’s local cache. Scope: currently loaded location and sessions. Last refreshed: unknown.",
+  "e7ProjectAttentionCacheSource": "Source: selected server’s local cache. Scope: currently loaded project and conversations. Last refreshed: unknown.",
   "@e7ProjectAttentionCacheSource": {
     "description": "Attention cached observation scope and freshness disclosure"
   },
-  "e7ProjectAttentionProfileSource": "Source: saved profile only. Attention status: unknown. Last checked: unknown.",
+  "e7ProjectAttentionProfileSource": "Source: saved server only. Attention status: unknown. Last checked: unknown.",
   "@e7ProjectAttentionProfileSource": {
     "description": "Attention inactive profile scope and unknown state disclosure"
   },
@@ -5332,11 +5332,11 @@
       }
     }
   },
-  "e7ProjectAttentionRunningUnknown": "Running sessions: unknown",
+  "e7ProjectAttentionRunningUnknown": "Running conversations: unknown",
   "@e7ProjectAttentionRunningUnknown": {
     "description": "Unknown active session count"
   },
-  "e7ProjectAttentionRunningKnown": "Last-known running or retrying sessions: {count}",
+  "e7ProjectAttentionRunningKnown": "Last-known running or retrying conversations: {count}",
   "@e7ProjectAttentionRunningKnown": {
     "description": "Positive cached active or retrying session count",
     "placeholders": {
@@ -5345,11 +5345,11 @@
       }
     }
   },
-  "e7ProjectAttentionUnreadUnknown": "Unread sessions: unknown",
+  "e7ProjectAttentionUnreadUnknown": "Unread conversations: unknown",
   "@e7ProjectAttentionUnreadUnknown": {
     "description": "Unknown unread count"
   },
-  "e7ProjectAttentionUnreadKnown": "Last-known unread sessions: {count}",
+  "e7ProjectAttentionUnreadKnown": "Last-known unread conversations: {count}",
   "@e7ProjectAttentionUnreadKnown": {
     "description": "Positive cached unread session count",
     "placeholders": {
@@ -5366,7 +5366,7 @@
   "@e7ProjectAttentionChoose": {
     "description": "Choose inactive saved server action"
   },
-  "e7ProjectMonitorUnsupported": "Background attention is unavailable for this connection. Open the conversation to review current requests.",
+  "e7ProjectMonitorUnsupported": "Background attention is unavailable for this server. Open the conversation to review current requests.",
   "@e7ProjectMonitorUnsupported": {
     "description": "Unsupported connection background attention explanation"
   },
@@ -5390,11 +5390,11 @@
   "@readerUiReconnecting": {
     "description": "Reader, Files and review user interface."
   },
-  "readerUiCommentAdded": "Review comment added. Return to the chat to continue.",
+  "readerUiCommentAdded": "Review comment added. Return to the conversation to continue.",
   "@readerUiCommentAdded": {
     "description": "Reader, Files and review user interface."
   },
-  "readerUiCommentCopied": "Review comment copied. Paste it into a chat.",
+  "readerUiCommentCopied": "Review comment copied. Paste it into a conversation.",
   "@readerUiCommentCopied": {
     "description": "Reader, Files and review user interface."
   },
@@ -5462,7 +5462,7 @@
   "@readerUiCopyPath": {
     "description": "Reader, Files and review user interface."
   },
-  "readerUiWorkspaceSymbols": "Search workspace symbols",
+  "readerUiWorkspaceSymbols": "Search project symbols",
   "@readerUiWorkspaceSymbols": {
     "description": "Reader, Files and review user interface."
   },
@@ -5474,7 +5474,7 @@
   "@readerUiNoSymbols": {
     "description": "Reader, Files and review user interface."
   },
-  "readerUiSymbolsUnavailable": "Try a different name. Some language services do not support workspace-wide symbol search.",
+  "readerUiSymbolsUnavailable": "Try a different name. Some language services do not support project-wide symbol search.",
   "@readerUiSymbolsUnavailable": {
     "description": "Reader, Files and review user interface."
   },
@@ -5518,7 +5518,7 @@
   "@readerUiWorkingTree": {
     "description": "Reader, Files and review user interface."
   },
-  "readerUiSessionScopeHint": "Changes attributed to this OpenCode session",
+  "readerUiSessionScopeHint": "Changes attributed to this OpenCode conversation",
   "@readerUiSessionScopeHint": {
     "description": "Reader, Files and review user interface."
   },
@@ -5610,7 +5610,7 @@
   "@readerUiNoChanges": {
     "description": "Reader, Files and review user interface."
   },
-  "readerUiNoChangesHint": "OpenCode has not changed any files in this session.",
+  "readerUiNoChangesHint": "OpenCode has not changed any files in this conversation.",
   "@readerUiNoChangesHint": {
     "description": "Reader, Files and review user interface."
   },
@@ -5761,7 +5761,7 @@
       }
     }
   },
-  "readerUiAttachedReturn": "{name} attached. Return to the chat to add your comment.",
+  "readerUiAttachedReturn": "{name} attached. Return to the conversation to add your comment.",
   "@readerUiAttachedReturn": {
     "description": "Reader display, status or accessible label. Technical placeholders remain original.",
     "placeholders": {
@@ -6085,7 +6085,7 @@
     "description": "Reader display, status or accessible label. Technical placeholders remain original.",
     "placeholders": {}
   },
-  "readerUiSession": "Session",
+  "readerUiSession": "Conversation",
   "@readerUiSession": {
     "description": "Reader display, status or accessible label. Technical placeholders remain original.",
     "placeholders": {}
@@ -6211,27 +6211,27 @@
   "@e7WorkspaceNeedsYou": {
     "description": "Workspace and activity: Needs you"
   },
-  "e7WorkspaceActiveSessions": "Active sessions",
+  "e7WorkspaceActiveSessions": "Active conversations",
   "@e7WorkspaceActiveSessions": {
     "description": "Workspace and activity: Active sessions"
   },
-  "e7WorkspaceRecentSessions": "Recent sessions",
+  "e7WorkspaceRecentSessions": "Recent conversations",
   "@e7WorkspaceRecentSessions": {
     "description": "Workspace and activity: Recent sessions"
   },
-  "e7WorkspaceNoRecent": "No recent sessions",
+  "e7WorkspaceNoRecent": "No recent conversations",
   "@e7WorkspaceNoRecent": {
     "description": "Workspace and activity: No recent sessions"
   },
-  "e7WorkspaceChooseFolderToStart": "Choose a project folder to start a session.",
+  "e7WorkspaceChooseFolderToStart": "Choose a project folder to start a conversation.",
   "@e7WorkspaceChooseFolderToStart": {
     "description": "Workspace and activity: Choose a project folder to start a session."
   },
-  "e7WorkspaceStartInWorkspace": "Start a session in the selected workspace.",
+  "e7WorkspaceStartInWorkspace": "Start a conversation in the selected project.",
   "@e7WorkspaceStartInWorkspace": {
     "description": "Workspace and activity: Start a session in the selected workspace."
   },
-  "e7WorkspaceArchivedSessions": "Archived sessions",
+  "e7WorkspaceArchivedSessions": "Archived conversations",
   "@e7WorkspaceArchivedSessions": {
     "description": "Workspace and activity: Archived sessions"
   },
@@ -6259,7 +6259,7 @@
   "@e7WorkspaceShareCopied": {
     "description": "Workspace and activity: Share link copied"
   },
-  "e7WorkspaceUnshared": "Session is no longer shared",
+  "e7WorkspaceUnshared": "Conversation is no longer shared",
   "@e7WorkspaceUnshared": {
     "description": "Workspace and activity: Session is no longer shared"
   },
@@ -6267,7 +6267,7 @@
   "@e7WorkspaceReconnectingShortly": {
     "description": "Workspace and activity: OpenCode is reconnecting. Try again shortly."
   },
-  "e7WorkspaceRenameSession": "Rename session",
+  "e7WorkspaceRenameSession": "Rename conversation",
   "@e7WorkspaceRenameSession": {
     "description": "Workspace and activity: Rename session"
   },
@@ -6275,15 +6275,15 @@
   "@e7WorkspaceTitle": {
     "description": "Workspace and activity: Title"
   },
-  "e7WorkspaceArchiveConfirm": "Archive session?",
+  "e7WorkspaceArchiveConfirm": "Archive conversation?",
   "@e7WorkspaceArchiveConfirm": {
     "description": "Workspace and activity: Archive session?"
   },
-  "e7WorkspaceShareConfirm": "Share this session?",
+  "e7WorkspaceShareConfirm": "Share this conversation?",
   "@e7WorkspaceShareConfirm": {
     "description": "Workspace and activity: Share this session?"
   },
-  "e7WorkspaceDeleteConfirm": "Delete session?",
+  "e7WorkspaceDeleteConfirm": "Delete conversation?",
   "@e7WorkspaceDeleteConfirm": {
     "description": "Workspace and activity: Delete session?"
   },
@@ -6291,11 +6291,11 @@
   "@e7WorkspaceArchive": {
     "description": "Workspace and activity: Archive"
   },
-  "e7WorkspaceShareSession": "Share session",
+  "e7WorkspaceShareSession": "Share conversation",
   "@e7WorkspaceShareSession": {
     "description": "Workspace and activity: Share session"
   },
-  "e7WorkspaceArchivedActions": "Archived session actions",
+  "e7WorkspaceArchivedActions": "Archived conversation actions",
   "@e7WorkspaceArchivedActions": {
     "description": "Workspace and activity: Archived session actions"
   },
@@ -6395,35 +6395,35 @@
   "@e7WorkspaceSendAnswers": {
     "description": "Workspace and activity: Send answers"
   },
-  "e7WorkspaceReferenceRetry": "Session reference unavailable. Refresh and try again.",
+  "e7WorkspaceReferenceRetry": "Conversation reference unavailable. Refresh and try again.",
   "@e7WorkspaceReferenceRetry": {
     "description": "Workspace and activity: Session reference unavailable. Refresh and try again."
   },
-  "e7WorkspaceLocationRetry": "Session location unavailable. Refresh and try again.",
+  "e7WorkspaceLocationRetry": "The conversation’s project is unavailable. Refresh and try again.",
   "@e7WorkspaceLocationRetry": {
     "description": "Workspace and activity: Session location unavailable. Refresh and try again."
   },
-  "e7WorkspaceLocationChangedReturn": "Session location changed. Return and try again.",
+  "e7WorkspaceLocationChangedReturn": "The conversation’s project changed. Return and try again.",
   "@e7WorkspaceLocationChangedReturn": {
     "description": "Workspace and activity: Session location changed. Return and try again."
   },
-  "e7WorkspaceLocationChangedRetry": "Session location changed. Refresh and try again.",
+  "e7WorkspaceLocationChangedRetry": "The conversation’s project changed. Refresh and try again.",
   "@e7WorkspaceLocationChangedRetry": {
     "description": "Workspace and activity: Session location changed. Refresh and try again."
   },
-  "e7WorkspaceReferenceUnavailable": "Session reference unavailable.",
+  "e7WorkspaceReferenceUnavailable": "Conversation reference unavailable.",
   "@e7WorkspaceReferenceUnavailable": {
     "description": "Workspace and activity: Session reference unavailable."
   },
-  "e7WorkspacePaginationStuck": "Session pagination could not advance. Refresh the list to continue.",
+  "e7WorkspacePaginationStuck": "Conversation pagination could not advance. Refresh the list to continue.",
   "@e7WorkspacePaginationStuck": {
     "description": "Workspace and activity: Session pagination could not advance. Refresh the list to continue."
   },
-  "e7WorkspaceContinueHereConfirm": "Continue this session here?",
+  "e7WorkspaceContinueHereConfirm": "Continue this conversation here?",
   "@e7WorkspaceContinueHereConfirm": {
     "description": "Workspace and activity: Continue this session here?"
   },
-  "e7WorkspaceCreateFailed": "Could not create a session: {error}",
+  "e7WorkspaceCreateFailed": "Could not create a conversation: {error}",
   "@e7WorkspaceCreateFailed": {
     "description": "Workspace and activity: Could not create a session: {error}",
     "placeholders": {
@@ -6432,11 +6432,11 @@
       }
     }
   },
-  "e7WorkspaceNoProjectsSearch": "The server returned no projects. Search all sessions to find previous conversations.",
+  "e7WorkspaceNoProjectsSearch": "The server returned no projects. Search all conversations to find previous work.",
   "@e7WorkspaceNoProjectsSearch": {
     "description": "Workspace and activity: The server returned no projects. Search all sessions to find previous conversations."
   },
-  "e7WorkspaceActiveDirectory": "Active session directory · {directory}",
+  "e7WorkspaceActiveDirectory": "Active conversation’s project · {directory}",
   "@e7WorkspaceActiveDirectory": {
     "description": "Workspace and activity: Active session directory · {directory}",
     "placeholders": {
@@ -6445,7 +6445,7 @@
       }
     }
   },
-  "e7WorkspaceArchivedCount": "{count, plural, one {1 archived session} other {{count} archived sessions}}",
+  "e7WorkspaceArchivedCount": "{count, plural, one {1 archived conversation} other {{count} archived conversations}}",
   "@e7WorkspaceArchivedCount": {
     "description": "Workspace and activity: {count, plural, one {1 archived session} other {{count} archived sessions}}",
     "placeholders": {
@@ -6472,7 +6472,7 @@
       }
     }
   },
-  "e7WorkspaceArchiveDetail": "“{title}” will be hidden from recent sessions.",
+  "e7WorkspaceArchiveDetail": "“{title}” will be hidden from recent conversations.",
   "@e7WorkspaceArchiveDetail": {
     "description": "Workspace and activity: “{title}” will be hidden from recent sessions.",
     "placeholders": {
@@ -6565,7 +6565,7 @@
       }
     }
   },
-  "e7WorkspaceSessionId": "Session {id}",
+  "e7WorkspaceSessionId": "Conversation {id}",
   "@e7WorkspaceSessionId": {
     "description": "Workspace and activity: Session {id}",
     "placeholders": {
@@ -6574,7 +6574,7 @@
       }
     }
   },
-  "e7WorkspaceContinueHereDetail": "“{title}” will belong to your current workspace through the server’s sync system. It stops belonging to the workspace it runs in now.",
+  "e7WorkspaceContinueHereDetail": "“{title}” will belong to your current project through the server’s sync system. It stops belonging to the project it runs in now.",
   "@e7WorkspaceContinueHereDetail": {
     "description": "Workspace and activity: “{title}” will belong to your current workspace through the server’s sync system. It stops belonging to the workspace it runs in now.",
     "placeholders": {
@@ -6583,7 +6583,7 @@
       }
     }
   },
-  "e7WorkspaceMovedHere": "“{title}” now belongs to this workspace",
+  "e7WorkspaceMovedHere": "“{title}” now belongs to this project",
   "@e7WorkspaceMovedHere": {
     "description": "Workspace and activity: “{title}” now belongs to this workspace",
     "placeholders": {
@@ -6604,7 +6604,7 @@
       }
     }
   },
-  "e7WorkspaceLoadingSessions": "Loading sessions…",
+  "e7WorkspaceLoadingSessions": "Loading conversations…",
   "@e7WorkspaceLoadingSessions": {
     "description": "Workspace and activity: Loading sessions…"
   },
@@ -6612,7 +6612,7 @@
   "@e7WorkspaceLoadedRecentEmpty": {
     "description": "Workspace and activity: Older conversations may still be available below."
   },
-  "e7WorkspaceSearchServer": "Search session titles across every project on this server",
+  "e7WorkspaceSearchServer": "Search conversation titles across every project on this server",
   "@e7WorkspaceSearchServer": {
     "description": "Workspace and activity: Search session titles across every project on this server"
   },
@@ -6668,7 +6668,7 @@
   "@e7WorkspaceBackgroundOff": {
     "description": "Workspace background connection state"
   },
-  "e7WorkspaceFilteredLoaded": "{count} shown from {total} loaded sessions",
+  "e7WorkspaceFilteredLoaded": "{count} shown from {total} loaded conversations",
   "@e7WorkspaceFilteredLoaded": {
     "description": "Distinguishes phone-side folder filtering of loaded results from server-wide title search.",
     "placeholders": {
@@ -6680,7 +6680,7 @@
       }
     }
   },
-  "e7WorkspaceLoadedSummary": "{count, plural, one {1 loaded session} other {{count} loaded sessions}} · {folders, plural, one {1 folder} other {{folders} folders}}",
+  "e7WorkspaceLoadedSummary": "{count, plural, one {1 loaded conversation} other {{count} loaded conversations}} · {folders, plural, one {1 project} other {{folders} projects}}",
   "@e7WorkspaceLoadedSummary": {
     "description": "Distinguishes phone-side folder filtering of loaded results from server-wide title search.",
     "placeholders": {
@@ -6692,7 +6692,7 @@
       }
     }
   },
-  "e7WorkspaceLoadedFolders": "Loaded folders",
+  "e7WorkspaceLoadedFolders": "Loaded projects",
   "@e7WorkspaceLoadedFolders": {
     "description": "Distinguishes phone-side folder filtering of loaded results from server-wide title search."
   },
@@ -6768,7 +6768,7 @@
   "@chatUiAnswerWasCutOffByTheLength": {
     "description": "Chat journey: Answer was cut off by the length limit"
   },
-  "chatUiAnyoneWithTheLinkCanViewThis": "Anyone with the link can view this session’s conversation and shared context. Do not share sessions containing secrets, credentials, or private files.",
+  "chatUiAnyoneWithTheLinkCanViewThis": "Anyone with the link can view this conversation and its shared context. Do not share conversations containing secrets, credentials, or private files.",
   "@chatUiAnyoneWithTheLinkCanViewThis": {
     "description": "Chat journey: Anyone with the link can view this session’s conversation and shared context. Do not share sessions containing secrets, credentials, or private files."
   },
@@ -6840,11 +6840,11 @@
   "@chatUiChangeTheActiveOpenCodeConsoleOrganization": {
     "description": "Chat journey: Change the active OpenCode Console organization"
   },
-  "chatUiChangeTheTitleShownInTheSession": "Change the title shown in the session list",
+  "chatUiChangeTheTitleShownInTheSession": "Change the title shown in the conversation list",
   "@chatUiChangeTheTitleShownInTheSession": {
     "description": "Chat journey: Change the title shown in the session list"
   },
-  "chatUiChangeThisSessionSExperimentalWorkspace": "Change this session’s experimental workspace",
+  "chatUiChangeThisSessionSExperimentalWorkspace": "Change this conversation’s experimental cloud environment",
   "@chatUiChangeThisSessionSExperimentalWorkspace": {
     "description": "Chat journey: Change this session’s experimental workspace"
   },
@@ -6856,11 +6856,11 @@
   "@chatUiChanges": {
     "description": "Chat journey: Changes"
   },
-  "chatUiChooseAPromptAndContinueItIn": "Choose a prompt and continue it in a new session",
+  "chatUiChooseAPromptAndContinueItIn": "Choose a prompt and continue it in a new conversation",
   "@chatUiChooseAPromptAndContinueItIn": {
     "description": "Chat journey: Choose a prompt and continue it in a new session"
   },
-  "chatUiChooseAPromptToRestoreItIn": "Choose a prompt to restore it in a new session.",
+  "chatUiChooseAPromptToRestoreItIn": "Choose a prompt to restore it in a new conversation.",
   "@chatUiChooseAPromptToRestoreItIn": {
     "description": "Chat journey: Choose a prompt to restore it in a new session."
   },
@@ -6916,7 +6916,7 @@
   "@chatUiCompactContext": {
     "description": "Chat journey: Compact context"
   },
-  "chatUiCompactSession": "Compact session",
+  "chatUiCompactSession": "Compact conversation",
   "@chatUiCompactSession": {
     "description": "Chat journey: Compact session"
   },
@@ -6996,11 +6996,11 @@
   "@chatUiCopyTranscript": {
     "description": "Chat journey: Copy transcript"
   },
-  "chatUiCreateOrCopyAPublicSessionLink": "Create or copy a public session link",
+  "chatUiCreateOrCopyAPublicSessionLink": "Create or copy a public conversation link",
   "@chatUiCreateOrCopyAPublicSessionLink": {
     "description": "Chat journey: Create or copy a public session link"
   },
-  "chatUiCurrentSession": "Current session",
+  "chatUiCurrentSession": "Current conversation",
   "@chatUiCurrentSession": {
     "description": "Chat journey: Current session"
   },
@@ -7016,7 +7016,7 @@
   "@chatUiDelegateThisPromptToAServerSubagent": {
     "description": "Chat journey: Delegate this prompt to a server subagent"
   },
-  "chatUiDelegatedSession": "Delegated session",
+  "chatUiDelegatedSession": "Delegated conversation",
   "@chatUiDelegatedSession": {
     "description": "Chat journey: Delegated session"
   },
@@ -7040,7 +7040,7 @@
   "@chatUiDirectory": {
     "description": "Chat journey: Directory"
   },
-  "chatUiDisableTheCurrentPublicSessionLink": "Disable the current public session link",
+  "chatUiDisableTheCurrentPublicSessionLink": "Disable the current public conversation link",
   "@chatUiDisableTheCurrentPublicSessionLink": {
     "description": "Chat journey: Disable the current public session link"
   },
@@ -7080,7 +7080,7 @@
   "@chatUiEditTheCurrentPromptInAFocused": {
     "description": "Chat journey: Edit the current prompt in a focused full-screen view"
   },
-  "chatUiEmptySessionWasKeptBecauseOpenCodeCould": "Empty session was kept because OpenCode could not verify or remove it.",
+  "chatUiEmptySessionWasKeptBecauseOpenCodeCould": "Empty conversation was kept because OpenCode could not verify or remove it.",
   "@chatUiEmptySessionWasKeptBecauseOpenCodeCould": {
     "description": "Chat journey: Empty session was kept because OpenCode could not verify or remove it."
   },
@@ -7112,7 +7112,7 @@
   "@chatUiExploring": {
     "description": "Chat journey: Exploring"
   },
-  "chatUiExportSessionTranscript": "Export session transcript",
+  "chatUiExportSessionTranscript": "Export conversation transcript",
   "@chatUiExportSessionTranscript": {
     "description": "Chat journey: Export session transcript"
   },
@@ -7156,7 +7156,7 @@
   "@chatUiFindFiles": {
     "description": "Chat journey: Find files"
   },
-  "chatUiFindSessionsAcrossEveryOpenCodeProject": "Find sessions across every OpenCode project",
+  "chatUiFindSessionsAcrossEveryOpenCodeProject": "Find conversations across every OpenCode project",
   "@chatUiFindSessionsAcrossEveryOpenCodeProject": {
     "description": "Chat journey: Find sessions across every OpenCode project"
   },
@@ -7172,7 +7172,7 @@
   "@chatUiForkFromThisPrompt": {
     "description": "Chat journey: Fork from this prompt"
   },
-  "chatUiForkSession": "Fork session",
+  "chatUiForkSession": "Fork conversation",
   "@chatUiForkSession": {
     "description": "Chat journey: Fork session"
   },
@@ -7324,11 +7324,11 @@
   "@chatUiMore": {
     "description": "Chat journey: More"
   },
-  "chatUiMoveSession": "Move session",
+  "chatUiMoveSession": "Move conversation",
   "@chatUiMoveSession": {
     "description": "Chat journey: Move session"
   },
-  "chatUiMoveThisSessionToAnotherProjectDirectory": "Move this session to another project directory",
+  "chatUiMoveThisSessionToAnotherProjectDirectory": "Move this conversation to another project",
   "@chatUiMoveThisSessionToAnotherProjectDirectory": {
     "description": "Chat journey: Move this session to another project directory"
   },
@@ -7360,7 +7360,7 @@
   "@chatUiNoSubagentsAvailableFromThisServer": {
     "description": "Chat journey: No subagents available from this server"
   },
-  "chatUiNoTodosInThisSession": "No todos in this session",
+  "chatUiNoTodosInThisSession": "No todos in this conversation",
   "@chatUiNoTodosInThisSession": {
     "description": "Chat journey: No todos in this session"
   },
@@ -7376,11 +7376,11 @@
   "@chatUiOpenFullScreenPromptEditor": {
     "description": "Chat journey: Open full-screen prompt editor"
   },
-  "chatUiOpenParentSession": "Open parent session",
+  "chatUiOpenParentSession": "Open parent conversation",
   "@chatUiOpenParentSession": {
     "description": "Chat journey: Open parent session"
   },
-  "chatUiOpenPersistentWorkspaceTerminals": "Open persistent workspace terminals",
+  "chatUiOpenPersistentWorkspaceTerminals": "Open persistent project terminals",
   "@chatUiOpenPersistentWorkspaceTerminals": {
     "description": "Chat journey: Open persistent workspace terminals"
   },
@@ -7388,7 +7388,7 @@
   "@chatUiOpenProviders": {
     "description": "Chat journey: Open providers"
   },
-  "chatUiOpenSubagentSession": "Open subagent session",
+  "chatUiOpenSubagentSession": "Open subagent conversation",
   "@chatUiOpenSubagentSession": {
     "description": "Chat journey: Open subagent session"
   },
@@ -7452,7 +7452,7 @@
   "@chatUiProjectReferences": {
     "description": "Chat journey: Project references"
   },
-  "chatUiProjectsAndWorkspaces": "Projects and workspaces",
+  "chatUiProjectsAndWorkspaces": "Projects and worktrees",
   "@chatUiProjectsAndWorkspaces": {
     "description": "Chat journey: Projects and workspaces"
   },
@@ -7532,7 +7532,7 @@
   "@chatUiRename": {
     "description": "Chat journey: Rename"
   },
-  "chatUiRenameSession": "Rename session",
+  "chatUiRenameSession": "Rename conversation",
   "@chatUiRenameSession": {
     "description": "Chat journey: Rename session"
   },
@@ -7544,7 +7544,7 @@
   "@chatUiRestoreRevertedPrompt": {
     "description": "Chat journey: Restore reverted prompt"
   },
-  "chatUiRestoreTheCurrentlyRevertedSessionState": "Restore the currently reverted session state",
+  "chatUiRestoreTheCurrentlyRevertedSessionState": "Restore the currently reverted conversation state",
   "@chatUiRestoreTheCurrentlyRevertedSessionState": {
     "description": "Chat journey: Restore the currently reverted session state"
   },
@@ -7584,7 +7584,7 @@
   "@chatUiReviewHandledAppErrorsAndSendA": {
     "description": "Chat journey: Review handled app errors and send a redacted report"
   },
-  "chatUiReviewTheActualDiffForThisSession": "Review the actual diff for this session",
+  "chatUiReviewTheActualDiffForThisSession": "Review the actual diff for this conversation",
   "@chatUiReviewTheActualDiffForThisSession": {
     "description": "Chat journey: Review the actual diff for this session"
   },
@@ -7628,7 +7628,7 @@
   "@chatUiSeeFullDiff": {
     "description": "Chat journey: See full diff"
   },
-  "chatUiSelectAModelBeforeCompactingThisSession": "Select a model before compacting this session.",
+  "chatUiSelectAModelBeforeCompactingThisSession": "Select a model before compacting this conversation.",
   "@chatUiSelectAModelBeforeCompactingThisSession": {
     "description": "Chat journey: Select a model before compacting this session."
   },
@@ -7684,23 +7684,23 @@
   "@chatUiServerStatus": {
     "description": "Chat journey: Server status"
   },
-  "chatUiSessionChanges": "Session changes",
+  "chatUiSessionChanges": "Conversation changes",
   "@chatUiSessionChanges": {
     "description": "Chat journey: Session changes"
   },
-  "chatUiSessionContext": "Session context",
+  "chatUiSessionContext": "Conversation context",
   "@chatUiSessionContext": {
     "description": "Chat journey: Session context"
   },
-  "chatUiSessionIsNoLongerShared": "Session is no longer shared",
+  "chatUiSessionIsNoLongerShared": "Conversation is no longer shared",
   "@chatUiSessionIsNoLongerShared": {
     "description": "Chat journey: Session is no longer shared"
   },
-  "chatUiSessionMenu": "Session menu",
+  "chatUiSessionMenu": "Conversation menu",
   "@chatUiSessionMenu": {
     "description": "Chat journey: Session menu"
   },
-  "chatUiSessionSharedCopyTheVisibleLinkManually": "Session shared. Copy the visible link manually.",
+  "chatUiSessionSharedCopyTheVisibleLinkManually": "Conversation shared. Copy the visible link manually.",
   "@chatUiSessionSharedCopyTheVisibleLinkManually": {
     "description": "Chat journey: Session shared. Copy the visible link manually."
   },
@@ -7708,11 +7708,11 @@
   "@chatUiShareLinkCopied": {
     "description": "Chat journey: Share link copied"
   },
-  "chatUiShareSession": "Share session",
+  "chatUiShareSession": "Share conversation",
   "@chatUiShareSession": {
     "description": "Chat journey: Share session"
   },
-  "chatUiShareThisSession": "Share this session?",
+  "chatUiShareThisSession": "Share this conversation?",
   "@chatUiShareThisSession": {
     "description": "Chat journey: Share this session?"
   },
@@ -7724,7 +7724,7 @@
   "@chatUiShowAllCommands": {
     "description": "Chat journey: Show all commands"
   },
-  "chatUiShowAllSubagentSessions": "Show all subagent sessions",
+  "chatUiShowAllSubagentSessions": "Show all subagent conversations",
   "@chatUiShowAllSubagentSessions": {
     "description": "Chat journey: Show all subagent sessions"
   },
@@ -7756,11 +7756,11 @@
   "@chatUiSlashCommandsAndAgents": {
     "description": "Chat journey: Slash commands and agents"
   },
-  "chatUiStartACleanSessionInThisWorkspace": "Start a clean session in this workspace",
+  "chatUiStartACleanSessionInThisWorkspace": "Start a clean conversation in this project",
   "@chatUiStartACleanSessionInThisWorkspace": {
     "description": "Chat journey: Start a clean session in this workspace"
   },
-  "chatUiStartANewSessionWithThisPrompt": "Start a new session with this prompt in the composer",
+  "chatUiStartANewSessionWithThisPrompt": "Start a new conversation with this prompt in the composer",
   "@chatUiStartANewSessionWithThisPrompt": {
     "description": "Chat journey: Start a new session with this prompt in the composer"
   },
@@ -7796,7 +7796,7 @@
   "@chatUiSubagentsCouldNotBeLoaded": {
     "description": "Chat journey: Subagents could not be loaded"
   },
-  "chatUiSummarizeTheSessionUsingTheSelectedModel": "Summarize the session using the selected model",
+  "chatUiSummarizeTheSessionUsingTheSelectedModel": "Summarize the conversation using the selected model",
   "@chatUiSummarizeTheSessionUsingTheSelectedModel": {
     "description": "Chat journey: Summarize the session using the selected model"
   },
@@ -7816,7 +7816,7 @@
   "@chatUiTellTheAgentWhyOrWhatTo": {
     "description": "Chat journey: Tell the agent why, or what to do instead (optional)"
   },
-  "chatUiThatMessageIsNoLongerInThis": "That message is no longer in this session.",
+  "chatUiThatMessageIsNoLongerInThis": "That message is no longer in this conversation.",
   "@chatUiThatMessageIsNoLongerInThis": {
     "description": "Chat journey: That message is no longer in this session."
   },
@@ -7980,7 +7980,7 @@
   "@chatUiYourOriginalComposerDraftAndAttachmentsWill": {
     "description": "Chat journey: Your original composer draft and attachments will stay unchanged."
   },
-  "chatUiInThisChat": "in this chat",
+  "chatUiInThisChat": "in this conversation",
   "@chatUiInThisChat": {
     "description": "Chat journey: in this chat"
   },
@@ -8049,7 +8049,7 @@
       }
     }
   },
-  "chatUiNextTurnsModel": "Next turns in this session use {model}.",
+  "chatUiNextTurnsModel": "Next turns in this conversation use {model}.",
   "@chatUiNextTurnsModel": {
     "description": "Chat journey: Next turns in this session use {model}.",
     "placeholders": {
@@ -8364,7 +8364,7 @@
       }
     }
   },
-  "chatUiSharedLink": "Shared session link {url}",
+  "chatUiSharedLink": "Shared conversation link {url}",
   "@chatUiSharedLink": {
     "description": "Chat journey: Shared session link {url}",
     "placeholders": {
@@ -8708,7 +8708,7 @@
   "@chatUiDisplayAndContext": {
     "description": "Chat journey: Display and context"
   },
-  "chatUiSessionActions": "Session actions",
+  "chatUiSessionActions": "Conversation actions",
   "@chatUiSessionActions": {
     "description": "Chat journey: Session actions"
   },
@@ -8720,7 +8720,7 @@
   "@chatUiPermissionFallback": {
     "description": "Chat journey: a permission"
   },
-  "chatUiMainSession": "Main session",
+  "chatUiMainSession": "Main conversation",
   "@chatUiMainSession": {
     "description": "Chat journey: Main session"
   },
@@ -8752,7 +8752,7 @@
   "@chatUiResultSourceDetails": {
     "description": "Chat journey: Server message details"
   },
-  "chatUiResultOpenChild": "Open subagent session",
+  "chatUiResultOpenChild": "Open subagent conversation",
   "@chatUiResultOpenChild": {
     "description": "Chat journey: Open subagent session"
   },
@@ -8808,7 +8808,7 @@
   "@chatUiUser": {
     "description": "Chat journey: User"
   },
-  "chatUiOpenCodeSession": "OpenCode session",
+  "chatUiOpenCodeSession": "OpenCode conversation",
   "@chatUiOpenCodeSession": {
     "description": "Chat journey: OpenCode session"
   },
@@ -9185,7 +9185,7 @@
   "@e7LibraryRefreshTools": {
     "description": "Library and project tools UI: Refresh tools"
   },
-  "e7LibraryOpenCodeToolsDependOnTheProviderAnd": "OpenCode tools depend on the provider and model used by the active chat.",
+  "e7LibraryOpenCodeToolsDependOnTheProviderAnd": "OpenCode tools depend on the provider and model used by the active conversation.",
   "@e7LibraryOpenCodeToolsDependOnTheProviderAnd": {
     "description": "Library and project tools UI: OpenCode tools depend on the provider and model used by the active chat."
   },
@@ -9343,7 +9343,7 @@
   "@e7LibraryCreateAndManageIsolatedGitBranches": {
     "description": "Library and project tools UI: Create and manage isolated Git branches"
   },
-  "e7LibraryManagedWorkspaces": "Managed workspaces",
+  "e7LibraryManagedWorkspaces": "Cloud environments",
   "@e7LibraryManagedWorkspaces": {
     "description": "Library and project tools UI: Managed workspaces"
   },
@@ -9363,11 +9363,11 @@
   "@e7LibraryOpenCodeIsReconnecting": {
     "description": "Library and project tools UI: OpenCode is reconnecting."
   },
-  "e7LibraryWorkspaceDiscoveryFinished": "Workspace discovery finished",
+  "e7LibraryWorkspaceDiscoveryFinished": "Environment discovery finished",
   "@e7LibraryWorkspaceDiscoveryFinished": {
     "description": "Library and project tools UI: Workspace discovery finished"
   },
-  "e7LibraryCouldNotDiscoverWorkspaces": "Could not discover workspaces: {detail1}",
+  "e7LibraryCouldNotDiscoverWorkspaces": "Could not discover environments: {detail1}",
   "@e7LibraryCouldNotDiscoverWorkspaces": {
     "description": "Library and project tools UI: Could not discover workspaces: {detail1}",
     "placeholders": {
@@ -9377,7 +9377,7 @@
       }
     }
   },
-  "e7LibraryCouldNotCreateWorkspace": "Could not create workspace: {detail1}",
+  "e7LibraryCouldNotCreateWorkspace": "Could not create environment: {detail1}",
   "@e7LibraryCouldNotCreateWorkspace": {
     "description": "Library and project tools UI: Could not create workspace: {detail1}",
     "placeholders": {
@@ -9397,7 +9397,7 @@
       }
     }
   },
-  "e7LibraryCouldNotRemoveWorkspace": "Could not delete workspace: {detail1}",
+  "e7LibraryCouldNotRemoveWorkspace": "Could not delete environment: {detail1}",
   "@e7LibraryCouldNotRemoveWorkspace": {
     "description": "Library and project tools UI: Could not remove workspace: {detail1}",
     "placeholders": {
@@ -9461,11 +9461,11 @@
   "@e7LibraryRetryWorkspaceAdapters": {
     "description": "Library and project tools UI: Retry workspace adapters"
   },
-  "e7LibraryNoWorkspaceAdapters": "No workspace adapters",
+  "e7LibraryNoWorkspaceAdapters": "No environment adapters",
   "@e7LibraryNoWorkspaceAdapters": {
     "description": "Library and project tools UI: No workspace adapters"
   },
-  "e7LibraryThisOpenCodeProjectDoesNotExposeManaged": "This OpenCode project does not expose managed workspace creation.",
+  "e7LibraryThisOpenCodeProjectDoesNotExposeManaged": "This OpenCode project does not expose cloud environment creation.",
   "@e7LibraryThisOpenCodeProjectDoesNotExposeManaged": {
     "description": "Library and project tools UI: This OpenCode project does not expose managed workspace creation."
   },
@@ -9493,7 +9493,7 @@
   "@e7LibraryOpenAgain": {
     "description": "Library and project tools UI: Open again"
   },
-  "e7LibraryNewManagedWorkspace": "New managed workspace",
+  "e7LibraryNewManagedWorkspace": "New cloud environment",
   "@e7LibraryNewManagedWorkspace": {
     "description": "Library and project tools UI: New managed workspace"
   },
@@ -9509,7 +9509,7 @@
   "@e7LibraryUseTheAdapterDefault": {
     "description": "Library and project tools UI: Use the adapter default"
   },
-  "e7LibraryOpenCodeConfiguresAdapterSpecificDetailsOnThe": "OpenCode configures adapter-specific details on the server. The new workspace opens here after it is ready.",
+  "e7LibraryOpenCodeConfiguresAdapterSpecificDetailsOnThe": "OpenCode configures adapter-specific details on the server. The new environment opens here after it is ready.",
   "@e7LibraryOpenCodeConfiguresAdapterSpecificDetailsOnThe": {
     "description": "Library and project tools UI: OpenCode configures adapter-specific details on the server. The new workspace opens here after it is ready."
   },
@@ -9527,7 +9527,7 @@
       }
     }
   },
-  "e7LibraryTheServerAdapterMayPermanentlyDeleteThe": "The server adapter may permanently delete the remote environment or worktree. Existing chat history remains, but its workspace may no longer be reachable.",
+  "e7LibraryTheServerAdapterMayPermanentlyDeleteThe": "The server adapter may permanently delete the remote environment or worktree. Existing conversations remain in history, but the environment may no longer be reachable.",
   "@e7LibraryTheServerAdapterMayPermanentlyDeleteThe": {
     "description": "Library and project tools UI: The server adapter may permanently delete the remote environment or worktree. Existing chat history remains, but its workspace may no longer be reachable."
   },
@@ -9583,7 +9583,7 @@
   "@e7LibraryWaitForOpenCodeToFinishPreparingThis": {
     "description": "Library and project tools UI: Wait for OpenCode to finish preparing this worktree."
   },
-  "e7LibraryOpenCodeDidNotSwitchLocations": "OpenCode did not switch locations.",
+  "e7LibraryOpenCodeDidNotSwitchLocations": "OpenCode did not switch projects.",
   "@e7LibraryOpenCodeDidNotSwitchLocations": {
     "description": "Library and project tools UI: OpenCode did not switch locations."
   },
@@ -9707,7 +9707,7 @@
   "@e7LibraryOpenCodeMakesTheNameURLSafeAnd": {
     "description": "Library and project tools UI: OpenCode makes the name URL-safe and unique."
   },
-  "e7LibraryTheWorktreeDirectoryAndItsGitBranch": "The worktree directory and its Git branch will be permanently deleted. Existing chats remain in history, but their working directory will no longer exist.",
+  "e7LibraryTheWorktreeDirectoryAndItsGitBranch": "The worktree directory and its Git branch will be permanently deleted. Existing conversations remain in history, but their working directory will no longer exist.",
   "@e7LibraryTheWorktreeDirectoryAndItsGitBranch": {
     "description": "Library and project tools UI: The worktree directory and its Git branch will be permanently deleted. Existing chats remain in history, but their working directory will no longer exist."
   },
@@ -9839,7 +9839,7 @@
       }
     }
   },
-  "e7LibraryLocationChanged": "Location changed.",
+  "e7LibraryLocationChanged": "Project changed.",
   "@e7LibraryLocationChanged": {
     "description": "Library and project tools UI: Location changed."
   },
@@ -10383,7 +10383,7 @@
   "@e7LibrarySearchPhoneAliases": {
     "description": "Search aliases for the phone destination; preserve English terms to allow either language."
   },
-  "e7LibrarySearchModelAliases": "AI reasoning favorites recent",
+  "e7LibrarySearchModelAliases": "AI reasoning favorites recent conversation session chat",
   "@e7LibrarySearchModelAliases": {
     "description": "Search aliases for the model destination; preserve English terms to allow either language."
   },
@@ -10407,11 +10407,11 @@
   "@e7LibrarySearchTerminalAliases": {
     "description": "Search aliases for the terminal destination; preserve English terms to allow either language."
   },
-  "e7LibrarySearchImportAliases": "backup restore transfer JSON conversation",
+  "e7LibrarySearchImportAliases": "backup restore transfer JSON conversation session chat",
   "@e7LibrarySearchImportAliases": {
     "description": "Search aliases for the import destination; preserve English terms to allow either language."
   },
-  "e7LibrarySearchSettingsAliases": "appearance theme language notifications privacy voice background server",
+  "e7LibrarySearchSettingsAliases": "appearance theme language notifications privacy voice background server profile connection",
   "@e7LibrarySearchSettingsAliases": {
     "description": "Search aliases for the settings destination; preserve English terms to allow either language."
   },
@@ -10443,7 +10443,7 @@
   "@e7SetupAccountHint": {
     "description": "Setup journey: account hint."
   },
-  "e7SetupNewTerminalDetail": "Start a shell in the active workspace.",
+  "e7SetupNewTerminalDetail": "Start a shell in the active project.",
   "@e7SetupNewTerminalDetail": {
     "description": "Setup journey: new terminal detail."
   },
@@ -10607,7 +10607,7 @@
   "@e7SetupNewTerminal": {
     "description": "Setup journey: new terminal."
   },
-  "e7SetupUnsavedProfile": "The server profile has not been saved.",
+  "e7SetupUnsavedProfile": "The server has not been saved.",
   "@e7SetupUnsavedProfile": {
     "description": "Setup journey: unsaved profile."
   },
@@ -11284,7 +11284,7 @@
       }
     }
   },
-  "e7SetupSaveFailed": "Could not save {name}. The existing profile was left unchanged. Check device storage and try again. ({detail})",
+  "e7SetupSaveFailed": "Could not save {name}. The existing server was left unchanged. Check device storage and try again. ({detail})",
   "@e7SetupSaveFailed": {
     "description": "Setup journey: save failed.",
     "placeholders": {
@@ -11317,7 +11317,7 @@
       }
     }
   },
-  "e7SetupRemoveFailed": "Could not remove {name}. The saved profile and current connection were kept. Check device storage and try again. ({detail})",
+  "e7SetupRemoveFailed": "Could not remove {name}. The saved server and current connection were kept. Check device storage and try again. ({detail})",
   "@e7SetupRemoveFailed": {
     "description": "Setup journey: remove failed.",
     "placeholders": {
@@ -11470,7 +11470,7 @@
       }
     }
   },
-  "e7SetupDeleteDisclosure": "This deletes everything this device stored for the server: its password, selected model and agent, workspace choice, and any sessions shown in the home-screen widget.\n\n{queued, plural, =0{} =1{1 queued prompt will be deleted.} other{{queued} queued prompts will be deleted.}} {drafts, plural, =0{} =1{1 unsent draft will be deleted.} other{{drafts} unsent drafts will be deleted.}}\n\nNothing is deleted on the server itself or at your AI providers.",
+  "e7SetupDeleteDisclosure": "This deletes everything this device stored for the server: its password, selected model and agent, project choice, and any conversations shown in the home-screen widget.\n\n{queued, plural, =0{} =1{1 queued prompt will be deleted.} other{{queued} queued prompts will be deleted.}} {drafts, plural, =0{} =1{1 unsent draft will be deleted.} other{{drafts} unsent drafts will be deleted.}}\n\nNothing is deleted on the server itself or at your AI providers.",
   "@e7SetupDeleteDisclosure": {
     "description": "Setup journey: delete disclosure.",
     "placeholders": {
@@ -11784,7 +11784,7 @@
   "@e7SetupNoReturnData": {
     "description": "Setup journey: no return data."
   },
-  "e7SetupCredentialMismatch": "The saved profile credential differs from this runtime; restore its original saved credential before returning",
+  "e7SetupCredentialMismatch": "The saved server credential differs from this runtime; restore its original saved credential before returning",
   "@e7SetupCredentialMismatch": {
     "description": "Setup journey: credential mismatch."
   },
@@ -11918,7 +11918,7 @@
       }
     }
   },
-  "e7SetupOpeningWorkspace": "Opening your saved workspace.",
+  "e7SetupOpeningWorkspace": "Opening your saved project.",
   "@e7SetupOpeningWorkspace": {
     "description": "Setup journey: OpeningWorkspace."
   },
@@ -12208,11 +12208,11 @@
   "@e7ModelUiUseModelMode": {
     "description": "Shared voice or model selection UI: e7ModelUiUseModelMode"
   },
-  "e7ModelUiUseSession": "Use for this session",
+  "e7ModelUiUseSession": "Use for this conversation",
   "@e7ModelUiUseSession": {
     "description": "Shared voice or model selection UI: e7ModelUiUseSession"
   },
-  "e7ModelUiUseNewSessions": "Use for new sessions",
+  "e7ModelUiUseNewSessions": "Use for new conversations",
   "@e7ModelUiUseNewSessions": {
     "description": "Shared voice or model selection UI: e7ModelUiUseNewSessions"
   },
@@ -12801,7 +12801,7 @@
   "@approvalsUiMenu": {
     "description": "Session actions row that opens the per-session approval settings sheet"
   },
-  "approvalsUiTitle": "Approvals for this session",
+  "approvalsUiTitle": "Approvals for this conversation",
   "@approvalsUiTitle": {
     "description": "Title of the per-session approval settings sheet"
   },
@@ -12825,7 +12825,7 @@
   "@approvalsUiInheritTitle": {
     "description": "Switch: child (subagent) sessions follow this session's approval choice"
   },
-  "approvalsUiInheritDetail": "Child sessions started by this one follow the same choice unless they have their own.",
+  "approvalsUiInheritDetail": "Subagent conversations started by this one follow the same choice unless they have their own.",
   "@approvalsUiInheritDetail": {
     "description": "Explanation under the Subagents inherit switch while it is enabled"
   },
@@ -12833,15 +12833,15 @@
   "@approvalsUiInheritUnavailable": {
     "description": "Explanation under the disabled Subagents inherit switch while Ask each time is selected"
   },
-  "approvalsUiInheritedFrom": "Inherited from parent session",
+  "approvalsUiInheritedFrom": "Inherited from parent conversation",
   "@approvalsUiInheritedFrom": {
     "description": "Banner in the approvals sheet of a child session that follows its parent's choice"
   },
-  "approvalsUiInheritedDetail": "This session follows its parent’s approvals. Override it to choose for this session only.",
+  "approvalsUiInheritedDetail": "This conversation follows its parent’s approvals. Override it to choose for this conversation only.",
   "@approvalsUiInheritedDetail": {
     "description": "Explanation under the Inherited from parent session banner"
   },
-  "approvalsUiOverride": "Override for this session",
+  "approvalsUiOverride": "Override for this conversation",
   "@approvalsUiOverride": {
     "description": "Button that gives a child session its own approval choice instead of the parent's"
   },
@@ -12849,7 +12849,7 @@
   "@approvalsUiFollowParent": {
     "description": "Button that removes a child session's own approval choice so it follows its parent again"
   },
-  "approvalsUiServerRulesNote": "The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects. New sessions always ask.",
+  "approvalsUiServerRulesNote": "The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects. New conversations always ask.",
   "@approvalsUiServerRulesNote": {
     "description": "Footnote in the approvals sheet about server rules, disconnects, and defaults"
   },
@@ -12891,7 +12891,7 @@
   "@approvalsUiIndicatorPausedDetail": {
     "description": "Second line of the paused indicator"
   },
-  "approvalsUiRecordTitle": "{count, plural, =0{Nothing approved automatically on this connection yet} =1{1 request approved automatically on this connection} other{{count} requests approved automatically on this connection}}",
+  "approvalsUiRecordTitle": "{count, plural, =0{Nothing approved automatically on this server yet} =1{1 request approved automatically on this server} other{{count} requests approved automatically on this server}}",
   "@approvalsUiRecordTitle": {
     "description": "Heading of the list of permissions the app approved automatically in this session since connecting",
     "placeholders": {
@@ -12904,7 +12904,7 @@
   "@handoffUiComputerTitle": {
     "description": "Session menu row and sheet title: resume this session in a terminal on the computer that runs the server"
   },
-  "handoffUiComputerIntro": "Run this in a terminal on the computer that runs this server. It opens the same session in the {binary} interface. Nothing is sent until you type.",
+  "handoffUiComputerIntro": "Run this in a terminal on the computer that runs this server. It opens the same conversation in the {binary} interface. Nothing is sent until you type.",
   "@handoffUiComputerIntro": {
     "description": "Sheet lead paragraph. {binary} is the CLI program name (opencode or opencode2); do not translate it.",
     "placeholders": {
@@ -12913,7 +12913,7 @@
       }
     }
   },
-  "handoffUiComputerDirectoryNote": "Sessions belong to a project folder, so the command changes into this session’s folder first.",
+  "handoffUiComputerDirectoryNote": "Conversations belong to a project folder, so the command changes into this conversation’s folder first.",
   "@handoffUiComputerDirectoryNote": {
     "description": "Sheet note explaining the cd prefix of the command"
   },
@@ -12929,23 +12929,23 @@
       }
     }
   },
-  "handoffUiUnavailableDirectory": "The server did not report a project folder for this session, so there is no folder to open it in. Reload the session and try again.",
+  "handoffUiUnavailableDirectory": "The server did not report a project folder for this conversation, so there is no folder to open it in. Reload the conversation and try again.",
   "@handoffUiUnavailableDirectory": {
     "description": "Sheet state when the session has no directory and no command can be built"
   },
-  "handoffUiUnavailableWorkspace": "This session runs inside a managed workspace. Its folder belongs to the workspace host, so a plain terminal command cannot open it. Export and import the session instead.",
+  "handoffUiUnavailableWorkspace": "This conversation runs inside a cloud environment. Its folder belongs to the environment’s host, so a plain terminal command cannot open it. Export and import the conversation instead.",
   "@handoffUiUnavailableWorkspace": {
     "description": "Sheet state for OpenCode 2 managed-workspace sessions"
   },
-  "handoffUiUnavailableReference": "This session’s reference cannot be placed in a command safely.",
+  "handoffUiUnavailableReference": "This conversation’s reference cannot be placed in a command safely.",
   "@handoffUiUnavailableReference": {
     "description": "Sheet state when the session id fails validation"
   },
-  "handoffUiExportHint": "Moving to a different server? Export this session as a file and import it there. That carries the transcript itself, not just a pointer to it.",
+  "handoffUiExportHint": "Moving to a different server? Export this conversation as a file and import it there. That carries the transcript itself, not just a pointer to it.",
   "@handoffUiExportHint": {
     "description": "Sheet paragraph pointing at the existing export/import feature for cross-server moves"
   },
-  "handoffUiExportAction": "Export session",
+  "handoffUiExportAction": "Export conversation",
   "@handoffUiExportAction": {
     "description": "Button in the handoff sheet that opens the existing session export screen"
   },
@@ -12953,11 +12953,11 @@
   "@handoffUiPhoneTitle": {
     "description": "Session menu row and sheet title: show a QR code that opens this session in the app on another phone"
   },
-  "handoffUiPhoneIntro": "Scan this with OpenCode Mobile on the other phone. The code carries only this saved server’s ID and the session ID: no messages, no address, no password. The other phone must already have this server saved.",
+  "handoffUiPhoneIntro": "Scan this with OpenCode Mobile on the other phone. The code carries only this saved server’s ID and the conversation ID: no messages, no address, no password. The other phone must already have this server saved.",
   "@handoffUiPhoneIntro": {
     "description": "QR sheet lead paragraph"
   },
-  "handoffUiPhoneQrLabel": "QR code that opens this session on another phone",
+  "handoffUiPhoneQrLabel": "QR code that opens this conversation on another phone",
   "@handoffUiPhoneQrLabel": {
     "description": "Accessibility label for the QR image"
   },
@@ -12973,7 +12973,7 @@
   "@handoffUiPhoneLinkCopied": {
     "description": "Snackbar after the session link was copied"
   },
-  "handoffUiPhoneUnavailable": "A link cannot be built for this session. Reload the session and try again.",
+  "handoffUiPhoneUnavailable": "A link cannot be built for this conversation. Reload the conversation and try again.",
   "@handoffUiPhoneUnavailable": {
     "description": "QR sheet state when the session or server reference fails validation"
   },
@@ -12989,7 +12989,7 @@
   "@handoffUiLinkDismiss": {
     "description": "Banner action closing the notice without navigating"
   },
-  "handoffUiLinkWaiting": "Opening the session once the server connects…",
+  "handoffUiLinkWaiting": "Opening the conversation once the server connects…",
   "@handoffUiLinkWaiting": {
     "description": "Snackbar while a scanned link waits for the saved server to finish connecting"
   },
@@ -16153,7 +16153,7 @@
   "@termuxStorageRescanAction": {
     "description": "Button that starts a fresh scan when a report exists"
   },
-  "termuxStorageIntro": "See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and session history stay in place.",
+  "termuxStorageIntro": "See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and conversation history stay in place.",
   "@termuxStorageIntro": {
     "description": "Storage screen: paragraph before the first scan"
   },
@@ -16261,7 +16261,7 @@
   "@termuxStorageCatOpenCode": {
     "description": "Storage category"
   },
-  "termuxStorageNoteOpenCode": "The server, its sign-ins and session history. Not removed from here; sessions have their own screen.",
+  "termuxStorageNoteOpenCode": "The server, its sign-ins and conversation history. Not removed from here; conversations have their own screen.",
   "@termuxStorageNoteOpenCode": {
     "description": "Storage category note"
   },
@@ -17103,11 +17103,11 @@
   "termuxStorageCatSharedCaches": "Other caches and package data",
   "termuxStorageNoteSharedCaches": "Shared caches, package installs and download folders may support other tools or contain files worth keeping. They cannot be removed here.",
   "termuxStorageRescanRequired": "Previous scan · Scan again before cleaning more",
-  "safetyStopSharingTitle": "Stop sharing this session?",
+  "safetyStopSharingTitle": "Stop sharing this conversation?",
   "@safetyStopSharingTitle": {
     "description": "Title of the confirmation shown before a shared session link is revoked."
   },
-  "safetyStopSharingBody": "The link stops working for anyone who has it. The session itself is not changed.",
+  "safetyStopSharingBody": "The link stops working for anyone who has it. The conversation itself is not changed.",
   "@safetyStopSharingBody": {
     "description": "Body of the stop sharing confirmation."
   },
