@@ -39,14 +39,13 @@ import 'external_agents_screen.dart';
 import 'guide_screen.dart';
 import 'host_management_screen.dart';
 import 'library_screen.dart';
-import 'provider_quota_screen.dart';
 import 'saved_permissions_screen.dart';
 import 'session_import_screen.dart';
 import 'settings/plugins_screen.dart';
 import 'tailscale_setup_screen.dart';
 import 'terminal_screen.dart';
 import 'termux_setup_screen.dart';
-import 'usage_screen.dart';
+import 'usage_hub_screen.dart';
 
 part 'settings/server_settings_screen.dart';
 part 'settings/default_shell_row.dart';
@@ -549,22 +548,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
       ]),
       _HubGroup(SettingsGroup.usage, copy.settingsHubGroupUsage, [
-        if (controller.supportsUsageStatistics)
+        // One Usage screen: "Spent" needs usage statistics, "Remaining"
+        // needs a saved server. Either is enough for the row; the subtitle
+        // names the sections this connection really has.
+        if (UsageHubScreen.sectionsFor(controller) case final sections
+            when sections.isNotEmpty)
           _HubRow(
             rowKey: 'settings-category-usage',
             icon: AppIconography.usage,
-            title: l10n.usageTitle,
+            title: copy.settingsHubGroupUsage,
+            subtitle: [
+              for (final section in sections)
+                switch (section) {
+                  UsageSection.spent => copy.usageSectionSpent,
+                  UsageSection.remaining => copy.usageSectionRemaining,
+                },
+            ].join(' · '),
             keywords: copy.settingsHubSearchUsageAliases,
-            onTap: () => _open(UsageScreen(controller: controller)),
-          ),
-        if (profile != null)
-          _HubRow(
-            rowKey: 'settings-category-quota',
-            icon: AppIconography.speed,
-            title: l10n.quotaTitle,
-            subtitle: l10n.quotaSettingsSummary,
-            keywords: copy.settingsHubSearchUsageAliases,
-            onTap: () => _open(ProviderQuotaScreen(controller: controller)),
+            onTap: () => _open(UsageHubScreen(controller: controller)),
           ),
       ]),
       _HubGroup(SettingsGroup.privacy, copy.settingsHubGroupPrivacy, [

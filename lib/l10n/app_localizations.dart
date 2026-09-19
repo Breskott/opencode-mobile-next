@@ -25861,7 +25861,7 @@ abstract class AppLocalizations {
   /// Search aliases for the Usage rows; preserve English terms.
   ///
   /// In en, this message translates to:
-  /// **'usage cost tokens budget quota limit spent remaining'**
+  /// **'usage cost tokens budget quota limit spent remaining threshold quota monitoring provider'**
   String get settingsHubSearchUsageAliases;
 
   /// Search aliases for the Privacy row; preserve English terms.
@@ -25983,6 +25983,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notification settings'**
   String get monitorNotificationSettings;
+
+  /// Usage screen section (tab): what the connected server reports it used.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent'**
+  String get usageSectionSpent;
+
+  /// Usage screen section (tab): what a provider account has left, with quota monitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining'**
+  String get usageSectionRemaining;
 }
 
 class _AppLocalizationsDelegate

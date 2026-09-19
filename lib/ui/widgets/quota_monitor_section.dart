@@ -22,32 +22,52 @@ String quotaProviderLabel(AppLocalizations l10n, QuotaProvider provider) =>
       QuotaProvider.glm => l10n.quotaGlm,
     };
 
-/// Review collector observations without connecting or switching OpenCode servers.
-class QuotaMonitorScreen extends StatelessWidget {
+/// Quota monitoring inside Usage → Remaining: every monitored source, on any
+/// saved server, with its latest reading, its alert threshold, Refresh and
+/// Disable. It never connects to or switches the active server.
+///
+/// How an alert notifies (device alerts, quiet hours, Wi-Fi only) is shared
+/// with the rest of the app and lives in Notifications; [onOpenNotifications]
+/// is the link to it.
+class QuotaMonitorSection extends StatelessWidget {
   final ConnectionController controller;
-  const QuotaMonitorScreen({super.key, required this.controller});
+  final VoidCallback onOpenNotifications;
+  const QuotaMonitorSection({
+    super.key,
+    required this.controller,
+    required this.onOpenNotifications,
+  });
+
   @override
   Widget build(BuildContext context) {
     final monitor = controller.quotaMonitor;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.quotaMonitorTitle)),
-      body: SafeArea(
-        child: ListenableBuilder(
-          listenable: monitor,
-          builder: (context, _) => ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Text(l10n.quotaMonitorRuntime),
-              const SizedBox(height: 12),
-              if (monitor.sources.isEmpty) Text(l10n.quotaMonitorEmpty),
-              for (final target in monitor.sources) ...[
-                const Divider(height: 32),
-                _Source(controller: controller, target: target),
-              ],
-            ],
+    return ListenableBuilder(
+      listenable: monitor,
+      builder: (context, _) => Column(
+        key: const ValueKey('quota-monitor-section'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.quotaMonitorTitle,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(l10n.quotaMonitorRuntime),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton(
+              key: const ValueKey('quota-monitor-notification-settings'),
+              onPressed: onOpenNotifications,
+              child: Text(l10n.monitorNotificationSettings),
+            ),
+          ),
+          if (monitor.sources.isEmpty) Text(l10n.quotaMonitorEmpty),
+          for (final target in monitor.sources) ...[
+            const Divider(height: 32),
+            _Source(controller: controller, target: target),
+          ],
+        ],
       ),
     );
   }

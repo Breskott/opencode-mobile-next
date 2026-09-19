@@ -16285,7 +16285,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsHubSearchUsageAliases =>
-      'usage cost tokens budget quota limit spent remaining استخدام تكلفة رموز ميزانية حصة حد منفق متبقي';
+      'usage cost tokens budget quota limit spent remaining threshold quota monitoring provider استخدام تكلفة رموز ميزانية حصة حد منفق متبقي مراقبة الحصص مزوّد';
 
   @override
   String get settingsHubSearchPrivacyAliases =>
@@ -16357,4 +16357,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get monitorNotificationSettings => 'إعدادات الإشعارات';
+
+  @override
+  String get usageSectionSpent => 'المصروف';
+
+  @override
+  String get usageSectionRemaining => 'المتبقي';
 }

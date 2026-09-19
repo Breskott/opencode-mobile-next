@@ -17312,7 +17312,7 @@
   "@settingsHubSearchPluginsAliases": {
     "description": "Search aliases for the Plugins row; preserve English terms."
   },
-  "settingsHubSearchUsageAliases": "usage cost tokens budget quota limit spent remaining",
+  "settingsHubSearchUsageAliases": "usage cost tokens budget quota limit spent remaining threshold quota monitoring provider",
   "@settingsHubSearchUsageAliases": {
     "description": "Search aliases for the Usage rows; preserve English terms."
   },
@@ -17400,5 +17400,13 @@
   "monitorNotificationSettings": "Notification settings",
   "@monitorNotificationSettings": {
     "description": "Link from the saved-servers attention list and the Usage screen to the Notifications screen."
+  },
+  "usageSectionSpent": "Spent",
+  "@usageSectionSpent": {
+    "description": "Usage screen section (tab): what the connected server reports it used."
+  },
+  "usageSectionRemaining": "Remaining",
+  "@usageSectionRemaining": {
+    "description": "Usage screen section (tab): what a provider account has left, with quota monitoring."
   }
 }

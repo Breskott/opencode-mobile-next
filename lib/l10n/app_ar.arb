@@ -4284,7 +4284,7 @@
   "settingsHubSearchMcpAliases": "mcp integrations servers tools تكاملات خوادم أدوات",
   "settingsHubSearchCommandsAliases": "commands tools skills references slash capabilities أوامر أدوات مهارات مراجع إمكانات",
   "settingsHubSearchPluginsAliases": "plugins plugin installed source status AI Team Gas City إضافات مثبت مصدر حالة فريق",
-  "settingsHubSearchUsageAliases": "usage cost tokens budget quota limit spent remaining استخدام تكلفة رموز ميزانية حصة حد منفق متبقي",
+  "settingsHubSearchUsageAliases": "usage cost tokens budget quota limit spent remaining threshold quota monitoring provider استخدام تكلفة رموز ميزانية حصة حد منفق متبقي مراقبة الحصص مزوّد",
   "settingsHubSearchPrivacyAliases": "privacy drafts queue queued prompts read state storage clear delete خصوصية مسودات قائمة انتظار حالة القراءة تخزين مسح حذف",
   "settingsHubSearchGuideAliases": "help guide connect tutorial start مساعدة دليل اتصال بدء",
   "settingsHubSearchBugAliases": "bug feedback issue support report خطأ ملاحظات مشكلة دعم بلاغ",
@@ -4304,5 +4304,7 @@
   "notifySectionServers": "الخوادم المحفوظة",
   "notifyWifiOnly": "التحقق في الخلفية عبر Wi-Fi فقط",
   "notifyHubBackgroundSummary": "الخلفية: {state}",
-  "monitorNotificationSettings": "إعدادات الإشعارات"
+  "monitorNotificationSettings": "إعدادات الإشعارات",
+  "usageSectionSpent": "المصروف",
+  "usageSectionRemaining": "المتبقي"
 }

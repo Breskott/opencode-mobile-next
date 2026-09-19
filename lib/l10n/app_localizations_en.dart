@@ -16011,7 +16011,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHubSearchUsageAliases =>
-      'usage cost tokens budget quota limit spent remaining';
+      'usage cost tokens budget quota limit spent remaining threshold quota monitoring provider';
 
   @override
   String get settingsHubSearchPrivacyAliases =>
@@ -16082,4 +16082,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get monitorNotificationSettings => 'Notification settings';
+
+  @override
+  String get usageSectionSpent => 'Spent';
+
+  @override
+  String get usageSectionRemaining => 'Remaining';
 }

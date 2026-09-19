@@ -9,7 +9,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/provider_quota_monitor.dart';
 import 'package:opencode_mobile/state/provider_quota_overview.dart';
 import 'package:opencode_mobile/ui/screens/provider_quota_screen.dart';
-import 'package:opencode_mobile/ui/screens/quota_monitor_screen.dart';
+import 'package:opencode_mobile/ui/widgets/quota_monitor_section.dart';
 import '../../test/provider_quota_test.dart' show providerQuotaFixture;
 import 'fixtures.dart'
     show capturePng, captureTheme, loadCaptureFonts, writePng;
@@ -143,7 +143,7 @@ void main() {
           EnginePhase.sendSemanticsUpdate,
           const Duration(seconds: 3),
         );
-        expect(find.byType(QuotaMonitorScreen), findsOneWidget);
+        expect(find.byType(QuotaMonitorSection), findsOneWidget);
         await completeRead(
           tester,
           connection.quotaMonitor.refresh(),

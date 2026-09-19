@@ -1,5 +1,5 @@
 import 'ui/screens/profile_monitor_screen.dart';
-import 'ui/screens/quota_monitor_screen.dart';
+import 'ui/screens/usage_hub_screen.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 
@@ -1009,7 +1009,11 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                 }
                 navigator.push(
                   MaterialPageRoute<void>(
-                    builder: (_) => QuotaMonitorScreen(controller: _controller),
+                    // Quota monitoring is part of Usage → Remaining.
+                    builder: (_) => UsageHubScreen(
+                      controller: _controller,
+                      initialSection: UsageSection.remaining,
+                    ),
                   ),
                 );
               }),
