@@ -16,6 +16,7 @@ import '../../state/paseo_connection_probe.dart';
 import '../../state/pairing.dart';
 import '../../state/profiles.dart';
 import '../../state/external_agents.dart';
+import '../../state/first_run.dart';
 import '../../termux/bridge.dart';
 import '../app_theme.dart';
 import '../setup_commands.dart';
@@ -147,6 +148,19 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   /// Bumped after Termux setup returns so the running-server entry re-reads
   /// the phone instead of trusting what it saw before the user left.
   int _termuxRevision = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // The welcome as the first thing a device shows is what makes it new
+    // (see [FirstRun]); the shell reads this after the first connect.
+    final store = ref.read(bootstrapProvider).store;
+    unawaited(
+      FirstRun(
+        store.prefs,
+      ).observeServers(hasServers: store.profiles.isNotEmpty),
+    );
+  }
 
   @override
   void didChangeDependencies() {

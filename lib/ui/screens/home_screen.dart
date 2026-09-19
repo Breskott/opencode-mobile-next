@@ -7,9 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/sse.dart';
 import '../../domain/server_gateway.dart' show ServerCapabilities;
 import '../../state/connection.dart';
+import '../../state/first_run.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../desktop/shortcuts.dart';
+import '../navigation/chat_route.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/retained_tab_view.dart';
@@ -56,14 +58,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   final _findInFiles = ValueNotifier<int>(0);
   final _projectBack = ProjectHubBackController();
 
+  /// True from the first connect of a new device until its first
+  /// conversation opens (UX plan 5.6 steps 4-5). The shell stays on Work,
+  /// where the project chooser shows when one is needed, and opens a new
+  /// conversation the moment a project is usable.
+  bool _firstRunLanding = false;
+  bool _firstRunCreating = false;
+
+  /// Re-checks while a project sheet or screen is still on top of the shell:
+  /// a conversation pushed under it would be closed along with it.
+  Timer? _firstRunRetry;
+
   @override
   void initState() {
     super.initState();
     final conn = ref.read(connProvider);
     _tab = _safeTab(widget.initialTab ?? _workTab, conn.capabilities);
-    if (widget.initialTab == null) {
-      _choosingColdStartTab = true;
-      _chooseColdStartTab(conn);
+    final firstRun = FirstRun(conn.store.prefs);
+    if (widget.initialTab == null &&
+        !conn.isIsolated &&
+        firstRun.landingPending) {
+      // First run ends in a conversation, not on a tab chosen by what is
+      // waiting: nothing can be waiting on a server connected seconds ago.
+      _firstRunLanding = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _continueFirstRun());
+    } else {
+      unawaited(firstRun.markReturning());
+      if (widget.initialTab == null) {
+        _choosingColdStartTab = true;
+        _chooseColdStartTab(conn);
+      }
     }
     conn.addListener(_onConnChanged);
     // If the SSE stream cannot connect at all, fall back to polling.
@@ -118,7 +142,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (!reading) _choosingColdStartTab = false;
   }
 
+  /// Step 4 then step 5: wait on Work while the person picks a project (the
+  /// chooser is already what Work shows then), and as soon as a project is
+  /// usable open a new conversation with the keyboard up. Back from it
+  /// returns here, to Work.
+  void _continueFirstRun() {
+    if (!mounted || !_firstRunLanding || _firstRunCreating) return;
+    final conn = ref.read(connProvider);
+    if (conn.api == null || conn.workspaceChoiceRequired) return;
+    if (!(ModalRoute.of(context)?.isCurrent ?? true)) {
+      _firstRunRetry ??= Timer.periodic(
+        const Duration(milliseconds: 300),
+        (_) => _continueFirstRun(),
+      );
+      return;
+    }
+    _firstRunRetry?.cancel();
+    _firstRunRetry = null;
+    _firstRunCreating = true;
+    unawaited(_openFirstConversation(conn));
+  }
+
+  Future<void> _openFirstConversation(ConnectionController conn) async {
+    final navigator = Navigator.of(context);
+    try {
+      final session = await conn.createSession();
+      await FirstRun(conn.store.prefs).markLanded();
+      if (!mounted) return;
+      _firstRunLanding = false;
+      await navigator.pushNamed(
+        '/chat/${session.id}',
+        arguments: const ChatRouteArguments.firstRun(),
+      );
+      if (mounted) unawaited(conn.refreshSessions());
+    } catch (_) {
+      // Work is a complete screen with its own New conversation button and
+      // its own error reporting; a failed shortcut is not worth a dialog.
+      // First run stays pending, so the next connect tries again.
+      _firstRunLanding = false;
+    } finally {
+      _firstRunCreating = false;
+    }
+  }
+
   void _selectTab(int next) {
+    // Choosing a tab is the person taking over; first run stops steering.
+    if (_firstRunLanding && !_firstRunCreating && next != _workTab) {
+      _firstRunLanding = false;
+      _firstRunRetry?.cancel();
+      _firstRunRetry = null;
+    }
     _choosingColdStartTab = false;
     if (_tab == next) return;
     _lastBackAt = null;
@@ -129,6 +202,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (!mounted) return;
     final conn = ref.read(connProvider);
     _chooseColdStartTab(conn);
+    _continueFirstRun();
     final next = _safeTab(_tab, conn.capabilities);
     setState(() => _tab = next);
   }
@@ -145,6 +219,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     try {
       ref.read(connProvider).removeListener(_onConnChanged);
     } catch (_) {}
+    _firstRunRetry?.cancel();
     _findInFiles.dispose();
     super.dispose();
   }

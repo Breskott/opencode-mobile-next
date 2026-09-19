@@ -206,6 +206,10 @@ class ChatScreen extends StatefulWidget {
   final List<PromptAttachment> initialAttachments;
   final bool discardIfUntouched;
 
+  /// Opens with the keyboard up. Only the conversation first run lands in
+  /// asks for this; everywhere else the person chooses when to type.
+  final bool focusComposer;
+
   /// An enclosing experience can provide its own navigation and task guidance.
   /// Defaults preserve the ordinary standalone chat presentation.
   final bool showAppBar;
@@ -222,6 +226,7 @@ class ChatScreen extends StatefulWidget {
     this.initialText = '',
     this.initialAttachments = const [],
     this.discardIfUntouched = false,
+    this.focusComposer = false,
     this.showAppBar = true,
     this.emptyState,
     this.handoffStore,
@@ -579,6 +584,11 @@ class _ChatScreenState extends State<ChatScreen>
     _syncRetryTicker();
     if (!_conn.isIsolated) {
       _handoff.store.addListener(_onHandoffChanged); // UX-103 review handoff
+    }
+    if (widget.focusComposer) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focus.requestFocus();
+      });
     }
     _load();
     if (_conn.capabilities.serverCatalog) {
