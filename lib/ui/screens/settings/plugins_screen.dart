@@ -29,6 +29,7 @@ import '../../widgets/team_discovery_card.dart';
 import '../../widgets/team_host_form.dart';
 import '../../widgets/team_phone_section.dart';
 import '../../widgets/team_technical_details.dart';
+import 'server_plugins_section.dart';
 
 export '../../widgets/team_discovery_card.dart' show TeamDiscoveryCard;
 export '../../widgets/team_technical_details.dart' show teamReadOnly;
@@ -43,7 +44,10 @@ bool teamPhoneProfile(ServerProfile? profile) =>
     TermuxBridge.supported &&
     TermuxBridge.managesServerUrl(profile.baseUrl);
 
-/// The Plugins page: discovery card, then the Plugins group.
+/// The one Plugins page. "In this app" holds the plugins this app ships
+/// (AI Team · Gas City, with its discovery card); "On the server" holds the
+/// connected server's plugin inventory and only exists when the server has
+/// one.
 class PluginsSettingsScreen extends StatefulWidget {
   const PluginsSettingsScreen({
     super.key,
@@ -147,10 +151,14 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
             else ...[
               Padding(
                 padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
-                child: Text(
-                  l10n.teamUiPluginsTitle,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: AppTheme.mutedOf(theme),
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    l10n.pluginsSectionInApp,
+                    key: const ValueKey('plugins-section-app'),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: AppTheme.mutedOf(theme),
+                    ),
                   ),
                 ),
               ),
@@ -183,6 +191,8 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
                 onTap: _openSheet,
               ),
             ],
+            if (controller.capabilities.pluginInventory)
+              ServerPluginsSection(controller: controller),
           ],
         ),
       ),

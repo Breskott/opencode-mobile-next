@@ -16255,4 +16255,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get settingsHubSearchAboutAliases =>
       'about version licenses open source notices privacy data حول إصدار تراخيص مفتوح المصدر إشعارات خصوصية بيانات';
+
+  @override
+  String get pluginsSectionInApp => 'في هذا التطبيق';
+
+  @override
+  String get pluginsSectionOnServer => 'على الخادم';
 }

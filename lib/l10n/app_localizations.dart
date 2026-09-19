@@ -25803,6 +25803,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'about version licenses open source notices privacy data'**
   String get settingsHubSearchAboutAliases;
+
+  /// Plugins screen section header: plugins that ship with this app (AI Team).
+  ///
+  /// In en, this message translates to:
+  /// **'In this app'**
+  String get pluginsSectionInApp;
+
+  /// Plugins screen section header: the connected server's plugin inventory.
+  ///
+  /// In en, this message translates to:
+  /// **'On the server'**
+  String get pluginsSectionOnServer;
 }
 
 class _AppLocalizationsDelegate

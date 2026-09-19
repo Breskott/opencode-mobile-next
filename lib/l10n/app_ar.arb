@@ -4274,5 +4274,7 @@
   "settingsHubSearchGuideAliases": "help guide connect tutorial start مساعدة دليل اتصال بدء",
   "settingsHubSearchBugAliases": "bug feedback issue support report خطأ ملاحظات مشكلة دعم بلاغ",
   "settingsHubSearchDiagnosticsAliases": "diagnostics debug errors log تشخيص أخطاء سجل",
-  "settingsHubSearchAboutAliases": "about version licenses open source notices privacy data حول إصدار تراخيص مفتوح المصدر إشعارات خصوصية بيانات"
+  "settingsHubSearchAboutAliases": "about version licenses open source notices privacy data حول إصدار تراخيص مفتوح المصدر إشعارات خصوصية بيانات",
+  "pluginsSectionInApp": "في هذا التطبيق",
+  "pluginsSectionOnServer": "على الخادم"
 }

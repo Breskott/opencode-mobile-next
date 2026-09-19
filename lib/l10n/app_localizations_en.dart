@@ -15971,4 +15971,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsHubSearchAboutAliases =>
       'about version licenses open source notices privacy data';
+
+  @override
+  String get pluginsSectionInApp => 'In this app';
+
+  @override
+  String get pluginsSectionOnServer => 'On the server';
 }

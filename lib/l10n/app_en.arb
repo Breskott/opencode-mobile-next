@@ -17320,5 +17320,13 @@
   "settingsHubSearchAboutAliases": "about version licenses open source notices privacy data",
   "@settingsHubSearchAboutAliases": {
     "description": "Search aliases for the About rows; preserve English terms."
+  },
+  "pluginsSectionInApp": "In this app",
+  "@pluginsSectionInApp": {
+    "description": "Plugins screen section header: plugins that ship with this app (AI Team)."
+  },
+  "pluginsSectionOnServer": "On the server",
+  "@pluginsSectionOnServer": {
+    "description": "Plugins screen section header: the connected server's plugin inventory."
   }
 }
