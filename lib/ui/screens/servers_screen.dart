@@ -42,6 +42,43 @@ import 'external_agents_screen.dart';
 /// when connecting (or saving) did not work out.
 typedef _SubmitOutcome = ({bool saved, String? failure});
 
+/// Checks a Paseo daemon or a Codex app-server, the two socket backends.
+typedef SocketAgentProbe =
+    Future<CodexConnectionProbeResult> Function({
+      required ServerBackend backend,
+      required String baseUrl,
+      required String secret,
+      required String directory,
+    });
+
+Future<CodexConnectionProbeResult> _probeSocketAgent({
+  required ServerBackend backend,
+  required String baseUrl,
+  required String secret,
+  required String directory,
+}) => backend == ServerBackend.paseo
+    ? probePaseoConnection(
+        baseUrl: baseUrl,
+        password: secret,
+        directory: directory,
+      )
+    : probeCodexConnection(
+        baseUrl: baseUrl,
+        token: secret,
+        directory: directory,
+      );
+
+/// The socket-backend counterpart of [serverProbe]: replaceable so a widget
+/// test can answer the connect screen's test without opening a socket.
+@visibleForTesting
+SocketAgentProbe socketAgentProbe = _probeSocketAgent;
+
+/// How long the person must stop typing before the first-run connect screen
+/// tests by itself. Long enough that an address is not probed half-typed,
+/// short enough that the verdict is there when they look up.
+@visibleForTesting
+const autoTestPause = Duration(milliseconds: 800);
+
 AppLocalizations _connectionL10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
@@ -1151,6 +1188,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   int _urlLength = 0;
   int _probeGeneration = 0;
 
+  /// The pause before the first-run test runs by itself; see [_autoTests].
+  Timer? _autoTestTimer;
+
   /// True while a pairing payload's addresses are being probed.
   bool _pairing = false;
 
@@ -1207,6 +1247,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// platform may offer it to autofill. So the field is emptied first and the
   /// payload is routed to [_applyPairing].
   void _urlChanged(String value) {
+    _applyUrlChange(value);
+    _scheduleAutoTest();
+  }
+
+  void _applyUrlChange(String value) {
     setState(_invalidateProbe);
     if (_isCodex) {
       final pasted = value.length - _urlLength >= 4;
@@ -1253,7 +1298,56 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     }
   }
 
+  /// Every field's change handler: what was tested is no longer what is
+  /// typed, so the verdict goes and, on the first-run path, a new test is
+  /// queued behind a pause.
+  void _fieldChanged() {
+    setState(_invalidateProbe);
+    _scheduleAutoTest();
+  }
+
+  /// True on the first-run connect screen only (UX plan 5.6 step 3). Editing
+  /// a saved server never tests by itself: that person came to change one
+  /// value, and a probe of the half-edited profile is noise.
+  bool get _autoTests =>
+      widget.presetBackend != null && widget.existing == null;
+
+  /// The required fields as [_testConnection] would accept them, checked
+  /// without its side effects (no error text, no focus move).
+  bool get _readyForAutoTest {
+    if (_url.text.trim().isEmpty) return false;
+    if (_isCodex) {
+      final url = _isPaseo
+          ? normalizePaseoServerUrl(_url.text)
+          : normalizeCodexServerUrl(_url.text);
+      return _validateSocketFields(url) == null;
+    }
+    return validateServerProfileUrl(
+          normalizeServerProfileUrl(_url.text),
+          username: _user.text,
+          password: _pass.text,
+        ) ==
+        null;
+  }
+
+  /// One test after the person pauses, never one per keystroke: each change
+  /// restarts the wait, and [_invalidateProbe] has already retired whatever
+  /// probe was in flight.
+  void _scheduleAutoTest() {
+    _autoTestTimer?.cancel();
+    _autoTestTimer = null;
+    if (!_autoTests || !_readyForAutoTest) return;
+    _autoTestTimer = Timer(autoTestPause, () {
+      _autoTestTimer = null;
+      if (!mounted || _submitting || _pairing || _testing || _closing) return;
+      if (!_readyForAutoTest) return;
+      unawaited(_testConnection(auto: true));
+    });
+  }
+
   void _invalidateProbe() {
+    _autoTestTimer?.cancel();
+    _autoTestTimer = null;
     _probeGeneration += 1;
     _testing = false;
     _submitFailure = null;
@@ -1265,10 +1359,14 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     _pairingFailure = null;
   }
 
-  Future<void> _testConnection() async {
+  /// [auto] is the first-run test that runs by itself. It reports the same
+  /// verdict but never moves focus: the person is still typing somewhere.
+  Future<void> _testConnection({bool auto = false}) async {
     if (_testing) return;
+    _autoTestTimer?.cancel();
+    _autoTestTimer = null;
     if (_isCodex) {
-      await _testCodexConnection();
+      await _testCodexConnection(auto: auto);
       return;
     }
     final url = normalizeServerProfileUrl(_url.text);
@@ -1318,7 +1416,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     });
     // Per the v2 auth taxonomy: a 401 without a password sends the user to
     // the password field; a rejected password selects it for a clean repaste.
-    if (result.flavor == ServerFlavor.v2 && result.needsPassword) {
+    if (!auto && result.flavor == ServerFlavor.v2 && result.needsPassword) {
       if (_pass.text.isNotEmpty) {
         _pass.selection = TextSelection(
           baseOffset: 0,
@@ -1337,7 +1435,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
             validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
             validateCodexConnectionToken(_codexToken.text);
 
-  Future<void> _testCodexConnection() async {
+  Future<void> _testCodexConnection({bool auto = false}) async {
     var url = _isPaseo
         ? normalizePaseoServerUrl(_url.text)
         : normalizeCodexServerUrl(_url.text);
@@ -1374,24 +1472,19 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _error = null;
     });
     try {
-      final result = _isPaseo
-          ? await probePaseoConnection(
-              baseUrl: url,
-              password: _codexToken.text,
-              directory: _codexDirectory.text.trim(),
-            )
-          : await probeCodexConnection(
-              baseUrl: url,
-              token: _codexToken.text,
-              directory: _codexDirectory.text.trim(),
-            );
+      final result = await socketAgentProbe(
+        backend: _backend,
+        baseUrl: url,
+        secret: _codexToken.text,
+        directory: _codexDirectory.text.trim(),
+      );
       if (!mounted || generation != _probeGeneration) return;
       setState(() {
         _testing = false;
         _submitFailure = null;
         _codexTestResult = result;
       });
-      if (!result.ok) _codexTokenFocus.requestFocus();
+      if (!result.ok && !auto) _codexTokenFocus.requestFocus();
     } catch (error) {
       if (!mounted || generation != _probeGeneration) return;
       setState(() {
@@ -1581,6 +1674,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _invalidateProbe();
       _pass.text = text;
     });
+    _scheduleAutoTest();
     _passFocus.requestFocus();
   }
 
@@ -1600,6 +1694,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
 
   @override
   void dispose() {
+    _autoTestTimer?.cancel();
     _name.dispose();
     _url.dispose();
     _user.dispose();
@@ -1663,6 +1758,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _url.text = reviewed;
       _urlLength = reviewed.length;
     });
+    _scheduleAutoTest();
   }
 
   /// "Not on the same network?" on the first-run connect screen. For an
@@ -1843,6 +1939,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _invalidateProbe();
       _codexToken.text = value;
     });
+    _scheduleAutoTest();
     _codexTokenFocus.requestFocus();
   }
 
@@ -1855,7 +1952,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       focusNode: _nameFocus,
       textInputAction: TextInputAction.next,
       onSubmitted: (_) => _urlFocus.requestFocus(),
-      onChanged: (_) => setState(_invalidateProbe),
+      onChanged: (_) => _fieldChanged(),
       decoration: InputDecoration(
         labelText: _connectionL10n(context).connectionDisplayName,
         hintText: _connectionL10n(context).connectionDisplayNameHint,
@@ -1896,7 +1993,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       focusNode: _codexDirectoryFocus,
       textInputAction: TextInputAction.next,
       onSubmitted: (_) => _codexTokenFocus.requestFocus(),
-      onChanged: (_) => setState(_invalidateProbe),
+      onChanged: (_) => _fieldChanged(),
       decoration: InputDecoration(
         labelText: _connectionL10n(context).codexProjectFolder,
         hintText: '/work/my-project',
@@ -1910,7 +2007,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       controller: _codexToken,
       focusNode: _codexTokenFocus,
       autofocus: _needsCodexToken || widget.focusPassword,
-      onChanged: (_) => setState(_invalidateProbe),
+      onChanged: (_) => _fieldChanged(),
       obscureText: _obscurePassword,
       autocorrect: false,
       enableSuggestions: false,
@@ -2291,7 +2388,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       focusNode: _nameFocus,
                       textInputAction: TextInputAction.next,
                       onSubmitted: (_) => _userFocus.requestFocus(),
-                      onChanged: (_) => setState(_invalidateProbe),
+                      onChanged: (_) => _fieldChanged(),
                       decoration: InputDecoration(
                         labelText: _connectionL10n(
                           context,
@@ -2320,7 +2417,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       focusNode: _userFocus,
                       textInputAction: TextInputAction.next,
                       onSubmitted: (_) => _passFocus.requestFocus(),
-                      onChanged: (_) => setState(_invalidateProbe),
+                      onChanged: (_) => _fieldChanged(),
                       decoration: InputDecoration(
                         labelText: lookupAppLocalizations(
                           Localizations.localeOf(context),
@@ -2336,7 +2433,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       controller: _pass,
                       focusNode: _passFocus,
                       autofocus: _needsPassword || widget.focusPassword,
-                      onChanged: (_) => setState(_invalidateProbe),
+                      onChanged: (_) => _fieldChanged(),
                       obscureText: _obscurePassword,
                       autocorrect: false,
                       enableSuggestions: false,
