@@ -1508,11 +1508,11 @@ void main() {
       );
       expect(
         tester
-            .widget<RadioGroup<TermuxRuntime>>(
-              find.byType(RadioGroup<TermuxRuntime>),
+            .widget<RadioGroup<TermuxRuntimeChoice>>(
+              find.byType(RadioGroup<TermuxRuntimeChoice>),
             )
             .groupValue,
-        TermuxRuntime.openCode1,
+        TermuxRuntimeChoice.openCode1,
       );
       await tester.tap(
         find.byKey(const Key('setup-runtime-opencode2')).hitTestable(),
@@ -1522,11 +1522,11 @@ void main() {
       expect(fixture.store.savedProfiles, isEmpty);
       expect(
         tester
-            .widget<RadioGroup<TermuxRuntime>>(
-              find.byType(RadioGroup<TermuxRuntime>),
+            .widget<RadioGroup<TermuxRuntimeChoice>>(
+              find.byType(RadioGroup<TermuxRuntimeChoice>),
             )
             .groupValue,
-        TermuxRuntime.openCode2,
+        TermuxRuntimeChoice.openCode2,
       );
       await _revealGuideTarget(tester, find.text('Install & start'));
       expect(find.textContaining('0.0.0-beta-18600'), findsOneWidget);
@@ -1546,6 +1546,43 @@ void main() {
       expect(saved.username, 'opencode');
       expect(saved.password, isNotEmpty);
       expect(fixture.launchedScript, contains(saved.password));
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'choosing Claude Code still installs the default OpenCode runtime',
+    (tester) async {
+      // There is no Ubuntu-only path in the manager, so the third option
+      // rides on the normal setup and the Claude Code block continues after.
+      final fixture = await _setupFixture();
+      await fixture.mount(tester);
+      final claude = find.byKey(const Key('setup-runtime-claude'));
+      await _revealGuideTarget(tester, claude);
+      await tester.tap(claude.hitTestable());
+      await tester.pump();
+      expect(
+        tester
+            .widget<RadioGroup<TermuxRuntimeChoice>>(
+              find.byType(RadioGroup<TermuxRuntimeChoice>),
+            )
+            .groupValue,
+        TermuxRuntimeChoice.claudeCode,
+      );
+      await _revealGuideTarget(tester, find.text('Install & start'));
+      expect(
+        find.textContaining(TermuxRuntime.openCode1.pinnedVersion),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Install & start').hitTestable());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(fixture.launchCalls, 1);
+      expect(
+        fixture.launchedScript,
+        contains("setup '4096' '${TermuxRuntime.openCode1.pinnedVersion}'"),
+      );
+      expect(fixture.store.savedProfiles.single.flavor, ServerFlavor.v1);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -1606,14 +1643,14 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('confirm-stop-local-server')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      expect(find.byType(RadioGroup<TermuxRuntime>), findsNothing);
+      expect(find.byType(RadioGroup<TermuxRuntimeChoice>), findsNothing);
       fixture.pendingInventory!.complete(
         _commandResult(stdout: fixture.inventoryOutput),
       );
       await tester.pumpAndSettle();
       await _revealGuideTarget(tester, find.text('Reinstall & start'));
       await _scrollToTop(tester);
-      expect(find.byType(RadioGroup<TermuxRuntime>), findsNothing);
+      expect(find.byType(RadioGroup<TermuxRuntimeChoice>), findsNothing);
       expect(find.textContaining('0.0.0-beta-18600'), findsWidgets);
       await tester.tap(find.text('Reinstall & start').hitTestable());
       await tester.pumpAndSettle();
@@ -1644,7 +1681,7 @@ void main() {
           '${runtime == TermuxRuntime.openCode2 ? 'runtime=opencode2\n' : ''}';
       await fixture.mount(tester);
       await _revealGuideTarget(tester, find.text('Reinstall & start'));
-      expect(find.byType(RadioGroup<TermuxRuntime>), findsNothing);
+      expect(find.byType(RadioGroup<TermuxRuntimeChoice>), findsNothing);
       await tester.tap(find.text('Reinstall & start').hitTestable());
       await tester.pumpAndSettle();
       expect(fixture.launchCalls, 0);
@@ -1689,7 +1726,7 @@ void main() {
       );
       await fixture.mount(tester);
       await _revealGuideTarget(tester, find.text('Start installed OpenCode'));
-      expect(find.byType(RadioGroup<TermuxRuntime>), findsNothing);
+      expect(find.byType(RadioGroup<TermuxRuntimeChoice>), findsNothing);
       await tester.tap(find.text('Start installed OpenCode').hitTestable());
       await tester.pumpAndSettle();
       expect(fixture.restartCalls, 0);
@@ -2112,7 +2149,7 @@ pid=
       );
       expect(find.text('Start installed OpenCode'), findsOneWidget);
       expect(find.text('Install & start'), findsNothing);
-      expect(find.byType(RadioGroup<TermuxRuntime>), findsNothing);
+      expect(find.byType(RadioGroup<TermuxRuntimeChoice>), findsNothing);
     },
   );
 

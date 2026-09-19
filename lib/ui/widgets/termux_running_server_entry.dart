@@ -9,6 +9,7 @@ import '../../state/profiles.dart';
 import '../../state/termux_running_server.dart';
 import '../../termux/bridge.dart';
 import '../app_theme.dart';
+import 'local_server_card.dart';
 import 'safety_confirms.dart';
 
 /// What the card can do to the phone's server, injected so the card stays a
@@ -279,7 +280,6 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
       );
     }
 
-    final theme = Theme.of(context);
     final profile = savedProfileForTermuxServer(widget.profiles, server);
     final connected =
         server.isRunning &&
@@ -300,191 +300,65 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
       null => l10n.termuxRunningDetected,
     };
     final actions = widget.actions;
-    const touch = Size(48, 48);
 
-    return Card.filled(
-      key: const ValueKey('termux-running-server'),
-      margin: const EdgeInsets.only(bottom: 16),
-      color: theme.colorScheme.primaryContainer.withValues(
-        alpha: server.isStopped ? .18 : .35,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Icon(
-                    AppIconography.phone,
-                    color: server.isStopped
-                        ? theme.colorScheme.onSurfaceVariant
-                        : theme.colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Semantics(
-                          liveRegion: true,
-                          child: Text(
-                            title,
-                            style: theme.textTheme.titleMedium,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          runtime,
-                          key: const ValueKey('termux-running-server-runtime'),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                PopupMenuButton<VoidCallback>(
-                  key: const ValueKey('termux-running-server-menu'),
-                  tooltip: l10n.phoneServerMore,
-                  enabled: !_locked,
-                  onSelected: (action) => action(),
-                  itemBuilder: (context) => [
-                    if (connected && widget.onDisconnect != null)
-                      PopupMenuItem(
-                        key: const ValueKey('termux-running-server-disconnect'),
-                        value: () => unawaited(widget.onDisconnect!()),
-                        child: Text(l10n.e7WorkspaceDisconnect),
-                      ),
-                    PopupMenuItem(
-                      key: const ValueKey('termux-running-server-recheck'),
-                      value: () => unawaited(_check()),
-                      child: Text(l10n.workRefresh),
-                    ),
-                    if (widget.onManage != null)
-                      PopupMenuItem(
-                        key: const ValueKey('termux-running-server-manage'),
-                        value: widget.onManage!,
-                        child: Text(l10n.phoneServerManage),
-                      ),
-                    if (profile != null && widget.onForget != null)
-                      PopupMenuItem(
-                        key: const ValueKey('termux-running-server-forget'),
-                        value: () => widget.onForget!(profile),
-                        child: Text(l10n.phoneServerForget),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-            if (_operation != null)
-              const Padding(
-                padding: EdgeInsetsDirectional.only(top: 8, end: 8),
-                child: LinearProgressIndicator(
-                  key: ValueKey('termux-running-server-progress'),
-                ),
-              ),
-            if (_failure != null)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(top: 8, end: 8),
-                child: Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    _failure!,
-                    key: const ValueKey('termux-running-server-failure'),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 8),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (server.isStopped)
-                    FilledButton.icon(
-                      key: const ValueKey('termux-running-server-start'),
-                      style: FilledButton.styleFrom(minimumSize: touch),
-                      onPressed: _locked || actions == null
-                          ? null
-                          : () => unawaited(_start(l10n)),
-                      icon: const Icon(AppIconography.forward),
-                      label: Text(l10n.phoneServerStart),
-                    )
-                  else ...[
-                    FilledButton.icon(
-                      key: const ValueKey('termux-running-server-connect'),
-                      style: FilledButton.styleFrom(minimumSize: touch),
-                      onPressed: _locked ? null : () => unawaited(_connect()),
-                      icon: const Icon(AppIconography.forward),
-                      label: Text(
-                        connected
-                            ? l10n.phoneServerOpen
-                            : l10n.phoneServerConnect,
-                      ),
-                    ),
-                    if (actions != null) ...[
-                      OutlinedButton.icon(
-                        key: const ValueKey('termux-running-server-restart'),
-                        style: OutlinedButton.styleFrom(minimumSize: touch),
-                        onPressed: _locked
-                            ? null
-                            : () => unawaited(_restart(l10n)),
-                        icon: const Icon(AppIconography.restart),
-                        label: Text(l10n.termuxRestartConfirm),
-                      ),
-                      OutlinedButton.icon(
-                        key: const ValueKey('termux-running-server-stop'),
-                        style: OutlinedButton.styleFrom(minimumSize: touch),
-                        onPressed: _locked
-                            ? null
-                            : () => unawaited(_stop(l10n)),
-                        icon: const Icon(AppIcons.stop),
-                        label: Text(l10n.phoneServerStop),
-                      ),
-                    ],
-                  ],
-                ],
-              ),
-            ),
-            // Version and check time are for diagnosis, not for deciding what
-            // to do next, so they stay folded away.
-            if (server.isRunning)
-              ExpansionTile(
-                tilePadding: const EdgeInsetsDirectional.only(end: 8),
-                title: Text(l10n.termuxRunningDetails),
-                children: [
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: Text(detail),
-                  ),
-                  if (observedAt != null)
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(
-                        l10n.managedHealthObserved(
-                          MaterialLocalizations.of(
-                            context,
-                          ).formatTimeOfDay(TimeOfDay.fromDateTime(observedAt)),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-          ],
+    // The look is shared with the Claude Code daemon's card; what this entry
+    // owns is the OpenCode server's state and what its controls do.
+    return LocalServerCard(
+      keyPrefix: 'termux-running-server',
+      title: title,
+      subtitle: runtime,
+      stopped: server.isStopped,
+      locked: _locked,
+      inProgress: _operation != null,
+      connected: connected,
+      failure: _failure,
+      menuTooltip: l10n.phoneServerMore,
+      menuItems: [
+        if (connected && widget.onDisconnect != null)
+          LocalServerCardMenuItem(
+            keySuffix: 'disconnect',
+            label: l10n.e7WorkspaceDisconnect,
+            onSelected: () => unawaited(widget.onDisconnect!()),
+          ),
+        LocalServerCardMenuItem(
+          keySuffix: 'recheck',
+          label: l10n.workRefresh,
+          onSelected: () => unawaited(_check()),
         ),
-      ),
+        if (widget.onManage != null)
+          LocalServerCardMenuItem(
+            keySuffix: 'manage',
+            label: l10n.phoneServerManage,
+            onSelected: widget.onManage!,
+          ),
+        if (profile != null && widget.onForget != null)
+          LocalServerCardMenuItem(
+            keySuffix: 'forget',
+            label: l10n.phoneServerForget,
+            onSelected: () => widget.onForget!(profile),
+          ),
+      ],
+      startLabel: l10n.phoneServerStart,
+      connectLabel: l10n.phoneServerConnect,
+      openLabel: l10n.phoneServerOpen,
+      restartLabel: l10n.termuxRestartConfirm,
+      stopLabel: l10n.phoneServerStop,
+      onStart: actions == null ? null : () => unawaited(_start(l10n)),
+      onConnect: () => unawaited(_connect()),
+      onRestart: actions == null ? null : () => unawaited(_restart(l10n)),
+      onStop: actions == null ? null : () => unawaited(_stop(l10n)),
+      detailsTitle: server.isRunning ? l10n.termuxRunningDetails : null,
+      details: [
+        Text(detail),
+        if (observedAt != null)
+          Text(
+            l10n.managedHealthObserved(
+              MaterialLocalizations.of(
+                context,
+              ).formatTimeOfDay(TimeOfDay.fromDateTime(observedAt)),
+            ),
+          ),
+      ],
     );
   }
 }
