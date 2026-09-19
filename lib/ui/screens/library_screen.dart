@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../api/models.dart' show ModelRef;
 import '../../api/mcp_oauth.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
