@@ -9,9 +9,11 @@ import '../api2/models.dart' show Api2FormInfo;
 import '../api/models.dart';
 import '../domain/profile_monitor.dart';
 import '../domain/server_gateway.dart';
+import 'notification_preferences.dart';
 import 'profiles.dart';
 
 export '../domain/profile_monitor.dart';
+export 'notification_preferences.dart' show SharedNotifyRules;
 
 typedef MonitorGatewayPair = ({
   ServerGateway gateway,
@@ -334,7 +336,18 @@ class ProfileMonitor extends ChangeNotifier {
     return token;
   }
 
+  /// The rule as it applies now. Quiet hours, Wi-Fi only and the check-in
+  /// duration are shared by every server once the one-time migration has run
+  /// ([NotificationPreferences]); until then the server's own legacy record
+  /// still answers, so nothing changes for an install that has not migrated.
   ProfileNotifyRules rulesFor(String id) {
+    final own = _storedRules(id);
+    return _notifications.shared?.applyTo(own) ?? own;
+  }
+
+  late final _notifications = NotificationPreferences(store.prefs);
+
+  ProfileNotifyRules _storedRules(String id) {
     try {
       final raw = store.prefs.getString(rulesKey(id));
       if (raw != null) {
@@ -344,6 +357,26 @@ class ProfileMonitor extends ChangeNotifier {
       }
     } catch (_) {}
     return const ProfileNotifyRules();
+  }
+
+  /// The shared rules were edited. Quiet hours are read at delivery time and
+  /// need nothing; a changed check-in duration retires posted reminders, and
+  /// a changed Wi-Fi rule must not wait out the current poll interval.
+  Future<void> sharedRulesChanged({required bool checkInChanged}) async {
+    if (_disposed) return;
+    _next.clear();
+    _snapshots.removeWhere(
+      (_, snapshot) => snapshot.status == ProfileMonitorStatus.wifiRequired,
+    );
+    if (checkInChanged) {
+      for (final profile in store.profiles) {
+        await _dismissCheckIns(profile.id);
+      }
+    }
+    if (_disposed) return;
+    notifyListeners();
+    _schedule();
+    unawaited(refresh());
   }
 
   ProfileAttentionSnapshot snapshotFor(String id) {
@@ -925,6 +958,7 @@ class ProfileMonitor extends ChangeNotifier {
       final rules = rulesFor(id);
       return rules.enabled &&
           rules.notifications &&
+          _notifications.requests &&
           !rules.quietAt(_now()) &&
           (alertsAllowed?.call(id) ?? true);
     } catch (_) {

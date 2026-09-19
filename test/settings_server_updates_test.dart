@@ -925,7 +925,11 @@ void main() {
       findsNothing,
     );
     expect(
-      tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+      tester
+          .widget<SwitchListTile>(
+            find.byKey(const ValueKey('background-live-switch')),
+          )
+          .value,
       isTrue,
     );
 
@@ -939,14 +943,22 @@ void main() {
     );
     expect(find.text('Android stopped the live connection'), findsOneWidget);
     expect(
-      tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+      tester
+          .widget<SwitchListTile>(
+            find.byKey(const ValueKey('background-live-switch')),
+          )
+          .value,
       isFalse,
       reason: 'the switch must not claim a service the system killed',
     );
     expect(controller.keepLiveInBackground, isFalse);
 
     // Turning it back on is the answer to the notice, so the notice goes.
-    await tester.tap(find.byType(SwitchListTile));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('background-live-switch')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('background-live-switch')));
     await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('background-timeout-notice')),

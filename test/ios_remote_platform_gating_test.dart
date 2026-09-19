@@ -494,11 +494,30 @@ void main() {
         _screen(state.controller, SettingsScreen(controller: state.controller)),
       );
       await _pumpFrames(tester);
+      // Notifications stays (saved-server monitoring works in the open app)
+      // but says nothing about a background service iOS does not have.
       expect(find.text('Notifications & background'), findsNothing);
+      expect(find.textContaining('Background:'), findsNothing);
+      final notifications = find.byKey(
+        const ValueKey('settings-category-background'),
+      );
+      expect(notifications, findsOneWidget);
+      await tester.ensureVisible(notifications);
+      await _pumpFrames(tester);
+      await tester.tap(notifications);
+      await _pumpFrames(tester);
+      expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('settings-category-background')),
+        find.byKey(const ValueKey('background-live-switch')),
         findsNothing,
       );
+      expect(
+        find.byKey(const ValueKey('notifications-section-background')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('notify-quiet-hours')), findsNothing);
+      await tester.pageBack();
+      await _pumpFrames(tester);
       expect(
         find.byKey(const ValueKey('settings-category-privacy')),
         findsOneWidget,

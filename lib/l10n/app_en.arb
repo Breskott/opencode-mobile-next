@@ -2023,7 +2023,7 @@
   "pluginMappingClearFailed": "Personal links could not be cleared. Check that this server is still selected and try again.",
   "quotaMonitorTitle": "Quota monitoring",
   "quotaMonitorConsentTitle": "Monitor this provider source?",
-  "quotaMonitorConsent": "Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require the separate switch below and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.",
+  "quotaMonitorConsent": "Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.",
   "quotaMonitorRuntime": "Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.",
   "quotaMonitorEmpty": "No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.",
   "quotaMonitorEnable": "Enable quota monitoring",
@@ -17284,7 +17284,7 @@
   "@settingsHubSearchVoiceAliases": {
     "description": "Search aliases for the Voice row; preserve English terms."
   },
-  "settingsHubSearchNotificationsAliases": "notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers",
+  "settingsHubSearchNotificationsAliases": "notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds",
   "@settingsHubSearchNotificationsAliases": {
     "description": "Search aliases for the Notifications row; preserve English terms."
   },
@@ -17343,5 +17343,62 @@
   "pluginsSectionOnServer": "On the server",
   "@pluginsSectionOnServer": {
     "description": "Plugins screen section header: the connected server's plugin inventory."
+  },
+  "notifySectionWhat": "What notifies me",
+  "@notifySectionWhat": {
+    "description": "Notifications screen section header: which events send a notification."
+  },
+  "notifyFinishedRuns": "Finished runs",
+  "@notifyFinishedRuns": {
+    "description": "Notifications screen toggle: notify when a run finishes or fails."
+  },
+  "notifyFinishedRunsDetail": "When a run on the connected server finishes or fails.",
+  "@notifyFinishedRunsDetail": {
+    "description": "Subtitle of the Finished runs toggle."
+  },
+  "notifyRequests": "Approvals and questions",
+  "@notifyRequests": {
+    "description": "Notifications screen toggle: notify when the agent waits for an approval, a question or a form."
+  },
+  "notifyRequestsDetail": "When the agent is waiting for your answer, on any monitored server.",
+  "@notifyRequestsDetail": {
+    "description": "Subtitle of the Approvals and questions toggle."
+  },
+  "notifyQuotaAlerts": "Quota thresholds",
+  "@notifyQuotaAlerts": {
+    "description": "Notifications screen toggle: notify when a monitored provider quota passes its threshold."
+  },
+  "notifyQuotaAlertsDetail": "When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.",
+  "@notifyQuotaAlertsDetail": {
+    "description": "Subtitle of the Quota thresholds toggle."
+  },
+  "notifyQuietDetail": "No notifications during these local times, for every server and for quota alerts. Checks continue.",
+  "@notifyQuietDetail": {
+    "description": "Subtitle of the single Quiet hours toggle on the Notifications screen."
+  },
+  "notifySectionBackground": "Background",
+  "@notifySectionBackground": {
+    "description": "Notifications screen section header: the background connection, battery access and service state."
+  },
+  "notifySectionServers": "Saved servers",
+  "@notifySectionServers": {
+    "description": "Notifications screen section header: which saved servers are monitored and may notify."
+  },
+  "notifyWifiOnly": "Check in the background on Wi-Fi only",
+  "@notifyWifiOnly": {
+    "description": "The single Wi-Fi-only toggle; applies to saved-server monitoring and quota monitoring."
+  },
+  "notifyHubBackgroundSummary": "Background: {state}",
+  "@notifyHubBackgroundSummary": {
+    "description": "Subtitle of the Notifications row in the Settings hub; state is the background connection summary.",
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "monitorNotificationSettings": "Notification settings",
+  "@monitorNotificationSettings": {
+    "description": "Link from the saved-servers attention list and the Usage screen to the Notifications screen."
   }
 }

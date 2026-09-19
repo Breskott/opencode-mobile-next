@@ -324,7 +324,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   void _openBackgroundSettings(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => BackgroundSettingsScreen(controller: widget.controller),
+        builder: (_) =>
+            NotificationsSettingsScreen(controller: widget.controller),
       ),
     );
   }

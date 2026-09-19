@@ -192,7 +192,7 @@ void main() {
       _en.e7SettingsUi74: ['saved-permissions-entry'],
       _en.chatUiTranscriptDisplay: ['settings-transcript-display'],
       _en.settingsHubVoice: ['settings-voice'],
-      _en.e7SettingsUi3: ['settings-category-background'],
+      _en.settingsHubGroupNotifications: ['settings-category-background'],
       _en.e7AppearanceTitle: ['settings-category-appearance'],
       _en.libraryModelsAgentsTitle: ['settings-models'],
       _en.libraryProvidersTitle: ['settings-providers'],
@@ -223,6 +223,12 @@ void main() {
       'battery': ['settings-category-background'],
       'background': ['settings-category-background'],
       'check-in': ['settings-category-background'],
+      // What sits inside the one Notifications screen.
+      'quiet hours': ['settings-category-background'],
+      'wi-fi': ['settings-category-background'],
+      'finished': ['settings-category-background'],
+      'approvals': ['settings-category-background', 'saved-permissions-entry'],
+      'monitor': ['settings-category-background'],
       'theme': ['settings-category-appearance'],
       'dark': ['settings-category-appearance'],
       'language': ['settings-category-appearance'],
@@ -421,11 +427,11 @@ void main() {
       }
       // Plugins ("In this app") still needs only a saved server.
       expect(_row('settings-group-agent-setup'), findsOneWidget);
-      // No background service off Android: the Notifications group is gone
-      // rather than an empty header.
-      expect(_row('settings-category-background'), findsNothing);
-      expect(_row('settings-group-notifications'), findsNothing);
-      expect(find.text(_en.settingsHubGroupNotifications), findsNothing);
+      // Notifications stays off Android: saved-server monitoring and
+      // check-ins work in the open app, so its one row is never empty. The
+      // background summary is what goes.
+      expect(_row('settings-category-background'), findsOneWidget);
+      expect(find.textContaining('Background:'), findsNothing);
     });
   });
 

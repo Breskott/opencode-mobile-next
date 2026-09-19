@@ -3549,7 +3549,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quotaMonitorConsent =>
-      'Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require the separate switch below and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.';
+      'Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.';
 
   @override
   String get quotaMonitorRuntime =>
@@ -15984,7 +15984,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHubSearchNotificationsAliases =>
-      'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers';
+      'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds';
 
   @override
   String get settingsHubSearchAppearanceAliases =>
@@ -16037,4 +16037,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pluginsSectionOnServer => 'On the server';
+
+  @override
+  String get notifySectionWhat => 'What notifies me';
+
+  @override
+  String get notifyFinishedRuns => 'Finished runs';
+
+  @override
+  String get notifyFinishedRunsDetail =>
+      'When a run on the connected server finishes or fails.';
+
+  @override
+  String get notifyRequests => 'Approvals and questions';
+
+  @override
+  String get notifyRequestsDetail =>
+      'When the agent is waiting for your answer, on any monitored server.';
+
+  @override
+  String get notifyQuotaAlerts => 'Quota thresholds';
+
+  @override
+  String get notifyQuotaAlertsDetail =>
+      'When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.';
+
+  @override
+  String get notifyQuietDetail =>
+      'No notifications during these local times, for every server and for quota alerts. Checks continue.';
+
+  @override
+  String get notifySectionBackground => 'Background';
+
+  @override
+  String get notifySectionServers => 'Saved servers';
+
+  @override
+  String get notifyWifiOnly => 'Check in the background on Wi-Fi only';
+
+  @override
+  String notifyHubBackgroundSummary(String state) {
+    return 'Background: $state';
+  }
+
+  @override
+  String get monitorNotificationSettings => 'Notification settings';
 }

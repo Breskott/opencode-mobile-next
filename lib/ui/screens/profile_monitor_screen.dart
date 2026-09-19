@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../domain/profile_monitor.dart';
 import '../../l10n/app_localizations.dart';
-import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../../state/profile_monitor.dart' show ProfileMonitor;
@@ -11,6 +10,7 @@ import 'activity_screen.dart' show showQuestionSheet;
 import 'chat/form_flow.dart';
 import 'chat/permission_sheet.dart';
 import 'chat_screen.dart' show ChatScreen;
+import 'settings_screen.dart' show NotificationsSettingsScreen;
 
 /// Shared explicit route: revalidates profile, location and exact request before
 /// displaying the existing resolver. It never answers from monitor metadata.
@@ -111,10 +111,21 @@ class ProfileMonitorScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               Text(l10n.monitorScope),
-              const SizedBox(height: 12),
-              Text(l10n.monitorDisclosure),
-              const SizedBox(height: 16),
-              Text(l10n.monitorNoNotifications),
+              // The list lives here; how it notifies lives in one place.
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  key: const ValueKey('monitor-notification-settings'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          NotificationsSettingsScreen(controller: controller),
+                    ),
+                  ),
+                  icon: const Icon(AppIconography.notificationImportant),
+                  label: Text(l10n.monitorNotificationSettings),
+                ),
+              ),
               if (controller.store.profiles.isEmpty)
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -299,61 +310,20 @@ String monitorStatusText(AppLocalizations l10n, ProfileMonitorStatus status) =>
       ProfileMonitorStatus.paused => l10n.monitorPaused,
     };
 
-class _MonitorProfile extends StatefulWidget {
+/// One saved server in the live list: its status and what the last check
+/// found. Whether it is monitored, and how that notifies, is set in
+/// Notifications; this screen only shows the result.
+class _MonitorProfile extends StatelessWidget {
   const _MonitorProfile({required this.controller, required this.profile});
   final ConnectionController controller;
   final ServerProfile profile;
-  @override
-  State<_MonitorProfile> createState() => _MonitorProfileState();
-}
-
-class _MonitorProfileState extends State<_MonitorProfile> {
-  bool _saving = false;
-  Future<void> _save(ProfileNotifyRules rules) async {
-    if (_saving) return;
-    setState(() => _saving = true);
-    try {
-      await widget.controller.profileMonitor.setRules(widget.profile.id, rules);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).monitorSaveFailed,
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  Future<void> _quietTime(bool start, ProfileNotifyRules rules) async {
-    final selected = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(
-        hour: (start ? rules.quietStart : rules.quietEnd)! ~/ 60,
-        minute: (start ? rules.quietStart : rules.quietEnd)! % 60,
-      ),
-    );
-    if (selected != null && mounted) {
-      await _save(
-        start
-            ? rules.copyWith(quietStart: selected.hour * 60 + selected.minute)
-            : rules.copyWith(quietEnd: selected.hour * 60 + selected.minute),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final monitor = widget.controller.profileMonitor, id = widget.profile.id;
+    final monitor = controller.profileMonitor, id = profile.id;
     final rules = monitor.rulesFor(id), snapshot = monitor.snapshotFor(id);
-    final supported = monitor.supportsProfile(widget.profile);
+    final supported = monitor.supportsProfile(profile);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -363,23 +333,14 @@ class _MonitorProfileState extends State<_MonitorProfile> {
           contentPadding: EdgeInsets.zero,
           leading: ServerAttentionDot(current: snapshot.isCurrent),
           title: Text(
-            widget.profile.name,
+            profile.name,
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          subtitle: Text(monitorStatusText(l10n, snapshot.status)),
-        ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.monitorOptIn),
           subtitle: Text(
             supported
-                ? l10n.monitorOptInDetail
+                ? monitorStatusText(l10n, snapshot.status)
                 : l10n.e7ProjectMonitorUnsupported,
           ),
-          value: rules.enabled,
-          onChanged: !supported || _saving
-              ? null
-              : (value) => _save(rules.copyWith(enabled: value)),
         ),
         if (supported && rules.enabled) ...[
           Text(
@@ -394,117 +355,6 @@ class _MonitorProfileState extends State<_MonitorProfile> {
               _time(context, snapshot.nextCheckAt),
             ),
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.monitorNotifications),
-            value: rules.notifications,
-            onChanged: _saving
-                ? null
-                : (value) => _save(rules.copyWith(notifications: value)),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.monitorWifi),
-            subtitle: Text(
-              platformCapabilities.supportsBackgroundService
-                  ? l10n.monitorWifiDetail
-                  : l10n.monitorWifiUnsupported,
-            ),
-            value: rules.wifiOnly,
-            onChanged:
-                _saving || !platformCapabilities.supportsBackgroundService
-                ? null
-                : (value) => _save(rules.copyWith(wifiOnly: value)),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.monitorQuiet),
-            subtitle: Text(l10n.monitorQuietDetail),
-            value: rules.quietStart != null && rules.quietEnd != null,
-            onChanged: _saving
-                ? null
-                : (value) => _save(
-                    value
-                        ? rules.copyWith(quietStart: 22 * 60, quietEnd: 8 * 60)
-                        : rules.copyWith(clearQuiet: true),
-                  ),
-          ),
-          if (rules.quietStart != null && rules.quietEnd != null) ...[
-            ListTile(
-              title: Text(l10n.monitorQuietStart),
-              subtitle: Text(
-                TimeOfDay(
-                  hour: rules.quietStart! ~/ 60,
-                  minute: rules.quietStart! % 60,
-                ).format(context),
-              ),
-              onTap: _saving ? null : () => _quietTime(true, rules),
-            ),
-            ListTile(
-              title: Text(l10n.monitorQuietEnd),
-              subtitle: Text(
-                TimeOfDay(
-                  hour: rules.quietEnd! ~/ 60,
-                  minute: rules.quietEnd! % 60,
-                ).format(context),
-              ),
-              onTap: _saving ? null : () => _quietTime(false, rules),
-            ),
-          ],
-          SwitchListTile(
-            key: ValueKey('monitor-check-in-${widget.profile.id}'),
-            contentPadding: EdgeInsets.zero,
-            title: Text(l10n.monitorCheckIn),
-            subtitle: Text(
-              platformCapabilities.supportsBackgroundService
-                  ? l10n.monitorCheckInDetail
-                  : l10n.monitorCheckInDetailForeground,
-            ),
-            value: rules.checkInAfterMinutes != null,
-            onChanged: _saving
-                ? null
-                : (value) => _save(
-                    value
-                        ? rules.copyWith(
-                            checkInAfterMinutes:
-                                ProfileNotifyRules.defaultCheckInMinutes,
-                          )
-                        : rules.copyWith(clearCheckIn: true),
-                  ),
-          ),
-          if (rules.checkInAfterMinutes != null)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(l10n.monitorCheckInAfter),
-                DropdownButton<int>(
-                  isExpanded: true,
-                  itemHeight: null,
-                  key: ValueKey('monitor-check-in-after-${widget.profile.id}'),
-                  value:
-                      ProfileNotifyRules.checkInChoices.contains(
-                        rules.checkInAfterMinutes,
-                      )
-                      ? rules.checkInAfterMinutes
-                      : null,
-                  hint: Text(l10n.monitorMinutes(rules.checkInAfterMinutes!)),
-                  items: [
-                    for (final minutes in ProfileNotifyRules.checkInChoices)
-                      DropdownMenuItem(
-                        value: minutes,
-                        child: Text(l10n.monitorMinutes(minutes)),
-                      ),
-                  ],
-                  onChanged: _saving
-                      ? null
-                      : (minutes) {
-                          if (minutes != null) {
-                            _save(rules.copyWith(checkInAfterMinutes: minutes));
-                          }
-                        },
-                ),
-              ],
-            ),
           if (snapshot.isCurrent && snapshot.requests.isEmpty)
             Padding(
               padding: const EdgeInsets.all(12),
@@ -513,15 +363,15 @@ class _MonitorProfileState extends State<_MonitorProfile> {
           if (snapshot.isCurrent)
             for (final request in snapshot.requests)
               _MonitorRequestRow(
-                controller: widget.controller,
-                profile: widget.profile,
+                controller: controller,
+                profile: profile,
                 request: request,
               ),
           if (snapshot.isCurrent && rules.checkInAfterMinutes != null)
             for (final interval in snapshot.busyIntervals)
               _BusyIntervalRow(
-                controller: widget.controller,
-                profile: widget.profile,
+                controller: controller,
+                profile: profile,
                 interval: interval,
                 due: interval.isDue(rules),
                 checkedAt: snapshot.checkedAt,

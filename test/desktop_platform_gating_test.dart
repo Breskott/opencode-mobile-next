@@ -359,11 +359,31 @@ void main() {
     ) async {
       onDesktop();
       await pumpSettings(tester);
+      // The row is now the one Notifications screen, which still holds what
+      // works in an open desktop app (saved-server monitoring, check-ins). It
+      // carries no background summary here, and the screen behind it has no
+      // foreground-service controls.
+      final row = find.byKey(const ValueKey('settings-category-background'));
+      expect(row, findsOneWidget);
+      expect(find.textContaining('Background:'), findsNothing);
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('settings-category-background')),
+        find.byKey(const ValueKey('notifications-section-background')),
         findsNothing,
       );
-      expect(find.text('Notifications & background'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('background-live-switch')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('background-status-row')), findsNothing);
+      expect(find.byKey(const ValueKey('notify-wifi-only')), findsNothing);
+      expect(find.byKey(const ValueKey('notify-quiet-hours')), findsNothing);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
       // The rest of the hub is untouched.
       expect(
         find.byKey(const ValueKey('settings-category-privacy')),

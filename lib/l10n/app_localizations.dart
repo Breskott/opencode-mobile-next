@@ -5932,7 +5932,7 @@ abstract class AppLocalizations {
   /// No description provided for @quotaMonitorConsent.
   ///
   /// In en, this message translates to:
-  /// **'Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require the separate switch below and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.'**
+  /// **'Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.'**
   String get quotaMonitorConsent;
 
   /// No description provided for @quotaMonitorRuntime.
@@ -25819,7 +25819,7 @@ abstract class AppLocalizations {
   /// Search aliases for the Notifications row; preserve English terms.
   ///
   /// In en, this message translates to:
-  /// **'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers'**
+  /// **'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds'**
   String get settingsHubSearchNotificationsAliases;
 
   /// Search aliases for the Appearance row; preserve English terms.
@@ -25905,6 +25905,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'On the server'**
   String get pluginsSectionOnServer;
+
+  /// Notifications screen section header: which events send a notification.
+  ///
+  /// In en, this message translates to:
+  /// **'What notifies me'**
+  String get notifySectionWhat;
+
+  /// Notifications screen toggle: notify when a run finishes or fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished runs'**
+  String get notifyFinishedRuns;
+
+  /// Subtitle of the Finished runs toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'When a run on the connected server finishes or fails.'**
+  String get notifyFinishedRunsDetail;
+
+  /// Notifications screen toggle: notify when the agent waits for an approval, a question or a form.
+  ///
+  /// In en, this message translates to:
+  /// **'Approvals and questions'**
+  String get notifyRequests;
+
+  /// Subtitle of the Approvals and questions toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'When the agent is waiting for your answer, on any monitored server.'**
+  String get notifyRequestsDetail;
+
+  /// Notifications screen toggle: notify when a monitored provider quota passes its threshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Quota thresholds'**
+  String get notifyQuotaAlerts;
+
+  /// Subtitle of the Quota thresholds toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.'**
+  String get notifyQuotaAlertsDetail;
+
+  /// Subtitle of the single Quiet hours toggle on the Notifications screen.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications during these local times, for every server and for quota alerts. Checks continue.'**
+  String get notifyQuietDetail;
+
+  /// Notifications screen section header: the background connection, battery access and service state.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get notifySectionBackground;
+
+  /// Notifications screen section header: which saved servers are monitored and may notify.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved servers'**
+  String get notifySectionServers;
+
+  /// The single Wi-Fi-only toggle; applies to saved-server monitoring and quota monitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Check in the background on Wi-Fi only'**
+  String get notifyWifiOnly;
+
+  /// Subtitle of the Notifications row in the Settings hub; state is the background connection summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Background: {state}'**
+  String notifyHubBackgroundSummary(String state);
+
+  /// Link from the saved-servers attention list and the Usage screen to the Notifications screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification settings'**
+  String get monitorNotificationSettings;
 }
 
 class _AppLocalizationsDelegate

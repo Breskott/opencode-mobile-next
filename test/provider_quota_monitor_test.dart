@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/background/live_background.dart';
 import 'package:opencode_mobile/demo/demo_store.dart';
 import 'package:opencode_mobile/domain/provider_quota.dart';
+import 'package:opencode_mobile/state/notification_preferences.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/provider_quota_monitor.dart';
 
@@ -180,6 +181,46 @@ void main() {
       wifiThrows = true;
       await monitor.refresh();
       expect(reads, isEmpty);
+    },
+  );
+
+  test(
+    'once migrated, the shared rules decide Wi-Fi, quiet hours and alerts',
+    () async {
+      // The record says: alerts on, any network, no quiet hours.
+      await monitor.enroll('profile', response, notifications: true);
+      final shared = NotificationPreferences(store.memory);
+      expect(shared.shared, isNull, reason: 'legacy records answer first');
+
+      // Shared Wi-Fi only pauses the read although the record allows it.
+      await shared.save(
+        const SharedNotifyRules(wifiOnly: true, quotaAlerts: true),
+      );
+      wifi = false;
+      monitor.setRuntime(foreground: false, backgroundAllowed: true);
+      await monitor.refresh();
+      expect(reads, isEmpty);
+      expect(
+        monitor.observationFor('profile', QuotaProvider.codex).status,
+        QuotaMonitorStatus.wifiRequired,
+      );
+
+      // Shared quiet hours (all day) silence the alert the record allows.
+      await shared.save(
+        const SharedNotifyRules(quietStart: 0, quietEnd: 0, quotaAlerts: true),
+      );
+      await monitor.refresh();
+      expect(reads, isNotEmpty);
+      expect(alerts, isEmpty);
+
+      // Shared alerts off wins over the record's "on".
+      await shared.save(const SharedNotifyRules());
+      await monitor.refresh();
+      expect(alerts, isEmpty);
+
+      await shared.save(const SharedNotifyRules(quotaAlerts: true));
+      await monitor.refresh();
+      expect(alerts, hasLength(1));
     },
   );
 

@@ -83,7 +83,7 @@ void main() {
       find.byKey(const ValueKey('activity-background-settings')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Notifications & background'), findsOneWidget);
+    expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
     expect(find.text('Stay connected in the background'), findsOneWidget);
     expect(find.byKey(const ValueKey('background-status-row')), findsOneWidget);
     expect(find.text('Off'), findsOneWidget);
@@ -119,7 +119,7 @@ void main() {
       MaterialApp(home: SettingsScreen(controller: controller)),
     );
     await tester.pumpAndSettle();
-    expect(find.text('On · running now'), findsOneWidget);
+    expect(find.text('Background: On · running now'), findsOneWidget);
 
     final row = find.byKey(const ValueKey('settings-category-background'));
     await tester.ensureVisible(row);
@@ -145,6 +145,10 @@ void main() {
     });
     await tester.pumpAndSettle();
     expect(find.text('Stopped by Android — tap to restart'), findsOneWidget);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('background-status-row')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('background-status-row')));
     await tester.pumpAndSettle();
     expect(find.text('Running now'), findsOneWidget);

@@ -99,20 +99,17 @@ class _SourceState extends State<_Source> {
       target.provider,
     );
     final snapshot = observation.snapshot;
-    final quiet = rules.quietStart != null;
-    Future<bool> policy({
-      bool? notifications,
-      bool? wifiOnly,
-      bool? quietHours,
-      double? threshold,
-    }) => monitor.setPolicy(
+    // Only the threshold is this source's own. Alerts, Wi-Fi only and quiet
+    // hours are shared and set in Notifications; the record's copies of them
+    // are carried over untouched for a build that has not migrated.
+    Future<bool> policy({required double threshold}) => monitor.setPolicy(
       target.profileID,
       target.provider,
-      notifications: notifications ?? rules.notifications,
-      threshold: threshold ?? rules.threshold,
-      wifiOnly: wifiOnly ?? rules.wifiOnly,
-      quietStart: (quietHours ?? quiet) ? 22 * 60 : null,
-      quietEnd: (quietHours ?? quiet) ? 8 * 60 : null,
+      notifications: rules.notifications,
+      threshold: threshold,
+      wifiOnly: rules.wifiOnly,
+      quietStart: rules.quietStart,
+      quietEnd: rules.quietEnd,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -175,15 +172,10 @@ class _SourceState extends State<_Source> {
             ),
           ],
         ],
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.quotaMonitorNotifications),
-          value: rules.notifications,
-          onChanged: saving
-              ? null
-              : (value) => _change(() => policy(notifications: value)),
-        ),
         DropdownButton<double>(
+          key: ValueKey(
+            'quota-threshold-${target.profileID}-${target.provider.name}',
+          ),
           value: rules.threshold,
           isExpanded: true,
           items: [
@@ -195,23 +187,9 @@ class _SourceState extends State<_Source> {
           ],
           onChanged: saving
               ? null
-              : (value) => _change(() => policy(threshold: value)),
-        ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.quotaMonitorWifi),
-          value: rules.wifiOnly,
-          onChanged: saving
-              ? null
-              : (value) => _change(() => policy(wifiOnly: value)),
-        ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.quotaMonitorQuiet),
-          value: quiet,
-          onChanged: saving
-              ? null
-              : (value) => _change(() => policy(quietHours: value)),
+              : (value) {
+                  if (value != null) _change(() => policy(threshold: value));
+                },
         ),
         Wrap(
           spacing: 12,

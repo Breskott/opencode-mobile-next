@@ -3597,7 +3597,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get quotaMonitorConsent =>
-      'اسمح للتطبيق بمواصلة قراءة جامع البيانات الموثوق لحساب مزوّد الخدمة هذا تحديدًا بعد مغادرة الصفحة، وحتى بعد إعادة تشغيل التطبيق. تفحص الدورة ثلاثة مصادر محفوظة كحد أقصى، كل خمس دقائق في المقدمة أو خمس عشرة دقيقة أثناء عمل خدمة الخلفية الحالية. عند وجود أكثر من ثلاثة مصادر، قد ينتظر كل مصدر عدة دورات. تتطلب تنبيهات الجهاز تفعيل المفتاح المنفصل أدناه وقراءة حديثة لفترة بلغت نسبة الاستخدام المحددة أو تجاوزتها. يسجل التنبيه تلك القراءة السابقة؛ افتحه للتحقق من الاستخدام الحالي. حدود الصفحة الشخصية مستقلة. لا تبدأ أي خدمة هنا.';
+      'اسمح للتطبيق بمواصلة قراءة جامع البيانات الموثوق لحساب مزوّد الخدمة هذا تحديدًا بعد مغادرة الصفحة، وحتى بعد إعادة تشغيل التطبيق. تفحص الدورة ثلاثة مصادر محفوظة كحد أقصى، كل خمس دقائق في المقدمة أو خمس عشرة دقيقة أثناء عمل خدمة الخلفية الحالية. عند وجود أكثر من ثلاثة مصادر، قد ينتظر كل مصدر عدة دورات. تتطلب تنبيهات الجهاز تفعيل «حدود الحصص» في إعدادات الإشعارات وقراءة حديثة لفترة بلغت نسبة الاستخدام المحددة أو تجاوزتها. يسجل التنبيه تلك القراءة السابقة؛ افتحه للتحقق من الاستخدام الحالي. حدود الصفحة الشخصية مستقلة. لا تبدأ أي خدمة هنا.';
 
   @override
   String get quotaMonitorRuntime =>
@@ -16257,7 +16257,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsHubSearchNotificationsAliases =>
-      'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers إشعارات تنبيهات ساعات الهدوء بطارية خلفية متابعة واي فاي مراقبة خوادم محفوظة';
+      'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds إشعارات تنبيهات ساعات الهدوء بطارية خلفية متابعة واي فاي مراقبة خوادم محفوظة العمليات المنتهية موافقات أسئلة حدود الحصص';
 
   @override
   String get settingsHubSearchAppearanceAliases =>
@@ -16312,4 +16312,49 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get pluginsSectionOnServer => 'على الخادم';
+
+  @override
+  String get notifySectionWhat => 'ما الذي يُشعرني';
+
+  @override
+  String get notifyFinishedRuns => 'العمليات المنتهية';
+
+  @override
+  String get notifyFinishedRunsDetail =>
+      'عند انتهاء عملية على الخادم المتصل أو فشلها.';
+
+  @override
+  String get notifyRequests => 'الموافقات والأسئلة';
+
+  @override
+  String get notifyRequestsDetail =>
+      'عندما ينتظر الوكيل إجابتك، على أي خادم مُراقَب.';
+
+  @override
+  String get notifyQuotaAlerts => 'حدود الحصص';
+
+  @override
+  String get notifyQuotaAlertsDetail =>
+      'عندما يتجاوز مزوّد مُراقَب الحد الذي ضبطته في الاستخدام. يسجّل التنبيه قراءة سابقة، لا المتبقي الآن.';
+
+  @override
+  String get notifyQuietDetail =>
+      'لا إشعارات خلال هذه الأوقات المحلية، لكل الخوادم ولتنبيهات الحصص. تستمر عمليات التحقق.';
+
+  @override
+  String get notifySectionBackground => 'الخلفية';
+
+  @override
+  String get notifySectionServers => 'الخوادم المحفوظة';
+
+  @override
+  String get notifyWifiOnly => 'التحقق في الخلفية عبر Wi-Fi فقط';
+
+  @override
+  String notifyHubBackgroundSummary(String state) {
+    return 'الخلفية: $state';
+  }
+
+  @override
+  String get monitorNotificationSettings => 'إعدادات الإشعارات';
 }

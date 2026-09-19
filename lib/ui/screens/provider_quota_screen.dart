@@ -96,7 +96,6 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
       return;
     }
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    var notifications = false, wifiOnly = false, quiet = false;
     var threshold = 100.0;
     final accepted = await showDialog<bool>(
       context: context,
@@ -128,24 +127,6 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
                   ],
                   onChanged: (value) => update(() => threshold = value ?? 100),
                 ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.quotaMonitorNotifications),
-                  value: notifications,
-                  onChanged: (value) => update(() => notifications = value),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.quotaMonitorWifi),
-                  value: wifiOnly,
-                  onChanged: (value) => update(() => wifiOnly = value),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.quotaMonitorQuiet),
-                  value: quiet,
-                  onChanged: (value) => update(() => quiet = value),
-                ),
               ],
             ),
           ),
@@ -165,6 +146,7 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
     if (!mounted || accepted != true) {
       return;
     }
+    final shared = widget.controller.sharedNotifyRules;
     final valid =
         !_overview.detached &&
         !_overview.snapshotIsStale &&
@@ -174,11 +156,14 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
         await widget.controller.quotaMonitor.enroll(
           profileID,
           snapshot,
-          notifications: notifications,
+          // Alerts, Wi-Fi only and quiet hours are shared (Notifications).
+          // The record still carries them so a build that has not migrated
+          // reads the same answer.
+          notifications: shared.quotaAlerts,
           threshold: threshold,
-          wifiOnly: wifiOnly,
-          quietStart: quiet ? 22 * 60 : null,
-          quietEnd: quiet ? 8 * 60 : null,
+          wifiOnly: shared.wifiOnly,
+          quietStart: shared.quietEnabled ? shared.quietStart : null,
+          quietEnd: shared.quietEnabled ? shared.quietEnd : null,
         );
     if (!mounted) {
       return;

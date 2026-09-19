@@ -5,7 +5,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/ui/screens/attention_overview_screen.dart';
-import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
 
 import '../tool/capture/fixtures.dart'
@@ -87,12 +87,18 @@ Widget _app(Widget home, TextDirection direction) => MaterialApp(
 );
 
 Future<void> _reveal(WidgetTester tester, Finder target) async {
+  // A screen that builds every row can scroll straight to one; a lazy list
+  // has to be dragged until the row exists.
+  if (target.evaluate().isNotEmpty) {
+    await tester.ensureVisible(target);
+    await tester.pump();
+  }
   for (
     var attempt = 0;
     attempt < 60 && target.hitTestable().evaluate().isEmpty;
     attempt++
   ) {
-    await tester.drag(find.byType(ListView).first, const Offset(0, -180));
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -180));
     await tester.pump();
   }
   expect(target.hitTestable(), findsOneWidget);
@@ -206,24 +212,24 @@ void main() {
           ),
         );
         await tester.pumpWidget(
-          _app(ProfileMonitorScreen(controller: controller), direction),
+          _app(NotificationsSettingsScreen(controller: controller), direction),
         );
         await tester.pump();
-        Finder toggle(String label) => find.descendant(
-          of: find.widgetWithText(SwitchListTile, label),
+        Finder toggle(String key) => find.descendant(
+          of: find.byKey(ValueKey(key)),
           matching: find.byType(Switch),
         );
-        final enabled = toggle('Monitor this server');
+        final enabled = toggle('monitor-enabled-profile-1');
         await _reveal(tester, enabled);
         await tester.tap(enabled.hitTestable());
         await tester.pumpAndSettle();
-        final quiet = toggle('Quiet hours');
+        final quiet = toggle('notify-quiet-hours');
         await _reveal(tester, quiet);
         await tester.tap(quiet.hitTestable());
         await tester.pumpAndSettle();
         // Localized labels are intentionally queried through the active catalog.
         final l10n = AppLocalizations.of(
-          tester.element(find.byType(ProfileMonitorScreen)),
+          tester.element(find.byType(NotificationsSettingsScreen)),
         );
         final start = find.widgetWithText(ListTile, l10n.monitorQuietStart);
         await _reveal(tester, start);
@@ -239,16 +245,11 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final checkIn = find.descendant(
-          of: find.byKey(const ValueKey('monitor-check-in-profile-1')),
-          matching: find.byType(Switch),
-        );
+        final checkIn = toggle('notify-check-ins');
         await _reveal(tester, checkIn);
         await tester.tap(checkIn.hitTestable());
         await tester.pumpAndSettle();
-        final duration = find.byKey(
-          const ValueKey('monitor-check-in-after-profile-1'),
-        );
+        final duration = find.byKey(const ValueKey('notify-check-in-after'));
         await _reveal(tester, duration);
         await tester.tap(duration.hitTestable());
         await tester.pumpAndSettle();

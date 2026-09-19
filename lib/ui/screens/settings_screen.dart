@@ -13,6 +13,7 @@ import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/external_agents.dart';
 import '../../state/offline_queue.dart';
+import '../../state/profile_monitor.dart';
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
 import '../../voice/model_manager.dart';
@@ -49,7 +50,7 @@ import 'usage_screen.dart';
 
 part 'settings/server_settings_screen.dart';
 part 'settings/default_shell_row.dart';
-part 'settings/background_settings_screen.dart';
+part 'settings/notifications_settings_screen.dart';
 part 'settings/personal_settings_screens.dart';
 
 AppLocalizations _settingsCopy(BuildContext context) =>
@@ -443,18 +444,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         SettingsGroup.notifications,
         copy.settingsHubGroupNotifications,
         [
-          // The live background service and its notifications are Android
-          // platform features; the row hides elsewhere.
-          if (platformCapabilities.supportsBackgroundService)
-            _HubRow(
-              rowKey: 'settings-category-background',
-              icon: AppIconography.notificationImportant,
-              title: copy.e7SettingsUi3,
-              subtitle: _backgroundSummary(controller),
-              keywords: copy.settingsHubSearchNotificationsAliases,
-              onTap: () =>
-                  _open(BackgroundSettingsScreen(controller: controller)),
-            ),
+          // One screen for everything that notifies. It stays off Android
+          // too: saved-server monitoring and check-ins work in the open app
+          // there, and the screen drops the rows that device cannot do. The
+          // key predates the merge and is kept for tests and deep links.
+          _HubRow(
+            rowKey: 'settings-category-background',
+            icon: AppIconography.notificationImportant,
+            title: copy.settingsHubGroupNotifications,
+            subtitle: platformCapabilities.supportsBackgroundService
+                ? copy.notifyHubBackgroundSummary(
+                    _backgroundSummary(controller),
+                  )
+                : null,
+            keywords: copy.settingsHubSearchNotificationsAliases,
+            onTap: () =>
+                _open(NotificationsSettingsScreen(controller: controller)),
+          ),
         ],
       ),
       _HubGroup(SettingsGroup.appearance, copy.e7AppearanceTitle, [
