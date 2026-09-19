@@ -543,9 +543,9 @@
           "key": "workspace-background-toggle",
           "line": 1849,
           "action": "navigate",
-          "target": "background-settings",
-          "targetWidget": "BackgroundSettingsScreen",
-          "effect": "onOpenBackgroundSettings -> _openBackgroundSettings() pushes BackgroundSettingsScreen(controller); the label reflects controller.keepLiveInBackground.",
+          "target": "notifications-settings",
+          "targetWidget": "NotificationsSettingsScreen",
+          "effect": "onOpenBackgroundSettings -> _openBackgroundSettings() pushes NotificationsSettingsScreen(controller); the label reflects controller.keepLiveInBackground.",
           "gates": [
             "platformCapabilities.supportsBackgroundService"
           ],

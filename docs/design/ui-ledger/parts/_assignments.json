@@ -106,7 +106,7 @@
   "lib/ui/screens/agent_account_screen.dart",
   "lib/ui/screens/external_agents_screen.dart",
   "lib/ui/screens/profile_monitor_screen.dart",
-  "lib/ui/screens/quota_monitor_screen.dart",
+  "lib/ui/widgets/quota_monitor_section.dart",
   "lib/ui/screens/provider_quota_screen.dart",
   "lib/ui/screens/usage_screen.dart",
   "lib/ui/widgets/connect_methods.dart",
@@ -151,7 +151,7 @@
  "j1-settings-more": [
   "lib/ui/screens/library_screen.dart",
   "lib/ui/screens/settings_screen.dart",
-  "lib/ui/screens/settings/background_settings_screen.dart",
+  "lib/ui/screens/settings/notifications_settings_screen.dart",
   "lib/ui/screens/settings/default_shell_row.dart",
   "lib/ui/screens/settings/personal_settings_screens.dart",
   "lib/ui/screens/settings/plugins_screen.dart",
@@ -165,7 +165,8 @@
   "lib/ui/widgets/appearance_picker.dart",
   "lib/ui/widgets/language_picker.dart",
   "lib/ui/widgets/pickers.dart",
-  "lib/feedback/bug_report.dart"
+  "lib/feedback/bug_report.dart",
+  "lib/ui/screens/usage_hub_screen.dart"
  ],
  "j2-library": [
   "lib/ui/screens/library/catalog_screen.dart",

@@ -7,6 +7,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profile_monitor.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart' show StreamStatus;
 
 import '../../test/support/profile_monitor_fixture.dart';
@@ -89,15 +90,17 @@ void main() {
               light: !dark,
               home: scenario == 'inbox'
                   ? const HomeScreen(initialTab: 2)
+                  // The check-in controls live in Notifications; the list
+                  // keeps the observed intervals.
+                  : scenario == 'controls' || scenario == 'narrow'
+                  ? NotificationsSettingsScreen(controller: controller)
                   : ProfileMonitorScreen(controller: controller),
             ),
           );
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 200));
           if (scenario == 'controls' || scenario == 'narrow') {
-            final target = find.byKey(
-              const ValueKey('monitor-check-in-after-profile-1'),
-            );
+            final target = find.byKey(const ValueKey('notify-check-in-after'));
             await tester.scrollUntilVisible(
               target,
               250,

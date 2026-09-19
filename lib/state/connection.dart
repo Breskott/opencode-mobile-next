@@ -19,6 +19,7 @@ import '../api2/models.dart' show Api2Delivery, Api2FormInfo, Api2InboxItem;
 import '../api/product_repository.dart';
 import '../api/server_probe.dart';
 import '../termux/managed_server_recovery.dart';
+import 'notification_preferences.dart';
 import 'profile_monitor.dart';
 import 'provider_quota_monitor.dart';
 import '../quota/provider_quota_client.dart';
@@ -279,6 +280,73 @@ class ConnectionController extends ChangeNotifier {
       )..addListener(_quotaMonitorChanged);
   void _quotaMonitorChanged() {
     if (!_disposed) super.notifyListeners();
+  }
+
+  /// The one home of quiet hours, Wi-Fi only, check-ins and the "what
+  /// notifies me" choices. Both monitors and this controller's own alerts
+  /// read it; only the Notifications screen writes it.
+  late final notificationPreferences = NotificationPreferences(store.prefs);
+
+  /// The shared rules as they apply now: the migrated value, or what the
+  /// legacy per-server records say while the migration has not run.
+  SharedNotifyRules get sharedNotifyRules =>
+      notificationPreferences.shared ??
+      notificationPreferences.readLegacy(_notifyMigrationOrder);
+
+  /// The connected server first, so its quiet hours win a disagreement.
+  List<String> get _notifyMigrationOrder {
+    final first = profile?.id ?? store.activeId;
+    return [
+      ?first,
+      for (final saved in store.profiles)
+        if (saved.id != first) saved.id,
+    ];
+  }
+
+  /// Folds the legacy per-server definitions into the shared one. Safe to
+  /// call on every start: after the first run it changes nothing.
+  Future<void> migrateNotificationPreferences() =>
+      notificationPreferences.migrate(_notifyMigrationOrder);
+
+  Future<void> updateSharedNotifyRules(
+    SharedNotifyRules Function(SharedNotifyRules current) change,
+  ) async {
+    final before = await notificationPreferences.migrate(_notifyMigrationOrder);
+    final after = change(before);
+    if (after == before) return;
+    await notificationPreferences.save(after);
+    if (_disposed) return;
+    await profileMonitor.sharedRulesChanged(
+      checkInChanged: after.checkInAfterMinutes != before.checkInAfterMinutes,
+    );
+    await quotaMonitor.sharedRulesChanged();
+    if (!_disposed) notifyListeners();
+  }
+
+  Future<void> setNotifyFinishedRuns(bool value) async {
+    await notificationPreferences.setFinishedRuns(value);
+    if (_disposed) return;
+    if (!value) {
+      for (final sessionID in _alertedStatusSessions.toList()) {
+        unawaited(
+          backgroundLive.dismissCodingAlert(_statusAlertKey(sessionID)),
+        );
+      }
+      _alertedStatusSessions.clear();
+    }
+    notifyListeners();
+  }
+
+  Future<void> setNotifyRequests(bool value) async {
+    await notificationPreferences.setRequests(value);
+    if (_disposed) return;
+    if (!value) {
+      for (final sessionID in _alertedInputKinds.keys.toList()) {
+        unawaited(backgroundLive.dismissCodingAlert(_inputAlertKey(sessionID)));
+      }
+      _alertedInputKinds.clear();
+    }
+    notifyListeners();
   }
 
   final MonitorGatewayFactory? _monitorGatewayFactory;
@@ -1214,7 +1282,9 @@ class ConnectionController extends ChangeNotifier {
         profileMonitor.rulesFor(profile?.id ?? '').enabled) {
       return;
     }
-    if (!_canShowCodingAlert || sessionsById[sessionID]?.parentID != null) {
+    if (!_canShowCodingAlert ||
+        !notificationPreferences.finishedRuns ||
+        sessionsById[sessionID]?.parentID != null) {
       return;
     }
     if (!_alertedStatusSessions.add(sessionID)) return;
@@ -1235,7 +1305,11 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _showInputAlert(String sessionID, CodingAlertKind kind) {
-    if (sessionID.isEmpty || !_canShowCodingAlert) return;
+    if (sessionID.isEmpty ||
+        !_canShowCodingAlert ||
+        !notificationPreferences.requests) {
+      return;
+    }
     // The alert represents one exact request: the front permission, or the
     // quick-reply-eligible question (falling back to the front question).
     final quickReplyQuestion = kind == CodingAlertKind.question

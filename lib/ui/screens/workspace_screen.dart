@@ -861,7 +861,8 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   void _openBackgroundSettings() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => BackgroundSettingsScreen(controller: widget.controller),
+        builder: (_) =>
+            NotificationsSettingsScreen(controller: widget.controller),
       ),
     );
   }

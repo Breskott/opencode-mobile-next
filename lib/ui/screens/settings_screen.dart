@@ -13,6 +13,7 @@ import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/external_agents.dart';
 import '../../state/offline_queue.dart';
+import '../../state/profile_monitor.dart';
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
 import '../../voice/model_manager.dart';
@@ -38,18 +39,17 @@ import 'external_agents_screen.dart';
 import 'guide_screen.dart';
 import 'host_management_screen.dart';
 import 'library_screen.dart';
-import 'provider_quota_screen.dart';
 import 'saved_permissions_screen.dart';
 import 'session_import_screen.dart';
 import 'settings/plugins_screen.dart';
 import 'tailscale_setup_screen.dart';
 import 'terminal_screen.dart';
 import 'termux_setup_screen.dart';
-import 'usage_screen.dart';
+import 'usage_hub_screen.dart';
 
 part 'settings/server_settings_screen.dart';
 part 'settings/default_shell_row.dart';
-part 'settings/background_settings_screen.dart';
+part 'settings/notifications_settings_screen.dart';
 part 'settings/personal_settings_screens.dart';
 
 AppLocalizations _settingsCopy(BuildContext context) =>
@@ -443,18 +443,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         SettingsGroup.notifications,
         copy.settingsHubGroupNotifications,
         [
-          // The live background service and its notifications are Android
-          // platform features; the row hides elsewhere.
-          if (platformCapabilities.supportsBackgroundService)
-            _HubRow(
-              rowKey: 'settings-category-background',
-              icon: AppIconography.notificationImportant,
-              title: copy.e7SettingsUi3,
-              subtitle: _backgroundSummary(controller),
-              keywords: copy.settingsHubSearchNotificationsAliases,
-              onTap: () =>
-                  _open(BackgroundSettingsScreen(controller: controller)),
-            ),
+          // One screen for everything that notifies. It stays off Android
+          // too: saved-server monitoring and check-ins work in the open app
+          // there, and the screen drops the rows that device cannot do. The
+          // key predates the merge and is kept for tests and deep links.
+          _HubRow(
+            rowKey: 'settings-category-background',
+            icon: AppIconography.notificationImportant,
+            title: copy.settingsHubGroupNotifications,
+            subtitle: platformCapabilities.supportsBackgroundService
+                ? copy.notifyHubBackgroundSummary(
+                    _backgroundSummary(controller),
+                  )
+                : null,
+            keywords: copy.settingsHubSearchNotificationsAliases,
+            onTap: () =>
+                _open(NotificationsSettingsScreen(controller: controller)),
+          ),
         ],
       ),
       _HubGroup(SettingsGroup.appearance, copy.e7AppearanceTitle, [
@@ -543,22 +548,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
       ]),
       _HubGroup(SettingsGroup.usage, copy.settingsHubGroupUsage, [
-        if (controller.supportsUsageStatistics)
+        // One Usage screen: "Spent" needs usage statistics, "Remaining"
+        // needs a saved server. Either is enough for the row; the subtitle
+        // names the sections this connection really has.
+        if (UsageHubScreen.sectionsFor(controller) case final sections
+            when sections.isNotEmpty)
           _HubRow(
             rowKey: 'settings-category-usage',
             icon: AppIconography.usage,
-            title: l10n.usageTitle,
+            title: copy.settingsHubGroupUsage,
+            subtitle: [
+              for (final section in sections)
+                switch (section) {
+                  UsageSection.spent => copy.usageSectionSpent,
+                  UsageSection.remaining => copy.usageSectionRemaining,
+                },
+            ].join(' · '),
             keywords: copy.settingsHubSearchUsageAliases,
-            onTap: () => _open(UsageScreen(controller: controller)),
-          ),
-        if (profile != null)
-          _HubRow(
-            rowKey: 'settings-category-quota',
-            icon: AppIconography.speed,
-            title: l10n.quotaTitle,
-            subtitle: l10n.quotaSettingsSummary,
-            keywords: copy.settingsHubSearchUsageAliases,
-            onTap: () => _open(ProviderQuotaScreen(controller: controller)),
+            onTap: () => _open(UsageHubScreen(controller: controller)),
           ),
       ]),
       _HubGroup(SettingsGroup.privacy, copy.settingsHubGroupPrivacy, [

@@ -35,8 +35,10 @@ class _Repository
   @override
   bool get sessionImportSupported => true;
 
+  _Repository({this.usageStatisticsSupported = true});
+
   @override
-  bool get usageStatisticsSupported => true;
+  final bool usageStatisticsSupported;
 
   @override
   void setLocation({String? directory, String? workspace}) {}
@@ -54,24 +56,28 @@ class _Repository
 
 Future<ConnectionController> _controller({
   ServerCapabilities capabilities = ServerCapabilities.allV1,
+  bool savedServer = true,
+  bool usageStatistics = true,
 }) async {
   SharedPreferences.setMockInitialValues({
-    'oc.profiles': jsonEncode([
-      {
-        'id': 'profile-1',
-        'name': 'Workstation',
-        'baseUrl': 'http://localhost:4096',
-        'username': '',
-      },
-    ]),
-    'oc.activeProfile': 'profile-1',
+    if (savedServer) ...{
+      'oc.profiles': jsonEncode([
+        {
+          'id': 'profile-1',
+          'name': 'Workstation',
+          'baseUrl': 'http://localhost:4096',
+          'username': '',
+        },
+      ]),
+      'oc.activeProfile': 'profile-1',
+    },
   });
   final preferences = await SharedPreferences.getInstance();
   final store = ProfileStore(prefs: preferences);
   await store.load();
   return ConnectionController(store)
     ..api = _Api(capabilities)
-    ..repository = _Repository()
+    ..repository = _Repository(usageStatisticsSupported: usageStatistics)
     ..status = StreamStatus.connected;
 }
 
@@ -192,7 +198,7 @@ void main() {
       _en.e7SettingsUi74: ['saved-permissions-entry'],
       _en.chatUiTranscriptDisplay: ['settings-transcript-display'],
       _en.settingsHubVoice: ['settings-voice'],
-      _en.e7SettingsUi3: ['settings-category-background'],
+      _en.settingsHubGroupNotifications: ['settings-category-background'],
       _en.e7AppearanceTitle: ['settings-category-appearance'],
       _en.libraryModelsAgentsTitle: ['settings-models'],
       _en.libraryProvidersTitle: ['settings-providers'],
@@ -201,8 +207,9 @@ void main() {
       _en.teamUiPluginsTitle: ['settings-category-plugins'],
       _en.importTitle: ['library-import-session'],
       _en.libraryTerminalTitle: ['library-terminal'],
-      _en.usageTitle: ['settings-category-usage'],
-      _en.quotaTitle: ['settings-category-quota'],
+      _en.settingsHubGroupUsage: ['settings-category-usage'],
+      _en.usageSectionSpent: ['settings-category-usage'],
+      _en.usageSectionRemaining: ['settings-category-usage'],
       _en.settingsHubPrivacyRow: ['settings-category-privacy'],
       _en.onboardingSetupGuide: ['settings-setup-guide'],
       _en.e7LibraryReportABug: ['library-report-bug'],
@@ -223,6 +230,12 @@ void main() {
       'battery': ['settings-category-background'],
       'background': ['settings-category-background'],
       'check-in': ['settings-category-background'],
+      // What sits inside the one Notifications screen.
+      'quiet hours': ['settings-category-background'],
+      'wi-fi': ['settings-category-background'],
+      'finished': ['settings-category-background'],
+      'approvals': ['settings-category-background', 'saved-permissions-entry'],
+      'monitor': ['settings-category-background'],
       'theme': ['settings-category-appearance'],
       'dark': ['settings-category-appearance'],
       'language': ['settings-category-appearance'],
@@ -235,9 +248,11 @@ void main() {
       'skills': ['settings-commands-tools'],
       'cost': ['settings-category-usage'],
       'tokens': ['settings-category-usage'],
-      'budget': ['settings-category-usage', 'settings-category-quota'],
-      'quota': ['settings-category-usage', 'settings-category-quota'],
-      'limit': ['settings-category-usage', 'settings-category-quota'],
+      'budget': ['settings-category-usage'],
+      'quota': ['settings-category-usage', 'settings-category-background'],
+      'limit': ['settings-category-usage'],
+      'threshold': ['settings-category-usage'],
+      'quota monitoring': ['settings-category-usage'],
       'drafts': ['settings-category-privacy'],
       'queue': ['settings-category-privacy'],
       'read state': ['settings-category-privacy'],
@@ -421,11 +436,26 @@ void main() {
       }
       // Plugins ("In this app") still needs only a saved server.
       expect(_row('settings-group-agent-setup'), findsOneWidget);
-      // No background service off Android: the Notifications group is gone
-      // rather than an empty header.
-      expect(_row('settings-category-background'), findsNothing);
-      expect(_row('settings-group-notifications'), findsNothing);
-      expect(find.text(_en.settingsHubGroupNotifications), findsNothing);
+      // Notifications stays off Android: saved-server monitoring and
+      // check-ins work in the open app, so its one row is never empty. The
+      // background summary is what goes.
+      expect(_row('settings-category-background'), findsOneWidget);
+      expect(find.textContaining('Background:'), findsNothing);
+
+      // Usage has one row, for "Spent" or "Remaining". With neither usage
+      // statistics nor a saved server the group is gone, not an empty header.
+      final bare = await _controller(
+        savedServer: false,
+        usageStatistics: false,
+      );
+      addTearDown(bare.dispose);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(_app(bare));
+      await tester.pumpAndSettle();
+      expect(_row('settings-category-usage'), findsNothing);
+      expect(_row('settings-group-usage'), findsNothing);
+      expect(find.text(_en.settingsHubGroupUsage), findsNothing);
+      expect(_row('settings-group-help'), findsOneWidget);
     });
   });
 

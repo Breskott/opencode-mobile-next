@@ -265,15 +265,14 @@
         {
           "id": "settings-category-background",
           "type": "list-tile",
-          "label": "Notifications & background",
+          "label": "Notifications",
           "key": "settings-category-background",
-          "line": 450,
+          "line": 451,
           "action": "navigate",
-          "target": "background-settings",
-          "targetWidget": "BackgroundSettingsScreen",
-          "effect": "Pushes BackgroundSettingsScreen(controller) via _open. Subtitle from _backgroundSummary (timeout / Off / active / starting).",
+          "target": "notifications-settings",
+          "targetWidget": "NotificationsSettingsScreen",
+          "effect": "Pushes NotificationsSettingsScreen(controller) via _open. On Android the subtitle is \"Background: <_backgroundSummary>\"; elsewhere there is none.",
           "gates": [
-            "platformCapabilities.supportsBackgroundService",
             "row hidden when it does not match the search query (_HubRow.matches(_query))"
           ],
           "destructive": false
@@ -408,31 +407,15 @@
         {
           "id": "settings-category-usage",
           "type": "list-tile",
-          "label": "Usage and cost",
+          "label": "Usage",
           "key": "settings-category-usage",
-          "line": 548,
+          "line": 557,
           "action": "navigate",
-          "target": "usage",
-          "targetWidget": "UsageScreen",
-          "effect": "Pushes UsageScreen(controller) via _open.",
+          "target": "usage-hub",
+          "targetWidget": "UsageHubScreen",
+          "effect": "Pushes UsageHubScreen(controller) via _open. Subtitle names the sections that apply (\"Spent · Remaining\").",
           "gates": [
-            "controller.supportsUsageStatistics",
-            "row hidden when it does not match the search query (_HubRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "settings-category-quota",
-          "type": "list-tile",
-          "label": "Remaining usage",
-          "key": "settings-category-quota",
-          "line": 556,
-          "action": "navigate",
-          "target": "provider-quota",
-          "targetWidget": "ProviderQuotaScreen",
-          "effect": "Pushes ProviderQuotaScreen(controller) via _open. Subtitle \"Optional Codex collector · setup required\".",
-          "gates": [
-            "profile != null",
+            "UsageHubScreen.sectionsFor(controller).isNotEmpty (supportsUsageStatistics || profile != null)",
             "row hidden when it does not match the search query (_HubRow.matches(_query))"
           ],
           "destructive": false
@@ -636,49 +619,170 @@
       "sheetKey": "disconnect-confirm-sheet"
     },
     {
-      "id": "background-settings",
-      "title": "Notifications & background",
+      "id": "notifications-settings",
+      "title": "Notifications",
       "kind": "screen",
-      "file": "lib/ui/screens/settings/background_settings_screen.dart",
-      "widget": "BackgroundSettingsScreen",
+      "file": "lib/ui/screens/settings/notifications_settings_screen.dart",
+      "widget": "NotificationsSettingsScreen",
       "presentedBy": [],
-      "line": 5,
-      "purpose": "Notifications & background: the keep-live background connection switch, its real service status and battery optimisation guidance.",
+      "line": 10,
+      "purpose": "The one Notifications screen: what notifies me, the single quiet-hours pair, the background connection, and which saved servers are monitored, with the single Wi-Fi-only rule. Sections and rows are absent when the device cannot do them.",
       "reachedFrom": [
         {
           "page": "settings",
           "element": "settings-category-background"
+        },
+        {
+          "page": "activity",
+          "element": "activity-background-hint"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-section-menu-background"
+        },
+        {
+          "page": "profile-monitor",
+          "element": "profile-monitor-notification-settings"
+        },
+        {
+          "page": "provider-quota",
+          "element": "provider-quota-monitor-notification-settings"
         }
       ],
-      "gates": [
-        "platformCapabilities.supportsBackgroundService"
-      ],
+      "gates": [],
       "elements": [
+        {
+          "id": "notifications-settings-finished-runs",
+          "type": "toggle",
+          "label": "Finished runs",
+          "key": "notify-finished-runs",
+          "line": 110,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.setNotifyFinishedRuns(value): persists oc.notify.finishedRuns; off dismisses posted status alerts and _settleSessionAttention stops posting complete/error alerts.",
+          "gates": [
+            "platformCapabilities.supportsNotifications"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-requests",
+          "type": "toggle",
+          "label": "Approvals and questions",
+          "key": "notify-requests",
+          "line": 120,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.setNotifyRequests(value): persists oc.notify.requests; gates _showInputAlert on the connected server and ProfileMonitor request alerts for saved servers.",
+          "gates": [
+            "platformCapabilities.supportsNotifications"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-check-ins",
+          "type": "toggle",
+          "label": "Check in on long runs",
+          "key": "notify-check-ins",
+          "line": 131,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.updateSharedNotifyRules: sets or clears the shared checkInAfterMinutes (default 30) for every monitored server; ProfileMonitor.sharedRulesChanged retires posted reminders.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-check-in-after",
+          "type": "dropdown",
+          "label": "Check in after — {minutes} minutes (ProfileNotifyRules.checkInChoices)",
+          "key": "notify-check-in-after",
+          "line": 158,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.updateSharedNotifyRules(checkInAfterMinutes: minutes).",
+          "gates": [
+            "rules.checkInAfterMinutes != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-quota-alerts",
+          "type": "toggle",
+          "label": "Quota thresholds",
+          "key": "notify-quota-alerts",
+          "line": 190,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.updateSharedNotifyRules(quotaAlerts: value): the one device-alert choice every quota source reads (ProviderQuotaMonitor.alertsFor); off dismisses posted quota alerts.",
+          "gates": [
+            "platformCapabilities.supportsNotifications"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-quiet-hours",
+          "type": "toggle",
+          "label": "Quiet hours",
+          "key": "notify-quiet-hours",
+          "line": 208,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.updateSharedNotifyRules: sets 22:00–08:00 or clears the ONE quiet-hours pair (oc.notify.quietStart/End) read by ProfileMonitor.rulesFor, ProviderQuotaMonitor.quietFor and the connected server's coding alerts.",
+          "gates": [
+            "platformCapabilities.supportsNotifications"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-quiet-start",
+          "type": "list-tile",
+          "label": "Quiet hours start",
+          "key": "notify-quiet-start",
+          "line": 225,
+          "action": "open-dialog",
+          "target": "notifications-settings-quiet-time-dialog",
+          "targetWidget": "_quietTime",
+          "effect": "Opens the time picker for the shared start.",
+          "gates": [
+            "platformCapabilities.supportsNotifications",
+            "rules.quietEnabled"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-quiet-end",
+          "type": "list-tile",
+          "label": "Quiet hours end",
+          "key": "notify-quiet-end",
+          "line": 231,
+          "action": "open-dialog",
+          "target": "notifications-settings-quiet-time-dialog",
+          "targetWidget": "_quietTime",
+          "effect": "Opens the time picker for the shared end.",
+          "gates": [
+            "platformCapabilities.supportsNotifications",
+            "rules.quietEnabled"
+          ],
+          "destructive": false
+        },
         {
           "id": "background-settings-live-switch",
           "type": "toggle",
           "label": "Stay connected in the background",
           "key": "background-live-switch",
-          "line": 78,
+          "line": 247,
           "action": "toggle-setting",
           "target": null,
           "targetWidget": null,
-          "effect": "_toggle(value) -> controller.setKeepLiveInBackground(value) (persists the keepLiveInBackground preference and starts/stops the Android foreground service); shows a snackbar with backgroundLive.lastError or \"Android did not enable background mode.\" when the result differs. Disabled while controller.backgroundLive.busy.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "background-settings-status-row",
-          "type": "list-tile",
-          "label": "Stopped by Android — tap to restart / Running now / Starting… / Off",
-          "key": "background-status-row",
-          "line": 170,
-          "action": "toggle-setting",
-          "target": null,
-          "targetWidget": null,
-          "effect": "Tappable only when live.stoppedByAndroidTimeout: onRestart -> _toggle(true) -> controller.setKeepLiveInBackground(true) restarting the service. Otherwise a status display.",
+          "effect": "_toggleBackground(value) -> controller.setKeepLiveInBackground(value) (persists the keepLiveInBackground preference and starts/stops the Android foreground service); snackbar with backgroundLive.lastError or \"Android did not enable background mode.\" when the result differs. Disabled while controller.backgroundLive.busy.",
           "gates": [
-            "onTap only when live.stoppedByAndroidTimeout && !controller.backgroundLive.busy"
+            "platformCapabilities.supportsBackgroundService"
           ],
           "destructive": false
         },
@@ -686,15 +790,188 @@
           "id": "background-settings-battery-row",
           "type": "list-tile",
           "label": "Allow unrestricted battery access / Unrestricted battery access allowed",
-          "key": null,
-          "line": 95,
+          "key": "background-battery-row",
+          "line": 256,
           "action": "external-link",
           "target": null,
           "targetWidget": null,
           "effect": "controller.backgroundLive.requestBatteryOptimizationExemption() (opens the Android battery-optimisation exemption prompt). Inert with a check icon once batteryOptimizationIgnored.",
           "gates": [
+            "platformCapabilities.supportsBackgroundService",
             "controller.keepLiveInBackground",
             "onTap only when !controller.backgroundLive.batteryOptimizationIgnored"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "background-settings-status-row",
+          "type": "list-tile",
+          "label": "Stopped by Android — tap to restart / Running now / Starting… / Off",
+          "key": "background-status-row",
+          "line": 502,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Tappable only when live.stoppedByAndroidTimeout: onRestart -> _toggleBackground(true) restarting the service. Otherwise a status display.",
+          "gates": [
+            "platformCapabilities.supportsBackgroundService",
+            "onTap only when live.stoppedByAndroidTimeout && !controller.backgroundLive.busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-monitor-server",
+          "type": "toggle",
+          "label": "<server name> — Monitor this server",
+          "key": "monitor-enabled-<profile id>",
+          "line": 437,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "profileMonitor.setRules(profile.id, rules.copyWith(enabled: value)). One row per readable saved server; disabled with \"unsupported\" when monitor.supportsProfile is false.",
+          "gates": [
+            "!controller.isIsolated",
+            "controller.isProfileReadable(profile.id)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-monitor-notify",
+          "type": "toggle",
+          "label": "Notify when attention is needed",
+          "key": "monitor-notify-<profile id>",
+          "line": 452,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "profileMonitor.setRules(profile.id, rules.copyWith(notifications: value)).",
+          "gates": [
+            "supported && rules.enabled",
+            "platformCapabilities.supportsNotifications"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-wifi-only",
+          "type": "toggle",
+          "label": "Check in the background on Wi-Fi only",
+          "key": "notify-wifi-only",
+          "line": 311,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.updateSharedNotifyRules(wifiOnly: value): the ONE Wi-Fi-only rule (oc.notify.wifiOnly) read by ProfileMonitor._run and ProviderQuotaMonitor.wifiOnlyFor.",
+          "gates": [
+            "platformCapabilities.supportsBackgroundService"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "notifications-settings-quiet-time-dialog",
+      "title": "[Quiet hours time picker]",
+      "kind": "dialog",
+      "file": "lib/ui/screens/settings/notifications_settings_screen.dart",
+      "widget": "_quietTime",
+      "presentedBy": [
+        "_quietTime"
+      ],
+      "line": 79,
+      "purpose": "Material time picker for the shared quiet-hours start or end.",
+      "reachedFrom": [
+        {
+          "page": "notifications-settings",
+          "element": "notifications-settings-quiet-start"
+        },
+        {
+          "page": "notifications-settings",
+          "element": "notifications-settings-quiet-end"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "notifications-settings-quiet-time-dialog-ok",
+          "type": "button",
+          "label": "OK",
+          "key": null,
+          "line": 79,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Returns the TimeOfDay; controller.updateSharedNotifyRules(quietStart|quietEnd: minutes).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "notifications-settings-quiet-time-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 79,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Closes the picker without saving.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "usage-hub",
+      "title": "Usage",
+      "kind": "screen",
+      "file": "lib/ui/screens/usage_hub_screen.dart",
+      "widget": "UsageHubScreen",
+      "presentedBy": [],
+      "line": 23,
+      "purpose": "The one Usage screen: \"Spent\" (usage statistics) and \"Remaining\" (provider quota and quota monitoring) as two tabs; a section the connection cannot serve is absent, and one section alone shows no tab bar.",
+      "reachedFrom": [
+        {
+          "page": "settings",
+          "element": "settings-category-usage"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "quota alert notification tap: quotaMonitor.resolveRoute(...) then push UsageHubScreen(initialSection: remaining) (lib/main.dart)"
+        }
+      ],
+      "gates": [
+        "controller.supportsUsageStatistics || controller.profile != null"
+      ],
+      "elements": [
+        {
+          "id": "usage-hub-tab-spent",
+          "type": "tab",
+          "label": "Spent",
+          "key": "usage-tab-spent",
+          "line": 88,
+          "action": "other",
+          "target": "usage",
+          "targetWidget": "UsageScreen",
+          "effect": "Shows the embedded UsageScreen body.",
+          "gates": [
+            "controller.supportsUsageStatistics",
+            "tab bar only when both sections apply"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "usage-hub-tab-remaining",
+          "type": "tab",
+          "label": "Remaining",
+          "key": "usage-tab-remaining",
+          "line": 88,
+          "action": "other",
+          "target": "provider-quota",
+          "targetWidget": "ProviderQuotaScreen",
+          "effect": "Shows the embedded ProviderQuotaScreen body.",
+          "gates": [
+            "controller.profile != null",
+            "tab bar only when both sections apply"
           ],
           "destructive": false
         }

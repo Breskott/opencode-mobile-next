@@ -146,9 +146,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'OpenCode Mobile';
 
   @override
-  String get libraryBrowseSection => 'Browse';
-
-  @override
   String get libraryManageSection => 'Manage';
 
   @override
@@ -2637,10 +2634,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaTitle => 'Remaining usage';
 
   @override
-  String get quotaSettingsSummary =>
-      'Optional Codex collector · setup required';
-
-  @override
   String get quotaDescription =>
       'Choose a provider to view its reported account windows. These are separate from OpenCode token usage and cost.';
 
@@ -2943,9 +2936,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.';
 
   @override
-  String get pluginsTitle => 'Plugins';
-
-  @override
   String get pluginsDescription =>
       'Plugins reported for this project on the server. Inspect status and source here; manage plugins on the server.';
 
@@ -3206,22 +3196,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get monitorNotifications => 'Notify when attention is needed';
 
   @override
-  String get monitorWifi => 'Wi-Fi only';
-
-  @override
   String get monitorWifiDetail =>
       'Checks pause unless Android reports an active Wi-Fi network. VPN or unavailable network information may pause checks.';
 
   @override
-  String get monitorWifiUnsupported =>
-      'Wi-Fi detection is unavailable on this platform.';
-
-  @override
   String get monitorQuiet => 'Quiet hours';
-
-  @override
-  String get monitorQuietDetail =>
-      'Mute attention alerts during these local times. Checks continue.';
 
   @override
   String get monitorQuietStart => 'Quiet hours start';
@@ -3323,10 +3302,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get monitorSelected => 'Selected project';
-
-  @override
-  String get monitorNoNotifications =>
-      'Background notifications also require Keep live and notification permission in Background settings.';
 
   @override
   String get monitorCheckIn => 'Check in on long runs';
@@ -3549,7 +3524,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quotaMonitorConsent =>
-      'Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require the separate switch below and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.';
+      'Allow this app to keep reading the trusted collector for this exact provider account after you leave this page, including after app restart. A cycle checks at most three saved sources, every five minutes in the foreground or fifteen minutes while your existing background service is active. With more than three sources, each source may wait several cycles. Device alerts require “Quota thresholds” in Notification settings and a freshly reported window at or above the selected percentage used. An alert records that past reading; open it to check current usage. Personal page thresholds are separate. No service is started here.';
 
   @override
   String get quotaMonitorRuntime =>
@@ -3561,16 +3536,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quotaMonitorEnable => 'Enable quota monitoring';
-
-  @override
-  String get quotaMonitorNotifications =>
-      'Device alerts for reported quota thresholds';
-
-  @override
-  String get quotaMonitorWifi => 'Read only on confirmed Wi-Fi';
-
-  @override
-  String get quotaMonitorQuiet => 'Quiet hours: 22:00–08:00 local time';
 
   @override
   String get quotaMonitorDisabled => 'Monitoring is off.';
@@ -6391,21 +6356,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsUi1 => 'Server';
 
   @override
-  String get e7SettingsUi2 => 'Coding defaults';
-
-  @override
-  String get e7SettingsUi3 => 'Notifications & background';
-
-  @override
-  String get e7SettingsUi5 => 'Privacy & permissions';
-
-  @override
-  String get e7SettingsUi6 => 'Diagnostics';
-
-  @override
-  String get e7SettingsUi7 => 'About';
-
-  @override
   String get e7SettingsUi8 => 'Disconnect';
 
   @override
@@ -6508,12 +6458,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsUi41 => 'Loading shells from OpenCode…';
 
   @override
-  String get e7SettingsUi42 => 'Selected model';
-
-  @override
-  String get e7SettingsUi44 => 'Selected agent';
-
-  @override
   String get e7SettingsUi45 => 'Server update commands copied';
 
   @override
@@ -6566,9 +6510,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SettingsUi62 => 'No server password saved';
-
-  @override
-  String get e7SettingsUi63 => 'Manage servers';
 
   @override
   String get e7SettingsUi64 => 'Add, edit, or switch OpenCode servers';
@@ -10863,43 +10804,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'This provider also uses the server environment, which mobile cannot remove and which will remain active.';
 
   @override
-  String get e7LibrarySearchPhoneAliases =>
-      'termux local on device setup install server android terminal';
-
-  @override
-  String get e7LibrarySearchModelAliases =>
-      'AI reasoning favorites recent conversation session chat';
-
-  @override
-  String get e7LibrarySearchProviderAliases =>
-      'API keys authentication connect';
-
-  @override
-  String get e7LibrarySearchMcpAliases => 'integrations servers';
-
-  @override
-  String get e7LibrarySearchCommandsAliases =>
-      'slash skills references capabilities';
-
-  @override
-  String get e7LibrarySearchPluginsAliases => 'plugin installed source status';
-
-  @override
   String get e7LibrarySearchTerminalAliases => 'shell command line';
 
   @override
   String get e7LibrarySearchImportAliases =>
       'backup restore transfer JSON conversation session chat';
-
-  @override
-  String get e7LibrarySearchSettingsAliases =>
-      'appearance theme language notifications privacy voice background server profile connection';
-
-  @override
-  String get e7LibrarySearchGuideAliases => 'help connect tutorial start';
-
-  @override
-  String get e7LibrarySearchBugAliases => 'feedback issue support';
 
   @override
   String get e7LibrarySearchShortcutsAliases => 'hotkeys help desktop';
@@ -15763,9 +15672,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get calmMoreToolsAndHelp => 'Tools & help';
-
-  @override
   String get calmCodeOptions => 'Code options';
 
   @override
@@ -15984,7 +15890,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHubSearchNotificationsAliases =>
-      'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers';
+      'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers finished runs approvals questions quota thresholds';
 
   @override
   String get settingsHubSearchAppearanceAliases =>
@@ -16011,7 +15917,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHubSearchUsageAliases =>
-      'usage cost tokens budget quota limit spent remaining';
+      'usage cost tokens budget quota limit spent remaining threshold quota monitoring provider';
 
   @override
   String get settingsHubSearchPrivacyAliases =>
@@ -16037,4 +15943,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pluginsSectionOnServer => 'On the server';
+
+  @override
+  String get notifySectionWhat => 'What notifies me';
+
+  @override
+  String get notifyFinishedRuns => 'Finished runs';
+
+  @override
+  String get notifyFinishedRunsDetail =>
+      'When a run on the connected server finishes or fails.';
+
+  @override
+  String get notifyRequests => 'Approvals and questions';
+
+  @override
+  String get notifyRequestsDetail =>
+      'When the agent is waiting for your answer, on any monitored server.';
+
+  @override
+  String get notifyQuotaAlerts => 'Quota thresholds';
+
+  @override
+  String get notifyQuotaAlertsDetail =>
+      'When a monitored provider passes the threshold you set in Usage. An alert records a past reading, not what remains now.';
+
+  @override
+  String get notifyQuietDetail =>
+      'No notifications during these local times, for every server and for quota alerts. Checks continue.';
+
+  @override
+  String get notifySectionBackground => 'Background';
+
+  @override
+  String get notifySectionServers => 'Saved servers';
+
+  @override
+  String get notifyWifiOnly => 'Check in the background on Wi-Fi only';
+
+  @override
+  String notifyHubBackgroundSummary(String state) {
+    return 'Background: $state';
+  }
+
+  @override
+  String get monitorNotificationSettings => 'Notification settings';
+
+  @override
+  String get usageSectionSpent => 'Spent';
+
+  @override
+  String get usageSectionRemaining => 'Remaining';
 }

@@ -18,7 +18,16 @@ AppLocalizations _strings(BuildContext context) =>
 class UsageScreen extends StatefulWidget {
   final ConnectionController controller;
   final UsageOverview? overview;
-  const UsageScreen({super.key, required this.controller, this.overview});
+
+  /// True as the "Spent" section of the Usage screen, which already supplies
+  /// the app bar.
+  final bool embedded;
+  const UsageScreen({
+    super.key,
+    required this.controller,
+    this.overview,
+    this.embedded = false,
+  });
   @override
   State<UsageScreen> createState() => _UsageScreenState();
 }
@@ -75,138 +84,142 @@ class _UsageScreenState extends State<UsageScreen> {
       final snapshot = _overview.snapshot;
       final unsupported = _overview.error is UsageUnsupported;
       final available = !_overview.detached && !unsupported;
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.usageTitle),
-          actions: [
-            IconButton(
-              key: const ValueKey('refresh-usage'),
-              tooltip: l10n.usageRefresh,
-              onPressed: available && !_overview.loading
-                  ? _overview.refresh
-                  : null,
-              icon: const Icon(AppIconography.retry),
-            ),
-          ],
-        ),
-        body: SafeArea(
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 860),
-              child: RefreshIndicator(
-                onRefresh: _overview.refresh,
-                child: ListView(
-                  key: const ValueKey('usage-content'),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-                  children: [
-                    Text(
-                      l10n.usageDescription,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    if (available) ...[
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          for (final range in UsageRange.values)
-                            ChoiceChip(
-                              key: ValueKey('usage-range-${range.name}'),
-                              showCheckmark: false,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              labelPadding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              label: Text(switch (range) {
-                                UsageRange.today => l10n.usageToday,
-                                UsageRange.thirtyDays => l10n.usageThirtyDays,
-                                UsageRange.year => l10n.usageYear,
-                                UsageRange.allTime => l10n.usageAllTime,
-                              }),
-                              selected: _overview.range == range,
-                              onSelected: (_) =>
-                                  unawaited(_overview.setRange(range)),
+      final refresh = IconButton(
+        key: const ValueKey('refresh-usage'),
+        tooltip: l10n.usageRefresh,
+        onPressed: available && !_overview.loading ? _overview.refresh : null,
+        icon: const Icon(AppIconography.retry),
+      );
+      final description = Text(
+        l10n.usageDescription,
+        style: Theme.of(context).textTheme.bodyMedium,
+      );
+      final body = SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 860),
+            child: RefreshIndicator(
+              onRefresh: _overview.refresh,
+              child: ListView(
+                key: const ValueKey('usage-content'),
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                children: [
+                  // Inside Usage there is no app bar of its own to hold
+                  // Refresh, so it sits beside the description.
+                  if (widget.embedded)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: description),
+                        refresh,
+                      ],
+                    )
+                  else
+                    description,
+                  const SizedBox(height: 16),
+                  if (available) ...[
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        for (final range in UsageRange.values)
+                          ChoiceChip(
+                            key: ValueKey('usage-range-${range.name}'),
+                            showCheckmark: false,
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            labelPadding: const EdgeInsets.symmetric(
+                              horizontal: 4,
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<UsageScope>(
-                        key: ValueKey('usage-scope-${_overview.scope.name}'),
-                        initialValue: _overview.scope,
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          labelText: l10n.usageScope,
-                          border: const OutlineInputBorder(),
-                        ),
-                        items: [
-                          DropdownMenuItem(
-                            value: UsageScope.allProjects,
-                            child: Text(l10n.usageAllProjects),
+                            label: Text(switch (range) {
+                              UsageRange.today => l10n.usageToday,
+                              UsageRange.thirtyDays => l10n.usageThirtyDays,
+                              UsageRange.year => l10n.usageYear,
+                              UsageRange.allTime => l10n.usageAllTime,
+                            }),
+                            selected: _overview.range == range,
+                            onSelected: (_) =>
+                                unawaited(_overview.setRange(range)),
                           ),
-                          DropdownMenuItem(
-                            value: UsageScope.currentProject,
-                            child: Text(l10n.usageCurrentProject),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            unawaited(_overview.setScope(value));
-                          }
-                        },
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<UsageScope>(
+                      key: ValueKey('usage-scope-${_overview.scope.name}'),
+                      initialValue: _overview.scope,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: l10n.usageScope,
+                        border: const OutlineInputBorder(),
                       ),
-                      const SizedBox(height: 20),
-                    ],
-                    if (_overview.loading) ...[
-                      LinearProgressIndicator(
-                        semanticsLabel: l10n.usageLoading,
-                      ),
-                      if (snapshot != null) Text(l10n.usagePreviousResult),
-                      const SizedBox(height: 12),
-                    ],
-                    if (_overview.detached) Text(l10n.usageLocationChanged),
-                    if (_overview.error case final error?) ...[
-                      Text(
-                        _error(error, l10n),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
+                      items: [
+                        DropdownMenuItem(
+                          value: UsageScope.allProjects,
+                          child: Text(l10n.usageAllProjects),
                         ),
-                      ),
-                      if (snapshot != null) Text(l10n.usagePreviousResult),
-                      if (available)
-                        Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: TextButton(
-                            onPressed: _overview.loading
-                                ? null
-                                : _overview.refresh,
-                            child: Text(l10n.usageRefresh),
-                          ),
+                        DropdownMenuItem(
+                          value: UsageScope.currentProject,
+                          child: Text(l10n.usageCurrentProject),
                         ),
-                      const SizedBox(height: 12),
-                    ],
-                    if (snapshot != null && _budgets.available) ...[
-                      _UsageBudgetControls(
-                        budgets: _budgets,
-                        snapshot: snapshot,
-                        enabled:
-                            available &&
-                            !_overview.loading &&
-                            _overview.error == null,
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                    if (snapshot != null)
-                      _UsageReport(snapshot: snapshot, overview: _overview),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          unawaited(_overview.setScope(value));
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
                   ],
-                ),
+                  if (_overview.loading) ...[
+                    LinearProgressIndicator(semanticsLabel: l10n.usageLoading),
+                    if (snapshot != null) Text(l10n.usagePreviousResult),
+                    const SizedBox(height: 12),
+                  ],
+                  if (_overview.detached) Text(l10n.usageLocationChanged),
+                  if (_overview.error case final error?) ...[
+                    Text(
+                      _error(error, l10n),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    if (snapshot != null) Text(l10n.usagePreviousResult),
+                    if (available)
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton(
+                          onPressed: _overview.loading
+                              ? null
+                              : _overview.refresh,
+                          child: Text(l10n.usageRefresh),
+                        ),
+                      ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (snapshot != null && _budgets.available) ...[
+                    _UsageBudgetControls(
+                      budgets: _budgets,
+                      snapshot: snapshot,
+                      enabled:
+                          available &&
+                          !_overview.loading &&
+                          _overview.error == null,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  if (snapshot != null)
+                    _UsageReport(snapshot: snapshot, overview: _overview),
+                ],
               ),
             ),
           ),
         ),
+      );
+      if (widget.embedded) return body;
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.usageTitle), actions: [refresh]),
+        body: body,
       );
     },
   );
