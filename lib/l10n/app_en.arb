@@ -6916,10 +6916,6 @@
   "@chatUiCompactingConversation": {
     "description": "Chat journey: Compacting conversation…"
   },
-  "chatUiCompacting": "Compacting…",
-  "@chatUiCompacting": {
-    "description": "Chat journey: Compacting…"
-  },
   "chatUiCompactionFailed": "Compaction failed",
   "@chatUiCompactionFailed": {
     "description": "Chat journey: Compaction failed"
@@ -7015,10 +7011,6 @@
   "chatUiDelegatedSession": "Delegated session",
   "@chatUiDelegatedSession": {
     "description": "Chat journey: Delegated session"
-  },
-  "chatUiDeleteChat": "Delete chat?",
-  "@chatUiDeleteChat": {
-    "description": "Chat journey: Delete chat?"
   },
   "chatUiDeleteMessage": "Delete message",
   "@chatUiDeleteMessage": {
@@ -7127,10 +7119,6 @@
   "chatUiFetchPage": "Fetch page",
   "@chatUiFetchPage": {
     "description": "Chat journey: Fetch page"
-  },
-  "chatUiFileEditsMadeInThisSessionWill": "File edits made in this session will be listed here.",
-  "@chatUiFileEditsMadeInThisSessionWill": {
-    "description": "Chat journey: File edits made in this session will be listed here."
   },
   "chatUiFiles": "Files",
   "@chatUiFiles": {
@@ -7344,21 +7332,9 @@
   "@chatUiNavigate": {
     "description": "Chat journey: Navigate"
   },
-  "chatUiNeedsYou": "Needs you",
-  "@chatUiNeedsYou": {
-    "description": "Chat journey: Needs you"
-  },
   "chatUiNoAnswer": "No answer",
   "@chatUiNoAnswer": {
     "description": "Chat journey: No answer"
-  },
-  "chatUiNoChatsYet": "No chats yet",
-  "@chatUiNoChatsYet": {
-    "description": "Chat journey: No chats yet"
-  },
-  "chatUiNoFileChangesYet": "No file changes yet",
-  "@chatUiNoFileChangesYet": {
-    "description": "Chat journey: No file changes yet"
   },
   "chatUiNoMatchingCommands": "No matching commands",
   "@chatUiNoMatchingCommands": {
@@ -7379,10 +7355,6 @@
   "chatUiNoTodosInThisSession": "No todos in this session",
   "@chatUiNoTodosInThisSession": {
     "description": "Chat journey: No todos in this session"
-  },
-  "chatUiNotConnected": "Not connected",
-  "@chatUiNotConnected": {
-    "description": "Chat journey: Not connected"
   },
   "chatUiNotConnectedToTheServerRightNow": "Not connected to the server right now.",
   "@chatUiNotConnectedToTheServerRightNow": {
@@ -7552,10 +7524,6 @@
   "@chatUiRename": {
     "description": "Chat journey: Rename"
   },
-  "chatUiRenameChat": "Rename chat",
-  "@chatUiRenameChat": {
-    "description": "Chat journey: Rename chat"
-  },
   "chatUiRenameSession": "Rename session",
   "@chatUiRenameSession": {
     "description": "Chat journey: Rename session"
@@ -7587,10 +7555,6 @@
   "chatUiRetryServerCommands": "Retry server commands",
   "@chatUiRetryServerCommands": {
     "description": "Chat journey: Retry server commands"
-  },
-  "chatUiRetrying": "Retrying",
-  "@chatUiRetrying": {
-    "description": "Chat journey: Retrying"
   },
   "chatUiRevert": "Revert",
   "@chatUiRevert": {
@@ -7795,10 +7759,6 @@
   "chatUiStartCoding": "Start coding",
   "@chatUiStartCoding": {
     "description": "Chat journey: Start coding"
-  },
-  "chatUiStartOne": "Start one",
-  "@chatUiStartOne": {
-    "description": "Chat journey: Start one"
   },
   "chatUiSteer": "Steer",
   "@chatUiSteer": {
@@ -8489,24 +8449,6 @@
       }
     }
   },
-  "chatUiDeleteChatBody": "“{title}” and its history will be permanently removed.",
-  "@chatUiDeleteChatBody": {
-    "description": "Chat journey: “{title}” and its history will be permanently removed.",
-    "placeholders": {
-      "title": {
-        "type": "Object"
-      }
-    }
-  },
-  "chatUiChangedFilesSuffix": " · {count, plural, one{1 file} other{{count} files}}",
-  "@chatUiChangedFilesSuffix": {
-    "description": "Chat journey:  · {count, plural, one{1 file} other{{count} files}}",
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "chatUiToolsSummary": "Tools: {tools}",
   "@chatUiToolsSummary": {
     "description": "Chat journey: Tools: {tools}",
@@ -8741,15 +8683,6 @@
       }
     }
   },
-  "chatUiRunningAgentCount": "{count, plural, one{1 agent running} other{{count} agents running}}",
-  "@chatUiRunningAgentCount": {
-    "description": "Chat journey: {count, plural, one{1 agent running} other{{count} agents running}}",
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "chatUiChooseOption": "Choose: {option}",
   "@chatUiChooseOption": {
     "description": "Chat journey: Choose: {option}",
@@ -8778,10 +8711,6 @@
   "chatUiPermissionFallback": "a permission",
   "@chatUiPermissionFallback": {
     "description": "Chat journey: a permission"
-  },
-  "chatUiUntitledChat": "Untitled chat",
-  "@chatUiUntitledChat": {
-    "description": "Chat journey: Untitled chat"
   },
   "chatUiMainSession": "Main session",
   "@chatUiMainSession": {
@@ -10089,86 +10018,6 @@
   "e7LibraryModelsAndAgents": "Models and agents",
   "@e7LibraryModelsAndAgents": {
     "description": "Library and project tools UI: Models and agents"
-  },
-  "e7LibraryNoMatchingModels": "No matching models",
-  "@e7LibraryNoMatchingModels": {
-    "description": "Library and project tools UI: No matching models"
-  },
-  "e7LibraryTryAnotherProviderOrModelName": "Try another provider or model name.",
-  "@e7LibraryTryAnotherProviderOrModelName": {
-    "description": "Library and project tools UI: Try another provider or model name."
-  },
-  "e7LibraryContextOutput": "{detail1} context - {detail2} output",
-  "@e7LibraryContextOutput": {
-    "description": "Library and project tools UI: {detail1} context - {detail2} output",
-    "placeholders": {
-      "detail1": {
-        "type": "String",
-        "description": "Server or project detail displayed verbatim in this message."
-      },
-      "detail2": {
-        "type": "String",
-        "description": "Server or project detail displayed verbatim in this message."
-      }
-    }
-  },
-  "e7LibraryNoProvidersConnected": "No providers connected",
-  "@e7LibraryNoProvidersConnected": {
-    "description": "Library and project tools UI: No providers connected"
-  },
-  "e7LibraryConnectAProviderOnTheOpenCodeServer": "Connect a provider on the OpenCode server to use models.",
-  "@e7LibraryConnectAProviderOnTheOpenCodeServer": {
-    "description": "Library and project tools UI: Connect a provider on the OpenCode server to use models."
-  },
-  "e7LibraryAvailableModelsAuthenticationIsManagedUnderMCP": "{detail1} available models\nAuthentication is managed under MCP and integrations.",
-  "@e7LibraryAvailableModelsAuthenticationIsManagedUnderMCP": {
-    "description": "Library and project tools UI: {detail1} available models Authentication is managed under MCP and integrations.",
-    "placeholders": {
-      "detail1": {
-        "type": "String",
-        "description": "Server or project detail displayed verbatim in this message."
-      }
-    }
-  },
-  "e7LibraryNoAgentsAvailable": "No agents available",
-  "@e7LibraryNoAgentsAvailable": {
-    "description": "Library and project tools UI: No agents available"
-  },
-  "e7LibraryNoVisibleAgentsWereReturnedForThis": "No visible agents were returned for this workspace.",
-  "@e7LibraryNoVisibleAgentsWereReturnedForThis": {
-    "description": "Library and project tools UI: No visible agents were returned for this workspace."
-  },
-  "e7LibraryContext": "{detail1} context",
-  "@e7LibraryContext": {
-    "description": "Library and project tools UI: {detail1} context",
-    "placeholders": {
-      "detail1": {
-        "type": "String",
-        "description": "Server or project detail displayed verbatim in this message."
-      }
-    }
-  },
-  "e7LibraryOutput": "{detail1} output",
-  "@e7LibraryOutput": {
-    "description": "Library and project tools UI: {detail1} output",
-    "placeholders": {
-      "detail1": {
-        "type": "String",
-        "description": "Server or project detail displayed verbatim in this message."
-      }
-    }
-  },
-  "e7LibraryAttachments": "Attachments",
-  "@e7LibraryAttachments": {
-    "description": "Library and project tools UI: Attachments"
-  },
-  "e7LibraryTools": "Tools",
-  "@e7LibraryTools": {
-    "description": "Library and project tools UI: Tools"
-  },
-  "e7LibraryUseThisModel": "Use this model",
-  "@e7LibraryUseThisModel": {
-    "description": "Library and project tools UI: Use this model"
   },
   "e7LibraryUnavailable": "Unavailable",
   "@e7LibraryUnavailable": {
