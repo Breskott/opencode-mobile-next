@@ -234,10 +234,21 @@ void main() {
     await controller.refreshSessions();
     await tester.pump(const Duration(seconds: 8));
     expect(api.created, 1);
-    expect(find.text('Retry'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(MaterialBanner),
+        matching: find.text('Try again'),
+      ),
+      findsOneWidget,
+    );
 
     api.createError = null;
-    await tester.tap(find.text('Retry'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(MaterialBanner),
+        matching: find.text('Try again'),
+      ),
+    );
     await tester.pumpAndSettle();
     final chat = tester.widget<ChatScreen>(find.byType(ChatScreen));
     expect(chat.initialText, 'keep this shared text');
@@ -290,7 +301,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ChatScreen), findsNothing);
     expect(share.pending.value, 'review in the right connection');
-    expect(find.text('Retry'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(MaterialBanner),
+        matching: find.text('Try again'),
+      ),
+      findsOneWidget,
+    );
     expect(api.created, 1);
   });
 }

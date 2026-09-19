@@ -691,7 +691,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Project list unavailable'), findsOneWidget);
       expect(find.text('Swipe target'), findsOneWidget);
-      expect(find.text('Retry projects'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
       await tester.tap(find.text('Search all sessions'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Previous conversation'));
@@ -730,7 +730,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Swipe target'), findsOneWidget);
       fail = false;
-      await tester.tap(find.text('Retry projects'));
+      await tester.tap(find.text('Try again'));
       await tester.pumpAndSettle();
       expect(find.text('Project list unavailable'), findsNothing);
       expect(find.text('No projects opened'), findsNothing);
@@ -938,7 +938,7 @@ void main() {
 
     expect(find.textContaining('Session list unavailable'), findsOneWidget);
     fail = false;
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Load more sessions'));
     await tester.pumpAndSettle();

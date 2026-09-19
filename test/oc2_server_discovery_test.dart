@@ -278,7 +278,10 @@ void main() {
     await tester.pumpAndSettle();
     final entry = find.byKey(const ValueKey('quick-add-termux-card'));
     await _reveal(tester, entry);
-    expect(find.text('Set up OpenCode 1 or 2 on this phone.'), findsOneWidget);
+    expect(
+      find.text('Set up OpenCode 1 or 2 here with Termux.'),
+      findsOneWidget,
+    );
     await tester.tap(entry);
     await tester.pumpAndSettle();
     expect(find.text('Termux route: null'), findsOneWidget);

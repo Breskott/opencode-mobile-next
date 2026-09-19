@@ -198,7 +198,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 subtitle: Text(healthLine),
                 trailing: IconButton(
-                  tooltip: _settingsCopy(context).activityCheckAgain,
+                  tooltip: _settingsCopy(context).workRefresh,
                   onPressed: _checking ? null : _checkHealth,
                   icon: _checking
                       ? const SizedBox.square(

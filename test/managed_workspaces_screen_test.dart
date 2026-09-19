@@ -259,7 +259,7 @@ void main() {
       find.descendant(of: tile, matching: find.byType(PopupMenuButton<String>)),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Remove'));
+    await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     expect(
       tester

@@ -421,7 +421,7 @@ void main() {
             find.byKey(const Key('run-result-open-conversation')),
             findsNothing,
           );
-          expect(find.text('Retry'), findsNothing);
+          expect(find.text('Try again'), findsNothing);
           final replacement = _Gateway([_run]);
           c.transport = replacement;
           await tester
@@ -540,7 +540,7 @@ void main() {
       expect(find.byKey(const Key('run-result-error-state')), findsOneWidget);
       expect(find.text('offline'), findsOneWidget);
       failedController.transport = _Gateway([_run]);
-      await tester.tap(find.text('Retry'));
+      await tester.tap(find.text('Try again'));
       await tester.pumpAndSettle();
       expect(find.text('Completed'), findsOneWidget);
       expect(tester.takeException(), isNull);

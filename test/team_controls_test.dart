@@ -609,8 +609,8 @@ void main() {
       await settle(tester);
       await tester.tap(key('team-run-more'));
       await tester.pumpAndSettle();
-      expect(find.text('Cancel run'), findsOneWidget);
-      await tester.tap(find.text('Cancel run'));
+      expect(find.text('Stop run'), findsOneWidget);
+      await tester.tap(find.text('Stop run'));
       await tester.pumpAndSettle();
       expect(key('team-run-cancel-confirm'), findsOneWidget);
       expect(gateway.calls, isEmpty);
@@ -619,7 +619,7 @@ void main() {
       expect(gateway.calls.single.verb, 'cancelRun');
       expect(gateway.calls.single.target, 'oc-xru');
       expect(key('team-run-receipt'), findsOneWidget);
-      expect(find.text('Cancel run · Sent'), findsOneWidget);
+      expect(find.text('Stop run · Sent'), findsOneWidget);
       // The chip sits under the state header, before the progress bar.
       final chipY = tester.getTopLeft(key('team-run-receipt')).dy;
       expect(chipY, greaterThan(tester.getTopLeft(key('team-run-state')).dy));
@@ -638,7 +638,7 @@ void main() {
       await settle(tester);
       await tester.tap(key('team-run-more'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancel run'));
+      await tester.tap(find.text('Stop run'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Keep going'));
       await tester.pumpAndSettle();
@@ -665,7 +665,7 @@ void main() {
       await tester.tap(key('team-run-more'));
       await tester.pumpAndSettle();
       expect(find.text('Close batch'), findsOneWidget);
-      expect(find.text('Cancel run'), findsNothing);
+      expect(find.text('Stop run'), findsNothing);
       await tester.tapAt(Offset.zero);
       await tester.pumpAndSettle();
 

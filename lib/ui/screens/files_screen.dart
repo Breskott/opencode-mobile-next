@@ -1177,7 +1177,7 @@ class _FilesScreenState extends State<FilesScreen> {
       else if (!deleted) ...[
         ContextMenuAction(
           menuKey: const ValueKey('file-menu-open'),
-          label: 'Open',
+          label: readerL10n(context).readerUiOpen,
           icon: AppIconography.externalLink,
           onSelected: () => _openFile(node),
         ),

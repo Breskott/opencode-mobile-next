@@ -76,10 +76,10 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller, scale: scale));
       await tester.pumpAndSettle();
-      expect(find.text('Termux setup').hitTestable(), findsOneWidget);
-      expect(find.text('Run OpenCode on this phone'), findsOneWidget);
+      expect(find.text('On this phone').hitTestable(), findsOneWidget);
+      expect(find.text('Run OpenCode here with Termux'), findsOneWidget);
       expect(
-        tester.getTopLeft(find.text('Termux setup')).dy,
+        tester.getTopLeft(find.text('On this phone')).dy,
         lessThan(tester.getTopLeft(find.text('Browse')).dy),
       );
       await tester.enterText(
@@ -87,7 +87,7 @@ void main() {
         'local termux',
       );
       await tester.pumpAndSettle();
-      expect(find.text('Termux setup'), findsOneWidget);
+      expect(find.text('On this phone'), findsOneWidget);
       expect(find.text('Models & agents'), findsNothing);
       expect(tester.takeException(), isNull);
     });
@@ -117,7 +117,7 @@ void main() {
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(controller));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Termux setup'));
+        await tester.tap(find.text('On this phone'));
         await tester.pumpAndSettle();
         expect(find.byType(TermuxSetupScreen), findsOneWidget);
         if (state == 'not installed') {
@@ -140,7 +140,7 @@ void main() {
         expect(calls, ['getCapabilities']);
         await tester.pageBack();
         await tester.pumpAndSettle();
-        expect(find.text('Termux setup'), findsOneWidget);
+        expect(find.text('On this phone'), findsOneWidget);
       },
     );
   }
@@ -152,7 +152,7 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller, servers: true));
       await tester.pumpAndSettle();
-      expect(find.text('Termux setup').hitTestable(), findsOneWidget);
+      expect(find.text('On this phone').hitTestable(), findsOneWidget);
       expect(
         find.byKey(const ValueKey('quick-add-termux-card')),
         findsOneWidget,
@@ -170,10 +170,10 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
-      expect(find.text('Termux setup'), findsNothing);
+      expect(find.text('On this phone'), findsNothing);
       await tester.pumpWidget(_app(controller, servers: true));
       await tester.pumpAndSettle();
-      expect(find.text('Termux setup'), findsNothing);
+      expect(find.text('On this phone'), findsNothing);
     });
   }
 }

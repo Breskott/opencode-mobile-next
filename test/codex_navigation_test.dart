@@ -167,11 +167,11 @@ void main() {
       // something with the menu open.
       await tester.tap(find.byKey(const ValueKey('workspace-section-menu')));
       await tester.pumpAndSettle();
-      expect(find.text('Reload recent sessions'), findsOneWidget);
+      expect(find.text('Refresh recent sessions'), findsOneWidget);
       expect(find.byKey(const ValueKey('workspace-terminal')), findsNothing);
       await tester.tapAt(const Offset(4, 4));
       await tester.pumpAndSettle();
-      expect(find.text('Reload recent sessions'), findsNothing);
+      expect(find.text('Refresh recent sessions'), findsNothing);
       // The menu route is gone: only the shell's navigator page remains.
       expect(
         find.byWidgetPredicate((widget) => widget is PopupMenuItem),

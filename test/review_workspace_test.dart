@@ -107,7 +107,7 @@ void main() {
       expect(tester.element(find.text('+a.dart')), same(line));
       expect(find.byKey(const Key('review-selection-bar')), findsOneWidget);
       fail = false;
-      await tester.tap(find.text('Retry'));
+      await tester.tap(find.text('Try again'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Review refresh failed'), findsNothing);
       expect(find.byKey(const Key('review-selection-bar')), findsOneWidget);

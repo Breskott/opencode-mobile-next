@@ -255,7 +255,7 @@ void main() {
       findsOneWidget,
     );
     refuse = false;
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(copies, ['a,b\r\n']);
   });

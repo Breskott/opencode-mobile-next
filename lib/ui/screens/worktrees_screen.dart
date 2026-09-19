@@ -737,7 +737,7 @@ class _WorktreeTile extends StatelessWidget {
                 child: Text(
                   lookupAppLocalizations(
                     Localizations.localeOf(context),
-                  ).capsuleRemove,
+                  ).promptStashDelete,
                 ),
               ),
             ],
@@ -773,7 +773,7 @@ class _WorktreeTile extends StatelessWidget {
                 menuKey: const ValueKey('worktree-menu-remove'),
                 label: lookupAppLocalizations(
                   Localizations.localeOf(context),
-                ).capsuleRemove,
+                ).promptStashDelete,
                 icon: AppIconography.delete,
                 destructive: true,
                 onSelected: onRemove,

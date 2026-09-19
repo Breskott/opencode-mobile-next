@@ -110,7 +110,7 @@ void main() {
           expect(tester.element(find.byType(RefreshIndicator)), same(content));
           if (!empty) expect(find.textContaining('review'), findsWidgets);
           repository.failure = null;
-          await tester.tap(find.text('Retry'));
+          await tester.tap(find.text('Try again'));
           await tester.pumpAndSettle();
           expect(find.textContaining('Couldn’t refresh'), findsNothing);
           expect(tester.element(find.byType(RefreshIndicator)), same(content));

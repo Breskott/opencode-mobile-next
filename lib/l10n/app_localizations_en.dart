@@ -416,7 +416,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fileSave => 'Save';
 
   @override
-  String get fileReload => 'Reload';
+  String get fileReload => 'Refresh';
 
   @override
   String get queueRemoveFailed =>
@@ -554,7 +554,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get refreshFailed => 'Couldn’t refresh';
 
   @override
-  String get refreshRetry => 'Retry';
+  String get refreshRetry => 'Try again';
 
   @override
   String get filesProjectRoot => 'Project root';
@@ -586,17 +586,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your conversations can still be available. Search all sessions to find previous work.';
 
   @override
-  String get workspaceRetryProjects => 'Retry projects';
+  String get workspaceRetryProjects => 'Try again';
 
   @override
   String get historyLoadOlder => 'Load older messages';
 
   @override
-  String get historyReload => 'Reload recent history';
+  String get historyReload => 'Refresh recent history';
 
   @override
   String get historyCursorExpired =>
-      'Older history changed or expired. Reload recent history to continue.';
+      'Older history changed or expired. Refresh recent history to continue.';
 
   @override
   String get historyRefreshed =>
@@ -634,7 +634,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionsLoadMore => 'Load more sessions';
 
   @override
-  String get sessionsReload => 'Reload recent sessions';
+  String get sessionsReload => 'Refresh recent sessions';
 
   @override
   String get sessionsNoLoadedRecent => 'No recent sessions in loaded results';
@@ -755,7 +755,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionNoteDescription =>
-      'Keep a short instruction for this session. Saving or removing it takes effect at the next agent step and appears in the transcript then. It does not start a run.';
+      'Keep a short instruction for this session. Saving or deleting it takes effect at the next agent step and appears in the transcript then. It does not start a run.';
 
   @override
   String get sessionNoteHint =>
@@ -765,13 +765,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionNoteSave => 'Save note';
 
   @override
-  String get sessionNoteRemove => 'Remove saved note';
+  String get sessionNoteRemove => 'Delete saved note';
 
   @override
   String get sessionNoteSaved => 'Note saved';
 
   @override
-  String get sessionNoteRemoved => 'Note removed';
+  String get sessionNoteRemoved => 'Note deleted';
 
   @override
   String get sessionNotePending => 'Applies at the next agent step.';
@@ -1352,7 +1352,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Some saved attachments could not be moved to local attachment storage yet. Your saved content has been kept. Free device storage and retry.';
 
   @override
-  String get commonRetry => 'Retry';
+  String get commonRetry => 'Try again';
 
   @override
   String get shareWaitingForServer =>
@@ -1765,7 +1765,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Continue the existing browser sign-in, then explicitly check its status or enter its code. The browser link is not saved.';
 
   @override
-  String get pendingAuthResume => 'Resume / check status';
+  String get pendingAuthResume => 'Resume / check sign-in';
 
   @override
   String get pendingAuthEnterCode => 'Enter code';
@@ -1794,7 +1794,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Recovery could not be saved reliably. Keep this app open and retry saving; restarting may lose this attempt. If no browser page opened, cancel the attempt before starting again.';
 
   @override
-  String get pendingAuthRetrySave => 'Retry saving recovery';
+  String get pendingAuthRetrySave => 'Try saving recovery again';
 
   @override
   String get pendingAuthForget => 'Forget on this device';
@@ -2017,7 +2017,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign-in is pending on the server. Finish any server-side interaction, then check its status. Closing this sheet does not cancel it.';
 
   @override
-  String get commandAuthCheck => 'Check status';
+  String get commandAuthCheck => 'Check sign-in';
 
   @override
   String get commandAuthCancel => 'Cancel sign-in';
@@ -2197,7 +2197,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mcpConnectionUnconfirmed => 'App connection not confirmed';
 
   @override
-  String get mcpRetryReconnect => 'Retry reconnect';
+  String get mcpRetryReconnect => 'Try reconnecting again';
 
   @override
   String get mcpReconnecting => 'Reconnecting';
@@ -2233,7 +2233,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get promptStashedDraftPending =>
-      'Prompt saved to your stash. The composer draft still needs to be saved; use Retry in the draft warning.';
+      'Prompt saved to your stash. The composer draft still needs to be saved; try again from the draft warning.';
 
   @override
   String get promptStashReadFailed =>
@@ -2485,7 +2485,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The original server was removed. Copy your draft to keep it.';
 
   @override
-  String get draftRetrySave => 'Retry saving draft';
+  String get draftRetrySave => 'Try saving draft again';
 
   @override
   String get draftClearFailed =>
@@ -2905,13 +2905,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setupConnectExisting => 'Connect existing server';
 
   @override
-  String get setupScreenTitle => 'On-device setup';
+  String get setupScreenTitle => 'On this phone';
 
   @override
   String get setupInstallStart => 'Install & start';
 
   @override
-  String get setupCheckAgain => 'Check again';
+  String get setupCheckAgain => 'Try again';
 
   @override
   String uncertainAuthTitle(String integrationID) {
@@ -3038,7 +3038,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Check the server managed by this app in Termux.';
 
   @override
-  String get managedHealthCheck => 'Check status';
+  String get managedHealthCheck => 'Refresh';
 
   @override
   String get managedHealthChecking => 'Checking Termux…';
@@ -3066,7 +3066,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get managedHealthUnknown => 'Server state unavailable';
 
   @override
-  String get managedHealthManage => 'Open setup controls';
+  String get managedHealthManage => 'On this phone';
 
   @override
   String managedHealthObserved(String time) {
@@ -3369,7 +3369,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get managedStorageFailed =>
-      'Termux storage could not be checked. Retry Check status.';
+      'Termux storage could not be checked. Refresh to try again.';
 
   @override
   String get managedRecoveryTitle => 'Recover a crashed managed server';
@@ -3428,10 +3428,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get managedRecoveryUncertain =>
-      'Recovery paused because Termux did not confirm the result. Check status to continue.';
+      'Recovery paused because Termux did not confirm the result. Refresh to continue.';
 
   @override
-  String get managedRecoveryRetryDisable => 'Retry disabling recovery';
+  String get managedRecoveryRetryDisable => 'Try disabling recovery again';
 
   @override
   String get managedRecoveryStoppedWithCleanupError =>
@@ -4228,7 +4228,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get markdownCopyFailed => 'Could not copy code. Try again.';
 
   @override
-  String get markdownCopyRetry => 'Retry';
+  String get markdownCopyRetry => 'Try again';
 
   @override
   String get markdownWrapCode => 'Wrap lines';
@@ -4347,7 +4347,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Draft changes could not be saved. Keep this screen open and retry before leaving.';
 
   @override
-  String get a2aRetryDraftSave => 'Retry saving draft';
+  String get a2aRetryDraftSave => 'Try saving draft again';
 
   @override
   String get a2aSavingDraft => 'Saving draft changes…';
@@ -4378,21 +4378,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'No external agents yet. Start with an agent\'s HTTPS address or public Agent Card URL.';
 
   @override
-  String get a2aDeleteAgent => 'Delete agent';
+  String get a2aDeleteAgent => 'Remove agent';
 
   @override
   String get a2aDeleteAgentDetail =>
       'Remove this agent, its saved tasks and its credential from this phone. This does not stop remote work or delete data held by the agent.';
 
   @override
-  String get a2aDeleteLocal => 'Delete local data';
+  String get a2aDeleteLocal => 'Remove from this phone';
 
   @override
   String get a2aDeletionPending =>
-      'Local deletion is incomplete. This agent is unavailable until its remaining data is removed.';
+      'Removal from this phone is incomplete. This agent is unavailable until its remaining data is removed.';
 
   @override
-  String get a2aRetryDelete => 'Retry deletion';
+  String get a2aRetryDelete => 'Try removing again';
 
   @override
   String get a2aInspectIntro => 'Inspect before you connect';
@@ -4471,14 +4471,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Saved locally. Refresh a known task to check its current state.';
 
   @override
-  String get a2aCancelTask => 'Cancel task';
+  String get a2aCancelTask => 'Stop task';
 
   @override
   String get a2aCancelDetail =>
-      'Ask this agent to cancel this task. Work may already have finished, and the agent decides whether cancellation is possible.';
+      'Ask this agent to stop this task. Work may already have finished, and the agent decides whether stopping is possible.';
 
   @override
-  String get a2aRequestCancel => 'Request cancellation';
+  String get a2aRequestCancel => 'Ask to stop';
 
   @override
   String get a2aForgetTask => 'Forget saved task';
@@ -5092,7 +5092,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Reach a server over your private network';
 
   @override
-  String get onboardingRunOnPhone => 'Run OpenCode on this phone';
+  String get onboardingRunOnPhone => 'Run OpenCode here with Termux';
 
   @override
   String get onboardingTermuxNote => 'Guided Termux setup';
@@ -5107,7 +5107,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingSaveChanges => 'Save changes';
 
   @override
-  String get onboardingTermuxSetup => 'Termux setup';
+  String get onboardingTermuxSetup => 'On this phone';
 
   @override
   String get activityClearHere => 'All clear here';
@@ -5124,7 +5124,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'No requests loaded. Some server activity is still unknown.';
 
   @override
-  String get activityCheckAgain => 'Check again';
+  String get activityCheckAgain => 'Try again';
 
   @override
   String get activitySavedServers => 'Saved servers';
@@ -5237,7 +5237,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get oc2DiscoveryAutodetect => 'Detects OpenCode 1 or 2 automatically.';
 
   @override
-  String get oc2DiscoveryPhone => 'Set up OpenCode 1 or 2 on this phone.';
+  String get oc2DiscoveryPhone => 'Set up OpenCode 1 or 2 here with Termux.';
 
   @override
   String setupSwitchUse(String runtime) {
@@ -5272,7 +5272,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String setupSwitchRetry(String runtime) {
-    return 'Retry $runtime';
+    return 'Try $runtime again';
   }
 
   @override
@@ -7140,6 +7140,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerUiOpenFolder => 'Open folder';
 
   @override
+  String get readerUiOpen => 'Open';
+
+  @override
+  String get readerUiExpand => 'Expand';
+
+  @override
   String get readerUiAttachPrompt => 'Attach to prompt';
 
   @override
@@ -8742,7 +8748,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiReject1 => 'Reject…';
 
   @override
-  String get chatUiReloadMessages => 'Reload messages';
+  String get chatUiReloadMessages => 'Refresh messages';
 
   @override
   String get chatUiRemovesItFromTheConversationPermanently =>
@@ -8771,13 +8777,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiResult => 'Result';
 
   @override
-  String get chatUiRetryImagePreview => 'Retry image preview';
+  String get chatUiRetryImagePreview => 'Try again';
 
   @override
   String get chatUiRetryLastPrompt => 'Retry last prompt';
 
   @override
-  String get chatUiRetryServerCommands => 'Retry server commands';
+  String get chatUiRetryServerCommands => 'Try again';
 
   @override
   String get chatUiRetrying => 'Retrying';
@@ -10191,12 +10197,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7LibraryWasRemoved(String detail1) {
-    return '$detail1 was removed';
+    return '$detail1 was deleted';
   }
 
   @override
   String e7LibraryCouldNotRemoveWorkspace(String detail1) {
-    return 'Could not remove workspace: $detail1';
+    return 'Could not delete workspace: $detail1';
   }
 
   @override
@@ -10227,7 +10233,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LibraryEnvironmentRefreshFailed => 'Environment refresh failed';
 
   @override
-  String get e7LibraryRetryCloudEnvironments => 'Retry cloud environments';
+  String get e7LibraryRetryCloudEnvironments => 'Try again';
 
   @override
   String get e7LibraryAdapters => 'Adapters';
@@ -10236,7 +10242,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LibraryAdaptersUnavailable => 'Adapters unavailable';
 
   @override
-  String get e7LibraryRetryWorkspaceAdapters => 'Retry workspace adapters';
+  String get e7LibraryRetryWorkspaceAdapters => 'Try again';
 
   @override
   String get e7LibraryNoWorkspaceAdapters => 'No workspace adapters';
@@ -10284,7 +10290,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7LibraryRemove(String detail1) {
-    return 'Remove $detail1?';
+    return 'Delete $detail1?';
   }
 
   @override
@@ -10297,7 +10303,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7LibraryRemovePermanently => 'Remove permanently';
+  String get e7LibraryRemovePermanently => 'Delete permanently';
 
   @override
   String e7LibraryIsReady(String detail1) {
@@ -10341,7 +10347,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7LibraryAndItsBranchWereRemoved(String detail1) {
-    return '$detail1 and its branch were removed';
+    return '$detail1 and its branch were deleted';
   }
 
   @override
@@ -10965,7 +10971,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibrarySearchPhoneAliases =>
-      'local on device setup install server android terminal';
+      'termux local on device setup install server android terminal';
 
   @override
   String get e7LibrarySearchModelAliases => 'AI reasoning favorites recent';
@@ -11464,7 +11470,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Leave empty only if this server no longer uses a password.';
 
   @override
-  String get e7SetupAndroidOnly => 'On-device setup is Android only';
+  String get e7SetupAndroidOnly => 'Setup on this phone is Android only';
 
   @override
   String get e7SetupEditServer => 'Edit server';
@@ -12218,7 +12224,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7SetupCheckTermux => 'Check Termux';
+  String get e7SetupCheckTermux => 'On this phone';
 
   @override
   String get e7SetupCommandFailed => 'Termux command failed.';
@@ -13410,7 +13416,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiCardRetry => 'Retry';
+  String get teamUiCardRetry => 'Try again';
 
   @override
   String get teamUiCardRunStateBlocked => 'Blocked';
@@ -14573,7 +14579,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiGateAnswerOptionsHint => 'Choose one option, then send.';
 
   @override
-  String get teamUiGateAnswerRunRetry => 'Retry';
+  String get teamUiGateAnswerRunRetry => 'Try again';
 
   @override
   String teamUiGateAnswerRunRetryDetail(String work, String agent) {
@@ -14587,10 +14593,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiGateAnswerRunLogs => 'View logs';
 
   @override
-  String get teamUiGateAnswerRunCancel => 'Cancel work';
+  String get teamUiGateAnswerRunCancel => 'Stop work';
 
   @override
-  String get teamUiGateAnswerRetry => 'Retry';
+  String get teamUiGateAnswerRetry => 'Try again';
 
   @override
   String get teamUiGateAnswerTryAgain => 'Try again';
@@ -14633,7 +14639,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The host marks this as destructive. It cannot be undone from the phone.';
 
   @override
-  String get teamUiGateAnswerConfirmCancelRunTitle => 'Cancel this work?';
+  String get teamUiGateAnswerConfirmCancelRunTitle => 'Stop this work?';
 
   @override
   String get teamUiGateAnswerConfirmCancelRunBody =>
@@ -14744,19 +14750,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiControlReceiptRetry => 'Retry';
+  String get teamUiControlReceiptRetry => 'Try again';
 
   @override
   String get teamUiControlMoreActions => 'More actions';
 
   @override
-  String get teamUiControlCancelRun => 'Cancel run';
+  String get teamUiControlCancelRun => 'Stop run';
 
   @override
   String get teamUiControlCloseBatch => 'Close batch';
 
   @override
-  String get teamUiControlCancelRunConfirmTitle => 'Cancel this run?';
+  String get teamUiControlCancelRunConfirmTitle => 'Stop this run?';
 
   @override
   String get teamUiControlCancelRunConfirmBody =>
@@ -15230,10 +15236,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Large caches take a minute or two. You can leave this screen; the scan keeps going.';
 
   @override
-  String get termuxStorageCancel => 'Cancel scan';
+  String get termuxStorageCancel => 'Stop scan';
 
   @override
-  String get termuxStorageCancelled => 'Scan cancelled';
+  String get termuxStorageCancelled => 'Scan stopped';
 
   @override
   String get termuxStorageFailed => 'The scan did not finish. Try again.';
@@ -15330,23 +15336,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String termuxStorageCleanConfirmTitle(String size, String category) {
-    return 'Remove $size of $category?';
+    return 'Delete $size of $category?';
   }
 
   @override
   String get termuxStorageCleanConfirmBody =>
-      'Remove only the listed Gradle and npm content caches? Downloads may be needed again and offline builds can be affected. Stop builds and package installs first. Scan again afterward to update the measured sizes.';
+      'Delete only the listed Gradle and npm content caches? Downloads may be needed again and offline builds can be affected. Stop builds and package installs first. Scan again afterward to update the measured sizes.';
 
   @override
   String termuxStorageCleanConfirm(String size) {
-    return 'Remove $size';
+    return 'Delete $size';
   }
 
   @override
   String get termuxStorageKeep => 'Keep';
 
   @override
-  String get termuxStorageCleaning => 'Removing…';
+  String get termuxStorageCleaning => 'Deleting…';
 
   @override
   String termuxStorageFreed(String size) {
@@ -15436,7 +15442,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get termuxProcsGroupOther => 'Other';
 
   @override
-  String get termuxProcsGroupOpenCodeHint => 'Managed from the server controls';
+  String get termuxProcsGroupOpenCodeHint => 'Managed from On this phone';
 
   @override
   String get termuxProcsOrphansHint =>
@@ -15481,7 +15487,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get termuxProcsKeep => 'Keep';
 
   @override
-  String get termuxProcsProtected => 'Protected · open the server controls';
+  String get termuxProcsProtected => 'Protected · open On this phone';
 
   @override
   String termuxProcsOrphanParentGone(String elapsed) {
@@ -15659,7 +15665,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiPhoneOpenWorkspace => 'Open Workspace';
 
   @override
-  String get teamUiPhoneRetry => 'Retry';
+  String get teamUiPhoneRetry => 'Try again';
 
   @override
   String get teamUiPhoneFailedTitle => 'The AI team could not be set up.';
@@ -15818,20 +15824,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiPhoneTipsCopied => 'Commands copied';
 
   @override
-  String get teamUiPhoneRemove => 'Remove from this phone';
+  String get teamUiPhoneRemove => 'Delete from this phone';
 
   @override
-  String get teamUiPhoneRemoveTitle => 'Remove the AI team from this phone?';
+  String get teamUiPhoneRemoveTitle => 'Delete the AI team from this phone?';
 
   @override
   String get teamUiPhoneRemoveBody =>
       'Stops the supervisor and deletes gc, the city and its store. Your project files and their git history stay. The plugin is turned off for this server.';
 
   @override
-  String get teamUiPhoneRemoveConfirm => 'Remove';
+  String get teamUiPhoneRemoveConfirm => 'Delete';
 
   @override
-  String get teamUiPhoneRemoved => 'The AI team was removed from this phone.';
+  String get teamUiPhoneRemoved => 'The AI team was deleted from this phone.';
 
   @override
   String teamUiPhoneActionFailed(String reason) {

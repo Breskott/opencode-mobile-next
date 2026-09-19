@@ -107,8 +107,11 @@ void main() {
     expect(find.text('Connect to a server'), findsOneWidget);
     expect(find.text('Try demo'), findsOneWidget);
     expect(find.text('More setup options'), findsOneWidget);
-    expect(find.text('Termux setup'), findsOneWidget);
-    expect(find.text('Set up OpenCode 1 or 2 on this phone.'), findsOneWidget);
+    expect(find.text('On this phone'), findsOneWidget);
+    expect(
+      find.text('Set up OpenCode 1 or 2 here with Termux.'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
     await tester.pumpAndSettle();

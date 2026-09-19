@@ -2310,7 +2310,7 @@ class _CompactExpandBar extends StatelessWidget {
               Icon(AppIconography.chevronDown, size: 20, color: scheme.primary),
               const SizedBox(width: 6),
               Text(
-                'Expand',
+                readerL10n(context).readerUiExpand,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: scheme.primary,
                   fontWeight: FontWeight.w600,

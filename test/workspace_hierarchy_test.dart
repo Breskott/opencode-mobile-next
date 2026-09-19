@@ -450,7 +450,7 @@ void main() {
           );
           await _pumpFrames(tester);
           expect(tester.takeException(), isNull);
-          expect(find.text('Reload recent sessions'), findsOneWidget);
+          expect(find.text('Refresh recent sessions'), findsOneWidget);
           expect(
             find.byKey(const ValueKey('workspace-terminal')),
             findsOneWidget,
@@ -612,12 +612,12 @@ void main() {
     // checked with it open.
     await tester.tap(find.byKey(const ValueKey('workspace-section-menu')));
     await _pumpFrames(tester);
-    expect(find.text('Reload recent sessions'), findsOneWidget);
+    expect(find.text('Refresh recent sessions'), findsOneWidget);
     expect(find.byKey(const ValueKey('workspace-terminal')), findsNothing);
     expect(find.text('Terminal'), findsNothing);
-    await tester.tap(find.text('Reload recent sessions'));
+    await tester.tap(find.text('Refresh recent sessions'));
     await _pumpFrames(tester);
-    expect(find.text('Reload recent sessions'), findsNothing);
+    expect(find.text('Refresh recent sessions'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

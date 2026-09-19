@@ -208,7 +208,7 @@
   "fileReference": "Reference",
   "fileAttach": "Attach",
   "fileSave": "Save",
-  "fileReload": "Reload",
+  "fileReload": "Refresh",
   "queueRemoveFailed": "Could not remove this draft from device storage. It is still queued. Check available storage and try again.",
   "composerReuseSubtitle": "Reuse text from this conversation and recent sends",
   "composerReuseDescription": "Text from loaded prompts in this conversation and recent sends on this server. Selecting one appends it to your draft. Attachments are not copied. With a keyboard, use Up at the start or Down at the end to browse and restore your draft.",
@@ -294,7 +294,7 @@
   "commandRunning": "Starting…",
   "commandLocationChanged": "The server or workspace changed. Close this dialog and open the command again.",
   "refreshFailed": "Couldn’t refresh",
-  "refreshRetry": "Retry",
+  "refreshRetry": "Try again",
   "filesProjectRoot": "Project root",
   "filesOpenFolder": "Open folder {folder}",
   "@filesOpenFolder": {
@@ -320,10 +320,10 @@
   "workspaceSearchAllSessions": "Search all sessions",
   "workspaceProjectListUnavailable": "Project list unavailable",
   "workspaceProjectListFallback": "Your conversations can still be available. Search all sessions to find previous work.",
-  "workspaceRetryProjects": "Retry projects",
+  "workspaceRetryProjects": "Try again",
   "historyLoadOlder": "Load older messages",
-  "historyReload": "Reload recent history",
-  "historyCursorExpired": "Older history changed or expired. Reload recent history to continue.",
+  "historyReload": "Refresh recent history",
+  "historyCursorExpired": "Older history changed or expired. Refresh recent history to continue.",
   "historyRefreshed": "History refreshed. Older messages remain available above.",
   "historyLoadedOnly": "Only loaded messages are included. Load older history to include more.",
   "historyLoadedTotals": "Usage and loaded history",
@@ -334,7 +334,7 @@
   "sessionsLoadedOnly": "Showing loaded sessions. Load more to include older conversations.",
   "sessionsDetailsUnavailable": "Session details could not be loaded. Try again.",
   "sessionsLoadMore": "Load more sessions",
-  "sessionsReload": "Reload recent sessions",
+  "sessionsReload": "Refresh recent sessions",
   "sessionsNoLoadedRecent": "No recent sessions in loaded results",
   "sessionsNoLoadedArchived": "No archived sessions in loaded results",
   "sessionsLoadedCount": "{count} loaded",
@@ -376,12 +376,12 @@
   "revertAttachmentPrompt": "Attachment-only prompt",
   "revertResolveBeforeSending": "Review the staged revert, then clear it or make it permanent before sending. Your draft is kept.",
   "sessionNoteTitle": "Note for the agent",
-  "sessionNoteDescription": "Keep a short instruction for this session. Saving or removing it takes effect at the next agent step and appears in the transcript then. It does not start a run.",
+  "sessionNoteDescription": "Keep a short instruction for this session. Saving or deleting it takes effect at the next agent step and appears in the transcript then. It does not start a run.",
   "sessionNoteHint": "For example: Keep explanations brief and run the relevant checks before finishing.",
   "sessionNoteSave": "Save note",
-  "sessionNoteRemove": "Remove saved note",
+  "sessionNoteRemove": "Delete saved note",
   "sessionNoteSaved": "Note saved",
-  "sessionNoteRemoved": "Note removed",
+  "sessionNoteRemoved": "Note deleted",
   "sessionNotePending": "Applies at the next agent step.",
   "sessionInstructionsUpdated": "Instructions updated",
   "sessionInstructionsApplied": "The agent's session instructions have been updated for this step.",
@@ -623,7 +623,7 @@
   "promptHistorySaveFailed": "Prompt sent, but its history could not be saved on this device.",
   "promptAttachmentsUnavailableDetail": "Missing, damaged or temporary attachments: {names}. Restore the available content and reattach these files before sending. The saved copy will stay in your stash.",
   "promptStashMigrationPending": "Some saved attachments could not be moved to local attachment storage yet. Your saved content has been kept. Free device storage and retry.",
-  "commonRetry": "Retry",
+  "commonRetry": "Try again",
   "shareWaitingForServer": "Connect to a server and the shared text opens in a new session.",
   "shareSessionFailed": "Shared text kept. Could not open a session. Retry when the connection is ready.",
   "webSourcesDisclosure": "Web search is not available through this connection’s app gateway. Paste a public URL and optionally an excerpt you want to include. No page is fetched. Nothing is sent to the model here.",
@@ -877,7 +877,7 @@
     }
   },
   "pendingAuthDetail": "Continue the existing browser sign-in, then explicitly check its status or enter its code. The browser link is not saved.",
-  "pendingAuthResume": "Resume / check status",
+  "pendingAuthResume": "Resume / check sign-in",
   "pendingAuthEnterCode": "Enter code",
   "pendingAuthComplete": "Sign-in complete.",
   "pendingAuthStillPending": "Sign-in is still pending. No new attempt was started.",
@@ -885,7 +885,7 @@
   "pendingAuthExpired": "This attempt is expired or outside the device’s recovery window. Cancellation is a separate server action.",
   "pendingAuthFailed": "Could not confirm the action. Check pending sign-ins before trying again. No new sign-in was started.",
   "pendingAuthSaveUncertain": "Recovery could not be saved reliably. Keep this app open and retry saving; restarting may lose this attempt. If no browser page opened, cancel the attempt before starting again.",
-  "pendingAuthRetrySave": "Retry saving recovery",
+  "pendingAuthRetrySave": "Try saving recovery again",
   "pendingAuthForget": "Forget on this device",
   "pendingAuthForgetDetail": "Remove only this device’s recovery record? This does not cancel a server command, revoke credentials, or finish authorization. The server attempt may keep running until it expires.",
   "pendingAuthUnsupported": "This connection cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.",
@@ -965,7 +965,7 @@
   "@commandAuthPending": {
     "description": "Pending status without fabricated instructions or automatic cancellation"
   },
-  "commandAuthCheck": "Check status",
+  "commandAuthCheck": "Check sign-in",
   "@commandAuthCheck": {
     "description": "Read the pinned command-auth attempt status"
   },
@@ -1170,7 +1170,7 @@
   },
   "mcpSavedStatus": "Saved in OpenCode",
   "mcpConnectionUnconfirmed": "App connection not confirmed",
-  "mcpRetryReconnect": "Retry reconnect",
+  "mcpRetryReconnect": "Try reconnecting again",
   "mcpReconnecting": "Reconnecting",
   "mcpStillDisconnected": "OpenCode is still disconnected. Try again.",
   "mcpScopeChanged": "The server or project changed. Refresh to load its MCP servers before making changes.",
@@ -1183,7 +1183,7 @@
   "promptRestoredReferences": "Prompt restored. Saved references are snapshots; their server files may have changed.",
   "promptDefaultLocation": "the server default directory",
   "promptStashed": "Prompt saved to your stash.",
-  "promptStashedDraftPending": "Prompt saved to your stash. The composer draft still needs to be saved; use Retry in the draft warning.",
+  "promptStashedDraftPending": "Prompt saved to your stash. The composer draft still needs to be saved; try again from the draft warning.",
   "@promptStashedDraftPending": {
     "description": "Stash save succeeded but persisting the cleared or restored composer draft failed; the saved stash remains available"
   },
@@ -1317,7 +1317,7 @@
   "draftSaveFailed": "Draft not saved. Copy your text or retry.",
   "draftStorageFull": "Draft storage is full. Copy your text before leaving.",
   "draftProfileRemoved": "The original server was removed. Copy your draft to keep it.",
-  "draftRetrySave": "Retry saving draft",
+  "draftRetrySave": "Try saving draft again",
   "draftClearFailed": "Could not clear the saved draft. Retry before leaving.",
   "activeContextTypeCount": "{type} · {count}",
   "@activeContextTypeCount": {
@@ -1692,9 +1692,9 @@
   "setupOwnOption": "Use your own setup",
   "setupOwnDescription": "Connect an existing OpenCode 1 or OpenCode 2 server by address. A native musl installation needs a compatible Linux environment and is not managed by this app.",
   "setupConnectExisting": "Connect existing server",
-  "setupScreenTitle": "On-device setup",
+  "setupScreenTitle": "On this phone",
   "setupInstallStart": "Install & start",
-  "setupCheckAgain": "Check again",
+  "setupCheckAgain": "Try again",
   "uncertainAuthTitle": "Unconfirmed sign-in: {integrationID}",
   "@uncertainAuthTitle": {
     "placeholders": {
@@ -1739,7 +1739,7 @@
   "quotaMiniMaxSourceBound": "Tied to the collector's configured MiniMax Subscription Key. The quota response does not independently identify the account. Only reported general-pool percentages are shown; other limits may apply.",
   "managedHealthTitle": "On-device server",
   "managedHealthUnchecked": "Check the server managed by this app in Termux.",
-  "managedHealthCheck": "Check status",
+  "managedHealthCheck": "Refresh",
   "managedHealthChecking": "Checking Termux…",
   "managedHealthFailed": "Could not check Termux. Open setup to check permissions or try again.",
   "managedHealthReady": "Server process running",
@@ -1748,7 +1748,7 @@
   "managedHealthNeedsSetup": "Setup needs attention",
   "managedHealthAbsent": "No managed setup found",
   "managedHealthUnknown": "Server state unavailable",
-  "managedHealthManage": "Open setup controls",
+  "managedHealthManage": "On this phone",
   "managedHealthObserved": "Last checked at {time}. Check again for the current state.",
   "@managedHealthObserved": {
     "placeholders": {
@@ -1933,7 +1933,7 @@
       }
     }
   },
-  "managedStorageFailed": "Termux storage could not be checked. Retry Check status.",
+  "managedStorageFailed": "Termux storage could not be checked. Refresh to try again.",
   "managedRecoveryTitle": "Recover a crashed managed server",
   "managedRecoveryPolicy": "Opt in to at most 3 restart attempts, with delays of at least 5, 15 and 45 seconds. Only while this app is in the foreground. No install or update.",
   "managedRecoveryAttempts": "Attempts used: {attempts} of 3. The limit survives app restarts.",
@@ -1962,8 +1962,8 @@
   "managedRecoverySettingsUnreadable": "Recovery settings could not be read. Check the server before enabling recovery.",
   "managedRecoveryEnableFailed": "Could not enable recovery. Start the managed server, then try again.",
   "managedRecoveryOwnershipChanged": "The managed operation changed. Check the server before enabling recovery again.",
-  "managedRecoveryUncertain": "Recovery paused because Termux did not confirm the result. Check status to continue.",
-  "managedRecoveryRetryDisable": "Retry disabling recovery",
+  "managedRecoveryUncertain": "Recovery paused because Termux did not confirm the result. Refresh to continue.",
+  "managedRecoveryRetryDisable": "Try disabling recovery again",
   "managedRecoveryStoppedWithCleanupError": "The local server is stopped. Recovery settings could not be fully cleared; retry disabling recovery in Servers before removing the profile.",
   "pluginMappingPersonal": "Your command links · not verified plugin ownership",
   "pluginMappingReview": "Review /{command}",
@@ -2487,7 +2487,7 @@
   "markdownCopyCode": "Copy code",
   "markdownCopied": "Code copied",
   "markdownCopyFailed": "Could not copy code. Try again.",
-  "markdownCopyRetry": "Retry",
+  "markdownCopyRetry": "Try again",
   "markdownWrapCode": "Wrap lines",
   "markdownScrollCode": "Scroll lines",
   "markdownExpandCode": "Full screen",
@@ -2521,7 +2521,7 @@
   "tailscaleRecovery": "If the server is unreachable, check Tailscale on both devices, the full HTTPS name and port, Serve on the server, and your network’s access rules. A VPN or DNS conflict may also prevent access. Keep HTTPS enabled. Correct the server password if authentication is rejected, then retry Test connection.",
   "tailscaleEditorDetail": "Your network connection is managed in Tailscale. Test connection checks this OpenCode server, not the VPN. Enter the server’s own username and password here, not your Tailscale login. Setup help keeps these fields intact.",
   "a2aDraftSaveError": "Draft changes could not be saved. Keep this screen open and retry before leaving.",
-  "a2aRetryDraftSave": "Retry saving draft",
+  "a2aRetryDraftSave": "Try saving draft again",
   "a2aSavingDraft": "Saving draft changes…",
   "a2aCardVersion": "Agent version: {version}",
   "@a2aCardVersion": {
@@ -2537,11 +2537,11 @@
   "a2aBoundary": "Connect to an A2A agent and send a task you choose. Only the text you submit is shared. Your projects, files and other conversations stay on this phone.",
   "a2aAdd": "Add agent",
   "a2aEmpty": "No external agents yet. Start with an agent's HTTPS address or public Agent Card URL.",
-  "a2aDeleteAgent": "Delete agent",
+  "a2aDeleteAgent": "Remove agent",
   "a2aDeleteAgentDetail": "Remove this agent, its saved tasks and its credential from this phone. This does not stop remote work or delete data held by the agent.",
-  "a2aDeleteLocal": "Delete local data",
-  "a2aDeletionPending": "Local deletion is incomplete. This agent is unavailable until its remaining data is removed.",
-  "a2aRetryDelete": "Retry deletion",
+  "a2aDeleteLocal": "Remove from this phone",
+  "a2aDeletionPending": "Removal from this phone is incomplete. This agent is unavailable until its remaining data is removed.",
+  "a2aRetryDelete": "Try removing again",
   "a2aInspectIntro": "Inspect before you connect",
   "a2aAddress": "Agent address",
   "a2aInspect": "Inspect Agent Card",
@@ -2565,9 +2565,9 @@
   "a2aTaskTitle": "Agent task",
   "a2aFresh": "Checked with the agent this visit.",
   "a2aSavedSnapshot": "Saved locally. Refresh a known task to check its current state.",
-  "a2aCancelTask": "Cancel task",
-  "a2aCancelDetail": "Ask this agent to cancel this task. Work may already have finished, and the agent decides whether cancellation is possible.",
-  "a2aRequestCancel": "Request cancellation",
+  "a2aCancelTask": "Stop task",
+  "a2aCancelDetail": "Ask this agent to stop this task. Work may already have finished, and the agent decides whether stopping is possible.",
+  "a2aRequestCancel": "Ask to stop",
   "a2aForgetTask": "Forget saved task",
   "a2aForgetDetail": "Remove this saved task from the phone. Remote work may continue, including a send whose delivery is unconfirmed. This cannot delete the agent's copy.",
   "a2aYourReply": "Your reply",
@@ -2936,17 +2936,17 @@
   "onboardingDemoNote": "A simulated session. No server needed.",
   "onboardingMoreSetup": "More setup options",
   "onboardingPrivateNetwork": "Reach a server over your private network",
-  "onboardingRunOnPhone": "Run OpenCode on this phone",
+  "onboardingRunOnPhone": "Run OpenCode here with Termux",
   "onboardingTermuxNote": "Guided Termux setup",
   "onboardingSetupGuide": "Setup guide",
   "onboardingSaveConnect": "Save & connect",
   "onboardingSaveChanges": "Save changes",
-  "onboardingTermuxSetup": "Termux setup",
+  "onboardingTermuxSetup": "On this phone",
   "activityClearHere": "All clear here",
   "activityStatusIncomplete": "Status incomplete",
   "activityCheckedLocationsClear": "Nothing needs you in the checked locations.",
   "activityUnknownStatusDetail": "No requests loaded. Some server activity is still unknown.",
-  "activityCheckAgain": "Check again",
+  "activityCheckAgain": "Try again",
   "activitySavedServers": "Saved servers",
   "activitySelectedLocationsOnly": "Last selected locations only",
   "activityBackgroundUpdates": "Background updates",
@@ -3001,7 +3001,7 @@
   "oc2DiscoveryExisting": "Use a server that is already running.",
   "oc2DiscoveryTypes": "OpenCode 1 or 2",
   "oc2DiscoveryAutodetect": "Detects OpenCode 1 or 2 automatically.",
-  "oc2DiscoveryPhone": "Set up OpenCode 1 or 2 on this phone.",
+  "oc2DiscoveryPhone": "Set up OpenCode 1 or 2 here with Termux.",
   "setupSwitchUse": "Try {runtime}",
   "@setupSwitchUse": {
     "placeholders": {
@@ -3037,7 +3037,7 @@
       }
     }
   },
-  "setupSwitchRetry": "Retry {runtime}",
+  "setupSwitchRetry": "Try {runtime} again",
   "@setupSwitchRetry": {
     "placeholders": {
       "runtime": {
@@ -5438,6 +5438,14 @@
   "@readerUiOpenFolder": {
     "description": "Reader, Files and review user interface."
   },
+  "readerUiOpen": "Open",
+  "@readerUiOpen": {
+    "description": "Reader, Files and review user interface."
+  },
+  "readerUiExpand": "Expand",
+  "@readerUiExpand": {
+    "description": "Reader, Files and review user interface."
+  },
   "readerUiAttachPrompt": "Attach to prompt",
   "@readerUiAttachPrompt": {
     "description": "Reader, Files and review user interface."
@@ -7540,7 +7548,7 @@
   "@chatUiReject1": {
     "description": "Chat journey: Reject…"
   },
-  "chatUiReloadMessages": "Reload messages",
+  "chatUiReloadMessages": "Refresh messages",
   "@chatUiReloadMessages": {
     "description": "Chat journey: Reload messages"
   },
@@ -7576,7 +7584,7 @@
   "@chatUiResult": {
     "description": "Chat journey: Result"
   },
-  "chatUiRetryImagePreview": "Retry image preview",
+  "chatUiRetryImagePreview": "Try again",
   "@chatUiRetryImagePreview": {
     "description": "Chat journey: Retry image preview"
   },
@@ -7584,7 +7592,7 @@
   "@chatUiRetryLastPrompt": {
     "description": "Chat journey: Retry last prompt"
   },
-  "chatUiRetryServerCommands": "Retry server commands",
+  "chatUiRetryServerCommands": "Try again",
   "@chatUiRetryServerCommands": {
     "description": "Chat journey: Retry server commands"
   },
@@ -9450,7 +9458,7 @@
       }
     }
   },
-  "e7LibraryWasRemoved": "{detail1} was removed",
+  "e7LibraryWasRemoved": "{detail1} was deleted",
   "@e7LibraryWasRemoved": {
     "description": "Library and project tools UI: {detail1} was removed",
     "placeholders": {
@@ -9460,7 +9468,7 @@
       }
     }
   },
-  "e7LibraryCouldNotRemoveWorkspace": "Could not remove workspace: {detail1}",
+  "e7LibraryCouldNotRemoveWorkspace": "Could not delete workspace: {detail1}",
   "@e7LibraryCouldNotRemoveWorkspace": {
     "description": "Library and project tools UI: Could not remove workspace: {detail1}",
     "placeholders": {
@@ -9508,7 +9516,7 @@
   "@e7LibraryEnvironmentRefreshFailed": {
     "description": "Library and project tools UI: Environment refresh failed"
   },
-  "e7LibraryRetryCloudEnvironments": "Retry cloud environments",
+  "e7LibraryRetryCloudEnvironments": "Try again",
   "@e7LibraryRetryCloudEnvironments": {
     "description": "Library and project tools UI: Retry cloud environments"
   },
@@ -9520,7 +9528,7 @@
   "@e7LibraryAdaptersUnavailable": {
     "description": "Library and project tools UI: Adapters unavailable"
   },
-  "e7LibraryRetryWorkspaceAdapters": "Retry workspace adapters",
+  "e7LibraryRetryWorkspaceAdapters": "Try again",
   "@e7LibraryRetryWorkspaceAdapters": {
     "description": "Library and project tools UI: Retry workspace adapters"
   },
@@ -9580,7 +9588,7 @@
   "@e7LibraryCreateAndOpen": {
     "description": "Library and project tools UI: Create and open"
   },
-  "e7LibraryRemove": "Remove {detail1}?",
+  "e7LibraryRemove": "Delete {detail1}?",
   "@e7LibraryRemove": {
     "description": "Library and project tools UI: Remove {detail1}?",
     "placeholders": {
@@ -9604,7 +9612,7 @@
       }
     }
   },
-  "e7LibraryRemovePermanently": "Remove permanently",
+  "e7LibraryRemovePermanently": "Delete permanently",
   "@e7LibraryRemovePermanently": {
     "description": "Library and project tools UI: Remove permanently"
   },
@@ -9674,7 +9682,7 @@
       }
     }
   },
-  "e7LibraryAndItsBranchWereRemoved": "{detail1} and its branch were removed",
+  "e7LibraryAndItsBranchWereRemoved": "{detail1} and its branch were deleted",
   "@e7LibraryAndItsBranchWereRemoved": {
     "description": "Library and project tools UI: {detail1} and its branch were removed",
     "placeholders": {
@@ -10522,7 +10530,7 @@
   "@e7LibraryEnvironmentRemainsAfterDisconnect": {
     "description": "Library and project tools confirmation or count."
   },
-  "e7LibrarySearchPhoneAliases": "local on device setup install server android terminal",
+  "e7LibrarySearchPhoneAliases": "termux local on device setup install server android terminal",
   "@e7LibrarySearchPhoneAliases": {
     "description": "Search aliases for the phone destination; preserve English terms to allow either language."
   },
@@ -11134,7 +11142,7 @@
   "@e7SetupEmptyPasswordHint": {
     "description": "Setup journey: empty password hint."
   },
-  "e7SetupAndroidOnly": "On-device setup is Android only",
+  "e7SetupAndroidOnly": "Setup on this phone is Android only",
   "@e7SetupAndroidOnly": {
     "description": "Setup journey: android only."
   },
@@ -12139,7 +12147,7 @@
       }
     }
   },
-  "e7SetupCheckTermux": "Check Termux",
+  "e7SetupCheckTermux": "On this phone",
   "@e7SetupCheckTermux": {
     "description": "Connection recovery action to inspect Termux."
   },
@@ -13754,7 +13762,7 @@
       }
     }
   },
-  "teamUiCardRetry": "Retry",
+  "teamUiCardRetry": "Try again",
   "@teamUiCardRetry": {
     "description": "Workspace AI Team card error state action: probe the host again"
   },
@@ -15366,7 +15374,7 @@
   "@teamUiGateAnswerOptionsHint": {
     "description": "Helper under the option list of a choice decision before anything is selected"
   },
-  "teamUiGateAnswerRunRetry": "Retry",
+  "teamUiGateAnswerRunRetry": "Try again",
   "@teamUiGateAnswerRunRetry": {
     "description": "Failed-run sheet action sending the stuck work to its agent again"
   },
@@ -15390,11 +15398,11 @@
   "@teamUiGateAnswerRunLogs": {
     "description": "Failed-run sheet action opening the agent output page"
   },
-  "teamUiGateAnswerRunCancel": "Cancel work",
+  "teamUiGateAnswerRunCancel": "Stop work",
   "@teamUiGateAnswerRunCancel": {
     "description": "Failed-run sheet action cancelling the run; two-step in the error tone"
   },
-  "teamUiGateAnswerRetry": "Retry",
+  "teamUiGateAnswerRetry": "Try again",
   "@teamUiGateAnswerRetry": {
     "description": "Receipt action on an unconfirmed answer: sends it again under a new key"
   },
@@ -15447,7 +15455,7 @@
   "@teamUiGateAnswerConfirmApproveBody": {
     "description": "Two-step sheet body before a destructive confirmation is approved"
   },
-  "teamUiGateAnswerConfirmCancelRunTitle": "Cancel this work?",
+  "teamUiGateAnswerConfirmCancelRunTitle": "Stop this work?",
   "@teamUiGateAnswerConfirmCancelRunTitle": {
     "description": "Two-step sheet title before a failed run is cancelled"
   },
@@ -15603,7 +15611,7 @@
       }
     }
   },
-  "teamUiControlReceiptRetry": "Retry",
+  "teamUiControlReceiptRetry": "Try again",
   "@teamUiControlReceiptRetry": {
     "description": "Button on a refused or unconfirmed receipt chip: send again under a new key"
   },
@@ -15611,7 +15619,7 @@
   "@teamUiControlMoreActions": {
     "description": "Tooltip of the run app bar's overflow menu"
   },
-  "teamUiControlCancelRun": "Cancel run",
+  "teamUiControlCancelRun": "Stop run",
   "@teamUiControlCancelRun": {
     "description": "Overflow item and control name: cancel a formula run (two-step)"
   },
@@ -15619,7 +15627,7 @@
   "@teamUiControlCloseBatch": {
     "description": "Overflow item and control name: close a batch (Gas City convoy), two-step"
   },
-  "teamUiControlCancelRunConfirmTitle": "Cancel this run?",
+  "teamUiControlCancelRunConfirmTitle": "Stop this run?",
   "@teamUiControlCancelRunConfirmTitle": {
     "description": "Title of the two-step Cancel run confirmation"
   },
@@ -16308,11 +16316,11 @@
   "@termuxStorageScanningDetail": {
     "description": "Storage screen: line under the scanning heading"
   },
-  "termuxStorageCancel": "Cancel scan",
+  "termuxStorageCancel": "Stop scan",
   "@termuxStorageCancel": {
     "description": "Button that cancels a running scan"
   },
-  "termuxStorageCancelled": "Scan cancelled",
+  "termuxStorageCancelled": "Scan stopped",
   "@termuxStorageCancelled": {
     "description": "Status line after a cancelled scan"
   },
@@ -16444,7 +16452,7 @@
       }
     }
   },
-  "termuxStorageCleanConfirmTitle": "Remove {size} of {category}?",
+  "termuxStorageCleanConfirmTitle": "Delete {size} of {category}?",
   "@termuxStorageCleanConfirmTitle": {
     "description": "Two-step confirmation title for cleaning over a gigabyte",
     "placeholders": {
@@ -16456,11 +16464,11 @@
       }
     }
   },
-  "termuxStorageCleanConfirmBody": "Remove only the listed Gradle and npm content caches? Downloads may be needed again and offline builds can be affected. Stop builds and package installs first. Scan again afterward to update the measured sizes.",
+  "termuxStorageCleanConfirmBody": "Delete only the listed Gradle and npm content caches? Downloads may be needed again and offline builds can be affected. Stop builds and package installs first. Scan again afterward to update the measured sizes.",
   "@termuxStorageCleanConfirmBody": {
     "description": "Two-step confirmation body for cleaning"
   },
-  "termuxStorageCleanConfirm": "Remove {size}",
+  "termuxStorageCleanConfirm": "Delete {size}",
   "@termuxStorageCleanConfirm": {
     "description": "Two-step confirmation button",
     "placeholders": {
@@ -16473,7 +16481,7 @@
   "@termuxStorageKeep": {
     "description": "Two-step confirmation cancel button"
   },
-  "termuxStorageCleaning": "Removing…",
+  "termuxStorageCleaning": "Deleting…",
   "@termuxStorageCleaning": {
     "description": "Status while a clean runs"
   },
@@ -16620,7 +16628,7 @@
   "@termuxProcsGroupOther": {
     "description": "Process group"
   },
-  "termuxProcsGroupOpenCodeHint": "Managed from the server controls",
+  "termuxProcsGroupOpenCodeHint": "Managed from On this phone",
   "@termuxProcsGroupOpenCodeHint": {
     "description": "Under the OpenCode server group instead of a Stop all button"
   },
@@ -16689,7 +16697,7 @@
   "@termuxProcsKeep": {
     "description": "Two-step confirmation cancel button"
   },
-  "termuxProcsProtected": "Protected · open the server controls",
+  "termuxProcsProtected": "Protected · open On this phone",
   "@termuxProcsProtected": {
     "description": "Row subtitle for sshd and opencode serve"
   },
@@ -16968,7 +16976,7 @@
   "@teamUiPhoneOpenWorkspace": {
     "description": "On-device setup: success card action"
   },
-  "teamUiPhoneRetry": "Retry",
+  "teamUiPhoneRetry": "Try again",
   "@teamUiPhoneRetry": {
     "description": "On-device setup: retry after a failure"
   },
@@ -17173,11 +17181,11 @@
   "@teamUiPhoneTipsCopied": {
     "description": "Keep it running sheet: copied confirmation"
   },
-  "teamUiPhoneRemove": "Remove from this phone",
+  "teamUiPhoneRemove": "Delete from this phone",
   "@teamUiPhoneRemove": {
     "description": "On this phone: remove action"
   },
-  "teamUiPhoneRemoveTitle": "Remove the AI team from this phone?",
+  "teamUiPhoneRemoveTitle": "Delete the AI team from this phone?",
   "@teamUiPhoneRemoveTitle": {
     "description": "On this phone: remove confirmation title"
   },
@@ -17185,11 +17193,11 @@
   "@teamUiPhoneRemoveBody": {
     "description": "On this phone: remove confirmation body"
   },
-  "teamUiPhoneRemoveConfirm": "Remove",
+  "teamUiPhoneRemoveConfirm": "Delete",
   "@teamUiPhoneRemoveConfirm": {
     "description": "On this phone: remove confirmation action"
   },
-  "teamUiPhoneRemoved": "The AI team was removed from this phone.",
+  "teamUiPhoneRemoved": "The AI team was deleted from this phone.",
   "@teamUiPhoneRemoved": {
     "description": "On this phone: removed confirmation"
   },

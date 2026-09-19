@@ -65,7 +65,7 @@ void main() {
         'Share session',
         'Run shell command',
         'Commands',
-        'Reload messages',
+        'Refresh messages',
         'Continue on computer',
         'Open on another phone',
       ]) {
@@ -121,9 +121,9 @@ void main() {
       await tester.ensureVisible(find.text('Session actions'));
       await tester.tap(find.text('Session actions'));
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Reload messages'));
+      await tester.ensureVisible(find.text('Refresh messages'));
       await tester.pumpAndSettle();
-      expect(find.text('Reload messages').hitTestable(), findsOneWidget);
+      expect(find.text('Refresh messages').hitTestable(), findsOneWidget);
       await tester.ensureVisible(find.text('Open on another phone'));
       await tester.pumpAndSettle();
       expect(find.text('Open on another phone').hitTestable(), findsOneWidget);

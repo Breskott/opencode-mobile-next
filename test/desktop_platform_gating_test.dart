@@ -139,9 +139,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('welcome-termux-card')), findsOneWidget);
-      expect(find.text('Termux setup'), findsOneWidget);
+      expect(find.text('On this phone'), findsOneWidget);
       expect(
-        find.text('Set up OpenCode 1 or 2 on this phone.'),
+        find.text('Set up OpenCode 1 or 2 here with Termux.'),
         findsOneWidget,
       );
       expect(find.text('Setup guide'), findsOneWidget);
@@ -181,9 +181,9 @@ void main() {
         find.byKey(const ValueKey('quick-add-termux-card')),
         findsOneWidget,
       );
-      expect(find.text('Termux setup'), findsOneWidget);
+      expect(find.text('On this phone'), findsOneWidget);
       expect(
-        find.text('Set up OpenCode 1 or 2 on this phone.'),
+        find.text('Set up OpenCode 1 or 2 here with Termux.'),
         findsOneWidget,
       );
     });
@@ -281,7 +281,7 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const Key('termux-setup-unsupported')), findsOneWidget);
-      expect(find.text('On-device setup is Android only'), findsOneWidget);
+      expect(find.text('Setup on this phone is Android only'), findsOneWidget);
       // No step list, so nothing invites a tap that cannot work.
       expect(find.text('Get Termux'), findsNothing);
       expect(tester.takeException(), isNull);

@@ -786,7 +786,7 @@ void main() {
       await tester.tap(cancel);
       await tester.pumpAndSettle();
       expect(confirmSheet, findsOneWidget);
-      expect(find.text('Cancel this work?'), findsOneWidget);
+      expect(find.text('Stop this work?'), findsOneWidget);
       expect(gateway.calls, isEmpty);
       await tester.tap(confirmYes);
       await tester.pumpAndSettle();
@@ -853,7 +853,7 @@ void main() {
         'Sent, unconfirmed — check on the host before re-sending',
       );
       expect(retry, findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
       // The primary action is gone: the same answer may have landed.
       expect(send, findsNothing);
       expect(gateway.calls, hasLength(1));

@@ -382,7 +382,7 @@ void main() {
     expect(find.text('Session 1'), findsOneWidget);
     expect(find.text('Next page unavailable'), findsOneWidget);
     fail = false;
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(repository.calls.map((query) => query.cursor), [
       null,
@@ -419,7 +419,7 @@ void main() {
     expect(find.text('Temporary refresh failure'), findsOneWidget);
     expect(find.text('Could not refresh sessions.'), findsOneWidget);
 
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(find.text('Session 2'), findsOneWidget);
     expect(find.text('Session 1'), findsNothing);
@@ -499,7 +499,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('could not advance'), findsOneWidget);
     expect(repository.calls, hasLength(2));
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(repository.calls.last.cursor, isNull);
   });

@@ -845,7 +845,7 @@ abstract class AppLocalizations {
   /// No description provided for @fileReload.
   ///
   /// In en, this message translates to:
-  /// **'Reload'**
+  /// **'Refresh'**
   String get fileReload;
 
   /// No description provided for @queueRemoveFailed.
@@ -1061,7 +1061,7 @@ abstract class AppLocalizations {
   /// No description provided for @refreshRetry.
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Try again'**
   String get refreshRetry;
 
   /// No description provided for @filesProjectRoot.
@@ -1115,7 +1115,7 @@ abstract class AppLocalizations {
   /// No description provided for @workspaceRetryProjects.
   ///
   /// In en, this message translates to:
-  /// **'Retry projects'**
+  /// **'Try again'**
   String get workspaceRetryProjects;
 
   /// No description provided for @historyLoadOlder.
@@ -1127,13 +1127,13 @@ abstract class AppLocalizations {
   /// No description provided for @historyReload.
   ///
   /// In en, this message translates to:
-  /// **'Reload recent history'**
+  /// **'Refresh recent history'**
   String get historyReload;
 
   /// No description provided for @historyCursorExpired.
   ///
   /// In en, this message translates to:
-  /// **'Older history changed or expired. Reload recent history to continue.'**
+  /// **'Older history changed or expired. Refresh recent history to continue.'**
   String get historyCursorExpired;
 
   /// No description provided for @historyRefreshed.
@@ -1199,7 +1199,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionsReload.
   ///
   /// In en, this message translates to:
-  /// **'Reload recent sessions'**
+  /// **'Refresh recent sessions'**
   String get sessionsReload;
 
   /// No description provided for @sessionsNoLoadedRecent.
@@ -1409,7 +1409,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionNoteDescription.
   ///
   /// In en, this message translates to:
-  /// **'Keep a short instruction for this session. Saving or removing it takes effect at the next agent step and appears in the transcript then. It does not start a run.'**
+  /// **'Keep a short instruction for this session. Saving or deleting it takes effect at the next agent step and appears in the transcript then. It does not start a run.'**
   String get sessionNoteDescription;
 
   /// No description provided for @sessionNoteHint.
@@ -1427,7 +1427,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionNoteRemove.
   ///
   /// In en, this message translates to:
-  /// **'Remove saved note'**
+  /// **'Delete saved note'**
   String get sessionNoteRemove;
 
   /// No description provided for @sessionNoteSaved.
@@ -1439,7 +1439,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionNoteRemoved.
   ///
   /// In en, this message translates to:
-  /// **'Note removed'**
+  /// **'Note deleted'**
   String get sessionNoteRemoved;
 
   /// No description provided for @sessionNotePending.
@@ -2399,7 +2399,7 @@ abstract class AppLocalizations {
   /// No description provided for @commonRetry.
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Try again'**
   String get commonRetry;
 
   /// No description provided for @shareWaitingForServer.
@@ -3017,7 +3017,7 @@ abstract class AppLocalizations {
   /// No description provided for @pendingAuthResume.
   ///
   /// In en, this message translates to:
-  /// **'Resume / check status'**
+  /// **'Resume / check sign-in'**
   String get pendingAuthResume;
 
   /// No description provided for @pendingAuthEnterCode.
@@ -3065,7 +3065,7 @@ abstract class AppLocalizations {
   /// No description provided for @pendingAuthRetrySave.
   ///
   /// In en, this message translates to:
-  /// **'Retry saving recovery'**
+  /// **'Try saving recovery again'**
   String get pendingAuthRetrySave;
 
   /// No description provided for @pendingAuthForget.
@@ -3437,7 +3437,7 @@ abstract class AppLocalizations {
   /// Read the pinned command-auth attempt status
   ///
   /// In en, this message translates to:
-  /// **'Check status'**
+  /// **'Check sign-in'**
   String get commandAuthCheck;
 
   /// Cancel the selected command-auth attempt, not all credentials
@@ -3731,7 +3731,7 @@ abstract class AppLocalizations {
   /// No description provided for @mcpRetryReconnect.
   ///
   /// In en, this message translates to:
-  /// **'Retry reconnect'**
+  /// **'Try reconnecting again'**
   String get mcpRetryReconnect;
 
   /// No description provided for @mcpReconnecting.
@@ -3791,7 +3791,7 @@ abstract class AppLocalizations {
   /// Stash save succeeded but persisting the cleared or restored composer draft failed; the saved stash remains available
   ///
   /// In en, this message translates to:
-  /// **'Prompt saved to your stash. The composer draft still needs to be saved; use Retry in the draft warning.'**
+  /// **'Prompt saved to your stash. The composer draft still needs to be saved; try again from the draft warning.'**
   String get promptStashedDraftPending;
 
   /// No description provided for @promptStashReadFailed.
@@ -4205,7 +4205,7 @@ abstract class AppLocalizations {
   /// No description provided for @draftRetrySave.
   ///
   /// In en, this message translates to:
-  /// **'Retry saving draft'**
+  /// **'Try saving draft again'**
   String get draftRetrySave;
 
   /// No description provided for @draftClearFailed.
@@ -4841,7 +4841,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupScreenTitle.
   ///
   /// In en, this message translates to:
-  /// **'On-device setup'**
+  /// **'On this phone'**
   String get setupScreenTitle;
 
   /// No description provided for @setupInstallStart.
@@ -4853,7 +4853,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupCheckAgain.
   ///
   /// In en, this message translates to:
-  /// **'Check again'**
+  /// **'Try again'**
   String get setupCheckAgain;
 
   /// No description provided for @uncertainAuthTitle.
@@ -5081,7 +5081,7 @@ abstract class AppLocalizations {
   /// No description provided for @managedHealthCheck.
   ///
   /// In en, this message translates to:
-  /// **'Check status'**
+  /// **'Refresh'**
   String get managedHealthCheck;
 
   /// No description provided for @managedHealthChecking.
@@ -5135,7 +5135,7 @@ abstract class AppLocalizations {
   /// No description provided for @managedHealthManage.
   ///
   /// In en, this message translates to:
-  /// **'Open setup controls'**
+  /// **'On this phone'**
   String get managedHealthManage;
 
   /// No description provided for @managedHealthObserved.
@@ -5638,7 +5638,7 @@ abstract class AppLocalizations {
   /// No description provided for @managedStorageFailed.
   ///
   /// In en, this message translates to:
-  /// **'Termux storage could not be checked. Retry Check status.'**
+  /// **'Termux storage could not be checked. Refresh to try again.'**
   String get managedStorageFailed;
 
   /// No description provided for @managedRecoveryTitle.
@@ -5728,13 +5728,13 @@ abstract class AppLocalizations {
   /// No description provided for @managedRecoveryUncertain.
   ///
   /// In en, this message translates to:
-  /// **'Recovery paused because Termux did not confirm the result. Check status to continue.'**
+  /// **'Recovery paused because Termux did not confirm the result. Refresh to continue.'**
   String get managedRecoveryUncertain;
 
   /// No description provided for @managedRecoveryRetryDisable.
   ///
   /// In en, this message translates to:
-  /// **'Retry disabling recovery'**
+  /// **'Try disabling recovery again'**
   String get managedRecoveryRetryDisable;
 
   /// No description provided for @managedRecoveryStoppedWithCleanupError.
@@ -7060,7 +7060,7 @@ abstract class AppLocalizations {
   /// No description provided for @markdownCopyRetry.
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Try again'**
   String get markdownCopyRetry;
 
   /// No description provided for @markdownWrapCode.
@@ -7264,7 +7264,7 @@ abstract class AppLocalizations {
   /// No description provided for @a2aRetryDraftSave.
   ///
   /// In en, this message translates to:
-  /// **'Retry saving draft'**
+  /// **'Try saving draft again'**
   String get a2aRetryDraftSave;
 
   /// No description provided for @a2aSavingDraft.
@@ -7318,7 +7318,7 @@ abstract class AppLocalizations {
   /// No description provided for @a2aDeleteAgent.
   ///
   /// In en, this message translates to:
-  /// **'Delete agent'**
+  /// **'Remove agent'**
   String get a2aDeleteAgent;
 
   /// No description provided for @a2aDeleteAgentDetail.
@@ -7330,19 +7330,19 @@ abstract class AppLocalizations {
   /// No description provided for @a2aDeleteLocal.
   ///
   /// In en, this message translates to:
-  /// **'Delete local data'**
+  /// **'Remove from this phone'**
   String get a2aDeleteLocal;
 
   /// No description provided for @a2aDeletionPending.
   ///
   /// In en, this message translates to:
-  /// **'Local deletion is incomplete. This agent is unavailable until its remaining data is removed.'**
+  /// **'Removal from this phone is incomplete. This agent is unavailable until its remaining data is removed.'**
   String get a2aDeletionPending;
 
   /// No description provided for @a2aRetryDelete.
   ///
   /// In en, this message translates to:
-  /// **'Retry deletion'**
+  /// **'Try removing again'**
   String get a2aRetryDelete;
 
   /// No description provided for @a2aInspectIntro.
@@ -7486,19 +7486,19 @@ abstract class AppLocalizations {
   /// No description provided for @a2aCancelTask.
   ///
   /// In en, this message translates to:
-  /// **'Cancel task'**
+  /// **'Stop task'**
   String get a2aCancelTask;
 
   /// No description provided for @a2aCancelDetail.
   ///
   /// In en, this message translates to:
-  /// **'Ask this agent to cancel this task. Work may already have finished, and the agent decides whether cancellation is possible.'**
+  /// **'Ask this agent to stop this task. Work may already have finished, and the agent decides whether stopping is possible.'**
   String get a2aCancelDetail;
 
   /// No description provided for @a2aRequestCancel.
   ///
   /// In en, this message translates to:
-  /// **'Request cancellation'**
+  /// **'Ask to stop'**
   String get a2aRequestCancel;
 
   /// No description provided for @a2aForgetTask.
@@ -8536,7 +8536,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingRunOnPhone.
   ///
   /// In en, this message translates to:
-  /// **'Run OpenCode on this phone'**
+  /// **'Run OpenCode here with Termux'**
   String get onboardingRunOnPhone;
 
   /// No description provided for @onboardingTermuxNote.
@@ -8566,7 +8566,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingTermuxSetup.
   ///
   /// In en, this message translates to:
-  /// **'Termux setup'**
+  /// **'On this phone'**
   String get onboardingTermuxSetup;
 
   /// No description provided for @activityClearHere.
@@ -8596,7 +8596,7 @@ abstract class AppLocalizations {
   /// No description provided for @activityCheckAgain.
   ///
   /// In en, this message translates to:
-  /// **'Check again'**
+  /// **'Try again'**
   String get activityCheckAgain;
 
   /// No description provided for @activitySavedServers.
@@ -8782,7 +8782,7 @@ abstract class AppLocalizations {
   /// No description provided for @oc2DiscoveryPhone.
   ///
   /// In en, this message translates to:
-  /// **'Set up OpenCode 1 or 2 on this phone.'**
+  /// **'Set up OpenCode 1 or 2 here with Termux.'**
   String get oc2DiscoveryPhone;
 
   /// No description provided for @setupSwitchUse.
@@ -8830,7 +8830,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupSwitchRetry.
   ///
   /// In en, this message translates to:
-  /// **'Retry {runtime}'**
+  /// **'Try {runtime} again'**
   String setupSwitchRetry(String runtime);
 
   /// No description provided for @setupSwitchInProgressHint.
@@ -11831,6 +11831,18 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
+  /// **'Open'**
+  String get readerUiOpen;
+
+  /// Reader, Files and review user interface.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get readerUiExpand;
+
+  /// Reader, Files and review user interface.
+  ///
+  /// In en, this message translates to:
   /// **'Attach to prompt'**
   String get readerUiAttachPrompt;
 
@@ -14446,7 +14458,7 @@ abstract class AppLocalizations {
   /// Chat journey: Reload messages
   ///
   /// In en, this message translates to:
-  /// **'Reload messages'**
+  /// **'Refresh messages'**
   String get chatUiReloadMessages;
 
   /// Chat journey: Removes it from the conversation permanently
@@ -14500,7 +14512,7 @@ abstract class AppLocalizations {
   /// Chat journey: Retry image preview
   ///
   /// In en, this message translates to:
-  /// **'Retry image preview'**
+  /// **'Try again'**
   String get chatUiRetryImagePreview;
 
   /// Chat journey: Retry last prompt
@@ -14512,7 +14524,7 @@ abstract class AppLocalizations {
   /// Chat journey: Retry server commands
   ///
   /// In en, this message translates to:
-  /// **'Retry server commands'**
+  /// **'Try again'**
   String get chatUiRetryServerCommands;
 
   /// Chat journey: Retrying
@@ -16477,13 +16489,13 @@ abstract class AppLocalizations {
   /// Library and project tools UI: {detail1} was removed
   ///
   /// In en, this message translates to:
-  /// **'{detail1} was removed'**
+  /// **'{detail1} was deleted'**
   String e7LibraryWasRemoved(String detail1);
 
   /// Library and project tools UI: Could not remove workspace: {detail1}
   ///
   /// In en, this message translates to:
-  /// **'Could not remove workspace: {detail1}'**
+  /// **'Could not delete workspace: {detail1}'**
   String e7LibraryCouldNotRemoveWorkspace(String detail1);
 
   /// Library and project tools UI: Cloud environments
@@ -16537,7 +16549,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: Retry cloud environments
   ///
   /// In en, this message translates to:
-  /// **'Retry cloud environments'**
+  /// **'Try again'**
   String get e7LibraryRetryCloudEnvironments;
 
   /// Library and project tools UI: Adapters
@@ -16555,7 +16567,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: Retry workspace adapters
   ///
   /// In en, this message translates to:
-  /// **'Retry workspace adapters'**
+  /// **'Try again'**
   String get e7LibraryRetryWorkspaceAdapters;
 
   /// Library and project tools UI: No workspace adapters
@@ -16645,7 +16657,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: Remove {detail1}?
   ///
   /// In en, this message translates to:
-  /// **'Remove {detail1}?'**
+  /// **'Delete {detail1}?'**
   String e7LibraryRemove(String detail1);
 
   /// Library and project tools UI: The server adapter may permanently delete the remote environment or worktree. Existing chat history remains, but its workspace may no longer be reachable.
@@ -16663,7 +16675,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: Remove permanently
   ///
   /// In en, this message translates to:
-  /// **'Remove permanently'**
+  /// **'Delete permanently'**
   String get e7LibraryRemovePermanently;
 
   /// Library and project tools UI: {detail1} is ready
@@ -16720,7 +16732,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: {detail1} and its branch were removed
   ///
   /// In en, this message translates to:
-  /// **'{detail1} and its branch were removed'**
+  /// **'{detail1} and its branch were deleted'**
   String e7LibraryAndItsBranchWereRemoved(String detail1);
 
   /// Library and project tools UI: Reset {detail1}?
@@ -17714,7 +17726,7 @@ abstract class AppLocalizations {
   /// Search aliases for the phone destination; preserve English terms to allow either language.
   ///
   /// In en, this message translates to:
-  /// **'local on device setup install server android terminal'**
+  /// **'termux local on device setup install server android terminal'**
   String get e7LibrarySearchPhoneAliases;
 
   /// Search aliases for the model destination; preserve English terms to allow either language.
@@ -18632,7 +18644,7 @@ abstract class AppLocalizations {
   /// Setup journey: android only.
   ///
   /// In en, this message translates to:
-  /// **'On-device setup is Android only'**
+  /// **'Setup on this phone is Android only'**
   String get e7SetupAndroidOnly;
 
   /// Setup journey: edit server.
@@ -19784,7 +19796,7 @@ abstract class AppLocalizations {
   /// Connection recovery action to inspect Termux.
   ///
   /// In en, this message translates to:
-  /// **'Check Termux'**
+  /// **'On this phone'**
   String get e7SetupCheckTermux;
 
   /// Localized manager or bridge status: CommandFailed.
@@ -21708,7 +21720,7 @@ abstract class AppLocalizations {
   /// Workspace AI Team card error state action: probe the host again
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Try again'**
   String get teamUiCardRetry;
 
   /// Run state word on a Workspace AI Team card run row
@@ -23536,7 +23548,7 @@ abstract class AppLocalizations {
   /// Failed-run sheet action sending the stuck work to its agent again
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Try again'**
   String get teamUiGateAnswerRunRetry;
 
   /// Helper under the failed-run Retry action naming the work item and agent
@@ -23560,13 +23572,13 @@ abstract class AppLocalizations {
   /// Failed-run sheet action cancelling the run; two-step in the error tone
   ///
   /// In en, this message translates to:
-  /// **'Cancel work'**
+  /// **'Stop work'**
   String get teamUiGateAnswerRunCancel;
 
   /// Receipt action on an unconfirmed answer: sends it again under a new key
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Try again'**
   String get teamUiGateAnswerRetry;
 
   /// Receipt action on an answer the host refused
@@ -23638,7 +23650,7 @@ abstract class AppLocalizations {
   /// Two-step sheet title before a failed run is cancelled
   ///
   /// In en, this message translates to:
-  /// **'Cancel this work?'**
+  /// **'Stop this work?'**
   String get teamUiGateAnswerConfirmCancelRunTitle;
 
   /// Two-step sheet body before a failed run is cancelled
@@ -23830,7 +23842,7 @@ abstract class AppLocalizations {
   /// Button on a refused or unconfirmed receipt chip: send again under a new key
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Try again'**
   String get teamUiControlReceiptRetry;
 
   /// Tooltip of the run app bar's overflow menu
@@ -23842,7 +23854,7 @@ abstract class AppLocalizations {
   /// Overflow item and control name: cancel a formula run (two-step)
   ///
   /// In en, this message translates to:
-  /// **'Cancel run'**
+  /// **'Stop run'**
   String get teamUiControlCancelRun;
 
   /// Overflow item and control name: close a batch (Gas City convoy), two-step
@@ -23854,7 +23866,7 @@ abstract class AppLocalizations {
   /// Title of the two-step Cancel run confirmation
   ///
   /// In en, this message translates to:
-  /// **'Cancel this run?'**
+  /// **'Stop this run?'**
   String get teamUiControlCancelRunConfirmTitle;
 
   /// Body of the Cancel run confirmation
@@ -24615,13 +24627,13 @@ abstract class AppLocalizations {
   /// Button that cancels a running scan
   ///
   /// In en, this message translates to:
-  /// **'Cancel scan'**
+  /// **'Stop scan'**
   String get termuxStorageCancel;
 
   /// Status line after a cancelled scan
   ///
   /// In en, this message translates to:
-  /// **'Scan cancelled'**
+  /// **'Scan stopped'**
   String get termuxStorageCancelled;
 
   /// Status line after a failed scan
@@ -24777,19 +24789,19 @@ abstract class AppLocalizations {
   /// Two-step confirmation title for cleaning over a gigabyte
   ///
   /// In en, this message translates to:
-  /// **'Remove {size} of {category}?'**
+  /// **'Delete {size} of {category}?'**
   String termuxStorageCleanConfirmTitle(String size, String category);
 
   /// Two-step confirmation body for cleaning
   ///
   /// In en, this message translates to:
-  /// **'Remove only the listed Gradle and npm content caches? Downloads may be needed again and offline builds can be affected. Stop builds and package installs first. Scan again afterward to update the measured sizes.'**
+  /// **'Delete only the listed Gradle and npm content caches? Downloads may be needed again and offline builds can be affected. Stop builds and package installs first. Scan again afterward to update the measured sizes.'**
   String get termuxStorageCleanConfirmBody;
 
   /// Two-step confirmation button
   ///
   /// In en, this message translates to:
-  /// **'Remove {size}'**
+  /// **'Delete {size}'**
   String termuxStorageCleanConfirm(String size);
 
   /// Two-step confirmation cancel button
@@ -24801,7 +24813,7 @@ abstract class AppLocalizations {
   /// Status while a clean runs
   ///
   /// In en, this message translates to:
-  /// **'Removing…'**
+  /// **'Deleting…'**
   String get termuxStorageCleaning;
 
   /// Result line after a clean
@@ -24945,7 +24957,7 @@ abstract class AppLocalizations {
   /// Under the OpenCode server group instead of a Stop all button
   ///
   /// In en, this message translates to:
-  /// **'Managed from the server controls'**
+  /// **'Managed from On this phone'**
   String get termuxProcsGroupOpenCodeHint;
 
   /// Under the Orphans group heading
@@ -25011,7 +25023,7 @@ abstract class AppLocalizations {
   /// Row subtitle for sshd and opencode serve
   ///
   /// In en, this message translates to:
-  /// **'Protected · open the server controls'**
+  /// **'Protected · open On this phone'**
   String get termuxProcsProtected;
 
   /// Orphan reason line
@@ -25275,7 +25287,7 @@ abstract class AppLocalizations {
   /// On-device setup: retry after a failure
   ///
   /// In en, this message translates to:
-  /// **'Retry'**
+  /// **'Try again'**
   String get teamUiPhoneRetry;
 
   /// On-device setup: failure heading
@@ -25521,13 +25533,13 @@ abstract class AppLocalizations {
   /// On this phone: remove action
   ///
   /// In en, this message translates to:
-  /// **'Remove from this phone'**
+  /// **'Delete from this phone'**
   String get teamUiPhoneRemove;
 
   /// On this phone: remove confirmation title
   ///
   /// In en, this message translates to:
-  /// **'Remove the AI team from this phone?'**
+  /// **'Delete the AI team from this phone?'**
   String get teamUiPhoneRemoveTitle;
 
   /// On this phone: remove confirmation body
@@ -25539,13 +25551,13 @@ abstract class AppLocalizations {
   /// On this phone: remove confirmation action
   ///
   /// In en, this message translates to:
-  /// **'Remove'**
+  /// **'Delete'**
   String get teamUiPhoneRemoveConfirm;
 
   /// On this phone: removed confirmation
   ///
   /// In en, this message translates to:
-  /// **'The AI team was removed from this phone.'**
+  /// **'The AI team was deleted from this phone.'**
   String get teamUiPhoneRemoved;
 
   /// On this phone: a verb failed
