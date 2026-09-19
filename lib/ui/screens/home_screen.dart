@@ -33,6 +33,13 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with AppShortcutSurface {
+  // Tab ids follow the visible order, so Ctrl/Cmd+1..4 and `initialTab` mean
+  // "the nth destination" and never drift from what the dock shows.
+  static const _workTab = 0;
+  static const _inboxTab = 1;
+  static const _projectTab = 2;
+  static const _settingsTab = 3;
+
   late int _tab;
 
   /// Bumped by Ctrl+F while the Files destination is showing. Files listens
@@ -64,7 +71,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         _selectTab(next);
         return true;
       case FindInSurfaceIntent()
-          when _tab == 1 && ref.read(connProvider).capabilities.fileBrowsing:
+          when _tab == _projectTab &&
+              ref.read(connProvider).capabilities.fileBrowsing:
         _findInFiles.value++;
         return true;
       case OpenTerminalIntent()
@@ -93,8 +101,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   static int _safeTab(int requested, ServerCapabilities capabilities) {
-    final tab = requested.clamp(0, 3);
-    return tab == 1 && !capabilities.fileBrowsing ? 0 : tab;
+    final tab = requested.clamp(_workTab, _settingsTab);
+    return tab == _projectTab && !capabilities.fileBrowsing ? _workTab : tab;
   }
 
   @override
@@ -115,10 +123,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         MediaQuery.sizeOf(context).width < 760 &&
         MediaQuery.viewInsetsOf(context).bottom == 0;
 
-    // Audit §5: Activity replaces Terminal in primary navigation; Terminal is
-    // reachable from Session and the Settings hub. One destination, one badge.
+    // One tab per noun (UX plan 5.1): Work, Inbox, Project, Settings. The
+    // Inbox carries the product's single pending badge.
     final tabs = <Widget>[
       WorkspaceScreen(controller: conn),
+      ActivityScreen(controller: conn, embedded: true),
       if (conn.capabilities.fileBrowsing)
         FilesScreen(
           controller: conn,
@@ -127,41 +136,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         )
       else
         const SizedBox.shrink(),
-      ActivityScreen(controller: conn, embedded: true),
       SettingsScreen(controller: conn, embedded: true),
     ];
     final pending = conn.unifiedAttentionCount;
     final destinations = <({int id, NavigationDestination destination})>[
       (
-        id: 0,
+        id: _workTab,
         destination: NavigationDestination(
           icon: AppGlyph(AppIconography.workspace),
           selectedIcon: AppGlyph(AppIconography.workspaceSelected),
-          label: _l10n(context).e7WorkspaceWorkspace,
+          label: _l10n(context).shellTabWork,
         ),
       ),
-      if (conn.capabilities.fileBrowsing)
-        (
-          id: 1,
-          destination: NavigationDestination(
-            icon: AppGlyph(AppIconography.files),
-            selectedIcon: AppGlyph(AppIconography.filesSelected),
-            label: _l10n(context).e7WorkspaceFiles,
-          ),
-        ),
       (
-        id: 2,
+        id: _inboxTab,
         destination: NavigationDestination(
           icon: _ActivityIcon(pending: pending, icon: AppIconography.activity),
           selectedIcon: _ActivityIcon(
             pending: pending,
             icon: AppIconography.activitySelected,
           ),
-          label: _l10n(context).e7WorkspaceActivity,
+          label: _l10n(context).shellTabInbox,
         ),
       ),
+      if (conn.capabilities.fileBrowsing)
+        (
+          id: _projectTab,
+          destination: NavigationDestination(
+            icon: AppGlyph(AppIconography.files),
+            selectedIcon: AppGlyph(AppIconography.filesSelected),
+            label: _l10n(context).shellTabProject,
+          ),
+        ),
       (
-        id: 3,
+        id: _settingsTab,
         destination: NavigationDestination(
           icon: Icon(AppIconography.settings),
           selectedIcon: Icon(AppIconography.settings),
@@ -190,7 +198,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
           actions: [
             // §5 Root app bar: one contextual action plus overflow. The
-            // pending badge lives on the Activity destination alone.
+            // pending badge lives on the Inbox destination alone.
             // Settings and the shortcuts list have one entry point each, on
             // the Settings tab; this overflow holds only connection-level acts.
             PopupMenuButton<String>(
@@ -289,17 +297,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   /// Files first unwinds its local navigation, then destinations return home.
-  /// Only Workspace uses the double-back exit guard.
+  /// Only Work uses the double-back exit guard.
   void _onRootPop(bool didPop, Object? result) {
     if (didPop) return;
-    if (_tab == 1 &&
+    if (_tab == _projectTab &&
         ref.read(connProvider).capabilities.fileBrowsing &&
         _filesBack.handleBack()) {
       _lastBackAt = null;
       return;
     }
-    if (_tab != 0) {
-      _selectTab(0);
+    if (_tab != _workTab) {
+      _selectTab(_workTab);
       return;
     }
     final now = DateTime.now();
@@ -322,9 +330,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   DateTime? _lastBackAt;
 
   List<String> get _titles => [
-    _l10n(context).e7WorkspaceWorkspace,
-    _l10n(context).e7WorkspaceFiles,
-    _l10n(context).e7WorkspaceActivity,
+    _l10n(context).shellTabWork,
+    _l10n(context).shellTabInbox,
+    _l10n(context).shellTabProject,
     _l10n(context).librarySettingsTitle,
   ];
 }

@@ -1105,17 +1105,18 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         keys: '$mod + 1',
         onInvoke: () => go(0),
       ),
-      DesktopCommand(
-        label: l10n.e7LocaleUiFiles,
-        icon: Icons.folder_outlined,
-        hint: l10n.e7LocaleUiFilesHint,
-        keys: '$mod + 2',
-        onInvoke: () => go(1),
-      ),
+      // Same order as the dock: the number in the hint is the tab's position.
       DesktopCommand(
         label: l10n.e7LocaleUiActivity,
         icon: Icons.notifications_outlined,
         hint: l10n.e7LocaleUiActivityHint,
+        keys: '$mod + 2',
+        onInvoke: () => go(1),
+      ),
+      DesktopCommand(
+        label: l10n.e7LocaleUiFiles,
+        icon: Icons.folder_outlined,
+        hint: l10n.e7LocaleUiFilesHint,
         keys: '$mod + 3',
         onInvoke: () => go(2),
       ),

@@ -2861,7 +2861,7 @@ abstract class AppLocalizations {
   /// No description provided for @attentionNavigationUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Opening servers is unavailable here. Return to Home to choose a server and view Activity.'**
+  /// **'Opening servers is unavailable here. Return to Home to choose a server and view Inbox.'**
   String get attentionNavigationUnavailable;
 
   /// No description provided for @handoffTitle.
@@ -6898,7 +6898,7 @@ abstract class AppLocalizations {
   /// No description provided for @returnBriefMore.
   ///
   /// In en, this message translates to:
-  /// **'Additional items: {count}. They remain unacknowledged; see the conversations below or Activity.'**
+  /// **'Additional items: {count}. They remain unacknowledged; see the conversations below or Inbox.'**
   String returnBriefMore(int count);
 
   /// No description provided for @returnBriefSaveFailed.
@@ -10318,7 +10318,7 @@ abstract class AppLocalizations {
   /// Locale selection or app shell: Workspace
   ///
   /// In en, this message translates to:
-  /// **'Workspace'**
+  /// **'Work'**
   String get e7LocaleUiWorkspace;
 
   /// Locale selection or app shell: WorkspaceHint
@@ -10330,7 +10330,7 @@ abstract class AppLocalizations {
   /// Locale selection or app shell: Files
   ///
   /// In en, this message translates to:
-  /// **'Files'**
+  /// **'Project'**
   String get e7LocaleUiFiles;
 
   /// Locale selection or app shell: FilesHint
@@ -10342,7 +10342,7 @@ abstract class AppLocalizations {
   /// Locale selection or app shell: Activity
   ///
   /// In en, this message translates to:
-  /// **'Activity'**
+  /// **'Inbox'**
   String get e7LocaleUiActivity;
 
   /// Locale selection or app shell: ActivityHint
@@ -10402,7 +10402,7 @@ abstract class AppLocalizations {
   /// App shell command menu or routing: Destinations
   ///
   /// In en, this message translates to:
-  /// **'Workspace, Files, Activity, Settings'**
+  /// **'Work, Inbox, Project, Settings'**
   String get e7LocaleUiDestinations;
 
   /// App shell command menu or routing: Terminal
@@ -11519,7 +11519,7 @@ abstract class AppLocalizations {
   /// Project management unavailable explanation
   ///
   /// In en, this message translates to:
-  /// **'This server keeps the configured folder for conversations. Start a new conversation from Workspace to continue.'**
+  /// **'This server keeps the configured folder for conversations. Start a new conversation from Work to continue.'**
   String get e7ProjectProjectSwitchUnavailableDetail;
 
   /// Project browser title
@@ -12804,18 +12804,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop sharing'**
   String get e7WorkspaceStopSharing;
-
-  /// Workspace and activity: Files
-  ///
-  /// In en, this message translates to:
-  /// **'Files'**
-  String get e7WorkspaceFiles;
-
-  /// Workspace and activity: Activity
-  ///
-  /// In en, this message translates to:
-  /// **'Activity'**
-  String get e7WorkspaceActivity;
 
   /// Workspace and activity: Model / agent
   ///
@@ -16297,7 +16285,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: No project folder is open. Choose one from Workspace.
   ///
   /// In en, this message translates to:
-  /// **'No project folder is open. Choose one from Workspace.'**
+  /// **'No project folder is open. Choose one from Work.'**
   String get e7LibraryNoProjectFolderIsOpenChooseOne;
 
   /// Library and project tools UI: Project
@@ -24979,7 +24967,7 @@ abstract class AppLocalizations {
   /// On-device AI Team block: body
   ///
   /// In en, this message translates to:
-  /// **'Lets several coding agents work on your project while you supervise from Workspace. Uses the same Linux environment you just set up.'**
+  /// **'Lets several coding agents work on your project while you supervise from Work. Uses the same Linux environment you just set up.'**
   String get teamUiPhoneOfferBody;
 
   /// On-device AI Team block: download size line
@@ -25105,7 +25093,7 @@ abstract class AppLocalizations {
   /// On-device setup: success card action
   ///
   /// In en, this message translates to:
-  /// **'Open Workspace'**
+  /// **'Open Work'**
   String get teamUiPhoneOpenWorkspace;
 
   /// On-device setup: retry after a failure
@@ -25405,7 +25393,7 @@ abstract class AppLocalizations {
   /// Settings › Plugins: re-offer row body
   ///
   /// In en, this message translates to:
-  /// **'The optional step you skipped during setup. Several coding agents work on your project while you supervise from Workspace; Android may stop them when the app is away.'**
+  /// **'The optional step you skipped during setup. Several coding agents work on your project while you supervise from Work; Android may stop them when the app is away.'**
   String get teamUiPhoneReofferBody;
 
   /// Settings › Plugins: dismiss the re-offer (shown once)
@@ -25905,6 +25893,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'On the server'**
   String get pluginsSectionOnServer;
+
+  /// Bottom navigation label and app bar title of the first tab: conversations in the current project.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get shellTabWork;
+
+  /// Bottom navigation label and title of the second tab: everything waiting on the person, then running and finished work.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get shellTabInbox;
+
+  /// Bottom navigation label and app bar title of the third tab: tools scoped to the current project.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get shellTabProject;
 }
 
 class _AppLocalizationsDelegate

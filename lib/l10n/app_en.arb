@@ -835,7 +835,7 @@
   "runResultsOutputTitle": "Recorded tool output",
   "runResultsOpenConversation": "Open conversation",
   "attentionDisclosure": "A local overview, not live monitoring across servers. Cached signals may be incomplete or out of date. Open a server to check its current activity.",
-  "attentionNavigationUnavailable": "Opening servers is unavailable here. Return to Home to choose a server and view Activity.",
+  "attentionNavigationUnavailable": "Opening servers is unavailable here. Return to Home to choose a server and view Inbox.",
   "handoffTitle": "Copy handoff reference?",
   "handoffDisclosure": "Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.",
   "handoffCopy": "Copy reference",
@@ -2453,7 +2453,7 @@
   "returnBriefUnreviewed": "Unreviewed conversation. Open results to check the outcome.",
   "returnBriefReview": "Review results",
   "returnBriefContinue": "Continue",
-  "returnBriefMore": "Additional items: {count}. They remain unacknowledged; see the conversations below or Activity.",
+  "returnBriefMore": "Additional items: {count}. They remain unacknowledged; see the conversations below or Inbox.",
   "@returnBriefMore": {
     "placeholders": {
       "count": {
@@ -4236,7 +4236,7 @@
   "@e7LocaleUiNewSessionHint": {
     "description": "Locale selection or app shell: NewSessionHint"
   },
-  "e7LocaleUiWorkspace": "Workspace",
+  "e7LocaleUiWorkspace": "Work",
   "@e7LocaleUiWorkspace": {
     "description": "Locale selection or app shell: Workspace"
   },
@@ -4244,7 +4244,7 @@
   "@e7LocaleUiWorkspaceHint": {
     "description": "Locale selection or app shell: WorkspaceHint"
   },
-  "e7LocaleUiFiles": "Files",
+  "e7LocaleUiFiles": "Project",
   "@e7LocaleUiFiles": {
     "description": "Locale selection or app shell: Files"
   },
@@ -4252,7 +4252,7 @@
   "@e7LocaleUiFilesHint": {
     "description": "Locale selection or app shell: FilesHint"
   },
-  "e7LocaleUiActivity": "Activity",
+  "e7LocaleUiActivity": "Inbox",
   "@e7LocaleUiActivity": {
     "description": "Locale selection or app shell: Activity"
   },
@@ -4292,7 +4292,7 @@
   "@e7LocaleUiFindSurface": {
     "description": "App shell command menu or routing: FindSurface"
   },
-  "e7LocaleUiDestinations": "Workspace, Files, Activity, Settings",
+  "e7LocaleUiDestinations": "Work, Inbox, Project, Settings",
   "@e7LocaleUiDestinations": {
     "description": "App shell command menu or routing: Destinations"
   },
@@ -5197,7 +5197,7 @@
   "@e7ProjectProjectSwitchUnavailable": {
     "description": "Project management unavailable heading"
   },
-  "e7ProjectProjectSwitchUnavailableDetail": "This server keeps the configured folder for conversations. Start a new conversation from Workspace to continue.",
+  "e7ProjectProjectSwitchUnavailableDetail": "This server keeps the configured folder for conversations. Start a new conversation from Work to continue.",
   "@e7ProjectProjectSwitchUnavailableDetail": {
     "description": "Project management unavailable explanation"
   },
@@ -6310,14 +6310,6 @@
   "e7WorkspaceStopSharing": "Stop sharing",
   "@e7WorkspaceStopSharing": {
     "description": "Workspace and activity: Stop sharing"
-  },
-  "e7WorkspaceFiles": "Files",
-  "@e7WorkspaceFiles": {
-    "description": "Workspace and activity: Files"
-  },
-  "e7WorkspaceActivity": "Activity",
-  "@e7WorkspaceActivity": {
-    "description": "Workspace and activity: Activity"
   },
   "e7WorkspaceModelAgent": "Model / agent",
   "@e7WorkspaceModelAgent": {
@@ -9303,7 +9295,7 @@
   "@e7LibraryNoProjectSelected": {
     "description": "Library and project tools UI: No project selected"
   },
-  "e7LibraryNoProjectFolderIsOpenChooseOne": "No project folder is open. Choose one from Workspace.",
+  "e7LibraryNoProjectFolderIsOpenChooseOne": "No project folder is open. Choose one from Work.",
   "@e7LibraryNoProjectFolderIsOpenChooseOne": {
     "description": "Library and project tools UI: No project folder is open. Choose one from Workspace."
   },
@@ -16709,7 +16701,7 @@
   "@teamUiPhoneOfferTitle": {
     "description": "On-device AI Team block: title"
   },
-  "teamUiPhoneOfferBody": "Lets several coding agents work on your project while you supervise from Workspace. Uses the same Linux environment you just set up.",
+  "teamUiPhoneOfferBody": "Lets several coding agents work on your project while you supervise from Work. Uses the same Linux environment you just set up.",
   "@teamUiPhoneOfferBody": {
     "description": "On-device AI Team block: body"
   },
@@ -16813,7 +16805,7 @@
       }
     }
   },
-  "teamUiPhoneOpenWorkspace": "Open Workspace",
+  "teamUiPhoneOpenWorkspace": "Open Work",
   "@teamUiPhoneOpenWorkspace": {
     "description": "On-device setup: success card action"
   },
@@ -17059,7 +17051,7 @@
   "@teamUiPhoneReofferTitle": {
     "description": "Settings › Plugins: re-offer row title"
   },
-  "teamUiPhoneReofferBody": "The optional step you skipped during setup. Several coding agents work on your project while you supervise from Workspace; Android may stop them when the app is away.",
+  "teamUiPhoneReofferBody": "The optional step you skipped during setup. Several coding agents work on your project while you supervise from Work; Android may stop them when the app is away.",
   "@teamUiPhoneReofferBody": {
     "description": "Settings › Plugins: re-offer row body"
   },
@@ -17343,5 +17335,17 @@
   "pluginsSectionOnServer": "On the server",
   "@pluginsSectionOnServer": {
     "description": "Plugins screen section header: the connected server's plugin inventory."
+  },
+  "shellTabWork": "Work",
+  "@shellTabWork": {
+    "description": "Bottom navigation label and app bar title of the first tab: conversations in the current project."
+  },
+  "shellTabInbox": "Inbox",
+  "@shellTabInbox": {
+    "description": "Bottom navigation label and title of the second tab: everything waiting on the person, then running and finished work."
+  },
+  "shellTabProject": "Project",
+  "@shellTabProject": {
+    "description": "Bottom navigation label and app bar title of the third tab: tools scoped to the current project."
   }
 }

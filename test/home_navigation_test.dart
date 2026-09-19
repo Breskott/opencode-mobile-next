@@ -171,7 +171,7 @@ void main() {
           find.byIcon(AppIconography.workspaceSelected),
         );
         expect(icon.top, greaterThanOrEqualTo(dock.top + 4));
-        for (final label in ['Workspace', 'Files', 'Activity', 'Settings']) {
+        for (final label in ['Work', 'Inbox', 'Project', 'Settings']) {
           final rect = tester.getRect(
             find.descendant(
               of: find.byType(NavigationBar),
@@ -270,7 +270,7 @@ void main() {
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Workspace',
+        'Work',
       );
       await tester.binding.handlePopRoute();
       await tester.pump();
@@ -300,7 +300,7 @@ void main() {
     expect(find.text('Press back again to exit'), findsNothing);
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Workspace',
+      'Work',
     );
     expect(api.paths.length, loads);
   });
@@ -331,9 +331,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Activity Back returns Workspace before offering exit', (
-    tester,
-  ) async {
+  testWidgets('Inbox Back returns Work before offering exit', (tester) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller);
@@ -343,7 +341,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Workspace',
+      'Work',
     );
     expect(find.text('Press back again to exit'), findsNothing);
   });
@@ -472,16 +470,29 @@ void main() {
     final label = tester.getRect(
       find.descendant(
         of: find.byType(NavigationBar),
-        matching: find.text('Workspace'),
+        matching: find.text('Work'),
       ),
     );
     expect(dock.bottom - label.bottom, greaterThanOrEqualTo(4));
 
     expect(find.byType(NavigationRail), findsNothing);
-    expect(find.text('Workspace'), findsWidgets);
-    expect(find.text('Files'), findsOneWidget);
-    // Audit §5: Activity took Terminal's navigation slot.
-    expect(find.text('Activity'), findsWidgets);
+    // UX plan 5.1: one tab per noun, in this order.
+    final navigationLabels = tester
+        .widgetList<NavigationDestination>(
+          find.descendant(
+            of: find.byType(NavigationBar),
+            matching: find.byType(NavigationDestination),
+          ),
+        )
+        .map((destination) => destination.label)
+        .toList();
+    expect(navigationLabels, ['Work', 'Inbox', 'Project', 'Settings']);
+    expect(find.text('Work'), findsWidgets);
+    expect(find.text('Project'), findsOneWidget);
+    expect(find.text('Inbox'), findsWidgets);
+    expect(find.text('Workspace'), findsNothing);
+    expect(find.text('Activity'), findsNothing);
+    expect(find.text('Files'), findsNothing);
     expect(find.text('Terminal'), findsNothing);
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('More'), findsNothing);
@@ -489,7 +500,7 @@ void main() {
     expect(find.text('Guide'), findsNothing);
   });
 
-  testWidgets('one pending badge, on the Activity destination', (tester) async {
+  testWidgets('one pending badge, on the Inbox destination', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -520,6 +531,44 @@ void main() {
       find.descendant(of: find.byType(NavigationBar), matching: badge),
       findsOneWidget,
     );
+    expect(
+      find.descendant(of: badge, matching: find.text('1')),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(
+        of: badge,
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is NavigationDestination && widget.label == 'Inbox',
+        ),
+      ),
+      findsOneWidget,
+    );
+
+    // The badge counts everything waiting on the person, not just "some".
+    controller.permissions = {
+      for (final id in ['perm-1', 'perm-2', 'perm-3'])
+        id: PermissionRequest(
+          id: id,
+          sessionID: 'session-1',
+          permission: 'edit',
+          patterns: const ['lib/main.dart'],
+        ),
+    };
+    controller.notifyListeners();
+    await tester.pump();
+    expect(
+      find.descendant(of: badge, matching: find.text('3')),
+      findsOneWidget,
+    );
+    controller.permissions = {'perm-1': controller.permissions['perm-1']!};
+    controller.notifyListeners();
+    await tester.pump();
+    expect(
+      find.descendant(of: badge, matching: find.text('1')),
+      findsOneWidget,
+    );
     expect(find.byTooltip('Mission Control'), findsNothing);
     expect(find.byTooltip('Pending requests'), findsNothing);
     // Model selection is a secondary shell action, available from overflow.
@@ -534,7 +583,7 @@ void main() {
     expect(find.text('Model / agent'), findsOneWidget);
   });
 
-  testWidgets('the Activity tab shows cross-session sections', (tester) async {
+  testWidgets('the Inbox tab shows cross-session sections', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -550,7 +599,7 @@ void main() {
     expect(find.byType(ActivityScreen), findsOneWidget);
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Activity',
+      'Inbox',
     );
     // An empty inbox reads as success, not as a missing feature.
     expect(find.text('All clear here'), findsWidgets);

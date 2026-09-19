@@ -316,7 +316,7 @@ void main() {
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Workspace',
+        'Work',
       );
 
       await _press(tester, LogicalKeyboardKey.digit2);
@@ -324,7 +324,15 @@ void main() {
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Files',
+        'Inbox',
+      );
+
+      await _press(tester, LogicalKeyboardKey.digit3);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
+            .data,
+        'Project',
       );
 
       await _press(tester, LogicalKeyboardKey.digit4);
@@ -340,7 +348,7 @@ void main() {
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Workspace',
+        'Work',
       );
     });
 
@@ -378,13 +386,13 @@ void main() {
         // A destination shortcut over chat/review/terminal used to be a
         // no-op: the shell was buried and nothing else claimed it.
         await pushRoute();
-        await _press(tester, LogicalKeyboardKey.digit2);
+        await _press(tester, LogicalKeyboardKey.digit3);
         expect(find.text('pushed-route'), findsNothing);
         expect(
           tester
               .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
               .data,
-          'Files',
+          'Project',
         );
 
         await pushRoute();
@@ -432,7 +440,7 @@ void main() {
         isNot('files-search'),
       );
 
-      await _press(tester, LogicalKeyboardKey.digit2);
+      await _press(tester, LogicalKeyboardKey.digit3);
       await _press(tester, LogicalKeyboardKey.keyF);
       expect(
         tester.binding.focusManager.primaryFocus?.debugLabel,

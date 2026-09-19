@@ -669,7 +669,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (widget.embedded) return body;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_l10n(context).e7WorkspaceActivity),
+        title: Text(_l10n(context).shellTabInbox),
         actions: [
           IconButton(
             tooltip: _l10n(context).globalSessionsRefresh,
