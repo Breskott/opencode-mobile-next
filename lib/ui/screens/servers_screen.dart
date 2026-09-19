@@ -328,7 +328,8 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     }
   }
 
-  Future<void> _edit({
+  /// Completes with whether the editor saved a server.
+  Future<bool> _edit({
     ServerProfile? existing,
     bool focusPassword = false,
     bool tailscale = false,
@@ -373,22 +374,34 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         ),
       ),
     );
-    if (result == null || !mounted) return;
+    if (result == null) return false;
+    if (!mounted) return true;
     if (isNew || connectOnSave || result.backend == ServerBackend.codex) {
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
     }
+    return true;
   }
 
   /// First run, computer path: ask which agent, then open the connect screen
   /// already set to it. The connect screen is pushed on top of the question,
   /// so Back returns to the question rather than to the welcome.
-  Future<void> _computerPath() => Navigator.of(context).push<void>(
-    MaterialPageRoute<void>(
+  Future<void> _computerPath() {
+    final navigator = Navigator.of(context);
+    late final MaterialPageRoute<void> question;
+    question = MaterialPageRoute<void>(
       builder: (_) => AgentChoiceScreen(
-        onChoose: (backend) => unawaited(_edit(presetBackend: backend)),
+        onChoose: (backend) async {
+          final saved = await _edit(presetBackend: backend);
+          // A first connection turns the root into the shell in place, so
+          // this screen is no longer mounted to clear the stack itself. The
+          // question has been answered; left alone it would sit on top of
+          // the conversation the person is about to land in.
+          if (saved && question.isActive) navigator.removeRoute(question);
+        },
       ),
-    ),
-  );
+    );
+    return navigator.push<void>(question);
+  }
 
   Future<void> _tailscale() async {
     final url = await Navigator.of(context).push<String>(
