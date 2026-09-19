@@ -17411,5 +17411,21 @@
   "firstRunCommandsCodexUsb": "A phone on a USB cable reaches it with:",
   "@firstRunCommandsCodexUsb": {
     "description": "Connect screen, Codex: caption above the adb reverse command."
+  },
+  "firstRunNotifyTitle": "Get told when it's done?",
+  "@firstRunNotifyTitle": {
+    "description": "Conversation, first run: title of the one card shown above the composer after the first reply completes."
+  },
+  "firstRunNotifyBody": "Leave the app while the agent works. You get a notification when it finishes or needs you. Android shows a small ongoing notification while it stays connected.",
+  "@firstRunNotifyBody": {
+    "description": "Conversation, first run: what accepting the notification card turns on, including its visible cost."
+  },
+  "firstRunNotifyAccept": "Notify me",
+  "@firstRunNotifyAccept": {
+    "description": "Conversation, first run: accepts the notification card; asks Android for notification permission and keeps the connection alive in the background."
+  },
+  "firstRunNotifyDecline": "Not now",
+  "@firstRunNotifyDecline": {
+    "description": "Conversation, first run: dismisses the notification card for good; Settings, Notifications stays the place to turn it on."
   }
 }

@@ -16067,4 +16067,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get firstRunCommandsCodexUsb =>
       'A phone on a USB cable reaches it with:';
+
+  @override
+  String get firstRunNotifyTitle => 'Get told when it\'s done?';
+
+  @override
+  String get firstRunNotifyBody =>
+      'Leave the app while the agent works. You get a notification when it finishes or needs you. Android shows a small ongoing notification while it stays connected.';
+
+  @override
+  String get firstRunNotifyAccept => 'Notify me';
+
+  @override
+  String get firstRunNotifyDecline => 'Not now';
 }

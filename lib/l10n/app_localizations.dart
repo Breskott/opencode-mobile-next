@@ -25959,6 +25959,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A phone on a USB cable reaches it with:'**
   String get firstRunCommandsCodexUsb;
+
+  /// Conversation, first run: title of the one card shown above the composer after the first reply completes.
+  ///
+  /// In en, this message translates to:
+  /// **'Get told when it\'s done?'**
+  String get firstRunNotifyTitle;
+
+  /// Conversation, first run: what accepting the notification card turns on, including its visible cost.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the app while the agent works. You get a notification when it finishes or needs you. Android shows a small ongoing notification while it stays connected.'**
+  String get firstRunNotifyBody;
+
+  /// Conversation, first run: accepts the notification card; asks Android for notification permission and keeps the connection alive in the background.
+  ///
+  /// In en, this message translates to:
+  /// **'Notify me'**
+  String get firstRunNotifyAccept;
+
+  /// Conversation, first run: dismisses the notification card for good; Settings, Notifications stays the place to turn it on.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get firstRunNotifyDecline;
 }
 
 class _AppLocalizationsDelegate

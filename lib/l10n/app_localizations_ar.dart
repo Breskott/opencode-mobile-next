@@ -16334,4 +16334,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get firstRunCommandsCodexUsb => 'يصل إليه هاتف موصول بكابل USB عبر:';
+
+  @override
+  String get firstRunNotifyTitle => 'هل تريد إشعارًا عند الانتهاء؟';
+
+  @override
+  String get firstRunNotifyBody =>
+      'غادر التطبيق بينما يعمل الوكيل. يصلك إشعار عندما ينتهي أو يحتاج إليك. يعرض Android إشعارًا صغيرًا دائمًا ما دام الاتصال قائمًا.';
+
+  @override
+  String get firstRunNotifyAccept => 'أشعِرني';
+
+  @override
+  String get firstRunNotifyDecline => 'ليس الآن';
 }

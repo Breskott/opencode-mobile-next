@@ -49,6 +49,7 @@ import '../widgets/confirm_sheet.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
+import '../widgets/first_reply_notify_card.dart';
 import '../widgets/info_label.dart';
 import '../widgets/markdown.dart';
 import '../widgets/pickers.dart';
@@ -7211,6 +7212,20 @@ class _ChatScreenState extends State<ChatScreen>
                               ),
                             if (_voiceConversation)
                               _voiceConversationControls(),
+                            // First run's one notification question; the card
+                            // is absent for everyone it is not due for.
+                            FirstReplyNotifyCard(
+                              controller: _conn,
+                              compact: compactComposer,
+                              replyCompleted:
+                                  !_conn.busySessions.contains(
+                                    widget.sessionID,
+                                  ) &&
+                                  _messages.any(
+                                    (message) =>
+                                        message.info.role == 'assistant',
+                                  ),
+                            ),
                             Center(
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(
