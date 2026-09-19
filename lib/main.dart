@@ -1119,18 +1119,14 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         keys: '$mod + 3',
         onInvoke: () => go(2),
       ),
-      DesktopCommand(
-        label: l10n.e7LocaleUiMore,
-        icon: Icons.more_horiz_rounded,
-        hint: l10n.e7LocaleUiMoreHint,
-        keys: '$mod + 4',
-        onInvoke: () => go(3),
-      ),
+      // One Settings command: the fourth tab is the hub. "$mod + ," still
+      // opens the same hub over the current screen without leaving it.
       DesktopCommand(
         label: l10n.e7LocaleUiSettings,
         icon: Icons.settings_outlined,
-        keys: '$mod + ,',
-        onInvoke: _openSettings,
+        hint: l10n.e7LocaleUiMoreHint,
+        keys: '$mod + 4',
+        onInvoke: () => go(3),
       ),
       DesktopCommand(
         label: l10n.e7LocaleUiKeyboardShortcuts,

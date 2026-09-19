@@ -2,23 +2,27 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../domain/plugin_inventory.dart';
-import '../../domain/server_gateway.dart' show StreamStatus, CommandInfo;
-import '../../state/plugin_command_mappings.dart';
-import '../widgets/run_command_dialog.dart';
-import '../widgets/confirm_sheet.dart';
-import '../../l10n/app_localizations.dart';
-import '../../state/connection.dart';
-import '../app_theme.dart';
+import '../../../domain/plugin_inventory.dart';
+import '../../../domain/server_gateway.dart' show StreamStatus, CommandInfo;
+import '../../../state/plugin_command_mappings.dart';
+import '../../widgets/run_command_dialog.dart';
+import '../../widgets/confirm_sheet.dart';
+import '../../../l10n/app_localizations.dart';
+import '../../../state/connection.dart';
+import '../../app_theme.dart';
 
-class PluginsScreen extends StatefulWidget {
-  const PluginsScreen({super.key, required this.controller});
+/// The "On the server" section of the one Plugins screen
+/// (settings/plugins_screen.dart): the server's plugin inventory and the
+/// personal command links. It is a section, not a page, so Plugins has one
+/// home; the host only builds it when the server has a plugin inventory.
+class ServerPluginsSection extends StatefulWidget {
+  const ServerPluginsSection({super.key, required this.controller});
   final ConnectionController controller;
   @override
-  State<PluginsScreen> createState() => _PluginsScreenState();
+  State<ServerPluginsSection> createState() => _ServerPluginsSectionState();
 }
 
-class _PluginsScreenState extends State<PluginsScreen> {
+class _ServerPluginsSectionState extends State<ServerPluginsSection> {
   StreamSubscription<dynamic>? _events;
   Object? _source;
   List<PluginInfo>? _plugins;
@@ -91,7 +95,7 @@ class _PluginsScreenState extends State<PluginsScreen> {
   }
 
   @override
-  void didUpdateWidget(covariant PluginsScreen oldWidget) {
+  void didUpdateWidget(covariant ServerPluginsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.controller, widget.controller)) {
       _detach(oldWidget.controller);
@@ -165,58 +169,72 @@ class _PluginsScreenState extends State<PluginsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.pluginsTitle),
-        actions: [
-          if (_connected && _supported)
-            IconButton(
-              tooltip: l10n.pluginsRefresh,
-              onPressed: _loading ? null : _load,
-              icon: const Icon(AppIconography.retry),
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(l10n.pluginsDescription),
-            if (_mappingStore != null)
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton.icon(
-                  icon: const Icon(AppIconography.unlink),
-                  label: Text(l10n.pluginMappingClearAll),
-                  onPressed: _editingMapping ? null : _clearMappings,
-                ),
-              ),
-            const SizedBox(height: 20),
-            if (!_supported)
-              Text(l10n.pluginsUnsupported)
-            else if (!_connected)
-              Text(l10n.pluginsDisconnected)
-            else ...[
-              if (_loading || _mappingLoading) const LinearProgressIndicator(),
-              if (_failed) ...[
-                Text(l10n.pluginsLoadFailed),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: TextButton(
-                    onPressed: _loading ? null : _load,
-                    child: Text(l10n.pluginsRetry),
+    final theme = Theme.of(context);
+    return Padding(
+      key: const ValueKey('plugins-section-server'),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 20, bottom: 4),
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      l10n.pluginsSectionOnServer,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: AppTheme.mutedOf(theme),
+                      ),
+                    ),
                   ),
                 ),
-              ],
-              if (_plugins?.isEmpty == true && !_loading && !_failed)
-                Text(l10n.pluginsEmpty),
-              for (final plugin in _plugins ?? const <PluginInfo>[]) ...[
-                _row(plugin, l10n),
-                const Divider(height: 1),
-              ],
+              ),
+              if (_connected && _supported)
+                IconButton(
+                  tooltip: l10n.pluginsRefresh,
+                  onPressed: _loading ? null : _load,
+                  icon: const Icon(AppIconography.retry),
+                ),
+            ],
+          ),
+          Text(l10n.pluginsDescription),
+          if (_mappingStore != null)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                icon: const Icon(AppIconography.unlink),
+                label: Text(l10n.pluginMappingClearAll),
+                onPressed: _editingMapping ? null : _clearMappings,
+              ),
+            ),
+          const SizedBox(height: 12),
+          if (!_supported)
+            Text(l10n.pluginsUnsupported)
+          else if (!_connected)
+            Text(l10n.pluginsDisconnected)
+          else ...[
+            if (_loading || _mappingLoading) const LinearProgressIndicator(),
+            if (_failed) ...[
+              Text(l10n.pluginsLoadFailed),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  onPressed: _loading ? null : _load,
+                  child: Text(l10n.pluginsRetry),
+                ),
+              ),
+            ],
+            if (_plugins?.isEmpty == true && !_loading && !_failed)
+              Text(l10n.pluginsEmpty),
+            for (final plugin in _plugins ?? const <PluginInfo>[]) ...[
+              _row(plugin, l10n),
+              const Divider(height: 1),
             ],
           ],
-        ),
+        ],
       ),
     );
   }

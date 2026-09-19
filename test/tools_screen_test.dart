@@ -6,7 +6,7 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/library_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/tools_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -251,20 +251,30 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Library exposes one native tools destination', (tester) async {
+  testWidgets('Settings exposes one native tools destination', (tester) async {
     final repository = _ToolsRepository();
     final controller = await _controller(repository);
     addTearDown(controller.dispose);
     await tester.pumpWidget(
-      _app(Scaffold(body: LibraryScreen(controller: controller))),
+      _app(
+        Scaffold(body: SettingsScreen(controller: controller, embedded: true)),
+      ),
     );
-
-    // Occasional tools are disclosed through the More hub.
-    expect(find.text('Commands & tools'), findsNothing);
-    await tester.tap(find.text('Tools & help'));
     await tester.pumpAndSettle();
+
+    // One door, under Agent setup.
+    final row = find.byKey(const ValueKey('settings-commands-tools'));
     expect(find.text('Commands & tools'), findsOneWidget);
-    await tester.tap(find.text('Commands & tools'));
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('settings-group-agent-setup')),
+        matching: row,
+      ),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    await tester.tap(row);
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(Tab, 'Tools'));

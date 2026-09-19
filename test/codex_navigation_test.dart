@@ -9,7 +9,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
-import 'package:opencode_mobile/ui/screens/library_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _CodexApi extends OpenCodeApi {
@@ -148,7 +148,7 @@ void main() {
       expect(find.text('Files'), findsNothing);
       expect(find.text('Workspace'), findsWidgets);
       expect(find.text('Activity'), findsOneWidget);
-      expect(find.text('More'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('location-recovery-notice')),
         findsOneWidget,
@@ -197,13 +197,13 @@ void main() {
         reason: 'Files is hidden, so Activity is the second rail destination',
       );
 
-      await tester.tap(_railDestination('More'));
+      await tester.tap(_railDestination('Settings'));
       await tester.pumpAndSettle();
       expect(
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'More',
+        'Settings',
       );
       expect(
         tester
@@ -211,7 +211,16 @@ void main() {
             .selectedIndex,
         2,
       );
-      expect(find.text('Settings'), findsOneWidget);
+      // The tab is the hub itself; what is about the app survives a Codex
+      // connection, what needs the server catalog is absent.
+      expect(
+        find.byKey(const ValueKey('settings-group-connection')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('settings-category-appearance')),
+        findsOneWidget,
+      );
       expect(find.text('Models & agents'), findsNothing);
       expect(find.text('Providers'), findsNothing);
       expect(find.text('MCP'), findsNothing);
@@ -240,15 +249,14 @@ void main() {
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: LibraryScreen(controller: controller)),
+        home: Scaffold(
+          body: SettingsScreen(controller: controller, embedded: true),
+        ),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('Models & agents'), findsOneWidget);
-    expect(find.text('Providers'), findsNothing);
-    await tester.tap(find.text('Tools & help'));
-    await tester.pumpAndSettle();
     expect(find.text('Providers'), findsOneWidget);
     expect(find.text('MCP'), findsOneWidget);
     expect(find.text('Commands & tools'), findsOneWidget);

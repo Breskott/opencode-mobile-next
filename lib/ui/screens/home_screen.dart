@@ -17,7 +17,7 @@ import '../widgets/retained_tab_view.dart';
 import '../widgets/safety_confirms.dart';
 import 'activity_screen.dart';
 import 'files_screen.dart';
-import 'library_screen.dart';
+import 'settings_screen.dart';
 import 'terminal_screen.dart';
 import 'workspace_screen.dart';
 
@@ -116,7 +116,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         MediaQuery.viewInsetsOf(context).bottom == 0;
 
     // Audit §5: Activity replaces Terminal in primary navigation; Terminal is
-    // reachable from Session and the More hub. One destination, one badge.
+    // reachable from Session and the Settings hub. One destination, one badge.
     final tabs = <Widget>[
       WorkspaceScreen(controller: conn),
       if (conn.capabilities.fileBrowsing)
@@ -128,7 +128,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       else
         const SizedBox.shrink(),
       ActivityScreen(controller: conn, embedded: true),
-      LibraryScreen(controller: conn),
+      SettingsScreen(controller: conn, embedded: true),
     ];
     final pending = conn.unifiedAttentionCount;
     final destinations = <({int id, NavigationDestination destination})>[
@@ -163,9 +163,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       (
         id: 3,
         destination: NavigationDestination(
-          icon: Icon(AppIconography.more),
-          selectedIcon: Icon(AppIconography.more),
-          label: _l10n(context).e7WorkspaceMore,
+          icon: Icon(AppIconography.settings),
+          selectedIcon: Icon(AppIconography.settings),
+          label: _l10n(context).librarySettingsTitle,
         ),
       ),
     ];
@@ -192,7 +192,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             // §5 Root app bar: one contextual action plus overflow. The
             // pending badge lives on the Activity destination alone.
             // Settings and the shortcuts list have one entry point each, on
-            // the More tab; this overflow holds only connection-level acts.
+            // the Settings tab; this overflow holds only connection-level acts.
             PopupMenuButton<String>(
               onSelected: (v) {
                 if (v == 'model') showModelPicker(context);
@@ -325,7 +325,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _l10n(context).e7WorkspaceWorkspace,
     _l10n(context).e7WorkspaceFiles,
     _l10n(context).e7WorkspaceActivity,
-    _l10n(context).e7WorkspaceMore,
+    _l10n(context).librarySettingsTitle,
   ];
 }
 

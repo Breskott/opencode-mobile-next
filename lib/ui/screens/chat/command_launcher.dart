@@ -12,6 +12,7 @@ enum _ChatCommandAction {
   terminal,
   model,
   integrations,
+  mcpServers,
   organization,
   skills,
   tools,

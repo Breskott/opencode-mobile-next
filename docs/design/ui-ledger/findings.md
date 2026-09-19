@@ -165,6 +165,26 @@ persisted preference, by page:
   (`settings/plugins_screen.dart:47`, AI Team, Settings hub, gate
   `profile != null`).
 
+### Update after UX phase 2, steps 1-3 (one Settings hub)
+
+- More and Settings are one page, `settings` (`SettingsScreen`, the fourth
+  tab): search plus eight groups. `coding-settings`, `diagnostics-settings`
+  and `about-settings` are gone; their rows are hub rows.
+- One Plugins page: `plugins-settings`, with sections "In this app" (AI Team)
+  and "On the server" (`ServerPluginsSection`, the former `PluginsScreen`).
+  The per-plugin command links therefore sit under Settings now, so the
+  places holding persisted preferences drop from 6 to 5.
+- "Always allowed actions" and the transcript display toggles have a hub home
+  (Conversation defaults); the conversation menu flips the same stored values.
+- Still open from this section: quiet hours are still defined twice
+  (`profile_monitor_screen.dart`, `quota_monitor_screen.dart`) and
+  `usage`, `provider-quota` and `quota-monitor` are still three pages
+  (phase 2 steps 4-5).
+- Pages 335 -> 325: five settings pages merged away, one sheet added, and six
+  stale pages removed whose code phase 1A had deleted (`sessions-tab` and its
+  two dialogs, `diff-sheet`, `embedded-running-agents-strip`,
+  `catalog-model-details-sheet`).
+
 ## 6. Inconsistent labels for the same action
 
 - Retry family: "Try again" 36 elements, "Retry" 16, "Check again" 5, "Check

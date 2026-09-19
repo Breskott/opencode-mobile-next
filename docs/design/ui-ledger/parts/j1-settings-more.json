@@ -2,449 +2,169 @@
   "area": "j1-settings-more",
   "pages": [
     {
-      "id": "more",
-      "title": "More",
+      "id": "settings",
+      "title": "Settings",
       "kind": "tab",
-      "file": "lib/ui/screens/library_screen.dart",
-      "widget": "LibraryScreen",
+      "file": "lib/ui/screens/settings_screen.dart",
+      "widget": "SettingsScreen",
       "presentedBy": [],
-      "line": 49,
-      "purpose": "Root tab 3 of the shell: searchable hub of destinations for settings, catalog, integrations, tools and help.",
+      "line": 81,
+      "purpose": "The one Settings hub (root tab 3 of the shell, also pushed by Ctrl/Cmd+,): a search field, then eight groups (Connection, Conversation defaults, Notifications, Appearance, Agent setup, Usage, Privacy, Help), each keyed settings-group-<slug>. Replaces the former More tab and Settings screen. Rows the server cannot serve and empty groups are absent; SettingsScreen(initialGroup:) scrolls to a group.",
       "reachedFrom": [
         {
           "page": "home-shell",
           "element": "home-shell-tab-more"
         },
         {
+          "page": "global-shortcuts",
+          "element": "global-shortcuts-settings"
+        },
+        {
           "page": "system",
           "element": null,
-          "trigger": "desktop command / shortcut \"$mod + 4\" -> go(3) (lib/main.dart:1126)"
+          "trigger": "desktop command \"Settings\" / shortcut \"$mod + 4\" -> go(3) (lib/main.dart:1129)"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "desktop shortcut \"$mod + ,\" -> _openSettings pushes SettingsScreen (lib/main.dart:1072)"
         }
       ],
       "gates": [],
       "elements": [
         {
-          "id": "more-search-field",
+          "id": "settings-search-field",
           "type": "text-field",
           "label": "Find settings, tools, and help",
           "key": "library-search",
-          "line": 242,
+          "line": 686,
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "onChanged sets _query (trimmed, lower-cased) which filters every destination row by title + keyword aliases; with a query the \"More tools and help\" group stops being collapsible and a result summary (key library-search-summary) appears.",
+          "effect": "onChanged sets _query (trimmed, lower-cased); every group keeps only rows whose title or keywords contain every word, empty groups disappear, and a result count (key library-search-summary) or \"Nothing matches\" line is shown.",
           "gates": [],
           "destructive": false
         },
         {
-          "id": "more-search-clear",
+          "id": "settings-search-clear",
           "type": "icon-button",
           "label": "Clear search",
           "key": null,
-          "line": 252,
+          "line": 696,
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "Clears the _search controller and resets _query to empty.",
+          "effect": "Clears the search field and _query.",
           "gates": [
-            "shown only when _query.isNotEmpty"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-termux-setup-tile",
-          "type": "list-tile",
-          "label": "Termux setup",
-          "key": null,
-          "line": 78,
-          "action": "navigate",
-          "target": "termux-setup",
-          "targetWidget": "TermuxSetupScreen",
-          "effect": "Pushes TermuxSetupScreen via _open (MaterialPageRoute). Subtitle \"Run OpenCode on this phone\". Rendered above both groups.",
-          "gates": [
-            "platformCapabilities.supportsTermux",
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-settings-tile",
-          "type": "list-tile",
-          "label": "Settings",
-          "key": null,
-          "line": 180,
-          "action": "navigate",
-          "target": "settings",
-          "targetWidget": "SettingsScreen",
-          "effect": "Pushes SettingsScreen(controller) via _open. Primary row, group \"Browse\".",
-          "gates": [
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-models-agents-tile",
-          "type": "list-tile",
-          "label": "Models & agents",
-          "key": null,
-          "line": 90,
-          "action": "navigate",
-          "target": "catalog",
-          "targetWidget": "CatalogScreen",
-          "effect": "Pushes CatalogScreen(controller) via _open. Primary row; subtitle shows the default model label (settingsDiscoveryNewChatsModel(_defaultModelLabel)).",
-          "gates": [
-            "controller.capabilities.serverCatalog",
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-terminal-tile",
-          "type": "list-tile",
-          "label": "Terminal",
-          "key": "library-terminal",
-          "line": 154,
-          "action": "navigate",
-          "target": "terminal",
-          "targetWidget": "TerminalPage",
-          "effect": "Pushes TerminalPage(controller) via _open. Primary row.",
-          "gates": [
-            "controller.capabilities.terminal",
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-tools-and-help-expander",
-          "type": "list-tile",
-          "label": "Tools & help",
-          "key": "library-tools-and-help",
-          "line": 342,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "ExpansionTile (PageStorageKey library-tools-and-help) that expands the non-primary rows; when a search query is active the group renders as a plain always-open card instead.",
-          "gates": [
-            "collapsible only when _query.isEmpty",
-            "hidden when the group has no matching rows"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-providers-tile",
-          "type": "list-tile",
-          "label": "Providers",
-          "key": null,
-          "line": 103,
-          "action": "navigate",
-          "target": "integrations",
-          "targetWidget": "IntegrationsScreen",
-          "effect": "Pushes IntegrationsScreen(controller, mode: IntegrationsMode.providers) via _open.",
-          "gates": [
-            "controller.capabilities.serverCatalog",
-            "inside \"More tools and help\" group",
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-mcp-tile",
-          "type": "list-tile",
-          "label": "MCP",
-          "key": null,
-          "line": 117,
-          "action": "navigate",
-          "target": "integrations",
-          "targetWidget": "IntegrationsScreen",
-          "effect": "Pushes IntegrationsScreen(controller, mode: IntegrationsMode.mcp) via _open.",
-          "gates": [
-            "controller.capabilities.serverCatalog",
-            "inside \"More tools and help\" group",
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-commands-tools-tile",
-          "type": "list-tile",
-          "label": "Commands & tools",
-          "key": null,
-          "line": 131,
-          "action": "navigate",
-          "target": "capabilities",
-          "targetWidget": "CapabilitiesScreen",
-          "effect": "Pushes CapabilitiesScreen(controller) via _open.",
-          "gates": [
-            "controller.capabilities.serverCatalog",
-            "inside \"More tools and help\" group",
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-plugins-tile",
-          "type": "list-tile",
-          "label": "Plugins",
-          "key": null,
-          "line": 142,
-          "action": "navigate",
-          "target": "plugins",
-          "targetWidget": "PluginsScreen",
-          "effect": "Pushes PluginsScreen(controller) from lib/ui/screens/plugins_screen.dart (server plugin inventory, NOT the AI Team PluginsSettingsScreen) via _open.",
-          "gates": [
-            "controller.capabilities.pluginInventory",
-            "inside \"More tools and help\" group",
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-import-session-tile",
-          "type": "list-tile",
-          "label": "Import conversation",
-          "key": "library-import-session",
-          "line": 170,
-          "action": "navigate",
-          "target": "session-import",
-          "targetWidget": "SessionImportScreen",
-          "effect": "Pushes SessionImportScreen(controller) via _open.",
-          "gates": [
-            "controller.capabilities.sessionImportExport && controller.repository is SessionImportGateway && (controller.repository as SessionImportGateway).sessionImportSupported",
-            "inside \"More tools and help\" group",
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-setup-guide-tile",
-          "type": "list-tile",
-          "label": "Setup guide",
-          "key": null,
-          "line": 189,
-          "action": "navigate",
-          "target": "guide",
-          "targetWidget": "GuideScreen",
-          "effect": "Pushes const GuideScreen() (embedded: false, so it has its own Scaffold) via _open.",
-          "gates": [
-            "inside \"More tools and help\" group",
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-report-bug-tile",
-          "type": "list-tile",
-          "label": "Report a bug",
-          "key": "library-report-bug",
-          "line": 202,
-          "action": "external-link",
-          "target": null,
-          "targetWidget": "openBugReport",
-          "effect": "Calls openBugReport(context) (lib/feedback/bug_report.dart): builds the prefilled GitHub issue URL and launches it with launchUrl(externalApplication); on failure copies the link to the clipboard and shows a snackbar.",
-          "gates": [
-            "inside \"More tools and help\" group",
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "more-keyboard-shortcuts-tile",
-          "type": "list-tile",
-          "label": "Keyboard shortcuts",
-          "key": "library-keyboard-shortcuts",
-          "line": 216,
-          "action": "open-dialog",
-          "target": "shortcuts-help-dialog",
-          "targetWidget": "showShortcutsHelp",
-          "effect": "Calls showShortcutsHelp(context) (lib/ui/desktop/shortcuts.dart, a showDialog).",
-          "gates": [
-            "desktopInteractions",
-            "inside \"More tools and help\" group",
-            "row hidden when it does not match the search query (_DestinationRow.matches(_query))"
-          ],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "settings",
-      "title": "Settings",
-      "kind": "screen",
-      "file": "lib/ui/screens/settings_screen.dart",
-      "widget": "SettingsScreen",
-      "presentedBy": [],
-      "line": 47,
-      "purpose": "Settings hub: connection health summary, one row per settings category, and Disconnect.",
-      "reachedFrom": [
-        {
-          "page": "more",
-          "element": "more-settings-tile"
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "_executeMobileCommand",
-          "file": "lib/ui/screens/chat_screen.dart",
-          "line": 5271
-        },
-        {
-          "page": "system",
-          "element": null,
-          "trigger": "desktop shortcut \"$mod + ,\" / command palette \"Settings\" -> _openSettings (lib/main.dart:1072, wired at 1133 and AppShortcutHandlers.onOpenSettings 1203)"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "settings-check-health",
-          "type": "icon-button",
-          "label": "Check again",
-          "key": null,
-          "line": 200,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_checkHealth(): controller.prepareActionTransport() then api.health(); updates the connection summary line (version / error). Disabled while _checking.",
-          "gates": [
-            "inside ListTile keyed settings-connection-summary"
+            "_query.isNotEmpty"
           ],
           "destructive": false
         },
         {
           "id": "settings-category-server",
           "type": "list-tile",
-          "label": "Server",
+          "label": "This server",
           "key": "settings-category-server",
-          "line": 213,
+          "line": 265,
           "action": "navigate",
           "target": "server-settings",
           "targetWidget": "ServerSettingsScreen",
-          "effect": "Pushes ServerSettingsScreen(controller) (part file settings/server_settings_screen.dart) via _open; setState on return.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "settings-category-coding",
-          "type": "list-tile",
-          "label": "Coding defaults",
-          "key": "settings-category-coding",
-          "line": 219,
-          "action": "navigate",
-          "target": "coding-settings",
-          "targetWidget": "CodingSettingsScreen",
-          "effect": "Pushes CodingSettingsScreen(controller) via _open.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "settings-category-background",
-          "type": "list-tile",
-          "label": "Notifications & background",
-          "key": "settings-category-background",
-          "line": 228,
-          "action": "navigate",
-          "target": "background-settings",
-          "targetWidget": "BackgroundSettingsScreen",
-          "effect": "Pushes BackgroundSettingsScreen(controller) via _open. Subtitle from _backgroundSummary (timeout / Off / active / starting).",
+          "effect": "Pushes ServerSettingsScreen(controller) via _open. Subtitle \"<server name> · <health line>\" from _checkHealth (runs on open); wrapped in KeyedSubtree settings-connection-summary.",
           "gates": [
-            "platformCapabilities.supportsBackgroundService"
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
           ],
           "destructive": false
         },
         {
-          "id": "settings-category-appearance",
-          "type": "list-tile",
-          "label": "Appearance",
-          "key": "settings-category-appearance",
-          "line": 236,
-          "action": "navigate",
-          "target": "appearance-settings",
-          "targetWidget": "AppearanceSettingsScreen",
-          "effect": "Pushes AppearanceSettingsScreen(controller) via _open. Subtitle \"<appearance label> · <theme pack label>\".",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "settings-category-privacy",
-          "type": "list-tile",
-          "label": "Privacy & permissions",
-          "key": "settings-category-privacy",
-          "line": 245,
-          "action": "navigate",
-          "target": "privacy-settings",
-          "targetWidget": "PrivacySettingsScreen",
-          "effect": "Pushes PrivacySettingsScreen(controller) via _open.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "settings-category-usage",
-          "type": "list-tile",
-          "label": "Usage and cost",
-          "key": "settings-category-usage",
-          "line": 252,
-          "action": "navigate",
-          "target": "usage",
-          "targetWidget": "UsageScreen",
-          "effect": "Pushes UsageScreen(controller) via _open.",
+          "id": "settings-server-try-again",
+          "type": "icon-button",
+          "label": "Try again",
+          "key": "settings-server-try-again",
+          "line": 294,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_checkHealth(): controller.prepareActionTransport() then api.health(); replaces the chevron of the This server row.",
           "gates": [
-            "controller.supportsUsageStatistics"
+            "_healthError != null && !_checking"
           ],
           "destructive": false
         },
         {
-          "id": "settings-category-quota",
+          "id": "settings-saved-servers",
           "type": "list-tile",
-          "label": "Remaining usage",
-          "key": "settings-category-quota",
-          "line": 261,
+          "label": "Saved servers",
+          "key": "settings-saved-servers",
+          "line": 323,
           "action": "navigate",
-          "target": "provider-quota",
-          "targetWidget": "ProviderQuotaScreen",
-          "effect": "Pushes ProviderQuotaScreen(controller) via _open. Subtitle \"Optional Codex collector · setup required\".",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "Navigator.pushNamed('/servers'). Subtitle \"Add, edit, or switch OpenCode servers\".",
           "gates": [
-            "profile != null"
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
           ],
           "destructive": false
         },
         {
-          "id": "settings-category-diagnostics",
+          "id": "settings-on-this-phone",
           "type": "list-tile",
-          "label": "Diagnostics",
-          "key": "settings-category-diagnostics",
-          "line": 272,
+          "label": "On this phone",
+          "key": "settings-on-this-phone",
+          "line": 334,
           "action": "navigate",
-          "target": "diagnostics-settings",
-          "targetWidget": "DiagnosticsSettingsScreen",
-          "effect": "Pushes DiagnosticsSettingsScreen(controller) via _open.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "settings-category-about",
-          "type": "list-tile",
-          "label": "About",
-          "key": "settings-category-about",
-          "line": 279,
-          "action": "navigate",
-          "target": "about-settings",
-          "targetWidget": "AboutSettingsScreen",
-          "effect": "Pushes AboutSettingsScreen(controller) via _open.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "settings-category-plugins",
-          "type": "list-tile",
-          "label": "Plugins",
-          "key": "settings-category-plugins",
-          "line": 288,
-          "action": "navigate",
-          "target": "plugins-settings",
-          "targetWidget": "PluginsSettingsScreen",
-          "effect": "Pushes PluginsSettingsScreen(controller) from lib/ui/screens/settings/plugins_screen.dart (AI Team / Gas City) via _open. Subtitle \"AI Team · Gas City\".",
+          "target": "termux-setup",
+          "targetWidget": "TermuxSetupScreen",
+          "effect": "Pushes TermuxSetupScreen via _open. Subtitle \"Run OpenCode here with Termux\".",
           "gates": [
-            "profile != null"
+            "platformCapabilities.supportsTermux",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-accounts",
+          "type": "list-tile",
+          "label": "Accounts",
+          "key": "settings-accounts",
+          "line": 343,
+          "action": "navigate",
+          "target": "agent-account",
+          "targetWidget": "AgentAccountScreen",
+          "effect": "Pushes AgentAccountScreen(connection: controller) via _open.",
+          "gates": [
+            "controller.isConnected && capabilities.agentAccount",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-external-agents",
+          "type": "list-tile",
+          "label": "External agents",
+          "key": "settings-external-agents",
+          "line": 351,
+          "action": "navigate",
+          "target": "external-agents",
+          "targetWidget": "ExternalAgentsScreen",
+          "effect": "_openExternalAgents(): builds an ExternalAgentStore from the profile store, pushes ExternalAgentsScreen(store), disposes the store on return.",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-tailscale",
+          "type": "list-tile",
+          "label": "Connect with Tailscale",
+          "key": "settings-tailscale",
+          "line": 359,
+          "action": "navigate",
+          "target": "tailscale-setup",
+          "targetWidget": "TailscaleSetupScreen",
+          "effect": "Pushes TailscaleSetupScreen via _open.",
+          "gates": [
+            "platformCapabilities.supportsTailscaleHandoff",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
           ],
           "destructive": false
         },
@@ -453,13 +173,417 @@
           "type": "button",
           "label": "Disconnect",
           "key": "settings-disconnect",
-          "line": 299,
+          "line": 377,
           "action": "open-sheet",
           "target": "settings-disconnect-sheet",
-          "targetWidget": "showConfirmSheet",
-          "effect": "_disconnect(): opens the disconnect confirm sheet (showConfirmSheet) whose body counts queued prompts and drafts for this profile.",
-          "gates": [],
+          "targetWidget": "confirmDisconnectServer",
+          "effect": "_disconnect(): confirmDisconnectServer(context, controller); on confirm controller.disconnect() then pushNamedAndRemoveUntil('/servers'). Last row of Connection, set apart from the doors above.",
+          "gates": [
+            "profile != null",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
           "destructive": true
+        },
+        {
+          "id": "settings-model-and-mode",
+          "type": "list-tile",
+          "label": "Model and mode",
+          "key": "settings-model-and-mode",
+          "line": 387,
+          "action": "open-sheet",
+          "target": "model-picker-sheet",
+          "targetWidget": "showModelPicker",
+          "effect": "showModelPicker(context). Subtitle \"<model> · <variant> · <agent>\" from _modelAndModeSummary.",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-default-shell",
+          "type": "list-tile",
+          "label": "Default shell",
+          "key": "default-shell-settings-entry",
+          "line": 208,
+          "action": "open-sheet",
+          "target": "coding-settings-shell-sheet",
+          "targetWidget": "_chooseShell",
+          "effect": "DefaultShellRow: loads repository.loadTerminalShellSettings() on first build and on resume; tap opens the shell sheet (_chooseShell) or retries a failed load (_loadShellSettings).",
+          "gates": [
+            "capabilities.shellSettings (otherwise the disabled GatedRowTile gated-shell-settings with its reason)",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false,
+          "file": "lib/ui/screens/settings/default_shell_row.dart"
+        },
+        {
+          "id": "settings-saved-permissions",
+          "type": "list-tile",
+          "label": "Always allowed actions",
+          "key": "saved-permissions-entry",
+          "line": 416,
+          "action": "navigate",
+          "target": "saved-permissions",
+          "targetWidget": "SavedPermissionsScreen",
+          "effect": "Pushes SavedPermissionsScreen(controller) via _open.",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-transcript-display",
+          "type": "list-tile",
+          "label": "Transcript display",
+          "key": "settings-transcript-display",
+          "line": 424,
+          "action": "open-sheet",
+          "target": "settings-transcript-display-sheet",
+          "targetWidget": "_openTranscriptDisplay",
+          "effect": "_openTranscriptDisplay(): bottom sheet with TranscriptDisplayToggles bound to the controller; the same two stored values the conversation menu flips.",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-voice",
+          "type": "list-tile",
+          "label": "Voice",
+          "key": "settings-voice",
+          "line": 434,
+          "action": "open-sheet",
+          "target": "voice-model-setup-sheet",
+          "targetWidget": "showVoiceModelSetupSheet",
+          "effect": "_openVoice(): VoiceModelManager.shared() then showVoiceModelSetupSheet(context, models).",
+          "gates": [
+            "platformCapabilities.supportsVoice",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-category-background",
+          "type": "list-tile",
+          "label": "Notifications & background",
+          "key": "settings-category-background",
+          "line": 450,
+          "action": "navigate",
+          "target": "background-settings",
+          "targetWidget": "BackgroundSettingsScreen",
+          "effect": "Pushes BackgroundSettingsScreen(controller) via _open. Subtitle from _backgroundSummary (timeout / Off / active / starting).",
+          "gates": [
+            "platformCapabilities.supportsBackgroundService",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-category-appearance",
+          "type": "list-tile",
+          "label": "Appearance",
+          "key": "settings-category-appearance",
+          "line": 462,
+          "action": "navigate",
+          "target": "appearance-settings",
+          "targetWidget": "AppearanceSettingsScreen",
+          "effect": "Pushes AppearanceSettingsScreen(controller) via _open. Subtitle \"<appearance label> · <theme pack label>\".",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-models",
+          "type": "list-tile",
+          "label": "Models & agents",
+          "key": "settings-models",
+          "line": 474,
+          "action": "navigate",
+          "target": "catalog",
+          "targetWidget": "CatalogScreen",
+          "effect": "Pushes CatalogScreen(controller) via _open. Subtitle shows the default model label (defaultModelLabel).",
+          "gates": [
+            "capabilities.serverCatalog",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-providers",
+          "type": "list-tile",
+          "label": "Providers",
+          "key": "settings-providers",
+          "line": 484,
+          "action": "navigate",
+          "target": "integrations",
+          "targetWidget": "IntegrationsScreen",
+          "effect": "Pushes IntegrationsScreen(controller, mode: IntegrationsMode.providers) via _open.",
+          "gates": [
+            "capabilities.serverCatalog",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-mcp",
+          "type": "list-tile",
+          "label": "MCP",
+          "key": "settings-mcp",
+          "line": 496,
+          "action": "navigate",
+          "target": "integrations",
+          "targetWidget": "IntegrationsScreen",
+          "effect": "Pushes IntegrationsScreen(controller, mode: IntegrationsMode.mcp) via _open.",
+          "gates": [
+            "capabilities.serverCatalog",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-commands-tools",
+          "type": "list-tile",
+          "label": "Commands & tools",
+          "key": "settings-commands-tools",
+          "line": 508,
+          "action": "navigate",
+          "target": "capabilities",
+          "targetWidget": "CapabilitiesScreen",
+          "effect": "Pushes CapabilitiesScreen(controller) via _open.",
+          "gates": [
+            "capabilities.serverCatalog",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-category-plugins",
+          "type": "list-tile",
+          "label": "Plugins",
+          "key": "settings-category-plugins",
+          "line": 519,
+          "action": "navigate",
+          "target": "plugins-settings",
+          "targetWidget": "PluginsSettingsScreen",
+          "effect": "Pushes the one Plugins screen, PluginsSettingsScreen(controller), via _open. Subtitle \"AI Team · Gas City\".",
+          "gates": [
+            "profile != null || capabilities.pluginInventory",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-import-session",
+          "type": "list-tile",
+          "label": "Import conversation",
+          "key": "library-import-session",
+          "line": 528,
+          "action": "navigate",
+          "target": "session-import",
+          "targetWidget": "SessionImportScreen",
+          "effect": "Pushes SessionImportScreen(controller) via _open.",
+          "gates": [
+            "capabilities.sessionImportExport && repository is SessionImportGateway && sessionImportSupported",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-terminal",
+          "type": "list-tile",
+          "label": "Terminal",
+          "key": "library-terminal",
+          "line": 538,
+          "action": "navigate",
+          "target": "terminal",
+          "targetWidget": "TerminalPage",
+          "effect": "Pushes TerminalPage(controller) via _open. Last row of Agent setup until the Project tab exists (phase 3).",
+          "gates": [
+            "capabilities.terminal",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-category-usage",
+          "type": "list-tile",
+          "label": "Usage and cost",
+          "key": "settings-category-usage",
+          "line": 548,
+          "action": "navigate",
+          "target": "usage",
+          "targetWidget": "UsageScreen",
+          "effect": "Pushes UsageScreen(controller) via _open.",
+          "gates": [
+            "controller.supportsUsageStatistics",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-category-quota",
+          "type": "list-tile",
+          "label": "Remaining usage",
+          "key": "settings-category-quota",
+          "line": 556,
+          "action": "navigate",
+          "target": "provider-quota",
+          "targetWidget": "ProviderQuotaScreen",
+          "effect": "Pushes ProviderQuotaScreen(controller) via _open. Subtitle \"Optional Codex collector · setup required\".",
+          "gates": [
+            "profile != null",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-category-privacy",
+          "type": "list-tile",
+          "label": "Privacy and local data",
+          "key": "settings-category-privacy",
+          "line": 566,
+          "action": "navigate",
+          "target": "privacy-settings",
+          "targetWidget": "PrivacySettingsScreen",
+          "effect": "Pushes PrivacySettingsScreen(controller) via _open.",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-setup-guide",
+          "type": "list-tile",
+          "label": "Setup guide",
+          "key": "settings-setup-guide",
+          "line": 575,
+          "action": "navigate",
+          "target": "guide",
+          "targetWidget": "GuideScreen",
+          "effect": "Pushes GuideScreen(embedded: false) via _open.",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-keyboard-shortcuts",
+          "type": "list-tile",
+          "label": "Keyboard shortcuts",
+          "key": "library-keyboard-shortcuts",
+          "line": 586,
+          "action": "open-dialog",
+          "target": "shortcuts-help-dialog",
+          "targetWidget": "showShortcutsHelp",
+          "effect": "showShortcutsHelp(context).",
+          "gates": [
+            "desktopInteractions",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-report-bug",
+          "type": "list-tile",
+          "label": "Report a bug",
+          "key": "library-report-bug",
+          "line": 595,
+          "action": "external-link",
+          "target": null,
+          "targetWidget": "openBugReport",
+          "effect": "openBugReport(context): prefilled GitHub issue opened externally (clipboard fallback).",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-app-diagnostics",
+          "type": "list-tile",
+          "label": "App diagnostics",
+          "key": "app-diagnostics-entry",
+          "line": 609,
+          "action": "navigate",
+          "target": "app-diagnostics",
+          "targetWidget": "AppDiagnosticsScreen",
+          "effect": "Pushes AppDiagnosticsScreen(controller) via _open. Subtitle counts handled errors (controller.diagnostics).",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-privacy-data-use",
+          "type": "list-tile",
+          "label": "Privacy and data use",
+          "key": "settings-privacy-data-use",
+          "line": 622,
+          "action": "navigate",
+          "target": "about",
+          "targetWidget": "AboutScreen",
+          "effect": "Pushes AboutScreen() via _open.",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-voice-notices",
+          "type": "list-tile",
+          "label": "Voice licenses and provenance",
+          "key": "settings-voice-notices",
+          "line": 634,
+          "action": "navigate",
+          "target": "voice-notices",
+          "targetWidget": "showVoiceNotices",
+          "effect": "showVoiceNotices(context) pushes VoiceNoticesPage.",
+          "gates": [
+            "platformCapabilities.supportsVoice",
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "settings-about-notices",
+          "type": "list-tile",
+          "label": "About and open source notices",
+          "key": "settings-about-notices",
+          "line": 642,
+          "action": "navigate",
+          "target": "about",
+          "targetWidget": "AboutScreen",
+          "effect": "Pushes AboutScreen(initialTab: 1) via _open.",
+          "gates": [
+            "row hidden when it does not match the search query (_HubRow.matches(_query))"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "settings-transcript-display-sheet",
+      "title": "Transcript display",
+      "kind": "sheet",
+      "file": "lib/ui/screens/settings_screen.dart",
+      "widget": "_openTranscriptDisplay",
+      "presentedBy": [],
+      "line": 208,
+      "purpose": "The transcript display defaults (reasoning expanded, timestamps and usage) edited from the hub; the same stored values the conversation menu flips.",
+      "reachedFrom": [
+        {
+          "page": "settings",
+          "element": "settings-transcript-display"
+        }
+      ],
+      "gates": [],
+      "elements": [],
+      "embeds": [
+        {
+          "widget": "TranscriptDisplayToggles",
+          "file": "lib/ui/widgets/transcript_display_toggles.dart",
+          "line": 220,
+          "gates": []
         }
       ]
     },
@@ -577,93 +701,18 @@
       ]
     },
     {
-      "id": "coding-settings",
-      "title": "Coding defaults",
-      "kind": "screen",
-      "file": "lib/ui/screens/settings/coding_settings_screen.dart",
-      "widget": "CodingSettingsScreen",
-      "presentedBy": [],
-      "line": 5,
-      "purpose": "Coding defaults: server default shell, default model and default agent.",
-      "reachedFrom": [
-        {
-          "page": "settings",
-          "element": "settings-category-coding"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "coding-settings-shell-gated",
-          "type": "list-tile",
-          "label": "Default shell",
-          "key": null,
-          "line": 210,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "GatedRowTile(feature: shell-settings): tap only shows the snackbar \"Requires an OpenCode 1 server\" (lib/ui/widgets/product_states.dart:405); explainer \"Shell selection isn't available on OpenCode 2 servers\".",
-          "gates": [
-            "!controller.capabilities.shellSettings"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "coding-settings-default-shell",
-          "type": "list-tile",
-          "label": "Default shell",
-          "key": "default-shell-settings-entry",
-          "line": 217,
-          "action": "open-sheet",
-          "target": "coding-settings-shell-sheet",
-          "targetWidget": "_chooseShell",
-          "effect": "_chooseShell() opens the shell chooser sheet; when _shellError != null the tap instead retries _loadShellSettings() (repository.loadTerminalShellSettings()). Disabled while loading/saving.",
-          "gates": [
-            "controller.capabilities.shellSettings"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "coding-settings-default-model",
-          "type": "list-tile",
-          "label": "Selected model",
-          "key": null,
-          "line": 240,
-          "action": "open-sheet",
-          "target": "model-picker-sheet",
-          "targetWidget": "showModelPicker",
-          "effect": "showModelPicker(context) (classic scope, becomes newSessions when controller.serverOwnsSessionSelection); apply writes controller.selectModel(model, variant:).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "coding-settings-default-agent",
-          "type": "list-tile",
-          "label": "Selected agent",
-          "key": null,
-          "line": 268,
-          "action": "open-sheet",
-          "target": "model-picker-sheet",
-          "targetWidget": "showModelPicker",
-          "effect": "showModelPicker(context, focusAgent: true): opens the model sheet and immediately the agent dialog; apply writes controller.selectAgent(agent).",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
       "id": "coding-settings-shell-sheet",
       "title": "Default shell",
       "kind": "sheet",
-      "file": "lib/ui/screens/settings/coding_settings_screen.dart",
+      "file": "lib/ui/screens/settings/default_shell_row.dart",
       "widget": "_chooseShell",
       "presentedBy": [],
-      "line": 80,
+      "line": 82,
       "purpose": "Radio-style list of server shells (Automatic + server-reported options) for the default shell.",
       "reachedFrom": [
         {
-          "page": "coding-settings",
-          "element": "coding-settings-default-shell"
+          "page": "settings",
+          "element": "settings-default-shell"
         }
       ],
       "gates": [
@@ -676,7 +725,7 @@
           "type": "list-tile",
           "label": "Automatic (server default) | <shell name or path>",
           "key": "server-shell-<choice.id>",
-          "line": 98,
+          "line": 101,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -979,13 +1028,13 @@
     },
     {
       "id": "privacy-settings",
-      "title": "Privacy & permissions",
+      "title": "Privacy and local data",
       "kind": "screen",
       "file": "lib/ui/screens/settings/personal_settings_screens.dart",
       "widget": "PrivacySettingsScreen",
       "presentedBy": [],
-      "line": 133,
-      "purpose": "Privacy & permissions: share-session-views preference, saved permissions, and on-device unsent work (queued prompts, drafts).",
+      "line": 135,
+      "purpose": "Privacy: share-session-views preference and on-device unsent work (queued prompts, drafts). \"Always allowed actions\" lives in the hub under Conversation defaults.",
       "reachedFrom": [
         {
           "page": "settings",
@@ -999,7 +1048,7 @@
           "type": "toggle",
           "label": "Sync read state",
           "key": "share-session-views",
-          "line": 208,
+          "line": 211,
           "action": "toggle-setting",
           "target": null,
           "targetWidget": null,
@@ -1010,24 +1059,11 @@
           "destructive": false
         },
         {
-          "id": "privacy-settings-saved-permissions",
-          "type": "list-tile",
-          "label": "Always allowed actions",
-          "key": "saved-permissions-entry",
-          "line": 244,
-          "action": "navigate",
-          "target": "saved-permissions",
-          "targetWidget": "SavedPermissionsScreen",
-          "effect": "Pushes SavedPermissionsScreen(controller).",
-          "gates": [],
-          "destructive": false
-        },
-        {
           "id": "privacy-settings-clear-queued",
           "type": "list-tile",
           "label": "Clear queued prompts",
           "key": "clear-queued-prompts",
-          "line": 292,
+          "line": 283,
           "action": "open-sheet",
           "target": "privacy-settings-clear-queued-sheet",
           "targetWidget": "showConfirmSheet",
@@ -1042,7 +1078,7 @@
           "type": "list-tile",
           "label": "Clear drafts",
           "key": "clear-session-drafts",
-          "line": 318,
+          "line": 309,
           "action": "open-sheet",
           "target": "privacy-settings-clear-drafts-sheet",
           "targetWidget": "showConfirmSheet",
@@ -1149,119 +1185,14 @@
       ]
     },
     {
-      "id": "diagnostics-settings",
-      "title": "Diagnostics",
-      "kind": "screen",
-      "file": "lib/ui/screens/settings/personal_settings_screens.dart",
-      "widget": "DiagnosticsSettingsScreen",
-      "presentedBy": [],
-      "line": 351,
-      "purpose": "Diagnostics category: single entry to the in-app error log.",
-      "reachedFrom": [
-        {
-          "page": "settings",
-          "element": "settings-category-diagnostics"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "diagnostics-settings-app-diagnostics",
-          "type": "list-tile",
-          "label": "App diagnostics",
-          "key": "app-diagnostics-entry",
-          "line": 366,
-          "action": "navigate",
-          "target": "app-diagnostics",
-          "targetWidget": "AppDiagnosticsScreen",
-          "effect": "Pushes AppDiagnosticsScreen(controller). Subtitle shows controller.diagnostics.count.",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
-      "id": "about-settings",
-      "title": "About",
-      "kind": "screen",
-      "file": "lib/ui/screens/settings/personal_settings_screens.dart",
-      "widget": "AboutSettingsScreen",
-      "presentedBy": [],
-      "line": 392,
-      "purpose": "About category: setup guide, privacy, voice notices and app/open-source details.",
-      "reachedFrom": [
-        {
-          "page": "settings",
-          "element": "settings-category-about"
-        }
-      ],
-      "gates": [],
-      "elements": [
-        {
-          "id": "about-settings-setup-guide",
-          "type": "list-tile",
-          "label": "Setup guide",
-          "key": "settings-setup-guide",
-          "line": 403,
-          "action": "navigate",
-          "target": "guide",
-          "targetWidget": "GuideScreen",
-          "effect": "Pushes GuideScreen(embedded: false).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "about-settings-privacy",
-          "type": "list-tile",
-          "label": "Privacy and data use",
-          "key": null,
-          "line": 415,
-          "action": "navigate",
-          "target": "about",
-          "targetWidget": "AboutScreen",
-          "effect": "Pushes const AboutScreen() (initialTab 0 = Privacy).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "about-settings-voice-notices",
-          "type": "list-tile",
-          "label": "Voice licenses and provenance",
-          "key": "settings-voice-notices",
-          "line": 428,
-          "action": "navigate",
-          "target": "voice-notices",
-          "targetWidget": "showVoiceNotices",
-          "effect": "showVoiceNotices(context) (lib/voice/notices.dart:84) pushes VoiceNoticesPage.",
-          "gates": [
-            "platformCapabilities.supportsVoice"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "about-settings-app-details",
-          "type": "list-tile",
-          "label": "About and open source notices",
-          "key": null,
-          "line": 436,
-          "action": "navigate",
-          "target": "about",
-          "targetWidget": "AboutScreen",
-          "effect": "Pushes const AboutScreen(initialTab: 1) (Open source tab).",
-          "gates": [],
-          "destructive": false
-        }
-      ]
-    },
-    {
       "id": "plugins-settings",
       "title": "Plugins",
       "kind": "screen",
       "file": "lib/ui/screens/settings/plugins_screen.dart",
       "widget": "PluginsSettingsScreen",
       "presentedBy": [],
-      "line": 47,
-      "purpose": "Settings > Plugins (AI Team / Gas City): discovery card, optional on-phone re-offer card, and the single AI Team row. Defines PluginsSettingsScreen, TeamPluginSheet, teamPhoneProfile, teamRowSubtitle, teamErrorReason. Opened only from SettingsScreen (settings_screen.dart:294).",
+      "line": 51,
+      "purpose": "The one Plugins screen. Section \"In this app\": AI Team · Gas City (discovery card, optional on-phone re-offer card, the AI Team row). Section \"On the server\" (ServerPluginsSection, only with capabilities.pluginInventory): server plugin inventory and personal plugin -> slash-command links.",
       "reachedFrom": [
         {
           "page": "settings",
@@ -1269,7 +1200,7 @@
         }
       ],
       "gates": [
-        "profile != null (hub row gate, settings_screen.dart:287)"
+        "profile != null || capabilities.pluginInventory (hub row gate, settings_screen.dart:517)"
       ],
       "elements": [
         {
@@ -1277,7 +1208,7 @@
           "type": "list-tile",
           "label": "AI Team · Gas City",
           "key": "plugins-ai-team-row",
-          "line": 157,
+          "line": 166,
           "action": "open-sheet",
           "target": "team-plugin-sheet",
           "targetWidget": "TeamPluginSheet",
@@ -1286,6 +1217,94 @@
             "profile != null (else text \"Connect to a server to use plugins.\", key plugins-no-server)"
           ],
           "destructive": false
+        },
+        {
+          "id": "plugins-refresh",
+          "type": "icon-button",
+          "label": "Refresh plugins",
+          "key": null,
+          "line": 197,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load() -> (controller.repository as PluginGateway).listPlugins() and reloads mappings from PluginCommandMappings.load(scope). Disabled while _loading.",
+          "gates": [
+            "section \"On the server\": capabilities.pluginInventory",
+            "_connected && _supported"
+          ],
+          "destructive": false,
+          "file": "lib/ui/screens/settings/server_plugins_section.dart"
+        },
+        {
+          "id": "plugins-clear-mappings",
+          "type": "button",
+          "label": "Clear personal links",
+          "key": null,
+          "line": 209,
+          "action": "open-sheet",
+          "target": "plugins-clear-mappings-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "_clearMappings() opens the destructive confirm sheet. Disabled while _editingMapping.",
+          "gates": [
+            "section \"On the server\": capabilities.pluginInventory",
+            "_mappingStore != null (controller.profile?.id != null)"
+          ],
+          "destructive": true,
+          "file": "lib/ui/screens/settings/server_plugins_section.dart"
+        },
+        {
+          "id": "plugins-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 226,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load() again after a failed listPlugins().",
+          "gates": [
+            "section \"On the server\": capabilities.pluginInventory",
+            "_failed",
+            "_supported && _connected"
+          ],
+          "destructive": false,
+          "file": "lib/ui/screens/settings/server_plugins_section.dart"
+        },
+        {
+          "id": "plugins-review-command",
+          "type": "button",
+          "label": "Review /{command}",
+          "key": null,
+          "line": 559,
+          "action": "open-dialog",
+          "target": "run-command-dialog",
+          "targetWidget": "showRunCommandDialog",
+          "effect": "_reviewCommand(plugin, name): re-validates plugin active + command present + mapping still stored, then showRunCommandDialog(context, controller:, command: CommandInfo(name), validateCommand:); if it returns a session id, Navigator.pushNamed('/chat/$sessionID').",
+          "gates": [
+            "section \"On the server\": capabilities.pluginInventory",
+            "one per mapped command name of a plugin with an id",
+            "enabled only when _connected && !_editingMapping && plugin.status == PluginStatus.active"
+          ],
+          "destructive": false,
+          "file": "lib/ui/screens/settings/server_plugins_section.dart"
+        },
+        {
+          "id": "plugins-manage-mapping",
+          "type": "button",
+          "label": "Link commands",
+          "key": null,
+          "line": 573,
+          "action": "open-dialog",
+          "target": "plugins-mapping-dialog",
+          "targetWidget": "_editMapping",
+          "effect": "_editMapping(plugin): loads controller.repository.listCommands() then opens the mapping dialog.",
+          "gates": [
+            "section \"On the server\": capabilities.pluginInventory",
+            "plugin.id != null && PluginCommandMappings.validName(id)",
+            "enabled only when _connected && !_editingMapping"
+          ],
+          "destructive": false,
+          "file": "lib/ui/screens/settings/server_plugins_section.dart"
         }
       ],
       "embeds": [
@@ -1301,6 +1320,14 @@
           "line": 128,
           "gates": [
             "teamPhoneProfile(profile): profile != null && TermuxBridge.supported && TermuxBridge.managesServerUrl(profile.baseUrl)"
+          ]
+        },
+        {
+          "widget": "ServerPluginsSection",
+          "file": "lib/ui/screens/settings/server_plugins_section.dart",
+          "line": 195,
+          "gates": [
+            "controller.capabilities.pluginInventory"
           ]
         }
       ]
@@ -1430,118 +1457,19 @@
       ]
     },
     {
-      "id": "plugins",
-      "title": "Plugins",
-      "kind": "screen",
-      "file": "lib/ui/screens/plugins_screen.dart",
-      "widget": "PluginsScreen",
-      "presentedBy": [],
-      "line": 14,
-      "purpose": "Server plugin inventory (PluginGateway.listPlugins) with personal plugin -> slash-command mappings. Defines only PluginsScreen. Opened only from LibraryScreen (library_screen.dart:149).",
-      "reachedFrom": [
-        {
-          "page": "more",
-          "element": "more-plugins-tile"
-        }
-      ],
-      "gates": [
-        "controller.capabilities.pluginInventory (hub row gate); body shows \"This server does not support plugin inspection.\" unless controller.repository is PluginGateway, and \"Connect to a server to inspect its plugins.\" unless connected"
-      ],
-      "elements": [
-        {
-          "id": "plugins-refresh",
-          "type": "icon-button",
-          "label": "Refresh plugins",
-          "key": null,
-          "line": 173,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_load() -> (controller.repository as PluginGateway).listPlugins() and reloads mappings from PluginCommandMappings.load(scope). Disabled while _loading.",
-          "gates": [
-            "_connected && _supported"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "plugins-clear-mappings",
-          "type": "button",
-          "label": "Clear personal links",
-          "key": null,
-          "line": 188,
-          "action": "open-sheet",
-          "target": "plugins-clear-mappings-sheet",
-          "targetWidget": "showConfirmSheet",
-          "effect": "_clearMappings() opens the destructive confirm sheet. Disabled while _editingMapping.",
-          "gates": [
-            "_mappingStore != null (controller.profile?.id != null)"
-          ],
-          "destructive": true
-        },
-        {
-          "id": "plugins-retry",
-          "type": "button",
-          "label": "Try again",
-          "key": null,
-          "line": 205,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "_load() again after a failed listPlugins().",
-          "gates": [
-            "_failed",
-            "_supported && _connected"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "plugins-review-command",
-          "type": "button",
-          "label": "Review /{command}",
-          "key": null,
-          "line": 539,
-          "action": "open-dialog",
-          "target": "run-command-dialog",
-          "targetWidget": "showRunCommandDialog",
-          "effect": "_reviewCommand(plugin, name): re-validates plugin active + command present + mapping still stored, then showRunCommandDialog(context, controller:, command: CommandInfo(name), validateCommand:); if it returns a session id, Navigator.pushNamed('/chat/$sessionID').",
-          "gates": [
-            "one per mapped command name of a plugin with an id",
-            "enabled only when _connected && !_editingMapping && plugin.status == PluginStatus.active"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "plugins-manage-mapping",
-          "type": "button",
-          "label": "Link commands",
-          "key": null,
-          "line": 553,
-          "action": "open-dialog",
-          "target": "plugins-mapping-dialog",
-          "targetWidget": "_editMapping",
-          "effect": "_editMapping(plugin): loads controller.repository.listCommands() then opens the mapping dialog.",
-          "gates": [
-            "plugin.id != null && PluginCommandMappings.validName(id)",
-            "enabled only when _connected && !_editingMapping"
-          ],
-          "destructive": false
-        }
-      ]
-    },
-    {
       "id": "plugins-clear-mappings-sheet",
       "title": "Clear all personal command links?",
       "kind": "sheet",
-      "file": "lib/ui/screens/plugins_screen.dart",
+      "file": "lib/ui/screens/settings/server_plugins_section.dart",
       "widget": "_clearMappings",
       "presentedBy": [
         "showConfirmSheet"
       ],
-      "line": 241,
+      "line": 259,
       "purpose": "Confirms clearing every personal plugin command mapping for this profile.",
       "reachedFrom": [
         {
-          "page": "plugins",
+          "page": "plugins-settings",
           "element": "plugins-clear-mappings"
         }
       ],
@@ -1579,14 +1507,14 @@
       "id": "plugins-mapping-dialog",
       "title": "Link commands",
       "kind": "dialog",
-      "file": "lib/ui/screens/plugins_screen.dart",
+      "file": "lib/ui/screens/settings/server_plugins_section.dart",
       "widget": "_editMapping",
       "presentedBy": [],
-      "line": 297,
+      "line": 315,
       "purpose": "Checkbox list of server slash commands to associate with one plugin (personal, on-device mapping).",
       "reachedFrom": [
         {
-          "page": "plugins",
+          "page": "plugins-settings",
           "element": "plugins-manage-mapping"
         }
       ],
@@ -1644,12 +1572,12 @@
       "purpose": "Two-tab document viewer (Privacy, Open source) with build identity, non-affiliation and build-provenance notices.",
       "reachedFrom": [
         {
-          "page": "about-settings",
-          "element": "about-settings-privacy"
+          "page": "settings",
+          "element": "settings-privacy-data-use"
         },
         {
-          "page": "about-settings",
-          "element": "about-settings-app-details"
+          "page": "settings",
+          "element": "settings-about-notices"
         },
         {
           "page": "?",
@@ -1784,12 +1712,8 @@
       "purpose": "Setup guide: three-step pairing story, link to connection help and an Advanced disclosure with copyable commands. With embedded: true it renders only the body inside a host.",
       "reachedFrom": [
         {
-          "page": "more",
-          "element": "more-setup-guide-tile"
-        },
-        {
-          "page": "about-settings",
-          "element": "about-settings-setup-guide"
+          "page": "settings",
+          "element": "settings-setup-guide"
         },
         {
           "page": "?",
@@ -1912,8 +1836,8 @@
       "purpose": "Process-local handled-error log with send-to-server, copy and clear.",
       "reachedFrom": [
         {
-          "page": "diagnostics-settings",
-          "element": "diagnostics-settings-app-diagnostics"
+          "page": "settings",
+          "element": "settings-app-diagnostics"
         },
         {
           "page": "?",
@@ -2201,8 +2125,8 @@
       "purpose": "Lists the durable \"always allow\" grants for the current project and lets the user revoke them.",
       "reachedFrom": [
         {
-          "page": "privacy-settings",
-          "element": "privacy-settings-saved-permissions"
+          "page": "settings",
+          "element": "settings-saved-permissions"
         }
       ],
       "gates": [],
@@ -2571,14 +2495,6 @@
       "line": 71,
       "purpose": "The single model / thinking mode / agent selector (ModelCatalogView in a draggable sheet). On open it calls controller.refreshCatalog() and, for a session on a server that owns selection, controller.ensureSession(sessionID). pickers.dart defines only this picker (showModelPicker); the same ModelCatalogView is embedded full-screen by CatalogScreen (showHeader: false).",
       "reachedFrom": [
-        {
-          "page": "coding-settings",
-          "element": "coding-settings-default-model"
-        },
-        {
-          "page": "coding-settings",
-          "element": "coding-settings-default-agent"
-        },
         {
           "page": "?",
           "element": null,
@@ -3019,10 +2935,13 @@
     {
       "file": "lib/feedback/bug_report.dart",
       "reason": "No surface: openBugReport() builds a prefilled GitHub issue URL and launches it externally (clipboard fallback + snackbar). Referenced as targetWidget \"openBugReport\" by more-report-bug-tile, about-report-bug and the about tab alpha buttons; also called from lib/ui/widgets/product_states.dart:250."
+    },
+    {
+      "file": "lib/ui/screens/library_screen.dart",
+      "reason": "No surface since UX phase 2: the More tab (LibraryScreen) merged into the Settings hub. The file only hosts the library part files (catalog, integrations, commands, skills, references) and defaultModelLabel()."
     }
   ],
   "notes": [
-    "Two plugins screens: lib/ui/screens/plugins_screen.dart defines only PluginsScreen (server plugin inventory + command mappings), opened only by LibraryScreen (library_screen.dart:149, gate controller.capabilities.pluginInventory). lib/ui/screens/settings/plugins_screen.dart defines PluginsSettingsScreen and TeamPluginSheet (AI Team / Gas City) plus helpers teamPhoneProfile/teamRowSubtitle/teamErrorReason and re-exports TeamDiscoveryCard/teamReadOnly; opened only by SettingsScreen (settings_screen.dart:294, gate profile != null).",
     "pickers.dart contains a single picker, showModelPicker (pickers.dart:34) / ModelCatalogView; there are no other show* pickers in the file. The agent picker and variant selector are inline parts of it.",
     "ModelCatalogView is also embedded by CatalogScreen (lib/ui/screens/library/catalog_screen.dart:108, another area); elements are recorded once on model-picker-sheet with embeddedAlsoIn rather than duplicated as an embedded-* overlay.",
     "plugins-settings embeds TeamDiscoveryCard (lib/ui/widgets/team_discovery_card.dart) and TeamPhoneReofferCard; team-plugin-sheet embeds TeamPhoneSection (lib/ui/widgets/team_phone_section.dart). Those files are not in this area, so their interactive elements are not recorded here (see the pages' \"embeds\" field).",
@@ -3032,6 +2951,9 @@
     "plugins_screen.dart:466: after showRunCommandDialog returns a session id the screen does Navigator.pushNamed('/chat/$sessionID'); recorded in the effect of plugins-review-command.",
     "GuideScreen Cmd copy buttons share one definition (guide_screen.dart:335); three elements are recorded, one per instantiated command (lines 49, 119, 148).",
     "web_sources_screen.dart:76 has a hard-coded English error string (\"Enter an HTTP or HTTPS URL without credentials.\"), not from l10n.",
-    "bug_report.dart:114 snackbar text is hard-coded English."
+    "bug_report.dart:114 snackbar text is hard-coded English.",
+    "UX phase 2: LibraryScreen (More) and the old SettingsScreen are one page, \"settings\" (kind tab; also pushed over other screens by Ctrl/Cmd+,). CodingSettingsScreen, DiagnosticsSettingsScreen and AboutSettingsScreen no longer exist; their rows are hub rows. lib/ui/screens/library_screen.dart now only hosts the library part files.",
+    "UX phase 2: one Plugins page, \"plugins-settings\". The former PluginsScreen is ServerPluginsSection (lib/ui/screens/settings/server_plugins_section.dart), embedded as the \"On the server\" section; its elements keep their plugins-* ids.",
+    "The Default shell hub row stays visible but disabled (GatedRowTile gated-shell-settings) when capabilities.shellSettings is false, per the OpenCode 2 port rule §7 row 22; every other hub row the server cannot serve is absent."
   ]
 }

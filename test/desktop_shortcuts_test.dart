@@ -332,7 +332,7 @@ void main() {
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'More',
+        'Settings',
       );
 
       await _press(tester, LogicalKeyboardKey.digit1);
@@ -394,7 +394,7 @@ void main() {
           tester
               .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
               .data,
-          'More',
+          'Settings',
         );
 
         // The terminal shortcut likewise returns to the shell first, then

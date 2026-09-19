@@ -44,7 +44,6 @@ import '../desktop/desktop_interaction.dart';
 import '../desktop/file_drop.dart';
 import '../desktop/shortcuts.dart';
 import '../widgets/agent_color.dart';
-import '../widgets/appearance_picker.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/safety_confirms.dart';
@@ -84,8 +83,8 @@ import 'staged_revert_screen.dart';
 import 'session_destination_sheet.dart';
 import 'session_relations_screen.dart';
 import 'settings_screen.dart';
+import 'capabilities_screen.dart';
 import 'terminal_screen.dart';
-import 'tools_screen.dart';
 import 'web_sources_screen.dart';
 import 'context_capsule_screen.dart';
 import '../early_l10n.dart';
@@ -531,6 +530,7 @@ class _ChatScreenState extends State<ChatScreen>
     _ChatCommandAction.redo => _conn.capabilities.sessionRevert,
     _ChatCommandAction.references => _conn.capabilities.fileBrowsing,
     _ChatCommandAction.integrations ||
+    _ChatCommandAction.mcpServers ||
     _ChatCommandAction.skills => _conn.capabilities.serverCatalog,
     _ChatCommandAction.model => true,
     _ => true,
@@ -4728,7 +4728,7 @@ class _ChatScreenState extends State<ChatScreen>
           context,
         ).chatUiInspectMCPStatusAuthenticationAndResources,
         group: 'OpenCode',
-        action: _ChatCommandAction.integrations,
+        action: _ChatCommandAction.mcpServers,
       ),
       _ChatCommand.mobile(
         slash: 'connect',
@@ -5212,11 +5212,28 @@ class _ChatScreenState extends State<ChatScreen>
           );
         }
         return;
+      // "/connect" and "/mcps" land on the same screens as Settings › Agent
+      // setup › Providers and › MCP, so each has one home.
       case _ChatCommandAction.integrations:
         if (mounted) {
           await Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => IntegrationsScreen(controller: _conn),
+              builder: (_) => IntegrationsScreen(
+                controller: _conn,
+                mode: IntegrationsMode.providers,
+              ),
+            ),
+          );
+        }
+        return;
+      case _ChatCommandAction.mcpServers:
+        if (mounted) {
+          await Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => IntegrationsScreen(
+                controller: _conn,
+                mode: IntegrationsMode.mcp,
+              ),
             ),
           );
         }
@@ -5246,10 +5263,14 @@ class _ChatScreenState extends State<ChatScreen>
         }
         return;
       case _ChatCommandAction.tools:
+        // Same destination as Settings › Agent setup › Commands & tools,
+        // opened on its Tools tab (index 1 whenever the inventory exists,
+        // which is also the gate for this command).
         if (mounted) {
           await Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => ToolsScreen(controller: _conn),
+              builder: (_) =>
+                  CapabilitiesScreen(controller: _conn, initialTab: 1),
             ),
           );
         }
@@ -5267,10 +5288,12 @@ class _ChatScreenState extends State<ChatScreen>
         }
         return;
       case _ChatCommandAction.status:
+        // "/status" means this server's health, not all of Settings: open
+        // the hub's Connection › This server screen.
         if (mounted) {
           await Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => SettingsScreen(controller: _conn),
+              builder: (_) => ServerSettingsScreen(controller: _conn),
             ),
           );
         }
@@ -5285,8 +5308,13 @@ class _ChatScreenState extends State<ChatScreen>
         }
         return;
       case _ChatCommandAction.appearance:
+        // Settings › Appearance, the one home of theme and language.
         if (mounted) {
-          await showAppearancePicker(context, controller: _conn);
+          await Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => AppearanceSettingsScreen(controller: _conn),
+            ),
+          );
         }
         return;
       case _ChatCommandAction.diff:

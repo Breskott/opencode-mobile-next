@@ -306,13 +306,13 @@
         {
           "id": "home-shell-tab-more",
           "type": "tab",
-          "label": "More",
+          "label": "Settings",
           "key": null,
-          "line": 162,
+          "line": 168,
           "action": "navigate",
-          "target": "library",
-          "targetWidget": "LibraryScreen",
-          "effect": "_selectTab(3): shows LibraryScreen(controller: conn).",
+          "target": "settings",
+          "targetWidget": "SettingsScreen",
+          "effect": "_selectTab(3): shows the Settings hub, SettingsScreen(controller: conn, embedded: true).",
           "gates": [],
           "destructive": false
         },
@@ -1394,14 +1394,14 @@
         {
           "id": "command-palette-dialog-cmd-settings",
           "type": "list-tile",
-          "label": "Settings (Ctrl + ,; ⌘ on macOS)",
+          "label": "Settings (Ctrl + 4; ⌘ on macOS)",
           "key": "command-Settings",
           "file": "lib/main.dart",
-          "line": 1129,
+          "line": 1125,
           "action": "navigate",
           "target": "settings",
           "targetWidget": "SettingsScreen",
-          "effect": "_openSettings(): pushes SettingsScreen(controller).",
+          "effect": "DesktopCommand \"Settings\": go(3) returns to the shell root and selects the Settings tab. It replaces the separate \"More\" and \"Settings\" commands; Ctrl/Cmd+, still pushes the same hub over the current screen.",
           "gates": [],
           "destructive": false
         },
@@ -1472,7 +1472,7 @@
         {
           "page": "?",
           "element": null,
-          "widget": "LibraryScreen (key 'library-keyboard-shortcuts', gated by desktopInteractions)",
+          "widget": "SettingsScreen (key 'library-keyboard-shortcuts', gated by desktopInteractions)",
           "file": "lib/ui/screens/library_screen.dart",
           "line": 225
         }
@@ -2120,7 +2120,6 @@
         "WorkspaceScreen (workspace_screen.dart:1299,1568)",
         "WorktreesScreen (worktrees_screen.dart:750)",
         "FilesScreen (files_screen.dart:1040)",
-        "SessionsTab (chat/sessions_tab.dart:83)",
         "MessageView (chat/message_view.dart:1616)",
         "GlobalSessionsScreen (global_sessions_screen.dart:1097)",
         "ManagedWorkspacesScreen (managed_workspaces_screen.dart:528)"
@@ -2218,7 +2217,7 @@
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "GatedRowTile: tap shows snackbar 'Requires an OpenCode {requiresGeneration} server'. Key 'gated-<feature>'. Used by ProjectHealthScreen:301, CodingSettingsScreen:210, ServerSettingsScreen:294.",
+          "effect": "GatedRowTile: tap shows snackbar 'Requires an OpenCode {requiresGeneration} server'. Key 'gated-<feature>'. Used by ProjectHealthScreen:301, SettingsScreen (Default shell row):210, ServerSettingsScreen:294.",
           "gates": [],
           "destructive": false
         }
@@ -2226,7 +2225,7 @@
       "embeddedIn": [
         "ProductErrorState: TerminalPage, SessionContextScreen, ReviewWorkspace, ActiveContextScreen, WorktreesScreen, ProjectsScreen, SavedPermissionsScreen, SessionRelationsScreen, AgentScreen, RunScreen, FilesScreen, SessionDestinationSheet, session_sheets, CommandsScreen, SkillsScreen, ReferencesScreen, TeamHomeScreen, ActivityScreen, GlobalSessionsScreen, ToolsScreen, ChatScreen, ManagedWorkspacesScreen, lib/voice/notices.dart",
         "ProductRefreshBody: TerminalPage, ReviewWorkspace, SkillsScreen, ReferencesScreen, CommandsScreen",
-        "GatedRowTile: ProjectHealthScreen, CodingSettingsScreen, ServerSettingsScreen"
+        "GatedRowTile: ProjectHealthScreen, SettingsScreen (Default shell row), ServerSettingsScreen"
       ]
     },
     {
@@ -2318,7 +2317,7 @@
         {
           "page": "?",
           "element": null,
-          "widget": "LibraryScreen._open",
+          "widget": "SettingsScreen._open",
           "file": "lib/ui/screens/library_screen.dart",
           "line": 138
         }

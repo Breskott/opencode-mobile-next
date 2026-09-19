@@ -171,7 +171,7 @@ void main() {
           find.byIcon(AppIconography.workspaceSelected),
         );
         expect(icon.top, greaterThanOrEqualTo(dock.top + 4));
-        for (final label in ['Workspace', 'Files', 'Activity', 'More']) {
+        for (final label in ['Workspace', 'Files', 'Activity', 'Settings']) {
           final rect = tester.getRect(
             find.descendant(
               of: find.byType(NavigationBar),
@@ -292,7 +292,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('lib'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(AppIconography.more));
+    await tester.tap(find.byIcon(AppIconography.settings));
     await tester.pumpAndSettle();
     final loads = api.paths.length;
     await tester.binding.handlePopRoute();
@@ -321,7 +321,7 @@ void main() {
     await tester.enterText(search, 'needle');
     await tester.pump(const Duration(milliseconds: 400));
     final loads = api.paths.length;
-    await tester.tap(find.byIcon(AppIconography.more));
+    await tester.tap(find.byIcon(AppIconography.settings));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(AppIconography.files));
     await tester.pumpAndSettle();
@@ -364,11 +364,11 @@ void main() {
           .animationDuration,
       Duration.zero,
     );
-    await tester.tap(find.byIcon(AppIconography.more));
+    await tester.tap(find.byIcon(AppIconography.settings));
     await tester.pump();
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'More',
+      'Settings',
     );
     expect(tester.takeException(), isNull);
   });
@@ -483,7 +483,8 @@ void main() {
     // Audit §5: Activity took Terminal's navigation slot.
     expect(find.text('Activity'), findsWidgets);
     expect(find.text('Terminal'), findsNothing);
-    expect(find.text('More'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('More'), findsNothing);
     expect(find.text('API'), findsNothing);
     expect(find.text('Guide'), findsNothing);
   });

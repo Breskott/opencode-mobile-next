@@ -16,10 +16,14 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
+import 'package:opencode_mobile/ui/screens/capabilities_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/global_sessions_screen.dart';
+import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
+import 'package:opencode_mobile/ui/screens/tools_screen.dart';
 import 'package:opencode_mobile/ui/widgets/product_states.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -2919,9 +2923,55 @@ void main() {
     expect(find.text('All conversations'), findsOneWidget);
   });
 
-  testWidgets('themes command opens the native appearance picker', (
-    tester,
-  ) async {
+  // Navigation commands land on the same screens as the Settings hub rows,
+  // so a typed alias and the hub never disagree about where a thing lives.
+  for (final entry in <String, (Type, bool Function(Widget))>{
+    'status': (ServerSettingsScreen, (_) => true),
+    'connect': (
+      IntegrationsScreen,
+      (widget) =>
+          (widget as IntegrationsScreen).mode == IntegrationsMode.providers,
+    ),
+    'mcps': (
+      IntegrationsScreen,
+      (widget) => (widget as IntegrationsScreen).mode == IntegrationsMode.mcp,
+    ),
+    'tools': (
+      CapabilitiesScreen,
+      (widget) => (widget as CapabilitiesScreen).initialTab == 1,
+    ),
+  }.entries) {
+    testWidgets('${entry.key} command opens its Settings hub destination', (
+      tester,
+    ) async {
+      await _pumpChat(
+        tester,
+        _FakeOpenCodeApi(),
+        repository: _DestinationRepository(),
+      );
+      await _useComposerTool(tester, 'commands');
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('command-launcher-search')),
+        entry.key,
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(Key('command-mobile-${entry.key}')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      final destination = find.byType(entry.value.$1);
+      expect(destination, findsOneWidget);
+      expect(entry.value.$2(tester.widget(destination)), isTrue);
+      // Never the whole hub under a misleading name.
+      expect(find.byType(SettingsScreen), findsNothing);
+      if (entry.key == 'tools') {
+        expect(find.byType(ToolsScreen), findsOneWidget);
+      }
+    });
+  }
+
+  testWidgets('themes command opens Settings › Appearance', (tester) async {
     final controller = await _pumpChat(tester, _FakeOpenCodeApi());
     await _useComposerTool(tester, 'commands');
     await tester.pumpAndSettle();
@@ -2933,6 +2983,9 @@ void main() {
     await tester.tap(find.byKey(const Key('command-mobile-themes')));
     await tester.pumpAndSettle();
 
+    expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('appearance-settings-entry')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('appearance-picker')), findsOneWidget);
     await tester.ensureVisible(find.byKey(const Key('appearance-light')));
     await tester.pumpAndSettle();

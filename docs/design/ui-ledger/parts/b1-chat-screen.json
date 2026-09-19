@@ -77,9 +77,9 @@
     {
      "page": "?",
      "element": null,
-     "widget": "_PluginsScreenState (after showRunCommandDialog returns a session id)",
-     "file": "lib/ui/screens/plugins_screen.dart",
-     "line": 466
+     "widget": "_ServerPluginsSectionState (after showRunCommandDialog returns a session id)",
+     "file": "lib/ui/screens/settings/server_plugins_section.dart",
+     "line": 484
     },
     {
      "page": "?",
@@ -108,27 +108,6 @@
      "widget": "_CommandsScreenState._run",
      "file": "lib/ui/screens/library/commands_screen.dart",
      "line": 158
-    },
-    {
-     "page": "?",
-     "element": null,
-     "widget": "SessionsTab._newChat",
-     "file": "lib/ui/screens/chat/sessions_tab.dart",
-     "line": 16
-    },
-    {
-     "page": "?",
-     "element": null,
-     "widget": "SessionsTab.build (session row)",
-     "file": "lib/ui/screens/chat/sessions_tab.dart",
-     "line": 91
-    },
-    {
-     "page": "?",
-     "element": null,
-     "widget": "SessionsTab.build (session row)",
-     "file": "lib/ui/screens/chat/sessions_tab.dart",
-     "line": 202
     },
     {
      "page": "?",

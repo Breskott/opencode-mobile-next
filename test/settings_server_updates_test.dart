@@ -165,7 +165,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await _openCategory(tester, 'settings-category-diagnostics');
 
     await tester.scrollUntilVisible(
       find.byKey(const Key('app-diagnostics-entry')),
@@ -390,12 +389,18 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await _openCategory(tester, 'settings-category-privacy');
-
+    // Durable grants are a Conversation defaults row of the hub: they are
+    // about how the agent works, not about privacy.
     final entry = find.byKey(const ValueKey('saved-permissions-entry'));
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
-    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('settings-group-conversation-defaults')),
+        matching: entry,
+      ),
+      findsOneWidget,
+    );
     await tester.ensureVisible(entry);
+    await tester.pumpAndSettle();
     expect(find.text('Always allowed actions'), findsOneWidget);
     await tester.tap(entry);
     await tester.pumpAndSettle();
@@ -472,7 +477,6 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await _openCategory(tester, 'settings-category-coding');
       final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
       await tester.scrollUntilVisible(
         entry,
@@ -525,7 +529,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await _openCategory(tester, 'settings-category-coding');
     final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
     await tester.scrollUntilVisible(
       entry,
@@ -534,7 +537,8 @@ void main() {
     );
 
     expect(find.textContaining('Shell endpoint unavailable'), findsOneWidget);
-    expect(find.text('Selected model'), findsOneWidget);
+    // Scoped: the neighbouring default still renders.
+    expect(find.text('Model and mode'), findsOneWidget);
     repository.shellError = null;
     await tester.tap(entry);
     await tester.pumpAndSettle();
@@ -545,8 +549,17 @@ void main() {
     // A failed refresh with cached choices must retry the request, rather than
     // opening the stale chooser behind a row labelled "Tap to retry".
     repository.shellError = const ProductException('Shell refresh unavailable');
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    // The real order: the hub hosts lifecycle listeners that assert on it.
+    for (final state in const [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
     await tester.pumpAndSettle();
     expect(find.textContaining('Shell refresh unavailable'), findsOneWidget);
     final loadsBeforeRetry = repository.shellLoadCalls;
@@ -577,7 +590,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await _openCategory(tester, 'settings-category-coding');
     final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
     await tester.scrollUntilVisible(
       entry,
@@ -623,7 +635,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await _openCategory(tester, 'settings-category-coding');
     final entry = find.byKey(const ValueKey('default-shell-settings-entry'));
     await tester.scrollUntilVisible(
       entry,
@@ -697,12 +708,14 @@ void main() {
     );
     for (final key in const [
       'settings-category-server',
-      'settings-category-coding',
+      'settings-model-and-mode',
+      'default-shell-settings-entry',
       'settings-category-background',
       'settings-category-appearance',
+      'settings-category-plugins',
       'settings-category-privacy',
-      'settings-category-diagnostics',
-      'settings-category-about',
+      'app-diagnostics-entry',
+      'settings-about-notices',
     ]) {
       await tester.scrollUntilVisible(
         find.byKey(ValueKey(key)),

@@ -53,7 +53,7 @@
         {
           "page": "?",
           "element": null,
-          "widget": "LibraryScreen (_DestinationRow \"phone tools\")",
+          "widget": "SettingsScreen (_DestinationRow \"phone tools\")",
           "file": "lib/ui/screens/library_screen.dart",
           "line": 85
         },
@@ -68,7 +68,7 @@
       ],
       "gates": [
         "named route `/termux-setup` is registered only `if (platformCapabilities.supportsTermux)` (lib/main.dart:1242-1243)",
-        "LibraryScreen and TermuxProcessesScreen push `TermuxSetupScreen` directly via MaterialPageRoute (library entry itself gated by `platformCapabilities.supportsTermux`)",
+        "SettingsScreen and TermuxProcessesScreen push `TermuxSetupScreen` directly via MaterialPageRoute (library entry itself gated by `platformCapabilities.supportsTermux`)",
         "initState schedules `_refresh()`; app resume re-runs `_refresh()` (or `_verifyAfterTermuxReturn()` after a Termux round trip)"
       ],
       "states": {
@@ -1408,7 +1408,7 @@
           "type": "list-tile",
           "label": "<process name> · \"Protected · open the server controls\"",
           "key": "termux-proc-<pid>",
-          "line": 522,
+          "line": 509,
           "action": "navigate",
           "target": "termux-setup",
           "targetWidget": "TermuxSetupScreen",
@@ -1423,7 +1423,7 @@
           "type": "icon-button",
           "label": "Stop {name}",
           "key": "termux-proc-stop-<pid>",
-          "line": 513,
+          "line": 502,
           "action": "mutate",
           "target": null,
           "effect": "`_stopProcess(process, confirm: !process.isOrphan)`: orphans are stopped in one tap with no confirmation via `TermuxProcesses.stopPid(pid)`; result line shown and list refreshed.",
