@@ -19,6 +19,8 @@ Future<void> openFirstRunConnect(
   final choice = find.byKey(ValueKey('agent-choice-$agent'));
   await tester.ensureVisible(choice);
   await tester.pumpAndSettle();
-  await tester.tap(choice);
+  // At 2.5x text a choice can be taller than the space left on a 320 dp
+  // screen, so its centre may sit below the fold; its top is always in view.
+  await tester.tapAt(tester.getTopLeft(choice) + const Offset(24, 24));
   await tester.pumpAndSettle();
 }

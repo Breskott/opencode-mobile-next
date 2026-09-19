@@ -16728,22 +16728,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get firstRunJustShowMe => 'أرني فقط';
 
   @override
-  String get firstRunWhichAgent => 'أي وكيل؟';
+  String get firstRunWhichAgent => 'بأي وكيل تبدأ؟';
 
   @override
   String get firstRunAgentOpenCode => 'OpenCode';
 
   @override
-  String get firstRunAgentClaudeOrPi => 'Claude Code أو Pi';
+  String get firstRunAgentClaudeOrPi => 'Claude Code وCodex وPi وغيرها';
 
   @override
-  String get firstRunAgentClaudeOrPiDetail => 'عبر خدمة Paseo. تجريبي.';
+  String get firstRunAgentClaudeOrPiDetail =>
+      'اتصال واحد بخدمة Paseo يشغّل كل وكيل مثبّت هناك. تجريبي.';
 
   @override
   String get firstRunAgentCodex => 'Codex';
 
   @override
-  String get firstRunAgentCodexDetail => 'عبر Codex app-server. تجريبي.';
+  String get firstRunAgentCodexDetail =>
+      'مباشرةً عبر Codex app-server. تجريبي.';
 
   @override
   String get firstRunRunOnComputer => 'على حاسوبك، شغّل:';
@@ -16993,4 +16995,11 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get localAgentRuntimeChoiceDetail =>
       'يعدّ Ubuntu وخادم OpenCode أولًا، ثم يثبّت Claude Code إلى جانبه.';
+
+  @override
+  String get firstRunAgentsSideBySide =>
+      'تعمل جنبًا إلى جنب على الحاسوب نفسه. ابدأ بواحد، وأضف البقية في أي وقت من اسم الخادم في الأعلى.';
+
+  @override
+  String get firstRunPaseoTitle => 'الوكلاء عبر Paseo';
 }

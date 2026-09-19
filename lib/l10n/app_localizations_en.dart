@@ -16469,24 +16469,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get firstRunJustShowMe => 'Just show me';
 
   @override
-  String get firstRunWhichAgent => 'Which agent?';
+  String get firstRunWhichAgent => 'Which agent first?';
 
   @override
   String get firstRunAgentOpenCode => 'OpenCode';
 
   @override
-  String get firstRunAgentClaudeOrPi => 'Claude Code or Pi';
+  String get firstRunAgentClaudeOrPi => 'Claude Code, Codex, Pi and more';
 
   @override
   String get firstRunAgentClaudeOrPiDetail =>
-      'Through the Paseo daemon. Experimental.';
+      'One connection to the Paseo daemon drives every agent installed there. Experimental.';
 
   @override
   String get firstRunAgentCodex => 'Codex';
 
   @override
   String get firstRunAgentCodexDetail =>
-      'Through Codex app-server. Experimental.';
+      'Directly, through Codex app-server. Experimental.';
 
   @override
   String get firstRunRunOnComputer => 'On your computer, run:';
@@ -16737,4 +16737,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get localAgentRuntimeChoiceDetail =>
       'Sets up Ubuntu and the OpenCode server first, then installs Claude Code next to it.';
+
+  @override
+  String get firstRunAgentsSideBySide =>
+      'They run side by side on the same computer. Start with one, and add the others any time from the server name at the top.';
+
+  @override
+  String get firstRunPaseoTitle => 'Agents through Paseo';
 }

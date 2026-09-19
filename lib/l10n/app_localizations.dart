@@ -26629,7 +26629,7 @@ abstract class AppLocalizations {
   /// First run, computer path: the question above the three agent choices.
   ///
   /// In en, this message translates to:
-  /// **'Which agent?'**
+  /// **'Which agent first?'**
   String get firstRunWhichAgent;
 
   /// Agent choice title; a product name, not translated.
@@ -26641,13 +26641,13 @@ abstract class AppLocalizations {
   /// Agent choice title for the Paseo backend; product names are not translated.
   ///
   /// In en, this message translates to:
-  /// **'Claude Code or Pi'**
+  /// **'Claude Code, Codex, Pi and more'**
   String get firstRunAgentClaudeOrPi;
 
   /// Agent choice: one line under 'Claude Code or Pi'.
   ///
   /// In en, this message translates to:
-  /// **'Through the Paseo daemon. Experimental.'**
+  /// **'One connection to the Paseo daemon drives every agent installed there. Experimental.'**
   String get firstRunAgentClaudeOrPiDetail;
 
   /// Agent choice title; a product name, not translated.
@@ -26659,7 +26659,7 @@ abstract class AppLocalizations {
   /// Agent choice: one line under 'Codex'.
   ///
   /// In en, this message translates to:
-  /// **'Through Codex app-server. Experimental.'**
+  /// **'Directly, through Codex app-server. Experimental.'**
   String get firstRunAgentCodexDetail;
 
   /// Connect screen on the first-run computer path: caption above the one command to run.
@@ -27081,6 +27081,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sets up Ubuntu and the OpenCode server first, then installs Claude Code next to it.'**
   String get localAgentRuntimeChoiceDetail;
+
+  /// No description provided for @firstRunAgentsSideBySide.
+  ///
+  /// In en, this message translates to:
+  /// **'They run side by side on the same computer. Start with one, and add the others any time from the server name at the top.'**
+  String get firstRunAgentsSideBySide;
+
+  /// No description provided for @firstRunPaseoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents through Paseo'**
+  String get firstRunPaseoTitle;
 }
 
 class _AppLocalizationsDelegate
