@@ -78,7 +78,8 @@
    "gates": [
     "named route '/servers' (lib/main.dart:1230)",
     "list body shown when bootstrap.store.profiles.isNotEmpty; otherwise the servers-welcome body is shown",
-    "route argument 'edit-active' auto-opens the active profile's editor with the password/token focused (didChangeDependencies, line 70)"
+    "route argument 'edit-active' auto-opens the active profile's editor with the password/token focused (didChangeDependencies, line 70)",
+    "route argument ServersRouteRequest (from the server switcher) runs on arrival: connect -> _connect(profile), add -> _edit(), enterPhoneCredentials -> _edit on the phone server URL, forget -> _delete(profile)"
    ],
    "elements": [
     {

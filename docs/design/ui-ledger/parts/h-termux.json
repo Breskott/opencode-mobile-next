@@ -2197,85 +2197,182 @@
     },
     {
       "id": "embedded-termux-running-server-entry",
-      "title": "Server found on this phone",
+      "title": "Server on this phone",
       "kind": "overlay",
       "file": "lib/ui/widgets/termux_running_server_entry.dart",
       "widget": "TermuxRunningServerEntry",
       "presentedBy": [],
-      "line": 21,
-      "purpose": "Card on the Servers / welcome screen shown only while a read-only Termux check reports the app-managed server running and it is not the connected profile.",
+      "line": 37,
+      "purpose": "Card for the app-managed server on this phone, first on the Servers screen, the welcome screen and in the server switcher: connect or open, start, restart, stop, and a menu with Disconnect, Refresh, Manage setup and Forget saved sign-in. Hosts wire connect, credentials, disconnect, manage and forget.",
       "reachedFrom": [],
       "gates": [
-        "`platformCapabilities.supportsTermux`",
-        "`_server != null` and state not `unsupported`/`absent`",
-        "hidden when the running server's saved profile id equals `widget.connectedProfileID`"
+        "platformCapabilities.supportsTermux",
+        "_server != null and state not unsupported/absent (a running or stopped managed server)"
       ],
       "embeddedIn": [
-        "ServersScreen"
+        "ServersScreen",
+        "ServerSwitcherSheet"
       ],
       "key": "termux-running-server",
       "elements": [
         {
-          "id": "embedded-termux-running-server-entry-recheck-icon",
-          "type": "icon-button",
-          "label": "Check status",
-          "key": null,
-          "line": 142,
-          "action": "other",
+          "id": "embedded-termux-running-server-entry-connect",
+          "key": "termux-running-server-connect",
           "target": null,
-          "effect": "`_check()` re-runs `detectTermuxRunningServer`. Trailing icon of a ListTile titled \"Allow Termux access in phone setup to check for a server.\" (denied) or \"Could not check the server on this phone.\".",
+          "targetWidget": null,
           "gates": [
-            "`!server.isRunning` and state not unsupported/absent",
-            "disabled while `widget.busy || _checking`"
+            "!server.isStopped",
+            "disabled while widget.busy || _checking || _operation != null"
           ],
-          "destructive": false
+          "destructive": false,
+          "type": "button",
+          "label": "Connect | Open",
+          "line": 427,
+          "action": "mutate",
+          "effect": "_connect(): re-reads the phone (detectTermuxRunningServer), then host onConnect(saved) or, with no saved profile / needsCredentials / requiresPasswordReentry, host onEnterCredentials(fresh, saved)."
         },
         {
-          "id": "embedded-termux-running-server-entry-connect",
-          "type": "button",
-          "label": "Connect to running server",
-          "key": "termux-running-server-connect",
-          "line": 193,
-          "action": "mutate",
+          "id": "embedded-termux-running-server-entry-start",
+          "key": "termux-running-server-start",
           "target": null,
-          "effect": "Revalidates the observation, then calls host `onConnect(saved)` (ServersScreen `_connect(profile, detectedRunning: true)`) or, when no saved profile / `fresh.needsCredentials` / `saved.requiresPasswordReentry`, host `onEnterCredentials(fresh, saved)` (ServersScreen `_edit(... connectOnSave: true, focusPassword: true)` profile editor).",
+          "targetWidget": null,
           "gates": [
-            "`server.isRunning`",
-            "disabled while `widget.busy || _checking`"
+            "server.isStopped",
+            "disabled when widget.actions == null or locked"
           ],
-          "destructive": false
+          "destructive": false,
+          "type": "button",
+          "label": "Start",
+          "line": 417,
+          "action": "mutate",
+          "effect": "_start(): widget.actions.restart() (LocalServerControls.restart) with a progress bar, then re-reads the phone; a failure is shown on the card."
+        },
+        {
+          "id": "embedded-termux-running-server-entry-restart",
+          "key": "termux-running-server-restart",
+          "target": null,
+          "targetWidget": null,
+          "gates": [
+            "!server.isStopped",
+            "widget.actions != null",
+            "disabled while locked"
+          ],
+          "destructive": true,
+          "type": "button",
+          "label": "Restart",
+          "line": 439,
+          "action": "mutate",
+          "effect": "_restart(): confirmRestartLocalServer(busyConversations) confirm sheet, then widget.actions.restart()."
+        },
+        {
+          "id": "embedded-termux-running-server-entry-stop",
+          "key": "termux-running-server-stop",
+          "target": null,
+          "targetWidget": null,
+          "gates": [
+            "!server.isStopped",
+            "widget.actions != null",
+            "disabled while locked"
+          ],
+          "destructive": true,
+          "type": "button",
+          "label": "Stop",
+          "line": 448,
+          "action": "mutate",
+          "effect": "_stop(): confirmStopLocalServer confirm sheet, then widget.actions.stop() (LocalServerControls.stop)."
+        },
+        {
+          "id": "embedded-termux-running-server-entry-menu",
+          "key": "termux-running-server-menu",
+          "target": null,
+          "targetWidget": null,
+          "gates": [
+            "disabled while locked"
+          ],
+          "destructive": false,
+          "type": "icon-button",
+          "label": "More server actions",
+          "line": 355,
+          "action": "other",
+          "effect": "opens overflow menu (PopupMenuButton<VoidCallback>)"
+        },
+        {
+          "id": "embedded-termux-running-server-entry-menu-disconnect",
+          "key": "termux-running-server-disconnect",
+          "target": "settings-disconnect-sheet",
+          "targetWidget": "confirmDisconnectServer",
+          "gates": [
+            "connected through this profile",
+            "widget.onDisconnect != null"
+          ],
+          "destructive": true,
+          "type": "menu-item",
+          "label": "Disconnect",
+          "line": 362,
+          "action": "open-sheet",
+          "effect": "Host onDisconnect: confirmDisconnectServer then connection.disconnect(keepActive: true); the server keeps running."
         },
         {
           "id": "embedded-termux-running-server-entry-recheck",
-          "type": "button",
-          "label": "Check status",
           "key": "termux-running-server-recheck",
-          "line": 236,
-          "action": "other",
           "target": null,
-          "effect": "`_check()`.",
+          "targetWidget": null,
+          "gates": [],
+          "destructive": false,
+          "type": "menu-item",
+          "label": "Refresh",
+          "line": 367,
+          "action": "other",
+          "effect": "_check(): re-reads the phone server state."
+        },
+        {
+          "id": "embedded-termux-running-server-entry-menu-manage",
+          "key": "termux-running-server-manage",
+          "target": "termux-setup",
+          "targetWidget": "/termux-setup",
           "gates": [
-            "`server.isRunning`",
-            "disabled while `widget.busy || _checking`"
+            "widget.onManage != null"
           ],
-          "destructive": false
+          "destructive": false,
+          "type": "menu-item",
+          "label": "Manage setup",
+          "line": 373,
+          "action": "navigate",
+          "effect": "Host onManage: opens the setup wizard ('/termux-setup')."
+        },
+        {
+          "id": "embedded-termux-running-server-entry-menu-forget",
+          "key": "termux-running-server-forget",
+          "target": "servers-remove-server-sheet",
+          "targetWidget": "_delete",
+          "gates": [
+            "a saved profile matches the phone server",
+            "widget.onForget != null"
+          ],
+          "destructive": true,
+          "type": "menu-item",
+          "label": "Forget saved sign-in",
+          "line": 379,
+          "action": "open-sheet",
+          "effect": "Host onForget(profile): ServersScreen._delete confirm sheet, then connection.deleteProfileAndLocalData(profile.id). The server itself is untouched."
         },
         {
           "id": "embedded-termux-running-server-entry-details",
+          "key": null,
+          "target": null,
+          "targetWidget": null,
+          "gates": [
+            "server.isRunning"
+          ],
+          "destructive": false,
           "type": "list-tile",
           "label": "Server details",
-          "key": null,
-          "line": 247,
+          "line": 466,
           "action": "other",
-          "target": null,
-          "effect": "ExpansionTile; expands runtime name · version and \"Last checked at {time}\".",
-          "gates": [
-            "`server.isRunning`"
-          ],
-          "destructive": false
+          "effect": "ExpansionTile: expands version and last check time."
         }
       ],
-      "notes": "Embedded via ServersScreen._runningServerEntry (lib/ui/screens/servers_screen.dart:105-124), used by both the welcome view and the list."
+      "notes": "Embedded via ServersScreen._runningServerEntry and ServerSwitcherSheet; both build LocalServerCardActions from LocalServerControls."
     },
     {
       "id": "embedded-managed-server-health",

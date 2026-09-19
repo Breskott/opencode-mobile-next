@@ -6311,10 +6311,6 @@
   "@e7WorkspaceStopSharing": {
     "description": "Workspace and activity: Stop sharing"
   },
-  "e7WorkspaceModelAgent": "Model / agent",
-  "@e7WorkspaceModelAgent": {
-    "description": "Workspace and activity: Model / agent"
-  },
   "e7WorkspaceDisconnect": "Disconnect",
   "@e7WorkspaceDisconnect": {
     "description": "Workspace and activity: Disconnect"
@@ -17355,5 +17351,9 @@
   "projectHubSearchSubtitle": "Find a file by name",
   "@projectHubSearchSubtitle": {
     "description": "Project tab: subtitle of the Search files row, which opens Files with the search field focused."
+  },
+  "serverSwitcherOpen": "Switch server",
+  "@serverSwitcherOpen": {
+    "description": "Shell app bar: accessibility hint on the server name and status, which open the server switcher sheet."
   }
 }

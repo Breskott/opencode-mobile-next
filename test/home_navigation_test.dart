@@ -594,16 +594,15 @@ void main() {
     );
     expect(find.byTooltip('Mission Control'), findsNothing);
     expect(find.byTooltip('Pending requests'), findsNothing);
-    // Model selection is a secondary shell action, available from overflow.
+    // The model lives on the composer; the shell has no overflow menu left.
     expect(find.byTooltip('Model / agent'), findsNothing);
-    await tester.tap(
+    expect(
       find.descendant(
         of: find.byType(AppBar),
-        matching: find.byType(PopupMenuButton<String>),
+        matching: find.byWidgetPredicate((widget) => widget is PopupMenuButton),
       ),
+      findsNothing,
     );
-    await tester.pumpAndSettle();
-    expect(find.text('Model / agent'), findsOneWidget);
   });
 
   testWidgets('the Inbox tab shows cross-session sections', (tester) async {

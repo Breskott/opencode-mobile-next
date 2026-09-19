@@ -7762,9 +7762,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7WorkspaceStopSharing => 'Stop sharing';
 
   @override
-  String get e7WorkspaceModelAgent => 'Model / agent';
-
-  @override
   String get e7WorkspaceDisconnect => 'Disconnect';
 
   @override
@@ -16047,4 +16044,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectHubSearchSubtitle => 'Find a file by name';
+
+  @override
+  String get serverSwitcherOpen => 'Switch server';
 }

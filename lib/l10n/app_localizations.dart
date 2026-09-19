@@ -12805,12 +12805,6 @@ abstract class AppLocalizations {
   /// **'Stop sharing'**
   String get e7WorkspaceStopSharing;
 
-  /// Workspace and activity: Model / agent
-  ///
-  /// In en, this message translates to:
-  /// **'Model / agent'**
-  String get e7WorkspaceModelAgent;
-
   /// Workspace and activity: Disconnect
   ///
   /// In en, this message translates to:
@@ -25923,6 +25917,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Find a file by name'**
   String get projectHubSearchSubtitle;
+
+  /// Shell app bar: accessibility hint on the server name and status, which open the server switcher sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch server'**
+  String get serverSwitcherOpen;
 }
 
 class _AppLocalizationsDelegate

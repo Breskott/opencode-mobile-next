@@ -501,7 +501,7 @@ void main() {
       expect(harness.newSessions, 0);
     });
 
-    testWidgets('the More menu hides the shortcuts entry', (tester) async {
+    testWidgets('a phone is not offered the shortcuts entry', (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -520,15 +520,25 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final appMenu = find.descendant(
-        of: find.byType(AppBar),
-        matching: find.byType(PopupMenuButton<String>),
+      // The shell has no app menu any more; the entry's one home is the
+      // Settings hub, and a phone does not get it there either.
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is PopupMenuButton,
+          ),
+        ),
+        findsNothing,
       );
-      expect(appMenu.hitTestable(), findsOneWidget);
-      await tester.tap(appMenu);
+      expect(find.text('Keyboard shortcuts'), findsNothing);
+      await tester.tap(find.byIcon(AppIconography.settings));
       await tester.pumpAndSettle();
-
-      expect(find.text('Refresh'), findsWidgets);
+      expect(find.byKey(const Key('library-search')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('library-keyboard-shortcuts')),
+        findsNothing,
+      );
       expect(find.text('Keyboard shortcuts'), findsNothing);
     });
   });

@@ -578,10 +578,11 @@
       "file": "lib/ui/screens/settings_screen.dart",
       "widget": "_disconnect",
       "presentedBy": [
-        "showConfirmSheet"
+        "showConfirmSheet",
+        "confirmDisconnectServer"
       ],
       "line": 127,
-      "purpose": "Confirms disconnecting from the current server, disclosing how many queued prompts and drafts stop moving.",
+      "purpose": "Confirms disconnecting from the current server, disclosing how many queued prompts and drafts stop moving. One sheet (confirmDisconnectServer in lib/ui/widgets/safety_confirms.dart) for every door: Settings, the server switcher and the phone server card.",
       "reachedFrom": [
         {
           "page": "settings",

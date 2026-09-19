@@ -267,7 +267,7 @@
           "type": "tab",
           "label": "Work",
           "key": null,
-          "line": 148,
+          "line": 147,
           "action": "navigate",
           "target": "workspace",
           "targetWidget": "WorkspaceScreen",
@@ -280,7 +280,7 @@
           "type": "tab",
           "label": "Project",
           "key": null,
-          "line": 168,
+          "line": 167,
           "action": "navigate",
           "target": "project-hub",
           "targetWidget": "ProjectHub",
@@ -295,7 +295,7 @@
           "type": "tab",
           "label": "Inbox",
           "key": "activity-pending-badge",
-          "line": 156,
+          "line": 155,
           "action": "navigate",
           "target": "activity",
           "targetWidget": "ActivityScreen",
@@ -308,7 +308,7 @@
           "type": "tab",
           "label": "Settings",
           "key": null,
-          "line": 176,
+          "line": 175,
           "action": "navigate",
           "target": "settings",
           "targetWidget": "SettingsScreen",
@@ -317,63 +317,11 @@
           "destructive": false
         },
         {
-          "id": "home-shell-overflow",
-          "type": "icon-button",
-          "label": "[overflow menu]",
-          "key": null,
-          "line": 193,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "opens overflow menu (PopupMenuButton<String>) holding connection-level actions.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "home-shell-menu-model",
-          "type": "menu-item",
-          "label": "Model / agent",
-          "key": null,
-          "line": 204,
-          "action": "open-sheet",
-          "target": "model-picker",
-          "targetWidget": "showModelPicker",
-          "effect": "showModelPicker(context).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "home-shell-menu-refresh",
-          "type": "menu-item",
-          "label": "Refresh",
-          "key": null,
-          "line": 208,
-          "action": "mutate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "conn.refreshSessions().",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "home-shell-menu-disconnect",
-          "type": "menu-item",
-          "label": "Disconnect",
-          "key": null,
-          "line": 212,
-          "action": "navigate",
-          "target": "servers",
-          "targetWidget": "/servers",
-          "effect": "conn.disconnect() then navigator.pushNamedAndRemoveUntil('/servers', (_) => false). No confirmation.",
-          "gates": [],
-          "destructive": true
-        },
-        {
           "id": "home-shell-back-gesture",
           "type": "gesture",
           "label": "[system back]",
           "key": null,
-          "line": 306,
+          "line": 289,
           "action": "other",
           "target": null,
           "targetWidget": null,
@@ -427,6 +375,19 @@
             "desktopInteractions",
             "conn.capabilities.terminal"
           ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-server-switcher",
+          "type": "button",
+          "label": "<server name> + status dot (semantics: Server: {name}; hint: Switch server)",
+          "key": "server-switcher-button",
+          "line": 510,
+          "action": "open-sheet",
+          "target": "server-switcher-sheet",
+          "targetWidget": "showServerSwitcher",
+          "effect": "_openServerSwitcher(conn): showServerSwitcher(context, conn); the returned choice is acted on after the sheet closed: pushNamed('/servers', arguments: ServersRouteRequest), pushNamed('/termux-setup'), or conn.disconnect() + pushNamedAndRemoveUntil('/servers').",
+          "gates": [],
           "destructive": false
         },
         {
@@ -496,6 +457,147 @@
             "!controller.passwordRejected"
           ],
           "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "server-switcher-sheet",
+      "title": "[Server switcher]",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/server_switcher_sheet.dart",
+      "widget": "ServerSwitcherSheet",
+      "presentedBy": [
+        "showServerSwitcher"
+      ],
+      "line": 51,
+      "purpose": "The single door to servers while connected: the current server with its status, the server found on this phone (controlled in place), the other saved servers, Add server, Manage servers, and Disconnect last and apart. The sheet only chooses; connecting, credentials, adding and forgetting run on the Servers screen through a ServersRouteRequest.",
+      "reachedFrom": [
+        {
+          "page": "home-shell",
+          "element": "home-shell-server-switcher"
+        }
+      ],
+      "gates": [],
+      "sheetKey": "server-switcher-sheet",
+      "elements": [
+        {
+          "id": "server-switcher-sheet-profile",
+          "key": "server-switcher-profile-<profile.id>",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "gates": [
+            "every saved profile except the current one"
+          ],
+          "destructive": false,
+          "type": "list-tile",
+          "label": "<saved server name> / <baseUrl>",
+          "line": 159,
+          "action": "navigate",
+          "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.connect(profile.id)); the shell pushes '/servers' and ServersScreen._handleRouteRequest runs _connect(profile): runtime-choice detour to the phone setup, the editor when the password or token must be re-entered, otherwise conn.connect(profile) and '/home'; a failure is shown inline on the Servers list."
+        },
+        {
+          "id": "server-switcher-sheet-add",
+          "key": "server-switcher-add",
+          "target": "profile-editor",
+          "targetWidget": "_ProfileEditorScreen",
+          "gates": [],
+          "destructive": false,
+          "type": "list-tile",
+          "label": "Add server",
+          "line": 184,
+          "action": "navigate",
+          "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.add()); the shell pushes '/servers', which opens the new-server editor (_edit()) on arrival."
+        },
+        {
+          "id": "server-switcher-sheet-manage",
+          "key": "server-switcher-manage",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "gates": [],
+          "destructive": false,
+          "type": "list-tile",
+          "label": "Manage servers",
+          "line": 192,
+          "action": "navigate",
+          "effect": "Pops ServerSwitcherOpenServers(); the shell pushes '/servers'."
+        },
+        {
+          "id": "server-switcher-sheet-disconnect",
+          "key": "server-switcher-disconnect",
+          "target": "settings-disconnect-sheet",
+          "targetWidget": "confirmDisconnectServer",
+          "gates": [
+            "controller.profile != null"
+          ],
+          "destructive": true,
+          "type": "button",
+          "label": "Disconnect",
+          "line": 204,
+          "action": "open-sheet",
+          "effect": "confirmDisconnectServer(context, controller); on cancel the switcher stays open; on confirm pops ServerSwitcherLeave and the shell runs conn.disconnect() then pushNamedAndRemoveUntil('/servers')."
+        },
+        {
+          "id": "server-switcher-sheet-phone-connect",
+          "key": "termux-running-server-connect",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "gates": [
+            "platformCapabilities.supportsTermux",
+            "a running or stopped managed server was observed"
+          ],
+          "destructive": false,
+          "type": "button",
+          "label": "Connect | Open (phone server card)",
+          "file": "lib/ui/widgets/termux_running_server_entry.dart",
+          "line": 132,
+          "action": "navigate",
+          "effect": "Card onConnect: when this shell is already connected through that profile the sheet just closes; otherwise pops ServerSwitcherOpenServers(ServersRouteRequest.connect(id, detectedRunning: true)) and the Servers screen connects without the runtime-choice detour. Card onEnterCredentials pops ServersRouteRequest.enterPhoneCredentials, which opens the editor on the phone server URL."
+        },
+        {
+          "id": "server-switcher-sheet-phone-disconnect",
+          "key": "termux-running-server-disconnect",
+          "target": "settings-disconnect-sheet",
+          "targetWidget": "confirmDisconnectServer",
+          "gates": [
+            "connected through the phone server profile"
+          ],
+          "destructive": true,
+          "type": "menu-item",
+          "label": "Disconnect (phone server card menu)",
+          "file": "lib/ui/widgets/termux_running_server_entry.dart",
+          "line": 112,
+          "action": "open-sheet",
+          "effect": "confirmDisconnectServer; on confirm controller.disconnect(keepActive: true), then pops ServerSwitcherLeave(alreadyDisconnected: true) and the shell goes to '/servers'. The server keeps running."
+        },
+        {
+          "id": "server-switcher-sheet-phone-manage",
+          "key": "termux-running-server-manage",
+          "target": "termux-setup",
+          "targetWidget": "/termux-setup",
+          "gates": [],
+          "destructive": false,
+          "type": "menu-item",
+          "label": "Manage setup (phone server card menu)",
+          "file": "lib/ui/widgets/termux_running_server_entry.dart",
+          "line": 128,
+          "action": "navigate",
+          "effect": "Pops ServerSwitcherOpenPhoneSetup; the shell pushes '/termux-setup'."
+        },
+        {
+          "id": "server-switcher-sheet-phone-forget",
+          "key": "termux-running-server-forget",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "gates": [
+            "a saved profile matches the phone server"
+          ],
+          "destructive": true,
+          "type": "menu-item",
+          "label": "Forget saved sign-in (phone server card menu)",
+          "file": "lib/ui/widgets/termux_running_server_entry.dart",
+          "line": 123,
+          "action": "navigate",
+          "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.forget(profile.id)); the Servers screen opens its remove-server confirm sheet for that profile."
         }
       ]
     },

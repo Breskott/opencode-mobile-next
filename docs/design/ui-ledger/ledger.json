@@ -1,5 +1,5 @@
 {
- "generatedFrom": "f6e615fc4a68ef2ff9725cdb2096a7c2999ad99d",
+ "generatedFrom": "34233b4aba8e607db942ca44dc1aa2463d242d69",
  "pages": [
   {
    "id": "system",
@@ -2158,7 +2158,7 @@
      "label": "Work",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 148,
+     "line": 147,
      "action": "navigate",
      "target": "workspace",
      "targetWidget": "WorkspaceScreen",
@@ -2172,7 +2172,7 @@
      "label": "Inbox",
      "key": "activity-pending-badge",
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 156,
+     "line": 155,
      "action": "navigate",
      "target": "activity",
      "targetWidget": "ActivityScreen",
@@ -2186,7 +2186,7 @@
      "label": "Project",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 168,
+     "line": 167,
      "action": "navigate",
      "target": "project-hub",
      "targetWidget": "ProjectHub",
@@ -2202,7 +2202,7 @@
      "label": "Settings",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 176,
+     "line": 175,
      "action": "navigate",
      "target": "settings",
      "targetWidget": "SettingsScreen",
@@ -2211,72 +2211,30 @@
      "destructive": false
     },
     {
-     "id": "home-shell-overflow",
-     "type": "icon-button",
-     "label": "[overflow menu]",
-     "key": null,
-     "file": "lib/ui/screens/home_screen.dart",
-     "line": 193,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "opens overflow menu (PopupMenuButton<String>) holding connection-level actions.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "home-shell-menu-model",
-     "type": "menu-item",
-     "label": "Model / agent",
-     "key": null,
-     "file": "lib/ui/screens/home_screen.dart",
-     "line": 204,
-     "action": "open-sheet",
-     "target": "model-picker-sheet",
-     "targetWidget": "showModelPicker",
-     "effect": "showModelPicker(context).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "home-shell-menu-refresh",
-     "type": "menu-item",
-     "label": "Refresh",
-     "key": null,
-     "file": "lib/ui/screens/home_screen.dart",
-     "line": 208,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "conn.refreshSessions().",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "home-shell-menu-disconnect",
-     "type": "menu-item",
-     "label": "Disconnect",
-     "key": null,
-     "file": "lib/ui/screens/home_screen.dart",
-     "line": 212,
-     "action": "navigate",
-     "target": "servers",
-     "targetWidget": "/servers",
-     "effect": "conn.disconnect() then navigator.pushNamedAndRemoveUntil('/servers', (_) => false). No confirmation.",
-     "gates": [],
-     "destructive": true
-    },
-    {
      "id": "home-shell-back-gesture",
      "type": "gesture",
      "label": "[system back]",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 306,
+     "line": 289,
      "action": "other",
      "target": null,
      "targetWidget": null,
      "effect": "_onRootPop: on Project, ProjectHubBackController.handleBack() first unwinds Files (keyboard, search, folder) and then returns to the hub; any other tab returns to Work; on Work a second Back within 2 s calls SystemNavigator.pop().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "home-shell-server-switcher",
+     "type": "button",
+     "label": "<server name> + status dot (semantics: Server: {name}; hint: Switch server)",
+     "key": "server-switcher-button",
+     "file": "lib/ui/screens/home_screen.dart",
+     "line": 510,
+     "action": "open-sheet",
+     "target": "server-switcher-sheet",
+     "targetWidget": "showServerSwitcher",
+     "effect": "_openServerSwitcher(conn): showServerSwitcher(context, conn); the returned choice is acted on after the sheet closed: pushNamed('/servers', arguments: ServersRouteRequest), pushNamed('/termux-setup'), or conn.disconnect() + pushNamedAndRemoveUntil('/servers').",
      "gates": [],
      "destructive": false
     },
@@ -2500,6 +2458,152 @@
      "destructive": false
     }
    ]
+  },
+  {
+   "id": "server-switcher-sheet",
+   "title": "[Server switcher]",
+   "kind": "sheet",
+   "area": "shell",
+   "file": "lib/ui/widgets/server_switcher_sheet.dart",
+   "widget": "ServerSwitcherSheet",
+   "presentedBy": [
+    "showServerSwitcher"
+   ],
+   "line": 51,
+   "purpose": "The single door to servers while connected: the current server with its status, the server found on this phone (controlled in place), the other saved servers, Add server, Manage servers, and Disconnect last and apart. The sheet only chooses; connecting, credentials, adding and forgetting run on the Servers screen through a ServersRouteRequest.",
+   "reachedFrom": [
+    {
+     "page": "home-shell",
+     "element": "home-shell-server-switcher"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "server-switcher-sheet-profile",
+     "type": "list-tile",
+     "label": "<saved server name> / <baseUrl>",
+     "key": "server-switcher-profile-<profile.id>",
+     "file": "lib/ui/widgets/server_switcher_sheet.dart",
+     "line": 159,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.connect(profile.id)); the shell pushes '/servers' and ServersScreen._handleRouteRequest runs _connect(profile): runtime-choice detour to the phone setup, the editor when the password or token must be re-entered, otherwise conn.connect(profile) and '/home'; a failure is shown inline on the Servers list.",
+     "gates": [
+      "every saved profile except the current one"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "server-switcher-sheet-add",
+     "type": "list-tile",
+     "label": "Add server",
+     "key": "server-switcher-add",
+     "file": "lib/ui/widgets/server_switcher_sheet.dart",
+     "line": 184,
+     "action": "navigate",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.add()); the shell pushes '/servers', which opens the new-server editor (_edit()) on arrival.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "server-switcher-sheet-manage",
+     "type": "list-tile",
+     "label": "Manage servers",
+     "key": "server-switcher-manage",
+     "file": "lib/ui/widgets/server_switcher_sheet.dart",
+     "line": 192,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "Pops ServerSwitcherOpenServers(); the shell pushes '/servers'.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "server-switcher-sheet-disconnect",
+     "type": "button",
+     "label": "Disconnect",
+     "key": "server-switcher-disconnect",
+     "file": "lib/ui/widgets/server_switcher_sheet.dart",
+     "line": 204,
+     "action": "open-sheet",
+     "target": "settings-disconnect-sheet",
+     "targetWidget": "confirmDisconnectServer",
+     "effect": "confirmDisconnectServer(context, controller); on cancel the switcher stays open; on confirm pops ServerSwitcherLeave and the shell runs conn.disconnect() then pushNamedAndRemoveUntil('/servers').",
+     "gates": [
+      "controller.profile != null"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "server-switcher-sheet-phone-disconnect",
+     "type": "menu-item",
+     "label": "Disconnect (phone server card menu)",
+     "key": "termux-running-server-disconnect",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 112,
+     "action": "open-sheet",
+     "target": "settings-disconnect-sheet",
+     "targetWidget": "confirmDisconnectServer",
+     "effect": "confirmDisconnectServer; on confirm controller.disconnect(keepActive: true), then pops ServerSwitcherLeave(alreadyDisconnected: true) and the shell goes to '/servers'. The server keeps running.",
+     "gates": [
+      "connected through the phone server profile"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "server-switcher-sheet-phone-forget",
+     "type": "menu-item",
+     "label": "Forget saved sign-in (phone server card menu)",
+     "key": "termux-running-server-forget",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 123,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.forget(profile.id)); the Servers screen opens its remove-server confirm sheet for that profile.",
+     "gates": [
+      "a saved profile matches the phone server"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "server-switcher-sheet-phone-manage",
+     "type": "menu-item",
+     "label": "Manage setup (phone server card menu)",
+     "key": "termux-running-server-manage",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 128,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "Pops ServerSwitcherOpenPhoneSetup; the shell pushes '/termux-setup'.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "server-switcher-sheet-phone-connect",
+     "type": "button",
+     "label": "Connect | Open (phone server card)",
+     "key": "termux-running-server-connect",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 132,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "Card onConnect: when this shell is already connected through that profile the sheet just closes; otherwise pops ServerSwitcherOpenServers(ServersRouteRequest.connect(id, detectedRunning: true)) and the Servers screen connects without the runtime-choice detour. Card onEnterCredentials pops ServersRouteRequest.enterPhoneCredentials, which opens the editor on the phone server URL.",
+     "gates": [
+      "platformCapabilities.supportsTermux",
+      "a running or stopped managed server was observed"
+     ],
+     "destructive": false
+    }
+   ],
+   "sheetKey": "server-switcher-sheet"
   },
   {
    "id": "desktop-release-notice",
@@ -21137,15 +21241,27 @@
     },
     {
      "page": "home-shell",
-     "element": "home-shell-menu-disconnect"
-    },
-    {
-     "page": "home-shell",
      "element": "home-shell-banner-update-token"
     },
     {
      "page": "home-shell",
      "element": "home-shell-banner-update-password"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-profile"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-manage"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-phone-connect"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-phone-forget"
     },
     {
      "page": "connection-status-details-sheet",
@@ -21179,7 +21295,8 @@
    "gates": [
     "named route '/servers' (lib/main.dart:1230)",
     "list body shown when bootstrap.store.profiles.isNotEmpty; otherwise the servers-welcome body is shown",
-    "route argument 'edit-active' auto-opens the active profile's editor with the password/token focused (didChangeDependencies, line 70)"
+    "route argument 'edit-active' auto-opens the active profile's editor with the password/token focused (didChangeDependencies, line 70)",
+    "route argument ServersRouteRequest (from the server switcher) runs on arrival: connect -> _connect(profile), add -> _edit(), enterPhoneCredentials -> _edit on the phone server URL, forget -> _delete(profile)"
    ],
    "elements": [
     {
@@ -21489,6 +21606,10 @@
     {
      "page": "servers",
      "element": "servers-profile-menu-remove"
+    },
+    {
+     "page": "embedded-termux-running-server-entry",
+     "element": "embedded-termux-running-server-entry-menu-forget"
     }
    ],
    "gates": [],
@@ -21569,6 +21690,10 @@
      "page": "embedded-termux-running-server-entry",
      "element": null,
      "evidence": "lib/ui/widgets/termux_running_server_entry.dart:228"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-add"
     },
     {
      "page": "system",
@@ -23535,6 +23660,10 @@
      "element": "root-connecting-primary-termux"
     },
     {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-phone-manage"
+    },
+    {
      "page": "servers",
      "element": "servers-termux-setup"
     },
@@ -23545,6 +23674,10 @@
     {
      "page": "server-settings",
      "element": "server-settings-updates-managed"
+    },
+    {
+     "page": "embedded-termux-running-server-entry",
+     "element": "embedded-termux-running-server-entry-menu-manage"
     },
     {
      "page": "embedded-team-phone-section",
@@ -25304,15 +25437,20 @@
   },
   {
    "id": "embedded-termux-running-server-entry",
-   "title": "Server found on this phone",
+   "title": "Server on this phone",
    "kind": "overlay",
    "area": "termux",
    "file": "lib/ui/widgets/termux_running_server_entry.dart",
    "widget": "TermuxRunningServerEntry",
    "presentedBy": [],
-   "line": 21,
-   "purpose": "Card on the Servers / welcome screen shown only while a read-only Termux check reports the app-managed server running and it is not the connected profile.",
+   "line": 37,
+   "purpose": "Card for the app-managed server on this phone, first on the Servers screen, the welcome screen and in the server switcher: connect or open, start, restart, stop, and a menu with Disconnect, Refresh, Manage setup and Forget saved sign-in. Hosts wire connect, credentials, disconnect, manage and forget.",
    "reachedFrom": [
+    {
+     "page": "server-switcher-sheet",
+     "element": null,
+     "via": "embedded"
+    },
     {
      "page": "servers",
      "element": null,
@@ -25320,64 +25458,167 @@
     }
    ],
    "gates": [
-    "`platformCapabilities.supportsTermux`",
-    "`_server != null` and state not `unsupported`/`absent`",
-    "hidden when the running server's saved profile id equals `widget.connectedProfileID`"
+    "platformCapabilities.supportsTermux",
+    "_server != null and state not unsupported/absent (a running or stopped managed server)"
    ],
    "embeddedIn": [
-    "ServersScreen"
+    "ServersScreen",
+    "ServerSwitcherSheet"
    ],
    "hostPages": [
+    "server-switcher-sheet",
     "servers"
    ],
    "elements": [
     {
-     "id": "embedded-termux-running-server-entry-recheck-icon",
+     "id": "embedded-termux-running-server-entry-menu",
      "type": "icon-button",
-     "label": "Check status",
-     "key": null,
+     "label": "More server actions",
+     "key": "termux-running-server-menu",
      "file": "lib/ui/widgets/termux_running_server_entry.dart",
-     "line": 142,
+     "line": 355,
      "action": "other",
      "target": null,
-     "effect": "`_check()` re-runs `detectTermuxRunningServer`. Trailing icon of a ListTile titled \"Allow Termux access in phone setup to check for a server.\" (denied) or \"Could not check the server on this phone.\".",
+     "targetWidget": null,
+     "effect": "opens overflow menu (PopupMenuButton<VoidCallback>)",
      "gates": [
-      "`!server.isRunning` and state not unsupported/absent",
-      "disabled while `widget.busy || _checking`"
+      "disabled while locked"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-termux-running-server-entry-menu-disconnect",
+     "type": "menu-item",
+     "label": "Disconnect",
+     "key": "termux-running-server-disconnect",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 362,
+     "action": "open-sheet",
+     "target": "settings-disconnect-sheet",
+     "targetWidget": "confirmDisconnectServer",
+     "effect": "Host onDisconnect: confirmDisconnectServer then connection.disconnect(keepActive: true); the server keeps running.",
+     "gates": [
+      "connected through this profile",
+      "widget.onDisconnect != null"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "embedded-termux-running-server-entry-recheck",
+     "type": "menu-item",
+     "label": "Refresh",
+     "key": "termux-running-server-recheck",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 367,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_check(): re-reads the phone server state.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-termux-running-server-entry-menu-manage",
+     "type": "menu-item",
+     "label": "Manage setup",
+     "key": "termux-running-server-manage",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 373,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "Host onManage: opens the setup wizard ('/termux-setup').",
+     "gates": [
+      "widget.onManage != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-termux-running-server-entry-menu-forget",
+     "type": "menu-item",
+     "label": "Forget saved sign-in",
+     "key": "termux-running-server-forget",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 379,
+     "action": "open-sheet",
+     "target": "servers-remove-server-sheet",
+     "targetWidget": "_delete",
+     "effect": "Host onForget(profile): ServersScreen._delete confirm sheet, then connection.deleteProfileAndLocalData(profile.id). The server itself is untouched.",
+     "gates": [
+      "a saved profile matches the phone server",
+      "widget.onForget != null"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "embedded-termux-running-server-entry-start",
+     "type": "button",
+     "label": "Start",
+     "key": "termux-running-server-start",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 417,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_start(): widget.actions.restart() (LocalServerControls.restart) with a progress bar, then re-reads the phone; a failure is shown on the card.",
+     "gates": [
+      "server.isStopped",
+      "disabled when widget.actions == null or locked"
      ],
      "destructive": false
     },
     {
      "id": "embedded-termux-running-server-entry-connect",
      "type": "button",
-     "label": "Connect to running server",
+     "label": "Connect | Open",
      "key": "termux-running-server-connect",
      "file": "lib/ui/widgets/termux_running_server_entry.dart",
-     "line": 193,
+     "line": 427,
      "action": "mutate",
      "target": null,
-     "effect": "Revalidates the observation, then calls host `onConnect(saved)` (ServersScreen `_connect(profile, detectedRunning: true)`) or, when no saved profile / `fresh.needsCredentials` / `saved.requiresPasswordReentry`, host `onEnterCredentials(fresh, saved)` (ServersScreen `_edit(... connectOnSave: true, focusPassword: true)` profile editor).",
+     "targetWidget": null,
+     "effect": "_connect(): re-reads the phone (detectTermuxRunningServer), then host onConnect(saved) or, with no saved profile / needsCredentials / requiresPasswordReentry, host onEnterCredentials(fresh, saved).",
      "gates": [
-      "`server.isRunning`",
-      "disabled while `widget.busy || _checking`"
+      "!server.isStopped",
+      "disabled while widget.busy || _checking || _operation != null"
      ],
      "destructive": false
     },
     {
-     "id": "embedded-termux-running-server-entry-recheck",
+     "id": "embedded-termux-running-server-entry-restart",
      "type": "button",
-     "label": "Check status",
-     "key": "termux-running-server-recheck",
+     "label": "Restart",
+     "key": "termux-running-server-restart",
      "file": "lib/ui/widgets/termux_running_server_entry.dart",
-     "line": 236,
-     "action": "other",
+     "line": 439,
+     "action": "mutate",
      "target": null,
-     "effect": "`_check()`.",
+     "targetWidget": null,
+     "effect": "_restart(): confirmRestartLocalServer(busyConversations) confirm sheet, then widget.actions.restart().",
      "gates": [
-      "`server.isRunning`",
-      "disabled while `widget.busy || _checking`"
+      "!server.isStopped",
+      "widget.actions != null",
+      "disabled while locked"
      ],
-     "destructive": false
+     "destructive": true
+    },
+    {
+     "id": "embedded-termux-running-server-entry-stop",
+     "type": "button",
+     "label": "Stop",
+     "key": "termux-running-server-stop",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 448,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_stop(): confirmStopLocalServer confirm sheet, then widget.actions.stop() (LocalServerControls.stop).",
+     "gates": [
+      "!server.isStopped",
+      "widget.actions != null",
+      "disabled while locked"
+     ],
+     "destructive": true
     },
     {
      "id": "embedded-termux-running-server-entry-details",
@@ -25385,18 +25626,19 @@
      "label": "Server details",
      "key": null,
      "file": "lib/ui/widgets/termux_running_server_entry.dart",
-     "line": 247,
+     "line": 466,
      "action": "other",
      "target": null,
-     "effect": "ExpansionTile; expands runtime name · version and \"Last checked at {time}\".",
+     "targetWidget": null,
+     "effect": "ExpansionTile: expands version and last check time.",
      "gates": [
-      "`server.isRunning`"
+      "server.isRunning"
      ],
      "destructive": false
     }
    ],
    "key": "termux-running-server",
-   "notes": "Embedded via ServersScreen._runningServerEntry (lib/ui/screens/servers_screen.dart:105-124), used by both the welcome view and the list."
+   "notes": "Embedded via ServersScreen._runningServerEntry and ServerSwitcherSheet; both build LocalServerCardActions from LocalServerControls."
   },
   {
    "id": "team-agent-output",
@@ -33598,14 +33840,27 @@
    "file": "lib/ui/screens/settings_screen.dart",
    "widget": "_disconnect",
    "presentedBy": [
-    "showConfirmSheet"
+    "showConfirmSheet",
+    "confirmDisconnectServer"
    ],
    "line": 127,
-   "purpose": "Confirms disconnecting from the current server, disclosing how many queued prompts and drafts stop moving.",
+   "purpose": "Confirms disconnecting from the current server, disclosing how many queued prompts and drafts stop moving. One sheet (confirmDisconnectServer in lib/ui/widgets/safety_confirms.dart) for every door: Settings, the server switcher and the phone server card.",
    "reachedFrom": [
     {
      "page": "settings",
      "element": "settings-disconnect"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-disconnect"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-phone-disconnect"
+    },
+    {
+     "page": "embedded-termux-running-server-entry",
+     "element": "embedded-termux-running-server-entry-menu-disconnect"
     }
    ],
    "gates": [],
@@ -34404,7 +34659,8 @@
    "reachedFrom": [
     {
      "page": "home-shell",
-     "element": "home-shell-menu-model"
+     "element": null,
+     "evidence": "lib/ui/screens/home_screen.dart:195"
     },
     {
      "page": "chat",
@@ -36011,18 +36267,13 @@
    },
    {
     "from": "home-shell",
-    "element": "home-shell-menu-model",
-    "to": "model-picker-sheet"
-   },
-   {
-    "from": "home-shell",
-    "element": "home-shell-menu-disconnect",
-    "to": "servers"
-   },
-   {
-    "from": "home-shell",
     "element": "home-shell-shortcut-terminal",
     "to": "terminal"
+   },
+   {
+    "from": "home-shell",
+    "element": "home-shell-server-switcher",
+    "to": "server-switcher-sheet"
    },
    {
     "from": "home-shell",
@@ -36038,6 +36289,46 @@
     "from": "home-shell",
     "element": "home-shell-banner-details",
     "to": "connection-status-details-sheet"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-profile",
+    "to": "servers"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-add",
+    "to": "profile-editor"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-manage",
+    "to": "servers"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-disconnect",
+    "to": "settings-disconnect-sheet"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-phone-connect",
+    "to": "servers"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-phone-disconnect",
+    "to": "settings-disconnect-sheet"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-phone-manage",
+    "to": "termux-setup"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-phone-forget",
+    "to": "servers"
    },
    {
     "from": "connection-status-details-sheet",
@@ -38200,6 +38491,21 @@
     "to": "development-services-confirm-sheet"
    },
    {
+    "from": "embedded-termux-running-server-entry",
+    "element": "embedded-termux-running-server-entry-menu-disconnect",
+    "to": "settings-disconnect-sheet"
+   },
+   {
+    "from": "embedded-termux-running-server-entry",
+    "element": "embedded-termux-running-server-entry-menu-manage",
+    "to": "termux-setup"
+   },
+   {
+    "from": "embedded-termux-running-server-entry",
+    "element": "embedded-termux-running-server-entry-menu-forget",
+    "to": "servers-remove-server-sheet"
+   },
+   {
     "from": "embedded-managed-server-health",
     "element": "embedded-managed-server-health-manage",
     "to": "termux-setup"
@@ -39915,6 +40221,12 @@
     "via": "state"
    },
    {
+    "from": "server-switcher-sheet",
+    "element": null,
+    "to": "embedded-termux-running-server-entry",
+    "via": "embedded"
+   },
+   {
     "from": "servers",
     "element": null,
     "to": "embedded-termux-running-server-entry",
@@ -40099,6 +40411,11 @@
     "from": "chat",
     "element": null,
     "to": "app-diagnostics"
+   },
+   {
+    "from": "home-shell",
+    "element": null,
+    "to": "model-picker-sheet"
    },
    {
     "from": "chat",

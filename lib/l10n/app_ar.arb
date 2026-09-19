@@ -2115,7 +2115,6 @@
   "e7WorkspaceCompacting": "جارٍ اختصار السياق…",
   "e7WorkspaceShare": "مشاركة",
   "e7WorkspaceStopSharing": "إيقاف المشاركة",
-  "e7WorkspaceModelAgent": "النموذج / الوكيل",
   "e7WorkspaceDisconnect": "قطع الاتصال",
   "e7WorkspaceBackExit": "اضغط رجوع مرة أخرى للخروج",
   "e7WorkspaceConnected": "متصل",
@@ -4294,5 +4293,6 @@
   "shellTabProject": "المشروع",
   "projectHubFilesSubtitle": "تصفّح ملفات المشروع ومعاينتها",
   "projectHubChangesSubtitle": "راجع التغييرات غير المودَعة",
-  "projectHubSearchSubtitle": "اعثر على ملف باسمه"
+  "projectHubSearchSubtitle": "اعثر على ملف باسمه",
+  "serverSwitcherOpen": "تبديل الخادم"
 }

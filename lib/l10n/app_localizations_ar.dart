@@ -7857,9 +7857,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7WorkspaceStopSharing => 'إيقاف المشاركة';
 
   @override
-  String get e7WorkspaceModelAgent => 'النموذج / الوكيل';
-
-  @override
   String get e7WorkspaceDisconnect => 'قطع الاتصال';
 
   @override
@@ -16321,4 +16318,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get projectHubSearchSubtitle => 'اعثر على ملف باسمه';
+
+  @override
+  String get serverSwitcherOpen => 'تبديل الخادم';
 }

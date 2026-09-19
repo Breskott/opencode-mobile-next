@@ -12,10 +12,10 @@ import '../app_theme.dart';
 import '../desktop/shortcuts.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/glass_surface.dart';
-import '../widgets/pickers.dart';
 import '../widgets/retained_tab_view.dart';
-import '../widgets/safety_confirms.dart';
+import '../widgets/server_switcher_sheet.dart';
 import 'activity_screen.dart';
+import 'servers_screen.dart' show ServersRouteRequest;
 import 'project_hub_screen.dart';
 import 'settings_screen.dart';
 import 'terminal_screen.dart';
@@ -119,7 +119,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   Widget build(BuildContext context) {
     final conn = ref.watch(connProvider);
-    final navigator = Navigator.of(context);
     final activeTab = _safeTab(_tab, conn.capabilities);
     final showDock =
         MediaQuery.sizeOf(context).width < 760 &&
@@ -195,38 +194,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         extendBody: showDock,
         appBar: AppBar(
           title: _WorkspaceAppBarTitle(
+            onOpenSwitcher: () => unawaited(_openServerSwitcher(conn)),
             profileName: conn.profile?.name ?? 'OpenCode',
             tabTitle: _titles[activeTab],
             status: conn.status,
             compact: MediaQuery.sizeOf(context).width < 600,
           ),
-          actions: [
-            // §5 Root app bar: one contextual action plus overflow. The
-            // pending badge lives on the Inbox destination alone.
-            // Settings and the shortcuts list have one entry point each, on
-            // the Settings tab; this overflow holds only connection-level acts.
-            PopupMenuButton<String>(
-              onSelected: (v) {
-                if (v == 'model') showModelPicker(context);
-                if (v == 'refresh') conn.refreshSessions();
-                if (v == 'disconnect') unawaited(_disconnect(conn, navigator));
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'model',
-                  child: Text(_l10n(context).e7WorkspaceModelAgent),
-                ),
-                PopupMenuItem(
-                  value: 'refresh',
-                  child: Text(_l10n(context).globalSessionsRefresh),
-                ),
-                PopupMenuItem(
-                  value: 'disconnect',
-                  child: Text(_l10n(context).e7WorkspaceDisconnect),
-                ),
-              ],
-            ),
-          ],
+          // No overflow menu: Disconnect moved into the server switcher
+          // (and stays in Settings), the model lives on the composer, and
+          // pull-to-refresh covers the two tabs that list conversations.
         ),
         body: LayoutBuilder(
           builder: (context, constraints) {
@@ -288,16 +264,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  /// Same confirmation as Settings > Disconnect: the overflow is the faster
-  /// route, so it must not also be the one that skips the warning.
-  Future<void> _disconnect(
-    ConnectionController conn,
-    NavigatorState navigator,
-  ) async {
-    if (!await confirmDisconnectServer(context, conn)) return;
-    await conn.disconnect();
-    if (!navigator.mounted) return;
-    navigator.pushNamedAndRemoveUntil('/servers', (_) => false);
+  /// The switcher only chooses. Connecting, credentials, adding and
+  /// forgetting all run on the Servers screen, which already owns the
+  /// runtime-choice detour and shows a failed connect next to its fix.
+  Future<void> _openServerSwitcher(ConnectionController conn) async {
+    final navigator = Navigator.of(context);
+    final choice = await showServerSwitcher(context, conn);
+    if (choice == null || !navigator.mounted) return;
+    switch (choice) {
+      case ServerSwitcherOpenServers(:final ServersRouteRequest? request):
+        unawaited(navigator.pushNamed('/servers', arguments: request));
+      case ServerSwitcherOpenPhoneSetup():
+        unawaited(navigator.pushNamed('/termux-setup'));
+      case ServerSwitcherLeave(:final alreadyDisconnected):
+        if (!alreadyDisconnected) await conn.disconnect();
+        if (!navigator.mounted) return;
+        unawaited(navigator.pushNamedAndRemoveUntil('/servers', (_) => false));
+    }
   }
 
   /// Project first unwinds Files and returns to its hub, then destinations
@@ -465,12 +448,14 @@ class _ActivityIcon extends StatelessWidget {
 }
 
 class _WorkspaceAppBarTitle extends StatelessWidget {
+  final VoidCallback onOpenSwitcher;
   final String profileName;
   final String tabTitle;
   final StreamStatus status;
   final bool compact;
 
   const _WorkspaceAppBarTitle({
+    required this.onOpenSwitcher,
     required this.profileName,
     required this.tabTitle,
     required this.status,
@@ -507,28 +492,51 @@ class _WorkspaceAppBarTitle extends StatelessWidget {
       children: [
         _StatusDot(status: status),
         const SizedBox(width: 8),
-        Expanded(child: profile),
+        Flexible(child: profile),
+        // The visible handle: the name is a control, not a caption.
+        Icon(
+          AppIconography.chevronDown,
+          size: 18,
+          color: AppTheme.mutedOf(theme),
+        ),
       ],
+    );
+    // The whole block is the target so it clears 48dp in the app bar; the
+    // name alone would be a 20dp strip.
+    Widget switcher(Widget child) => Semantics(
+      button: true,
+      hint: _l10n(context).serverSwitcherOpen,
+      child: InkWell(
+        key: const ValueKey('server-switcher-button'),
+        borderRadius: BorderRadius.circular(8),
+        onTap: onOpenSwitcher,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: child,
+        ),
+      ),
     );
 
     if (compact) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          server,
-          const SizedBox(height: 1),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(start: 18),
-            child: page,
-          ),
-        ],
+      return switcher(
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            server,
+            const SizedBox(height: 1),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 18),
+              child: page,
+            ),
+          ],
+        ),
       );
     }
 
     return Row(
       children: [
-        Expanded(child: server),
+        Expanded(child: switcher(server)),
         const SizedBox(width: 12),
         page,
       ],
