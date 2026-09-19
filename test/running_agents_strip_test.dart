@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/ui/widgets/running_agents_strip.dart';
@@ -51,37 +50,5 @@ void main() {
       RunningAgentRelation.current,
       RunningAgentRelation.child,
     ]);
-  });
-
-  testWidgets('tapping a chip opens that session; the current one is inert', (
-    tester,
-  ) async {
-    final sessions = {
-      'p': _session('p', created: 1),
-      'a': _session('a', parentID: 'p', created: 2),
-      'b': _session('b', parentID: 'p', created: 3),
-    };
-    final opened = <String>[];
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: RunningAgentsStrip(
-            entries: runningAgentEntries(
-              sessionID: 'a',
-              sessions: sessions,
-              busy: {'b'},
-            ),
-            onOpen: (s) => opened.add(s.id),
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-    expect(find.byKey(const ValueKey('running-agents-strip')), findsOneWidget);
-    expect(find.text('Parent · Session p'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('running-agent-a')));
-    await tester.tap(find.byKey(const ValueKey('running-agent-b')));
-    await tester.pump();
-    expect(opened, ['b']);
   });
 }

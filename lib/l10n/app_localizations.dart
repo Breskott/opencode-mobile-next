@@ -13507,12 +13507,6 @@ abstract class AppLocalizations {
   /// **'Compacting conversation…'**
   String get chatUiCompactingConversation;
 
-  /// Chat journey: Compacting…
-  ///
-  /// In en, this message translates to:
-  /// **'Compacting…'**
-  String get chatUiCompacting;
-
   /// Chat journey: Compaction failed
   ///
   /// In en, this message translates to:
@@ -13656,12 +13650,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delegated session'**
   String get chatUiDelegatedSession;
-
-  /// Chat journey: Delete chat?
-  ///
-  /// In en, this message translates to:
-  /// **'Delete chat?'**
-  String get chatUiDeleteChat;
 
   /// Chat journey: Delete message
   ///
@@ -13824,12 +13812,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fetch page'**
   String get chatUiFetchPage;
-
-  /// Chat journey: File edits made in this session will be listed here.
-  ///
-  /// In en, this message translates to:
-  /// **'File edits made in this session will be listed here.'**
-  String get chatUiFileEditsMadeInThisSessionWill;
 
   /// Chat journey: Files
   ///
@@ -14149,29 +14131,11 @@ abstract class AppLocalizations {
   /// **'Navigate'**
   String get chatUiNavigate;
 
-  /// Chat journey: Needs you
-  ///
-  /// In en, this message translates to:
-  /// **'Needs you'**
-  String get chatUiNeedsYou;
-
   /// Chat journey: No answer
   ///
   /// In en, this message translates to:
   /// **'No answer'**
   String get chatUiNoAnswer;
-
-  /// Chat journey: No chats yet
-  ///
-  /// In en, this message translates to:
-  /// **'No chats yet'**
-  String get chatUiNoChatsYet;
-
-  /// Chat journey: No file changes yet
-  ///
-  /// In en, this message translates to:
-  /// **'No file changes yet'**
-  String get chatUiNoFileChangesYet;
 
   /// Chat journey: No matching commands
   ///
@@ -14202,12 +14166,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No todos in this session'**
   String get chatUiNoTodosInThisSession;
-
-  /// Chat journey: Not connected
-  ///
-  /// In en, this message translates to:
-  /// **'Not connected'**
-  String get chatUiNotConnected;
 
   /// Chat journey: Not connected to the server right now.
   ///
@@ -14461,12 +14419,6 @@ abstract class AppLocalizations {
   /// **'Rename'**
   String get chatUiRename;
 
-  /// Chat journey: Rename chat
-  ///
-  /// In en, this message translates to:
-  /// **'Rename chat'**
-  String get chatUiRenameChat;
-
   /// Chat journey: Rename session
   ///
   /// In en, this message translates to:
@@ -14514,12 +14466,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry server commands'**
   String get chatUiRetryServerCommands;
-
-  /// Chat journey: Retrying
-  ///
-  /// In en, this message translates to:
-  /// **'Retrying'**
-  String get chatUiRetrying;
 
   /// Chat journey: Revert
   ///
@@ -14826,12 +14772,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start coding'**
   String get chatUiStartCoding;
-
-  /// Chat journey: Start one
-  ///
-  /// In en, this message translates to:
-  /// **'Start one'**
-  String get chatUiStartOne;
 
   /// Chat journey: Steer
   ///
@@ -15475,18 +15415,6 @@ abstract class AppLocalizations {
   /// **'{priority} priority'**
   String chatUiPriorityLabel(Object priority);
 
-  /// Chat journey: “{title}” and its history will be permanently removed.
-  ///
-  /// In en, this message translates to:
-  /// **'“{title}” and its history will be permanently removed.'**
-  String chatUiDeleteChatBody(Object title);
-
-  /// Chat journey:  · {count, plural, one{1 file} other{{count} files}}
-  ///
-  /// In en, this message translates to:
-  /// **' · {count, plural, one{1 file} other{{count} files}}'**
-  String chatUiChangedFilesSuffix(num count);
-
   /// Chat journey: Tools: {tools}
   ///
   /// In en, this message translates to:
@@ -15637,12 +15565,6 @@ abstract class AppLocalizations {
   /// **'Parent · {title}'**
   String chatUiParentSession(Object title);
 
-  /// Chat journey: {count, plural, one{1 agent running} other{{count} agents running}}
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{1 agent running} other{{count} agents running}}'**
-  String chatUiRunningAgentCount(num count);
-
   /// Chat journey: Choose: {option}
   ///
   /// In en, this message translates to:
@@ -15678,12 +15600,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'a permission'**
   String get chatUiPermissionFallback;
-
-  /// Chat journey: Untitled chat
-  ///
-  /// In en, this message translates to:
-  /// **'Untitled chat'**
-  String get chatUiUntitledChat;
 
   /// Chat journey: Main session
   ///
@@ -17226,86 +17142,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Models and agents'**
   String get e7LibraryModelsAndAgents;
-
-  /// Library and project tools UI: No matching models
-  ///
-  /// In en, this message translates to:
-  /// **'No matching models'**
-  String get e7LibraryNoMatchingModels;
-
-  /// Library and project tools UI: Try another provider or model name.
-  ///
-  /// In en, this message translates to:
-  /// **'Try another provider or model name.'**
-  String get e7LibraryTryAnotherProviderOrModelName;
-
-  /// Library and project tools UI: {detail1} context - {detail2} output
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1} context - {detail2} output'**
-  String e7LibraryContextOutput(String detail1, String detail2);
-
-  /// Library and project tools UI: No providers connected
-  ///
-  /// In en, this message translates to:
-  /// **'No providers connected'**
-  String get e7LibraryNoProvidersConnected;
-
-  /// Library and project tools UI: Connect a provider on the OpenCode server to use models.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect a provider on the OpenCode server to use models.'**
-  String get e7LibraryConnectAProviderOnTheOpenCodeServer;
-
-  /// Library and project tools UI: {detail1} available models Authentication is managed under MCP and integrations.
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1} available models\nAuthentication is managed under MCP and integrations.'**
-  String e7LibraryAvailableModelsAuthenticationIsManagedUnderMCP(
-    String detail1,
-  );
-
-  /// Library and project tools UI: No agents available
-  ///
-  /// In en, this message translates to:
-  /// **'No agents available'**
-  String get e7LibraryNoAgentsAvailable;
-
-  /// Library and project tools UI: No visible agents were returned for this workspace.
-  ///
-  /// In en, this message translates to:
-  /// **'No visible agents were returned for this workspace.'**
-  String get e7LibraryNoVisibleAgentsWereReturnedForThis;
-
-  /// Library and project tools UI: {detail1} context
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1} context'**
-  String e7LibraryContext(String detail1);
-
-  /// Library and project tools UI: {detail1} output
-  ///
-  /// In en, this message translates to:
-  /// **'{detail1} output'**
-  String e7LibraryOutput(String detail1);
-
-  /// Library and project tools UI: Attachments
-  ///
-  /// In en, this message translates to:
-  /// **'Attachments'**
-  String get e7LibraryAttachments;
-
-  /// Library and project tools UI: Tools
-  ///
-  /// In en, this message translates to:
-  /// **'Tools'**
-  String get e7LibraryTools;
-
-  /// Library and project tools UI: Use this model
-  ///
-  /// In en, this message translates to:
-  /// **'Use this model'**
-  String get e7LibraryUseThisModel;
 
   /// Library and project tools UI: Unavailable
   ///

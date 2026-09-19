@@ -8230,9 +8230,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiCompactingConversation => 'Compacting conversation…';
 
   @override
-  String get chatUiCompacting => 'Compacting…';
-
-  @override
   String get chatUiCompactionFailed => 'Compaction failed';
 
   @override
@@ -8309,9 +8306,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiDelegatedSession => 'Delegated session';
-
-  @override
-  String get chatUiDeleteChat => 'Delete chat?';
 
   @override
   String get chatUiDeleteMessage => 'Delete message';
@@ -8398,10 +8392,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiFetchPage => 'Fetch page';
-
-  @override
-  String get chatUiFileEditsMadeInThisSessionWill =>
-      'File edits made in this session will be listed here.';
 
   @override
   String get chatUiFiles => 'Files';
@@ -8581,16 +8571,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiNavigate => 'Navigate';
 
   @override
-  String get chatUiNeedsYou => 'Needs you';
-
-  @override
   String get chatUiNoAnswer => 'No answer';
-
-  @override
-  String get chatUiNoChatsYet => 'No chats yet';
-
-  @override
-  String get chatUiNoFileChangesYet => 'No file changes yet';
 
   @override
   String get chatUiNoMatchingCommands => 'No matching commands';
@@ -8607,9 +8588,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiNoTodosInThisSession => 'No todos in this session';
-
-  @override
-  String get chatUiNotConnected => 'Not connected';
 
   @override
   String get chatUiNotConnectedToTheServerRightNow =>
@@ -8752,9 +8730,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiRename => 'Rename';
 
   @override
-  String get chatUiRenameChat => 'Rename chat';
-
-  @override
   String get chatUiRenameSession => 'Rename session';
 
   @override
@@ -8778,9 +8753,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiRetryServerCommands => 'Retry server commands';
-
-  @override
-  String get chatUiRetrying => 'Retrying';
 
   @override
   String get chatUiRevert => 'Revert';
@@ -8948,9 +8920,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiStartCoding => 'Start coding';
-
-  @override
-  String get chatUiStartOne => 'Start one';
 
   @override
   String get chatUiSteer => 'Steer';
@@ -9455,22 +9424,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiDeleteChatBody(Object title) {
-    return '“$title” and its history will be permanently removed.';
-  }
-
-  @override
-  String chatUiChangedFilesSuffix(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count files',
-      one: '1 file',
-    );
-    return ' · $_temp0';
-  }
-
-  @override
   String chatUiToolsSummary(Object tools) {
     return 'Tools: $tools';
   }
@@ -9632,17 +9585,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiRunningAgentCount(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count agents running',
-      one: '1 agent running',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String chatUiChooseOption(Object option) {
     return 'Choose: $option';
   }
@@ -9661,9 +9603,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiPermissionFallback => 'a permission';
-
-  @override
-  String get chatUiUntitledChat => 'Untitled chat';
 
   @override
   String get chatUiMainSession => 'Main session';
@@ -10638,58 +10577,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibraryModelsAndAgents => 'Models and agents';
-
-  @override
-  String get e7LibraryNoMatchingModels => 'No matching models';
-
-  @override
-  String get e7LibraryTryAnotherProviderOrModelName =>
-      'Try another provider or model name.';
-
-  @override
-  String e7LibraryContextOutput(String detail1, String detail2) {
-    return '$detail1 context - $detail2 output';
-  }
-
-  @override
-  String get e7LibraryNoProvidersConnected => 'No providers connected';
-
-  @override
-  String get e7LibraryConnectAProviderOnTheOpenCodeServer =>
-      'Connect a provider on the OpenCode server to use models.';
-
-  @override
-  String e7LibraryAvailableModelsAuthenticationIsManagedUnderMCP(
-    String detail1,
-  ) {
-    return '$detail1 available models\nAuthentication is managed under MCP and integrations.';
-  }
-
-  @override
-  String get e7LibraryNoAgentsAvailable => 'No agents available';
-
-  @override
-  String get e7LibraryNoVisibleAgentsWereReturnedForThis =>
-      'No visible agents were returned for this workspace.';
-
-  @override
-  String e7LibraryContext(String detail1) {
-    return '$detail1 context';
-  }
-
-  @override
-  String e7LibraryOutput(String detail1) {
-    return '$detail1 output';
-  }
-
-  @override
-  String get e7LibraryAttachments => 'Attachments';
-
-  @override
-  String get e7LibraryTools => 'Tools';
-
-  @override
-  String get e7LibraryUseThisModel => 'Use this model';
 
   @override
   String get e7LibraryUnavailable => 'Unavailable';

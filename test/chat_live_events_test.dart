@@ -64,8 +64,6 @@ class _FakeOpenCodeApi extends OpenCodeApi with CompleteMessageHistory {
   String? slashVariant;
   int abortCalls = 0;
   Object? abortError;
-  bool failRename = false;
-  bool failDelete = false;
   int createCalls = 0;
   final List<({String id, String title})> renameCalls = [];
   final List<String> deleteCalls = [];
@@ -164,13 +162,11 @@ class _FakeOpenCodeApi extends OpenCodeApi with CompleteMessageHistory {
   @override
   Future<void> renameSession(String id, String title) async {
     renameCalls.add((id: id, title: title));
-    if (failRename) throw StateError('rename failed');
   }
 
   @override
   Future<void> deleteSession(String id) async {
     deleteCalls.add(id);
-    if (failDelete) throw StateError('delete failed');
   }
 }
 
@@ -4469,97 +4465,6 @@ void main() {
     expect(api.slashModel?.providerID, 'anthropic');
     expect(api.slashModel?.modelID, 'claude-sonnet');
     expect(api.slashVariant, 'high');
-  });
-
-  testWidgets('session rename and delete failures preserve the session', (
-    tester,
-  ) async {
-    final api = _FakeOpenCodeApi()
-      ..failRename = true
-      ..failDelete = true;
-    final controller = await _controller(api);
-    addTearDown(controller.dispose);
-    controller.sessionsById = {
-      'session-1': Session(
-        id: 'session-1',
-        title: 'Original title',
-        time: SessionTime(created: 1, updated: 1),
-      ),
-    };
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: SessionsTab(controller: controller)),
-      ),
-    );
-
-    await tester.tap(find.byType(PopupMenuButton<String>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-    expect(find.text('Delete chat?'), findsOneWidget);
-    expect(controller.sessionsById, contains('session-1'));
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
-    await tester.pumpAndSettle();
-    expect(find.text('OpenCode is unreachable. Try again.'), findsOneWidget);
-    expect(controller.sessionsById, contains('session-1'));
-    expect(find.text('Original title'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byType(PopupMenuButton<String>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Rename'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'Changed title');
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-    await tester.pumpAndSettle();
-    expect(find.text('OpenCode is unreachable. Try again.'), findsOneWidget);
-    expect(controller.sessionsById['session-1']?.title, 'Original title');
-    expect(find.text('Original title'), findsOneWidget);
-  });
-
-  testWidgets('session row end-swipe runs the existing delete confirm flow', (
-    tester,
-  ) async {
-    final api = _FakeOpenCodeApi();
-    final controller = await _controller(api);
-    addTearDown(controller.dispose);
-    controller.sessionsById = {
-      'session-1': Session(
-        id: 'session-1',
-        title: 'Swipe me away',
-        time: SessionTime(created: 1, updated: 1),
-      ),
-    };
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: SessionsTab(controller: controller)),
-      ),
-    );
-
-    final row = find.byKey(const ValueKey('session-dismiss-session-1'));
-    expect(row, findsOneWidget);
-    // The trailing popup menu remains alongside the swipe affordance.
-    expect(find.byType(PopupMenuButton<String>), findsOneWidget);
-
-    // Cancelling the confirm sheet keeps the session.
-    await tester.drag(row, const Offset(-400, 0));
-    await tester.pumpAndSettle();
-    expect(find.text('Delete chat?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
-    await tester.pumpAndSettle();
-    expect(api.deleteCalls, isEmpty);
-    expect(find.text('Swipe me away'), findsOneWidget);
-
-    // Confirming deletes through the same flow as the popup menu.
-    await tester.drag(row, const Offset(-400, 0));
-    await tester.pumpAndSettle();
-    expect(find.text('Delete chat?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
-    await tester.pumpAndSettle();
-
-    expect(api.deleteCalls, ['session-1']);
-    expect(find.text('Swipe me away'), findsNothing);
   });
 
   testWidgets('attachment count limit is enforced before opening the picker', (

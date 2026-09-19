@@ -8337,9 +8337,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiCompactingConversation => 'جارٍ اختصار المحادثة…';
 
   @override
-  String get chatUiCompacting => 'جارٍ الاختصار…';
-
-  @override
   String get chatUiCompactionFailed => 'فشل اختصار السياق';
 
   @override
@@ -8416,9 +8413,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiDelegatedSession => 'جلسة مفوّضة';
-
-  @override
-  String get chatUiDeleteChat => 'هل تريد حذف المحادثة؟';
 
   @override
   String get chatUiDeleteMessage => 'حذف الرسالة';
@@ -8506,10 +8500,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiFetchPage => 'جلب صفحة';
-
-  @override
-  String get chatUiFileEditsMadeInThisSessionWill =>
-      'ستظهر هنا تعديلات الملفات التي أُجريت في هذه الجلسة.';
 
   @override
   String get chatUiFiles => 'الملفات';
@@ -8689,16 +8679,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiNavigate => 'التنقّل';
 
   @override
-  String get chatUiNeedsYou => 'بحاجة إليك';
-
-  @override
   String get chatUiNoAnswer => 'لا توجد إجابة';
-
-  @override
-  String get chatUiNoChatsYet => 'لا توجد محادثات بعد';
-
-  @override
-  String get chatUiNoFileChangesYet => 'لا توجد تغييرات ملفات بعد';
 
   @override
   String get chatUiNoMatchingCommands => 'لا توجد أوامر مطابقة';
@@ -8715,9 +8696,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiNoTodosInThisSession => 'لا توجد مهام في هذه الجلسة';
-
-  @override
-  String get chatUiNotConnected => 'غير متصل';
 
   @override
   String get chatUiNotConnectedToTheServerRightNow =>
@@ -8860,9 +8838,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiRename => 'إعادة تسمية';
 
   @override
-  String get chatUiRenameChat => 'إعادة تسمية المحادثة';
-
-  @override
   String get chatUiRenameSession => 'إعادة تسمية الجلسة';
 
   @override
@@ -8886,9 +8861,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiRetryServerCommands => 'إعادة محاولة أوامر الخادم';
-
-  @override
-  String get chatUiRetrying => 'جارٍ إعادة المحاولة';
 
   @override
   String get chatUiRevert => 'تراجع';
@@ -9059,9 +9031,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiStartCoding => 'بدء البرمجة';
-
-  @override
-  String get chatUiStartOne => 'بدء محادثة';
 
   @override
   String get chatUiSteer => 'توجيه';
@@ -9603,26 +9572,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String chatUiDeleteChatBody(Object title) {
-    return 'ستُحذف «$title» وسجلها نهائيًا.';
-  }
-
-  @override
-  String chatUiChangedFilesSuffix(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ملف',
-      many: '$count ملفًا',
-      few: '$count ملفات',
-      two: 'ملفان',
-      one: 'ملف واحد',
-      zero: 'لا ملفات',
-    );
-    return ' · $_temp0';
-  }
-
-  @override
   String chatUiToolsSummary(Object tools) {
     return 'الأدوات: $tools';
   }
@@ -9808,21 +9757,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String chatUiRunningAgentCount(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count وكيل يعملون',
-      many: '$count وكيلًا يعملون',
-      few: '$count وكلاء يعملون',
-      two: 'وكيلان يعملان',
-      one: 'وكيل واحد يعمل',
-      zero: 'لا وكلاء يعملون',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String chatUiChooseOption(Object option) {
     return 'اختيار: $option';
   }
@@ -9841,9 +9775,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiPermissionFallback => 'إذن';
-
-  @override
-  String get chatUiUntitledChat => 'محادثة بلا عنوان';
 
   @override
   String get chatUiMainSession => 'الجلسة الرئيسية';
@@ -10851,58 +10782,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7LibraryModelsAndAgents => 'النماذج والوكلاء';
-
-  @override
-  String get e7LibraryNoMatchingModels => 'لا توجد نماذج مطابقة';
-
-  @override
-  String get e7LibraryTryAnotherProviderOrModelName =>
-      'جرّب اسم مزوّد خدمة أو نموذج آخر.';
-
-  @override
-  String e7LibraryContextOutput(String detail1, String detail2) {
-    return 'السياق: $detail1 - المخرجات: $detail2';
-  }
-
-  @override
-  String get e7LibraryNoProvidersConnected => 'لا توجد اتصالات بمزوّدي الخدمة';
-
-  @override
-  String get e7LibraryConnectAProviderOnTheOpenCodeServer =>
-      'اربط مزوّد خدمة على خادم OpenCode لاستخدام النماذج.';
-
-  @override
-  String e7LibraryAvailableModelsAuthenticationIsManagedUnderMCP(
-    String detail1,
-  ) {
-    return 'النماذج المتاحة: $detail1\nتُدار المصادقة ضمن MCP وعمليات التكامل.';
-  }
-
-  @override
-  String get e7LibraryNoAgentsAvailable => 'لا يوجد وكلاء متاحون';
-
-  @override
-  String get e7LibraryNoVisibleAgentsWereReturnedForThis =>
-      'لم يُرجع الخادم وكلاء ظاهرين لمساحة العمل هذه.';
-
-  @override
-  String e7LibraryContext(String detail1) {
-    return 'السياق: $detail1';
-  }
-
-  @override
-  String e7LibraryOutput(String detail1) {
-    return 'المخرجات: $detail1';
-  }
-
-  @override
-  String get e7LibraryAttachments => 'المرفقات';
-
-  @override
-  String get e7LibraryTools => 'الأدوات';
-
-  @override
-  String get e7LibraryUseThisModel => 'استخدام هذا النموذج';
 
   @override
   String get e7LibraryUnavailable => 'غير متاح';
