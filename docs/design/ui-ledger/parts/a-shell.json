@@ -764,9 +764,9 @@
           "key": "activity-background-settings",
           "line": 1330,
           "action": "navigate",
-          "target": "background-settings",
-          "targetWidget": "BackgroundSettingsScreen",
-          "effect": "_openBackgroundSettings: pushes BackgroundSettingsScreen(controller).",
+          "target": "notifications-settings",
+          "targetWidget": "NotificationsSettingsScreen",
+          "effect": "_openBackgroundSettings: pushes NotificationsSettingsScreen(controller).",
           "gates": [
             "empty",
             "platformCapabilities.supportsBackgroundService && !controller.keepLiveInBackground"
@@ -1642,9 +1642,9 @@
           "key": null,
           "line": 982,
           "action": "navigate",
-          "target": "quota-monitor",
-          "targetWidget": "QuotaMonitorScreen",
-          "effect": "_scheduleCodingAlertRoute: quotaMonitor.resolveRoute(...) then pushes QuotaMonitorScreen(controller); unresolved -> snackbar quotaMonitorSourceChanged.",
+          "target": "usage-hub",
+          "targetWidget": "UsageHubScreen",
+          "effect": "_scheduleCodingAlertRoute: quotaMonitor.resolveRoute(...) then pushes UsageHubScreen(initialSection: remaining)(controller); unresolved -> snackbar quotaMonitorSourceChanged.",
           "gates": [],
           "destructive": false
         },

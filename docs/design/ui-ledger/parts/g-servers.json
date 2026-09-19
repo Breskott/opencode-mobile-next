@@ -2379,7 +2379,7 @@
    "widget": "ProfileMonitorScreen",
    "presentedBy": [],
    "line": 90,
-   "purpose": "Per saved server opt-in background monitoring of pending permissions/questions/forms and long-run check-ins, with notification, Wi-Fi and quiet-hour rules.",
+   "purpose": "Live saved-server attention list: each readable server with its monitor status, last and next check, pending requests and observed busy intervals. Its settings live in Notifications, one link away.",
    "reachedFrom": [
     {
      "page": "?",
@@ -2403,7 +2403,7 @@
      "type": "icon-button",
      "label": "Check monitored servers",
      "key": null,
-     "line": 100,
+     "line": 101,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -2412,135 +2412,16 @@
      "destructive": false
     },
     {
-     "id": "profile-monitor-opt-in",
-     "type": "toggle",
-     "label": "Monitor this server",
-     "key": null,
-     "line": 371,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_save(rules.copyWith(enabled: value)) -> controller.profileMonitor.setRules(profile.id, rules). One block per readable saved profile (_MonitorProfile).",
-     "gates": [
-      "disabled when !monitor.supportsProfile(profile)",
-      "disabled while _saving"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-monitor-notifications",
-     "type": "toggle",
-     "label": "Notify when attention is needed",
-     "key": null,
-     "line": 397,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "profileMonitor.setRules(... notifications: value).",
-     "gates": [
-      "supported && rules.enabled",
-      "disabled while _saving"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-monitor-wifi-only",
-     "type": "toggle",
-     "label": "Wi-Fi only",
-     "key": null,
-     "line": 405,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "profileMonitor.setRules(... wifiOnly: value).",
-     "gates": [
-      "supported && rules.enabled",
-      "disabled when !platformCapabilities.supportsBackgroundService",
-      "disabled while _saving"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-monitor-quiet-hours",
-     "type": "toggle",
-     "label": "Quiet hours",
-     "key": null,
-     "line": 419,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "On: setRules(quietStart 22:00, quietEnd 08:00); off: setRules(clearQuiet: true).",
-     "gates": [
-      "supported && rules.enabled",
-      "disabled while _saving"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-monitor-quiet-start",
-     "type": "list-tile",
-     "label": "Quiet hours start",
-     "key": null,
-     "line": 433,
-     "action": "open-dialog",
-     "target": "profile-monitor-quiet-time-dialog",
-     "targetWidget": "showTimePicker",
-     "effect": "_quietTime(true, rules): showTimePicker then setRules(quietStart).",
-     "gates": [
-      "supported && rules.enabled",
-      "rules.quietStart != null && rules.quietEnd != null",
-      "disabled while _saving"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-monitor-quiet-end",
-     "type": "list-tile",
-     "label": "Quiet hours end",
-     "key": null,
-     "line": 443,
-     "action": "open-dialog",
-     "target": "profile-monitor-quiet-time-dialog",
-     "targetWidget": "showTimePicker",
-     "effect": "_quietTime(false, rules): showTimePicker then setRules(quietEnd).",
-     "gates": [
-      "supported && rules.enabled",
-      "rules.quietStart != null && rules.quietEnd != null",
-      "disabled while _saving"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-monitor-check-in",
-     "type": "toggle",
-     "label": "Check in on long runs",
-     "key": "monitor-check-in-<profile id>",
-     "line": 454,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "On: setRules(checkInAfterMinutes: ProfileNotifyRules.defaultCheckInMinutes); off: setRules(clearCheckIn: true).",
-     "gates": [
-      "supported && rules.enabled",
-      "disabled while _saving"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "profile-monitor-check-in-after",
-     "type": "dropdown",
-     "label": "Check in after — {minutes} minutes (ProfileNotifyRules.checkInChoices)",
-     "key": "monitor-check-in-after-<profile id>",
-     "line": 480,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "setRules(checkInAfterMinutes: minutes).",
-     "gates": [
-      "supported && rules.enabled",
-      "rules.checkInAfterMinutes != null",
-      "disabled while _saving"
-     ],
+     "id": "profile-monitor-notification-settings",
+     "type": "link",
+     "label": "Notification settings",
+     "key": "monitor-notification-settings",
+     "line": 118,
+     "action": "navigate",
+     "target": "notifications-settings",
+     "targetWidget": "NotificationsSettingsScreen",
+     "effect": "Pushes NotificationsSettingsScreen(controller), where monitoring, Notify, check-ins, quiet hours and Wi-Fi only are set.",
+     "gates": [],
      "destructive": false
     },
     {
@@ -2548,7 +2429,7 @@
      "type": "list-tile",
      "label": "<session title | Session> / {server} · Permission|Question|Form|Check-in due · last checked",
      "key": "monitor-row-<request identity>",
-     "line": 226,
+     "line": 238,
      "action": "navigate",
      "target": "permission-sheet",
      "targetWidget": "openMonitoredRequest",
@@ -2564,7 +2445,7 @@
      "type": "list-tile",
      "label": "<session title | Session> / [Check-in due ·] observed busy {minutes} min since {time}",
      "key": "monitor-busy-<session id>",
-     "line": 561,
+     "line": 412,
      "action": "navigate",
      "target": "chat",
      "targetWidget": "ChatScreen",
@@ -2573,57 +2454,6 @@
       "supported && rules.enabled",
       "snapshot.isCurrent && rules.checkInAfterMinutes != null"
      ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "profile-monitor-quiet-time-dialog",
-   "title": "[Quiet hours time picker]",
-   "kind": "dialog",
-   "file": "lib/ui/screens/profile_monitor_screen.dart",
-   "widget": "_quietTime",
-   "presentedBy": [
-    "_quietTime"
-   ],
-   "line": 335,
-   "purpose": "Material time picker for the quiet-hours start or end.",
-   "reachedFrom": [
-    {
-     "page": "profile-monitor",
-     "element": "profile-monitor-quiet-start"
-    },
-    {
-     "page": "profile-monitor",
-     "element": "profile-monitor-quiet-end"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "profile-monitor-quiet-time-dialog-ok",
-     "type": "button",
-     "label": "OK",
-     "key": null,
-     "line": 335,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Returns the TimeOfDay; _save(rules.copyWith(quietStart|quietEnd: minutes)) -> profileMonitor.setRules.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "profile-monitor-quiet-time-dialog-cancel",
-     "type": "button",
-     "label": "Cancel",
-     "key": null,
-     "line": 335,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Closes the picker without saving.",
-     "gates": [],
      "destructive": false
     }
    ]
@@ -2755,156 +2585,24 @@
    ]
   },
   {
-   "id": "quota-monitor",
-   "title": "Quota monitoring",
-   "kind": "screen",
-   "file": "lib/ui/screens/quota_monitor_screen.dart",
-   "widget": "QuotaMonitorScreen",
-   "presentedBy": [],
-   "line": 26,
-   "purpose": "Reviews every enrolled provider-quota source (profile x provider) with its last observation and edits its alert policy without connecting to the server.",
-   "reachedFrom": [
-    {
-     "page": "provider-quota",
-     "element": "provider-quota-open-monitor"
-    },
-    {
-     "page": "provider-quota-enroll-dialog",
-     "element": "provider-quota-enroll-dialog-enable"
-    },
-    {
-     "page": "system",
-     "element": null,
-     "trigger": "quota alert notification tap: quotaMonitor.resolveRoute(...) then push QuotaMonitorScreen (lib/main.dart:1004)"
-    }
-   ],
-   "gates": [],
-   "elements": [
-    {
-     "id": "quota-monitor-notifications",
-     "type": "toggle",
-     "label": "Device alerts for reported quota thresholds",
-     "key": null,
-     "line": 178,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_change(() => monitor.setPolicy(profileID, provider, notifications: value, ...)). One block per monitor.sources entry (_Source).",
-     "gates": [
-      "disabled while saving"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "quota-monitor-threshold",
-     "type": "dropdown",
-     "label": "{percent}% used (50 / 75 / 90 / 100 / current)",
-     "key": null,
-     "line": 186,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "monitor.setPolicy(... threshold: value).",
-     "gates": [
-      "disabled while saving"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "quota-monitor-wifi-only",
-     "type": "toggle",
-     "label": "Read only on confirmed Wi-Fi",
-     "key": null,
-     "line": 200,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "monitor.setPolicy(... wifiOnly: value).",
-     "gates": [
-      "disabled while saving"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "quota-monitor-quiet-hours",
-     "type": "toggle",
-     "label": "Quiet hours: 22:00–08:00 local time",
-     "key": null,
-     "line": 208,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "monitor.setPolicy(... quietStart 22*60 / quietEnd 8*60 or null).",
-     "gates": [
-      "disabled while saving"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "quota-monitor-refresh-source",
-     "type": "button",
-     "label": "Refresh remaining usage",
-     "key": null,
-     "line": 219,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "monitor.refreshSource(target).",
-     "gates": [
-      "disabled when monitor.refreshing || !monitor.runningAllowed"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "quota-monitor-disable",
-     "type": "button",
-     "label": "Disable quota monitoring",
-     "key": null,
-     "line": 225,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "monitor.disable(target.profileID, target.provider) — removes the source from monitoring.",
-     "gates": [
-      "disabled while saving"
-     ],
-     "destructive": true
-    }
-   ]
-  },
-  {
    "id": "provider-quota",
-   "title": "Remaining usage",
-   "kind": "screen",
+   "title": "Remaining",
+   "kind": "tab",
    "file": "lib/ui/screens/provider_quota_screen.dart",
    "widget": "ProviderQuotaScreen",
    "presentedBy": [],
-   "line": 14,
-   "purpose": "Reads remaining provider quota (Codex, Claude, MiniMax, GLM) through a user-installed collector on the connected server, with consent, per-window personal alert thresholds and enrollment into background quota monitoring.",
+   "line": 15,
+   "purpose": "Reads remaining provider quota (Codex, Claude, MiniMax, GLM) through a user-installed collector on the connected server, with consent, per-window personal alert thresholds and enrollment into background quota monitoring. Ends with the quota-monitoring section: every monitored source with its reading, threshold, Refresh and Disable.",
    "reachedFrom": [
     {
-     "page": "?",
-     "element": null,
-     "widget": "SettingsScreen (settings-category-quota row, shown when profile != null)",
-     "file": "lib/ui/screens/settings_screen.dart",
-     "line": 270
+     "page": "usage-hub",
+     "element": "usage-hub-tab-remaining"
     }
    ],
-   "gates": [],
+   "gates": [
+    "controller.profile != null"
+   ],
    "elements": [
-    {
-     "id": "provider-quota-open-monitor",
-     "type": "icon-button",
-     "label": "Quota monitoring",
-     "key": null,
-     "line": 212,
-     "action": "navigate",
-     "target": "quota-monitor",
-     "targetWidget": "QuotaMonitorScreen",
-     "effect": "Pushes QuotaMonitorScreen(controller).",
-     "gates": [],
-     "destructive": false
-    },
     {
      "id": "provider-quota-refresh",
      "type": "icon-button",
@@ -3062,6 +2760,66 @@
       "_overview.consented"
      ],
      "destructive": true
+    },
+    {
+     "id": "provider-quota-monitor-notification-settings",
+     "type": "link",
+     "label": "Notification settings",
+     "key": "quota-monitor-notification-settings",
+     "file": "lib/ui/widgets/quota_monitor_section.dart",
+     "line": 60,
+     "action": "navigate",
+     "target": "notifications-settings",
+     "targetWidget": "NotificationsSettingsScreen",
+     "effect": "Pushes NotificationsSettingsScreen(controller): device alerts, quiet hours and Wi-Fi only are shared and set there.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-monitor-threshold",
+     "type": "dropdown",
+     "label": "{percent}% used (50 / 75 / 90 / 100 / current)",
+     "key": "quota-threshold-<profile id>-<provider>",
+     "file": "lib/ui/widgets/quota_monitor_section.dart",
+     "line": 197,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "quotaMonitor.setPolicy(threshold: value), leaving the source record's other fields untouched.",
+     "gates": [
+      "one block per monitored source (quotaMonitor.sources)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-monitor-refresh-source",
+     "type": "button",
+     "label": "Refresh remaining usage",
+     "key": null,
+     "file": "lib/ui/widgets/quota_monitor_section.dart",
+     "line": 220,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "quotaMonitor.refreshSource(target).",
+     "gates": [
+      "!monitor.refreshing && monitor.runningAllowed"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-monitor-disable",
+     "type": "button",
+     "label": "Disable quota monitoring",
+     "key": null,
+     "file": "lib/ui/widgets/quota_monitor_section.dart",
+     "line": 227,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "quotaMonitor.disable(profileID, provider): removes the source from monitoring.",
+     "gates": [],
+     "destructive": false
     }
    ]
   },
@@ -3074,8 +2832,8 @@
    "presentedBy": [
     "_enroll"
    ],
-   "line": 101,
-   "purpose": "Consent dialog for background quota monitoring of the current source, with initial threshold and alert options.",
+   "line": 108,
+   "purpose": "Consent dialog for background quota monitoring of the current source, with its initial threshold.",
    "reachedFrom": [
     {
      "page": "provider-quota",
@@ -3089,7 +2847,7 @@
      "type": "dropdown",
      "label": "{percent}% used (50 / 75 / 90 / 100)",
      "key": null,
-     "line": 117,
+     "line": 124,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -3098,50 +2856,11 @@
      "destructive": false
     },
     {
-     "id": "provider-quota-enroll-dialog-notifications",
-     "type": "toggle",
-     "label": "Device alerts for reported quota thresholds",
-     "key": null,
-     "line": 131,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Local dialog state: notifications.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "provider-quota-enroll-dialog-wifi",
-     "type": "toggle",
-     "label": "Read only on confirmed Wi-Fi",
-     "key": null,
-     "line": 137,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Local dialog state: wifiOnly.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "provider-quota-enroll-dialog-quiet",
-     "type": "toggle",
-     "label": "Quiet hours: 22:00–08:00 local time",
-     "key": null,
-     "line": 143,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Local dialog state: quiet.",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "provider-quota-enroll-dialog-cancel",
      "type": "button",
      "label": "Cancel",
      "key": null,
-     "line": 153,
+     "line": 143,
      "action": "dismiss",
      "target": null,
      "targetWidget": null,
@@ -3154,11 +2873,11 @@
      "type": "button",
      "label": "Enable quota monitoring",
      "key": null,
-     "line": 157,
+     "line": 147,
      "action": "toggle-setting",
-     "target": "quota-monitor",
-     "targetWidget": "QuotaMonitorScreen",
-     "effect": "Pops with true; _enroll then calls controller.quotaMonitor.enroll(profileID, snapshot, notifications, threshold, wifiOnly, quietStart, quietEnd) and pushes QuotaMonitorScreen (snackbar on failure).",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with true; _enroll then calls controller.quotaMonitor.enroll(profileID, snapshot, threshold) with alerts, Wi-Fi only and quiet hours taken from the shared notification rules; the new source appears in the monitoring section in place (snackbar on failure).",
      "gates": [],
      "destructive": false
     }
@@ -3211,8 +2930,8 @@
   },
   {
    "id": "usage",
-   "title": "Usage and cost",
-   "kind": "screen",
+   "title": "Spent",
+   "kind": "tab",
    "file": "lib/ui/screens/usage_screen.dart",
    "widget": "UsageScreen",
    "presentedBy": [],
@@ -3220,15 +2939,12 @@
    "purpose": "Server-reported usage statistics: cost, sessions, tokens, provider and model breakdown and tool reliability, filterable by range, project scope, provider and search, with local consumption budgets.",
    "reachedFrom": [
     {
-     "page": "?",
-     "element": null,
-     "widget": "SettingsScreen (settings-category-usage row)",
-     "file": "lib/ui/screens/settings_screen.dart",
-     "line": 258
+     "page": "usage-hub",
+     "element": "usage-hub-tab-spent"
     }
    ],
    "gates": [
-    "entry row shown when controller.supportsUsageStatistics"
+    "controller.supportsUsageStatistics"
    ],
    "elements": [
     {
@@ -3236,11 +2952,11 @@
      "type": "icon-button",
      "label": "Refresh usage",
      "key": "refresh-usage",
-     "line": 82,
+     "line": 88,
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "_overview.refresh() (UsageOverview).",
+     "effect": "_overview.refresh() (UsageOverview). Inside Usage it sits beside the description; standalone it is an app-bar action.",
      "gates": [
       "enabled when !_overview.detached && error is not UsageUnsupported && !_overview.loading"
      ],

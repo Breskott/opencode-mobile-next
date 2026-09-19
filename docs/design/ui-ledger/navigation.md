@@ -22,7 +22,6 @@ One diagram per area. Dialog pages and the `system` pseudo page are left out of 
 graph LR
   activity["activity"]
   attention_overview["attention-overview"]
-  background_settings["background-settings"]:::ext
   capabilities["capabilities"]
   chat["chat"]:::ext
   command_launcher_sheet["command-launcher-sheet"]:::ext
@@ -43,6 +42,7 @@ graph LR
   global_shortcuts(["global-shortcuts"])
   home_shell["home-shell"]
   model_picker_sheet["model-picker-sheet"]:::ext
+  notifications_settings["notifications-settings"]:::ext
   permission_sheet["permission-sheet"]:::ext
   profile_monitor["profile-monitor"]:::ext
   question_sheet(["question-sheet"])
@@ -76,7 +76,7 @@ graph LR
   connection_status_details_sheet --> servers
   embedded_connection_status_banner --> servers
   embedded_connection_status_banner --> connection_status_details_sheet
-  activity --> background_settings
+  activity --> notifications_settings
   activity --> gate_sheet
   activity --> team_agent
   activity --> permission_sheet
@@ -450,7 +450,6 @@ graph LR
 
 ```mermaid
 graph LR
-  background_settings["background-settings"]:::ext
   chat["chat"]:::ext
   command_launcher_sheet["command-launcher-sheet"]:::ext
   console_organization_sheet(["console-organization-sheet"])
@@ -471,6 +470,7 @@ graph LR
   isolated_task_sheet(["isolated-task-sheet"])
   manage_project["manage-project"]
   managed_workspaces["managed-workspaces"]
+  notifications_settings["notifications-settings"]:::ext
   project_health["project-health"]
   projects["projects"]
   running_work_sheet(["running-work-sheet"])
@@ -508,7 +508,7 @@ graph LR
   workspace --> workspace_archive_session_sheet
   workspace --> workspace_delete_session_sheet
   workspace --> terminal
-  workspace --> background_settings
+  workspace --> notifications_settings
   workspace --> workspace_archived_sheet
   workspace --> isolated_task_sheet
   workspace --> embedded_session_inventory_footer
@@ -675,13 +675,13 @@ graph LR
   guide["guide"]:::ext
   home_shell["home-shell"]:::ext
   host_management["host-management"]
+  notifications_settings["notifications-settings"]:::ext
   pairing_scanner["pairing-scanner"]
   permission_sheet["permission-sheet"]:::ext
   profile_editor["profile-editor"]
   profile_editor_discard_sheet(["profile-editor-discard-sheet"])
   profile_monitor["profile-monitor"]
   provider_quota["provider-quota"]
-  quota_monitor["quota-monitor"]
   root_connecting["root-connecting"]:::ext
   server_settings["server-settings"]
   server_settings_upgrade_sheet(["server-settings-upgrade-sheet"])
@@ -696,6 +696,7 @@ graph LR
   team_host_sheet["team-host-sheet"]:::ext
   termux_setup["termux-setup"]:::ext
   usage["usage"]
+  usage_hub["usage-hub"]:::ext
   root_connecting --> servers
   home_shell --> servers
   connection_status_details_sheet --> servers
@@ -734,20 +735,21 @@ graph LR
   external_agent_detail --> external_agent_detail_delete_sheet
   external_task --> external_task_cancel_sheet
   external_task --> external_task_forget_sheet
+  profile_monitor --> notifications_settings
   profile_monitor --> permission_sheet
   profile_monitor --> chat
   embedded_profile_monitor_inbox --> profile_monitor
   embedded_profile_monitor_inbox --> permission_sheet
-  provider_quota --> quota_monitor
+  provider_quota --> notifications_settings
   termux_setup --> servers
   settings --> server_settings
   settings --> servers
   settings --> agent_account
   settings --> external_agents
   settings --> tailscale_setup
-  settings --> usage
-  settings --> provider_quota
   settings_disconnect_sheet --> servers
+  usage_hub --> usage
+  usage_hub --> provider_quota
   guide --> connection_help
   server_settings -.-> embedded_product_states
   profile_monitor --> form_sheet
@@ -1050,7 +1052,6 @@ graph LR
   app_diagnostics_clear_sheet(["app-diagnostics-clear-sheet"])
   appearance_picker_sheet(["appearance-picker-sheet"])
   appearance_settings["appearance-settings"]
-  background_settings["background-settings"]
   capabilities["capabilities"]:::ext
   catalog["catalog"]
   chat["chat"]:::ext
@@ -1089,11 +1090,13 @@ graph LR
   legacy_drafts_review_sheet(["legacy-drafts-review-sheet"])
   mcp_setup["mcp-setup"]
   model_picker_sheet(["model-picker-sheet"])
+  notifications_settings["notifications-settings"]
   plugins_clear_mappings_sheet(["plugins-clear-mappings-sheet"])
   plugins_settings["plugins-settings"]
   privacy_settings["privacy-settings"]
   privacy_settings_clear_drafts_sheet(["privacy-settings-clear-drafts-sheet"])
   privacy_settings_clear_queued_sheet(["privacy-settings-clear-queued-sheet"])
+  profile_monitor["profile-monitor"]:::ext
   prompt_tools_sheet["prompt-tools-sheet"]:::ext
   provider_quota["provider-quota"]:::ext
   references["references"]
@@ -1120,13 +1123,14 @@ graph LR
   tools["tools"]
   tools_detail_sheet(["tools-detail-sheet"])
   usage["usage"]:::ext
+  usage_hub["usage-hub"]
   voice_model_setup_sheet["voice-model-setup-sheet"]:::ext
   voice_notices["voice-notices"]:::ext
   web_sources["web-sources"]
   workspace["workspace"]:::ext
   home_shell --> settings
   home_shell --> model_picker_sheet
-  activity --> background_settings
+  activity --> notifications_settings
   global_shortcuts --> settings
   capabilities --> commands
   capabilities --> tools
@@ -1149,9 +1153,11 @@ graph LR
   embedded_prompt_error_banner --> model_picker_sheet
   embedded_message_view --> model_picker_sheet
   embedded_message_view --> integrations
-  workspace --> background_settings
+  workspace --> notifications_settings
   servers --> about
   servers_welcome --> about
+  profile_monitor --> notifications_settings
+  provider_quota --> notifications_settings
   settings --> server_settings
   settings --> servers
   settings --> termux_setup
@@ -1164,7 +1170,7 @@ graph LR
   settings --> saved_permissions
   settings --> settings_transcript_display_sheet
   settings --> voice_model_setup_sheet
-  settings --> background_settings
+  settings --> notifications_settings
   settings --> appearance_settings
   settings --> catalog
   settings --> integrations
@@ -1172,14 +1178,15 @@ graph LR
   settings --> plugins_settings
   settings --> session_import
   settings --> terminal
-  settings --> usage
-  settings --> provider_quota
+  settings --> usage_hub
   settings --> privacy_settings
   settings --> guide
   settings --> app_diagnostics
   settings --> about
   settings --> voice_notices
   settings_disconnect_sheet --> servers
+  usage_hub --> usage
+  usage_hub --> provider_quota
   appearance_settings --> appearance_picker_sheet
   appearance_settings --> language_sheet
   appearance_settings --> theme_pack_preview_sheet
@@ -1359,7 +1366,7 @@ graph LR
 
 | Page | Kind | Depth | Inbound (page / element) | Outbound (element -> page) |
 |---|---|---|---|---|
-| `system` | overlay | system only | _none_ | system-entry-share-text -> `chat`<br>system-entry-launch-connect -> `servers`<br>system-entry-launch-new-task -> `chat`<br>system-entry-launch-pinned-session -> `chat`<br>system-entry-launch-activity -> `activity`<br>system-entry-session-link -> `chat`<br>system-entry-team-link-gate -> `activity`<br>system-entry-team-link-run -> `team-run`<br>system-entry-alert-quota -> `quota-monitor`<br>system-entry-alert-monitored-request -> `profile-monitor-switch-server-dialog`<br>system-entry-alert-question -> `activity`<br>system-entry-alert-session -> `chat`<br>system-app-launch-runapp-appbootstrapgate-at-lib-main-dart-66-repla-to-bootstrap-gate -> `bootstrap-gate`<br>system-initialroute-main-dart-1227-1229-shown-automatically-when-co-to-root-connecting -> `root-connecting`<br>system-route-root-returns-homescreen-when-conn-hasconnectedserver-m-to-home-shell -> `home-shell`<br>system-session-handoff-link-ai-team-link-for-a-non-active-saved-ser-to-home-shell -> `home-shell`<br>system-activityscreen-initialquestionsessionid-from-a-question-noti-to-question-sheet -> `question-sheet`<br>system-always-active-on-desktop-builds-while-ocapp-is-mounted-to-global-shortcuts -> `global-shortcuts`<br>system-system-trigger-to-share-session-failed-banner -> `share-session-failed-banner`<br>system-system-trigger-to-session-link-server-missing-banner -> `session-link-server-missing-banner`<br>system-automatic-app-start-resume-when-a-newer-release-tag-exists-to-desktop-release-notice -> `desktop-release-notice`<br>system-automatic-app-start-resume-when-service-checkforupdate-repor-to-shorebird-update-notice -> `shorebird-update-notice`<br>system-automatic-from-initstate-line-570-when-the-saved-session-dra-to-chat-draft-attachment-recovery-sheet -> `chat-draft-attachment-recovery-sheet`<br>system-system-back-while-the-prompt-editor-is-dirty-popscope-prompt-to-prompt-editor-discard-sheet -> `prompt-editor-discard-sheet`<br>system-automatic-replaces-the-workspace-tab-body-while-controller-w-to-workspace-folder-chooser -> `workspace-folder-chooser`<br>system-openterminalintent-keyboard-shortcut-handled-in-homescreenst-to-terminal -> `terminal`<br>system-app-root-root-build-returns-serversscreen-when-conn-profile--to-servers-welcome -> `servers-welcome`<br>system-launch-shortcut-launch-action-showserversforlaunch-pushes-se-to-servers-welcome -> `servers-welcome`<br>system-any-route-into-serversscreen-while-the-profile-store-is-empt-to-servers-welcome -> `servers-welcome`<br>system-servers-opened-with-arguments-edit-active-connection-banner--to-profile-editor -> `profile-editor`<br>system-system-back-gesture-in-the-editor-while-dirty-popscope-onpop-to-profile-editor-discard-sheet -> `profile-editor-discard-sheet`<br>system-deep-link-restored-route-direct-push-on-a-non-termux-platfor-to-termux-setup-unsupported -> `termux-setup-unsupported`<br>system-initial-state-on-open-phase-phase-checking-to-termux-setup-checking -> `termux-setup-checking`<br>system-automatic-refresh-found-capabilities-installed-phase-phase-n-to-termux-setup-get-termux -> `termux-setup-get-termux`<br>system-automatic-capabilities-permissiongranted-verifybridge-failur-to-termux-setup-connect-termux -> `termux-setup-connect-termux`<br>system-automatic-bridge-verified-and-snapshot-idle-stopped-phase-ph-to-termux-setup-choose -> `termux-setup-choose`<br>system-automatic-on-open-resume-refreshstatus-finds-status-isrunnin-to-termux-setup-installing -> `termux-setup-installing`<br>system-automatic-snapshot-isready-with-a-saved-profile-phase-phase--to-termux-setup-connected -> `termux-setup-connected`<br>system-automatic-phase-phase-failed-snapshot-failed-switch-pending--to-termux-setup-failed -> `termux-setup-failed`<br>system-automatic-build-branch-at-line-1629-once-an-installed-runnin-to-termux-setup-installed -> `termux-setup-installed`<br>system-activityscreen-opened-with-an-initial-gate-id-post-frame-sho-to-gate-sheet -> `gate-sheet`<br>system-desktop-command-settings-shortcut-mod-4-go-3-lib-main-dart-1-to-settings -> `settings`<br>system-desktop-shortcut-mod-opensettings-pushes-settingsscreen-lib--to-settings -> `settings`<br>system-named-route-about-lib-main-dart-1238-to-about -> `about`<br>system-named-route-guide-lib-main-dart-1237-to-guide -> `guide`<br>system-named-route-debug-via-desktop-command-diagnostics-lib-main-d-to-app-diagnostics -> `app-diagnostics`<br>system-automatic-post-frame-in-scheduleagententry-when-widget-focus-to-model-picker-sheet-agent-dialog -> `model-picker-sheet-agent-dialog` |
+| `system` | overlay | system only | _none_ | system-entry-share-text -> `chat`<br>system-entry-launch-connect -> `servers`<br>system-entry-launch-new-task -> `chat`<br>system-entry-launch-pinned-session -> `chat`<br>system-entry-launch-activity -> `activity`<br>system-entry-session-link -> `chat`<br>system-entry-team-link-gate -> `activity`<br>system-entry-team-link-run -> `team-run`<br>system-entry-alert-quota -> `usage-hub`<br>system-entry-alert-monitored-request -> `profile-monitor-switch-server-dialog`<br>system-entry-alert-question -> `activity`<br>system-entry-alert-session -> `chat`<br>system-app-launch-runapp-appbootstrapgate-at-lib-main-dart-66-repla-to-bootstrap-gate -> `bootstrap-gate`<br>system-initialroute-main-dart-1227-1229-shown-automatically-when-co-to-root-connecting -> `root-connecting`<br>system-route-root-returns-homescreen-when-conn-hasconnectedserver-m-to-home-shell -> `home-shell`<br>system-session-handoff-link-ai-team-link-for-a-non-active-saved-ser-to-home-shell -> `home-shell`<br>system-activityscreen-initialquestionsessionid-from-a-question-noti-to-question-sheet -> `question-sheet`<br>system-always-active-on-desktop-builds-while-ocapp-is-mounted-to-global-shortcuts -> `global-shortcuts`<br>system-system-trigger-to-share-session-failed-banner -> `share-session-failed-banner`<br>system-system-trigger-to-session-link-server-missing-banner -> `session-link-server-missing-banner`<br>system-automatic-app-start-resume-when-a-newer-release-tag-exists-to-desktop-release-notice -> `desktop-release-notice`<br>system-automatic-app-start-resume-when-service-checkforupdate-repor-to-shorebird-update-notice -> `shorebird-update-notice`<br>system-automatic-from-initstate-line-570-when-the-saved-session-dra-to-chat-draft-attachment-recovery-sheet -> `chat-draft-attachment-recovery-sheet`<br>system-system-back-while-the-prompt-editor-is-dirty-popscope-prompt-to-prompt-editor-discard-sheet -> `prompt-editor-discard-sheet`<br>system-automatic-replaces-the-workspace-tab-body-while-controller-w-to-workspace-folder-chooser -> `workspace-folder-chooser`<br>system-openterminalintent-keyboard-shortcut-handled-in-homescreenst-to-terminal -> `terminal`<br>system-app-root-root-build-returns-serversscreen-when-conn-profile--to-servers-welcome -> `servers-welcome`<br>system-launch-shortcut-launch-action-showserversforlaunch-pushes-se-to-servers-welcome -> `servers-welcome`<br>system-any-route-into-serversscreen-while-the-profile-store-is-empt-to-servers-welcome -> `servers-welcome`<br>system-servers-opened-with-arguments-edit-active-connection-banner--to-profile-editor -> `profile-editor`<br>system-system-back-gesture-in-the-editor-while-dirty-popscope-onpop-to-profile-editor-discard-sheet -> `profile-editor-discard-sheet`<br>system-deep-link-restored-route-direct-push-on-a-non-termux-platfor-to-termux-setup-unsupported -> `termux-setup-unsupported`<br>system-initial-state-on-open-phase-phase-checking-to-termux-setup-checking -> `termux-setup-checking`<br>system-automatic-refresh-found-capabilities-installed-phase-phase-n-to-termux-setup-get-termux -> `termux-setup-get-termux`<br>system-automatic-capabilities-permissiongranted-verifybridge-failur-to-termux-setup-connect-termux -> `termux-setup-connect-termux`<br>system-automatic-bridge-verified-and-snapshot-idle-stopped-phase-ph-to-termux-setup-choose -> `termux-setup-choose`<br>system-automatic-on-open-resume-refreshstatus-finds-status-isrunnin-to-termux-setup-installing -> `termux-setup-installing`<br>system-automatic-snapshot-isready-with-a-saved-profile-phase-phase--to-termux-setup-connected -> `termux-setup-connected`<br>system-automatic-phase-phase-failed-snapshot-failed-switch-pending--to-termux-setup-failed -> `termux-setup-failed`<br>system-automatic-build-branch-at-line-1629-once-an-installed-runnin-to-termux-setup-installed -> `termux-setup-installed`<br>system-activityscreen-opened-with-an-initial-gate-id-post-frame-sho-to-gate-sheet -> `gate-sheet`<br>system-desktop-command-settings-shortcut-mod-4-go-3-lib-main-dart-1-to-settings -> `settings`<br>system-desktop-shortcut-mod-opensettings-pushes-settingsscreen-lib--to-settings -> `settings`<br>system-named-route-about-lib-main-dart-1238-to-about -> `about`<br>system-named-route-guide-lib-main-dart-1237-to-guide -> `guide`<br>system-named-route-debug-via-desktop-command-diagnostics-lib-main-d-to-app-diagnostics -> `app-diagnostics`<br>system-automatic-post-frame-in-scheduleagententry-when-widget-focus-to-model-picker-sheet-agent-dialog -> `model-picker-sheet-agent-dialog` |
 | `share-session-failed-banner` | overlay | system only | `system` / system-system-trigger-to-share-session-failed-banner | share-session-failed-banner-retry -> `chat` |
 | `session-link-server-missing-banner` | overlay | system only | `system` / system-system-trigger-to-session-link-server-missing-banner | session-link-server-missing-banner-open-servers -> `servers` |
 | `root-connecting` | screen | - / 0 | `system` / system-initialroute-main-dart-1227-1229-shown-automatically-when-co-to-root-connecting | root-connecting-termux-secondary -> `termux-setup`<br>root-connecting-change -> `servers`<br>root-connecting-primary-termux -> `termux-setup`<br>root-connecting-primary-password -> `servers`<br>root-connecting-primary-token -> `servers`<br>root-connecting-primary-change -> `servers` |
@@ -1368,7 +1375,7 @@ graph LR
 | `global-shortcuts` | overlay | system only | `system` / system-always-active-on-desktop-builds-while-ocapp-is-mounted-to-global-shortcuts | global-shortcuts-palette -> `command-palette-dialog`<br>global-shortcuts-new-session -> `chat`<br>global-shortcuts-settings -> `settings`<br>global-shortcuts-help -> `shortcuts-help-dialog`<br>global-shortcuts-terminal -> `terminal`<br>global-shortcuts-destinations -> `home-shell` |
 | `command-palette-dialog` | dialog | system only | `global-shortcuts` / global-shortcuts-palette | command-palette-dialog-cmd-new-session -> `chat`<br>command-palette-dialog-cmd-workspace -> `home-shell`<br>command-palette-dialog-cmd-files -> `home-shell`<br>command-palette-dialog-cmd-activity -> `home-shell`<br>command-palette-dialog-cmd-more -> `home-shell`<br>command-palette-dialog-cmd-settings -> `settings`<br>command-palette-dialog-cmd-shortcuts -> `shortcuts-help-dialog`<br>command-palette-dialog-cmd-diagnostics -> `app-diagnostics` |
 | `shortcuts-help-dialog` | dialog | 1 / 3 | `global-shortcuts` / global-shortcuts-help<br>`command-palette-dialog` / command-palette-dialog-cmd-shortcuts<br>`settings` / settings-keyboard-shortcuts | _none_ |
-| `activity` | screen | 0 / 2 | `home-shell` / home-shell-tab-activity<br>`system` / system-entry-launch-activity<br>`system` / system-entry-team-link-gate<br>`system` / system-entry-alert-question | activity-background-hint -> `background-settings`<br>activity-team-gate-row -> `gate-sheet`<br>activity-team-agent-blocked-row -> `team-agent`<br>activity-permission-row -> `permission-sheet`<br>activity-question-row -> `question-sheet`<br>activity-form-row -> `form-sheet`<br>activity-running-row -> `chat`<br>activity-digest-open-conversation -> `chat`<br>activity-digest-review -> `permission-sheet`<br>activity-digest-run-results -> `run-result`<br>activity-digest-review -> `question-sheet`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-question-options`<br>(embedded) -> `embedded-completion-digest-card`<br>-> `embedded-profile-monitor-inbox`<br>(embedded) -> `embedded-profile-monitor-inbox`<br>(embedded) -> `embedded-team-receipt-chip` |
+| `activity` | screen | 0 / 2 | `home-shell` / home-shell-tab-activity<br>`system` / system-entry-launch-activity<br>`system` / system-entry-team-link-gate<br>`system` / system-entry-alert-question | activity-background-hint -> `notifications-settings`<br>activity-team-gate-row -> `gate-sheet`<br>activity-team-agent-blocked-row -> `team-agent`<br>activity-permission-row -> `permission-sheet`<br>activity-question-row -> `question-sheet`<br>activity-form-row -> `form-sheet`<br>activity-running-row -> `chat`<br>activity-digest-open-conversation -> `chat`<br>activity-digest-review -> `permission-sheet`<br>activity-digest-run-results -> `run-result`<br>activity-digest-review -> `question-sheet`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-question-options`<br>(embedded) -> `embedded-completion-digest-card`<br>-> `embedded-profile-monitor-inbox`<br>(embedded) -> `embedded-profile-monitor-inbox`<br>(embedded) -> `embedded-team-receipt-chip` |
 | `question-sheet` | sheet | 1 / 3 | `activity` / activity-question-row<br>`activity` / activity-digest-review<br>`profile-monitor-switch-server-dialog`<br>`embedded-return-brief-panel`<br>`system` / system-activityscreen-initialquestionsessionid-from-a-question-noti-to-question-sheet<br>`chat` / chat-question-card-more<br>`embedded-question-attention-card` / embedded-question-attention-card-answer<br>`embedded-question-attention-card` / embedded-question-attention-card-more | question-sheet-dismiss -> `question-sheet-dismiss-dialog` |
 | `question-sheet-dismiss-dialog` | dialog | 2 / 4 | `question-sheet` / question-sheet-dismiss | _none_ |
 | `attention-overview` | screen | 2 / 1 | `servers` / servers-attention | attention-overview-monitor-settings -> `profile-monitor` |
@@ -1483,7 +1490,7 @@ graph LR
 | `session-destination-confirm-dialog` | dialog | 3 / 4 | `session-destination-sheet` / session-destination-sheet-destination | _none_ |
 | `console-organization-sheet` | sheet | 2 / 3 | `chat`<br>`command-launcher-sheet` / chat-command-org | console-organization-sheet-org -> `console-organization-switch-dialog` |
 | `console-organization-switch-dialog` | dialog | 3 / 4 | `console-organization-sheet` / console-organization-sheet-org | _none_ |
-| `workspace` | tab | 0 / 2 | `home-shell` / home-shell-tab-workspace | workspace-error-search-all -> `global-sessions`<br>workspace-no-projects-search-all -> `global-sessions`<br>workspace-project-header -> `workspace-context-sheet`<br>workspace-active-session-directory -> `workspace-directory-details-dialog`<br>workspace-restricted-directory -> `workspace-directory-details-dialog`<br>workspace-return-brief-panel -> `embedded-return-brief-panel`<br>workspace-team-card -> `team-home`<br>workspace-termux-attention-line -> `embedded-termux-attention-line`<br>workspace-session-row -> `chat`<br>workspace-session-menu-details -> `workspace-session-details-sheet`<br>workspace-session-menu-rename -> `workspace-rename-session-dialog`<br>workspace-session-menu-share -> `workspace-share-session-sheet`<br>workspace-session-menu-archive -> `workspace-archive-session-sheet`<br>workspace-session-menu-delete -> `workspace-delete-session-sheet`<br>workspace-session-context-details -> `workspace-session-details-sheet`<br>workspace-session-context-open -> `chat`<br>workspace-session-context-rename -> `workspace-rename-session-dialog`<br>workspace-session-context-share -> `workspace-share-session-sheet`<br>workspace-session-context-archive -> `workspace-archive-session-sheet`<br>workspace-session-context-delete -> `workspace-delete-session-sheet`<br>workspace-search-all-sessions -> `global-sessions`<br>workspace-section-menu-terminal -> `terminal`<br>workspace-section-menu-background -> `background-settings`<br>workspace-archived-sessions -> `workspace-archived-sheet`<br>workspace-new-session -> `chat`<br>workspace-isolated-task -> `isolated-task-sheet`<br>workspace-inventory-footer -> `embedded-session-inventory-footer`<br>workspace-session-row-swipe -> `workspace-delete-session-sheet`<br>(embedded) -> `embedded-context-menu-region`<br>(embedded) -> `embedded-return-brief-panel`<br>(state) -> `workspace-folder-chooser`<br>(embedded) -> `embedded-session-inventory-footer`<br>(embedded) -> `embedded-termux-attention-line`<br>(embedded) -> `embedded-team-card` |
+| `workspace` | tab | 0 / 2 | `home-shell` / home-shell-tab-workspace | workspace-error-search-all -> `global-sessions`<br>workspace-no-projects-search-all -> `global-sessions`<br>workspace-project-header -> `workspace-context-sheet`<br>workspace-active-session-directory -> `workspace-directory-details-dialog`<br>workspace-restricted-directory -> `workspace-directory-details-dialog`<br>workspace-return-brief-panel -> `embedded-return-brief-panel`<br>workspace-team-card -> `team-home`<br>workspace-termux-attention-line -> `embedded-termux-attention-line`<br>workspace-session-row -> `chat`<br>workspace-session-menu-details -> `workspace-session-details-sheet`<br>workspace-session-menu-rename -> `workspace-rename-session-dialog`<br>workspace-session-menu-share -> `workspace-share-session-sheet`<br>workspace-session-menu-archive -> `workspace-archive-session-sheet`<br>workspace-session-menu-delete -> `workspace-delete-session-sheet`<br>workspace-session-context-details -> `workspace-session-details-sheet`<br>workspace-session-context-open -> `chat`<br>workspace-session-context-rename -> `workspace-rename-session-dialog`<br>workspace-session-context-share -> `workspace-share-session-sheet`<br>workspace-session-context-archive -> `workspace-archive-session-sheet`<br>workspace-session-context-delete -> `workspace-delete-session-sheet`<br>workspace-search-all-sessions -> `global-sessions`<br>workspace-section-menu-terminal -> `terminal`<br>workspace-section-menu-background -> `notifications-settings`<br>workspace-archived-sessions -> `workspace-archived-sheet`<br>workspace-new-session -> `chat`<br>workspace-isolated-task -> `isolated-task-sheet`<br>workspace-inventory-footer -> `embedded-session-inventory-footer`<br>workspace-session-row-swipe -> `workspace-delete-session-sheet`<br>(embedded) -> `embedded-context-menu-region`<br>(embedded) -> `embedded-return-brief-panel`<br>(state) -> `workspace-folder-chooser`<br>(embedded) -> `embedded-session-inventory-footer`<br>(embedded) -> `embedded-termux-attention-line`<br>(embedded) -> `embedded-team-card` |
 | `workspace-directory-details-dialog` | dialog | 1 / 3 | `workspace` / workspace-active-session-directory<br>`workspace` / workspace-restricted-directory | _none_ |
 | `workspace-context-sheet` | sheet | 1 / 3 | `workspace` / workspace-project-header | workspace-context-sheet-switch-project -> `projects`<br>workspace-context-sheet-manage-project -> `manage-project` |
 | `workspace-session-details-sheet` | sheet | 1 / 3 | `workspace` / workspace-session-menu-details<br>`workspace` / workspace-session-context-details | _none_ |
@@ -1540,13 +1547,11 @@ graph LR
 | `host-management` | screen | 2 / 4 | `server-settings` / server-settings-host-management | _none_ |
 | `pairing-scanner` | screen | 3 / 2 | `profile-editor` / profile-editor-pairing-scan | _none_ |
 | `profile-monitor-switch-server-dialog` | dialog | 1 / 3 | `profile-monitor` / profile-monitor-request-row<br>`profile-monitor` / profile-monitor-busy-row<br>`embedded-profile-monitor-inbox` / embedded-profile-monitor-inbox-request-row<br>`system` / system-entry-alert-monitored-request | -> `question-sheet`<br>-> `chat` |
-| `profile-monitor` | screen | 1 / 2 | `attention-overview` / attention-overview-monitor-settings<br>`embedded-profile-monitor-inbox` / embedded-profile-monitor-inbox-summary | profile-monitor-quiet-start -> `profile-monitor-quiet-time-dialog`<br>profile-monitor-quiet-end -> `profile-monitor-quiet-time-dialog`<br>profile-monitor-request-row -> `permission-sheet`<br>profile-monitor-busy-row -> `chat`<br>profile-monitor-request-row -> `profile-monitor-switch-server-dialog`<br>profile-monitor-busy-row -> `profile-monitor-switch-server-dialog`<br>-> `form-sheet` |
+| `profile-monitor` | screen | 1 / 2 | `attention-overview` / attention-overview-monitor-settings<br>`embedded-profile-monitor-inbox` / embedded-profile-monitor-inbox-summary | profile-monitor-notification-settings -> `notifications-settings`<br>profile-monitor-request-row -> `permission-sheet`<br>profile-monitor-busy-row -> `chat`<br>profile-monitor-request-row -> `profile-monitor-switch-server-dialog`<br>profile-monitor-busy-row -> `profile-monitor-switch-server-dialog`<br>-> `form-sheet` |
 | `embedded-profile-monitor-inbox` | overlay | 0 / 2 | `activity`<br>`activity` / (embedded) | embedded-profile-monitor-inbox-summary -> `profile-monitor`<br>embedded-profile-monitor-inbox-request-row -> `permission-sheet`<br>embedded-profile-monitor-inbox-request-row -> `profile-monitor-switch-server-dialog` |
-| `profile-monitor-quiet-time-dialog` | dialog | 2 / 3 | `profile-monitor` / profile-monitor-quiet-start<br>`profile-monitor` / profile-monitor-quiet-end | _none_ |
-| `provider-quota` | screen | 1 / 3 | `settings` / settings-category-quota | provider-quota-open-monitor -> `quota-monitor`<br>provider-quota-enable-monitoring -> `provider-quota-enroll-dialog`<br>provider-quota-clear-thresholds -> `provider-quota-clear-dialog` |
-| `provider-quota-enroll-dialog` | dialog | 2 / 4 | `provider-quota` / provider-quota-enable-monitoring | provider-quota-enroll-dialog-enable -> `quota-monitor` |
-| `provider-quota-clear-dialog` | dialog | 2 / 4 | `provider-quota` / provider-quota-clear-thresholds | _none_ |
-| `quota-monitor` | screen | 2 / 4 | `provider-quota` / provider-quota-open-monitor<br>`provider-quota-enroll-dialog` / provider-quota-enroll-dialog-enable<br>`system` / system-entry-alert-quota | _none_ |
+| `provider-quota` | tab | 2 / 4 | `usage-hub` / usage-hub-tab-remaining | provider-quota-enable-monitoring -> `provider-quota-enroll-dialog`<br>provider-quota-clear-thresholds -> `provider-quota-clear-dialog`<br>provider-quota-monitor-notification-settings -> `notifications-settings` |
+| `provider-quota-enroll-dialog` | dialog | 3 / 5 | `provider-quota` / provider-quota-enable-monitoring | _none_ |
+| `provider-quota-clear-dialog` | dialog | 3 / 5 | `provider-quota` / provider-quota-clear-thresholds | _none_ |
 | `servers` | screen | 1 / 0 | `profile-editor`<br>`settings` / settings-saved-servers<br>`root-connecting` / root-connecting-change<br>`root-connecting` / root-connecting-primary-password<br>`root-connecting` / root-connecting-primary-token<br>`root-connecting` / root-connecting-primary-change<br>`home-shell` / home-shell-menu-disconnect<br>`home-shell` / home-shell-banner-update-token<br>`home-shell` / home-shell-banner-update-password<br>`connection-status-details-sheet` / connection-status-details-sheet-change-server<br>`embedded-connection-status-banner` / embedded-connection-status-banner-update-token<br>`embedded-connection-status-banner` / embedded-connection-status-banner-update-password<br>`system` / system-entry-launch-connect<br>`session-link-server-missing-banner` / session-link-server-missing-banner-open-servers<br>`termux-setup` / termux-setup-connect-existing<br>`settings-disconnect-sheet` / settings-disconnect-sheet-confirm | servers-attention -> `attention-overview`<br>servers-about -> `about`<br>servers-guide -> `guide`<br>servers-profile-row -> `home-shell`<br>servers-profile-menu-account -> `agent-account`<br>servers-profile-menu-connect -> `home-shell`<br>servers-profile-menu-edit -> `profile-editor`<br>servers-profile-menu-remove -> `servers-remove-server-sheet`<br>servers-add-server -> `profile-editor`<br>servers-connect-opencode2 -> `profile-editor`<br>servers-try-demo -> `demo`<br>servers-termux-setup -> `termux-setup`<br>servers-tailscale -> `tailscale-setup`<br>servers-setup-guide -> `guide`<br>servers-external-agents -> `external-agents`<br>servers-profile-row -> `profile-editor`<br>(state) -> `servers-welcome`<br>(embedded) -> `embedded-termux-running-server-entry`<br>(embedded) -> `embedded-managed-server-health` |
 | `servers-remove-server-sheet` | sheet | 2 / 1 | `servers` / servers-profile-menu-remove | _none_ |
 | `profile-editor` | screen | 2 / 1 | `servers` / servers-add-server<br>`servers` / servers-connect-opencode2<br>`servers` / servers-profile-menu-edit<br>`servers` / servers-profile-row<br>`servers-welcome` / servers-welcome-connect<br>`servers-welcome` / servers-welcome-connect-opencode2<br>`tailscale-setup` / tailscale-setup-continue<br>`embedded-termux-running-server-entry`<br>`system` / system-servers-opened-with-arguments-edit-active-connection-banner--to-profile-editor | profile-editor-close -> `profile-editor-discard-sheet`<br>profile-editor-tailscale-help -> `tailscale-setup`<br>profile-editor-pairing-scan -> `pairing-scanner`<br>profile-editor-test-guide -> `guide`<br>profile-editor-team-learn -> `team-host-guide-sheet`<br>profile-editor-team-add -> `team-host-sheet`<br>-> `servers` |
@@ -1555,9 +1560,9 @@ graph LR
 | `server-settings-restart-dialog` | dialog | 2 / 4 | `server-settings` / server-settings-updates-restart | _none_ |
 | `server-settings-upgrade-sheet` | sheet | 2 / 4 | `server-settings` / server-settings-updates-upgrade | _none_ |
 | `tailscale-setup` | screen | 1 / 1 | `servers` / servers-tailscale<br>`servers-welcome` / servers-welcome-tailscale<br>`profile-editor` / profile-editor-tailscale-help<br>`settings` / settings-tailscale | tailscale-setup-install -> `external-link-dialog`<br>tailscale-setup-continue -> `profile-editor`<br>tailscale-setup-serve-docs -> `external-link-dialog`<br>tailscale-setup-android-docs -> `external-link-dialog` |
-| `usage` | screen | 1 / 3 | `settings` / settings-category-usage | usage-budget-usd -> `usage-budget-dialog`<br>usage-budget-tokens -> `usage-budget-dialog`<br>usage-budget-clear-all -> `usage-budget-clear-dialog` |
-| `usage-budget-dialog` | dialog | 2 / 4 | `usage` / usage-budget-usd<br>`usage` / usage-budget-tokens | _none_ |
-| `usage-budget-clear-dialog` | dialog | 2 / 4 | `usage` / usage-budget-clear-all | _none_ |
+| `usage` | tab | 2 / 4 | `usage-hub` / usage-hub-tab-spent | usage-budget-usd -> `usage-budget-dialog`<br>usage-budget-tokens -> `usage-budget-dialog`<br>usage-budget-clear-all -> `usage-budget-clear-dialog` |
+| `usage-budget-dialog` | dialog | 3 / 5 | `usage` / usage-budget-usd<br>`usage` / usage-budget-tokens | _none_ |
+| `usage-budget-clear-dialog` | dialog | 3 / 5 | `usage` / usage-budget-clear-all | _none_ |
 
 ### Termux / on-device setup
 
@@ -1686,8 +1691,9 @@ graph LR
 | `mcp-setup` | screen | 2 / 4 | `integrations` / integrations-add-mcp<br>`integrations` / integrations-mcp-empty-add<br>`integrations` / integrations-resources-empty-add | mcp-setup-glossary -> `info-label-sheet` |
 | `saved-permissions` | screen | 1 / 3 | `settings` / settings-saved-permissions | saved-permissions-revoke -> `saved-permissions-revoke-dialog`<br>(embedded) -> `embedded-product-states` |
 | `saved-permissions-revoke-dialog` | dialog | 2 / 4 | `saved-permissions` / saved-permissions-revoke | _none_ |
-| `background-settings` | screen | 1 / 3 | `settings` / settings-category-background<br>`activity` / activity-background-hint<br>`workspace` / workspace-section-menu-background | _none_ |
 | `coding-settings-shell-sheet` | sheet | 1 / 3 | `settings` / settings-default-shell | _none_ |
+| `notifications-settings` | screen | 1 / 3 | `settings` / settings-category-background<br>`activity` / activity-background-hint<br>`workspace` / workspace-section-menu-background<br>`profile-monitor` / profile-monitor-notification-settings<br>`provider-quota` / provider-quota-monitor-notification-settings | notifications-settings-quiet-start -> `notifications-settings-quiet-time-dialog`<br>notifications-settings-quiet-end -> `notifications-settings-quiet-time-dialog` |
+| `notifications-settings-quiet-time-dialog` | dialog | 2 / 4 | `notifications-settings` / notifications-settings-quiet-start<br>`notifications-settings` / notifications-settings-quiet-end | _none_ |
 | `appearance-settings` | screen | 1 / 3 | `settings` / settings-category-appearance<br>`command-launcher-sheet` / chat-command-themes | appearance-settings-mode -> `appearance-picker-sheet`<br>appearance-settings-language -> `language-sheet`<br>appearance-settings-theme-pack -> `theme-pack-preview-sheet`<br>-> `voice-notices` |
 | `privacy-settings` | screen | 1 / 3 | `settings` / settings-category-privacy | privacy-settings-clear-queued -> `privacy-settings-clear-queued-sheet`<br>privacy-settings-clear-drafts -> `privacy-settings-clear-drafts-sheet` |
 | `privacy-settings-clear-drafts-sheet` | sheet | 2 / 4 | `privacy-settings` / privacy-settings-clear-drafts | _none_ |
@@ -1696,11 +1702,12 @@ graph LR
 | `team-plugin-sheet` | sheet | 2 / 4 | `plugins-settings` / plugins-settings-ai-team-row | team-plugin-sheet-how -> `team-host-guide-sheet`<br>team-plugin-sheet-add-manually -> `team-host-sheet`<br>team-plugin-sheet-turn-off -> `team-turn-off-sheet`<br>-> `embedded-team-phone-section`<br>(embedded) -> `embedded-team-phone-section`<br>(embedded) -> `embedded-team-technical-value` |
 | `plugins-clear-mappings-sheet` | sheet | 2 / 4 | `plugins-settings` / plugins-clear-mappings | -> `run-command-dialog` |
 | `plugins-mapping-dialog` | dialog | 2 / 4 | `plugins-settings` / plugins-manage-mapping | _none_ |
-| `settings` | tab | 0 / 2 | `home-shell` / home-shell-tab-more<br>`global-shortcuts` / global-shortcuts-settings<br>`command-palette-dialog` / command-palette-dialog-cmd-settings<br>`system` / system-desktop-command-settings-shortcut-mod-4-go-3-lib-main-dart-1-to-settings<br>`system` / system-desktop-shortcut-mod-opensettings-pushes-settingsscreen-lib--to-settings | settings-category-server -> `server-settings`<br>settings-saved-servers -> `servers`<br>settings-on-this-phone -> `termux-setup`<br>settings-accounts -> `agent-account`<br>settings-external-agents -> `external-agents`<br>settings-tailscale -> `tailscale-setup`<br>settings-disconnect -> `settings-disconnect-sheet`<br>settings-model-and-mode -> `model-picker-sheet`<br>settings-default-shell -> `coding-settings-shell-sheet`<br>settings-saved-permissions -> `saved-permissions`<br>settings-transcript-display -> `settings-transcript-display-sheet`<br>settings-voice -> `voice-model-setup-sheet`<br>settings-category-background -> `background-settings`<br>settings-category-appearance -> `appearance-settings`<br>settings-models -> `catalog`<br>settings-providers -> `integrations`<br>settings-mcp -> `integrations`<br>settings-commands-tools -> `capabilities`<br>settings-category-plugins -> `plugins-settings`<br>settings-import-session -> `session-import`<br>settings-terminal -> `terminal`<br>settings-category-usage -> `usage`<br>settings-category-quota -> `provider-quota`<br>settings-category-privacy -> `privacy-settings`<br>settings-setup-guide -> `guide`<br>settings-keyboard-shortcuts -> `shortcuts-help-dialog`<br>settings-app-diagnostics -> `app-diagnostics`<br>settings-privacy-data-use -> `about`<br>settings-voice-notices -> `voice-notices`<br>settings-about-notices -> `about`<br>(embedded) -> `embedded-product-states` |
+| `settings` | tab | 0 / 2 | `home-shell` / home-shell-tab-more<br>`global-shortcuts` / global-shortcuts-settings<br>`command-palette-dialog` / command-palette-dialog-cmd-settings<br>`system` / system-desktop-command-settings-shortcut-mod-4-go-3-lib-main-dart-1-to-settings<br>`system` / system-desktop-shortcut-mod-opensettings-pushes-settingsscreen-lib--to-settings | settings-category-server -> `server-settings`<br>settings-saved-servers -> `servers`<br>settings-on-this-phone -> `termux-setup`<br>settings-accounts -> `agent-account`<br>settings-external-agents -> `external-agents`<br>settings-tailscale -> `tailscale-setup`<br>settings-disconnect -> `settings-disconnect-sheet`<br>settings-model-and-mode -> `model-picker-sheet`<br>settings-default-shell -> `coding-settings-shell-sheet`<br>settings-saved-permissions -> `saved-permissions`<br>settings-transcript-display -> `settings-transcript-display-sheet`<br>settings-voice -> `voice-model-setup-sheet`<br>settings-category-background -> `notifications-settings`<br>settings-category-appearance -> `appearance-settings`<br>settings-models -> `catalog`<br>settings-providers -> `integrations`<br>settings-mcp -> `integrations`<br>settings-commands-tools -> `capabilities`<br>settings-category-plugins -> `plugins-settings`<br>settings-import-session -> `session-import`<br>settings-terminal -> `terminal`<br>settings-category-usage -> `usage-hub`<br>settings-category-privacy -> `privacy-settings`<br>settings-setup-guide -> `guide`<br>settings-keyboard-shortcuts -> `shortcuts-help-dialog`<br>settings-app-diagnostics -> `app-diagnostics`<br>settings-privacy-data-use -> `about`<br>settings-voice-notices -> `voice-notices`<br>settings-about-notices -> `about`<br>(embedded) -> `embedded-product-states` |
 | `settings-disconnect-sheet` | sheet | 1 / 3 | `settings` / settings-disconnect | settings-disconnect-sheet-confirm -> `servers` |
 | `settings-transcript-display-sheet` | sheet | 1 / 3 | `settings` / settings-transcript-display | _none_ |
 | `tools` | screen | 2 / 3 | `chat`<br>`capabilities` / capabilities-tab-tools | tools-choose-model-empty -> `model-picker-sheet`<br>tools-model-summary -> `model-picker-sheet`<br>tools-header-change -> `model-picker-sheet`<br>tools-callable-row -> `tools-detail-sheet`<br>(embedded) -> `embedded-product-states` |
 | `tools-detail-sheet` | sheet | 3 / 4 | `tools` / tools-callable-row | _none_ |
+| `usage-hub` | screen | 1 / 3 | `settings` / settings-category-usage<br>`system` / system-entry-alert-quota | usage-hub-tab-spent -> `usage`<br>usage-hub-tab-remaining -> `provider-quota` |
 | `web-sources` | screen | 2 / 3 | `chat` / chat-composer-web-sources<br>`prompt-tools-sheet` / prompt-tools-sheet-web-sources | -> `external-link-dialog` |
 | `appearance-picker-sheet` | sheet | 2 / 3 | `appearance-settings` / appearance-settings-mode<br>`chat` | _none_ |
 | `theme-pack-preview-sheet` | sheet | 2 / 4 | `appearance-settings` / appearance-settings-theme-pack | _none_ |
