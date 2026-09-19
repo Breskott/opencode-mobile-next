@@ -129,14 +129,22 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Disconnect', () {
-    Future<void> openOverflowDisconnect(WidgetTester tester) async {
-      await tester.tap(find.byType(PopupMenuButton<String>).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Disconnect'));
+    // The shell's Disconnect lives in the server switcher, which stays open
+    // after a "no" so the person can pick something else.
+    Future<void> openSwitcherDisconnect(WidgetTester tester) async {
+      final disconnect = find.byKey(
+        const ValueKey('server-switcher-disconnect'),
+      );
+      if (disconnect.evaluate().isEmpty) {
+        await tester.tap(find.byKey(const ValueKey('server-switcher-button')));
+        await tester.pumpAndSettle();
+      }
+      await tester.ensureVisible(disconnect);
+      await tester.tap(disconnect);
       await tester.pumpAndSettle();
     }
 
-    testWidgets('shell overflow asks first and stays put on cancel', (
+    testWidgets('server switcher asks first and stays put on cancel', (
       tester,
     ) async {
       final controller = await _controller();
@@ -144,7 +152,7 @@ void main() {
       await tester.pumpWidget(_app(const HomeScreen(), provided: controller));
       await tester.pumpAndSettle();
 
-      await openOverflowDisconnect(tester);
+      await openSwitcherDisconnect(tester);
       expect(find.byKey(_sheet), findsOneWidget);
       expect(find.text('Disconnect from Studio box?'), findsOneWidget);
       expect(find.textContaining('No queued prompts.'), findsOneWidget);
@@ -156,20 +164,20 @@ void main() {
       expect(find.text('servers-route'), findsNothing);
 
       // Dismissing by the scrim is also a "no".
-      await openOverflowDisconnect(tester);
+      await openSwitcherDisconnect(tester);
       await tester.tapAt(const Offset(10, 10));
       await tester.pumpAndSettle();
       expect(find.byKey(_sheet), findsNothing);
       expect(controller.disconnects, 0);
     });
 
-    testWidgets('shell overflow disconnects once confirmed', (tester) async {
+    testWidgets('server switcher disconnects once confirmed', (tester) async {
       final controller = await _controller();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(const HomeScreen(), provided: controller));
       await tester.pumpAndSettle();
 
-      await openOverflowDisconnect(tester);
+      await openSwitcherDisconnect(tester);
       await tester.tap(find.byKey(_confirm));
       await tester.pumpAndSettle();
       expect(controller.disconnects, 1);

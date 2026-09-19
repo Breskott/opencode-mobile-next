@@ -316,7 +316,7 @@ void main() {
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Workspace',
+        'Work',
       );
 
       await _press(tester, LogicalKeyboardKey.digit2);
@@ -324,7 +324,15 @@ void main() {
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Files',
+        'Inbox',
+      );
+
+      await _press(tester, LogicalKeyboardKey.digit3);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
+            .data,
+        'Project',
       );
 
       await _press(tester, LogicalKeyboardKey.digit4);
@@ -340,7 +348,7 @@ void main() {
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Workspace',
+        'Work',
       );
     });
 
@@ -378,13 +386,13 @@ void main() {
         // A destination shortcut over chat/review/terminal used to be a
         // no-op: the shell was buried and nothing else claimed it.
         await pushRoute();
-        await _press(tester, LogicalKeyboardKey.digit2);
+        await _press(tester, LogicalKeyboardKey.digit3);
         expect(find.text('pushed-route'), findsNothing);
         expect(
           tester
               .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
               .data,
-          'Files',
+          'Project',
         );
 
         await pushRoute();
@@ -432,7 +440,7 @@ void main() {
         isNot('files-search'),
       );
 
-      await _press(tester, LogicalKeyboardKey.digit2);
+      await _press(tester, LogicalKeyboardKey.digit3);
       await _press(tester, LogicalKeyboardKey.keyF);
       expect(
         tester.binding.focusManager.primaryFocus?.debugLabel,
@@ -493,7 +501,7 @@ void main() {
       expect(harness.newSessions, 0);
     });
 
-    testWidgets('the More menu hides the shortcuts entry', (tester) async {
+    testWidgets('a phone is not offered the shortcuts entry', (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -512,15 +520,25 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final appMenu = find.descendant(
-        of: find.byType(AppBar),
-        matching: find.byType(PopupMenuButton<String>),
+      // The shell has no app menu any more; the entry's one home is the
+      // Settings hub, and a phone does not get it there either.
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is PopupMenuButton,
+          ),
+        ),
+        findsNothing,
       );
-      expect(appMenu.hitTestable(), findsOneWidget);
-      await tester.tap(appMenu);
+      expect(find.text('Keyboard shortcuts'), findsNothing);
+      await tester.tap(find.byIcon(AppIconography.settings));
       await tester.pumpAndSettle();
-
-      expect(find.text('Refresh'), findsWidgets);
+      expect(find.byKey(const Key('library-search')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('library-keyboard-shortcuts')),
+        findsNothing,
+      );
       expect(find.text('Keyboard shortcuts'), findsNothing);
     });
   });

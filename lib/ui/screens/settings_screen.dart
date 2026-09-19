@@ -43,7 +43,6 @@ import 'saved_permissions_screen.dart';
 import 'session_import_screen.dart';
 import 'settings/plugins_screen.dart';
 import 'tailscale_setup_screen.dart';
-import 'terminal_screen.dart';
 import 'termux_setup_screen.dart';
 import 'usage_hub_screen.dart';
 
@@ -535,16 +534,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: l10n.importTitle,
             keywords: l10n.e7LibrarySearchImportAliases,
             onTap: () => _open(SessionImportScreen(controller: controller)),
-          ),
-        // Terminal belongs to the Project tab (phase 3). Until that tab
-        // exists it stays here, last, so nothing is lost.
-        if (capabilities.terminal)
-          _HubRow(
-            rowKey: 'library-terminal',
-            icon: AppIconography.terminal,
-            title: l10n.libraryTerminalTitle,
-            keywords: l10n.e7LibrarySearchTerminalAliases,
-            onTap: () => _open(TerminalPage(controller: controller)),
           ),
       ]),
       _HubGroup(SettingsGroup.usage, copy.settingsHubGroupUsage, [

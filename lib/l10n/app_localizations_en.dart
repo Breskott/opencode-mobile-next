@@ -1678,7 +1678,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attentionNavigationUnavailable =>
-      'Opening servers is unavailable here. Return to Home to choose a server and view Activity.';
+      'Opening servers is unavailable here. Return to Home to choose a server and view Inbox.';
 
   @override
   String get handoffTitle => 'Copy handoff reference?';
@@ -4107,7 +4107,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String returnBriefMore(int count) {
-    return 'Additional items: $count. They remain unacknowledged; see the conversations below or Activity.';
+    return 'Additional items: $count. They remain unacknowledged; see the conversations below or Inbox.';
   }
 
   @override
@@ -6191,26 +6191,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Start a conversation in the active project';
 
   @override
-  String get e7LocaleUiWorkspace => 'Workspace';
+  String get e7LocaleUiWorkspace => 'Work';
 
   @override
   String get e7LocaleUiWorkspaceHint =>
       'Recent conversations and the active project';
 
   @override
-  String get e7LocaleUiFiles => 'Files';
+  String get e7LocaleUiFiles => 'Project';
 
   @override
-  String get e7LocaleUiFilesHint => 'Browse the project tree';
+  String get e7LocaleUiFilesHint =>
+      'Files, changes, terminal and other project tools';
 
   @override
-  String get e7LocaleUiActivity => 'Activity';
+  String get e7LocaleUiActivity => 'Inbox';
 
   @override
   String get e7LocaleUiActivityHint => 'Permissions, questions, and forms';
 
   @override
-  String get e7LocaleUiMoreHint => 'Models, providers, terminal, settings';
+  String get e7LocaleUiMoreHint => 'Models, providers, notifications, settings';
 
   @override
   String get e7LocaleUiSettings => 'Settings';
@@ -6234,7 +6235,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LocaleUiFindSurface => 'Find in this surface';
 
   @override
-  String get e7LocaleUiDestinations => 'Workspace, Files, Activity, Settings';
+  String get e7LocaleUiDestinations => 'Work, Inbox, Project, Settings';
 
   @override
   String get e7LocaleUiTerminal => 'Terminal';
@@ -6904,7 +6905,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7ProjectProjectSwitchUnavailableDetail =>
-      'This server keeps the configured folder for conversations. Start a new conversation from Workspace to continue.';
+      'This server keeps the configured folder for conversations. Start a new conversation from Work to continue.';
 
   @override
   String get e7ProjectProjectsTitle => 'Projects';
@@ -7621,9 +7622,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7WorkspaceNeedsYou => 'Needs you';
 
   @override
-  String get e7WorkspaceActiveSessions => 'Active conversations';
-
-  @override
   String get e7WorkspaceRecentSessions => 'Recent conversations';
 
   @override
@@ -7700,15 +7698,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7WorkspaceStopSharing => 'Stop sharing';
-
-  @override
-  String get e7WorkspaceFiles => 'Files';
-
-  @override
-  String get e7WorkspaceActivity => 'Activity';
-
-  @override
-  String get e7WorkspaceModelAgent => 'Model / agent';
 
   @override
   String get e7WorkspaceDisconnect => 'Disconnect';
@@ -10025,7 +10014,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibraryNoProjectFolderIsOpenChooseOne =>
-      'No project folder is open. Choose one from Workspace.';
+      'No project folder is open. Choose one from Work.';
 
   @override
   String get e7LibraryProject => 'Project';
@@ -10802,9 +10791,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get e7LibraryEnvironmentRemainsAfterDisconnect =>
       'This provider also uses the server environment, which mobile cannot remove and which will remain active.';
-
-  @override
-  String get e7LibrarySearchTerminalAliases => 'shell command line';
 
   @override
   String get e7LibrarySearchImportAliases =>
@@ -15383,7 +15369,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiPhoneOfferBody =>
-      'Lets several coding agents work on your project while you supervise from Workspace. Uses the same Linux environment you just set up.';
+      'Lets several coding agents work on your project while you supervise from Work. Uses the same Linux environment you just set up.';
 
   @override
   String teamUiPhoneOfferSize(int size) {
@@ -15464,7 +15450,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiPhoneOpenWorkspace => 'Open Workspace';
+  String get teamUiPhoneOpenWorkspace => 'Open Work';
 
   @override
   String get teamUiPhoneRetry => 'Try again';
@@ -15655,7 +15641,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiPhoneReofferBody =>
-      'The optional step you skipped during setup. Several coding agents work on your project while you supervise from Workspace; Android may stop them when the app is away.';
+      'The optional step you skipped during setup. Several coding agents work on your project while you supervise from Work; Android may stop them when the app is away.';
 
   @override
   String get teamUiPhoneReofferDismiss => 'Not now';
@@ -15994,4 +15980,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usageSectionRemaining => 'Remaining';
+
+  @override
+  String get shellTabWork => 'Work';
+
+  @override
+  String get shellTabInbox => 'Inbox';
+
+  @override
+  String get shellTabProject => 'Project';
+
+  @override
+  String get projectHubFilesSubtitle => 'Browse and preview project files';
+
+  @override
+  String get projectHubChangesSubtitle => 'Review uncommitted changes';
+
+  @override
+  String get projectHubSearchSubtitle => 'Find a file by name';
+
+  @override
+  String get serverSwitcherManage => 'Manage servers';
+
+  @override
+  String get serverSwitcherOpen => 'Switch server';
 }

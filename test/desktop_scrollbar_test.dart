@@ -178,12 +178,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    for (final destination in const [
-      'Workspace',
-      'Files',
-      'Activity',
-      'Settings',
-    ]) {
+    for (final destination in const ['Work', 'Inbox', 'Project', 'Settings']) {
       await tester.tap(
         find.descendant(
           of: find.byType(NavigationBar),

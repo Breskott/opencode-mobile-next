@@ -379,7 +379,9 @@ void main() {
         final label =
             '${width.toInt()}px, ${textScale}x text, ${dark ? 'dark' : 'light'}';
         testWidgets('$label: blocked sessions sit once under Needs you, above '
-            'Pinned, Active and Recent, and nothing overflows', (tester) async {
+            'Running, Pinned and Recent, and nothing overflows', (
+          tester,
+        ) async {
           // Tall enough that every section is laid out; width is what the
           // caption row and the menu have to fit.
           tester.view.physicalSize = Size(width, 2400 * textScale);
@@ -426,18 +428,33 @@ void main() {
           expect(find.textContaining('Answer needed'), findsOneWidget);
 
           // Section order top to bottom.
+          // UX plan 5.7: needs me, running, pinned, recent.
           final needsYou = _top(tester, find.text('Needs you'));
+          final running = _top(
+            tester,
+            find.byKey(const ValueKey('workspace-running')),
+          );
           final pinned = _top(tester, find.text('Pinned'));
-          final active = _top(tester, find.text('Active conversations'));
           final recent = _top(tester, find.text('Recent conversations'));
-          expect(needsYou, lessThan(pinned));
-          expect(pinned, lessThan(active));
-          expect(active, lessThan(recent));
+          expect(find.text('Active conversations'), findsNothing);
+          expect(
+            find.descendant(
+              of: find.byKey(const ValueKey('workspace-running')),
+              matching: find.text('Running'),
+            ),
+            findsOneWidget,
+          );
+          expect(needsYou, lessThan(running));
+          expect(running, lessThan(pinned));
+          expect(pinned, lessThan(recent));
           // Blocked rows are above the first ordinary row, whatever their
           // pin or busy state.
-          expect(_top(tester, _row('busy-blocked')), lessThan(pinned));
-          expect(_top(tester, _row('pinned-idle')), lessThan(active));
-          expect(_top(tester, _row('busy-working')), lessThan(recent));
+          expect(_top(tester, _row('busy-blocked')), lessThan(running));
+          expect(_top(tester, _row('pinned-blocked')), lessThan(running));
+          expect(_top(tester, _row('busy-working')), greaterThan(running));
+          expect(_top(tester, _row('busy-working')), lessThan(pinned));
+          expect(_top(tester, _row('pinned-idle')), greaterThan(pinned));
+          expect(_top(tester, _row('pinned-idle')), lessThan(recent));
           expect(_top(tester, _row('recent-idle')), greaterThan(recent));
 
           // The caption's actions still fit and open a labelled menu.
@@ -451,11 +468,12 @@ void main() {
           await _pumpFrames(tester);
           expect(tester.takeException(), isNull);
           expect(find.text('Refresh recent conversations'), findsOneWidget);
+          // Terminal is a Project tool now, not a Work menu entry.
           expect(
             find.byKey(const ValueKey('workspace-terminal')),
-            findsOneWidget,
+            findsNothing,
           );
-          expect(find.text('Terminal'), findsOneWidget);
+          expect(find.text('Terminal'), findsNothing);
         });
       }
     }
@@ -506,7 +524,7 @@ void main() {
   });
 
   testWidgets('answering the request returns a pinned session to Pinned in '
-      'pin order and a busy one to Active', (tester) async {
+      'pin order and a busy one to Running', (tester) async {
     tester.view.physicalSize = const Size(390, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -548,14 +566,15 @@ void main() {
     );
     await _pumpFrames(tester);
     expect(find.byKey(const ValueKey('workspace-needs-you')), findsOneWidget);
-    expect(find.text('Active conversations'), findsOneWidget); // busy-working
+    final runningSection = find.byKey(const ValueKey('workspace-running'));
+    expect(runningSection, findsOneWidget); // busy-working
     expect(
       _top(tester, _row('pinned-blocked')),
-      lessThan(_top(tester, find.text('Pinned'))),
+      lessThan(_top(tester, runningSection)),
     );
     expect(
       _top(tester, _row('busy-blocked')),
-      lessThan(_top(tester, find.text('Pinned'))),
+      lessThan(_top(tester, runningSection)),
     );
     // The pin is still a pin: its menu offers Unpin, not Pin.
     await tester.tap(
@@ -586,15 +605,127 @@ void main() {
     expect(_row('busy-blocked'), findsOneWidget);
     // Back under Pinned, first by recency among pins, as before.
     final pinnedLabel = _top(tester, find.text('Pinned'));
-    final activeLabel = _top(tester, find.text('Active conversations'));
+    final runningLabel = _top(tester, runningSection);
+    expect(runningLabel, lessThan(pinnedLabel));
     expect(_top(tester, _row('pinned-blocked')), greaterThan(pinnedLabel));
     expect(
       _top(tester, _row('pinned-blocked')),
       lessThan(_top(tester, _row('pinned-idle'))),
     );
-    expect(_top(tester, _row('pinned-idle')), lessThan(activeLabel));
-    expect(_top(tester, _row('busy-blocked')), greaterThan(activeLabel));
+    expect(_top(tester, _row('busy-blocked')), greaterThan(runningLabel));
+    expect(_top(tester, _row('busy-blocked')), lessThan(pinnedLabel));
     expect(find.textContaining('Working'), findsNWidgets(2));
+  });
+
+  testWidgets('a pinned conversation that is running sits once under Running '
+      'and returns to Pinned when the run ends', (tester) async {
+    tester.view.physicalSize = const Size(390, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    controller.busySessions.add('pinned-idle');
+
+    await tester.pumpWidget(_app(controller));
+    await _pumpFrames(tester);
+    final running = find.byKey(const ValueKey('workspace-running'));
+    expect(_row('pinned-idle'), findsOneWidget);
+    expect(
+      _top(tester, _row('pinned-idle')),
+      greaterThan(_top(tester, running)),
+    );
+    expect(
+      _top(tester, _row('pinned-idle')),
+      lessThan(_top(tester, find.text('Pinned'))),
+    );
+    // The section counts what it holds: three running, one pinned.
+    expect(
+      find.descendant(of: running, matching: find.text('3')),
+      findsOneWidget,
+    );
+    expect(controller.isSessionPinned('pinned-idle'), isTrue);
+
+    controller.busySessions.remove('pinned-idle');
+    controller.notifyListeners();
+    await _pumpFrames(tester);
+    expect(_row('pinned-idle'), findsOneWidget);
+    expect(
+      _top(tester, _row('pinned-idle')),
+      greaterThan(_top(tester, find.text('Pinned'))),
+    );
+  });
+
+  testWidgets('the project switcher and New conversation stay put while the '
+      'list scrolls', (tester) async {
+    tester.view.physicalSize = const Size(390, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    controller.busySessions.clear();
+    controller.sessionsById = {
+      for (var i = 0; i < 30; i++) 'recent-$i': _session('recent-$i', 100 - i),
+    };
+
+    await tester.pumpWidget(_app(controller));
+    await _pumpFrames(tester);
+    final header = find.byKey(const ValueKey('current-project-entry'));
+    final create = find.byKey(const ValueKey('workspace-quick-ask'));
+    expect(header, findsOneWidget);
+    // In the header, not in the scroll (UX plan 5.7).
+    expect(
+      find.ancestor(of: header, matching: find.byType(CustomScrollView)),
+      findsNothing,
+    );
+    expect(
+      find.ancestor(of: create, matching: find.byType(CustomScrollView)),
+      findsNothing,
+    );
+    final headerBefore = tester.getRect(header);
+    final createBefore = tester.getRect(create);
+    expect(headerBefore.top, 0);
+    // Thumb reach: the primary action sits in the bottom third.
+    expect(createBefore.top, greaterThan(700 * 2 / 3));
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1500));
+    await _pumpFrames(tester);
+    expect(_row('recent-0').hitTestable(), findsNothing);
+    expect(tester.getRect(header), headerBefore);
+    expect(tester.getRect(create), createBefore);
+
+    await tester.tap(header);
+    await _pumpFrames(tester);
+    expect(
+      find.byKey(const ValueKey('workspace-context-sheet')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Archived closes the list, after Recent', (tester) async {
+    tester.view.physicalSize = const Size(390, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    controller.sessionsById['old'] = Session(
+      id: 'old',
+      title: 'old',
+      directory: '/work/app',
+      time: SessionTime(created: 1, updated: 2, archived: 3),
+    );
+
+    await tester.pumpWidget(_app(controller));
+    await _pumpFrames(tester);
+    final archived = find.text('Archived conversations');
+    expect(archived, findsOneWidget);
+    expect(_row('old'), findsNothing);
+    expect(
+      _top(tester, archived),
+      greaterThan(_top(tester, _row('recent-idle'))),
+    );
   });
 
   testWidgets('the section menu reloads sessions and omits Terminal when the '

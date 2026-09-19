@@ -41,6 +41,51 @@ typedef _SubmitOutcome = ({bool saved, String? failure});
 AppLocalizations _connectionL10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
+/// What another surface asks the Servers screen to do as it opens, passed as
+/// the `/servers` route argument.
+///
+/// The server switcher in the shell lists the same servers, but connecting,
+/// credentials, adding and forgetting each have one implementation, here:
+/// the runtime-choice detour, the editor that stays open until a connect
+/// succeeds, and the inline failure card. The switcher hands the choice over
+/// instead of keeping a second, thinner copy of that flow.
+class ServersRouteRequest {
+  /// Connect [profileID] through the list's connect flow. [detectedRunning]
+  /// is the phone card's promise that this runtime is the live one.
+  const ServersRouteRequest.connect(
+    String this.profileID, {
+    this.detectedRunning = false,
+  }) : kind = ServersRouteRequestKind.connect,
+       openCode2 = false;
+
+  /// Open the editor for a new server.
+  const ServersRouteRequest.add()
+    : kind = ServersRouteRequestKind.add,
+      profileID = null,
+      detectedRunning = false,
+      openCode2 = false;
+
+  /// Ask for the phone server's sign-in, saved as [profileID] when it exists.
+  const ServersRouteRequest.enterPhoneCredentials({
+    this.profileID,
+    required this.openCode2,
+  }) : kind = ServersRouteRequestKind.enterPhoneCredentials,
+       detectedRunning = true;
+
+  /// Confirm and forget the saved server [profileID].
+  const ServersRouteRequest.forget(String this.profileID)
+    : kind = ServersRouteRequestKind.forget,
+      detectedRunning = false,
+      openCode2 = false;
+
+  final ServersRouteRequestKind kind;
+  final String? profileID;
+  final bool detectedRunning;
+  final bool openCode2;
+}
+
+enum ServersRouteRequestKind { connect, add, enterPhoneCredentials, forget }
+
 /// Manage opencode server profiles and connect.
 class ServersScreen extends ConsumerStatefulWidget {
   const ServersScreen({super.key});
@@ -70,7 +115,14 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     // The connection banner's "Update password" action routes here with this
     // argument: open the active profile's editor with the password focused so
     // a rotated serve password is one paste away (never a modal).
-    if (ModalRoute.of(context)?.settings.arguments == 'edit-active') {
+    final argument = ModalRoute.of(context)?.settings.arguments;
+    if (argument is ServersRouteRequest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_handleRouteRequest(argument));
+      });
+      return;
+    }
+    if (argument == 'edit-active') {
       final store = ref.read(bootstrapProvider).store;
       ServerProfile? active;
       for (final p in store.profiles) {
@@ -82,6 +134,31 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           if (mounted) unawaited(_edit(existing: target, focusPassword: true));
         });
       }
+    }
+  }
+
+  Future<void> _handleRouteRequest(ServersRouteRequest request) async {
+    ServerProfile? target;
+    for (final p in ref.read(bootstrapProvider).store.profiles) {
+      if (p.id == request.profileID) target = p;
+    }
+    switch (request.kind) {
+      case ServersRouteRequestKind.add:
+        await _edit();
+      case ServersRouteRequestKind.connect:
+        if (target != null) {
+          await _connect(target, detectedRunning: request.detectedRunning);
+        }
+      case ServersRouteRequestKind.enterPhoneCredentials:
+        await _edit(
+          existing: target,
+          connectOnSave: true,
+          initialUrl: TermuxBridge.managedServerUrl,
+          focusPassword: true,
+          openCode2Intent: request.openCode2,
+        );
+      case ServersRouteRequestKind.forget:
+        if (target != null) await _delete(target);
     }
   }
 

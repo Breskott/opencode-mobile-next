@@ -108,7 +108,7 @@ Widget _app(ConnectionController controller) => ProviderScope(
   child: const MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: HomeScreen(initialTab: 1),
+    home: HomeScreen(initialTab: 2),
   ),
 );
 
@@ -136,18 +136,18 @@ void main() {
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
 
-      // Files is logical destination 1, so an initial Files selection falls
-      // back to Workspace rather than shifting Activity or More left.
+      // Project is logical destination 2, so an initial Project selection
+      // falls back to Work rather than shifting Settings left.
       expect(find.byKey(const ValueKey('current-tab-title')), findsOneWidget);
       expect(
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Workspace',
+        'Work',
       );
-      expect(find.text('Files'), findsNothing);
-      expect(find.text('Workspace'), findsWidgets);
-      expect(find.text('Activity'), findsOneWidget);
+      expect(find.text('Project'), findsNothing);
+      expect(find.text('Work'), findsWidgets);
+      expect(find.text('Inbox'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('location-recovery-notice')),
@@ -181,20 +181,20 @@ void main() {
       // At the 800px test surface the shell uses a NavigationRail, whose
       // labels are zero-size semantics-only boxes; tap the destination's
       // ink well, which is what a pointer actually reaches.
-      await tester.tap(_railDestination('Activity'));
+      await tester.tap(_railDestination('Inbox'));
       await tester.pumpAndSettle();
       expect(
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Activity',
+        'Inbox',
       );
       expect(
         tester
             .widget<NavigationRail>(find.byType(NavigationRail))
             .selectedIndex,
         1,
-        reason: 'Files is hidden, so Activity is the second rail destination',
+        reason: 'Inbox is the second rail destination',
       );
 
       await tester.tap(_railDestination('Settings'));

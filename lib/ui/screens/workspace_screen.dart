@@ -30,12 +30,32 @@ import 'project_folder_actions.dart';
 import 'projects_screen.dart';
 import 'settings_screen.dart';
 import 'team/team_home_screen.dart';
-import 'terminal_screen.dart';
 import '../app_theme.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   final ConnectionController controller;
   const WorkspaceScreen({super.key, required this.controller});
+
+  /// The catalog project that owns [directory]: its root or a listed
+  /// worktree first, then any project containing it. Shared with the Project
+  /// tab so both name the same project for the same folder.
+  static WorkspaceProject? projectForDirectory(
+    List<WorkspaceProject> projects,
+    String directory,
+  ) {
+    for (final project in projects) {
+      if (project.directory == directory ||
+          project.worktrees.contains(directory)) {
+        return project;
+      }
+    }
+    for (final project in projects) {
+      if (ConnectionController.projectContainsDirectory(project, directory)) {
+        return project;
+      }
+    }
+    return null;
+  }
 
   @override
   State<WorkspaceScreen> createState() => _WorkspaceScreenState();
@@ -126,7 +146,10 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         if (controllerDirectory != null) {
           _selectedDirectory = controllerDirectory;
           _selectedWorkspaceID = widget.controller.workspace;
-          final matching = _projectForDirectory(projects, controllerDirectory);
+          final matching = WorkspaceScreen.projectForDirectory(
+            projects,
+            controllerDirectory,
+          );
           // An unlisted explicit folder is still the active context. Never
           // label it with a different catalog project's name.
           _selectedProjectID = matching?.id;
@@ -196,24 +219,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   WorkspaceProject? get _selectedProject {
     for (final project in _projects ?? const <WorkspaceProject>[]) {
       if (project.id == _selectedProjectID) return project;
-    }
-    return null;
-  }
-
-  static WorkspaceProject? _projectForDirectory(
-    List<WorkspaceProject> projects,
-    String directory,
-  ) {
-    for (final project in projects) {
-      if (project.directory == directory ||
-          project.worktrees.contains(directory)) {
-        return project;
-      }
-    }
-    for (final project in projects) {
-      if (ConnectionController.projectContainsDirectory(project, directory)) {
-        return project;
-      }
     }
     return null;
   }
@@ -358,28 +363,30 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         .sortedSessions()
         .where((session) => !_pendingArchive.contains(session.id))
         .toList();
-    // A blocked session appears once, at the top, whatever else it is: the
-    // pin or the run resumes its usual place once the request is answered,
-    // because every section below is cut from the same sorted list.
+    // One order for every list (UX plan 5.7): what needs me, what is running,
+    // what I pinned, what I did recently. A conversation appears once, in the
+    // first section that fits: a blocked or running pin returns to Pinned as
+    // soon as it is answered or finishes, because every section is cut from
+    // the same sorted list.
     final blockers = <String, String>{
       for (final session in sessions) session.id: ?_blocker(session.id, l10n),
     };
     final attention = sessions
         .where((session) => blockers.containsKey(session.id))
         .toList();
-    final pinned = sessions
-        .where(
-          (session) =>
-              !blockers.containsKey(session.id) &&
-              widget.controller.isSessionPinned(session.id),
-        )
-        .toList();
     final active = sessions
         .where(
           (session) =>
               !blockers.containsKey(session.id) &&
-              widget.controller.busySessions.contains(session.id) &&
-              !widget.controller.isSessionPinned(session.id),
+              widget.controller.busySessions.contains(session.id),
+        )
+        .toList();
+    final pinned = sessions
+        .where(
+          (session) =>
+              !blockers.containsKey(session.id) &&
+              !widget.controller.busySessions.contains(session.id) &&
+              widget.controller.isSessionPinned(session.id),
         )
         .toList();
     final recent = sessions
@@ -417,415 +424,444 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       );
     }
 
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        RefreshIndicator(
-          onRefresh: _refreshWorkspace,
-          child: DesktopScrollbarArea(
-            builder: (scrollController) => CustomScrollView(
-              controller: scrollController,
-              key: const PageStorageKey('workspace-scroll'),
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                // 1. Current project/workspace context — one compact header.
-                SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (widget.controller.locationNotice != null)
-                        ListTile(
-                          key: const ValueKey('location-recovery-notice'),
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                          leading: const Icon(AppIconography.info, size: 18),
-                          title: Text(
-                            widget.controller.locationNotice!,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          trailing: IconButton(
-                            key: const ValueKey('location-recovery-dismiss'),
-                            tooltip: l10n.workspaceDismissNotice,
-                            onPressed: widget.controller.dismissLocationNotice,
-                            icon: const Icon(AppIconography.close, size: 18),
-                          ),
-                        ),
-                      // The project catalog and session inventory are separate.
-                      // An empty catalog must not hide existing conversations,
-                      // inventory errors, or the server-wide session finder.
-                      if (capabilities.projectManagement &&
-                          _projects == null &&
-                          _projectError == null)
-                        // A transient state: the caption's search stays
-                        // reachable below, so no second search button here.
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Semantics(
-                            label: _l10n(context).e7WorkspaceLoadingProjects,
-                            child: const LinearProgressIndicator(),
-                          ),
-                        ),
-                      if (capabilities.projectManagement &&
-                          _projectError != null)
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Semantics(
-                                liveRegion: true,
-                                child: Text(
-                                  l10n.workspaceProjectListUnavailable,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium,
+        // Which project this is stays put while the list scrolls (UX plan
+        // 5.7): the switcher is the header, not a row to scroll back to. It
+        // is context, not a control panel: the name owns its row at every
+        // text size, and a single chevron opens the project sheet with the
+        // full folder path, switching, managing and the review-state caveat.
+        if (_hasProjectDetails)
+          _ProjectHeader(
+            key: const ValueKey('current-project-entry'),
+            name:
+                _selectedProject?.name ??
+                (_selectedDirectory == null
+                    ? _l10n(context).e7WorkspaceChooseProject
+                    : _basename(_selectedDirectory!)),
+            onTap: _openContextSheet,
+          ),
+        // Still context, not management: the conversation is running
+        // somewhere other than the project root.
+        if (capabilities.projectManagement && _hasExternalSessionDirectory)
+          ListTile(
+            key: const ValueKey('active-session-directory'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            minLeadingWidth: 32,
+            horizontalTitleGap: 12,
+            leading: const SizedBox.square(
+              dimension: 32,
+              child: Icon(AppIconography.nested, size: 24),
+            ),
+            title: Text(_basename(_selectedDirectory!)),
+            subtitle: Text(
+              _l10n(context).e7WorkspaceActiveDirectory(_selectedDirectory!),
+              style: Theme.of(context).textTheme.bodySmall,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () => _showDirectoryDetails(_selectedDirectory!),
+          ),
+        if (!capabilities.projectManagement &&
+            widget.controller.directory?.isNotEmpty == true)
+          ListTile(
+            key: const ValueKey('restricted-directory-context'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            minLeadingWidth: 32,
+            horizontalTitleGap: 12,
+            leading: const SizedBox.square(
+              dimension: 32,
+              child: Icon(AppIconography.files, size: 24),
+            ),
+            title: Text(_basename(widget.controller.directory!)),
+            subtitle: Text(
+              widget.controller.directory!,
+              textDirection: TextDirection.ltr,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            onTap: () => _showDirectoryDetails(widget.controller.directory!),
+          ),
+        Expanded(
+          child: Stack(
+            children: [
+              RefreshIndicator(
+                onRefresh: _refreshWorkspace,
+                child: DesktopScrollbarArea(
+                  builder: (scrollController) => CustomScrollView(
+                    controller: scrollController,
+                    key: const PageStorageKey('workspace-scroll'),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      // Notices and project-catalog states; the project itself is
+                      // the fixed header above.
+                      SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (widget.controller.locationNotice != null)
+                              ListTile(
+                                key: const ValueKey('location-recovery-notice'),
+                                dense: true,
+                                visualDensity: VisualDensity.compact,
+                                leading: const Icon(
+                                  AppIconography.info,
+                                  size: 18,
+                                ),
+                                title: Text(
+                                  widget.controller.locationNotice!,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                trailing: IconButton(
+                                  key: const ValueKey(
+                                    'location-recovery-dismiss',
+                                  ),
+                                  tooltip: l10n.workspaceDismissNotice,
+                                  onPressed:
+                                      widget.controller.dismissLocationNotice,
+                                  icon: const Icon(
+                                    AppIconography.close,
+                                    size: 18,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Text(_projectError!),
-                              const SizedBox(height: 4),
-                              Text(l10n.workspaceProjectListFallback),
-                              Wrap(
-                                spacing: 8,
-                                children: [
-                                  TextButton.icon(
-                                    onPressed: _load,
-                                    icon: const Icon(AppIconography.retry),
-                                    label: Text(l10n.workspaceRetryProjects),
-                                  ),
-                                  if (capabilities.globalSessionSearch)
-                                    TextButton.icon(
-                                      onPressed: _openAllSessions,
-                                      icon: const Icon(
-                                        AppIconography.searchList,
-                                      ),
-                                      label: Text(
-                                        l10n.workspaceSearchAllSessions,
+                            // The project catalog and session inventory are separate.
+                            // An empty catalog must not hide existing conversations,
+                            // inventory errors, or the server-wide session finder.
+                            if (capabilities.projectManagement &&
+                                _projects == null &&
+                                _projectError == null)
+                              // A transient state: the caption's search stays
+                              // reachable below, so no second search button here.
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Semantics(
+                                  label: _l10n(
+                                    context,
+                                  ).e7WorkspaceLoadingProjects,
+                                  child: const LinearProgressIndicator(),
+                                ),
+                              ),
+                            if (capabilities.projectManagement &&
+                                _projectError != null)
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Semantics(
+                                      liveRegion: true,
+                                      child: Text(
+                                        l10n.workspaceProjectListUnavailable,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium,
                                       ),
                                     ),
-                                ],
+                                    const SizedBox(height: 8),
+                                    Text(_projectError!),
+                                    const SizedBox(height: 4),
+                                    Text(l10n.workspaceProjectListFallback),
+                                    Wrap(
+                                      spacing: 8,
+                                      children: [
+                                        TextButton.icon(
+                                          onPressed: _load,
+                                          icon: const Icon(
+                                            AppIconography.retry,
+                                          ),
+                                          label: Text(
+                                            l10n.workspaceRetryProjects,
+                                          ),
+                                        ),
+                                        if (capabilities.globalSessionSearch)
+                                          TextButton.icon(
+                                            onPressed: _openAllSessions,
+                                            icon: const Icon(
+                                              AppIconography.searchList,
+                                            ),
+                                            label: Text(
+                                              l10n.workspaceSearchAllSessions,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
+                            if (capabilities.projectManagement &&
+                                _projects?.isEmpty == true &&
+                                _selectedDirectory == null)
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: ProductInlineEmpty(
+                                  icon: Icons.folder_off_outlined,
+                                  title: _l10n(context).e7WorkspaceNoProjects,
+                                  message: capabilities.globalSessionSearch
+                                      ? _l10n(
+                                          context,
+                                        ).e7WorkspaceNoProjectsSearch
+                                      : _l10n(
+                                          context,
+                                        ).e7WorkspaceServerNoProjects,
+                                  actionLabel: capabilities.globalSessionSearch
+                                      ? _l10n(
+                                          context,
+                                        ).workspaceSearchAllSessions
+                                      : null,
+                                  onAction: capabilities.globalSessionSearch
+                                      ? _openAllSessions
+                                      : null,
+                                ),
+                              ),
+                            if (capabilities.projectManagement &&
+                                _workspaceError != null)
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  0,
+                                  16,
+                                  8,
+                                ),
+                                child: Text(
+                                  _workspaceError!,
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: ReturnBriefPanel(
+                          controller: widget.controller,
+                          inventoryStatusInParent: true,
+                          unknownStatusInParent: _hasProjectDetails,
+                        ),
+                      ),
+                      // TEAM-305: a stray helper burning CPU on the phone server is
+                      // an attention item too; the line links to Running now.
+                      if (platformCapabilities.supportsTermux &&
+                          TermuxBridge.managesServerUrl(
+                            widget.controller.profile?.baseUrl,
+                          ))
+                        const SliverToBoxAdapter(child: TermuxAttentionLine()),
+                      // 2. Work waiting on the user, first: the persona's top job
+                      // is seeing what needs them, and a blocked run reads as
+                      // "Working" anywhere else.
+                      if (attention.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: SectionLabel(
+                            _l10n(context).e7WorkspaceNeedsYou,
+                            key: const ValueKey('workspace-needs-you'),
+                            trailing: Text('${attention.length}'),
                           ),
                         ),
-                      if (capabilities.projectManagement &&
-                          _projects?.isEmpty == true &&
-                          _selectedDirectory == null)
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: ProductInlineEmpty(
-                            icon: Icons.folder_off_outlined,
-                            title: _l10n(context).e7WorkspaceNoProjects,
-                            message: capabilities.globalSessionSearch
-                                ? _l10n(context).e7WorkspaceNoProjectsSearch
-                                : _l10n(context).e7WorkspaceServerNoProjects,
-                            actionLabel: capabilities.globalSessionSearch
-                                ? _l10n(context).workspaceSearchAllSessions
-                                : null,
-                            onAction: capabilities.globalSessionSearch
+                      if (attention.isNotEmpty)
+                        SliverList.builder(
+                          itemCount: attention.length,
+                          itemBuilder: (context, index) => _SessionRow(
+                            controller: widget.controller,
+                            session: attention[index],
+                            busy: widget.controller.busySessions.contains(
+                              attention[index].id,
+                            ),
+                            blocker: blockers[attention[index].id],
+                            onOpen: _openSession,
+                            onAction: _sessionAction,
+                            sharingAvailable:
+                                widget.controller.capabilities.sessionShare,
+                            archiveAvailable:
+                                widget.controller.capabilities.sessionArchive,
+                          ),
+                        ),
+                      // 3. Running work, with its live state; then pins.
+                      if (active.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: SectionLabel(
+                            l10n.workRunning,
+                            key: const ValueKey('workspace-running'),
+                            trailing: Text('${active.length}'),
+                          ),
+                        ),
+                      if (active.isNotEmpty)
+                        SliverList.builder(
+                          itemCount: active.length,
+                          itemBuilder: (context, index) => _SessionRow(
+                            controller: widget.controller,
+                            session: active[index],
+                            busy: true,
+                            onOpen: _openSession,
+                            onAction: _sessionAction,
+                            sharingAvailable:
+                                widget.controller.capabilities.sessionShare,
+                            archiveAvailable:
+                                widget.controller.capabilities.sessionArchive,
+                          ),
+                        ),
+                      if (pinned.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: SectionLabel(
+                            l10n.sessionPinned,
+                            trailing: Text('${pinned.length}'),
+                          ),
+                        ),
+                      if (pinned.isNotEmpty)
+                        SliverList.builder(
+                          itemCount: pinned.length,
+                          itemBuilder: (context, index) => _SessionRow(
+                            controller: widget.controller,
+                            session: pinned[index],
+                            busy: widget.controller.busySessions.contains(
+                              pinned[index].id,
+                            ),
+                            onOpen: _openSession,
+                            onAction: _sessionAction,
+                            sharingAvailable:
+                                widget.controller.capabilities.sessionShare,
+                            archiveAvailable:
+                                widget.controller.capabilities.sessionArchive,
+                          ),
+                        ),
+                      // 4. Recent sessions. Search stays a one-tap icon; the
+                      // occasional actions sit behind one labelled menu so the
+                      // caption keeps its width on a phone at large text.
+                      SliverToBoxAdapter(
+                        child: SectionLabel(
+                          _l10n(context).e7WorkspaceRecentSessions,
+                          trailing: _SectionActions(
+                            controller: widget.controller,
+                            onSearch: capabilities.globalSessionSearch
                                 ? _openAllSessions
                                 : null,
+                            onOpenBackgroundSettings:
+                                platformCapabilities.supportsBackgroundService
+                                ? _openBackgroundSettings
+                                : null,
                           ),
-                        )
-                      // The project is context, not a control panel: the
-                      // name owns its row at every text size, and a
-                      // single chevron opens the project sheet containing
-                      // the full folder path. Switching, managing
-                      // and the review-state caveat live in that sheet.
-                      else if (_hasProjectDetails)
-                        _ProjectHeader(
-                          key: const ValueKey('current-project-entry'),
-                          name:
-                              _selectedProject?.name ??
-                              (_selectedDirectory == null
-                                  ? _l10n(context).e7WorkspaceChooseProject
-                                  : _basename(_selectedDirectory!)),
-                          onTap: _openContextSheet,
                         ),
-                      // Still context, not management: the session is running
-                      // somewhere other than the project root.
-                      if (capabilities.projectManagement &&
-                          _hasExternalSessionDirectory)
-                        ListTile(
-                          key: const ValueKey('active-session-directory'),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                          ),
-                          minLeadingWidth: 32,
-                          horizontalTitleGap: 12,
-                          leading: const SizedBox.square(
-                            dimension: 32,
-                            child: Icon(AppIconography.nested, size: 24),
-                          ),
-                          title: Text(_basename(_selectedDirectory!)),
-                          subtitle: Text(
-                            _l10n(
-                              context,
-                            ).e7WorkspaceActiveDirectory(_selectedDirectory!),
-                            style: Theme.of(context).textTheme.bodySmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          onTap: () =>
-                              _showDirectoryDetails(_selectedDirectory!),
-                        ),
-                      if (capabilities.projectManagement &&
-                          _workspaceError != null)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                          child: Text(
-                            _workspaceError!,
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
+                      ),
+                      if (recent.isEmpty)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 26),
+                            child: ProductInlineEmpty(
+                              icon: AppIconography.chat,
+                              title: partial
+                                  ? l10n.sessionsNoLoadedRecent
+                                  : pinned.isNotEmpty
+                                  ? l10n.sessionsNoOtherRecent
+                                  : _l10n(context).e7WorkspaceNoRecent,
+                              message: partial
+                                  ? _l10n(context).e7WorkspaceLoadedRecentEmpty
+                                  : widget.controller.directory == null
+                                  ? _l10n(
+                                      context,
+                                    ).e7WorkspaceChooseFolderToStart
+                                  : _l10n(context).e7WorkspaceStartInWorkspace,
                             ),
                           ),
-                        ),
-                      if (!capabilities.projectManagement &&
-                          widget.controller.directory?.isNotEmpty == true)
-                        ListTile(
-                          key: const ValueKey('restricted-directory-context'),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                          ),
-                          minLeadingWidth: 32,
-                          horizontalTitleGap: 12,
-                          leading: const SizedBox.square(
-                            dimension: 32,
-                            child: Icon(AppIconography.files, size: 24),
-                          ),
-                          title: Text(_basename(widget.controller.directory!)),
-                          subtitle: Text(
-                            widget.controller.directory!,
-                            textDirection: TextDirection.ltr,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          onTap: () => _showDirectoryDetails(
-                            widget.controller.directory!,
+                        )
+                      else
+                        SliverList.builder(
+                          itemCount: recent.length,
+                          itemBuilder: (context, index) => _SessionRow(
+                            controller: widget.controller,
+                            session: recent[index],
+                            busy: false,
+                            onOpen: _openSession,
+                            onAction: _sessionAction,
+                            sharingAvailable:
+                                widget.controller.capabilities.sessionShare,
+                            archiveAvailable:
+                                widget.controller.capabilities.sessionArchive,
                           ),
                         ),
+                      SliverToBoxAdapter(
+                        child: SessionInventoryFooter(
+                          controller: widget.controller,
+                        ),
+                      ),
+                      // The AI Team plugin's card follows the person's own
+                      // conversations (UX plan 5.5, 5.7); what its agents need from
+                      // the person already reaches Inbox. It is not in the tree at
+                      // all while the profile has no plugin config (02 §2.3 N).
+                      if (widget.controller.orchestration case final team?)
+                        SliverToBoxAdapter(
+                          child: TeamCard(
+                            controller: team,
+                            onOpen: () => _openTeamHome(team),
+                          ),
+                        ),
+                      if (archived.isNotEmpty || partial)
+                        SliverToBoxAdapter(
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                            ),
+                            minLeadingWidth: 32,
+                            horizontalTitleGap: 12,
+                            leading: const SizedBox.square(
+                              dimension: 32,
+                              child: Icon(AppIconography.archive, size: 24),
+                            ),
+                            title: Text(
+                              _l10n(context).e7WorkspaceArchivedSessions,
+                            ),
+                            // The footer owns partial-inventory truth. A count here
+                            // would suggest every archived session was known.
+                            subtitle: partial
+                                ? null
+                                : Text(
+                                    _l10n(
+                                      context,
+                                    ).e7WorkspaceArchivedCount(archived.length),
+                                  ),
+                            trailing: const Icon(AppIconography.chevronRight),
+                            onTap: _showArchived,
+                          ),
+                        ),
+                      // The scroll end clears the docked actions by their real
+                      // height: a fixed 96 hid the last row once the pill stacked
+                      // or its label wrapped at large text.
+                      SliverLayoutBuilder(
+                        builder: (context, constraints) => SliverToBoxAdapter(
+                          child: SizedBox(
+                            key: const ValueKey('workspace-scroll-end'),
+                            height:
+                                36 +
+                                _QuickAskPill.dockInset(context) +
+                                _QuickAskPill.metrics(
+                                  context,
+                                  width: constraints.crossAxisExtent - 32,
+                                  hasIsolated: _isolatedTaskProject != null,
+                                ).height,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                SliverToBoxAdapter(
-                  child: ReturnBriefPanel(
-                    controller: widget.controller,
-                    inventoryStatusInParent: true,
-                    unknownStatusInParent: _hasProjectDetails,
-                  ),
+              ),
+              // 4. Start a prompt: a docked quick-ask pill opens a fresh session in
+              // the active project without scrolling, replacing the New-session FAB.
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: _QuickAskPill.dockInset(context),
+                child: _QuickAskPill(
+                  creating: _creating,
+                  onTap: _creating ? null : _createSession,
+                  onIsolatedTask: _isolatedTaskProject == null
+                      ? null
+                      : _startIsolatedTask,
+                  isolatedTaskLabel: l10n.isolatedTaskAction,
                 ),
-                // The AI Team plugin's card sits below the project context
-                // and above every session section; it is not in the tree at
-                // all while the profile has no plugin config (02 §2.3 N).
-                if (widget.controller.orchestration case final team?)
-                  SliverToBoxAdapter(
-                    child: TeamCard(
-                      controller: team,
-                      onOpen: () => _openTeamHome(team),
-                    ),
-                  ),
-                // TEAM-305: a stray helper burning CPU on the phone server is
-                // an attention item too; the line links to Running now.
-                if (platformCapabilities.supportsTermux &&
-                    TermuxBridge.managesServerUrl(
-                      widget.controller.profile?.baseUrl,
-                    ))
-                  const SliverToBoxAdapter(child: TermuxAttentionLine()),
-                // 2. Work waiting on the user, first: the persona's top job
-                // is seeing what needs them, and a blocked run reads as
-                // "Working" anywhere else.
-                if (attention.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: SectionLabel(
-                      _l10n(context).e7WorkspaceNeedsYou,
-                      key: const ValueKey('workspace-needs-you'),
-                      trailing: Text('${attention.length}'),
-                    ),
-                  ),
-                if (attention.isNotEmpty)
-                  SliverList.builder(
-                    itemCount: attention.length,
-                    itemBuilder: (context, index) => _SessionRow(
-                      controller: widget.controller,
-                      session: attention[index],
-                      busy: widget.controller.busySessions.contains(
-                        attention[index].id,
-                      ),
-                      blocker: blockers[attention[index].id],
-                      onOpen: _openSession,
-                      onAction: _sessionAction,
-                      sharingAvailable:
-                          widget.controller.capabilities.sessionShare,
-                      archiveAvailable:
-                          widget.controller.capabilities.sessionArchive,
-                    ),
-                  ),
-                // 3. Continue active sessions, with their live state.
-                if (pinned.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: SectionLabel(
-                      l10n.sessionPinned,
-                      trailing: Text('${pinned.length}'),
-                    ),
-                  ),
-                if (pinned.isNotEmpty)
-                  SliverList.builder(
-                    itemCount: pinned.length,
-                    itemBuilder: (context, index) => _SessionRow(
-                      controller: widget.controller,
-                      session: pinned[index],
-                      busy: widget.controller.busySessions.contains(
-                        pinned[index].id,
-                      ),
-                      onOpen: _openSession,
-                      onAction: _sessionAction,
-                      sharingAvailable:
-                          widget.controller.capabilities.sessionShare,
-                      archiveAvailable:
-                          widget.controller.capabilities.sessionArchive,
-                    ),
-                  ),
-                if (active.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: SectionLabel(
-                      _l10n(context).e7WorkspaceActiveSessions,
-                      trailing: Text('${active.length}'),
-                    ),
-                  ),
-                if (active.isNotEmpty)
-                  SliverList.builder(
-                    itemCount: active.length,
-                    itemBuilder: (context, index) => _SessionRow(
-                      controller: widget.controller,
-                      session: active[index],
-                      busy: true,
-                      onOpen: _openSession,
-                      onAction: _sessionAction,
-                      sharingAvailable:
-                          widget.controller.capabilities.sessionShare,
-                      archiveAvailable:
-                          widget.controller.capabilities.sessionArchive,
-                    ),
-                  ),
-                // 4. Recent sessions. Search stays a one-tap icon; the
-                // occasional actions sit behind one labelled menu so the
-                // caption keeps its width on a phone at large text.
-                SliverToBoxAdapter(
-                  child: SectionLabel(
-                    _l10n(context).e7WorkspaceRecentSessions,
-                    trailing: _SectionActions(
-                      controller: widget.controller,
-                      onSearch: capabilities.globalSessionSearch
-                          ? _openAllSessions
-                          : null,
-                      onOpenTerminal: capabilities.terminal
-                          ? _openTerminal
-                          : null,
-                      onOpenBackgroundSettings:
-                          platformCapabilities.supportsBackgroundService
-                          ? _openBackgroundSettings
-                          : null,
-                    ),
-                  ),
-                ),
-                if (recent.isEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 26),
-                      child: ProductInlineEmpty(
-                        icon: AppIconography.chat,
-                        title: partial
-                            ? l10n.sessionsNoLoadedRecent
-                            : pinned.isNotEmpty
-                            ? l10n.sessionsNoOtherRecent
-                            : _l10n(context).e7WorkspaceNoRecent,
-                        message: partial
-                            ? _l10n(context).e7WorkspaceLoadedRecentEmpty
-                            : widget.controller.directory == null
-                            ? _l10n(context).e7WorkspaceChooseFolderToStart
-                            : _l10n(context).e7WorkspaceStartInWorkspace,
-                      ),
-                    ),
-                  )
-                else
-                  SliverList.builder(
-                    itemCount: recent.length,
-                    itemBuilder: (context, index) => _SessionRow(
-                      controller: widget.controller,
-                      session: recent[index],
-                      busy: false,
-                      onOpen: _openSession,
-                      onAction: _sessionAction,
-                      sharingAvailable:
-                          widget.controller.capabilities.sessionShare,
-                      archiveAvailable:
-                          widget.controller.capabilities.sessionArchive,
-                    ),
-                  ),
-                SliverToBoxAdapter(
-                  child: SessionInventoryFooter(controller: widget.controller),
-                ),
-                if (archived.isNotEmpty || partial)
-                  SliverToBoxAdapter(
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
-                      minLeadingWidth: 32,
-                      horizontalTitleGap: 12,
-                      leading: const SizedBox.square(
-                        dimension: 32,
-                        child: Icon(AppIconography.archive, size: 24),
-                      ),
-                      title: Text(_l10n(context).e7WorkspaceArchivedSessions),
-                      // The footer owns partial-inventory truth. A count here
-                      // would suggest every archived session was known.
-                      subtitle: partial
-                          ? null
-                          : Text(
-                              _l10n(
-                                context,
-                              ).e7WorkspaceArchivedCount(archived.length),
-                            ),
-                      trailing: const Icon(AppIconography.chevronRight),
-                      onTap: _showArchived,
-                    ),
-                  ),
-                // The scroll end clears the docked actions by their real
-                // height: a fixed 96 hid the last row once the pill stacked
-                // or its label wrapped at large text.
-                SliverLayoutBuilder(
-                  builder: (context, constraints) => SliverToBoxAdapter(
-                    child: SizedBox(
-                      key: const ValueKey('workspace-scroll-end'),
-                      height:
-                          36 +
-                          _QuickAskPill.dockInset(context) +
-                          _QuickAskPill.metrics(
-                            context,
-                            width: constraints.crossAxisExtent - 32,
-                            hasIsolated: _isolatedTaskProject != null,
-                          ).height,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        // 4. Start a prompt: a docked quick-ask pill opens a fresh session in
-        // the active project without scrolling, replacing the New-session FAB.
-        Positioned(
-          left: 16,
-          right: 16,
-          bottom: _QuickAskPill.dockInset(context),
-          child: _QuickAskPill(
-            creating: _creating,
-            onTap: _creating ? null : _createSession,
-            onIsolatedTask: _isolatedTaskProject == null
-                ? null
-                : _startIsolatedTask,
-            isolatedTaskLabel: l10n.isolatedTaskAction,
+              ),
+            ],
           ),
         ),
       ],
@@ -866,12 +902,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       ),
     );
   }
-
-  Future<void> _openTerminal() => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => TerminalPage(controller: widget.controller),
-    ),
-  );
 
   Future<void> _openAllSessions() => Navigator.of(context).push(
     MaterialPageRoute<void>(
@@ -1753,7 +1783,7 @@ class _ProjectHeader extends StatelessWidget {
   );
 }
 
-enum _SectionAction { refresh, terminal, background }
+enum _SectionAction { refresh, background }
 
 /// The Recent-sessions caption's controls: Search as a one-tap icon, and the
 /// occasional actions (reload, terminal, background updates) behind a single
@@ -1766,7 +1796,6 @@ class _SectionActions extends StatelessWidget {
   const _SectionActions({
     required this.controller,
     required this.onSearch,
-    required this.onOpenTerminal,
     required this.onOpenBackgroundSettings,
   });
 
@@ -1774,9 +1803,6 @@ class _SectionActions extends StatelessWidget {
 
   /// Null hides the icon: the server has no cross-directory session search.
   final VoidCallback? onSearch;
-
-  /// Null omits the entry: the server has no terminal.
-  final VoidCallback? onOpenTerminal;
 
   /// Null omits the entry: this platform has no background service.
   final VoidCallback? onOpenBackgroundSettings;
@@ -1827,8 +1853,6 @@ class _SectionActions extends StatelessWidget {
             switch (action) {
               case _SectionAction.refresh:
                 unawaited(controller.refreshSessions());
-              case _SectionAction.terminal:
-                onOpenTerminal?.call();
               case _SectionAction.background:
                 onOpenBackgroundSettings?.call();
             }
@@ -1843,17 +1867,6 @@ class _SectionActions extends StatelessWidget {
                 label: l10n.sessionsReload,
               ),
             ),
-            // Terminal gave its navigation slot to Activity; this keeps it
-            // one tap from the workspace it runs in.
-            if (onOpenTerminal != null)
-              PopupMenuItem(
-                key: const ValueKey('workspace-terminal'),
-                value: _SectionAction.terminal,
-                child: _MenuRow(
-                  icon: AppIconography.terminal,
-                  label: l10n.libraryTerminalTitle,
-                ),
-              ),
             // Whether runs keep updating after the app closes was only
             // discoverable two levels into Settings; say it where the runs
             // are.

@@ -138,69 +138,88 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadCaptureFonts);
 
-  for (final width in [320.0, 390.0]) {
-    testWidgets(
-      'navigation stays inside its glass surface at $width and 2.5x',
-      (tester) async {
-        tester.view.physicalSize = Size(width, 900);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-        final controller = await _controller();
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [connProvider.overrideWithValue(controller)],
-            child: MaterialApp(
-              theme: AppTheme.dark(),
-              builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(textScaler: const TextScaler.linear(2.5)),
-                child: child!,
-              ),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: const HomeScreen(),
+  for (final (width, locale) in [
+    (320.0, const Locale('en')),
+    (390.0, const Locale('en')),
+    (320.0, const Locale('ar')),
+  ]) {
+    testWidgets('navigation stays inside its glass surface at $width and 2.5x '
+        '(${locale.languageCode})', (tester) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [connProvider.overrideWithValue(controller)],
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            locale: locale,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(2.5)),
+              child: child!,
             ),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const HomeScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final dock = tester.getRect(find.byType(GlassSurface));
+      final icon = tester.getRect(
+        find.byIcon(AppIconography.workspaceSelected),
+      );
+      expect(icon.top, greaterThanOrEqualTo(dock.top + 4));
+      final copy = lookupAppLocalizations(locale);
+      final labels = [
+        copy.shellTabWork,
+        copy.shellTabInbox,
+        copy.shellTabProject,
+        copy.librarySettingsTitle,
+      ];
+      if (locale.languageCode == 'en') {
+        expect(labels, ['Work', 'Inbox', 'Project', 'Settings']);
+      } else {
+        expect(labels, ['العمل', 'الوارد', 'المشروع', 'الإعدادات']);
+        expect(
+          Directionality.of(tester.element(find.byType(NavigationBar))),
+          TextDirection.rtl,
+        );
+      }
+      for (final label in labels) {
+        final rect = tester.getRect(
+          find.descendant(
+            of: find.byType(NavigationBar),
+            matching: find.text(label),
           ),
         );
-        await tester.pumpAndSettle();
-        final dock = tester.getRect(find.byType(GlassSurface));
-        final icon = tester.getRect(
-          find.byIcon(AppIconography.workspaceSelected),
-        );
-        expect(icon.top, greaterThanOrEqualTo(dock.top + 4));
-        for (final label in ['Workspace', 'Files', 'Activity', 'Settings']) {
-          final rect = tester.getRect(
-            find.descendant(
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(
+            of: find.descendant(
               of: find.byType(NavigationBar),
               matching: find.text(label),
             ),
-          );
-          final paragraph = tester.renderObject<RenderParagraph>(
-            find.descendant(
-              of: find.descendant(
-                of: find.byType(NavigationBar),
-                matching: find.text(label),
-              ),
-              matching: find.byType(RichText),
-            ),
-          );
-          final lines = paragraph
-              .getBoxesForSelection(
-                TextSelection(baseOffset: 0, extentOffset: label.length),
-              )
-              .map((box) => box.top)
-              .toSet();
-          expect(lines, hasLength(1), reason: '$label stays on one line');
-          expect(rect.bottom, lessThanOrEqualTo(dock.bottom - 4));
-          expect(rect.left, greaterThanOrEqualTo(dock.left));
-          expect(rect.right, lessThanOrEqualTo(dock.right));
-        }
-        expect(tester.takeException(), isNull);
-      },
-    );
+            matching: find.byType(RichText),
+          ),
+        );
+        final lines = paragraph
+            .getBoxesForSelection(
+              TextSelection(baseOffset: 0, extentOffset: label.length),
+            )
+            .map((box) => box.top)
+            .toSet();
+        expect(lines, hasLength(1), reason: '$label stays on one line');
+        expect(rect.bottom, lessThanOrEqualTo(dock.bottom - 4));
+        expect(rect.left, greaterThanOrEqualTo(dock.left));
+        expect(rect.right, lessThanOrEqualTo(dock.right));
+      }
+      expect(tester.takeException(), isNull);
+    });
   }
 
   testWidgets(
@@ -226,6 +245,8 @@ void main() {
       );
       await _pumpShell(tester, controller);
       await tester.tap(find.byIcon(AppIconography.files));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('project-hub-files')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('lib'));
       await tester.pumpAndSettle();
@@ -263,6 +284,7 @@ void main() {
       expect(tester.widget<TextField>(search).focusNode?.hasFocus, isFalse);
       tester.view.resetViewInsets();
       await tester.pump();
+      // At the root of Files, Back returns to the Project hub first.
       await tester.binding.handlePopRoute();
       await tester.pump();
       expect(find.text('Press back again to exit'), findsNothing);
@@ -270,7 +292,21 @@ void main() {
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Workspace',
+        'Project',
+      );
+      expect(
+        find.byKey(const ValueKey('project-hub-files')).hitTestable(),
+        findsOneWidget,
+      );
+      expect(search.hitTestable(), findsNothing);
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.text('Press back again to exit'), findsNothing);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
+            .data,
+        'Work',
       );
       await tester.binding.handlePopRoute();
       await tester.pump();
@@ -290,6 +326,8 @@ void main() {
     await _pumpShell(tester, controller);
     await tester.tap(find.byIcon(AppIconography.files));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('project-hub-files')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('lib'));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(AppIconography.settings));
@@ -300,7 +338,7 @@ void main() {
     expect(find.text('Press back again to exit'), findsNothing);
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Workspace',
+      'Work',
     );
     expect(api.paths.length, loads);
   });
@@ -314,6 +352,8 @@ void main() {
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller);
     await tester.tap(find.byIcon(AppIconography.files));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('project-hub-files')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('lib'));
     await tester.pumpAndSettle();
@@ -331,9 +371,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Activity Back returns Workspace before offering exit', (
-    tester,
-  ) async {
+  testWidgets('Inbox Back returns Work before offering exit', (tester) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller);
@@ -343,7 +381,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Workspace',
+      'Work',
     );
     expect(find.text('Press back again to exit'), findsNothing);
   });
@@ -386,6 +424,8 @@ void main() {
       addTearDown(controller.dispose);
       await _pumpShell(tester, controller);
       await tester.tap(find.byIcon(AppIconography.files));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('project-hub-files')));
       await tester.pumpAndSettle();
       expect(
         tester.widget<Scaffold>(find.byType(Scaffold).first).extendBody,
@@ -472,16 +512,29 @@ void main() {
     final label = tester.getRect(
       find.descendant(
         of: find.byType(NavigationBar),
-        matching: find.text('Workspace'),
+        matching: find.text('Work'),
       ),
     );
     expect(dock.bottom - label.bottom, greaterThanOrEqualTo(4));
 
     expect(find.byType(NavigationRail), findsNothing);
-    expect(find.text('Workspace'), findsWidgets);
-    expect(find.text('Files'), findsOneWidget);
-    // Audit §5: Activity took Terminal's navigation slot.
-    expect(find.text('Activity'), findsWidgets);
+    // UX plan 5.1: one tab per noun, in this order.
+    final navigationLabels = tester
+        .widgetList<NavigationDestination>(
+          find.descendant(
+            of: find.byType(NavigationBar),
+            matching: find.byType(NavigationDestination),
+          ),
+        )
+        .map((destination) => destination.label)
+        .toList();
+    expect(navigationLabels, ['Work', 'Inbox', 'Project', 'Settings']);
+    expect(find.text('Work'), findsWidgets);
+    expect(find.text('Project'), findsOneWidget);
+    expect(find.text('Inbox'), findsWidgets);
+    expect(find.text('Workspace'), findsNothing);
+    expect(find.text('Activity'), findsNothing);
+    expect(find.text('Files'), findsNothing);
     expect(find.text('Terminal'), findsNothing);
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('More'), findsNothing);
@@ -489,7 +542,7 @@ void main() {
     expect(find.text('Guide'), findsNothing);
   });
 
-  testWidgets('one pending badge, on the Activity destination', (tester) async {
+  testWidgets('one pending badge, on the Inbox destination', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -520,21 +573,58 @@ void main() {
       find.descendant(of: find.byType(NavigationBar), matching: badge),
       findsOneWidget,
     );
+    expect(
+      find.descendant(of: badge, matching: find.text('1')),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(
+        of: badge,
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is NavigationDestination && widget.label == 'Inbox',
+        ),
+      ),
+      findsOneWidget,
+    );
+
+    // The badge counts everything waiting on the person, not just "some".
+    controller.permissions = {
+      for (final id in ['perm-1', 'perm-2', 'perm-3'])
+        id: PermissionRequest(
+          id: id,
+          sessionID: 'session-1',
+          permission: 'edit',
+          patterns: const ['lib/main.dart'],
+        ),
+    };
+    controller.notifyListeners();
+    await tester.pump();
+    expect(
+      find.descendant(of: badge, matching: find.text('3')),
+      findsOneWidget,
+    );
+    controller.permissions = {'perm-1': controller.permissions['perm-1']!};
+    controller.notifyListeners();
+    await tester.pump();
+    expect(
+      find.descendant(of: badge, matching: find.text('1')),
+      findsOneWidget,
+    );
     expect(find.byTooltip('Mission Control'), findsNothing);
     expect(find.byTooltip('Pending requests'), findsNothing);
-    // Model selection is a secondary shell action, available from overflow.
+    // The model lives on the composer; the shell has no overflow menu left.
     expect(find.byTooltip('Model / agent'), findsNothing);
-    await tester.tap(
+    expect(
       find.descendant(
         of: find.byType(AppBar),
-        matching: find.byType(PopupMenuButton<String>),
+        matching: find.byWidgetPredicate((widget) => widget is PopupMenuButton),
       ),
+      findsNothing,
     );
-    await tester.pumpAndSettle();
-    expect(find.text('Model / agent'), findsOneWidget);
   });
 
-  testWidgets('the Activity tab shows cross-session sections', (tester) async {
+  testWidgets('the Inbox tab shows cross-session sections', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -550,10 +640,237 @@ void main() {
     expect(find.byType(ActivityScreen), findsOneWidget);
     expect(
       tester.widget<Text>(find.byKey(const ValueKey('current-tab-title'))).data,
-      'Activity',
+      'Inbox',
     );
     // An empty inbox reads as success, not as a missing feature.
     expect(find.text('All clear here'), findsWidgets);
+  });
+
+  group('cold start opens where the person is needed', () {
+    PermissionRequest permission(String id) => PermissionRequest(
+      id: id,
+      sessionID: 'session-1',
+      permission: 'edit',
+      patterns: const ['lib/main.dart'],
+    );
+
+    String title(WidgetTester tester) => tester
+        .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
+        .data!;
+
+    Future<void> pump(
+      WidgetTester tester,
+      ConnectionController controller, {
+      int? initialTab,
+    }) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [connProvider.overrideWithValue(controller)],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: HomeScreen(initialTab: initialTab),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    testWidgets('nothing waiting: Work', (tester) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      await pump(tester, controller);
+      expect(title(tester), 'Work');
+      expect(find.byType(Badge), findsNothing);
+    });
+
+    testWidgets('something waiting: Inbox, on the request itself', (
+      tester,
+    ) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      controller.permissions = {'perm-1': permission('perm-1')};
+      await pump(tester, controller);
+      expect(title(tester), 'Inbox');
+      expect(
+        find.byKey(const ValueKey('activity-permission-perm-1')).hitTestable(),
+        findsOneWidget,
+      );
+      // Back still leads to Work, then to the exit guard.
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(title(tester), 'Work');
+    });
+
+    testWidgets('the first read of pending requests decides, once', (
+      tester,
+    ) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      // Connect starts this read before the shell mounts.
+      controller.permissionsLoading = true;
+      await pump(tester, controller);
+      expect(title(tester), 'Work');
+
+      controller
+        ..permissions = {'perm-1': permission('perm-1')}
+        ..permissionsLoading = false;
+      controller.notifyListeners();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(title(tester), 'Inbox');
+
+      // Decided. Returning to Work and getting a second request only moves
+      // the badge.
+      await tester.tap(find.byIcon(AppIconography.workspace));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      controller.permissions = {
+        'perm-1': permission('perm-1'),
+        'perm-2': permission('perm-2'),
+      };
+      controller.notifyListeners();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(title(tester), 'Work');
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('activity-pending-badge')),
+          matching: find.text('2'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a read that finds nothing leaves Work, and a late request '
+        'does not move the person', (tester) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      controller
+        ..permissionsLoading = true
+        ..questionsLoading = true;
+      await pump(tester, controller);
+      controller.permissionsLoading = false;
+      controller.notifyListeners();
+      await tester.pump();
+      // Questions are still being read: not decided yet.
+      controller.questionsLoading = false;
+      controller.notifyListeners();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(title(tester), 'Work');
+
+      controller.permissions = {'perm-late': permission('perm-late')};
+      controller.notifyListeners();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(title(tester), 'Work');
+      expect(
+        find.byKey(const ValueKey('activity-pending-badge')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('picking a tab during the read is final', (tester) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      controller.permissionsLoading = true;
+      await pump(tester, controller);
+      await tester.tap(find.byIcon(AppIconography.settings));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(title(tester), 'Settings');
+
+      controller
+        ..permissions = {'perm-1': permission('perm-1')}
+        ..permissionsLoading = false;
+      controller.notifyListeners();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(title(tester), 'Settings');
+    });
+
+    testWidgets('an explicit destination is respected', (tester) async {
+      final controller = await _controller();
+      addTearDown(controller.dispose);
+      controller.permissions = {'perm-1': permission('perm-1')};
+      await pump(tester, controller, initialTab: 0);
+      expect(title(tester), 'Work');
+      expect(
+        find.byKey(const ValueKey('activity-pending-badge')),
+        findsOneWidget,
+      );
+    });
+  });
+
+  testWidgets('Inbox order: waiting on you, then running, then finished', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    controller.sessionsById = {
+      'running': Session(id: 'running', title: 'Running conversation'),
+      'finished': Session(
+        id: 'finished',
+        title: 'Finished conversation',
+        time: SessionTime(created: 1, updated: 2, idle: 3),
+      ),
+    };
+    controller.busySessions.add('running');
+    controller.permissions = {
+      for (final id in ['perm-old', 'perm-new'])
+        id: PermissionRequest(
+          id: id,
+          sessionID: 'running',
+          permission: 'edit',
+          patterns: const ['lib/main.dart'],
+        ),
+    };
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ActivityScreen(controller: controller, embedded: true),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    double top(Finder finder) => tester.getTopLeft(finder).dy;
+    final order = [
+      find.text('Needs attention'),
+      find.byKey(const ValueKey('activity-permission-perm-old')),
+      find.byKey(const ValueKey('activity-permission-perm-new')),
+      find.text('Running'),
+      find.byKey(const ValueKey('activity-running-running')),
+      find.text('Completion digests'),
+    ];
+    for (final item in order) {
+      expect(item, findsOneWidget);
+    }
+    for (var i = 1; i < order.length; i++) {
+      expect(top(order[i - 1]), lessThan(top(order[i])), reason: 'item $i');
+    }
+    // Finished work is listed under its heading once opened.
+    await tester.tap(find.text('Completion digests'));
+    await tester.pump();
+    expect(find.text('Finished conversation'), findsOneWidget);
+    expect(
+      top(find.text('Finished conversation')),
+      greaterThan(top(find.text('Completion digests'))),
+    );
   });
 
   testWidgets('failed reconnect keeps the product shell and location visible', (

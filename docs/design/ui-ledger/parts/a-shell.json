@@ -214,13 +214,13 @@
     },
     {
       "id": "home-shell",
-      "title": "{server name} · Workspace / Files / Activity / More",
+      "title": "{server name} · Work / Inbox / Project / Settings",
       "kind": "screen",
       "file": "lib/ui/screens/home_screen.dart",
       "widget": "HomeScreen",
       "presentedBy": [],
-      "line": 22,
-      "purpose": "Main product shell for a connected server: app bar with server name/status dot and current tab title, overflow menu, connection banner, and four retained root destinations shown as a bottom glass dock (<760dp) or a NavigationRail (>=760dp).",
+      "line": 25,
+      "purpose": "Main product shell for a connected server: app bar whose server name and status open the server switcher, current tab title, connection banner, and four retained root destinations, one per noun (Work, Inbox, Project, Settings), shown as a bottom glass dock (<760dp) or a NavigationRail (>=760dp).",
       "reachedFrom": [
         {
           "page": "system",
@@ -259,47 +259,48 @@
         }
       ],
       "gates": [
-        "named route '/home' is ungated; via '/' requires conn.profile != null && conn.hasConnectedServer"
+        "named route '/home' is ungated; via '/' requires conn.profile != null && conn.hasConnectedServer",
+        "cold start (HomeScreen.initialTab == null): opens on Inbox when conn.unifiedAttentionCount > 0 once the first read of pending permissions, questions and forms has settled, otherwise Work; decided once, and a tab the person picks first is final"
       ],
       "elements": [
         {
           "id": "home-shell-tab-workspace",
           "type": "tab",
-          "label": "Workspace",
+          "label": "Work",
           "key": null,
-          "line": 133,
+          "line": 180,
           "action": "navigate",
           "target": "workspace",
           "targetWidget": "WorkspaceScreen",
-          "effect": "_selectTab(0): shows WorkspaceScreen(controller: conn) in the RetainedTabView. Rendered as NavigationBar destination (<760dp wide, keyboard closed; _ShellNavigation line 415) or NavigationRail destination (>=760dp; line 238, extended at >=1040dp).",
+          "effect": "_selectTab(_workTab): shows WorkspaceScreen(controller: conn) in the RetainedTabView. Rendered as NavigationBar destination (<760dp wide, keyboard closed) or NavigationRail destination (>=760dp, extended at >=1040dp).",
           "gates": [],
           "destructive": false
         },
         {
           "id": "home-shell-tab-files",
           "type": "tab",
-          "label": "Files",
+          "label": "Project",
           "key": null,
-          "line": 143,
+          "line": 200,
           "action": "navigate",
-          "target": "files",
-          "targetWidget": "FilesScreen",
-          "effect": "_selectTab(1): shows FilesScreen(controller, focusSearchSignal: _findInFiles, backController: _filesBack). _safeTab falls back to tab 0 when file browsing is unavailable.",
+          "target": "project-hub",
+          "targetWidget": "ProjectHub",
+          "effect": "_selectTab(_projectTab): shows ProjectHub(controller, focusSearchSignal: _findInFiles, backController: _projectBack). _safeTab falls back to Work when the server offers no project tool.",
           "gates": [
-            "conn.capabilities.fileBrowsing (destination hidden and body replaced by SizedBox.shrink otherwise)"
+            "ProjectHub.isAvailable(conn.capabilities): fileBrowsing || terminal || projectManagement (destination hidden and body replaced by SizedBox.shrink otherwise, e.g. Codex and Paseo)"
           ],
           "destructive": false
         },
         {
           "id": "home-shell-tab-activity",
           "type": "tab",
-          "label": "Activity",
+          "label": "Inbox",
           "key": "activity-pending-badge",
-          "line": 151,
+          "line": 475,
           "action": "navigate",
           "target": "activity",
           "targetWidget": "ActivityScreen",
-          "effect": "_selectTab(2): shows ActivityScreen(controller: conn, embedded: true). Icon carries Badge key 'activity-pending-badge' with conn.unifiedAttentionCount when > 0.",
+          "effect": "_selectTab(_inboxTab): shows ActivityScreen(controller: conn, embedded: true). The icon carries Badge key 'activity-pending-badge' with conn.unifiedAttentionCount (permissions, questions, forms, AI Team gates, other servers' pending counts) when > 0; no badge at zero.",
           "gates": [],
           "destructive": false
         },
@@ -308,76 +309,24 @@
           "type": "tab",
           "label": "Settings",
           "key": null,
-          "line": 168,
+          "line": 208,
           "action": "navigate",
           "target": "settings",
           "targetWidget": "SettingsScreen",
-          "effect": "_selectTab(3): shows the Settings hub, SettingsScreen(controller: conn, embedded: true).",
+          "effect": "_selectTab(_settingsTab): shows the Settings hub, SettingsScreen(controller: conn, embedded: true).",
           "gates": [],
           "destructive": false
-        },
-        {
-          "id": "home-shell-overflow",
-          "type": "icon-button",
-          "label": "[overflow menu]",
-          "key": null,
-          "line": 193,
-          "action": "other",
-          "target": null,
-          "targetWidget": null,
-          "effect": "opens overflow menu (PopupMenuButton<String>) holding connection-level actions.",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "home-shell-menu-model",
-          "type": "menu-item",
-          "label": "Model / agent",
-          "key": null,
-          "line": 204,
-          "action": "open-sheet",
-          "target": "model-picker",
-          "targetWidget": "showModelPicker",
-          "effect": "showModelPicker(context).",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "home-shell-menu-refresh",
-          "type": "menu-item",
-          "label": "Refresh",
-          "key": null,
-          "line": 208,
-          "action": "mutate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "conn.refreshSessions().",
-          "gates": [],
-          "destructive": false
-        },
-        {
-          "id": "home-shell-menu-disconnect",
-          "type": "menu-item",
-          "label": "Disconnect",
-          "key": null,
-          "line": 212,
-          "action": "navigate",
-          "target": "servers",
-          "targetWidget": "/servers",
-          "effect": "conn.disconnect() then navigator.pushNamedAndRemoveUntil('/servers', (_) => false). No confirmation.",
-          "gates": [],
-          "destructive": true
         },
         {
           "id": "home-shell-back-gesture",
           "type": "gesture",
           "label": "[system back]",
           "key": null,
-          "line": 175,
+          "line": 322,
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "PopScope(canPop: false) -> _onRootPop: on Files first _filesBack.handleBack(); on any non-Workspace tab _selectTab(0); on Workspace shows snackbar 'Press back again to exit' and a second back within 2s calls SystemNavigator.pop().",
+          "effect": "_onRootPop: on Project, ProjectHubBackController.handleBack() first unwinds Files (keyboard, search, folder) and then returns to the hub; any other tab returns to Work; on Work a second Back within 2 s calls SystemNavigator.pop().",
           "gates": [],
           "destructive": false
         },
@@ -386,11 +335,11 @@
           "type": "gesture",
           "label": "Ctrl/Cmd+1 … 4",
           "key": null,
-          "line": 58,
+          "line": 80,
           "action": "navigate",
           "target": null,
           "targetWidget": null,
-          "effect": "onAppShortcut(SelectDestinationIntent): _selectTab(_safeTab(index, conn.capabilities)).",
+          "effect": "onAppShortcut(SelectDestinationIntent): _selectTab(_safeTab(index, conn.capabilities)); the index is the visible position (1 Work, 2 Inbox, 3 Project, 4 Settings).",
           "gates": [
             "desktopInteractions (AppShortcuts only installed on desktop)",
             "HomeScreen route isCurrent"
@@ -402,14 +351,14 @@
           "type": "gesture",
           "label": "Ctrl/Cmd+F",
           "key": null,
-          "line": 63,
+          "line": 85,
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "onAppShortcut(FindInSurfaceIntent): bumps _findInFiles so FilesScreen focuses its search field.",
+          "effect": "onAppShortcut(FindInSurfaceIntent): bumps _findInFiles; ProjectHub opens Files and focuses its search field.",
           "gates": [
             "desktopInteractions",
-            "_tab == 1 && conn.capabilities.fileBrowsing"
+            "_tab == _projectTab && conn.capabilities.fileBrowsing"
           ],
           "destructive": false
         },
@@ -418,7 +367,7 @@
           "type": "gesture",
           "label": "Ctrl/Cmd+`",
           "key": null,
-          "line": 67,
+          "line": 90,
           "action": "navigate",
           "target": "terminal",
           "targetWidget": "TerminalPage",
@@ -427,6 +376,19 @@
             "desktopInteractions",
             "conn.capabilities.terminal"
           ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-server-switcher",
+          "type": "button",
+          "label": "<server name> + status dot (semantics: Server: {name}; hint: Switch server)",
+          "key": "server-switcher-button",
+          "line": 543,
+          "action": "open-sheet",
+          "target": "server-switcher-sheet",
+          "targetWidget": "showServerSwitcher",
+          "effect": "_openServerSwitcher(conn): showServerSwitcher(context, conn); the returned choice is acted on after the sheet closed: pushNamed('/servers', arguments: ServersRouteRequest), pushNamed('/termux-setup'), or conn.disconnect() + pushNamedAndRemoveUntil('/servers').",
+          "gates": [],
           "destructive": false
         },
         {
@@ -496,6 +458,147 @@
             "!controller.passwordRejected"
           ],
           "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "server-switcher-sheet",
+      "title": "[Server switcher]",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/server_switcher_sheet.dart",
+      "widget": "ServerSwitcherSheet",
+      "presentedBy": [
+        "showServerSwitcher"
+      ],
+      "line": 51,
+      "purpose": "The single door to servers while connected: the current server with its status, the server found on this phone (controlled in place), the other saved servers, Add server, Manage servers, and Disconnect last and apart. The sheet only chooses; connecting, credentials, adding and forgetting run on the Servers screen through a ServersRouteRequest.",
+      "reachedFrom": [
+        {
+          "page": "home-shell",
+          "element": "home-shell-server-switcher"
+        }
+      ],
+      "gates": [],
+      "sheetKey": "server-switcher-sheet",
+      "elements": [
+        {
+          "id": "server-switcher-sheet-profile",
+          "key": "server-switcher-profile-<profile.id>",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "gates": [
+            "every saved profile except the current one"
+          ],
+          "destructive": false,
+          "type": "list-tile",
+          "label": "<saved server name> / <baseUrl>",
+          "line": 159,
+          "action": "navigate",
+          "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.connect(profile.id)); the shell pushes '/servers' and ServersScreen._handleRouteRequest runs _connect(profile): runtime-choice detour to the phone setup, the editor when the password or token must be re-entered, otherwise conn.connect(profile) and '/home'; a failure is shown inline on the Servers list."
+        },
+        {
+          "id": "server-switcher-sheet-add",
+          "key": "server-switcher-add",
+          "target": "profile-editor",
+          "targetWidget": "_ProfileEditorScreen",
+          "gates": [],
+          "destructive": false,
+          "type": "list-tile",
+          "label": "Add server",
+          "line": 184,
+          "action": "navigate",
+          "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.add()); the shell pushes '/servers', which opens the new-server editor (_edit()) on arrival."
+        },
+        {
+          "id": "server-switcher-sheet-manage",
+          "key": "server-switcher-manage",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "gates": [],
+          "destructive": false,
+          "type": "list-tile",
+          "label": "Manage servers",
+          "line": 192,
+          "action": "navigate",
+          "effect": "Pops ServerSwitcherOpenServers(); the shell pushes '/servers'."
+        },
+        {
+          "id": "server-switcher-sheet-disconnect",
+          "key": "server-switcher-disconnect",
+          "target": "settings-disconnect-sheet",
+          "targetWidget": "confirmDisconnectServer",
+          "gates": [
+            "controller.profile != null"
+          ],
+          "destructive": true,
+          "type": "button",
+          "label": "Disconnect",
+          "line": 204,
+          "action": "open-sheet",
+          "effect": "confirmDisconnectServer(context, controller); on cancel the switcher stays open; on confirm pops ServerSwitcherLeave and the shell runs conn.disconnect() then pushNamedAndRemoveUntil('/servers')."
+        },
+        {
+          "id": "server-switcher-sheet-phone-connect",
+          "key": "termux-running-server-connect",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "gates": [
+            "platformCapabilities.supportsTermux",
+            "a running or stopped managed server was observed"
+          ],
+          "destructive": false,
+          "type": "button",
+          "label": "Connect | Open (phone server card)",
+          "file": "lib/ui/widgets/termux_running_server_entry.dart",
+          "line": 132,
+          "action": "navigate",
+          "effect": "Card onConnect: when this shell is already connected through that profile the sheet just closes; otherwise pops ServerSwitcherOpenServers(ServersRouteRequest.connect(id, detectedRunning: true)) and the Servers screen connects without the runtime-choice detour. Card onEnterCredentials pops ServersRouteRequest.enterPhoneCredentials, which opens the editor on the phone server URL."
+        },
+        {
+          "id": "server-switcher-sheet-phone-disconnect",
+          "key": "termux-running-server-disconnect",
+          "target": "settings-disconnect-sheet",
+          "targetWidget": "confirmDisconnectServer",
+          "gates": [
+            "connected through the phone server profile"
+          ],
+          "destructive": true,
+          "type": "menu-item",
+          "label": "Disconnect (phone server card menu)",
+          "file": "lib/ui/widgets/termux_running_server_entry.dart",
+          "line": 112,
+          "action": "open-sheet",
+          "effect": "confirmDisconnectServer; on confirm controller.disconnect(keepActive: true), then pops ServerSwitcherLeave(alreadyDisconnected: true) and the shell goes to '/servers'. The server keeps running."
+        },
+        {
+          "id": "server-switcher-sheet-phone-manage",
+          "key": "termux-running-server-manage",
+          "target": "termux-setup",
+          "targetWidget": "/termux-setup",
+          "gates": [],
+          "destructive": false,
+          "type": "menu-item",
+          "label": "Manage setup (phone server card menu)",
+          "file": "lib/ui/widgets/termux_running_server_entry.dart",
+          "line": 128,
+          "action": "navigate",
+          "effect": "Pops ServerSwitcherOpenPhoneSetup; the shell pushes '/termux-setup'."
+        },
+        {
+          "id": "server-switcher-sheet-phone-forget",
+          "key": "termux-running-server-forget",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "gates": [
+            "a saved profile matches the phone server"
+          ],
+          "destructive": true,
+          "type": "menu-item",
+          "label": "Forget saved sign-in (phone server card menu)",
+          "file": "lib/ui/widgets/termux_running_server_entry.dart",
+          "line": 123,
+          "action": "navigate",
+          "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.forget(profile.id)); the Servers screen opens its remove-server confirm sheet for that profile."
         }
       ]
     },
@@ -631,13 +734,13 @@
     },
     {
       "id": "activity",
-      "title": "Activity",
+      "title": "Inbox",
       "kind": "screen",
       "file": "lib/ui/screens/activity_screen.dart",
       "widget": "ActivityScreen",
       "presentedBy": [],
       "line": 48,
-      "purpose": "Single cross-session inbox: Needs attention (AI Team gates, permissions, questions, v2 forms, server requests, profile-monitor check-ins), Running sessions, and completion digests. Hosted as root tab (embedded: true, no own Scaffold) or pushed with its own app bar.",
+      "purpose": "Single cross-conversation inbox in one order (UX plan 5.7): Waiting on you (AI Team gates and blocked agents, permissions, questions, forms, server requests, other servers' check-ins), then Running, then Finished (completion digests). Within a kind the request blocked longest comes first: AI Team rows by createdAt, the app's own requests in arrival order because they carry no time. Hosted as the Inbox root tab (embedded: true, no own Scaffold) or pushed with its own app bar.",
       "reachedFrom": [
         {
           "page": "home-shell",
@@ -762,7 +865,7 @@
           "type": "list-tile",
           "label": "Background updates",
           "key": "activity-background-settings",
-          "line": 1330,
+          "line": 1334,
           "action": "navigate",
           "target": "notifications-settings",
           "targetWidget": "NotificationsSettingsScreen",

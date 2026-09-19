@@ -26,6 +26,54 @@ typedef ProjectFileAttachment =
     Future<void> Function(String path, FilePreviewData data);
 typedef ProjectReviewPrompt = void Function(String prompt);
 
+/// Opens the review of the project's uncommitted changes. Shared by Files and
+/// the Project tab's "Changes" row so both doors show the same review.
+Future<String?> pushWorkingTreeReview(
+  BuildContext context,
+  ConnectionController controller, {
+  ReviewHandoffSession? handoff,
+  String? initialFile,
+}) {
+  final copy = readerL10n(context);
+  return Navigator.of(context).push<String>(
+    MaterialPageRoute<String>(
+      builder: (_) => ReviewWorkspace(
+        initialScope: ReviewDiffScope.workingTree,
+        initialFile: initialFile,
+        handoff: handoff,
+        loadWorkingTreeDiffs: () async {
+          final repository = await controller.prepareActionRepository();
+          if (repository == null) {
+            throw ProductException(copy.readerUiReconnecting);
+          }
+          return repository.listVcsDiffs(VcsDiffMode.workingTree);
+        },
+      ),
+    ),
+  );
+}
+
+/// Legacy return path, used only when there is no handoff session: the
+/// review workspace pops with formatted text that goes to the host chat if
+/// one supplied a callback, and to the clipboard otherwise.
+Future<void> deliverReviewPrompt(
+  BuildContext context,
+  String? prompt, [
+  ProjectReviewPrompt? callback,
+]) async {
+  if (prompt == null || prompt.trim().isEmpty) return;
+  final reviewPrompt = prompt.trim();
+  final messenger = ScaffoldMessenger.of(context);
+  final copy = readerL10n(context);
+  if (callback != null) {
+    callback(reviewPrompt);
+    messenger.showSnackBar(SnackBar(content: Text(copy.readerUiCommentAdded)));
+    return;
+  }
+  await Clipboard.setData(ClipboardData(text: reviewPrompt));
+  messenger.showSnackBar(SnackBar(content: Text(copy.readerUiCommentCopied)));
+}
+
 /// Lets a containing navigation shell offer Back to its active Files tab.
 class FilesBackController {
   bool Function()? _handler;
@@ -677,67 +725,26 @@ class _FilesScreenState extends State<FilesScreen> {
   }
 
   Future<void> _reviewChanges() async {
-    final copy = readerL10n(context);
-    final prompt = await Navigator.of(context).push<String>(
-      MaterialPageRoute<String>(
-        builder: (_) => ReviewWorkspace(
-          initialScope: ReviewDiffScope.workingTree,
-          handoff: widget.handoff,
-          loadWorkingTreeDiffs: () async {
-            final repository = await widget.controller
-                .prepareActionRepository();
-            if (repository == null) {
-              throw ProductException(copy.readerUiReconnecting);
-            }
-            return repository.listVcsDiffs(VcsDiffMode.workingTree);
-          },
-        ),
-      ),
+    final prompt = await pushWorkingTreeReview(
+      context,
+      widget.controller,
+      handoff: widget.handoff,
     );
-    _handleReviewPrompt(prompt);
+    if (mounted) {
+      await deliverReviewPrompt(context, prompt, widget.onReviewPrompt);
+    }
   }
 
   Future<void> _reviewFileChange(FileNode node) async {
-    final copy = readerL10n(context);
-    final prompt = await Navigator.of(context).push<String>(
-      MaterialPageRoute<String>(
-        builder: (_) => ReviewWorkspace(
-          initialScope: ReviewDiffScope.workingTree,
-          initialFile: node.path,
-          handoff: widget.handoff,
-          loadWorkingTreeDiffs: () async {
-            final repository = await widget.controller
-                .prepareActionRepository();
-            if (repository == null) {
-              throw ProductException(copy.readerUiReconnecting);
-            }
-            return repository.listVcsDiffs(VcsDiffMode.workingTree);
-          },
-        ),
-      ),
+    final prompt = await pushWorkingTreeReview(
+      context,
+      widget.controller,
+      handoff: widget.handoff,
+      initialFile: node.path,
     );
-    _handleReviewPrompt(prompt);
-  }
-
-  /// Legacy return path, used only when there is no handoff session: the
-  /// review workspace pops with formatted text that goes to the host chat if
-  /// one supplied a callback, and to the clipboard otherwise.
-  Future<void> _handleReviewPrompt(String? prompt) async {
-    if (!mounted || prompt == null || prompt.trim().isEmpty) return;
-    final reviewPrompt = prompt.trim();
-    final callback = widget.onReviewPrompt;
-    if (callback != null) {
-      callback(reviewPrompt);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(readerL10n(context).readerUiCommentAdded)),
-      );
-      return;
+    if (mounted) {
+      await deliverReviewPrompt(context, prompt, widget.onReviewPrompt);
     }
-    await Clipboard.setData(ClipboardData(text: reviewPrompt));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(readerL10n(context).readerUiCommentCopied)),
-    );
   }
 
   @override

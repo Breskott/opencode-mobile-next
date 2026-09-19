@@ -449,8 +449,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
     }
   }
 
-  /// The AI Team rows in the §47 order, newest first within a rank: every
-  /// gate of the snapshot plus the blocked agents. A run that completed
+  /// The AI Team rows in the §47 order, oldest first within a rank so the
+  /// thing blocked longest leads (UX plan 5.7): every gate of the snapshot
+  /// plus the blocked agents. A run that completed
   /// since the last view (rank 7) is omitted: the controller keeps no
   /// per-view watermark, and inventing one here would mean guessing.
   List<_TeamRow> _teamRows(OrchestrationController? team) {
@@ -492,7 +493,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
       if (rank != 0) return rank;
       final at = a.at, bt = b.at;
       if (at == null || bt == null) return 0;
-      return bt.compareTo(at);
+      return at.compareTo(bt);
     });
     return rows;
   }
@@ -511,6 +512,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Widget build(BuildContext context) {
     _clearDigestScope();
     final controller = widget.controller;
+    // Permissions, questions and forms carry no timestamp; the controller
+    // keeps them in arrival order, which is oldest first.
     final permissions = controller.awaitingPermissions.toList();
     final questions = controller.questions.values.toList()
       ..sort((a, b) {
@@ -670,7 +673,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (widget.embedded) return body;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_l10n(context).e7WorkspaceActivity),
+        title: Text(_l10n(context).shellTabInbox),
         actions: [
           IconButton(
             tooltip: _l10n(context).globalSessionsRefresh,

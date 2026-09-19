@@ -389,22 +389,6 @@
           "destructive": false
         },
         {
-          "id": "settings-terminal",
-          "type": "list-tile",
-          "label": "Terminal",
-          "key": "library-terminal",
-          "line": 538,
-          "action": "navigate",
-          "target": "terminal",
-          "targetWidget": "TerminalPage",
-          "effect": "Pushes TerminalPage(controller) via _open. Last row of Agent setup until the Project tab exists (phase 3).",
-          "gates": [
-            "capabilities.terminal",
-            "row hidden when it does not match the search query (_HubRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
           "id": "settings-category-usage",
           "type": "list-tile",
           "label": "Usage",
@@ -577,10 +561,11 @@
       "file": "lib/ui/screens/settings_screen.dart",
       "widget": "_disconnect",
       "presentedBy": [
-        "showConfirmSheet"
+        "showConfirmSheet",
+        "confirmDisconnectServer"
       ],
       "line": 127,
-      "purpose": "Confirms disconnecting from the current server, disclosing how many queued prompts and drafts stop moving.",
+      "purpose": "Confirms disconnecting from the current server, disclosing how many queued prompts and drafts stop moving. One sheet (confirmDisconnectServer in lib/ui/widgets/safety_confirms.dart) for every door: Settings, the server switcher and the phone server card.",
       "reachedFrom": [
         {
           "page": "settings",

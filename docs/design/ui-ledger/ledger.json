@@ -1,5 +1,5 @@
 {
- "generatedFrom": "1fe26458f93e42190e3c5d02b326a99bb3b02a63",
+ "generatedFrom": "6afcf9086054ce9c08be464c50bdb15be6523821",
  "pages": [
   {
    "id": "system",
@@ -1387,14 +1387,14 @@
   },
   {
    "id": "activity",
-   "title": "Activity",
+   "title": "Inbox",
    "kind": "screen",
    "area": "shell",
    "file": "lib/ui/screens/activity_screen.dart",
    "widget": "ActivityScreen",
    "presentedBy": [],
    "line": 48,
-   "purpose": "Single cross-session inbox: Needs attention (AI Team gates, permissions, questions, v2 forms, server requests, profile-monitor check-ins), Running sessions, and completion digests. Hosted as root tab (embedded: true, no own Scaffold) or pushed with its own app bar.",
+   "purpose": "Single cross-conversation inbox in one order (UX plan 5.7): Waiting on you (AI Team gates and blocked agents, permissions, questions, forms, server requests, other servers' check-ins), then Running, then Finished (completion digests). Within a kind the request blocked longest comes first: AI Team rows by createdAt, the app's own requests in arrival order because they carry no time. Hosted as the Inbox root tab (embedded: true, no own Scaffold) or pushed with its own app bar.",
    "reachedFrom": [
     {
      "page": "home-shell",
@@ -1592,7 +1592,7 @@
      "label": "Background updates",
      "key": "activity-background-settings",
      "file": "lib/ui/screens/activity_screen.dart",
-     "line": 1330,
+     "line": 1334,
      "action": "navigate",
      "target": "notifications-settings",
      "targetWidget": "NotificationsSettingsScreen",
@@ -2022,14 +2022,14 @@
   },
   {
    "id": "home-shell",
-   "title": "{server name} · Workspace / Files / Activity / More",
+   "title": "{server name} · Work / Inbox / Project / Settings",
    "kind": "screen",
    "area": "shell",
    "file": "lib/ui/screens/home_screen.dart",
    "widget": "HomeScreen",
    "presentedBy": [],
-   "line": 22,
-   "purpose": "Main product shell for a connected server: app bar with server name/status dot and current tab title, overflow menu, connection banner, and four retained root destinations shown as a bottom glass dock (<760dp) or a NavigationRail (>=760dp).",
+   "line": 25,
+   "purpose": "Main product shell for a connected server: app bar whose server name and status open the server switcher, current tab title, connection banner, and four retained root destinations, one per noun (Work, Inbox, Project, Settings), shown as a bottom glass dock (<760dp) or a NavigationRail (>=760dp).",
    "reachedFrom": [
     {
      "page": "termux-setup",
@@ -2098,7 +2098,8 @@
     }
    ],
    "gates": [
-    "named route '/home' is ungated; via '/' requires conn.profile != null && conn.hasConnectedServer"
+    "named route '/home' is ungated; via '/' requires conn.profile != null && conn.hasConnectedServer",
+    "cold start (HomeScreen.initialTab == null): opens on Inbox when conn.unifiedAttentionCount > 0 once the first read of pending permissions, questions and forms has settled, otherwise Work; decided once, and a tab the person picks first is final"
    ],
    "elements": [
     {
@@ -2107,11 +2108,11 @@
      "label": "Ctrl/Cmd+1 … 4",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 58,
+     "line": 80,
      "action": "navigate",
      "target": null,
      "targetWidget": null,
-     "effect": "onAppShortcut(SelectDestinationIntent): _selectTab(_safeTab(index, conn.capabilities)).",
+     "effect": "onAppShortcut(SelectDestinationIntent): _selectTab(_safeTab(index, conn.capabilities)); the index is the visible position (1 Work, 2 Inbox, 3 Project, 4 Settings).",
      "gates": [
       "desktopInteractions (AppShortcuts only installed on desktop)",
       "HomeScreen route isCurrent"
@@ -2124,14 +2125,14 @@
      "label": "Ctrl/Cmd+F",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 63,
+     "line": 85,
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "onAppShortcut(FindInSurfaceIntent): bumps _findInFiles so FilesScreen focuses its search field.",
+     "effect": "onAppShortcut(FindInSurfaceIntent): bumps _findInFiles; ProjectHub opens Files and focuses its search field.",
      "gates": [
       "desktopInteractions",
-      "_tab == 1 && conn.capabilities.fileBrowsing"
+      "_tab == _projectTab && conn.capabilities.fileBrowsing"
      ],
      "destructive": false
     },
@@ -2141,7 +2142,7 @@
      "label": "Ctrl/Cmd+`",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 67,
+     "line": 90,
      "action": "navigate",
      "target": "terminal",
      "targetWidget": "TerminalPage",
@@ -2155,45 +2156,31 @@
     {
      "id": "home-shell-tab-workspace",
      "type": "tab",
-     "label": "Workspace",
+     "label": "Work",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 133,
+     "line": 180,
      "action": "navigate",
      "target": "workspace",
      "targetWidget": "WorkspaceScreen",
-     "effect": "_selectTab(0): shows WorkspaceScreen(controller: conn) in the RetainedTabView. Rendered as NavigationBar destination (<760dp wide, keyboard closed; _ShellNavigation line 415) or NavigationRail destination (>=760dp; line 238, extended at >=1040dp).",
+     "effect": "_selectTab(_workTab): shows WorkspaceScreen(controller: conn) in the RetainedTabView. Rendered as NavigationBar destination (<760dp wide, keyboard closed) or NavigationRail destination (>=760dp, extended at >=1040dp).",
      "gates": [],
      "destructive": false
     },
     {
      "id": "home-shell-tab-files",
      "type": "tab",
-     "label": "Files",
+     "label": "Project",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 143,
+     "line": 200,
      "action": "navigate",
-     "target": "files",
-     "targetWidget": "FilesScreen",
-     "effect": "_selectTab(1): shows FilesScreen(controller, focusSearchSignal: _findInFiles, backController: _filesBack). _safeTab falls back to tab 0 when file browsing is unavailable.",
+     "target": "project-hub",
+     "targetWidget": "ProjectHub",
+     "effect": "_selectTab(_projectTab): shows ProjectHub(controller, focusSearchSignal: _findInFiles, backController: _projectBack). _safeTab falls back to Work when the server offers no project tool.",
      "gates": [
-      "conn.capabilities.fileBrowsing (destination hidden and body replaced by SizedBox.shrink otherwise)"
+      "ProjectHub.isAvailable(conn.capabilities): fileBrowsing || terminal || projectManagement (destination hidden and body replaced by SizedBox.shrink otherwise, e.g. Codex and Paseo)"
      ],
-     "destructive": false
-    },
-    {
-     "id": "home-shell-tab-activity",
-     "type": "tab",
-     "label": "Activity",
-     "key": "activity-pending-badge",
-     "file": "lib/ui/screens/home_screen.dart",
-     "line": 151,
-     "action": "navigate",
-     "target": "activity",
-     "targetWidget": "ActivityScreen",
-     "effect": "_selectTab(2): shows ActivityScreen(controller: conn, embedded: true). Icon carries Badge key 'activity-pending-badge' with conn.unifiedAttentionCount when > 0.",
-     "gates": [],
      "destructive": false
     },
     {
@@ -2202,11 +2189,11 @@
      "label": "Settings",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 168,
+     "line": 208,
      "action": "navigate",
      "target": "settings",
      "targetWidget": "SettingsScreen",
-     "effect": "_selectTab(3): shows the Settings hub, SettingsScreen(controller: conn, embedded: true).",
+     "effect": "_selectTab(_settingsTab): shows the Settings hub, SettingsScreen(controller: conn, embedded: true).",
      "gates": [],
      "destructive": false
     },
@@ -2216,69 +2203,41 @@
      "label": "[system back]",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 175,
+     "line": 322,
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "PopScope(canPop: false) -> _onRootPop: on Files first _filesBack.handleBack(); on any non-Workspace tab _selectTab(0); on Workspace shows snackbar 'Press back again to exit' and a second back within 2s calls SystemNavigator.pop().",
+     "effect": "_onRootPop: on Project, ProjectHubBackController.handleBack() first unwinds Files (keyboard, search, folder) and then returns to the hub; any other tab returns to Work; on Work a second Back within 2 s calls SystemNavigator.pop().",
      "gates": [],
      "destructive": false
     },
     {
-     "id": "home-shell-overflow",
-     "type": "icon-button",
-     "label": "[overflow menu]",
-     "key": null,
+     "id": "home-shell-tab-activity",
+     "type": "tab",
+     "label": "Inbox",
+     "key": "activity-pending-badge",
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 193,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "opens overflow menu (PopupMenuButton<String>) holding connection-level actions.",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "home-shell-menu-model",
-     "type": "menu-item",
-     "label": "Model / agent",
-     "key": null,
-     "file": "lib/ui/screens/home_screen.dart",
-     "line": 204,
-     "action": "open-sheet",
-     "target": "model-picker-sheet",
-     "targetWidget": "showModelPicker",
-     "effect": "showModelPicker(context).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "home-shell-menu-refresh",
-     "type": "menu-item",
-     "label": "Refresh",
-     "key": null,
-     "file": "lib/ui/screens/home_screen.dart",
-     "line": 208,
-     "action": "mutate",
-     "target": null,
-     "targetWidget": null,
-     "effect": "conn.refreshSessions().",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "home-shell-menu-disconnect",
-     "type": "menu-item",
-     "label": "Disconnect",
-     "key": null,
-     "file": "lib/ui/screens/home_screen.dart",
-     "line": 212,
+     "line": 475,
      "action": "navigate",
-     "target": "servers",
-     "targetWidget": "/servers",
-     "effect": "conn.disconnect() then navigator.pushNamedAndRemoveUntil('/servers', (_) => false). No confirmation.",
+     "target": "activity",
+     "targetWidget": "ActivityScreen",
+     "effect": "_selectTab(_inboxTab): shows ActivityScreen(controller: conn, embedded: true). The icon carries Badge key 'activity-pending-badge' with conn.unifiedAttentionCount (permissions, questions, forms, AI Team gates, other servers' pending counts) when > 0; no badge at zero.",
      "gates": [],
-     "destructive": true
+     "destructive": false
+    },
+    {
+     "id": "home-shell-server-switcher",
+     "type": "button",
+     "label": "<server name> + status dot (semantics: Server: {name}; hint: Switch server)",
+     "key": "server-switcher-button",
+     "file": "lib/ui/screens/home_screen.dart",
+     "line": 543,
+     "action": "open-sheet",
+     "target": "server-switcher-sheet",
+     "targetWidget": "showServerSwitcher",
+     "effect": "_openServerSwitcher(conn): showServerSwitcher(context, conn); the returned choice is acted on after the sheet closed: pushNamed('/servers', arguments: ServersRouteRequest), pushNamed('/termux-setup'), or conn.disconnect() + pushNamedAndRemoveUntil('/servers').",
+     "gates": [],
+     "destructive": false
     },
     {
      "id": "home-shell-banner-update-token",
@@ -2500,6 +2459,152 @@
      "destructive": false
     }
    ]
+  },
+  {
+   "id": "server-switcher-sheet",
+   "title": "[Server switcher]",
+   "kind": "sheet",
+   "area": "shell",
+   "file": "lib/ui/widgets/server_switcher_sheet.dart",
+   "widget": "ServerSwitcherSheet",
+   "presentedBy": [
+    "showServerSwitcher"
+   ],
+   "line": 51,
+   "purpose": "The single door to servers while connected: the current server with its status, the server found on this phone (controlled in place), the other saved servers, Add server, Manage servers, and Disconnect last and apart. The sheet only chooses; connecting, credentials, adding and forgetting run on the Servers screen through a ServersRouteRequest.",
+   "reachedFrom": [
+    {
+     "page": "home-shell",
+     "element": "home-shell-server-switcher"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "server-switcher-sheet-profile",
+     "type": "list-tile",
+     "label": "<saved server name> / <baseUrl>",
+     "key": "server-switcher-profile-<profile.id>",
+     "file": "lib/ui/widgets/server_switcher_sheet.dart",
+     "line": 159,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.connect(profile.id)); the shell pushes '/servers' and ServersScreen._handleRouteRequest runs _connect(profile): runtime-choice detour to the phone setup, the editor when the password or token must be re-entered, otherwise conn.connect(profile) and '/home'; a failure is shown inline on the Servers list.",
+     "gates": [
+      "every saved profile except the current one"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "server-switcher-sheet-add",
+     "type": "list-tile",
+     "label": "Add server",
+     "key": "server-switcher-add",
+     "file": "lib/ui/widgets/server_switcher_sheet.dart",
+     "line": 184,
+     "action": "navigate",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.add()); the shell pushes '/servers', which opens the new-server editor (_edit()) on arrival.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "server-switcher-sheet-manage",
+     "type": "list-tile",
+     "label": "Manage servers",
+     "key": "server-switcher-manage",
+     "file": "lib/ui/widgets/server_switcher_sheet.dart",
+     "line": 192,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "Pops ServerSwitcherOpenServers(); the shell pushes '/servers'.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "server-switcher-sheet-disconnect",
+     "type": "button",
+     "label": "Disconnect",
+     "key": "server-switcher-disconnect",
+     "file": "lib/ui/widgets/server_switcher_sheet.dart",
+     "line": 204,
+     "action": "open-sheet",
+     "target": "settings-disconnect-sheet",
+     "targetWidget": "confirmDisconnectServer",
+     "effect": "confirmDisconnectServer(context, controller); on cancel the switcher stays open; on confirm pops ServerSwitcherLeave and the shell runs conn.disconnect() then pushNamedAndRemoveUntil('/servers').",
+     "gates": [
+      "controller.profile != null"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "server-switcher-sheet-phone-disconnect",
+     "type": "menu-item",
+     "label": "Disconnect (phone server card menu)",
+     "key": "termux-running-server-disconnect",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 112,
+     "action": "open-sheet",
+     "target": "settings-disconnect-sheet",
+     "targetWidget": "confirmDisconnectServer",
+     "effect": "confirmDisconnectServer; on confirm controller.disconnect(keepActive: true), then pops ServerSwitcherLeave(alreadyDisconnected: true) and the shell goes to '/servers'. The server keeps running.",
+     "gates": [
+      "connected through the phone server profile"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "server-switcher-sheet-phone-forget",
+     "type": "menu-item",
+     "label": "Forget saved sign-in (phone server card menu)",
+     "key": "termux-running-server-forget",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 123,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "Pops ServerSwitcherOpenServers(ServersRouteRequest.forget(profile.id)); the Servers screen opens its remove-server confirm sheet for that profile.",
+     "gates": [
+      "a saved profile matches the phone server"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "server-switcher-sheet-phone-manage",
+     "type": "menu-item",
+     "label": "Manage setup (phone server card menu)",
+     "key": "termux-running-server-manage",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 128,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "Pops ServerSwitcherOpenPhoneSetup; the shell pushes '/termux-setup'.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "server-switcher-sheet-phone-connect",
+     "type": "button",
+     "label": "Connect | Open (phone server card)",
+     "key": "termux-running-server-connect",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 132,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "Card onConnect: when this shell is already connected through that profile the sheet just closes; otherwise pops ServerSwitcherOpenServers(ServersRouteRequest.connect(id, detectedRunning: true)) and the Servers screen connects without the runtime-choice detour. Card onEnterCredentials pops ServersRouteRequest.enterPhoneCredentials, which opens the editor on the phone server URL.",
+     "gates": [
+      "platformCapabilities.supportsTermux",
+      "a running or stopped managed server was observed"
+     ],
+     "destructive": false
+    }
+   ],
+   "sheetKey": "server-switcher-sheet"
   },
   {
    "id": "desktop-release-notice",
@@ -13440,6 +13545,10 @@
     {
      "page": "command-launcher-sheet",
      "element": "chat-command-health"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-health"
     }
    ],
    "gates": [
@@ -14484,14 +14593,14 @@
   },
   {
    "id": "workspace",
-   "title": "Workspace",
+   "title": "Work",
    "kind": "tab",
    "area": "workspace",
    "file": "lib/ui/screens/workspace_screen.dart",
    "widget": "WorkspaceScreen",
    "presentedBy": [],
    "line": 35,
-   "purpose": "Root tab 0: current project context, AI Team card, return brief, sessions that need the user / pinned / active / recent, and the docked New session + Isolated task actions.",
+   "purpose": "Root tab 0 (Work). The current project is a fixed header that opens the project sheet; below it one scroll in the order every list uses (UX plan 5.7): notices and the return brief, Needs you, Running, Pinned, Recent, the AI Team card, Archived. New conversation and Isolated task stay docked in thumb reach. A conversation appears once, in the first section that fits, so a blocked or running pin returns to Pinned when it is answered or finishes.",
    "reachedFrom": [
     {
      "page": "home-shell",
@@ -14501,32 +14610,34 @@
    "gates": [],
    "elements": [
     {
-     "id": "workspace-pull-refresh",
-     "type": "gesture",
-     "label": "[pull to refresh]",
-     "key": "workspace-scroll",
+     "id": "workspace-active-session-directory",
+     "type": "list-tile",
+     "label": "<directory basename> / Active session directory · {directory}",
+     "key": "active-session-directory",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 422,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "_refreshWorkspace(): reloads the project catalog and workspaces via _load(), then controller.refreshSessions().",
-     "gates": [],
+     "line": 449,
+     "action": "open-dialog",
+     "target": "workspace-directory-details-dialog",
+     "targetWidget": "_showDirectoryDetails",
+     "effect": "_showDirectoryDetails(_selectedDirectory) shows the full path in a dialog.",
+     "gates": [
+      "widget.controller.capabilities.projectManagement && _hasExternalSessionDirectory (selected directory is neither the project root nor a listed worktree)"
+     ],
      "destructive": false
     },
     {
-     "id": "workspace-location-notice-dismiss",
-     "type": "icon-button",
-     "label": "Dismiss",
-     "key": "location-recovery-dismiss",
+     "id": "workspace-restricted-directory",
+     "type": "list-tile",
+     "label": "<directory basename> / <directory>",
+     "key": "restricted-directory-context",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 447,
-     "action": "dismiss",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.dismissLocationNotice() hides the location-recovery notice row.",
+     "line": 469,
+     "action": "open-dialog",
+     "target": "workspace-directory-details-dialog",
+     "targetWidget": "_showDirectoryDetails",
+     "effect": "_showDirectoryDetails(controller.directory) shows the full path in a dialog.",
      "gates": [
-      "widget.controller.locationNotice != null"
+      "!capabilities.projectManagement && widget.controller.directory?.isNotEmpty == true"
      ],
      "destructive": false
     },
@@ -14547,6 +14658,20 @@
      "destructive": false
     },
     {
+     "id": "workspace-pull-refresh",
+     "type": "gesture",
+     "label": "[pull to refresh]",
+     "key": "workspace-scroll",
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 495,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_refreshWorkspace(): reloads the project catalog and workspaces via _load(), then controller.refreshSessions().",
+     "gates": [],
+     "destructive": false
+    },
+    {
      "id": "workspace-error-search-all",
      "type": "button",
      "label": "Search all sessions",
@@ -14564,6 +14689,22 @@
      "destructive": false
     },
     {
+     "id": "workspace-location-notice-dismiss",
+     "type": "icon-button",
+     "label": "Dismiss",
+     "key": "location-recovery-dismiss",
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 519,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.dismissLocationNotice() hides the location-recovery notice row.",
+     "gates": [
+      "widget.controller.locationNotice != null"
+     ],
+     "destructive": false
+    },
+    {
      "id": "workspace-no-projects-search-all",
      "type": "button",
      "label": "Search all sessions",
@@ -14577,54 +14718,6 @@
      "gates": [
       "widget.controller.capabilities.projectManagement && _projects?.isEmpty == true && _selectedDirectory == null",
       "capabilities.globalSessionSearch"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "workspace-project-header",
-     "type": "card",
-     "label": "<project name> | Choose a project | <folder basename> (tooltip: Switch project, worktrees, and project health)",
-     "key": "current-project-context",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 541,
-     "action": "open-sheet",
-     "target": "workspace-context-sheet",
-     "targetWidget": "_openContextSheet",
-     "effect": "_openContextSheet() opens the project/workspace context sheet (InkWell at line 1725).",
-     "gates": [
-      "_hasProjectDetails: capabilities.projectManagement && (_projects?.isNotEmpty == true || _selectedDirectory != null)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "workspace-active-session-directory",
-     "type": "list-tile",
-     "label": "<directory basename> / Active session directory · {directory}",
-     "key": "active-session-directory",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 567,
-     "action": "open-dialog",
-     "target": "workspace-directory-details-dialog",
-     "targetWidget": "_showDirectoryDetails",
-     "effect": "_showDirectoryDetails(_selectedDirectory) shows the full path in a dialog.",
-     "gates": [
-      "widget.controller.capabilities.projectManagement && _hasExternalSessionDirectory (selected directory is neither the project root nor a listed worktree)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "workspace-restricted-directory",
-     "type": "list-tile",
-     "label": "<directory basename> / <directory>",
-     "key": "restricted-directory-context",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 602,
-     "action": "open-dialog",
-     "target": "workspace-directory-details-dialog",
-     "targetWidget": "_showDirectoryDetails",
-     "effect": "_showDirectoryDetails(controller.directory) shows the full path in a dialog.",
-     "gates": [
-      "!capabilities.projectManagement && widget.controller.directory?.isNotEmpty == true"
      ],
      "destructive": false
     },
@@ -14865,7 +14958,7 @@
     {
      "id": "workspace-session-row",
      "type": "list-tile",
-     "label": "<session title> (sections: Needs you, Pinned, Active sessions, Recent sessions)",
+     "label": "<conversation title> (sections: Needs you, Running, Pinned, Recent conversations)",
      "key": null,
      "file": "lib/ui/screens/workspace_screen.dart",
      "line": 1563,
@@ -14931,7 +15024,7 @@
      "label": "Open",
      "key": "session-menu-open",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1585,
+     "line": 1614,
      "action": "navigate",
      "target": "chat",
      "targetWidget": "/chat/<sessionId>",
@@ -14947,7 +15040,7 @@
      "label": "Rename",
      "key": "session-menu-rename",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1591,
+     "line": 1620,
      "action": "open-dialog",
      "target": "workspace-rename-session-dialog",
      "targetWidget": "_rename",
@@ -14963,7 +15056,7 @@
      "label": "Share | Stop sharing",
      "key": "session-menu-share",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1600,
+     "line": 1627,
      "action": "open-sheet",
      "target": "workspace-share-session-sheet",
      "targetWidget": "_confirmShare",
@@ -14980,7 +15073,7 @@
      "label": "Archive",
      "key": "session-menu-archive",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1609,
+     "line": 1638,
      "action": "open-sheet",
      "target": "workspace-archive-session-sheet",
      "targetWidget": "_confirmArchive",
@@ -14997,7 +15090,7 @@
      "label": "Delete",
      "key": "session-menu-delete",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1616,
+     "line": 1644,
      "action": "open-sheet",
      "target": "workspace-delete-session-sheet",
      "targetWidget": "_confirmDelete",
@@ -15006,6 +15099,22 @@
       "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
      ],
      "destructive": true
+    },
+    {
+     "id": "workspace-project-header",
+     "type": "card",
+     "label": "<project name> | Choose a project | <folder basename> (tooltip: Switch project, worktrees, and project health)",
+     "key": "current-project-context",
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 1756,
+     "action": "open-sheet",
+     "target": "workspace-context-sheet",
+     "targetWidget": "_openContextSheet",
+     "effect": "_openContextSheet() opens the project sheet. The header sits above the scroll view, so it stays in place while the list scrolls.",
+     "gates": [
+      "_hasProjectDetails: capabilities.projectManagement && (_projects?.isNotEmpty == true || _selectedDirectory != null)"
+     ],
+     "destructive": false
     },
     {
      "id": "workspace-search-all-sessions",
@@ -15029,7 +15138,7 @@
      "label": "[Recent sessions overflow menu]",
      "key": "workspace-section-menu",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1812,
+     "line": 1850,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -15043,7 +15152,7 @@
      "label": "Reload recent sessions",
      "key": "workspace-refresh-sessions",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1825,
+     "line": 1861,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -15054,50 +15163,18 @@
      "destructive": false
     },
     {
-     "id": "workspace-section-menu-terminal",
-     "type": "menu-item",
-     "label": "Terminal",
-     "key": "workspace-terminal",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1837,
-     "action": "navigate",
-     "target": "terminal",
-     "targetWidget": "TerminalPage",
-     "effect": "onOpenTerminal -> _openTerminal() pushes TerminalPage(controller).",
-     "gates": [
-      "capabilities.terminal"
-     ],
-     "destructive": false
-    },
-    {
      "id": "workspace-section-menu-background",
      "type": "menu-item",
      "label": "Stays connected in the background | Background updates off",
      "key": "workspace-background-toggle",
      "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1849,
+     "line": 1874,
      "action": "navigate",
      "target": "notifications-settings",
      "targetWidget": "NotificationsSettingsScreen",
      "effect": "onOpenBackgroundSettings -> _openBackgroundSettings() pushes NotificationsSettingsScreen(controller); the label reflects controller.keepLiveInBackground.",
      "gates": [
       "platformCapabilities.supportsBackgroundService"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "workspace-new-session",
-     "type": "fab",
-     "label": "New session",
-     "key": "workspace-quick-ask",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 2115,
-     "action": "navigate",
-     "target": "chat",
-     "targetWidget": "/chat/<sessionId>",
-     "effect": "_createSession(): controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()), then refreshSessions(); docked quick-ask pill replacing a FAB.",
-     "gates": [
-      "disabled while _creating"
      ],
      "destructive": false
     },
@@ -15119,16 +15196,32 @@
      "destructive": false
     },
     {
+     "id": "workspace-new-session",
+     "type": "fab",
+     "label": "New session",
+     "key": "workspace-quick-ask",
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 2157,
+     "action": "navigate",
+     "target": "chat",
+     "targetWidget": "/chat/<sessionId>",
+     "effect": "_createSession(): controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()), then refreshSessions(); docked quick-ask pill replacing a FAB.",
+     "gates": [
+      "disabled while _creating"
+     ],
+     "destructive": false
+    },
+    {
      "id": "workspace-team-card",
      "type": "card",
      "label": "[AI Team card]",
      "key": null,
      "file": "lib/ui/widgets/team_card.dart",
-     "line": 621,
+     "line": 794,
      "action": "navigate",
      "target": "team-home",
      "targetWidget": "TeamHomeScreen",
-     "effect": "Embeds TeamCard(controller: team, onOpen: () => _openTeamHome(team)); onOpen (run rows, collapsed row, Open action inside the card) pushes TeamHomeScreen(controller: team) via MaterialPageRoute (line 854). The card's other controls (refresh, retry) belong to the widget's owner.",
+     "effect": "Embeds TeamCard(controller: team, onOpen: () => _openTeamHome(team)) after Recent and its load-more footer and before Archived; onOpen pushes TeamHomeScreen(controller: team). What the team needs from the person reaches Inbox; the card's other controls belong to the widget's owner.",
      "gates": [
       "widget.controller.orchestration != null (AI Team plugin configured on the profile)"
      ],
@@ -15773,6 +15866,10 @@
     {
      "page": "manage-project",
      "element": "manage-project-worktrees"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-worktrees"
     }
    ],
    "gates": [
@@ -16340,11 +16437,11 @@
    "widget": "FilesScreen",
    "presentedBy": [],
    "line": 35,
-   "purpose": "Project file browser with file/symbol search, breadcrumbs, VCS change badges and an inline preview pane on wide layouts.",
+   "purpose": "Project file browser with file/symbol search, breadcrumbs, VCS change badges and an inline preview pane on wide layouts. Hosted inside the Project tab (kept alive behind the hub) or pushed from a conversation.",
    "reachedFrom": [
     {
-     "page": "home-shell",
-     "element": "home-shell-tab-files"
+     "page": "project-hub",
+     "element": "project-hub-files"
     },
     {
      "page": "chat",
@@ -16354,6 +16451,10 @@
     {
      "page": "command-launcher-sheet",
      "element": "chat-command-files"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-search"
     }
    ],
    "gates": [
@@ -17120,6 +17221,154 @@
    ]
   },
   {
+   "id": "project-hub",
+   "title": "Project",
+   "kind": "tab",
+   "area": "files",
+   "file": "lib/ui/screens/project_hub_screen.dart",
+   "widget": "ProjectHub",
+   "presentedBy": [],
+   "line": 36,
+   "purpose": "Root tab 2: the tools that act on the current project, one row each (Files, Changes, Terminal, Project health, Worktrees, Search files) under the project name and folder. Files opens inside the tab and stays alive behind the hub; the other rows push their existing screens.",
+   "reachedFrom": [
+    {
+     "page": "home-shell",
+     "element": "home-shell-tab-files"
+    }
+   ],
+   "gates": [
+    "ProjectHub.isAvailable(conn.capabilities): at least one row is available"
+   ],
+   "elements": [
+    {
+     "id": "project-hub-system-back",
+     "type": "gesture",
+     "label": "[system back]",
+     "key": null,
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 109,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_handleBack(): FilesBackController.handleBack() first (keyboard, search, parent folder); at the Files root it returns to the hub; on the hub it declines so the shell returns to Work.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-files-back",
+     "type": "icon-button",
+     "label": "Back",
+     "key": "project-hub-files-back",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 234,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Hides Files and shows the hub again; Files keeps its folder and search.",
+     "gates": [
+      "Files is showing inside the tab"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-files",
+     "type": "list-tile",
+     "label": "Files",
+     "key": "project-hub-files",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 291,
+     "action": "navigate",
+     "target": "files",
+     "targetWidget": "FilesScreen",
+     "effect": "_openFiles(): builds FilesScreen inside the tab on first use and shows it in place of the hub.",
+     "gates": [
+      "capabilities.fileBrowsing"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-changes",
+     "type": "list-tile",
+     "label": "Changes",
+     "key": "project-hub-changes",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 298,
+     "action": "navigate",
+     "target": "review-workspace",
+     "targetWidget": "ReviewWorkspace",
+     "effect": "_openChanges(): pushWorkingTreeReview(context, controller) pushes ReviewWorkspace on the working-tree scope; a returned review comment is copied to the clipboard (deliverReviewPrompt).",
+     "gates": [
+      "capabilities.fileBrowsing"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-terminal",
+     "type": "list-tile",
+     "label": "Terminal",
+     "key": "project-hub-terminal",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 305,
+     "action": "navigate",
+     "target": "terminal",
+     "targetWidget": "TerminalPage",
+     "effect": "_openTerminal(): Navigator.push(MaterialPageRoute(TerminalPage(controller))).",
+     "gates": [
+      "capabilities.terminal"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-health",
+     "type": "list-tile",
+     "label": "Project health",
+     "key": "project-hub-health",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 312,
+     "action": "navigate",
+     "target": "project-health",
+     "targetWidget": "ProjectHealthScreen",
+     "effect": "_openHealth(): controller.prepareActionRepository() then pushes ProjectHealthScreen; a missing repository shows the product error.",
+     "gates": [
+      "capabilities.projectManagement"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-worktrees",
+     "type": "list-tile",
+     "label": "Worktrees",
+     "key": "project-hub-worktrees",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 320,
+     "action": "navigate",
+     "target": "worktrees",
+     "targetWidget": "WorktreesScreen",
+     "effect": "_openWorktrees(): resolves the catalog project that owns controller.directory (WorkspaceScreen.projectForDirectory over repository.listProjects()) and pushes WorktreesScreen; no matching project shows \"No project folder is open. Choose one from Work.\"",
+     "gates": [
+      "capabilities.projectManagement"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-search",
+     "type": "list-tile",
+     "label": "Search files",
+     "key": "project-hub-search",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 327,
+     "action": "navigate",
+     "target": "files",
+     "targetWidget": "FilesScreen",
+     "effect": "_searchFiles(): opens Files inside the tab and focuses its search field (same path as Ctrl/Cmd+F).",
+     "gates": [
+      "capabilities.fileBrowsing"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
    "id": "review-workspace",
    "title": "Review changes",
    "kind": "screen",
@@ -17162,6 +17411,10 @@
     {
      "page": "session-menu-sheet",
      "element": "session-menu-sheet-changes"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-changes"
     }
    ],
    "gates": [
@@ -17945,12 +18198,8 @@
      "element": "chat-command-terminal"
     },
     {
-     "page": "workspace",
-     "element": "workspace-section-menu-terminal"
-    },
-    {
-     "page": "settings",
-     "element": "settings-terminal"
+     "page": "project-hub",
+     "element": "project-hub-terminal"
     }
    ],
    "gates": [
@@ -20695,15 +20944,27 @@
     },
     {
      "page": "home-shell",
-     "element": "home-shell-menu-disconnect"
-    },
-    {
-     "page": "home-shell",
      "element": "home-shell-banner-update-token"
     },
     {
      "page": "home-shell",
      "element": "home-shell-banner-update-password"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-profile"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-manage"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-phone-connect"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-phone-forget"
     },
     {
      "page": "connection-status-details-sheet",
@@ -20737,7 +20998,8 @@
    "gates": [
     "named route '/servers' (lib/main.dart:1230)",
     "list body shown when bootstrap.store.profiles.isNotEmpty; otherwise the servers-welcome body is shown",
-    "route argument 'edit-active' auto-opens the active profile's editor with the password/token focused (didChangeDependencies, line 70)"
+    "route argument 'edit-active' auto-opens the active profile's editor with the password/token focused (didChangeDependencies, line 70)",
+    "route argument ServersRouteRequest (from the server switcher) runs on arrival: connect -> _connect(profile), add -> _edit(), enterPhoneCredentials -> _edit on the phone server URL, forget -> _delete(profile)"
    ],
    "elements": [
     {
@@ -21047,6 +21309,10 @@
     {
      "page": "servers",
      "element": "servers-profile-menu-remove"
+    },
+    {
+     "page": "embedded-termux-running-server-entry",
+     "element": "embedded-termux-running-server-entry-menu-forget"
     }
    ],
    "gates": [],
@@ -21127,6 +21393,10 @@
      "page": "embedded-termux-running-server-entry",
      "element": null,
      "evidence": "lib/ui/widgets/termux_running_server_entry.dart:228"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-add"
     },
     {
      "page": "system",
@@ -23093,6 +23363,10 @@
      "element": "root-connecting-primary-termux"
     },
     {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-phone-manage"
+    },
+    {
      "page": "servers",
      "element": "servers-termux-setup"
     },
@@ -23103,6 +23377,10 @@
     {
      "page": "server-settings",
      "element": "server-settings-updates-managed"
+    },
+    {
+     "page": "embedded-termux-running-server-entry",
+     "element": "embedded-termux-running-server-entry-menu-manage"
     },
     {
      "page": "embedded-team-phone-section",
@@ -24862,15 +25140,20 @@
   },
   {
    "id": "embedded-termux-running-server-entry",
-   "title": "Server found on this phone",
+   "title": "Server on this phone",
    "kind": "overlay",
    "area": "termux",
    "file": "lib/ui/widgets/termux_running_server_entry.dart",
    "widget": "TermuxRunningServerEntry",
    "presentedBy": [],
-   "line": 21,
-   "purpose": "Card on the Servers / welcome screen shown only while a read-only Termux check reports the app-managed server running and it is not the connected profile.",
+   "line": 37,
+   "purpose": "Card for the app-managed server on this phone, first on the Servers screen, the welcome screen and in the server switcher: connect or open, start, restart, stop, and a menu with Disconnect, Refresh, Manage setup and Forget saved sign-in. Hosts wire connect, credentials, disconnect, manage and forget.",
    "reachedFrom": [
+    {
+     "page": "server-switcher-sheet",
+     "element": null,
+     "via": "embedded"
+    },
     {
      "page": "servers",
      "element": null,
@@ -24878,64 +25161,167 @@
     }
    ],
    "gates": [
-    "`platformCapabilities.supportsTermux`",
-    "`_server != null` and state not `unsupported`/`absent`",
-    "hidden when the running server's saved profile id equals `widget.connectedProfileID`"
+    "platformCapabilities.supportsTermux",
+    "_server != null and state not unsupported/absent (a running or stopped managed server)"
    ],
    "embeddedIn": [
-    "ServersScreen"
+    "ServersScreen",
+    "ServerSwitcherSheet"
    ],
    "hostPages": [
+    "server-switcher-sheet",
     "servers"
    ],
    "elements": [
     {
-     "id": "embedded-termux-running-server-entry-recheck-icon",
+     "id": "embedded-termux-running-server-entry-menu",
      "type": "icon-button",
-     "label": "Check status",
-     "key": null,
+     "label": "More server actions",
+     "key": "termux-running-server-menu",
      "file": "lib/ui/widgets/termux_running_server_entry.dart",
-     "line": 142,
+     "line": 355,
      "action": "other",
      "target": null,
-     "effect": "`_check()` re-runs `detectTermuxRunningServer`. Trailing icon of a ListTile titled \"Allow Termux access in phone setup to check for a server.\" (denied) or \"Could not check the server on this phone.\".",
+     "targetWidget": null,
+     "effect": "opens overflow menu (PopupMenuButton<VoidCallback>)",
      "gates": [
-      "`!server.isRunning` and state not unsupported/absent",
-      "disabled while `widget.busy || _checking`"
+      "disabled while locked"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-termux-running-server-entry-menu-disconnect",
+     "type": "menu-item",
+     "label": "Disconnect",
+     "key": "termux-running-server-disconnect",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 362,
+     "action": "open-sheet",
+     "target": "settings-disconnect-sheet",
+     "targetWidget": "confirmDisconnectServer",
+     "effect": "Host onDisconnect: confirmDisconnectServer then connection.disconnect(keepActive: true); the server keeps running.",
+     "gates": [
+      "connected through this profile",
+      "widget.onDisconnect != null"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "embedded-termux-running-server-entry-recheck",
+     "type": "menu-item",
+     "label": "Refresh",
+     "key": "termux-running-server-recheck",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 367,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_check(): re-reads the phone server state.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-termux-running-server-entry-menu-manage",
+     "type": "menu-item",
+     "label": "Manage setup",
+     "key": "termux-running-server-manage",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 373,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "Host onManage: opens the setup wizard ('/termux-setup').",
+     "gates": [
+      "widget.onManage != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-termux-running-server-entry-menu-forget",
+     "type": "menu-item",
+     "label": "Forget saved sign-in",
+     "key": "termux-running-server-forget",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 379,
+     "action": "open-sheet",
+     "target": "servers-remove-server-sheet",
+     "targetWidget": "_delete",
+     "effect": "Host onForget(profile): ServersScreen._delete confirm sheet, then connection.deleteProfileAndLocalData(profile.id). The server itself is untouched.",
+     "gates": [
+      "a saved profile matches the phone server",
+      "widget.onForget != null"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "embedded-termux-running-server-entry-start",
+     "type": "button",
+     "label": "Start",
+     "key": "termux-running-server-start",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 417,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_start(): widget.actions.restart() (LocalServerControls.restart) with a progress bar, then re-reads the phone; a failure is shown on the card.",
+     "gates": [
+      "server.isStopped",
+      "disabled when widget.actions == null or locked"
      ],
      "destructive": false
     },
     {
      "id": "embedded-termux-running-server-entry-connect",
      "type": "button",
-     "label": "Connect to running server",
+     "label": "Connect | Open",
      "key": "termux-running-server-connect",
      "file": "lib/ui/widgets/termux_running_server_entry.dart",
-     "line": 193,
+     "line": 427,
      "action": "mutate",
      "target": null,
-     "effect": "Revalidates the observation, then calls host `onConnect(saved)` (ServersScreen `_connect(profile, detectedRunning: true)`) or, when no saved profile / `fresh.needsCredentials` / `saved.requiresPasswordReentry`, host `onEnterCredentials(fresh, saved)` (ServersScreen `_edit(... connectOnSave: true, focusPassword: true)` profile editor).",
+     "targetWidget": null,
+     "effect": "_connect(): re-reads the phone (detectTermuxRunningServer), then host onConnect(saved) or, with no saved profile / needsCredentials / requiresPasswordReentry, host onEnterCredentials(fresh, saved).",
      "gates": [
-      "`server.isRunning`",
-      "disabled while `widget.busy || _checking`"
+      "!server.isStopped",
+      "disabled while widget.busy || _checking || _operation != null"
      ],
      "destructive": false
     },
     {
-     "id": "embedded-termux-running-server-entry-recheck",
+     "id": "embedded-termux-running-server-entry-restart",
      "type": "button",
-     "label": "Check status",
-     "key": "termux-running-server-recheck",
+     "label": "Restart",
+     "key": "termux-running-server-restart",
      "file": "lib/ui/widgets/termux_running_server_entry.dart",
-     "line": 236,
-     "action": "other",
+     "line": 439,
+     "action": "mutate",
      "target": null,
-     "effect": "`_check()`.",
+     "targetWidget": null,
+     "effect": "_restart(): confirmRestartLocalServer(busyConversations) confirm sheet, then widget.actions.restart().",
      "gates": [
-      "`server.isRunning`",
-      "disabled while `widget.busy || _checking`"
+      "!server.isStopped",
+      "widget.actions != null",
+      "disabled while locked"
      ],
-     "destructive": false
+     "destructive": true
+    },
+    {
+     "id": "embedded-termux-running-server-entry-stop",
+     "type": "button",
+     "label": "Stop",
+     "key": "termux-running-server-stop",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 448,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_stop(): confirmStopLocalServer confirm sheet, then widget.actions.stop() (LocalServerControls.stop).",
+     "gates": [
+      "!server.isStopped",
+      "widget.actions != null",
+      "disabled while locked"
+     ],
+     "destructive": true
     },
     {
      "id": "embedded-termux-running-server-entry-details",
@@ -24943,18 +25329,19 @@
      "label": "Server details",
      "key": null,
      "file": "lib/ui/widgets/termux_running_server_entry.dart",
-     "line": 247,
+     "line": 466,
      "action": "other",
      "target": null,
-     "effect": "ExpansionTile; expands runtime name · version and \"Last checked at {time}\".",
+     "targetWidget": null,
+     "effect": "ExpansionTile: expands version and last check time.",
      "gates": [
-      "`server.isRunning`"
+      "server.isRunning"
      ],
      "destructive": false
     }
    ],
    "key": "termux-running-server",
-   "notes": "Embedded via ServersScreen._runningServerEntry (lib/ui/screens/servers_screen.dart:105-124), used by both the welcome view and the list."
+   "notes": "Embedded via ServersScreen._runningServerEntry and ServerSwitcherSheet; both build LocalServerCardActions from LocalServerControls."
   },
   {
    "id": "team-agent-output",
@@ -33194,23 +33581,6 @@
      "destructive": false
     },
     {
-     "id": "settings-terminal",
-     "type": "list-tile",
-     "label": "Terminal",
-     "key": "library-terminal",
-     "file": "lib/ui/screens/settings_screen.dart",
-     "line": 538,
-     "action": "navigate",
-     "target": "terminal",
-     "targetWidget": "TerminalPage",
-     "effect": "Pushes TerminalPage(controller) via _open. Last row of Agent setup until the Project tab exists (phase 3).",
-     "gates": [
-      "capabilities.terminal",
-      "row hidden when it does not match the search query (_HubRow.matches(_query))"
-     ],
-     "destructive": false
-    },
-    {
      "id": "settings-category-usage",
      "type": "list-tile",
      "label": "Usage",
@@ -33397,14 +33767,27 @@
    "file": "lib/ui/screens/settings_screen.dart",
    "widget": "_disconnect",
    "presentedBy": [
-    "showConfirmSheet"
+    "showConfirmSheet",
+    "confirmDisconnectServer"
    ],
    "line": 127,
-   "purpose": "Confirms disconnecting from the current server, disclosing how many queued prompts and drafts stop moving.",
+   "purpose": "Confirms disconnecting from the current server, disclosing how many queued prompts and drafts stop moving. One sheet (confirmDisconnectServer in lib/ui/widgets/safety_confirms.dart) for every door: Settings, the server switcher and the phone server card.",
    "reachedFrom": [
     {
      "page": "settings",
      "element": "settings-disconnect"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-disconnect"
+    },
+    {
+     "page": "server-switcher-sheet",
+     "element": "server-switcher-sheet-phone-disconnect"
+    },
+    {
+     "page": "embedded-termux-running-server-entry",
+     "element": "embedded-termux-running-server-entry-menu-disconnect"
     }
    ],
    "gates": [],
@@ -34263,7 +34646,8 @@
    "reachedFrom": [
     {
      "page": "home-shell",
-     "element": "home-shell-menu-model"
+     "element": null,
+     "evidence": "lib/ui/screens/home_screen.dart:195"
     },
     {
      "page": "chat",
@@ -35813,8 +36197,8 @@
    "root-connecting",
    "home-shell",
    "workspace",
-   "files",
    "activity",
+   "project-hub",
    "settings"
   ],
   "edges": [
@@ -35856,7 +36240,7 @@
    {
     "from": "home-shell",
     "element": "home-shell-tab-files",
-    "to": "files"
+    "to": "project-hub"
    },
    {
     "from": "home-shell",
@@ -35870,18 +36254,13 @@
    },
    {
     "from": "home-shell",
-    "element": "home-shell-menu-model",
-    "to": "model-picker-sheet"
-   },
-   {
-    "from": "home-shell",
-    "element": "home-shell-menu-disconnect",
-    "to": "servers"
-   },
-   {
-    "from": "home-shell",
     "element": "home-shell-shortcut-terminal",
     "to": "terminal"
+   },
+   {
+    "from": "home-shell",
+    "element": "home-shell-server-switcher",
+    "to": "server-switcher-sheet"
    },
    {
     "from": "home-shell",
@@ -35897,6 +36276,46 @@
     "from": "home-shell",
     "element": "home-shell-banner-details",
     "to": "connection-status-details-sheet"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-profile",
+    "to": "servers"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-add",
+    "to": "profile-editor"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-manage",
+    "to": "servers"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-disconnect",
+    "to": "settings-disconnect-sheet"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-phone-connect",
+    "to": "servers"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-phone-disconnect",
+    "to": "settings-disconnect-sheet"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-phone-manage",
+    "to": "termux-setup"
+   },
+   {
+    "from": "server-switcher-sheet",
+    "element": "server-switcher-sheet-phone-forget",
+    "to": "servers"
    },
    {
     "from": "connection-status-details-sheet",
@@ -37185,11 +37604,6 @@
    },
    {
     "from": "workspace",
-    "element": "workspace-section-menu-terminal",
-    "to": "terminal"
-   },
-   {
-    "from": "workspace",
     "element": "workspace-section-menu-background",
     "to": "notifications-settings"
    },
@@ -37427,6 +37841,36 @@
     "from": "shell-output",
     "element": "shell-output-stop",
     "to": "shell-output-stop-dialog"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-files",
+    "to": "files"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-changes",
+    "to": "review-workspace"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-terminal",
+    "to": "terminal"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-health",
+    "to": "project-health"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-worktrees",
+    "to": "worktrees"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-search",
+    "to": "files"
    },
    {
     "from": "files",
@@ -38024,6 +38468,21 @@
     "to": "development-services-confirm-sheet"
    },
    {
+    "from": "embedded-termux-running-server-entry",
+    "element": "embedded-termux-running-server-entry-menu-disconnect",
+    "to": "settings-disconnect-sheet"
+   },
+   {
+    "from": "embedded-termux-running-server-entry",
+    "element": "embedded-termux-running-server-entry-menu-manage",
+    "to": "termux-setup"
+   },
+   {
+    "from": "embedded-termux-running-server-entry",
+    "element": "embedded-termux-running-server-entry-menu-forget",
+    "to": "servers-remove-server-sheet"
+   },
+   {
     "from": "embedded-managed-server-health",
     "element": "embedded-managed-server-health-manage",
     "to": "termux-setup"
@@ -38412,11 +38871,6 @@
     "from": "settings",
     "element": "settings-import-session",
     "to": "session-import"
-   },
-   {
-    "from": "settings",
-    "element": "settings-terminal",
-    "to": "terminal"
    },
    {
     "from": "settings",
@@ -39759,6 +40213,12 @@
     "via": "state"
    },
    {
+    "from": "server-switcher-sheet",
+    "element": null,
+    "to": "embedded-termux-running-server-entry",
+    "via": "embedded"
+   },
+   {
     "from": "servers",
     "element": null,
     "to": "embedded-termux-running-server-entry",
@@ -39943,6 +40403,11 @@
     "from": "chat",
     "element": null,
     "to": "app-diagnostics"
+   },
+   {
+    "from": "home-shell",
+    "element": null,
+    "to": "model-picker-sheet"
    },
    {
     "from": "chat",

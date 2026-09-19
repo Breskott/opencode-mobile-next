@@ -831,7 +831,7 @@
   "runResultsOutputTitle": "Recorded tool output",
   "runResultsOpenConversation": "Open conversation",
   "attentionDisclosure": "A local overview, not live monitoring across servers. Cached signals may be incomplete or out of date. Open a server to check its current activity.",
-  "attentionNavigationUnavailable": "Opening servers is unavailable here. Return to Home to choose a server and view Activity.",
+  "attentionNavigationUnavailable": "Opening servers is unavailable here. Return to Home to choose a server and view Inbox.",
   "handoffTitle": "Copy handoff reference?",
   "handoffDisclosure": "Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.",
   "handoffCopy": "Copy reference",
@@ -2437,7 +2437,7 @@
   "returnBriefUnreviewed": "Unreviewed conversation. Open results to check the outcome.",
   "returnBriefReview": "Review results",
   "returnBriefContinue": "Continue",
-  "returnBriefMore": "Additional items: {count}. They remain unacknowledged; see the conversations below or Activity.",
+  "returnBriefMore": "Additional items: {count}. They remain unacknowledged; see the conversations below or Inbox.",
   "@returnBriefMore": {
     "placeholders": {
       "count": {
@@ -4220,7 +4220,7 @@
   "@e7LocaleUiNewSessionHint": {
     "description": "Locale selection or app shell: NewSessionHint"
   },
-  "e7LocaleUiWorkspace": "Workspace",
+  "e7LocaleUiWorkspace": "Work",
   "@e7LocaleUiWorkspace": {
     "description": "Locale selection or app shell: Workspace"
   },
@@ -4228,15 +4228,15 @@
   "@e7LocaleUiWorkspaceHint": {
     "description": "Locale selection or app shell: WorkspaceHint"
   },
-  "e7LocaleUiFiles": "Files",
+  "e7LocaleUiFiles": "Project",
   "@e7LocaleUiFiles": {
     "description": "Locale selection or app shell: Files"
   },
-  "e7LocaleUiFilesHint": "Browse the project tree",
+  "e7LocaleUiFilesHint": "Files, changes, terminal and other project tools",
   "@e7LocaleUiFilesHint": {
     "description": "Locale selection or app shell: FilesHint"
   },
-  "e7LocaleUiActivity": "Activity",
+  "e7LocaleUiActivity": "Inbox",
   "@e7LocaleUiActivity": {
     "description": "Locale selection or app shell: Activity"
   },
@@ -4244,7 +4244,7 @@
   "@e7LocaleUiActivityHint": {
     "description": "Locale selection or app shell: ActivityHint"
   },
-  "e7LocaleUiMoreHint": "Models, providers, terminal, settings",
+  "e7LocaleUiMoreHint": "Models, providers, notifications, settings",
   "@e7LocaleUiMoreHint": {
     "description": "Locale selection or app shell: MoreHint"
   },
@@ -4276,7 +4276,7 @@
   "@e7LocaleUiFindSurface": {
     "description": "App shell command menu or routing: FindSurface"
   },
-  "e7LocaleUiDestinations": "Workspace, Files, Activity, Settings",
+  "e7LocaleUiDestinations": "Work, Inbox, Project, Settings",
   "@e7LocaleUiDestinations": {
     "description": "App shell command menu or routing: Destinations"
   },
@@ -5149,7 +5149,7 @@
   "@e7ProjectProjectSwitchUnavailable": {
     "description": "Project management unavailable heading"
   },
-  "e7ProjectProjectSwitchUnavailableDetail": "This server keeps the configured folder for conversations. Start a new conversation from Workspace to continue.",
+  "e7ProjectProjectSwitchUnavailableDetail": "This server keeps the configured folder for conversations. Start a new conversation from Work to continue.",
   "@e7ProjectProjectSwitchUnavailableDetail": {
     "description": "Project management unavailable explanation"
   },
@@ -6159,10 +6159,6 @@
   "@e7WorkspaceNeedsYou": {
     "description": "Workspace and activity: Needs you"
   },
-  "e7WorkspaceActiveSessions": "Active conversations",
-  "@e7WorkspaceActiveSessions": {
-    "description": "Workspace and activity: Active sessions"
-  },
   "e7WorkspaceRecentSessions": "Recent conversations",
   "@e7WorkspaceRecentSessions": {
     "description": "Workspace and activity: Recent sessions"
@@ -6262,18 +6258,6 @@
   "e7WorkspaceStopSharing": "Stop sharing",
   "@e7WorkspaceStopSharing": {
     "description": "Workspace and activity: Stop sharing"
-  },
-  "e7WorkspaceFiles": "Files",
-  "@e7WorkspaceFiles": {
-    "description": "Workspace and activity: Files"
-  },
-  "e7WorkspaceActivity": "Activity",
-  "@e7WorkspaceActivity": {
-    "description": "Workspace and activity: Activity"
-  },
-  "e7WorkspaceModelAgent": "Model / agent",
-  "@e7WorkspaceModelAgent": {
-    "description": "Workspace and activity: Model / agent"
   },
   "e7WorkspaceDisconnect": "Disconnect",
   "@e7WorkspaceDisconnect": {
@@ -9255,7 +9239,7 @@
   "@e7LibraryNoProjectSelected": {
     "description": "Library and project tools UI: No project selected"
   },
-  "e7LibraryNoProjectFolderIsOpenChooseOne": "No project folder is open. Choose one from Workspace.",
+  "e7LibraryNoProjectFolderIsOpenChooseOne": "No project folder is open. Choose one from Work.",
   "@e7LibraryNoProjectFolderIsOpenChooseOne": {
     "description": "Library and project tools UI: No project folder is open. Choose one from Workspace."
   },
@@ -10322,10 +10306,6 @@
   "e7LibraryEnvironmentRemainsAfterDisconnect": "This provider also uses the server environment, which mobile cannot remove and which will remain active.",
   "@e7LibraryEnvironmentRemainsAfterDisconnect": {
     "description": "Library and project tools confirmation or count."
-  },
-  "e7LibrarySearchTerminalAliases": "shell command line",
-  "@e7LibrarySearchTerminalAliases": {
-    "description": "Search aliases for the terminal destination; preserve English terms to allow either language."
   },
   "e7LibrarySearchImportAliases": "backup restore transfer JSON conversation session chat",
   "@e7LibrarySearchImportAliases": {
@@ -16625,7 +16605,7 @@
   "@teamUiPhoneOfferTitle": {
     "description": "On-device AI Team block: title"
   },
-  "teamUiPhoneOfferBody": "Lets several coding agents work on your project while you supervise from Workspace. Uses the same Linux environment you just set up.",
+  "teamUiPhoneOfferBody": "Lets several coding agents work on your project while you supervise from Work. Uses the same Linux environment you just set up.",
   "@teamUiPhoneOfferBody": {
     "description": "On-device AI Team block: body"
   },
@@ -16729,7 +16709,7 @@
       }
     }
   },
-  "teamUiPhoneOpenWorkspace": "Open Workspace",
+  "teamUiPhoneOpenWorkspace": "Open Work",
   "@teamUiPhoneOpenWorkspace": {
     "description": "On-device setup: success card action"
   },
@@ -16975,7 +16955,7 @@
   "@teamUiPhoneReofferTitle": {
     "description": "Settings › Plugins: re-offer row title"
   },
-  "teamUiPhoneReofferBody": "The optional step you skipped during setup. Several coding agents work on your project while you supervise from Workspace; Android may stop them when the app is away.",
+  "teamUiPhoneReofferBody": "The optional step you skipped during setup. Several coding agents work on your project while you supervise from Work; Android may stop them when the app is away.",
   "@teamUiPhoneReofferBody": {
     "description": "Settings › Plugins: re-offer row body"
   },
@@ -17323,5 +17303,37 @@
   "usageSectionRemaining": "Remaining",
   "@usageSectionRemaining": {
     "description": "Usage screen section (tab): what a provider account has left, with quota monitoring."
+  },
+  "shellTabWork": "Work",
+  "@shellTabWork": {
+    "description": "Bottom navigation label and app bar title of the first tab: conversations in the current project."
+  },
+  "shellTabInbox": "Inbox",
+  "@shellTabInbox": {
+    "description": "Bottom navigation label and title of the second tab: everything waiting on the person, then running and finished work."
+  },
+  "shellTabProject": "Project",
+  "@shellTabProject": {
+    "description": "Bottom navigation label and app bar title of the third tab: tools scoped to the current project."
+  },
+  "projectHubFilesSubtitle": "Browse and preview project files",
+  "@projectHubFilesSubtitle": {
+    "description": "Project tab: subtitle of the Files row."
+  },
+  "projectHubChangesSubtitle": "Review uncommitted changes",
+  "@projectHubChangesSubtitle": {
+    "description": "Project tab: subtitle of the Changes row, which opens the working-tree review."
+  },
+  "projectHubSearchSubtitle": "Find a file by name",
+  "@projectHubSearchSubtitle": {
+    "description": "Project tab: subtitle of the Search files row, which opens Files with the search field focused."
+  },
+  "serverSwitcherManage": "Manage servers",
+  "@serverSwitcherManage": {
+    "description": "Server switcher row that opens the Servers screen."
+  },
+  "serverSwitcherOpen": "Switch server",
+  "@serverSwitcherOpen": {
+    "description": "Shell app bar: accessibility hint on the server name and status, which open the server switcher sheet."
   }
 }

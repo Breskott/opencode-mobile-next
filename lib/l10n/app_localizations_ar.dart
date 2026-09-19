@@ -1711,7 +1711,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get attentionNavigationUnavailable =>
-      'لا يمكن فتح الخوادم هنا. ارجع إلى الرئيسية لاختيار خادم وعرض النشاط.';
+      'لا يمكن فتح الخوادم هنا. ارجع إلى الرئيسية لاختيار خادم وعرض «الوارد».';
 
   @override
   String get handoffTitle => 'هل تريد نسخ مرجع متابعة المحادثة؟';
@@ -4156,7 +4156,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String returnBriefMore(int count) {
-    return 'عناصر إضافية: $count. تبقى دون إقرار؛ راجع المحادثات أدناه أو «النشاط».';
+    return 'عناصر إضافية: $count. تبقى دون إقرار؛ راجع المحادثات أدناه أو «الوارد».';
   }
 
   @override
@@ -6243,25 +6243,27 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiNewSessionHint => 'ابدأ محادثة في المشروع الحالي';
 
   @override
-  String get e7LocaleUiWorkspace => 'مساحة العمل';
+  String get e7LocaleUiWorkspace => 'العمل';
 
   @override
   String get e7LocaleUiWorkspaceHint => 'المحادثات الأخيرة والمشروع الحالي';
 
   @override
-  String get e7LocaleUiFiles => 'الملفات';
+  String get e7LocaleUiFiles => 'المشروع';
 
   @override
-  String get e7LocaleUiFilesHint => 'تصفّح شجرة ملفات المشروع';
+  String get e7LocaleUiFilesHint =>
+      'الملفات والتغييرات والطرفية وأدوات المشروع الأخرى';
 
   @override
-  String get e7LocaleUiActivity => 'النشاط';
+  String get e7LocaleUiActivity => 'الوارد';
 
   @override
   String get e7LocaleUiActivityHint => 'الأذونات والأسئلة والنماذج';
 
   @override
-  String get e7LocaleUiMoreHint => 'النماذج ومزوّدو الخدمة والطرفية والإعدادات';
+  String get e7LocaleUiMoreHint =>
+      'النماذج ومزوّدو الخدمة والإشعارات والإعدادات';
 
   @override
   String get e7LocaleUiSettings => 'الإعدادات';
@@ -6285,8 +6287,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiFindSurface => 'البحث في هذه الصفحة';
 
   @override
-  String get e7LocaleUiDestinations =>
-      'مساحة العمل، الملفات، النشاط، الإعدادات';
+  String get e7LocaleUiDestinations => 'العمل، الوارد، المشروع، الإعدادات';
 
   @override
   String get e7LocaleUiTerminal => 'الطرفية';
@@ -6976,7 +6977,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7ProjectProjectSwitchUnavailableDetail =>
-      'يستخدم هذا الخادم المجلد المحدد للمحادثات. ابدأ محادثة جديدة من مساحة العمل للمتابعة.';
+      'يستخدم هذا الخادم المجلد المحدد للمحادثات. ابدأ محادثة جديدة من «العمل» للمتابعة.';
 
   @override
   String get e7ProjectProjectsTitle => 'المشاريع';
@@ -7719,9 +7720,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7WorkspaceNeedsYou => 'بانتظارك';
 
   @override
-  String get e7WorkspaceActiveSessions => 'المحادثات النشطة';
-
-  @override
   String get e7WorkspaceRecentSessions => 'المحادثات الأخيرة';
 
   @override
@@ -7796,15 +7794,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7WorkspaceStopSharing => 'إيقاف المشاركة';
-
-  @override
-  String get e7WorkspaceFiles => 'الملفات';
-
-  @override
-  String get e7WorkspaceActivity => 'النشاط';
-
-  @override
-  String get e7WorkspaceModelAgent => 'النموذج / الوكيل';
 
   @override
   String get e7WorkspaceDisconnect => 'قطع الاتصال';
@@ -10226,7 +10215,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7LibraryNoProjectFolderIsOpenChooseOne =>
-      'لا يوجد مجلد مشروع مفتوح. اختر مجلدًا من مساحة العمل.';
+      'لا يوجد مجلد مشروع مفتوح. اختر مجلدًا من «العمل».';
 
   @override
   String get e7LibraryProject => 'المشروع';
@@ -11008,10 +10997,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get e7LibraryEnvironmentRemainsAfterDisconnect =>
       'يستخدم مزوّد الخدمة هذا أيضًا بيئة الخادم، التي لا يستطيع تطبيق الهاتف إزالتها وستبقى نشطة.';
-
-  @override
-  String get e7LibrarySearchTerminalAliases =>
-      'shell command line طرفية صدفة سطر أوامر';
 
   @override
   String get e7LibrarySearchImportAliases =>
@@ -15642,7 +15627,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiPhoneOfferBody =>
-      'يتيح لعدة وكلاء برمجة العمل على مشروعك بينما تشرف عليهم من مساحة العمل. يستخدم بيئة لينكس نفسها التي أعددتها للتو.';
+      'يتيح لعدة وكلاء برمجة العمل على مشروعك بينما تشرف عليهم من تبويب «العمل». يستخدم بيئة لينكس نفسها التي أعددتها للتو.';
 
   @override
   String teamUiPhoneOfferSize(int size) {
@@ -15727,7 +15712,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamUiPhoneOpenWorkspace => 'فتح مساحة العمل';
+  String get teamUiPhoneOpenWorkspace => 'فتح «العمل»';
 
   @override
   String get teamUiPhoneRetry => 'إعادة المحاولة';
@@ -15923,7 +15908,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiPhoneReofferBody =>
-      'الخطوة الاختيارية التي تخطيتها أثناء الإعداد. يعمل عدة وكلاء برمجة على مشروعك بينما تشرف عليهم من مساحة العمل؛ وقد يوقفهم أندرويد أثناء غياب التطبيق.';
+      'الخطوة الاختيارية التي تخطيتها أثناء الإعداد. يعمل عدة وكلاء برمجة على مشروعك بينما تشرف عليهم من تبويب «العمل»؛ وقد يوقفهم أندرويد أثناء غياب التطبيق.';
 
   @override
   String get teamUiPhoneReofferDismiss => 'ليس الآن';
@@ -16266,4 +16251,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get usageSectionRemaining => 'المتبقي';
+
+  @override
+  String get shellTabWork => 'العمل';
+
+  @override
+  String get shellTabInbox => 'الوارد';
+
+  @override
+  String get shellTabProject => 'المشروع';
+
+  @override
+  String get projectHubFilesSubtitle => 'تصفّح ملفات المشروع ومعاينتها';
+
+  @override
+  String get projectHubChangesSubtitle => 'راجع التغييرات غير المودَعة';
+
+  @override
+  String get projectHubSearchSubtitle => 'اعثر على ملف باسمه';
+
+  @override
+  String get serverSwitcherManage => 'إدارة الخوادم';
+
+  @override
+  String get serverSwitcherOpen => 'تبديل الخادم';
 }

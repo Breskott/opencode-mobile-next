@@ -2855,7 +2855,7 @@ abstract class AppLocalizations {
   /// No description provided for @attentionNavigationUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Opening servers is unavailable here. Return to Home to choose a server and view Activity.'**
+  /// **'Opening servers is unavailable here. Return to Home to choose a server and view Inbox.'**
   String get attentionNavigationUnavailable;
 
   /// No description provided for @handoffTitle.
@@ -6838,7 +6838,7 @@ abstract class AppLocalizations {
   /// No description provided for @returnBriefMore.
   ///
   /// In en, this message translates to:
-  /// **'Additional items: {count}. They remain unacknowledged; see the conversations below or Activity.'**
+  /// **'Additional items: {count}. They remain unacknowledged; see the conversations below or Inbox.'**
   String returnBriefMore(int count);
 
   /// No description provided for @returnBriefSaveFailed.
@@ -10258,7 +10258,7 @@ abstract class AppLocalizations {
   /// Locale selection or app shell: Workspace
   ///
   /// In en, this message translates to:
-  /// **'Workspace'**
+  /// **'Work'**
   String get e7LocaleUiWorkspace;
 
   /// Locale selection or app shell: WorkspaceHint
@@ -10270,19 +10270,19 @@ abstract class AppLocalizations {
   /// Locale selection or app shell: Files
   ///
   /// In en, this message translates to:
-  /// **'Files'**
+  /// **'Project'**
   String get e7LocaleUiFiles;
 
   /// Locale selection or app shell: FilesHint
   ///
   /// In en, this message translates to:
-  /// **'Browse the project tree'**
+  /// **'Files, changes, terminal and other project tools'**
   String get e7LocaleUiFilesHint;
 
   /// Locale selection or app shell: Activity
   ///
   /// In en, this message translates to:
-  /// **'Activity'**
+  /// **'Inbox'**
   String get e7LocaleUiActivity;
 
   /// Locale selection or app shell: ActivityHint
@@ -10294,7 +10294,7 @@ abstract class AppLocalizations {
   /// Locale selection or app shell: MoreHint
   ///
   /// In en, this message translates to:
-  /// **'Models, providers, terminal, settings'**
+  /// **'Models, providers, notifications, settings'**
   String get e7LocaleUiMoreHint;
 
   /// Locale selection or app shell: Settings
@@ -10342,7 +10342,7 @@ abstract class AppLocalizations {
   /// App shell command menu or routing: Destinations
   ///
   /// In en, this message translates to:
-  /// **'Workspace, Files, Activity, Settings'**
+  /// **'Work, Inbox, Project, Settings'**
   String get e7LocaleUiDestinations;
 
   /// App shell command menu or routing: Terminal
@@ -11411,7 +11411,7 @@ abstract class AppLocalizations {
   /// Project management unavailable explanation
   ///
   /// In en, this message translates to:
-  /// **'This server keeps the configured folder for conversations. Start a new conversation from Workspace to continue.'**
+  /// **'This server keeps the configured folder for conversations. Start a new conversation from Work to continue.'**
   String get e7ProjectProjectSwitchUnavailableDetail;
 
   /// Project browser title
@@ -12541,12 +12541,6 @@ abstract class AppLocalizations {
   /// **'Needs you'**
   String get e7WorkspaceNeedsYou;
 
-  /// Workspace and activity: Active sessions
-  ///
-  /// In en, this message translates to:
-  /// **'Active conversations'**
-  String get e7WorkspaceActiveSessions;
-
   /// Workspace and activity: Recent sessions
   ///
   /// In en, this message translates to:
@@ -12696,24 +12690,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop sharing'**
   String get e7WorkspaceStopSharing;
-
-  /// Workspace and activity: Files
-  ///
-  /// In en, this message translates to:
-  /// **'Files'**
-  String get e7WorkspaceFiles;
-
-  /// Workspace and activity: Activity
-  ///
-  /// In en, this message translates to:
-  /// **'Activity'**
-  String get e7WorkspaceActivity;
-
-  /// Workspace and activity: Model / agent
-  ///
-  /// In en, this message translates to:
-  /// **'Model / agent'**
-  String get e7WorkspaceModelAgent;
 
   /// Workspace and activity: Disconnect
   ///
@@ -16189,7 +16165,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: No project folder is open. Choose one from Workspace.
   ///
   /// In en, this message translates to:
-  /// **'No project folder is open. Choose one from Workspace.'**
+  /// **'No project folder is open. Choose one from Work.'**
   String get e7LibraryNoProjectFolderIsOpenChooseOne;
 
   /// Library and project tools UI: Project
@@ -17438,12 +17414,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This provider also uses the server environment, which mobile cannot remove and which will remain active.'**
   String get e7LibraryEnvironmentRemainsAfterDisconnect;
-
-  /// Search aliases for the terminal destination; preserve English terms to allow either language.
-  ///
-  /// In en, this message translates to:
-  /// **'shell command line'**
-  String get e7LibrarySearchTerminalAliases;
 
   /// Search aliases for the import destination; preserve English terms to allow either language.
   ///
@@ -24817,7 +24787,7 @@ abstract class AppLocalizations {
   /// On-device AI Team block: body
   ///
   /// In en, this message translates to:
-  /// **'Lets several coding agents work on your project while you supervise from Workspace. Uses the same Linux environment you just set up.'**
+  /// **'Lets several coding agents work on your project while you supervise from Work. Uses the same Linux environment you just set up.'**
   String get teamUiPhoneOfferBody;
 
   /// On-device AI Team block: download size line
@@ -24943,7 +24913,7 @@ abstract class AppLocalizations {
   /// On-device setup: success card action
   ///
   /// In en, this message translates to:
-  /// **'Open Workspace'**
+  /// **'Open Work'**
   String get teamUiPhoneOpenWorkspace;
 
   /// On-device setup: retry after a failure
@@ -25243,7 +25213,7 @@ abstract class AppLocalizations {
   /// Settings › Plugins: re-offer row body
   ///
   /// In en, this message translates to:
-  /// **'The optional step you skipped during setup. Several coding agents work on your project while you supervise from Workspace; Android may stop them when the app is away.'**
+  /// **'The optional step you skipped during setup. Several coding agents work on your project while you supervise from Work; Android may stop them when the app is away.'**
   String get teamUiPhoneReofferBody;
 
   /// Settings › Plugins: dismiss the re-offer (shown once)
@@ -25827,6 +25797,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remaining'**
   String get usageSectionRemaining;
+
+  /// Bottom navigation label and app bar title of the first tab: conversations in the current project.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get shellTabWork;
+
+  /// Bottom navigation label and title of the second tab: everything waiting on the person, then running and finished work.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get shellTabInbox;
+
+  /// Bottom navigation label and app bar title of the third tab: tools scoped to the current project.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get shellTabProject;
+
+  /// Project tab: subtitle of the Files row.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse and preview project files'**
+  String get projectHubFilesSubtitle;
+
+  /// Project tab: subtitle of the Changes row, which opens the working-tree review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review uncommitted changes'**
+  String get projectHubChangesSubtitle;
+
+  /// Project tab: subtitle of the Search files row, which opens Files with the search field focused.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a file by name'**
+  String get projectHubSearchSubtitle;
+
+  /// Server switcher row that opens the Servers screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage servers'**
+  String get serverSwitcherManage;
+
+  /// Shell app bar: accessibility hint on the server name and status, which open the server switcher sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch server'**
+  String get serverSwitcherOpen;
 }
 
 class _AppLocalizationsDelegate
