@@ -17507,7 +17507,7 @@
   "@firstRunJustShowMe": {
     "description": "First-run welcome choice that opens the simulated demo."
   },
-  "firstRunWhichAgent": "Which agent?",
+  "firstRunWhichAgent": "Which agent first?",
   "@firstRunWhichAgent": {
     "description": "First run, computer path: the question above the three agent choices."
   },
@@ -17515,11 +17515,11 @@
   "@firstRunAgentOpenCode": {
     "description": "Agent choice title; a product name, not translated."
   },
-  "firstRunAgentClaudeOrPi": "Claude Code or Pi",
+  "firstRunAgentClaudeOrPi": "Claude Code, Codex, Pi and more",
   "@firstRunAgentClaudeOrPi": {
     "description": "Agent choice title for the Paseo backend; product names are not translated."
   },
-  "firstRunAgentClaudeOrPiDetail": "Through the Paseo daemon. Experimental.",
+  "firstRunAgentClaudeOrPiDetail": "One connection to the Paseo daemon drives every agent installed there. Experimental.",
   "@firstRunAgentClaudeOrPiDetail": {
     "description": "Agent choice: one line under 'Claude Code or Pi'."
   },
@@ -17527,7 +17527,7 @@
   "@firstRunAgentCodex": {
     "description": "Agent choice title; a product name, not translated."
   },
-  "firstRunAgentCodexDetail": "Through Codex app-server. Experimental.",
+  "firstRunAgentCodexDetail": "Directly, through Codex app-server. Experimental.",
   "@firstRunAgentCodexDetail": {
     "description": "Agent choice: one line under 'Codex'."
   },
@@ -17854,5 +17854,7 @@
   "localAgentRuntimeChoiceDetail": "Sets up Ubuntu and the OpenCode server first, then installs Claude Code next to it.",
   "@localAgentRuntimeChoiceDetail": {
     "description": "On this phone setup, runtime choice: what picking Claude Code does."
-  }
+  },
+  "firstRunAgentsSideBySide": "They run side by side on the same computer. Start with one, and add the others any time from the server name at the top.",
+  "firstRunPaseoTitle": "Agents through Paseo"
 }

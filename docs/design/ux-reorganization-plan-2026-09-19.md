@@ -182,6 +182,13 @@ conversations readable instead of blocking on a connecting screen.
 coming back (already a persona requirement; listed here because it is part of
 sequence, not structure).
 
+**Agents are not alternatives (owner direction, 2026-09-19).** OpenCode,
+Claude Code and Codex run side by side on one computer, so the "Which agent?"
+step only picks where to *begin* and says so; one Paseo connection already
+drives every agent installed there. Still to design: a *computer* as the unit
+in the switcher (one address; the app finds which services answer on it and
+lists them together), instead of one unrelated saved server per service.
+
 ### 5.7 Order inside a screen
 
 One ordering rule for every list and screen, top to bottom:

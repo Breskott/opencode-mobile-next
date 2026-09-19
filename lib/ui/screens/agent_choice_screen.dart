@@ -38,6 +38,16 @@ class AgentChoiceScreen extends StatelessWidget {
                       style: theme.textTheme.titleMedium,
                     ),
                   ),
+                  const SizedBox(height: 6),
+                  // The agents are not alternatives: one computer runs all of
+                  // them at once. This step only picks where to begin.
+                  Text(
+                    copy.firstRunAgentsSideBySide,
+                    key: const ValueKey('agent-choice-side-by-side'),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   FirstRunChoice(
                     key: const ValueKey('agent-choice-opencode'),

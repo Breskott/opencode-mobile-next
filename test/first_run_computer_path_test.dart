@@ -106,10 +106,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AgentChoiceScreen), findsOneWidget);
-    expect(find.text('Which agent?'), findsOneWidget);
+    expect(find.text('Which agent first?'), findsOneWidget);
+    // Not alternatives: the screen says they run side by side.
+    expect(
+      find.byKey(const ValueKey('agent-choice-side-by-side')),
+      findsOneWidget,
+    );
     expect(find.byType(FirstRunChoice), findsNWidgets(3));
     expect(find.text('OpenCode'), findsOneWidget);
-    expect(find.text('Claude Code or Pi'), findsOneWidget);
+    expect(find.text('Claude Code, Codex, Pi and more'), findsOneWidget);
     expect(find.text('Codex'), findsOneWidget);
   });
 
@@ -121,7 +126,7 @@ void main() {
       otherField: 'codex-server-address-field',
     ),
     'paseo': (
-      title: 'Claude Code or Pi',
+      title: 'Agents through Paseo',
       command: SetupCommands.paseoStart,
       field: 'codex-server-address-field',
       otherField: 'server-url-field',
@@ -348,7 +353,9 @@ void main() {
           final choice = find.byKey(ValueKey('agent-choice-$agent'));
           await tester.ensureVisible(choice);
           await tester.pumpAndSettle();
-          await tester.tap(choice);
+          // A choice can be taller than the space left at this text size, so
+          // its centre may be below the fold; its top is always in view.
+          await tester.tapAt(tester.getTopLeft(choice) + const Offset(24, 24));
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
 
