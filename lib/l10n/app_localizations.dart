@@ -6580,13 +6580,13 @@ abstract class AppLocalizations {
   /// Experimental new OpenCode server generation
   ///
   /// In en, this message translates to:
-  /// **'OpenCode 2 beta'**
+  /// **'OpenCode 2'**
   String get setupRuntimeTwo;
 
   /// Honest support note for the optional beta runtime
   ///
   /// In en, this message translates to:
-  /// **'Try the new server API. Some features are unavailable in this beta.'**
+  /// **'The newer server. A few features from OpenCode 1 are not available on it yet.'**
   String get setupRuntimeTwoDetail;
 
   /// Names the exact runtime and pinned version before installation
@@ -19470,7 +19470,7 @@ abstract class AppLocalizations {
   /// Localized manager or bridge status: InstallingBeta.
   ///
   /// In en, this message translates to:
-  /// **'Installing OpenCode 2 beta'**
+  /// **'Installing OpenCode 2'**
   String get e7SetupInstallingBeta;
 
   /// Localized manager or bridge status: AuthenticationFailed.

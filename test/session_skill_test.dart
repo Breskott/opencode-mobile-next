@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
+import 'package:opencode_mobile/api2/dialect.dart';
 import 'package:opencode_mobile/api2/events.dart';
 import 'package:opencode_mobile/api2/gateway_events.dart';
 import 'package:opencode_mobile/api2/gateway_operations.dart';
@@ -191,6 +192,8 @@ void main() {
         (server, requests) async {
           final gateway = gatewayFor(server);
           addTearDown(gateway.close);
+          // A beta server already settled at connect: a 404 is a real 404.
+          gateway.client.transport.settleDialect(Api2Dialect.beta);
           final ops = Api2OperationsGateway(client: gateway.client);
           Future<void> send() =>
               ops.activateSessionSkill('ses_test', 'review', resume: false);

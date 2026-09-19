@@ -2227,11 +2227,11 @@
   "@setupRuntimeOneDetail": {
     "description": "Description of the default first-run runtime"
   },
-  "setupRuntimeTwo": "OpenCode 2 beta",
+  "setupRuntimeTwo": "OpenCode 2",
   "@setupRuntimeTwo": {
     "description": "Experimental new OpenCode server generation"
   },
-  "setupRuntimeTwoDetail": "Try the new server API. Some features are unavailable in this beta.",
+  "setupRuntimeTwoDetail": "The newer server. A few features from OpenCode 1 are not available on it yet.",
   "@setupRuntimeTwoDetail": {
     "description": "Honest support note for the optional beta runtime"
   },
@@ -11912,7 +11912,7 @@
   "@e7SetupBootstrapCleared": {
     "description": "Localized manager or bridge status: BootstrapCleared."
   },
-  "e7SetupInstallingBeta": "Installing OpenCode 2 beta",
+  "e7SetupInstallingBeta": "Installing OpenCode 2",
   "@e7SetupInstallingBeta": {
     "description": "Localized manager or bridge status: InstallingBeta."
   },

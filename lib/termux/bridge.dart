@@ -7,7 +7,7 @@ import '../platform/platform_capabilities.dart';
 /// from a server's reported version and survives restarts in the manager state.
 enum TermuxRuntime {
   openCode1('opencode1', '1.18.29'),
-  openCode2('opencode2', '0.0.0-beta-18600');
+  openCode2('opencode2', '2.0.10');
 
   const TermuxRuntime(this.wireName, this.pinnedVersion);
   final String wireName;
@@ -380,7 +380,7 @@ if ! command -v "$binary" >/dev/null 2>&1; then
   exit 0
 fi
 version=$("$binary" --version)
-if [ "$runtime" = opencode2 ]; then version=${version#opencode2 v}; fi
+if [ "$runtime" = opencode2 ]; then version=${version#opencode2 v}; version=${version#opencode v}; fi
 printf "ubuntu=installed\nversion=%s\n" "$version"
 [ -z "$recorded_runtime" ] || printf "runtime=%s\n" "$runtime"
 ' -- "$runtime" "$command" "$recorded_runtime"
@@ -953,7 +953,7 @@ runtime_version() {
   runtime=$(managed_runtime) || return
   binary=$(runtime_command) || return
   version=$(proot-distro login "$PROOT_NAME" -- "$binary" --version) || return
-  if [ "$runtime" = opencode2 ]; then version=${version#opencode2 v}; fi
+  if [ "$runtime" = opencode2 ]; then version=${version#opencode2 v}; version=${version#opencode v}; fi
   printf '%s' "$version" | tr -d '\r\n'
 }
 
@@ -1643,9 +1643,18 @@ install_opencode() {
     x64) binary_suffix=linux-x64-baseline ;;
     *) printf '[oc] ERROR: OpenCode requires a 64-bit ARM or x64 Ubuntu environment\n' >&2; return 64 ;;
   esac
+  local prefix_args=()
   if [ "${OC_RUNTIME:-opencode1}" = opencode2 ]; then
-    binary_package="@opencode-ai/cli-$binary_suffix"
-    main_package=@opencode-ai/cli
+    # OpenCode 2 is published as @opencode/cli since 2026-09-07 (the old
+    # @opencode-ai/cli name stopped at a beta). Its package installs a command
+    # named `opencode` as well as `opencode2`, which collides with OpenCode 1's
+    # own `opencode` in the shared global prefix: npm refuses with EEXIST. So
+    # it gets a prefix of its own and only `opencode2` is linked, which keeps
+    # both runtimes installed side by side and switchable.
+    binary_package="@opencode/cli-$binary_suffix"
+    main_package=@opencode/cli
+    prefix_args=(--prefix "${OC2_PREFIX:-/opt/oc2}")
+    npm uninstall -g @opencode-ai/cli "@opencode-ai/cli-$binary_suffix" >/dev/null 2>&1 || true
   else
     binary_package="opencode-$binary_suffix"
   fi
@@ -1654,6 +1663,7 @@ install_opencode() {
   # failures must not silently leave postinstall trying a musl-only fallback.
   # Keep upstream postinstall intact and visible so runtime errors are actionable.
   if npm install -g \
+    ${prefix_args[@]+"${prefix_args[@]}"} \
     --include=optional \
     --foreground-scripts \
     --cache "$npm_cache" \
@@ -1664,6 +1674,11 @@ install_opencode() {
     "$binary_package@$OC_REQUESTED_VERSION" \
     "$main_package@$OC_REQUESTED_VERSION"; then
     install_code=0
+    if [ "${OC_RUNTIME:-opencode1}" = opencode2 ]; then
+      # The overrides exist for the script tests only.
+      ln -sfn "${OC2_PREFIX:-/opt/oc2}/bin/opencode2" \
+        "${OC2_LINK_DIR:-$(npm prefix -g)/bin}/opencode2" || install_code=$?
+    fi
   else
     install_code=$?
   fi
@@ -1690,7 +1705,7 @@ setup() {
   if [ -z "$requested_version" ]; then
     case "$CURRENT_RUNTIME" in
       opencode1) requested_version=1.18.29 ;;
-      opencode2) requested_version=0.0.0-beta-18600 ;;
+      opencode2) requested_version=2.0.10 ;;
     esac
   fi
   SETUP_SUCCEEDED=0
@@ -1744,7 +1759,9 @@ start_server() {
   runtime=$(managed_runtime) || return 64
   case "$runtime" in
     opencode1) health_path=/global/health ;;
-    opencode2) health_path=/api/health ;;
+    # OpenCode 2.0.4 and later answer at /api/info; the beta this app
+    # installed before answered at /api/health. Either one proves readiness.
+    opencode2) health_path='/api/info /api/health' ;;
   esac
   if [ -n "${CURRENT_RECOVERY:-}" ]; then
     recovery_permitted "$CURRENT_RECOVERY" || fail_setup 'Automatic recovery was disabled' "$CURRENT_PORT"
@@ -1784,10 +1801,15 @@ start_server() {
       local auth_codes
       auth_codes=$(proot-distro login "$PROOT_NAME" -- env \
         OC_PORT="$CURRENT_PORT" OC_PASSWORD="$password" OC_HEALTH_PATH="$health_path" bash -s <<'OC_AUTH_CHECK'
-unauth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
-  "http://127.0.0.1:$OC_PORT$OC_HEALTH_PATH" || true)
-auth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
-  -u "opencode:$OC_PASSWORD" "http://127.0.0.1:$OC_PORT$OC_HEALTH_PATH" || true)
+unauth=000
+auth=000
+for path in $OC_HEALTH_PATH; do
+  unauth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
+    "http://127.0.0.1:$OC_PORT$path" || true)
+  auth=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' \
+    -u "opencode:$OC_PASSWORD" "http://127.0.0.1:$OC_PORT$path" || true)
+  [ "$unauth $auth" != '401 200' ] || break
+done
 printf '%s %s' "$unauth" "$auth"
 OC_AUTH_CHECK
 )
@@ -1947,7 +1969,7 @@ switch_runtime() {
     local requested_version
     case "$target" in
       opencode1) requested_version=1.18.29 ;;
-      opencode2) requested_version=0.0.0-beta-18600 ;;
+      opencode2) requested_version=2.0.10 ;;
     esac
     install_runtime "$requested_version"
     installed_version=$(runtime_version 2>/dev/null || true)

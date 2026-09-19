@@ -146,6 +146,20 @@ void main() {
     },
   );
 
+  test('OpenCode 2.0.4 and later answer at /api/info, not /api/health', () async {
+    final result = await probe(
+      handler: (options) => options.path.endsWith('/api/info')
+          ? _json(
+              '{"version":"2.0.10","pid":4242,"urls":["http://127.0.0.1:4096"]}',
+              200,
+            )
+          : _empty(404),
+    );
+    expect(result.ok, isTrue);
+    expect(result.flavor, ServerFlavor.v2);
+    expect(result.version, '2.0.10');
+  });
+
   test('a 404 on /api/health falls through to the v1 health check', () async {
     final result = await probe(
       handler: (options) => options.path.endsWith('/api/health')
