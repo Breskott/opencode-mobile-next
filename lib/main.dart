@@ -1229,11 +1229,6 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
               '/': (_) => _Root(),
               '/servers': (_) => const ServersScreen(),
               '/home': (_) => const HomeScreen(),
-              // Activity absorbed Mission Control and Pending requests; the
-              // old deep link still resolves so notifications and shortcuts
-              // built against it keep working.
-              '/activity': (_) => ActivityScreen(controller: _controller),
-              '/requests': (_) => ActivityScreen(controller: _controller),
               '/guide': (_) => GuideScreen(embedded: false),
               '/about': (_) => const AboutScreen(),
               // Termux is an Android app. Registering the route everywhere
