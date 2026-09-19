@@ -1293,7 +1293,7 @@
         {
           "page": "?",
           "element": null,
-          "widget": "_LibraryScreenState (_DestinationRow)",
+          "widget": "_SettingsScreenState (_DestinationRow)",
           "file": "lib/ui/screens/library_screen.dart",
           "line": 162
         },
@@ -2518,9 +2518,9 @@
         {
           "page": "?",
           "element": null,
-          "widget": "_PluginsScreenState",
-          "file": "lib/ui/screens/plugins_screen.dart",
-          "line": 459
+          "widget": "_ServerPluginsSectionState",
+          "file": "lib/ui/screens/settings/server_plugins_section.dart",
+          "line": 477
         },
         {
           "page": "?",

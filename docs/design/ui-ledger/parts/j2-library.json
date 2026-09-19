@@ -14,126 +14,16 @@
     {
      "page": "?",
      "element": null,
-     "widget": "LibraryScreen",
+     "widget": "SettingsScreen",
      "file": "lib/ui/screens/library_screen.dart",
      "line": 101,
      "note": "row \"Models & agents\""
     }
    ],
    "gates": [
-    "controller.capabilities.serverCatalog (LibraryScreen row gate, library_screen.dart:91)"
+    "controller.capabilities.serverCatalog (SettingsScreen row gate, library_screen.dart:91)"
    ],
-   "elements": [
-    {
-     "id": "catalog-legacy-model-search",
-     "type": "text-field",
-     "label": "Search models",
-     "key": null,
-     "line": 125,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Legacy _models(): setState(_query) filters models by name/id/provider.",
-     "gates": [
-      "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "catalog-legacy-pull-refresh",
-     "type": "gesture",
-     "label": "[pull to refresh]",
-     "key": null,
-     "line": 140,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Legacy RefreshIndicators (lines 140,152,222,235,277,290) call _load() -> repository.loadCatalog().",
-     "gates": [
-      "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "catalog-legacy-model-row",
-     "type": "list-tile",
-     "label": "<model name> / <provider>/<id>",
-     "key": null,
-     "line": 168,
-     "action": "open-sheet",
-     "target": "catalog-model-details-sheet",
-     "targetWidget": "_modelDetails",
-     "effect": "Legacy model row; _modelDetails(model) opens the model details sheet. Disabled when !model.enabled.",
-     "gates": [
-      "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "catalog-legacy-provider-row",
-     "type": "list-tile",
-     "label": "<provider name>",
-     "key": null,
-     "line": 245,
-     "action": "navigate",
-     "target": "integrations",
-     "targetWidget": "IntegrationsScreen",
-     "effect": "Legacy provider row; pushes IntegrationsScreen(controller) in mode all.",
-     "gates": [
-      "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "catalog-legacy-agent-row",
-     "type": "list-tile",
-     "label": "<agent id>",
-     "key": null,
-     "line": 298,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Legacy agent row; controller.selectAgent(agent.id) then setState.",
-     "gates": [
-      "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
-     ],
-     "destructive": false
-    }
-   ]
-  },
-  {
-   "id": "catalog-model-details-sheet",
-   "title": "<model name>",
-   "kind": "sheet",
-   "file": "lib/ui/screens/library/catalog_screen.dart",
-   "widget": "_modelDetails",
-   "presentedBy": [],
-   "line": 320,
-   "purpose": "Legacy model detail sheet with capability chips and a 'Use this model' button; unreachable in the current build.",
-   "reachedFrom": [
-    {
-     "page": "catalog",
-     "element": "catalog-legacy-model-row"
-    }
-   ],
-   "gates": [
-    "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
-   ],
-   "elements": [
-    {
-     "id": "catalog-model-details-sheet-use",
-     "type": "button",
-     "label": "Use this model",
-     "key": null,
-     "line": 413,
-     "action": "toggle-setting",
-     "target": null,
-     "targetWidget": null,
-     "effect": "controller.selectModel(ModelRef(providerID, modelID)), then Navigator.pop and setState. Disabled when !model.enabled.",
-     "gates": [],
-     "destructive": false
-    }
-   ]
+   "elements": []
   },
   {
    "id": "commands",
@@ -792,7 +682,7 @@
     {
      "page": "?",
      "element": null,
-     "widget": "LibraryScreen",
+     "widget": "SettingsScreen",
      "file": "lib/ui/screens/library_screen.dart",
      "line": 111,
      "note": "row \"Providers\", mode: IntegrationsMode.providers"
@@ -800,7 +690,7 @@
     {
      "page": "?",
      "element": null,
-     "widget": "LibraryScreen",
+     "widget": "SettingsScreen",
      "file": "lib/ui/screens/library_screen.dart",
      "line": 125,
      "note": "row \"MCP\", mode: IntegrationsMode.mcp"
@@ -827,7 +717,7 @@
     }
    ],
    "gates": [
-    "controller.capabilities.serverCatalog (LibraryScreen rows, library_screen.dart:91)"
+    "controller.capabilities.serverCatalog (SettingsScreen rows, library_screen.dart:91)"
    ],
    "elements": [
     {
@@ -2448,7 +2338,7 @@
  "notes": [
   "lib/ui/screens/library/catalog_screen.dart:108 CatalogScreen's live body is ModelCatalogView (lib/ui/widgets/pickers.dart:113, not assigned here); its interactive elements must be merged into page 'catalog' by whoever owns pickers.dart.",
   "lib/ui/screens/library/catalog_screen.dart:113-439 _models/_providers/_agents/_modelDetails (and _load, _catalog, _query) are dead code (// ignore: unused_element); recorded with a dead-code gate so grep hits are covered. ModelStatusPill (line 5) and _CapabilityChip (line 448) are non-interactive.",
-  "CommandsScreen, SkillsScreen, ReferencesScreen and ToolsScreen are never pushed standalone from LibraryScreen; they are embedded tab bodies of CapabilitiesScreen (lib/ui/screens/capabilities_screen.dart:29-42, not assigned; opened from library_screen.dart:138 'Commands & tools'). CommandsScreen has no standalone opener anywhere in lib/. Coordinator may want to treat them as capabilities-<tab>-tab pages.",
+  "CommandsScreen, SkillsScreen, ReferencesScreen and ToolsScreen are never pushed standalone from SettingsScreen; they are embedded tab bodies of CapabilitiesScreen (lib/ui/screens/capabilities_screen.dart:29-42, not assigned; opened from library_screen.dart:138 'Commands & tools'). CommandsScreen has no standalone opener anywhere in lib/. Coordinator may want to treat them as capabilities-<tab>-tab pages.",
   "lib/ui/screens/library/commands_screen.dart:152 showRunCommandDialog lives in lib/ui/widgets/run_command_dialog.dart:10 (not assigned); target id guessed as 'run-command-dialog'.",
   "lib/ui/screens/tools_screen.dart:110 showModelPicker (lib/ui/widgets/pickers.dart) target id guessed as 'model-picker'.",
   "InfoLabel.show glossary sheet (lib/ui/widgets/info_label.dart:138) target id guessed as 'info-label-sheet' (integrations_screen.dart:896, mcp_setup_screen.dart:274).",

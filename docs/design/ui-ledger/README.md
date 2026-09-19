@@ -147,9 +147,10 @@ Known limits:
 ### Not a page
 
 Files with no surface of their own and no interactive element (also in
-`ledger.json` under `notPages`). The two under `lib/ui/screens/`:
+`ledger.json` under `notPages`). The three under `lib/ui/screens/`:
 
 - `lib/ui/screens/chat/form_flow.dart`: `presentConnectionForm` is glue that calls `presentForm` from `lib/ui/widgets/form_renderer.dart` (page `form-sheet`) and routes submit/cancel.
+- `lib/ui/screens/library_screen.dart`: no surface since UX phase 2 (the More tab merged into the Settings hub); it only hosts the library part files and `defaultModelLabel()`.
 - `lib/ui/screens/team/policy_block.dart`: `TeamPolicyBlock` / `TeamBoundariesRow` are read-only rendering blocks embedded in the run overview and the start-run sheet; no taps.
 
 Outside `lib/ui/screens/`:

@@ -3806,36 +3806,6 @@
       ]
     },
     {
-      "id": "embedded-running-agents-strip",
-      "title": "[Running agents strip]",
-      "kind": "overlay",
-      "file": "lib/ui/widgets/running_agents_strip.dart",
-      "widget": "RunningAgentsStrip",
-      "presentedBy": [],
-      "line": 114,
-      "purpose": "Horizontal strip of related running agent sessions as pills.",
-      "reachedFrom": [],
-      "gates": [],
-      "elements": [
-        {
-          "id": "embedded-running-agents-strip-pill",
-          "type": "chip",
-          "label": "<agent label>",
-          "key": "running-agent-<session.id>",
-          "file": "lib/ui/widgets/running_agents_strip.dart",
-          "line": 164,
-          "action": "navigate",
-          "target": null,
-          "targetWidget": null,
-          "effect": "onOpen(entry.session): host-provided ValueChanged<Session>; disabled for the current session.",
-          "gates": [
-            "!entry.current"
-          ],
-          "destructive": false
-        }
-      ]
-    },
-    {
       "id": "embedded-mobile-task-list",
       "title": "[Task list tool view]",
       "kind": "overlay",

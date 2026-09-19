@@ -6,7 +6,7 @@
   "workspace",
   "files",
   "activity",
-  "more"
+  "settings"
  ],
  "widgetToPage": {
   "/": "root-connecting",

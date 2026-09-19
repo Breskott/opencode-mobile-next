@@ -71,8 +71,8 @@
      "line": 214
     },
     {
-     "page": "server-settings",
-     "element": "server-settings-manage-profiles"
+     "page": "settings",
+     "element": "settings-saved-servers"
     }
    ],
    "gates": [
@@ -1454,15 +1454,16 @@
    "file": "lib/ui/screens/settings/server_settings_screen.dart",
    "widget": "ServerSettingsScreen",
    "presentedBy": [],
-   "line": 5,
+   "line": 6,
    "purpose": "Settings category for the connected server: identity, health check, authentication summary, profile management, host service commands and the server update flow.",
    "reachedFrom": [
     {
-     "page": "?",
-     "element": null,
-     "widget": "SettingsScreen",
-     "file": "lib/ui/screens/settings_screen.dart",
-     "line": 217
+     "page": "settings",
+     "element": "settings-category-server"
+    },
+    {
+     "page": "command-launcher-sheet",
+     "element": "chat-command-status"
     }
    ],
    "gates": [],
@@ -1472,7 +1473,7 @@
      "type": "icon-button",
      "label": "Check server health",
      "key": null,
-     "line": 206,
+     "line": 208,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -1483,24 +1484,11 @@
      "destructive": false
     },
     {
-     "id": "server-settings-manage-profiles",
-     "type": "list-tile",
-     "label": "Manage server profiles — Add, edit, or switch OpenCode servers",
-     "key": null,
-     "line": 271,
-     "action": "navigate",
-     "target": "servers",
-     "targetWidget": "/servers",
-     "effect": "Navigator.pushNamed('/servers').",
-     "gates": [],
-     "destructive": false
-    },
-    {
      "id": "server-settings-host-management",
      "type": "list-tile",
      "label": "Run as a Linux service",
      "key": "host-management-entry",
-     "line": 279,
+     "line": 274,
      "action": "navigate",
      "target": "host-management",
      "targetWidget": "HostManagementScreen",
@@ -1515,7 +1503,7 @@
      "type": "list-tile",
      "label": "Server updates — Upgrade from the machine running the server",
      "key": null,
-     "line": 294,
+     "line": 289,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -1530,7 +1518,7 @@
      "type": "list-tile",
      "label": "Update managed OpenCode",
      "key": "server-updates-tile",
-     "line": 301,
+     "line": 296,
      "action": "navigate",
      "target": "termux-setup",
      "targetWidget": "/termux-setup",
@@ -1545,7 +1533,7 @@
      "type": "list-tile",
      "label": "Restart OpenCode to use {version}",
      "key": "server-updates-tile",
-     "line": 301,
+     "line": 296,
      "action": "open-dialog",
      "target": "server-settings-restart-dialog",
      "targetWidget": "_showRemoteRestartNotice",
@@ -1562,7 +1550,7 @@
      "type": "list-tile",
      "label": "Update OpenCode to {version}",
      "key": "server-updates-tile",
-     "line": 301,
+     "line": 296,
      "action": "open-sheet",
      "target": "server-settings-upgrade-sheet",
      "targetWidget": "showConfirmSheet",
@@ -1579,7 +1567,7 @@
      "type": "list-tile",
      "label": "Server updates are managed externally",
      "key": "server-updates-tile",
-     "line": 301,
+     "line": 296,
      "action": "copy",
      "target": null,
      "targetWidget": null,

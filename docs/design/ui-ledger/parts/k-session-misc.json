@@ -605,7 +605,7 @@
         {
           "page": "?",
           "element": null,
-          "widget": "_LibraryScreenState (library-import-session row)",
+          "widget": "_SettingsScreenState (library-import-session row)",
           "file": "lib/ui/screens/library_screen.dart",
           "line": 178
         }
