@@ -121,6 +121,13 @@ List<ShortcutHelpEntry> shortcutHelp(AppLocalizations l10n) {
     ShortcutHelpEntry('$mod + Enter', l10n.e7LocaleUiSendPrompt),
     ShortcutHelpEntry('$mod + C', l10n.e7LocaleUiCopyTranscript),
     ShortcutHelpEntry('F2 / Shift + F2', l10n.e7LocaleUiRecentModel),
+    // Handled outside this file (chat screen, ModelShortcuts, the composer's
+    // focus node). Listed here so no shortcut is known only to the people
+    // who guessed it; each also has a visible control, see
+    // docs/design/ui-ledger/gesture-audit.md.
+    ShortcutHelpEntry('Ctrl + B', l10n.backgroundWorkTitle),
+    ShortcutHelpEntry('F3 / Shift + F3', l10n.gestureEquivShortcutFindMatch),
+    ShortcutHelpEntry('↑ / ↓', l10n.gestureEquivShortcutPromptHistory),
     ShortcutHelpEntry('$mod + /', l10n.e7LocaleUiThisList),
     ShortcutHelpEntry('Esc', l10n.e7LocaleUiCloseOverlay),
     ShortcutHelpEntry(

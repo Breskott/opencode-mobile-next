@@ -4281,5 +4281,8 @@
   "projectHubChangesSubtitle": "راجع التغييرات غير المودَعة",
   "projectHubSearchSubtitle": "اعثر على ملف باسمه",
   "serverSwitcherManage": "إدارة الخوادم",
-  "serverSwitcherOpen": "تبديل الخادم"
+  "serverSwitcherOpen": "تبديل الخادم",
+  "gestureEquivFileRowActions": "إجراءات {name}",
+  "gestureEquivShortcutFindMatch": "التطابق التالي / السابق أثناء البحث في المحادثة",
+  "gestureEquivShortcutPromptHistory": "الطلب الأقدم / الأحدث، والمؤشر في بداية مربع الرسالة أو نهايته"
 }

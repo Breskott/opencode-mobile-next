@@ -16275,4 +16275,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get serverSwitcherOpen => 'تبديل الخادم';
+
+  @override
+  String gestureEquivFileRowActions(String name) {
+    return 'إجراءات $name';
+  }
+
+  @override
+  String get gestureEquivShortcutFindMatch =>
+      'التطابق التالي / السابق أثناء البحث في المحادثة';
+
+  @override
+  String get gestureEquivShortcutPromptHistory =>
+      'الطلب الأقدم / الأحدث، والمؤشر في بداية مربع الرسالة أو نهايته';
 }

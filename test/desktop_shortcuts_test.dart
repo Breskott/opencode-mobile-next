@@ -230,6 +230,27 @@ void main() {
       expect(find.text('Command launcher'), findsOneWidget);
       expect(find.text('Send the prompt'), findsOneWidget);
       expect(find.text('Ctrl + W'), findsOneWidget);
+      // Shortcuts handled outside the shell layer (chat screen,
+      // ModelShortcuts, the composer) are listed too: a shortcut the help
+      // omits is a feature behind a gesture.
+      expect(find.text('F2 / Shift + F2'), findsOneWidget);
+      expect(find.text('Ctrl + B'), findsOneWidget);
+      expect(find.text('Move running work to background'), findsOneWidget);
+      expect(find.text('F3 / Shift + F3'), findsOneWidget);
+      expect(
+        find.text('Next / previous match while finding in a conversation'),
+        findsOneWidget,
+      );
+      expect(find.text('↑ / ↓'), findsOneWidget);
+      expect(
+        find.text(
+          'Earlier / later prompt, with the cursor at the start or end of '
+          'the message box',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Esc'), findsOneWidget);
+      expect(find.text('Right click / Shift + F10 / Menu'), findsOneWidget);
     });
 
     desktopTest('Ctrl+W closes the current route', (tester) async {
