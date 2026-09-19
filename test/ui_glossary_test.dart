@@ -25,6 +25,30 @@ const _allowedKeys = <String>{
   'chatUiRetryLastPrompt',
 };
 
+/// One word per noun (plan section 3, decision 1): a piece of work with the
+/// agent is a "conversation". A short label may not carry these standalone
+/// words. Only labels are scanned, so a sentence that quotes the `--session`
+/// flag is not the concern here.
+const _bannedNouns = <String>['session', 'sessions', 'chat', 'chats'];
+
+/// Labels allowed to keep a banned noun. Every entry names a different object
+/// from a conversation.
+const _allowedNounKeys = <String>{
+  // AI Team (Gas City): an agent's *host session* is the long-lived runtime
+  // process on the team host. It has an age, a name and an id, it is stopped
+  // and restarted from the controls, and it is not a conversation the person
+  // opens from the conversation list.
+  'teamUiAgentLabelSessionAge',
+  'teamUiAgentLabelSessionId',
+  'teamUiAgentLabelSessionName',
+  'teamUiAgentSessionAge',
+  'teamUiAgentTermSession',
+  'teamUiWorkLabelSession',
+  'teamUiWorkLabelSessionName',
+  'teamUiWorkSheetOpenSession',
+  'teamUiGateLabelSessionId',
+};
+
 /// At most this many words makes a value a label rather than a sentence.
 const _maxLabelWords = 4;
 
@@ -43,6 +67,18 @@ String? _bannedTermIn(String value) {
   final trimmed = value.trim();
   for (final term in _bannedTerms) {
     if (RegExp('^${RegExp.escape(term)}\\b').hasMatch(trimmed)) return term;
+  }
+  return null;
+}
+
+/// The banned noun [value] contains as a standalone word, or null.
+String? _bannedNounIn(String value) {
+  for (final noun in _bannedNouns) {
+    final pattern = RegExp(
+      '\\b${RegExp.escape(noun)}\\b',
+      caseSensitive: false,
+    );
+    if (pattern.hasMatch(value)) return noun;
   }
   return null;
 }
@@ -105,6 +141,51 @@ void main() {
         _isShortActionLabel(value!) && _bannedTermIn(value) != null,
         isTrue,
         reason: '$key no longer uses a banned term; drop it from the list',
+      );
+    }
+  });
+
+  test('the noun rule matches standalone words only', () {
+    expect(_bannedNounIn('New session'), 'session');
+    expect(_bannedNounIn('All sessions'), 'sessions');
+    expect(_bannedNounIn('Untitled chat'), 'chat');
+    expect(_bannedNounIn('New chats'), 'chats');
+    expect(_bannedNounIn('SESSION'), 'session');
+    expect(_bannedNounIn('New conversation'), isNull);
+    expect(_bannedNounIn('Chatty'), isNull);
+    expect(_bannedNounIn('Obsession'), isNull);
+  });
+
+  test('labels say conversation, not session or chat', () {
+    final offenders = <String>[];
+    for (final entry in _englishStrings().entries) {
+      if (_allowedNounKeys.contains(entry.key)) continue;
+      if (!_isShortActionLabel(entry.value)) continue;
+      final noun = _bannedNounIn(entry.value);
+      if (noun == null) continue;
+      offenders.add('${entry.key}: "${entry.value}" contains "$noun"');
+    }
+    expect(
+      offenders,
+      isEmpty,
+      reason:
+          'A piece of work with the agent is a "conversation" '
+          '(docs/design/ux-reorganization-plan-2026-09-19.md, sections 3 '
+          'and 6). Typed slash commands such as /sessions keep their names; '
+          'the visible label does not.\n'
+          '${offenders.join('\n')}',
+    );
+  });
+
+  test('every allow-listed noun key still needs its exemption', () {
+    final strings = _englishStrings();
+    for (final key in _allowedNounKeys) {
+      final value = strings[key];
+      expect(value, isNotNull, reason: '$key is allow-listed but gone');
+      expect(
+        _isShortActionLabel(value!) && _bannedNounIn(value) != null,
+        isTrue,
+        reason: '$key no longer uses a banned noun; drop it from the list',
       );
     }
   });
