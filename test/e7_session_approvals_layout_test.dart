@@ -116,7 +116,7 @@ EventEnvelope _ask(String id, String session) => EventEnvelope(
 Future<void> _openApprovals(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey('session-actions-button')));
   await tester.pumpAndSettle();
-  final actions = find.text('Session actions');
+  final actions = find.text('Conversation actions');
   await tester.ensureVisible(actions);
   await tester.pumpAndSettle();
   await tester.tap(actions);
@@ -211,7 +211,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text('1 request approved automatically on this connection'),
+          find.text('1 request approved automatically on this server'),
           findsOneWidget,
         );
         expect(
@@ -249,7 +249,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Approving automatically'), findsOneWidget);
-        expect(find.text('Inherited from parent session'), findsOneWidget);
+        expect(find.text('Inherited from parent conversation'), findsOneWidget);
         await _captureScreen(tester, 'child-indicator-${direction.name}');
 
         await _tapVisible(
@@ -260,7 +260,7 @@ void main() {
           find.byKey(const Key('approvals-inherited-note')),
           findsOneWidget,
         );
-        expect(find.text('Inherited from parent session'), findsWidgets);
+        expect(find.text('Inherited from parent conversation'), findsWidgets);
         expect(find.byKey(const Key('approvals-follow-parent')), findsNothing);
         await _captureScreen(tester, 'child-sheet-${direction.name}');
 

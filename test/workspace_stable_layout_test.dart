@@ -188,7 +188,7 @@ final _manage = find.byKey(const ValueKey('manage-project-entry'));
 final _switch = find.byKey(const ValueKey('context-switch-project'));
 final _pill = find.byKey(const ValueKey('workspace-quick-ask'));
 final _isolated = find.byKey(const ValueKey('workspace-isolated-task'));
-final _primary = find.widgetWithText(FilledButton, 'New session');
+final _primary = find.widgetWithText(FilledButton, 'New conversation');
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

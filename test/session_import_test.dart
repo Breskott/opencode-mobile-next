@@ -534,10 +534,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(repo.writes, isEmpty);
       expect(find.text('conversation.json'), findsOneWidget);
-      expect(
-        find.textContaining('connection or location changed'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('server or project changed'), findsOneWidget);
     },
   );
 
@@ -565,10 +562,7 @@ void main() {
 
     expect(find.text('late.json'), findsNothing);
     expect(find.text('Transfer العربية'), findsNothing);
-    expect(
-      find.textContaining('connection or location changed'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('server or project changed'), findsOneWidget);
     expect(repo.writes, isEmpty);
   });
 

@@ -222,7 +222,7 @@ void main() {
     );
     expect(find.byKey(const Key('continue-on-computer-export')), findsNothing);
     expect(
-      find.textContaining('Export this session as a file'),
+      find.textContaining('Export this conversation as a file'),
       findsOneWidget,
     );
   });
@@ -249,7 +249,7 @@ void main() {
       find.byKey(const Key('continue-on-computer-unavailable')),
       findsOneWidget,
     );
-    expect(find.textContaining('managed workspace'), findsOneWidget);
+    expect(find.textContaining('cloud environment'), findsOneWidget);
     // The command name still names the right product in the intro.
     expect(find.textContaining('opencode2 interface'), findsOneWidget);
   });

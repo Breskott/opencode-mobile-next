@@ -55,7 +55,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.text(
-        "The agent's session instructions have been updated for this step.",
+        "The agent's conversation instructions have been updated for this step.",
       ),
       findsOneWidget,
     );
@@ -449,7 +449,7 @@ void main() {
         picker(await controller(), ModelPickerApplyScope.session),
       );
       await tester.pump();
-      expect(find.text('Use for this session'), findsOneWidget);
+      expect(find.text('Use for this conversation'), findsOneWidget);
       await tester.tap(find.byKey(const Key('model-picker-options')));
       await tester.pumpAndSettle();
       expect(
@@ -457,7 +457,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text("Applies to this session's next turns."),
+        find.text("Applies to this conversation's next turns."),
         findsOneWidget,
       );
     });
@@ -469,7 +469,7 @@ void main() {
         picker(await controller(), ModelPickerApplyScope.newSessions),
       );
       await tester.pump();
-      expect(find.text('Use for new sessions'), findsOneWidget);
+      expect(find.text('Use for new conversations'), findsOneWidget);
       expect(
         find.byKey(const Key('model-picker-session-scope-note')),
         findsNothing,

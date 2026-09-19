@@ -189,7 +189,7 @@ void main() {
     expect(api.writes, isEmpty);
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Use for this session'));
+    await tester.tap(find.text('Use for this conversation'));
     await tester.pumpAndSettle();
     expect(
       find.text('Model saved. Agent choice was not confirmed. Try again.'),

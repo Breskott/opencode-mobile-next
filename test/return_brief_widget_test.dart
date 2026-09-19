@@ -293,8 +293,11 @@ void main() {
       c.publish();
       await frames(tester);
       expect(find.textContaining('Loaded sessions only.'), findsNothing);
-      expect(find.textContaining('Showing loaded sessions.'), findsOneWidget);
-      expect(find.text('Load more sessions'), findsOneWidget);
+      expect(
+        find.textContaining('Showing loaded conversations.'),
+        findsOneWidget,
+      );
+      expect(find.text('Load more conversations'), findsOneWidget);
     },
   );
 
@@ -376,30 +379,34 @@ void main() {
     expect(find.byKey(const ValueKey('return-brief-status')), findsNothing);
   });
 
-  testWidgets(
-    'partial Workspace keeps review actions and one inventory notice',
-    (tester) async {
-      final c = await briefController(requests: true);
-      addTearDown(c.dispose);
-      c.partial = true;
-      await tester.pumpWidget(briefApp(c));
-      await frames(tester);
-      expect(inBrief('Review results'), findsOneWidget);
-      expect(inBrief('Answer'), findsOneWidget);
-      expect(
-        inBrief('Loaded sessions only. The session list is still incomplete.'),
-        findsNothing,
-      );
-      await tester.scrollUntilVisible(
-        find.text('Load more sessions'),
-        300,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(find.textContaining('Showing loaded sessions.'), findsOneWidget);
-      expect(c.returnBriefAcknowledgement.runs, isEmpty);
-      expect(c.permissions, hasLength(1));
-    },
-  );
+  testWidgets('partial Workspace keeps review actions and one inventory notice', (
+    tester,
+  ) async {
+    final c = await briefController(requests: true);
+    addTearDown(c.dispose);
+    c.partial = true;
+    await tester.pumpWidget(briefApp(c));
+    await frames(tester);
+    expect(inBrief('Review results'), findsOneWidget);
+    expect(inBrief('Answer'), findsOneWidget);
+    expect(
+      inBrief(
+        'Loaded conversations only. The conversation list is still incomplete.',
+      ),
+      findsNothing,
+    );
+    await tester.scrollUntilVisible(
+      find.text('Load more conversations'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.textContaining('Showing loaded conversations.'),
+      findsOneWidget,
+    );
+    expect(c.returnBriefAcknowledgement.runs, isEmpty);
+    expect(c.permissions, hasLength(1));
+  });
 
   testWidgets('empty failed inventory does not claim no recent sessions', (
     tester,
@@ -410,7 +417,7 @@ void main() {
     c.sessionsError = 'Could not load this project';
     await tester.pumpWidget(briefApp(c));
     await frames(tester);
-    expect(find.text('No recent sessions'), findsNothing);
+    expect(find.text('No recent conversations'), findsNothing);
     expect(find.text('Could not load this project'), findsOneWidget);
     expect(
       tester

@@ -298,6 +298,6 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('session-menu-rename')));
     await tester.pumpAndSettle();
-    expect(find.text('Rename session'), findsOneWidget);
+    expect(find.text('Rename conversation'), findsOneWidget);
   });
 }

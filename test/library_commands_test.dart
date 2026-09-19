@@ -133,7 +133,7 @@ void main() {
       final controller = await _controller(api);
       addTearDown(controller.dispose);
       await _open(tester, controller);
-      expect(find.text('New chat'), findsOneWidget);
+      expect(find.text('New conversation'), findsOneWidget);
       expect(api.creates, 0);
       await tester.enterText(_arguments, '  pending changes  ');
       await tester.tap(_run);
@@ -211,7 +211,7 @@ void main() {
     api.creation!.complete(Session(id: 'old-workspace-chat'));
     await tester.pumpAndSettle();
     expect(api.calls, isEmpty);
-    expect(find.textContaining('server or workspace changed'), findsOneWidget);
+    expect(find.textContaining('server or project changed'), findsOneWidget);
     await tester.tap(_run);
     await tester.pumpAndSettle();
     expect(api.creates, 1);

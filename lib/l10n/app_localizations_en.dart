@@ -53,7 +53,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get servicesUnavailable =>
-      'This connection cannot start and track development commands. You can save commands and review their preview links here.';
+      'This server cannot start and track development commands. You can save commands and review their preview links here.';
 
   @override
   String get servicesScopeChanged =>
@@ -178,7 +178,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutSigningCertificate => 'Signing certificate SHA-256';
 
   @override
-  String get modelSwitchSession => 'Switch model for this session';
+  String get modelSwitchSession => 'Switch model for this conversation';
 
   @override
   String get modelNextRecent => 'Next recent model · F2';
@@ -217,27 +217,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelDefaultMode => 'Default mode';
 
   @override
-  String get modelSessionScopeNote => 'Applies to this session\'s next turns.';
+  String get modelSessionScopeNote =>
+      'Applies to this conversation\'s next turns.';
 
   @override
-  String get modelSelectionLoading => 'Loading session selection…';
+  String get modelSelectionLoading => 'Loading conversation selection…';
 
   @override
   String get modelServerDefault => 'Server default';
 
   @override
-  String get modelSelectionSaving => 'Saving session selection…';
+  String get modelSelectionSaving => 'Saving conversation selection…';
 
   @override
   String get modelAgentSaveFailed => 'Could not save the agent. Try again.';
 
   @override
   String get modelUnavailableSelection =>
-      'The session\'s model is unavailable in this catalog. Refresh models or choose another.';
+      'The conversation\'s model is unavailable in this catalog. Refresh models or choose another.';
 
   @override
   String get modelScopeChanged =>
-      'The connection changed. Reopen the model selector to continue.';
+      'The server changed. Reopen the model selector to continue.';
 
   @override
   String get commonClearSearch => 'Clear search';
@@ -249,7 +250,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workTitle => 'Tasks';
 
   @override
-  String get workDescription => 'Agents and commands related to this chat.';
+  String get workDescription =>
+      'Agents and commands related to this conversation.';
 
   @override
   String get workAgents => 'Agents';
@@ -262,7 +264,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workEmptyDescription =>
-      'Related agents and commands will appear here when this chat starts them.';
+      'Related agents and commands will appear here when this conversation starts them.';
 
   @override
   String get workRefresh => 'Refresh';
@@ -370,7 +372,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workContextChanged =>
-      'The server or workspace changed. Close this view and reopen Running work.';
+      'The server or project changed. Close this view and reopen Running work.';
 
   @override
   String workCount(int count) {
@@ -444,7 +446,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backgroundWorkShortcut =>
-      'Continue this work while you use the chat · Ctrl+B';
+      'Continue this work while you use the conversation · Ctrl+B';
 
   @override
   String get backgroundWorkNoop => 'No foreground subagents to background.';
@@ -457,7 +459,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get librarySearchHint => 'Find settings, tools, and help';
 
   @override
-  String get libraryDefaultModel => 'Default for new chats';
+  String get libraryDefaultModel => 'Default for new conversations';
 
   @override
   String get libraryNoModel => 'No model selected';
@@ -486,15 +488,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termuxRestartMessage =>
-      'OpenCode will be briefly unavailable. The app will keep your current workspace and reconnect automatically.';
+      'OpenCode will be briefly unavailable. The app will keep your current project and reconnect automatically.';
 
   @override
   String termuxRestartBusyMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count sessions are generating. Restarting will interrupt them.',
-      one: '1 session is generating. Restarting will interrupt it.',
+      other:
+          '$count conversations are generating. Restarting will interrupt them.',
+      one: '1 conversation is generating. Restarting will interrupt it.',
     );
     return '$_temp0';
   }
@@ -529,13 +532,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get commandDestination => 'Chat';
+  String get commandDestination => 'Conversation';
 
   @override
-  String get commandNewChat => 'New chat';
+  String get commandNewChat => 'New conversation';
 
   @override
-  String get commandUntitledChat => 'Untitled chat';
+  String get commandUntitledChat => 'Untitled conversation';
 
   @override
   String get commandArguments => 'Arguments (optional)';
@@ -548,7 +551,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commandLocationChanged =>
-      'The server or workspace changed. Close this dialog and open the command again.';
+      'The server or project changed. Close this dialog and open the command again.';
 
   @override
   String get refreshFailed => 'Couldn’t refresh';
@@ -570,20 +573,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get globalSessionsLoadMore => 'Load more sessions';
+  String get globalSessionsLoadMore => 'Load more conversations';
 
   @override
-  String get globalSessionsRefreshFailed => 'Could not refresh sessions.';
+  String get globalSessionsRefreshFailed => 'Could not refresh conversations.';
 
   @override
-  String get workspaceSearchAllSessions => 'Search all sessions';
+  String get workspaceSearchAllSessions => 'Search all conversations';
 
   @override
   String get workspaceProjectListUnavailable => 'Project list unavailable';
 
   @override
   String get workspaceProjectListFallback =>
-      'Your conversations can still be available. Search all sessions to find previous work.';
+      'Your conversations can still be available. Search all conversations to find previous work.';
 
   @override
   String get workspaceRetryProjects => 'Try again';
@@ -620,28 +623,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get historyServerTotalsNote =>
-      'Rows marked reported by server cover the session. Message counts and other estimates cover loaded history.';
+      'Rows marked reported by server cover the conversation. Message counts and other estimates cover loaded history.';
 
   @override
   String get sessionsLoadedOnly =>
-      'Showing loaded sessions. Load more to include older conversations.';
+      'Showing loaded conversations. Load more to include older ones.';
 
   @override
   String get sessionsDetailsUnavailable =>
-      'Session details could not be loaded. Try again.';
+      'Conversation details could not be loaded. Try again.';
 
   @override
-  String get sessionsLoadMore => 'Load more sessions';
+  String get sessionsLoadMore => 'Load more conversations';
 
   @override
-  String get sessionsReload => 'Refresh recent sessions';
+  String get sessionsReload => 'Refresh recent conversations';
 
   @override
-  String get sessionsNoLoadedRecent => 'No recent sessions in loaded results';
+  String get sessionsNoLoadedRecent =>
+      'No recent conversations in loaded results';
 
   @override
   String get sessionsNoLoadedArchived =>
-      'No archived sessions in loaded results';
+      'No archived conversations in loaded results';
 
   @override
   String sessionsLoadedCount(int count) {
@@ -670,13 +674,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get revertReviewChanged =>
-      'This session or its staged revert changed. Review the latest state before continuing.';
+      'This conversation or its staged revert changed. Review the latest state before continuing.';
 
   @override
   String get revertReviewLatest => 'Review latest state';
 
   @override
-  String get revertBusy => 'Wait for the current session action to finish.';
+  String get revertBusy =>
+      'Wait for the current conversation action to finish.';
 
   @override
   String get revertCancel => 'Cancel';
@@ -755,7 +760,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionNoteDescription =>
-      'Keep a short instruction for this session. Saving or deleting it takes effect at the next agent step and appears in the transcript then. It does not start a run.';
+      'Keep a short instruction for this conversation. Saving or deleting it takes effect at the next agent step and appears in the transcript then. It does not start a run.';
 
   @override
   String get sessionNoteHint =>
@@ -781,11 +786,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionInstructionsApplied =>
-      'The agent\'s session instructions have been updated for this step.';
+      'The agent\'s conversation instructions have been updated for this step.';
 
   @override
   String get sessionNoteUnsupported =>
-      'This server does not support session notes.';
+      'This server does not support conversation notes.';
 
   @override
   String get sessionNoteAuthorization =>
@@ -793,7 +798,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionNoteChanged =>
-      'The session or its instructions changed. Refresh the saved note before saving again. Your draft is kept.';
+      'The conversation or its instructions changed. Refresh the saved note before saving again. Your draft is kept.';
 
   @override
   String get sessionNoteInvalid =>
@@ -836,7 +841,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usageDescription =>
-      'Activity recorded by this OpenCode server across your sessions.';
+      'Activity recorded by this OpenCode server across your conversations.';
 
   @override
   String get usageRefresh => 'Refresh usage';
@@ -879,7 +884,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usageRefreshInterrupted =>
-      'The connection changed while loading usage. Refresh to try again.';
+      'The server changed while loading usage. Refresh to try again.';
 
   @override
   String get usageInvalidResponse =>
@@ -895,7 +900,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usageLocationChanged =>
-      'The active server or location changed. Reopen Usage from Settings.';
+      'The active server or project changed. Reopen Usage from Settings.';
 
   @override
   String get usageTinyCost => 'Less than \$0.000001';
@@ -904,10 +909,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get usageReportedCost => 'Reported cost · USD';
 
   @override
-  String get usageSessions => 'Sessions';
+  String get usageSessions => 'Conversations';
 
   @override
-  String get usageSubagents => 'Subagent sessions';
+  String get usageSubagents => 'Subagent conversations';
 
   @override
   String get usagePrompts => 'Prompts';
@@ -1019,22 +1024,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mcpRuntimeDescription =>
-      'Adds this MCP server to the selected location and tries to connect it now. It is removed when OpenCode restarts. For permanent setup, edit the server configuration.';
+      'Adds this MCP server to the selected project and tries to connect it now. It is removed when OpenCode restarts. For permanent setup, edit the server configuration.';
 
   @override
-  String get mcpCurrentLocation => 'Current location';
+  String get mcpCurrentLocation => 'Current project';
 
   @override
-  String get mcpDefaultLocation => 'OpenCode server’s default location';
+  String get mcpDefaultLocation => 'OpenCode server’s default directory';
 
   @override
   String mcpWorkspaceLocation(String workspace) {
-    return 'Workspace: $workspace';
+    return 'Cloud environment: $workspace';
   }
 
   @override
   String get mcpLocationChanged =>
-      'The connection or location changed. Your draft is still here; reopen setup in the intended location before adding it.';
+      'The server or project changed. Your draft is still here; reopen setup in the intended project before adding it.';
 
   @override
   String get mcpAdding => 'Adding MCP server';
@@ -1044,10 +1049,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mcpRuntimeEmpty =>
-      'Add tools for the current location until OpenCode restarts.';
+      'Add tools for the current project until OpenCode restarts.';
 
   @override
-  String get mcpRuntimeAdded => 'MCP server added for this location';
+  String get mcpRuntimeAdded => 'MCP server added for this project';
 
   @override
   String get sessionUnread => 'Unread result';
@@ -1079,14 +1084,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportJsonDescription =>
-      'Downloads the full session from the server, including older messages.';
+      'Downloads the full conversation from the server, including older messages.';
 
   @override
   String get exportMarkdown => 'Readable transcript · Markdown';
 
   @override
   String get exportMarkdownDescription =>
-      'Saves the messages currently loaded in this chat. Load older messages first if you need them included.';
+      'Saves the messages currently loaded in this conversation. Load older messages first if you need them included.';
 
   @override
   String get exportRedact => 'Redact sensitive data';
@@ -1116,7 +1121,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportChanged =>
-      'The connection or location changed. Reopen export from the intended conversation.';
+      'The server or project changed. Reopen export from the intended conversation.';
 
   @override
   String get exportUnsupported =>
@@ -1124,7 +1129,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportAuthorization =>
-      'The server denied access. Check your connection credentials and try again.';
+      'The server denied access. Check your server credentials and try again.';
 
   @override
   String get exportMissing =>
@@ -1175,18 +1180,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importDestination => 'Import into';
 
   @override
-  String get importChooseDestination => 'Choose a directory on this server';
+  String get importChooseDestination => 'Choose a project on this server';
 
   @override
   String get importChangeDestination => 'Change destination';
 
   @override
   String get importNoDestinations =>
-      'No project directories are available. Open a project on this server, then try again.';
+      'No projects are available. Open a project on this server, then try again.';
 
   @override
   String get importDestinationFailed =>
-      'Could not load destination projects or workspaces. Try again; your file is still selected.';
+      'Could not load destination projects or cloud environments. Try again; your file is still selected.';
 
   @override
   String get importPreserves =>
@@ -1206,18 +1211,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importOpenFailed =>
-      'The conversation was imported, but could not be opened. Find it in All sessions on the destination server.';
+      'The conversation was imported, but could not be opened. Find it in All conversations on the destination server.';
 
   @override
   String get importChanged =>
-      'The connection or location changed. Your file is still here. Reopen import on the intended server before continuing.';
+      'The server or project changed. Your file is still here. Reopen import on the intended server before continuing.';
 
   @override
   String get importUnsupported => 'This server does not support JSON import.';
 
   @override
   String get importInvalidFile =>
-      'Choose a valid OpenCode JSON export with session information and message records. Markdown transcripts cannot be imported.';
+      'Choose a valid OpenCode JSON export with conversation information and message records. Markdown transcripts cannot be imported.';
 
   @override
   String get importTooLarge =>
@@ -1225,11 +1230,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importConflict =>
-      'A conversation with this ID already exists on this server. Nothing was replaced. Find it in All sessions, or import this file on another server.';
+      'A conversation with this ID already exists on this server. Nothing was replaced. Find it in All conversations, or import this file on another server.';
 
   @override
   String get importAuthorization =>
-      'The server denied access. Check your connection credentials. Your file is still selected.';
+      'The server denied access. Check your server credentials. Your file is still selected.';
 
   @override
   String get importParentMissing =>
@@ -1241,7 +1246,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importUnconfirmed =>
-      'Import could not be confirmed. Check All sessions before retrying: the server may have received it. Your source file is unchanged.';
+      'Import could not be confirmed. Check All conversations before retrying: the server may have received it. Your source file is unchanged.';
 
   @override
   String get sessionsNoOtherRecent => 'No other recent conversations';
@@ -1257,7 +1262,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionPinFailed =>
-      'Could not save this pin. Check device storage and that the session location has not changed, then try again.';
+      'Could not save this pin. Check device storage and that the conversation’s project has not changed, then try again.';
 
   @override
   String get sessionPinsLoadFailed =>
@@ -1356,19 +1361,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareWaitingForServer =>
-      'Connect to a server and the shared text opens in a new session.';
+      'Connect to a server and the shared text opens in a new conversation.';
 
   @override
   String get shareSessionFailed =>
-      'Shared text kept. Could not open a session. Retry when the connection is ready.';
+      'Shared text kept. Could not open a conversation. Retry when the connection is ready.';
 
   @override
   String get webSourcesDisclosure =>
-      'Web search is not available through this connection’s app gateway. Paste a public URL and optionally an excerpt you want to include. No page is fetched. Nothing is sent to the model here.';
+      'Web search is not available through this server’s app gateway. Paste a public URL and optionally an excerpt you want to include. No page is fetched. Nothing is sent to the model here.';
 
   @override
   String get webSourcesScopeChanged =>
-      'Connection changed. Close and reopen Add web source.';
+      'Server changed. Close and reopen Add web source.';
 
   @override
   String get webSourcesUrl => 'Public URL';
@@ -1414,7 +1419,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get digestEmpty =>
-      'No ended-run metadata available in this location. Idle alone does not establish successful completion.';
+      'No ended-run metadata available in this project. Idle alone does not establish successful completion.';
 
   @override
   String get digestIdle => 'Server idle recorded · outcome unverified';
@@ -1431,9 +1436,10 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count changed files in the session total; this run is unknown.',
-      one: '1 changed file in the session total; this run is unknown.',
-      zero: 'No changed files in the session total; this run is unknown.',
+      other:
+          '$count changed files in the conversation total; this run is unknown.',
+      one: '1 changed file in the conversation total; this run is unknown.',
+      zero: 'No changed files in the conversation total; this run is unknown.',
     );
     return '$_temp0';
   }
@@ -1484,7 +1490,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get runResultsScopeChanged =>
-      'The connection or project changed. Close this view and reopen Run results from the intended project.';
+      'The server or project changed. Close this view and reopen Run results from the intended project.';
 
   @override
   String get runResultsTitle => 'Run results';
@@ -1682,13 +1688,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handoffDisclosure =>
-      'Metadata only, not a command or link. On your other device, connect to the same server and locate this project and session. Nothing is published or sent.\n\nThe clipboard will contain session and project identifiers. Other apps may read it; share only with people you trust.';
+      'Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.';
 
   @override
   String get handoffCopy => 'Copy reference';
 
   @override
-  String get handoffCopied => 'Session metadata reference copied';
+  String get handoffCopied => 'Conversation metadata reference copied';
 
   @override
   String get handoffCopyFailed => 'Could not copy the handoff. Try again.';
@@ -1700,7 +1706,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionCopyHandoff => 'Copy handoff';
 
   @override
-  String get sessionActions => 'Session actions';
+  String get sessionActions => 'Conversation actions';
 
   @override
   String get attentionTitle => 'Server attention';
@@ -1714,7 +1720,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get webSourcesDraftChanged =>
-      'The draft or connection changed. Your current draft was kept; reopen Add web source to try again.';
+      'The draft or server changed. Your current draft was kept; reopen Add web source to try again.';
 
   @override
   String get webSourcesDraftLabel =>
@@ -1805,11 +1811,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pendingAuthUnsupported =>
-      'This connection cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.';
+      'This server cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.';
 
   @override
   String get pendingAuthOtherSource =>
-      'Other pending sign-ins belong to another server origin or location. Return to their original source to manage them.';
+      'Other pending sign-ins belong to another server or project. Return to their original source to manage them.';
 
   @override
   String get connectionHelpTitle => 'Connection help';
@@ -1982,7 +1988,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get voiceConversationInstructions =>
-      'Review and insert your transcript, then tap Send in the composer. Replies are read aloud only while Speak replies is on, and only the reply to what you just sent. Unsent text is discarded when you leave voice mode, the chat, or the app.';
+      'Review and insert your transcript, then tap Send in the composer. Replies are read aloud only while Speak replies is on, and only the reply to what you just sent. Unsent text is discarded when you leave voice mode, the conversation, or the app.';
 
   @override
   String get desktopDropFailedTitle => 'Could not attach dropped files';
@@ -2036,7 +2042,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commandAuthScopeChanged =>
-      'The server or project changed. Return to the original location and reopen sign-in to manage its attempt.';
+      'The server or project changed. Return to the original project and reopen sign-in to manage its attempt.';
 
   @override
   String get commandAuthUncertainStart =>
@@ -2059,7 +2065,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readAloudConsentDetail =>
-      'The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software and its privacy practices apply. Code blocks and tool details are omitted. Others may hear the audio. Playback stops when this chat is covered or the app goes into the background.';
+      'The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software and its privacy practices apply. Code blocks and tool details are omitted. Others may hear the audio. Playback stops when this conversation is covered or the app goes into the background.';
 
   @override
   String get readAloudContinue => 'Choose voice';
@@ -2181,7 +2187,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mcpRemoveRuntimeDetail =>
-      'Remove this MCP server from the current runtime location. Its tools will no longer be available there. This does not erase persistent server configuration; it may return after a server restart.';
+      'Remove this MCP server from the current project’s runtime. Its tools will no longer be available there. This does not erase persistent server configuration; it may return after a server restart.';
 
   @override
   String get mcpRemoveFailed =>
@@ -2258,12 +2264,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String promptStashLocation(String directory) {
-    return 'This prompt refers to files in $directory. Switch to its original project and workspace before restoring it.';
+    return 'This prompt refers to files in $directory. Switch to its original project before restoring it.';
   }
 
   @override
   String get promptStashScopeChanged =>
-      'The server or location changed. Close and reopen Saved prompts.';
+      'The server or project changed. Close and reopen Saved prompts.';
 
   @override
   String get transcriptFindTitle => 'Find in conversation';
@@ -2347,7 +2353,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get skillLocationChanged =>
-      'The connection or project changed. Reopen Skills from the conversation.';
+      'The server or project changed. Reopen Skills from the conversation.';
 
   @override
   String get skillUnsupported =>
@@ -2413,7 +2419,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activeContextChanged =>
-      'The connection, project or conversation changed. Reopen this inspector from the conversation.';
+      'The server, project or conversation changed. Reopen this inspector from the conversation.';
 
   @override
   String get activeContextInvalid =>
@@ -2450,7 +2456,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activeContextCompaction => 'Compaction';
 
   @override
-  String get activeContextChange => 'Session change';
+  String get activeContextChange => 'Conversation change';
 
   @override
   String get activeContextText => 'Text';
@@ -2658,7 +2664,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quotaSetupDescription =>
-      'Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this profile\'s server sign-in. Confirm only if you installed or trust that deployment. Provider tokens stay on the server.';
+      'Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this saved server\'s sign-in. Confirm only if you installed or trust that deployment. Provider tokens stay on the server.';
 
   @override
   String get quotaSetupGuide =>
@@ -2838,11 +2844,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get iosKeychainGuide =>
-      'Server passwords use this device\'s Keychain. They are not stored in plain profile preferences.';
+      'Server passwords use this device\'s Keychain. They are not stored in plain app preferences.';
 
   @override
   String get platformSecureStorageGuide =>
-      'Server passwords use this platform\'s secure credential storage. They are not stored in plain profile preferences.';
+      'Server passwords use this platform\'s secure credential storage. They are not stored in plain app preferences.';
 
   @override
   String get quotaClaudeAccount => 'Claude login windows';
@@ -2941,7 +2947,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pluginsDescription =>
-      'Plugins reported for this server location. Inspect status and source here; manage plugins on the server.';
+      'Plugins reported for this project on the server. Inspect status and source here; manage plugins on the server.';
 
   @override
   String get pluginsUnsupported =>
@@ -2952,7 +2958,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Connect to a server to inspect its plugins.';
 
   @override
-  String get pluginsEmpty => 'No plugins reported for this location.';
+  String get pluginsEmpty => 'No plugins reported for this project.';
 
   @override
   String get pluginsLoadFailed => 'Could not load plugins. Try again.';
@@ -3008,7 +3014,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handoffCommandDisclosure =>
-      'Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and session ID, but no password.';
+      'Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and conversation ID, but no password.';
 
   @override
   String get handoffCopyCommand => 'Copy command';
@@ -3018,7 +3024,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handoffCommandUnavailable =>
-      'A resume command is unavailable for this connection or workspace. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the session metadata below.';
+      'A resume command is unavailable for this server or cloud environment. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the conversation metadata below.';
 
   @override
   String get quotaMiniMax => 'MiniMax';
@@ -3177,7 +3183,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get monitorScope =>
-      'Counts cover each server’s last selected location, not every project on that server.';
+      'Counts cover each server’s last selected project, not every project on that server.';
 
   @override
   String get monitorDisclosure =>
@@ -3194,7 +3200,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get monitorOptInDetail =>
-      'Check pending permissions, questions and forms in its last selected location.';
+      'Check pending permissions, questions and forms in its last selected project.';
 
   @override
   String get monitorNotifications => 'Notify when attention is needed';
@@ -3245,7 +3251,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get monitorCurrent => 'Current observation';
 
   @override
-  String get monitorAllClear => 'No pending requests in the checked location';
+  String get monitorAllClear => 'No pending requests in the checked project';
 
   @override
   String get monitorNoServers => 'Add a server to monitor attention.';
@@ -3256,20 +3262,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get monitorOpenFailed =>
-      'This request or its server location changed. Refresh the inbox and try again.';
+      'This request or its project changed. Refresh the inbox and try again.';
 
   @override
   String get monitorSwitchTitle => 'Switch server to review?';
 
   @override
   String get monitorSwitchDetail =>
-      'A run is active on the selected server. Switching changes the connection shown in this app; it does not stop that server’s run.';
+      'A run is active on the selected server. Switching changes the server shown in this app; it does not stop that server’s run.';
 
   @override
   String get monitorSwitch => 'Switch server';
 
   @override
-  String get monitorSession => 'Session';
+  String get monitorSession => 'Conversation';
 
   @override
   String get monitorPermission => 'Permission needed';
@@ -3316,7 +3322,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get monitorSelected => 'Selected location';
+  String get monitorSelected => 'Selected project';
 
   @override
   String get monitorNoNotifications =>
@@ -3412,7 +3418,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get managedRecoveryRevokeFailed =>
-      'Could not save or revoke recovery. Keep this profile and retry before removing it.';
+      'Could not save or revoke recovery. Keep this server and retry before removing it.';
 
   @override
   String get managedRecoverySettingsUnreadable =>
@@ -3435,7 +3441,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get managedRecoveryStoppedWithCleanupError =>
-      'The local server is stopped. Recovery settings could not be fully cleared; retry disabling recovery in Servers before removing the profile.';
+      'The local server is stopped. Recovery settings could not be fully cleared; retry disabling recovery in Servers before removing the server.';
 
   @override
   String get pluginMappingPersonal =>
@@ -3451,7 +3457,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pluginMappingDescription =>
-      'Choose commands you associate with this plugin. These personal links apply only to this server location. Each action opens a review of the chat and arguments before you run it.';
+      'Choose commands you associate with this plugin. These personal links apply only to this project on this server. Each action opens a review of the conversation and arguments before you run it.';
 
   @override
   String get pluginMappingEmpty => 'No server commands are available to link.';
@@ -3468,7 +3474,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pluginMappingSaveFailed =>
-      'Links could not be saved. Check that this server location is still selected and try again.';
+      'Links could not be saved. Check that this project is still selected and try again.';
 
   @override
   String get pluginMappingLoadFailed =>
@@ -3526,14 +3532,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pluginMappingClearDescription =>
-      'Remove personal plugin-command links for every location in this server profile, including previous locations. Server plugins and commands stay installed.';
+      'Remove personal plugin-command links for every project on this saved server, including previous projects. Server plugins and commands stay installed.';
 
   @override
   String get pluginMappingClearConfirm => 'Clear links';
 
   @override
   String get pluginMappingClearFailed =>
-      'Personal links could not be cleared. Check that this server profile is still selected and try again.';
+      'Personal links could not be cleared. Check that this server is still selected and try again.';
 
   @override
   String get quotaMonitorTitle => 'Quota monitoring';
@@ -3628,11 +3634,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get webSearchAuthentication =>
-      'The server did not authorize web search. Check this connection’s credentials.';
+      'The server did not authorize web search. Check this server’s credentials.';
 
   @override
   String get webSearchInvalidResponse =>
-      'The search response did not match this connection or the supported format. Refresh providers or paste a source.';
+      'The search response did not match this server or the supported format. Refresh providers or paste a source.';
 
   @override
   String get webSearchFailed =>
@@ -3689,7 +3695,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filesViewerScopeChanged =>
-      'Connection changed. Close and reopen this file.';
+      'Server changed. Close and reopen this file.';
 
   @override
   String get filesViewerPathChanged =>
@@ -3720,7 +3726,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get codexTextOnlyPrompt =>
-      'This connection supports text only. Remove attachments before sending.';
+      'This server supports text only. Remove attachments before sending.';
 
   @override
   String get codexOfflineDraftSaved =>
@@ -3802,7 +3808,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectionCredentialUnavailable =>
-      'A saved connection credential can no longer be read. Edit the active server and re-enter it before connecting.';
+      'A saved server credential can no longer be read. Edit the active server and re-enter it before connecting.';
 
   @override
   String get projectContextTitle => 'Project context';
@@ -3875,47 +3881,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get launchShortcutWaiting =>
-      'Connecting to the saved server. The new task opens when it is ready.';
+      'Connecting to the saved server. The new conversation opens when it is ready.';
 
   @override
   String get launchShortcutNoServer =>
-      'Choose a server, then start a new task.';
+      'Choose a server, then start a new conversation.';
 
   @override
   String get launchShortcutReentry =>
-      'Enter the credentials for the saved server, then start a new task.';
+      'Enter the credentials for the saved server, then start a new conversation.';
 
   @override
   String get launchShortcutConnectionFailed =>
-      'Could not connect to the saved server. Choose or fix a server, then start a new task.';
+      'Could not connect to the saved server. Choose or fix a server, then start a new conversation.';
 
   @override
   String launchShortcutNewTaskFailed(String error) {
-    return 'Could not start a new task. $error';
+    return 'Could not start a new conversation. $error';
   }
 
   @override
-  String get launchUiPinnedUntitled => 'Untitled session';
+  String get launchUiPinnedUntitled => 'Untitled conversation';
 
   @override
   String get launchUiSessionWaiting =>
-      'Connecting to the saved server. The session opens when it is ready.';
+      'Connecting to the saved server. The conversation opens when it is ready.';
 
   @override
   String get launchUiSessionNoServer =>
-      'Choose a server, then open the session from its list.';
+      'Choose a server, then open the conversation from its list.';
 
   @override
   String get launchUiSessionReentry =>
-      'Enter the credentials for the saved server, then open the session from its list.';
+      'Enter the credentials for the saved server, then open the conversation from its list.';
 
   @override
   String get launchUiSessionConnectionFailed =>
-      'Could not connect to the saved server. Choose or fix a server, then open the session from its list.';
+      'Could not connect to the saved server. Choose or fix a server, then open the conversation from its list.';
 
   @override
   String get launchUiSessionOtherServer =>
-      'That shortcut belongs to another server. Connect to that server, then open the session from its list.';
+      'That shortcut belongs to another server. Connect to that server, then open the conversation from its list.';
 
   @override
   String get launchUiActivityNoServer =>
@@ -3951,7 +3957,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queuedDiscardUnconfirmedMessage =>
-      'Its earlier send was never confirmed; it may already be in the session.';
+      'Its earlier send was never confirmed; it may already be in the conversation.';
 
   @override
   String get setupRuntimeTitle => 'Which OpenCode would you like to use?';
@@ -3977,7 +3983,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String setupRuntimeUpdateDetail(String runtime, String version) {
-    return 'The app will install $runtime $version, restart only the managed local server, and reconnect this profile.';
+    return 'The app will install $runtime $version, restart only the managed local server, and reconnect this server.';
   }
 
   @override
@@ -4026,7 +4032,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String isolatedTaskReady(String name) {
-    return '$name is ready. Opening a blank session…';
+    return '$name is ready. Opening a blank conversation…';
   }
 
   @override
@@ -4068,12 +4074,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String isolatedTaskOpening(String name) {
-    return 'Opening a blank session in $name…';
+    return 'Opening a blank conversation in $name…';
   }
 
   @override
   String isolatedTaskOpened(String name) {
-    return 'Session ready in $name. Nothing has been sent.';
+    return 'Conversation ready in $name. Nothing has been sent.';
   }
 
   @override
@@ -4104,7 +4110,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'For this project on this device. Dismissing keeps conversations unread and requests pending.';
 
   @override
-  String get returnBriefUntitled => 'Untitled session';
+  String get returnBriefUntitled => 'Untitled conversation';
 
   @override
   String get returnBriefStale =>
@@ -4119,14 +4125,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get returnBriefPartial =>
-      'Loaded sessions only. The session list is still incomplete.';
+      'Loaded conversations only. The conversation list is still incomplete.';
 
   @override
   String get returnBriefAnswer => 'Answer';
 
   @override
   String get returnBriefUnreviewed =>
-      'Unreviewed session. Open results to check the outcome.';
+      'Unreviewed conversation. Open results to check the outcome.';
 
   @override
   String get returnBriefReview => 'Review results';
@@ -4136,7 +4142,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String returnBriefMore(int count) {
-    return 'Additional items: $count. They remain unacknowledged; see the sessions below or Activity.';
+    return 'Additional items: $count. They remain unacknowledged; see the conversations below or Activity.';
   }
 
   @override
@@ -4154,11 +4160,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get capsuleEntry =>
-      'Collect notes, errors and screenshots for this task';
+      'Collect notes, errors and screenshots for this conversation';
 
   @override
   String get capsuleDescription =>
-      'Build a bundle for this task. Applying adds it to your existing draft; nothing is sent. Unapplied edits are kept only while this screen is open.';
+      'Build a bundle for this conversation. Applying adds it to your existing draft; nothing is sent. Unapplied edits are kept only while this screen is open.';
 
   @override
   String get capsuleNote => 'Note';
@@ -4196,11 +4202,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get capsuleScopeChanged =>
-      'The task, connection or draft changed. Close this capsule and reopen it from the intended task.';
+      'The conversation, server or draft changed. Close this capsule and reopen it from the intended conversation.';
 
   @override
   String get capsuleTextOnly =>
-      'This connection accepts text only. You can still collect notes, errors and code.';
+      'This server accepts text only. You can still collect notes, errors and code.';
 
   @override
   String get capsuleImagesOnly =>
@@ -4687,7 +4693,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentAccountScopeLost =>
-      'This connection changed. Return to Servers and open the account for the connected profile.';
+      'This server changed. Return to Servers and open the account for the connected server.';
 
   @override
   String get agentAccountRefresh => 'Refresh account';
@@ -4732,7 +4738,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentAccountHostNote =>
-      'The official Codex runtime keeps your provider credentials. Account changes apply to this host, including other profiles connected to it.';
+      'The official Codex runtime keeps your provider credentials. Account changes apply to this host, including other saved servers connected to it.';
 
   @override
   String get agentAccountUnsupportedDetail =>
@@ -4851,7 +4857,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectFolderChooserMessage =>
-      'OpenCode Mobile does not work in the server’s home folder. Create a new folder or open a project folder to start sessions.';
+      'OpenCode Mobile does not work in the server’s home folder. Create a new folder or open a project folder to start conversations.';
 
   @override
   String get projectFolderCreate => 'Create a new folder';
@@ -4868,7 +4874,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String projectFolderCreateMessage(String directory) {
-    return 'The folder is created in $directory on this device and opened as the workspace.';
+    return 'The folder is created in $directory on this device and opened as the project.';
   }
 
   @override
@@ -4908,13 +4914,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter the full path of a folder on the server';
 
   @override
-  String get globalSessionsTitle => 'All sessions';
+  String get globalSessionsTitle => 'All conversations';
 
   @override
-  String get globalSessionsSearchLabel => 'Search session titles';
+  String get globalSessionsSearchLabel => 'Search conversation titles';
 
   @override
-  String get globalSessionsSearchHint => 'Across every folder on this server';
+  String get globalSessionsSearchHint => 'Across every project on this server';
 
   @override
   String get globalSessionsIncludeArchived => 'Include archived';
@@ -4923,45 +4929,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get globalSessionsArchivedShort => 'Archived';
 
   @override
-  String get globalSessionsAllFolders => 'All folders';
+  String get globalSessionsAllFolders => 'All projects';
 
   @override
-  String get globalSessionsUnknownLocation => 'Unknown location';
+  String get globalSessionsUnknownLocation => 'Unknown project';
 
   @override
   String globalSessionsSummary(String count, int folders) {
-    return '$count sessions in $folders folders';
+    return '$count conversations in $folders projects';
   }
 
   @override
   String globalSessionsSummaryOneFolder(String count) {
-    return '$count sessions in one folder';
+    return '$count conversations in one project';
   }
 
   @override
   String globalSessionsFilteredSummary(int count, String total) {
-    return '$count of $total sessions shown';
+    return '$count of $total conversations shown';
   }
 
   @override
-  String get globalSessionsEmptyTitle => 'No sessions yet';
+  String get globalSessionsEmptyTitle => 'No conversations yet';
 
   @override
   String get globalSessionsEmptyMessage =>
-      'Sessions from every folder on this server will appear here.';
+      'Conversations from every project on this server will appear here.';
 
   @override
-  String get globalSessionsNoMatchTitle => 'No matching sessions';
+  String get globalSessionsNoMatchTitle => 'No matching conversations';
 
   @override
   String get globalSessionsNoMatchMessage =>
-      'Try a shorter title search or include archived sessions.';
+      'Try a shorter title search or include archived conversations.';
 
   @override
   String get globalSessionsRefresh => 'Refresh';
 
   @override
-  String get globalSessionsLoadMoreFailed => 'Could not load more sessions';
+  String get globalSessionsLoadMoreFailed =>
+      'Could not load more conversations';
 
   @override
   String get globalSessionsOpen => 'Open';
@@ -4970,22 +4977,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get globalSessionsContinueHere => 'Continue here';
 
   @override
-  String get globalSessionsActions => 'Session actions';
+  String get globalSessionsActions => 'Conversation actions';
 
   @override
   String get globalSessionsWorking => 'Working';
 
   @override
-  String get globalSessionsUntitled => 'Untitled session';
+  String get globalSessionsUntitled => 'Untitled conversation';
 
   @override
-  String get workspaceNewSession => 'New session';
+  String get workspaceNewSession => 'New conversation';
 
   @override
   String get workspaceIsolatedTask => 'Isolated task';
 
   @override
-  String get workspaceAllSessions => 'All sessions';
+  String get workspaceAllSessions => 'All conversations';
 
   @override
   String get workspaceDismissNotice => 'Dismiss';
@@ -5068,7 +5075,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsDiscoveryNewChatsModel(String model) {
-    return 'New chats: $model';
+    return 'New conversations: $model';
   }
 
   @override
@@ -5082,7 +5089,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingConnect => 'Connect to a server';
 
   @override
-  String get onboardingDemoNote => 'A simulated session. No server needed.';
+  String get onboardingDemoNote =>
+      'A simulated conversation. No server needed.';
 
   @override
   String get onboardingMoreSetup => 'More setup options';
@@ -5117,7 +5125,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityCheckedLocationsClear =>
-      'Nothing needs you in the checked locations.';
+      'Nothing needs you in the checked projects.';
 
   @override
   String get activityUnknownStatusDetail =>
@@ -5130,7 +5138,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activitySavedServers => 'Saved servers';
 
   @override
-  String get activitySelectedLocationsOnly => 'Last selected locations only';
+  String get activitySelectedLocationsOnly => 'Last selected projects only';
 
   @override
   String get activityBackgroundUpdates => 'Background updates';
@@ -5215,11 +5223,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workBackgroundEligible =>
-      'Run in background is available while a supported agent task or command is blocking this chat.';
+      'Run in background is available while a supported agent task or command is blocking this conversation.';
 
   @override
   String get workBackgroundAutomatic =>
-      'Ask your agent to delegate work in the background. Results return to this chat automatically.';
+      'Ask your agent to delegate work in the background. Results return to this conversation automatically.';
 
   @override
   String get oc2DiscoveryConnect => 'Connect OpenCode 2';
@@ -5251,7 +5259,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get setupSwitchConfirmDetail =>
-      'Stops this phone’s server and running tasks. Chats, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.';
+      'Stops this phone’s server and running tasks. Conversations, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.';
 
   @override
   String get setupSwitchConfirm => 'Switch version';
@@ -5306,7 +5314,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get setupSwitchMissingCredential =>
-      'The saved credential for the previous runtime is unavailable. Its data is retained; restore the saved profile before returning.';
+      'The saved credential for the previous runtime is unavailable. Its data is retained; restore the saved server before returning.';
 
   @override
   String get setupSwitchOwnDescription =>
@@ -5319,7 +5327,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get setupSwitchDataNotice =>
-      'Each version keeps its own chats and provider settings. Project files and project configuration are shared.';
+      'Each version keeps its own conversations and provider settings. Project files and project configuration are shared.';
 
   @override
   String get setupSwitchHelp => 'Setup help';
@@ -5538,7 +5546,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7GlossaryMcpExplanation =>
-      'Model Context Protocol. Small add-on servers that give the agent extra tools, like a browser, a database, or a design tool. You connect them once and every session can use them.';
+      'Model Context Protocol. Small add-on servers that give the agent extra tools, like a browser, a database, or a design tool. You connect them once and every conversation can use them.';
 
   @override
   String get e7GlossaryWorktreeTerm => 'Worktree';
@@ -5556,7 +5564,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7GlossaryContextExplanation =>
-      'Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the session can continue.';
+      'Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the conversation can continue.';
 
   @override
   String get e7GlossaryAgentTerm => 'Agent';
@@ -5641,7 +5649,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SharedThreeStepsToYourFirstSession =>
-      'Three steps to your first session';
+      'Three steps to your first conversation';
 
   @override
   String get e7SharedOpenCodeRunsOnYourComputerThisApp =>
@@ -5755,7 +5763,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'OpenCode is reconnecting. Try again.';
 
   @override
-  String get e7SharedSessionContext => 'Session context';
+  String get e7SharedSessionContext => 'Conversation context';
 
   @override
   String get e7SharedRefreshContext => 'Refresh context';
@@ -5765,7 +5773,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SharedSendAPromptAndWaitForAn =>
-      'Send a prompt and wait for an assistant response. OpenCode will then report token usage for this session.';
+      'Send a prompt and wait for an assistant response. OpenCode will then report token usage for this conversation.';
 
   @override
   String get e7SharedCurrentModelRequest => 'Current model request';
@@ -5774,7 +5782,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SharedEstimatedInputMakeup => 'Estimated input makeup';
 
   @override
-  String get e7SharedSessionTotals => 'Session totals';
+  String get e7SharedSessionTotals => 'Conversation totals';
 
   @override
   String get e7SharedUsageComesFromTheLatestCompletedAssistant =>
@@ -5811,7 +5819,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SharedSessionTokensReportedByServer =>
-      'Session tokens · reported by server';
+      'Conversation tokens · reported by server';
 
   @override
   String get e7SharedUserPrompts => 'User prompts';
@@ -5830,14 +5838,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SharedSessionLocationChangedCloseAndReopenThis =>
-      'Session location changed. Close and reopen this sheet.';
+      'The conversation’s project changed. Close and reopen this sheet.';
 
   @override
   String get e7SharedOpenCodeIsReconnecting => 'OpenCode is reconnecting.';
 
   @override
   String get e7SharedTheSessionProjectIsNotAvailableOn =>
-      'The session project is not available on this server.';
+      'The conversation project is not available on this server.';
 
   @override
   String get e7SharedLocalProject => 'Local project';
@@ -5853,7 +5861,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SharedCopyChangesAndMove => 'Copy changes and move';
 
   @override
-  String get e7SharedMoveSession => 'Move session';
+  String get e7SharedMoveSession => 'Move conversation';
 
   @override
   String get e7SharedChooseAnotherDirectoryInThisProject =>
@@ -5861,7 +5869,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SharedChooseAConnectedWorkspaceOrReturnTo =>
-      'Choose a connected workspace, or return to the local project.';
+      'Choose a connected cloud environment, or return to the local project.';
 
   @override
   String get e7SharedFilterDestinations => 'Filter destinations';
@@ -5892,49 +5900,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SharedSessionLocationChangedReturnAndReopenRelated =>
-      'Session location changed. Return and reopen related sessions.';
+      'The conversation’s project changed. Return and reopen related conversations.';
 
   @override
   String get e7SharedSessionIsNoLongerRelatedToThis =>
-      'Session is no longer related to this session.';
+      'That conversation is no longer related to this one.';
 
   @override
   String get e7SharedSessionLocationChangedReturnAndTryAgain =>
-      'Session location changed. Return and try again.';
+      'The conversation’s project changed. Return and try again.';
 
   @override
   String get e7SharedSessionUnavailableOrLocationChangedReturnOr =>
-      'Session unavailable or location changed. Return or refresh to try again.';
+      'Conversation unavailable or its project changed. Return or refresh to try again.';
 
   @override
   String get e7SharedCouldNotUpdateThePinReturnAnd =>
       'Could not update the pin. Return and try again.';
 
   @override
-  String get e7SharedRefreshSubagentSessions => 'Refresh subagent sessions';
+  String get e7SharedRefreshSubagentSessions =>
+      'Refresh subagent conversations';
 
   @override
-  String get e7SharedParentSession => 'Parent session';
+  String get e7SharedParentSession => 'Parent conversation';
 
   @override
   String get e7SharedSubagents => 'Subagents';
 
   @override
-  String get e7SharedNoSubagentSessionsYet => 'No subagent sessions yet';
+  String get e7SharedNoSubagentSessionsYet => 'No subagent conversations yet';
 
   @override
   String get e7SharedDelegatedWorkWillAppearHereWithoutMixing =>
-      'Delegated work will appear here without mixing child sessions into your main chat list.';
+      'Delegated work will appear here without mixing subagent conversations into your main list.';
 
   @override
   String get e7SharedOpenCodeHasNotDelegatedWorkFromThis =>
-      'OpenCode has not delegated work from this session.';
+      'OpenCode has not delegated work from this conversation.';
 
   @override
-  String get e7SharedUnpinSession => 'Unpin session';
+  String get e7SharedUnpinSession => 'Unpin conversation';
 
   @override
-  String get e7SharedPinSession => 'Pin session';
+  String get e7SharedPinSession => 'Pin conversation';
 
   @override
   String get e7SharedLinkBlockedThisAppMayOpenOnly =>
@@ -5987,7 +5996,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SharedAskedByTheAgentInThisSession =>
-      'Asked by the agent in this session';
+      'Asked by the agent in this conversation';
 
   @override
   String get e7SharedInputRequested => 'Input requested';
@@ -6045,7 +6054,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7SharedDetail429 => 'Move session?';
+  String get e7SharedDetail429 => 'Move conversation?';
 
   @override
   String e7SharedDetail430(int count, String action) {
@@ -6059,7 +6068,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'move': 'move',
       'other': 'be copied',
     });
-    return '$_temp0 Choose whether those working changes should $_temp1 with the session.';
+    return '$_temp0 Choose whether those working changes should $_temp1 with the conversation.';
   }
 
   @override
@@ -6090,8 +6099,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count delegated sessions · open any transcript directly.',
-      one: '1 delegated session · open any transcript directly.',
+      other: '$count delegated conversations · open any transcript directly.',
+      one: '1 delegated conversation · open any transcript directly.',
     );
     return '$_temp0';
   }
@@ -6210,17 +6219,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LocaleUiRetry => 'Try again';
 
   @override
-  String get e7LocaleUiNewSession => 'New session';
+  String get e7LocaleUiNewSession => 'New conversation';
 
   @override
-  String get e7LocaleUiNewSessionHint => 'Start a chat in the active project';
+  String get e7LocaleUiNewSessionHint =>
+      'Start a conversation in the active project';
 
   @override
   String get e7LocaleUiWorkspace => 'Workspace';
 
   @override
   String get e7LocaleUiWorkspaceHint =>
-      'Recent sessions and the active project';
+      'Recent conversations and the active project';
 
   @override
   String get e7LocaleUiFiles => 'Files';
@@ -6247,7 +6257,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LocaleUiKeyboardShortcuts => 'Keyboard shortcuts';
 
   @override
-  String get e7LocaleUiRefreshSessions => 'Refresh sessions';
+  String get e7LocaleUiRefreshSessions => 'Refresh conversations';
 
   @override
   String get e7LocaleUiDiagnostics => 'Diagnostics';
@@ -6278,7 +6288,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LocaleUiRecentModel =>
-      'Next / previous recent model in this chat';
+      'Next / previous recent model in this conversation';
 
   @override
   String get e7LocaleUiThisList => 'This list';
@@ -6287,7 +6297,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LocaleUiCloseOverlay => 'Close a sheet, dialog, or menu';
 
   @override
-  String get e7LocaleUiContextActions => 'Message, file, and session actions';
+  String get e7LocaleUiContextActions =>
+      'Message, file, and conversation actions';
 
   @override
   String get e7LocaleUiTypeCommand => 'Type a command…';
@@ -6299,10 +6310,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LocaleUiContextKeys => 'Right click / Shift + F10 / Menu';
 
   @override
-  String get e7LocaleUiShareScopeChanged => 'Shared session scope changed';
+  String get e7LocaleUiShareScopeChanged => 'Shared conversation scope changed';
 
   @override
-  String get e7LocaleUiConnectionChanged => 'The connection changed.';
+  String get e7LocaleUiConnectionChanged => 'The server changed.';
 
   @override
   String get e7AppearanceFollowAndroid => 'Follow Android';
@@ -6325,12 +6336,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Match this device’s current light or dark setting';
 
   @override
-  String get e7AppearanceLightDescription =>
-      'Use the bright editorial workspace';
+  String get e7AppearanceLightDescription => 'Use the bright editorial theme';
 
   @override
-  String get e7AppearanceDarkDescription =>
-      'Use the focused low-light workspace';
+  String get e7AppearanceDarkDescription => 'Use the focused low-light theme';
 
   @override
   String get e7AppearanceTitle => 'Appearance';
@@ -6562,7 +6571,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsUi62 => 'No server password saved';
 
   @override
-  String get e7SettingsUi63 => 'Manage server profiles';
+  String get e7SettingsUi63 => 'Manage servers';
 
   @override
   String get e7SettingsUi64 => 'Add, edit, or switch OpenCode servers';
@@ -6757,12 +6766,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7SettingsDraftDeleteSummary(int count) {
-    return 'Deletes composer text saved for $count sessions';
+    return 'Deletes composer text saved for $count conversations';
   }
 
   @override
   String e7SettingsDraftDeleteBody(int count) {
-    return 'This deletes the composer text saved for $count sessions. Nothing on the server is affected.';
+    return 'This deletes the composer text saved for $count conversations. Nothing on the server is affected.';
   }
 
   @override
@@ -6847,7 +6856,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SettingsDetailUi8 =>
-      'Handled app errors are redacted and kept only in memory. Chat messages and file contents are not collected. Nothing is sent automatically.';
+      'Handled app errors are redacted and kept only in memory. Your messages and file contents are not collected. Nothing is sent automatically.';
 
   @override
   String get e7SettingsDetailUi10 => 'Send';
@@ -6957,7 +6966,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7ProjectProjectSwitchUnavailableDetail =>
-      'This connection keeps the configured folder for sessions. Open a new task from Workspace to continue.';
+      'This server keeps the configured folder for conversations. Start a new conversation from Workspace to continue.';
 
   @override
   String get e7ProjectProjectsTitle => 'Projects';
@@ -6984,7 +6993,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7ProjectProjectsEmptyDetail =>
-      'Projects opened by this server appear here; choose one for sessions, files, terminals, and coding tools. Create a new folder or open one by its path above, or open a project on this OpenCode server and refresh.';
+      'Projects opened by this server appear here; choose one for conversations, files, terminals, and coding tools. Create a new folder or open one by its path above, or open a project on this OpenCode server and refresh.';
 
   @override
   String get e7ProjectProjectsNoMatch => 'No matching projects';
@@ -7043,11 +7052,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7ProjectAttentionCacheSource =>
-      'Source: selected connection’s local cache. Scope: currently loaded location and sessions. Last refreshed: unknown.';
+      'Source: selected server’s local cache. Scope: currently loaded project and conversations. Last refreshed: unknown.';
 
   @override
   String get e7ProjectAttentionProfileSource =>
-      'Source: saved profile only. Attention status: unknown. Last checked: unknown.';
+      'Source: saved server only. Attention status: unknown. Last checked: unknown.';
 
   @override
   String get e7ProjectAttentionPendingUnknown => 'Pending requests: unknown';
@@ -7058,19 +7067,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7ProjectAttentionRunningUnknown => 'Running sessions: unknown';
+  String get e7ProjectAttentionRunningUnknown =>
+      'Running conversations: unknown';
 
   @override
   String e7ProjectAttentionRunningKnown(int count) {
-    return 'Last-known running or retrying sessions: $count';
+    return 'Last-known running or retrying conversations: $count';
   }
 
   @override
-  String get e7ProjectAttentionUnreadUnknown => 'Unread sessions: unknown';
+  String get e7ProjectAttentionUnreadUnknown => 'Unread conversations: unknown';
 
   @override
   String e7ProjectAttentionUnreadKnown(int count) {
-    return 'Last-known unread sessions: $count';
+    return 'Last-known unread conversations: $count';
   }
 
   @override
@@ -7081,7 +7091,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7ProjectMonitorUnsupported =>
-      'Background attention is unavailable for this connection. Open the conversation to review current requests.';
+      'Background attention is unavailable for this server. Open the conversation to review current requests.';
 
   @override
   String get readerUiDisconnected => 'The server is not connected.';
@@ -7103,11 +7113,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readerUiCommentAdded =>
-      'Review comment added. Return to the chat to continue.';
+      'Review comment added. Return to the conversation to continue.';
 
   @override
   String get readerUiCommentCopied =>
-      'Review comment copied. Paste it into a chat.';
+      'Review comment copied. Paste it into a conversation.';
 
   @override
   String get readerUiSearchSymbols => 'Search symbols';
@@ -7158,7 +7168,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerUiCopyPath => 'Copy path';
 
   @override
-  String get readerUiWorkspaceSymbols => 'Search workspace symbols';
+  String get readerUiWorkspaceSymbols => 'Search project symbols';
 
   @override
   String get readerUiSymbolsHint =>
@@ -7169,7 +7179,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readerUiSymbolsUnavailable =>
-      'Try a different name. Some language services do not support workspace-wide symbol search.';
+      'Try a different name. Some language services do not support project-wide symbol search.';
 
   @override
   String get readerUiReviewAll => 'Review all changes';
@@ -7203,7 +7213,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readerUiSessionScopeHint =>
-      'Changes attributed to this OpenCode session';
+      'Changes attributed to this OpenCode conversation';
 
   @override
   String get readerUiWorkingScopeHint => 'Current uncommitted Git changes';
@@ -7273,7 +7283,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readerUiNoChangesHint =>
-      'OpenCode has not changed any files in this session.';
+      'OpenCode has not changed any files in this conversation.';
 
   @override
   String get readerUiDiffUnavailable => 'Diff content unavailable';
@@ -7382,7 +7392,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String readerUiAttachedReturn(String name) {
-    return '$name attached. Return to the chat to add your comment.';
+    return '$name attached. Return to the conversation to add your comment.';
   }
 
   @override
@@ -7582,7 +7592,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerUiChanged => 'Changed';
 
   @override
-  String get readerUiSession => 'Session';
+  String get readerUiSession => 'Conversation';
 
   @override
   String get readerUiBranch => 'Branch';
@@ -7673,24 +7683,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7WorkspaceNeedsYou => 'Needs you';
 
   @override
-  String get e7WorkspaceActiveSessions => 'Active sessions';
+  String get e7WorkspaceActiveSessions => 'Active conversations';
 
   @override
-  String get e7WorkspaceRecentSessions => 'Recent sessions';
+  String get e7WorkspaceRecentSessions => 'Recent conversations';
 
   @override
-  String get e7WorkspaceNoRecent => 'No recent sessions';
+  String get e7WorkspaceNoRecent => 'No recent conversations';
 
   @override
   String get e7WorkspaceChooseFolderToStart =>
-      'Choose a project folder to start a session.';
+      'Choose a project folder to start a conversation.';
 
   @override
   String get e7WorkspaceStartInWorkspace =>
-      'Start a session in the selected workspace.';
+      'Start a conversation in the selected project.';
 
   @override
-  String get e7WorkspaceArchivedSessions => 'Archived sessions';
+  String get e7WorkspaceArchivedSessions => 'Archived conversations';
 
   @override
   String get e7WorkspaceNoProjectSelected => 'No project selected';
@@ -7711,35 +7721,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7WorkspaceShareCopied => 'Share link copied';
 
   @override
-  String get e7WorkspaceUnshared => 'Session is no longer shared';
+  String get e7WorkspaceUnshared => 'Conversation is no longer shared';
 
   @override
   String get e7WorkspaceReconnectingShortly =>
       'OpenCode is reconnecting. Try again shortly.';
 
   @override
-  String get e7WorkspaceRenameSession => 'Rename session';
+  String get e7WorkspaceRenameSession => 'Rename conversation';
 
   @override
   String get e7WorkspaceTitle => 'Title';
 
   @override
-  String get e7WorkspaceArchiveConfirm => 'Archive session?';
+  String get e7WorkspaceArchiveConfirm => 'Archive conversation?';
 
   @override
-  String get e7WorkspaceShareConfirm => 'Share this session?';
+  String get e7WorkspaceShareConfirm => 'Share this conversation?';
 
   @override
-  String get e7WorkspaceDeleteConfirm => 'Delete session?';
+  String get e7WorkspaceDeleteConfirm => 'Delete conversation?';
 
   @override
   String get e7WorkspaceArchive => 'Archive';
 
   @override
-  String get e7WorkspaceShareSession => 'Share session';
+  String get e7WorkspaceShareSession => 'Share conversation';
 
   @override
-  String get e7WorkspaceArchivedActions => 'Archived session actions';
+  String get e7WorkspaceArchivedActions => 'Archived conversation actions';
 
   @override
   String get e7WorkspaceRename => 'Rename';
@@ -7817,43 +7827,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7WorkspaceReferenceRetry =>
-      'Session reference unavailable. Refresh and try again.';
+      'Conversation reference unavailable. Refresh and try again.';
 
   @override
   String get e7WorkspaceLocationRetry =>
-      'Session location unavailable. Refresh and try again.';
+      'The conversation’s project is unavailable. Refresh and try again.';
 
   @override
   String get e7WorkspaceLocationChangedReturn =>
-      'Session location changed. Return and try again.';
+      'The conversation’s project changed. Return and try again.';
 
   @override
   String get e7WorkspaceLocationChangedRetry =>
-      'Session location changed. Refresh and try again.';
+      'The conversation’s project changed. Refresh and try again.';
 
   @override
   String get e7WorkspaceReferenceUnavailable =>
-      'Session reference unavailable.';
+      'Conversation reference unavailable.';
 
   @override
   String get e7WorkspacePaginationStuck =>
-      'Session pagination could not advance. Refresh the list to continue.';
+      'Conversation pagination could not advance. Refresh the list to continue.';
 
   @override
-  String get e7WorkspaceContinueHereConfirm => 'Continue this session here?';
+  String get e7WorkspaceContinueHereConfirm =>
+      'Continue this conversation here?';
 
   @override
   String e7WorkspaceCreateFailed(String error) {
-    return 'Could not create a session: $error';
+    return 'Could not create a conversation: $error';
   }
 
   @override
   String get e7WorkspaceNoProjectsSearch =>
-      'The server returned no projects. Search all sessions to find previous conversations.';
+      'The server returned no projects. Search all conversations to find previous work.';
 
   @override
   String e7WorkspaceActiveDirectory(String directory) {
-    return 'Active session directory · $directory';
+    return 'Active conversation’s project · $directory';
   }
 
   @override
@@ -7861,8 +7872,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count archived sessions',
-      one: '1 archived session',
+      other: '$count archived conversations',
+      one: '1 archived conversation',
     );
     return '$_temp0';
   }
@@ -7885,7 +7896,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7WorkspaceArchiveDetail(String title) {
-    return '“$title” will be hidden from recent sessions.';
+    return '“$title” will be hidden from recent conversations.';
   }
 
   @override
@@ -7953,17 +7964,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7WorkspaceSessionId(String id) {
-    return 'Session $id';
+    return 'Conversation $id';
   }
 
   @override
   String e7WorkspaceContinueHereDetail(String title) {
-    return '“$title” will belong to your current workspace through the server’s sync system. It stops belonging to the workspace it runs in now.';
+    return '“$title” will belong to your current project through the server’s sync system. It stops belonging to the project it runs in now.';
   }
 
   @override
   String e7WorkspaceMovedHere(String title) {
-    return '“$title” now belongs to this workspace';
+    return '“$title” now belongs to this project';
   }
 
   @override
@@ -7972,7 +7983,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7WorkspaceLoadingSessions => 'Loading sessions…';
+  String get e7WorkspaceLoadingSessions => 'Loading conversations…';
 
   @override
   String get e7WorkspaceLoadedRecentEmpty =>
@@ -7980,7 +7991,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7WorkspaceSearchServer =>
-      'Search session titles across every project on this server';
+      'Search conversation titles across every project on this server';
 
   @override
   String get e7WorkspaceUnknownProject => 'Unknown project';
@@ -8022,7 +8033,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7WorkspaceFilteredLoaded(int count, int total) {
-    return '$count shown from $total loaded sessions';
+    return '$count shown from $total loaded conversations';
   }
 
   @override
@@ -8030,20 +8041,20 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count loaded sessions',
-      one: '1 loaded session',
+      other: '$count loaded conversations',
+      one: '1 loaded conversation',
     );
     String _temp1 = intl.Intl.pluralLogic(
       folders,
       locale: localeName,
-      other: '$folders folders',
-      one: '1 folder',
+      other: '$folders projects',
+      one: '1 project',
     );
     return '$_temp0 · $_temp1';
   }
 
   @override
-  String get e7WorkspaceLoadedFolders => 'Loaded folders';
+  String get e7WorkspaceLoadedFolders => 'Loaded projects';
 
   @override
   String get chatUiUnderAMessageForActions => ' under a message for actions';
@@ -8105,7 +8116,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiAnyoneWithTheLinkCanViewThis =>
-      'Anyone with the link can view this session’s conversation and shared context. Do not share sessions containing secrets, credentials, or private files.';
+      'Anyone with the link can view this conversation and its shared context. Do not share conversations containing secrets, credentials, or private files.';
 
   @override
   String get chatUiAppDiagnostics => 'App diagnostics';
@@ -8166,11 +8177,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiChangeTheTitleShownInTheSession =>
-      'Change the title shown in the session list';
+      'Change the title shown in the conversation list';
 
   @override
   String get chatUiChangeThisSessionSExperimentalWorkspace =>
-      'Change this session’s experimental workspace';
+      'Change this conversation’s experimental cloud environment';
 
   @override
   String get chatUiChangedFile => 'Changed file';
@@ -8180,11 +8191,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiChooseAPromptAndContinueItIn =>
-      'Choose a prompt and continue it in a new session';
+      'Choose a prompt and continue it in a new conversation';
 
   @override
   String get chatUiChooseAPromptToRestoreItIn =>
-      'Choose a prompt to restore it in a new session.';
+      'Choose a prompt to restore it in a new conversation.';
 
   @override
   String get chatUiChooseAServerModelByProviderAnd =>
@@ -8230,7 +8241,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiCompactContext => 'Compact context';
 
   @override
-  String get chatUiCompactSession => 'Compact session';
+  String get chatUiCompactSession => 'Compact conversation';
 
   @override
   String get chatUiCompactingConversation => 'Compacting conversation…';
@@ -8295,10 +8306,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiCreateOrCopyAPublicSessionLink =>
-      'Create or copy a public session link';
+      'Create or copy a public conversation link';
 
   @override
-  String get chatUiCurrentSession => 'Current session';
+  String get chatUiCurrentSession => 'Current conversation';
 
   @override
   String get chatUiDelegate => 'Delegate';
@@ -8311,7 +8322,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Delegate this prompt to a server subagent';
 
   @override
-  String get chatUiDelegatedSession => 'Delegated session';
+  String get chatUiDelegatedSession => 'Delegated conversation';
 
   @override
   String get chatUiDeleteMessage => 'Delete message';
@@ -8331,7 +8342,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiDisableTheCurrentPublicSessionLink =>
-      'Disable the current public session link';
+      'Disable the current public conversation link';
 
   @override
   String get chatUiDiscard => 'Discard';
@@ -8364,7 +8375,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiEmptySessionWasKeptBecauseOpenCodeCould =>
-      'Empty session was kept because OpenCode could not verify or remove it.';
+      'Empty conversation was kept because OpenCode could not verify or remove it.';
 
   @override
   String get chatUiErrorDetails => 'Error details';
@@ -8388,7 +8399,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiExploring => 'Exploring';
 
   @override
-  String get chatUiExportSessionTranscript => 'Export session transcript';
+  String get chatUiExportSessionTranscript => 'Export conversation transcript';
 
   @override
   String get chatUiExportTranscript => 'Export transcript';
@@ -8424,7 +8435,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiFindSessionsAcrossEveryOpenCodeProject =>
-      'Find sessions across every OpenCode project';
+      'Find conversations across every OpenCode project';
 
   @override
   String get chatUiFollowAndroidOrChooseTheNativeLight =>
@@ -8437,7 +8448,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiForkFromThisPrompt => 'Fork from this prompt';
 
   @override
-  String get chatUiForkSession => 'Fork session';
+  String get chatUiForkSession => 'Fork conversation';
 
   @override
   String get chatUiFromToolCall => 'From tool call';
@@ -8564,11 +8575,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiMore => 'More';
 
   @override
-  String get chatUiMoveSession => 'Move session';
+  String get chatUiMoveSession => 'Move conversation';
 
   @override
   String get chatUiMoveThisSessionToAnotherProjectDirectory =>
-      'Move this session to another project directory';
+      'Move this conversation to another project';
 
   @override
   String get chatUiMoved => 'Moved';
@@ -8593,7 +8604,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'No subagents available from this server';
 
   @override
-  String get chatUiNoTodosInThisSession => 'No todos in this session';
+  String get chatUiNoTodosInThisSession => 'No todos in this conversation';
 
   @override
   String get chatUiNotConnectedToTheServerRightNow =>
@@ -8607,17 +8618,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Open full-screen prompt editor';
 
   @override
-  String get chatUiOpenParentSession => 'Open parent session';
+  String get chatUiOpenParentSession => 'Open parent conversation';
 
   @override
   String get chatUiOpenPersistentWorkspaceTerminals =>
-      'Open persistent workspace terminals';
+      'Open persistent project terminals';
 
   @override
   String get chatUiOpenProviders => 'Open providers';
 
   @override
-  String get chatUiOpenSubagentSession => 'Open subagent session';
+  String get chatUiOpenSubagentSession => 'Open subagent conversation';
 
   @override
   String get chatUiOpenCodeCommandsAreUnavailableOffline =>
@@ -8670,7 +8681,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiProjectReferences => 'Project references';
 
   @override
-  String get chatUiProjectsAndWorkspaces => 'Projects and workspaces';
+  String get chatUiProjectsAndWorkspaces => 'Projects and worktrees';
 
   @override
   String get chatUiPromptEditor => 'Prompt editor';
@@ -8736,7 +8747,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiRename => 'Rename';
 
   @override
-  String get chatUiRenameSession => 'Rename session';
+  String get chatUiRenameSession => 'Rename conversation';
 
   @override
   String get chatUiRestoreMessages => 'Restore messages';
@@ -8746,7 +8757,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiRestoreTheCurrentlyRevertedSessionState =>
-      'Restore the currently reverted session state';
+      'Restore the currently reverted conversation state';
 
   @override
   String get chatUiResult => 'Result';
@@ -8779,7 +8790,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiReviewTheActualDiffForThisSession =>
-      'Review the actual diff for this session';
+      'Review the actual diff for this conversation';
 
   @override
   String get chatUiRollBackMessagesAndFileChangesAfter =>
@@ -8816,7 +8827,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiSelectAModelBeforeCompactingThisSession =>
-      'Select a model before compacting this session.';
+      'Select a model before compacting this conversation.';
 
   @override
   String get chatUiSend => 'Send';
@@ -8861,29 +8872,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiServerStatus => 'Server status';
 
   @override
-  String get chatUiSessionChanges => 'Session changes';
+  String get chatUiSessionChanges => 'Conversation changes';
 
   @override
-  String get chatUiSessionContext => 'Session context';
+  String get chatUiSessionContext => 'Conversation context';
 
   @override
-  String get chatUiSessionIsNoLongerShared => 'Session is no longer shared';
+  String get chatUiSessionIsNoLongerShared =>
+      'Conversation is no longer shared';
 
   @override
-  String get chatUiSessionMenu => 'Session menu';
+  String get chatUiSessionMenu => 'Conversation menu';
 
   @override
   String get chatUiSessionSharedCopyTheVisibleLinkManually =>
-      'Session shared. Copy the visible link manually.';
+      'Conversation shared. Copy the visible link manually.';
 
   @override
   String get chatUiShareLinkCopied => 'Share link copied';
 
   @override
-  String get chatUiShareSession => 'Share session';
+  String get chatUiShareSession => 'Share conversation';
 
   @override
-  String get chatUiShareThisSession => 'Share this session?';
+  String get chatUiShareThisSession => 'Share this conversation?';
 
   @override
   String get chatUiSharedAnyoneWithTheLinkCanView =>
@@ -8893,7 +8905,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiShowAllCommands => 'Show all commands';
 
   @override
-  String get chatUiShowAllSubagentSessions => 'Show all subagent sessions';
+  String get chatUiShowAllSubagentSessions => 'Show all subagent conversations';
 
   @override
   String get chatUiShowAllSubagents => 'Show all subagents';
@@ -8918,11 +8930,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiStartACleanSessionInThisWorkspace =>
-      'Start a clean session in this workspace';
+      'Start a clean conversation in this project';
 
   @override
   String get chatUiStartANewSessionWithThisPrompt =>
-      'Start a new session with this prompt in the composer';
+      'Start a new conversation with this prompt in the composer';
 
   @override
   String get chatUiStartCoding => 'Start coding';
@@ -8950,7 +8962,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiSummarizeTheSessionUsingTheSelectedModel =>
-      'Summarize the session using the selected model';
+      'Summarize the conversation using the selected model';
 
   @override
   String get chatUiSwitchOrganization => 'Switch organization';
@@ -8968,7 +8980,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiThatMessageIsNoLongerInThis =>
-      'That message is no longer in this session.';
+      'That message is no longer in this conversation.';
 
   @override
   String get chatUiTheFileHasNoContentToAttach =>
@@ -9110,7 +9122,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your original composer draft and attachments will stay unchanged.';
 
   @override
-  String get chatUiInThisChat => 'in this chat';
+  String get chatUiInThisChat => 'in this conversation';
 
   @override
   String get chatUiIncludesStepsNotRun => 'includes steps not run';
@@ -9166,7 +9178,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String chatUiNextTurnsModel(Object model) {
-    return 'Next turns in this session use $model.';
+    return 'Next turns in this conversation use $model.';
   }
 
   @override
@@ -9375,7 +9387,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String chatUiSharedLink(Object url) {
-    return 'Shared session link $url';
+    return 'Shared conversation link $url';
   }
 
   @override
@@ -9602,7 +9614,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiDisplayAndContext => 'Display and context';
 
   @override
-  String get chatUiSessionActions => 'Session actions';
+  String get chatUiSessionActions => 'Conversation actions';
 
   @override
   String get chatUiResults => 'Results';
@@ -9611,7 +9623,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiPermissionFallback => 'a permission';
 
   @override
-  String get chatUiMainSession => 'Main session';
+  String get chatUiMainSession => 'Main conversation';
 
   @override
   String get chatUiTodo => 'To do';
@@ -9635,7 +9647,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiResultSourceDetails => 'Server message details';
 
   @override
-  String get chatUiResultOpenChild => 'Open subagent session';
+  String get chatUiResultOpenChild => 'Open subagent conversation';
 
   @override
   String get chatUiNoResultText => 'The server returned no result text.';
@@ -9677,7 +9689,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiUser => 'User';
 
   @override
-  String get chatUiOpenCodeSession => 'OpenCode session';
+  String get chatUiOpenCodeSession => 'OpenCode conversation';
 
   @override
   String get chatUiTool => 'Tool';
@@ -9988,7 +10000,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibraryOpenCodeToolsDependOnTheProviderAnd =>
-      'OpenCode tools depend on the provider and model used by the active chat.';
+      'OpenCode tools depend on the provider and model used by the active conversation.';
 
   @override
   String get e7LibraryChooseModel => 'Choose model';
@@ -10104,7 +10116,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Create and manage isolated Git branches';
 
   @override
-  String get e7LibraryManagedWorkspaces => 'Managed workspaces';
+  String get e7LibraryManagedWorkspaces => 'Cloud environments';
 
   @override
   String get e7LibraryCreateDiscoverOpenAndRemoveAdapterBacked =>
@@ -10122,16 +10134,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibraryWorkspaceDiscoveryFinished =>
-      'Workspace discovery finished';
+      'Environment discovery finished';
 
   @override
   String e7LibraryCouldNotDiscoverWorkspaces(String detail1) {
-    return 'Could not discover workspaces: $detail1';
+    return 'Could not discover environments: $detail1';
   }
 
   @override
   String e7LibraryCouldNotCreateWorkspace(String detail1) {
-    return 'Could not create workspace: $detail1';
+    return 'Could not create environment: $detail1';
   }
 
   @override
@@ -10141,7 +10153,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7LibraryCouldNotRemoveWorkspace(String detail1) {
-    return 'Could not delete workspace: $detail1';
+    return 'Could not delete environment: $detail1';
   }
 
   @override
@@ -10184,11 +10196,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LibraryRetryWorkspaceAdapters => 'Try again';
 
   @override
-  String get e7LibraryNoWorkspaceAdapters => 'No workspace adapters';
+  String get e7LibraryNoWorkspaceAdapters => 'No environment adapters';
 
   @override
   String get e7LibraryThisOpenCodeProjectDoesNotExposeManaged =>
-      'This OpenCode project does not expose managed workspace creation.';
+      'This OpenCode project does not expose cloud environment creation.';
 
   @override
   String get e7LibraryAdapterRefreshFailed => 'Adapter refresh failed';
@@ -10209,7 +10221,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LibraryOpenAgain => 'Open again';
 
   @override
-  String get e7LibraryNewManagedWorkspace => 'New managed workspace';
+  String get e7LibraryNewManagedWorkspace => 'New cloud environment';
 
   @override
   String get e7LibraryAdapter => 'Adapter';
@@ -10222,7 +10234,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibraryOpenCodeConfiguresAdapterSpecificDetailsOnThe =>
-      'OpenCode configures adapter-specific details on the server. The new workspace opens here after it is ready.';
+      'OpenCode configures adapter-specific details on the server. The new environment opens here after it is ready.';
 
   @override
   String get e7LibraryCreateAndOpen => 'Create and open';
@@ -10234,7 +10246,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibraryTheServerAdapterMayPermanentlyDeleteThe =>
-      'The server adapter may permanently delete the remote environment or worktree. Existing chat history remains, but its workspace may no longer be reachable.';
+      'The server adapter may permanently delete the remote environment or worktree. Existing conversations remain in history, but the environment may no longer be reachable.';
 
   @override
   String e7LibraryTypeToConfirm(String detail1) {
@@ -10269,7 +10281,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibraryOpenCodeDidNotSwitchLocations =>
-      'OpenCode did not switch locations.';
+      'OpenCode did not switch projects.';
 
   @override
   String e7LibraryCouldNotVerifyBeforeThisDestructiveAction(
@@ -10354,7 +10366,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibraryTheWorktreeDirectoryAndItsGitBranch =>
-      'The worktree directory and its Git branch will be permanently deleted. Existing chats remain in history, but their working directory will no longer exist.';
+      'The worktree directory and its Git branch will be permanently deleted. Existing conversations remain in history, but their working directory will no longer exist.';
 
   @override
   String get e7LibraryInitializeGitRepository => 'Initialize Git repository?';
@@ -10447,7 +10459,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7LibraryLocationChanged => 'Location changed.';
+  String get e7LibraryLocationChanged => 'Project changed.';
 
   @override
   String get e7LibraryAuthenticateFromTheServerMachine =>
@@ -10861,7 +10873,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'termux local on device setup install server android terminal';
 
   @override
-  String get e7LibrarySearchModelAliases => 'AI reasoning favorites recent';
+  String get e7LibrarySearchModelAliases =>
+      'AI reasoning favorites recent conversation session chat';
 
   @override
   String get e7LibrarySearchProviderAliases =>
@@ -10882,11 +10895,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibrarySearchImportAliases =>
-      'backup restore transfer JSON conversation';
+      'backup restore transfer JSON conversation session chat';
 
   @override
   String get e7LibrarySearchSettingsAliases =>
-      'appearance theme language notifications privacy voice background server';
+      'appearance theme language notifications privacy voice background server profile connection';
 
   @override
   String get e7LibrarySearchGuideAliases => 'help connect tutorial start';
@@ -10912,8 +10925,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupAccountHint => 'Sign in with your account';
 
   @override
-  String get e7SetupNewTerminalDetail =>
-      'Start a shell in the active workspace.';
+  String get e7SetupNewTerminalDetail => 'Start a shell in the active project.';
 
   @override
   String get e7SetupShowPassword => 'Show server password';
@@ -11047,7 +11059,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SetupNewTerminal => 'New terminal';
 
   @override
-  String get e7SetupUnsavedProfile => 'The server profile has not been saved.';
+  String get e7SetupUnsavedProfile => 'The server has not been saved.';
 
   @override
   String get e7SetupCheckingInstall => 'Checking installed environment...';
@@ -11569,7 +11581,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7SetupSaveFailed(String name, String detail) {
-    return 'Could not save $name. The existing profile was left unchanged. Check device storage and try again. ($detail)';
+    return 'Could not save $name. The existing server was left unchanged. Check device storage and try again. ($detail)';
   }
 
   @override
@@ -11584,7 +11596,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7SetupRemoveFailed(String name, String detail) {
-    return 'Could not remove $name. The saved profile and current connection were kept. Check device storage and try again. ($detail)';
+    return 'Could not remove $name. The saved server and current connection were kept. Check device storage and try again. ($detail)';
   }
 
   @override
@@ -11673,7 +11685,7 @@ class AppLocalizationsEn extends AppLocalizations {
       one: '1 unsent draft will be deleted.',
       zero: '',
     );
-    return 'This deletes everything this device stored for the server: its password, selected model and agent, workspace choice, and any sessions shown in the home-screen widget.\n\n$_temp0 $_temp1\n\nNothing is deleted on the server itself or at your AI providers.';
+    return 'This deletes everything this device stored for the server: its password, selected model and agent, project choice, and any conversations shown in the home-screen widget.\n\n$_temp0 $_temp1\n\nNothing is deleted on the server itself or at your AI providers.';
   }
 
   @override
@@ -11942,7 +11954,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupCredentialMismatch =>
-      'The saved profile credential differs from this runtime; restore its original saved credential before returning';
+      'The saved server credential differs from this runtime; restore its original saved credential before returning';
 
   @override
   String get e7SetupUbuntuUnavailable =>
@@ -12063,7 +12075,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get e7SetupOpeningWorkspace => 'Opening your saved workspace.';
+  String get e7SetupOpeningWorkspace => 'Opening your saved project.';
 
   @override
   String get e7SetupWhatToCheck => 'What to check';
@@ -12271,10 +12283,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7ModelUiUseModelMode => 'Use model and mode';
 
   @override
-  String get e7ModelUiUseSession => 'Use for this session';
+  String get e7ModelUiUseSession => 'Use for this conversation';
 
   @override
-  String get e7ModelUiUseNewSessions => 'Use for new sessions';
+  String get e7ModelUiUseNewSessions => 'Use for new conversations';
 
   @override
   String get e7ModelUiTools => 'Tools';
@@ -12694,7 +12706,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get approvalsUiMenu => 'Approvals';
 
   @override
-  String get approvalsUiTitle => 'Approvals for this session';
+  String get approvalsUiTitle => 'Approvals for this conversation';
 
   @override
   String get approvalsUiAskTitle => 'Ask each time';
@@ -12714,28 +12726,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get approvalsUiInheritDetail =>
-      'Child sessions started by this one follow the same choice unless they have their own.';
+      'Subagent conversations started by this one follow the same choice unless they have their own.';
 
   @override
   String get approvalsUiInheritUnavailable =>
       'Available once automatic approval is on.';
 
   @override
-  String get approvalsUiInheritedFrom => 'Inherited from parent session';
+  String get approvalsUiInheritedFrom => 'Inherited from parent conversation';
 
   @override
   String get approvalsUiInheritedDetail =>
-      'This session follows its parent’s approvals. Override it to choose for this session only.';
+      'This conversation follows its parent’s approvals. Override it to choose for this conversation only.';
 
   @override
-  String get approvalsUiOverride => 'Override for this session';
+  String get approvalsUiOverride => 'Override for this conversation';
 
   @override
   String get approvalsUiFollowParent => 'Follow parent again';
 
   @override
   String get approvalsUiServerRulesNote =>
-      'The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects. New sessions always ask.';
+      'The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects. New conversations always ask.';
 
   @override
   String get approvalsUiIndicatorOn => 'Approving automatically';
@@ -12768,9 +12780,9 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count requests approved automatically on this connection',
-      one: '1 request approved automatically on this connection',
-      zero: 'Nothing approved automatically on this connection yet',
+      other: '$count requests approved automatically on this server',
+      one: '1 request approved automatically on this server',
+      zero: 'Nothing approved automatically on this server yet',
     );
     return '$_temp0';
   }
@@ -12780,12 +12792,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String handoffUiComputerIntro(String binary) {
-    return 'Run this in a terminal on the computer that runs this server. It opens the same session in the $binary interface. Nothing is sent until you type.';
+    return 'Run this in a terminal on the computer that runs this server. It opens the same conversation in the $binary interface. Nothing is sent until you type.';
   }
 
   @override
   String get handoffUiComputerDirectoryNote =>
-      'Sessions belong to a project folder, so the command changes into this session’s folder first.';
+      'Conversations belong to a project folder, so the command changes into this conversation’s folder first.';
 
   @override
   String handoffUiComputerVerify(String verified, String binary) {
@@ -12794,33 +12806,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handoffUiUnavailableDirectory =>
-      'The server did not report a project folder for this session, so there is no folder to open it in. Reload the session and try again.';
+      'The server did not report a project folder for this conversation, so there is no folder to open it in. Reload the conversation and try again.';
 
   @override
   String get handoffUiUnavailableWorkspace =>
-      'This session runs inside a managed workspace. Its folder belongs to the workspace host, so a plain terminal command cannot open it. Export and import the session instead.';
+      'This conversation runs inside a cloud environment. Its folder belongs to the environment’s host, so a plain terminal command cannot open it. Export and import the conversation instead.';
 
   @override
   String get handoffUiUnavailableReference =>
-      'This session’s reference cannot be placed in a command safely.';
+      'This conversation’s reference cannot be placed in a command safely.';
 
   @override
   String get handoffUiExportHint =>
-      'Moving to a different server? Export this session as a file and import it there. That carries the transcript itself, not just a pointer to it.';
+      'Moving to a different server? Export this conversation as a file and import it there. That carries the transcript itself, not just a pointer to it.';
 
   @override
-  String get handoffUiExportAction => 'Export session';
+  String get handoffUiExportAction => 'Export conversation';
 
   @override
   String get handoffUiPhoneTitle => 'Open on another phone';
 
   @override
   String get handoffUiPhoneIntro =>
-      'Scan this with OpenCode Mobile on the other phone. The code carries only this saved server’s ID and the session ID: no messages, no address, no password. The other phone must already have this server saved.';
+      'Scan this with OpenCode Mobile on the other phone. The code carries only this saved server’s ID and the conversation ID: no messages, no address, no password. The other phone must already have this server saved.';
 
   @override
   String get handoffUiPhoneQrLabel =>
-      'QR code that opens this session on another phone';
+      'QR code that opens this conversation on another phone';
 
   @override
   String get handoffUiPhoneLinkLabel => 'Link';
@@ -12833,7 +12845,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handoffUiPhoneUnavailable =>
-      'A link cannot be built for this session. Reload the session and try again.';
+      'A link cannot be built for this conversation. Reload the conversation and try again.';
 
   @override
   String get handoffUiLinkServerMissing =>
@@ -12847,7 +12859,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handoffUiLinkWaiting =>
-      'Opening the session once the server connects…';
+      'Opening the conversation once the server connects…';
 
   @override
   String get handoffUiLinkReentry =>
@@ -15113,7 +15125,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termuxStorageIntro =>
-      'See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and session history stay in place.';
+      'See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and conversation history stay in place.';
 
   @override
   String get termuxStorageScanning => 'Measuring storage';
@@ -15195,7 +15207,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termuxStorageNoteOpenCode =>
-      'The server, its sign-ins and session history. Not removed from here; sessions have their own screen.';
+      'The server, its sign-ins and conversation history. Not removed from here; conversations have their own screen.';
 
   @override
   String get termuxStorageCatProjects => 'Projects (your files)';
@@ -15839,11 +15851,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Previous scan · Scan again before cleaning more';
 
   @override
-  String get safetyStopSharingTitle => 'Stop sharing this session?';
+  String get safetyStopSharingTitle => 'Stop sharing this conversation?';
 
   @override
   String get safetyStopSharingBody =>
-      'The link stops working for anyone who has it. The session itself is not changed.';
+      'The link stops working for anyone who has it. The conversation itself is not changed.';
 
   @override
   String get safetyStopSharingKeep => 'Keep sharing';

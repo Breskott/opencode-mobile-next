@@ -40,7 +40,7 @@ void main() {
         _session('s5', title: 'Never shown'),
       ],
       profileID: 'server-1',
-      untitledLabel: 'Untitled session',
+      untitledLabel: 'Untitled conversation',
     );
 
     expect(published, hasLength(1));
@@ -49,7 +49,7 @@ void main() {
     final sessions = payload['sessions'] as List;
     expect(sessions, hasLength(4));
     expect(sessions[0], {'id': 's1', 'title': 'Fix auth'});
-    expect(sessions[1], {'id': 's2', 'title': 'Untitled session'});
+    expect(sessions[1], {'id': 's2', 'title': 'Untitled conversation'});
     expect((sessions[3] as Map)['id'], 's4');
     // Exactly these two keys per entry: no prompt text, tool input, busy
     // state, timestamps or file paths ever reach the launcher.
@@ -70,7 +70,7 @@ void main() {
     await shortcuts.update(
       sessions: [_session('s1', title: long)],
       profileID: 'server-1',
-      untitledLabel: 'Untitled session',
+      untitledLabel: 'Untitled conversation',
     );
     final title =
         ((published.single['sessions'] as List).single as Map)['title']
@@ -84,12 +84,12 @@ void main() {
     await shortcuts.update(
       sessions: sessions,
       profileID: 'server-1',
-      untitledLabel: 'Untitled session',
+      untitledLabel: 'Untitled conversation',
     );
     await shortcuts.update(
       sessions: sessions,
       profileID: 'server-1',
-      untitledLabel: 'Untitled session',
+      untitledLabel: 'Untitled conversation',
     );
     expect(published, hasLength(1));
 
@@ -97,7 +97,7 @@ void main() {
     await shortcuts.update(
       sessions: [_session('s1', title: 'Fix auth now')],
       profileID: 'server-1',
-      untitledLabel: 'Untitled session',
+      untitledLabel: 'Untitled conversation',
     );
     expect(published, hasLength(2));
   });
@@ -107,12 +107,12 @@ void main() {
     await shortcuts.update(
       sessions: [_session('s1', title: 'Fix auth')],
       profileID: 'server-1',
-      untitledLabel: 'Untitled session',
+      untitledLabel: 'Untitled conversation',
     );
     await shortcuts.update(
       sessions: const [],
       profileID: 'server-1',
-      untitledLabel: 'Untitled session',
+      untitledLabel: 'Untitled conversation',
     );
     expect(published, hasLength(2));
     expect(published.last['sessions'], isEmpty);
@@ -124,7 +124,7 @@ void main() {
     await shortcuts.update(
       sessions: [_session('s1', title: 'Fix auth')],
       profileID: 'server-1',
-      untitledLabel: 'Untitled session',
+      untitledLabel: 'Untitled conversation',
     );
     await shortcuts.clear();
     expect(published.last, {'profileID': '', 'sessions': isEmpty});
@@ -206,7 +206,7 @@ void main() {
     await shortcuts.update(
       sessions: [_session('s1', title: 'Fix auth')],
       profileID: 'server-1',
-      untitledLabel: 'Untitled session',
+      untitledLabel: 'Untitled conversation',
     );
     await shortcuts.clear();
     expect(prefs.getString(PinnedSessionShortcuts.prefsKey), isNull);

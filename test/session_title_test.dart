@@ -8,13 +8,13 @@ void main() {
       presentedSessionTitle(
         Session(id: 's', title: 'New session - 2026-09-02T14:47:06.902Z'),
       ),
-      'New session',
+      'New conversation',
     );
     expect(
       presentedSessionTitle(
         Session(id: 's', title: 'New session - 2026-09-02T14:47:06Z'),
       ),
-      'New session',
+      'New conversation',
     );
   });
 
@@ -34,8 +34,8 @@ void main() {
   });
 
   test('missing or blank titles fall back per surface', () {
-    expect(presentedSessionTitle(null), 'New session');
-    expect(presentedSessionTitle(Session(id: 's')), 'New session');
+    expect(presentedSessionTitle(null), 'New conversation');
+    expect(presentedSessionTitle(Session(id: 's')), 'New conversation');
     expect(
       presentedSessionTitle(
         Session(id: 's', title: '  '),

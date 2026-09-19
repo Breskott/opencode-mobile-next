@@ -182,7 +182,7 @@ void main() {
         await tester.pumpAndSettle();
         await _reveal(tester, find.byType(OutlinedButton));
         expect(find.text('Pending requests: unknown'), findsOneWidget);
-        expect(find.text('Running sessions: unknown'), findsOneWidget);
+        expect(find.text('Running conversations: unknown'), findsOneWidget);
         await _captureScreen(tester, 'attention-${direction.name}');
         await tester.tap(find.byType(OutlinedButton).hitTestable());
         expect(opened, 'profile-1');

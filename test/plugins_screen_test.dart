@@ -230,12 +230,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Could not load plugins. Try again.'), findsOneWidget);
       expect(find.textContaining('synthetic-secret'), findsNothing);
-      expect(find.text('No plugins reported for this location.'), findsNothing);
+      expect(find.text('No plugins reported for this project.'), findsNothing);
       repository.fail = false;
       await tester.tap(find.text('Try again'));
       await tester.pumpAndSettle();
       expect(
-        find.text('No plugins reported for this location.'),
+        find.text('No plugins reported for this project.'),
         findsOneWidget,
       );
       expect(repository.calls, 2);
@@ -256,7 +256,7 @@ void main() {
     oldResponse.complete([_plugin]);
     await tester.pumpAndSettle();
     expect(find.text('reviewer'), findsNothing);
-    expect(find.text('No plugins reported for this location.'), findsOneWidget);
+    expect(find.text('No plugins reported for this project.'), findsOneWidget);
     expect(repository.calls, 2);
   });
 
@@ -322,7 +322,7 @@ void main() {
     controller.status = StreamStatus.connected;
     controller.notifyListeners();
     await tester.pumpAndSettle();
-    expect(find.text('No plugins reported for this location.'), findsOneWidget);
+    expect(find.text('No plugins reported for this project.'), findsOneWidget);
     expect(repository.calls, 3);
   });
 

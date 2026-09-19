@@ -249,9 +249,12 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('No recent sessions in loaded results'), findsOneWidget);
+      expect(
+        find.text('No recent conversations in loaded results'),
+        findsOneWidget,
+      );
       await tester.scrollUntilVisible(
-        find.text('Archived sessions'),
+        find.text('Archived conversations'),
         180,
         scrollable: find
             .descendant(
@@ -263,10 +266,10 @@ void main() {
       // Move the row above the docked quick-ask control before tapping it.
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -220));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Archived sessions'));
+      await tester.tap(find.text('Archived conversations'));
       await tester.pumpAndSettle();
       expect(
-        find.text('No archived sessions in loaded results'),
+        find.text('No archived conversations in loaded results'),
         findsOneWidget,
       );
       await tester.tap(
@@ -587,11 +590,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Session actions'));
+    await tester.tap(find.byTooltip('Conversation actions'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
-    expect(find.text('Delete session?'), findsOneWidget);
+    expect(find.text('Delete conversation?'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
     await tester.pumpAndSettle();
 
@@ -617,7 +620,7 @@ void main() {
     );
     await tester.pump();
     expect(find.text('Swipe target'), findsOneWidget);
-    expect(find.text('All sessions'), findsOneWidget);
+    expect(find.text('All conversations'), findsOneWidget);
     expect(find.byKey(const ValueKey('search-all-sessions')), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     // The one remaining search action works while project discovery is pending.
@@ -692,7 +695,7 @@ void main() {
       expect(find.text('Project list unavailable'), findsOneWidget);
       expect(find.text('Swipe target'), findsOneWidget);
       expect(find.text('Try again'), findsOneWidget);
-      await tester.tap(find.text('Search all sessions'));
+      await tester.tap(find.text('Search all conversations'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Previous conversation'));
       await tester.pumpAndSettle();
@@ -779,7 +782,7 @@ void main() {
     expect(find.text('Choose a project folder'), findsOneWidget);
     expect(find.byKey(const ValueKey('workspace-open-folder')), findsOneWidget);
     expect(find.byKey(const ValueKey('workspace-quick-ask')), findsNothing);
-    expect(find.text('Search all sessions'), findsOneWidget);
+    expect(find.text('Search all conversations'), findsOneWidget);
   });
 
   testWidgets('a home-folder project is never opened automatically', (
@@ -940,7 +943,7 @@ void main() {
     fail = false;
     await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Load more sessions'));
+    await tester.tap(find.text('Load more conversations'));
     await tester.pumpAndSettle();
     expect(find.text('Older conversation'), findsOneWidget);
     expect(controller.hasMoreSessions, isFalse);

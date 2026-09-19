@@ -374,7 +374,7 @@ void main() {
 
     Future<void> openSessionMenu(WidgetTester tester) async {
       // Workspace also has a section menu; open the session's labeled control.
-      final actions = find.byTooltip('Session actions').hitTestable();
+      final actions = find.byTooltip('Conversation actions').hitTestable();
       expect(actions, findsOneWidget);
       await tester.tap(actions);
       await tester.pumpAndSettle();

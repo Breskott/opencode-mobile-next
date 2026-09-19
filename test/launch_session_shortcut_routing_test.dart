@@ -48,7 +48,7 @@ class _LaunchApi extends OpenCodeApi with CompleteMessageHistory {
   @override
   Future<Session> createSession() async {
     created += 1;
-    return Session(id: 'created-$created', title: 'New session');
+    return Session(id: 'created-$created', title: 'New conversation');
   }
 
   @override

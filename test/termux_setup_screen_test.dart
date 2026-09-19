@@ -804,7 +804,7 @@ void main() {
     expect(fixture.switchCalls, 0);
     expect(fixture.store.savedProfiles, isEmpty);
     expect(
-      find.textContaining('restore the saved profile before returning'),
+      find.textContaining('restore the saved server before returning'),
       findsOneWidget,
     );
   });
@@ -2001,7 +2001,7 @@ pid=
       expect(find.text('Restart the local server?'), findsOneWidget);
       expect(
         find.textContaining(
-          '1 session is generating. Restarting will interrupt it.',
+          '1 conversation is generating. Restarting will interrupt it.',
         ),
         findsOneWidget,
       );

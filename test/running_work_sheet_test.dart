@@ -95,7 +95,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Run in background'), findsOneWidget);
     expect(
-      find.textContaining('Results return to this chat automatically.'),
+      find.textContaining('Results return to this conversation automatically.'),
       findsOneWidget,
     );
     eligible = false;
@@ -443,7 +443,7 @@ void main() {
       conn.locationRevision++;
       conn.notifyListeners();
       await tester.pumpAndSettle();
-      expect(find.textContaining('workspace changed'), findsOneWidget);
+      expect(find.textContaining('project changed'), findsOneWidget);
       final refresh = tester.widget<IconButton>(
         find.byWidgetPredicate(
           (widget) => widget is IconButton && widget.tooltip == 'Refresh',

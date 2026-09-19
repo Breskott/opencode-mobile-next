@@ -60,7 +60,7 @@ void main() {
         'busy': true,
         'updatedAt': 50,
       });
-      expect((sessions[1] as Map)['title'], 'Untitled session');
+      expect((sessions[1] as Map)['title'], 'Untitled conversation');
       expect((sessions[1] as Map)['busy'], isFalse);
       // The snapshot never carries prompt text, tool input, or file paths:
       // exactly these four keys per session.

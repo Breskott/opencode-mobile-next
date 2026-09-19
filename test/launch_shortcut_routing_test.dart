@@ -52,7 +52,7 @@ class _ShortcutApi extends OpenCodeApi with CompleteMessageHistory {
     final pending = pendingCreate;
     pendingCreate = null;
     if (pending != null) return pending.future;
-    return Session(id: 'shortcut-$created', title: 'New session');
+    return Session(id: 'shortcut-$created', title: 'New conversation');
   }
 
   @override
@@ -202,7 +202,7 @@ void main() {
       final shortcut = _shortcut();
       await tester.pumpWidget(_app(controller, shortcut));
       await tester.pumpAndSettle();
-      expect(find.text('Opening your saved workspace.'), findsNothing);
+      expect(find.text('Opening your saved project.'), findsNothing);
       expect(find.byType(ServersScreen), findsNothing);
       shortcut.pending.value = LaunchAction.newTask;
       await tester.pumpAndSettle();
@@ -457,7 +457,9 @@ void main() {
       await tester.pump();
       expect(api.created, 1);
 
-      creation.complete(Session(id: 'shortcut-held', title: 'New session'));
+      creation.complete(
+        Session(id: 'shortcut-held', title: 'New conversation'),
+      );
       await tester.pumpAndSettle();
 
       expect(api.created, 1);

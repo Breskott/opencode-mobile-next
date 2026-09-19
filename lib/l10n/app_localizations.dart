@@ -179,7 +179,7 @@ abstract class AppLocalizations {
   /// No description provided for @servicesUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'This connection cannot start and track development commands. You can save commands and review their preview links here.'**
+  /// **'This server cannot start and track development commands. You can save commands and review their preview links here.'**
   String get servicesUnavailable;
 
   /// No description provided for @servicesScopeChanged.
@@ -401,7 +401,7 @@ abstract class AppLocalizations {
   /// Tooltip for the chat model cycling menu
   ///
   /// In en, this message translates to:
-  /// **'Switch model for this session'**
+  /// **'Switch model for this conversation'**
   String get modelSwitchSession;
 
   /// Cycle forward through recent models
@@ -479,13 +479,13 @@ abstract class AppLocalizations {
   /// No description provided for @modelSessionScopeNote.
   ///
   /// In en, this message translates to:
-  /// **'Applies to this session\'s next turns.'**
+  /// **'Applies to this conversation\'s next turns.'**
   String get modelSessionScopeNote;
 
   /// No description provided for @modelSelectionLoading.
   ///
   /// In en, this message translates to:
-  /// **'Loading session selection…'**
+  /// **'Loading conversation selection…'**
   String get modelSelectionLoading;
 
   /// No description provided for @modelServerDefault.
@@ -497,7 +497,7 @@ abstract class AppLocalizations {
   /// No description provided for @modelSelectionSaving.
   ///
   /// In en, this message translates to:
-  /// **'Saving session selection…'**
+  /// **'Saving conversation selection…'**
   String get modelSelectionSaving;
 
   /// No description provided for @modelAgentSaveFailed.
@@ -509,13 +509,13 @@ abstract class AppLocalizations {
   /// No description provided for @modelUnavailableSelection.
   ///
   /// In en, this message translates to:
-  /// **'The session\'s model is unavailable in this catalog. Refresh models or choose another.'**
+  /// **'The conversation\'s model is unavailable in this catalog. Refresh models or choose another.'**
   String get modelUnavailableSelection;
 
   /// No description provided for @modelScopeChanged.
   ///
   /// In en, this message translates to:
-  /// **'The connection changed. Reopen the model selector to continue.'**
+  /// **'The server changed. Reopen the model selector to continue.'**
   String get modelScopeChanged;
 
   /// No description provided for @commonClearSearch.
@@ -539,7 +539,7 @@ abstract class AppLocalizations {
   /// No description provided for @workDescription.
   ///
   /// In en, this message translates to:
-  /// **'Agents and commands related to this chat.'**
+  /// **'Agents and commands related to this conversation.'**
   String get workDescription;
 
   /// No description provided for @workAgents.
@@ -563,7 +563,7 @@ abstract class AppLocalizations {
   /// No description provided for @workEmptyDescription.
   ///
   /// In en, this message translates to:
-  /// **'Related agents and commands will appear here when this chat starts them.'**
+  /// **'Related agents and commands will appear here when this conversation starts them.'**
   String get workEmptyDescription;
 
   /// No description provided for @workRefresh.
@@ -767,7 +767,7 @@ abstract class AppLocalizations {
   /// No description provided for @workContextChanged.
   ///
   /// In en, this message translates to:
-  /// **'The server or workspace changed. Close this view and reopen Running work.'**
+  /// **'The server or project changed. Close this view and reopen Running work.'**
   String get workContextChanged;
 
   /// No description provided for @workCount.
@@ -893,7 +893,7 @@ abstract class AppLocalizations {
   /// No description provided for @backgroundWorkShortcut.
   ///
   /// In en, this message translates to:
-  /// **'Continue this work while you use the chat · Ctrl+B'**
+  /// **'Continue this work while you use the conversation · Ctrl+B'**
   String get backgroundWorkShortcut;
 
   /// No description provided for @backgroundWorkNoop.
@@ -917,7 +917,7 @@ abstract class AppLocalizations {
   /// No description provided for @libraryDefaultModel.
   ///
   /// In en, this message translates to:
-  /// **'Default for new chats'**
+  /// **'Default for new conversations'**
   String get libraryDefaultModel;
 
   /// No description provided for @libraryNoModel.
@@ -953,13 +953,13 @@ abstract class AppLocalizations {
   /// Confirmation explanation before restarting the managed Termux server
   ///
   /// In en, this message translates to:
-  /// **'OpenCode will be briefly unavailable. The app will keep your current workspace and reconnect automatically.'**
+  /// **'OpenCode will be briefly unavailable. The app will keep your current project and reconnect automatically.'**
   String get termuxRestartMessage;
 
   /// Additional restart warning when one or more sessions are generating
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 session is generating. Restarting will interrupt it.} other{{count} sessions are generating. Restarting will interrupt them.}}'**
+  /// **'{count, plural, =1{1 conversation is generating. Restarting will interrupt it.} other{{count} conversations are generating. Restarting will interrupt them.}}'**
   String termuxRestartBusyMessage(int count);
 
   /// Confirmation button that starts a managed Termux server restart
@@ -1013,19 +1013,19 @@ abstract class AppLocalizations {
   /// No description provided for @commandDestination.
   ///
   /// In en, this message translates to:
-  /// **'Chat'**
+  /// **'Conversation'**
   String get commandDestination;
 
   /// No description provided for @commandNewChat.
   ///
   /// In en, this message translates to:
-  /// **'New chat'**
+  /// **'New conversation'**
   String get commandNewChat;
 
   /// No description provided for @commandUntitledChat.
   ///
   /// In en, this message translates to:
-  /// **'Untitled chat'**
+  /// **'Untitled conversation'**
   String get commandUntitledChat;
 
   /// No description provided for @commandArguments.
@@ -1049,7 +1049,7 @@ abstract class AppLocalizations {
   /// No description provided for @commandLocationChanged.
   ///
   /// In en, this message translates to:
-  /// **'The server or workspace changed. Close this dialog and open the command again.'**
+  /// **'The server or project changed. Close this dialog and open the command again.'**
   String get commandLocationChanged;
 
   /// No description provided for @refreshFailed.
@@ -1085,19 +1085,19 @@ abstract class AppLocalizations {
   /// No description provided for @globalSessionsLoadMore.
   ///
   /// In en, this message translates to:
-  /// **'Load more sessions'**
+  /// **'Load more conversations'**
   String get globalSessionsLoadMore;
 
   /// Generic failure when refreshing the global session inventory
   ///
   /// In en, this message translates to:
-  /// **'Could not refresh sessions.'**
+  /// **'Could not refresh conversations.'**
   String get globalSessionsRefreshFailed;
 
   /// No description provided for @workspaceSearchAllSessions.
   ///
   /// In en, this message translates to:
-  /// **'Search all sessions'**
+  /// **'Search all conversations'**
   String get workspaceSearchAllSessions;
 
   /// No description provided for @workspaceProjectListUnavailable.
@@ -1109,7 +1109,7 @@ abstract class AppLocalizations {
   /// No description provided for @workspaceProjectListFallback.
   ///
   /// In en, this message translates to:
-  /// **'Your conversations can still be available. Search all sessions to find previous work.'**
+  /// **'Your conversations can still be available. Search all conversations to find previous work.'**
   String get workspaceProjectListFallback;
 
   /// No description provided for @workspaceRetryProjects.
@@ -1175,43 +1175,43 @@ abstract class AppLocalizations {
   /// No description provided for @historyServerTotalsNote.
   ///
   /// In en, this message translates to:
-  /// **'Rows marked reported by server cover the session. Message counts and other estimates cover loaded history.'**
+  /// **'Rows marked reported by server cover the conversation. Message counts and other estimates cover loaded history.'**
   String get historyServerTotalsNote;
 
   /// No description provided for @sessionsLoadedOnly.
   ///
   /// In en, this message translates to:
-  /// **'Showing loaded sessions. Load more to include older conversations.'**
+  /// **'Showing loaded conversations. Load more to include older ones.'**
   String get sessionsLoadedOnly;
 
   /// No description provided for @sessionsDetailsUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'Session details could not be loaded. Try again.'**
+  /// **'Conversation details could not be loaded. Try again.'**
   String get sessionsDetailsUnavailable;
 
   /// No description provided for @sessionsLoadMore.
   ///
   /// In en, this message translates to:
-  /// **'Load more sessions'**
+  /// **'Load more conversations'**
   String get sessionsLoadMore;
 
   /// No description provided for @sessionsReload.
   ///
   /// In en, this message translates to:
-  /// **'Refresh recent sessions'**
+  /// **'Refresh recent conversations'**
   String get sessionsReload;
 
   /// No description provided for @sessionsNoLoadedRecent.
   ///
   /// In en, this message translates to:
-  /// **'No recent sessions in loaded results'**
+  /// **'No recent conversations in loaded results'**
   String get sessionsNoLoadedRecent;
 
   /// No description provided for @sessionsNoLoadedArchived.
   ///
   /// In en, this message translates to:
-  /// **'No archived sessions in loaded results'**
+  /// **'No archived conversations in loaded results'**
   String get sessionsNoLoadedArchived;
 
   /// No description provided for @sessionsLoadedCount.
@@ -1259,7 +1259,7 @@ abstract class AppLocalizations {
   /// No description provided for @revertReviewChanged.
   ///
   /// In en, this message translates to:
-  /// **'This session or its staged revert changed. Review the latest state before continuing.'**
+  /// **'This conversation or its staged revert changed. Review the latest state before continuing.'**
   String get revertReviewChanged;
 
   /// No description provided for @revertReviewLatest.
@@ -1271,7 +1271,7 @@ abstract class AppLocalizations {
   /// No description provided for @revertBusy.
   ///
   /// In en, this message translates to:
-  /// **'Wait for the current session action to finish.'**
+  /// **'Wait for the current conversation action to finish.'**
   String get revertBusy;
 
   /// No description provided for @revertCancel.
@@ -1409,7 +1409,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionNoteDescription.
   ///
   /// In en, this message translates to:
-  /// **'Keep a short instruction for this session. Saving or deleting it takes effect at the next agent step and appears in the transcript then. It does not start a run.'**
+  /// **'Keep a short instruction for this conversation. Saving or deleting it takes effect at the next agent step and appears in the transcript then. It does not start a run.'**
   String get sessionNoteDescription;
 
   /// No description provided for @sessionNoteHint.
@@ -1457,13 +1457,13 @@ abstract class AppLocalizations {
   /// No description provided for @sessionInstructionsApplied.
   ///
   /// In en, this message translates to:
-  /// **'The agent\'s session instructions have been updated for this step.'**
+  /// **'The agent\'s conversation instructions have been updated for this step.'**
   String get sessionInstructionsApplied;
 
   /// No description provided for @sessionNoteUnsupported.
   ///
   /// In en, this message translates to:
-  /// **'This server does not support session notes.'**
+  /// **'This server does not support conversation notes.'**
   String get sessionNoteUnsupported;
 
   /// No description provided for @sessionNoteAuthorization.
@@ -1475,7 +1475,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionNoteChanged.
   ///
   /// In en, this message translates to:
-  /// **'The session or its instructions changed. Refresh the saved note before saving again. Your draft is kept.'**
+  /// **'The conversation or its instructions changed. Refresh the saved note before saving again. Your draft is kept.'**
   String get sessionNoteChanged;
 
   /// No description provided for @sessionNoteInvalid.
@@ -1547,7 +1547,7 @@ abstract class AppLocalizations {
   /// No description provided for @usageDescription.
   ///
   /// In en, this message translates to:
-  /// **'Activity recorded by this OpenCode server across your sessions.'**
+  /// **'Activity recorded by this OpenCode server across your conversations.'**
   String get usageDescription;
 
   /// No description provided for @usageRefresh.
@@ -1625,7 +1625,7 @@ abstract class AppLocalizations {
   /// No description provided for @usageRefreshInterrupted.
   ///
   /// In en, this message translates to:
-  /// **'The connection changed while loading usage. Refresh to try again.'**
+  /// **'The server changed while loading usage. Refresh to try again.'**
   String get usageRefreshInterrupted;
 
   /// No description provided for @usageInvalidResponse.
@@ -1649,7 +1649,7 @@ abstract class AppLocalizations {
   /// No description provided for @usageLocationChanged.
   ///
   /// In en, this message translates to:
-  /// **'The active server or location changed. Reopen Usage from Settings.'**
+  /// **'The active server or project changed. Reopen Usage from Settings.'**
   String get usageLocationChanged;
 
   /// No description provided for @usageTinyCost.
@@ -1667,13 +1667,13 @@ abstract class AppLocalizations {
   /// No description provided for @usageSessions.
   ///
   /// In en, this message translates to:
-  /// **'Sessions'**
+  /// **'Conversations'**
   String get usageSessions;
 
   /// No description provided for @usageSubagents.
   ///
   /// In en, this message translates to:
-  /// **'Subagent sessions'**
+  /// **'Subagent conversations'**
   String get usageSubagents;
 
   /// No description provided for @usagePrompts.
@@ -1865,31 +1865,31 @@ abstract class AppLocalizations {
   /// No description provided for @mcpRuntimeDescription.
   ///
   /// In en, this message translates to:
-  /// **'Adds this MCP server to the selected location and tries to connect it now. It is removed when OpenCode restarts. For permanent setup, edit the server configuration.'**
+  /// **'Adds this MCP server to the selected project and tries to connect it now. It is removed when OpenCode restarts. For permanent setup, edit the server configuration.'**
   String get mcpRuntimeDescription;
 
   /// No description provided for @mcpCurrentLocation.
   ///
   /// In en, this message translates to:
-  /// **'Current location'**
+  /// **'Current project'**
   String get mcpCurrentLocation;
 
   /// No description provided for @mcpDefaultLocation.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode server’s default location'**
+  /// **'OpenCode server’s default directory'**
   String get mcpDefaultLocation;
 
   /// No description provided for @mcpWorkspaceLocation.
   ///
   /// In en, this message translates to:
-  /// **'Workspace: {workspace}'**
+  /// **'Cloud environment: {workspace}'**
   String mcpWorkspaceLocation(String workspace);
 
   /// No description provided for @mcpLocationChanged.
   ///
   /// In en, this message translates to:
-  /// **'The connection or location changed. Your draft is still here; reopen setup in the intended location before adding it.'**
+  /// **'The server or project changed. Your draft is still here; reopen setup in the intended project before adding it.'**
   String get mcpLocationChanged;
 
   /// No description provided for @mcpAdding.
@@ -1907,13 +1907,13 @@ abstract class AppLocalizations {
   /// No description provided for @mcpRuntimeEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Add tools for the current location until OpenCode restarts.'**
+  /// **'Add tools for the current project until OpenCode restarts.'**
   String get mcpRuntimeEmpty;
 
   /// No description provided for @mcpRuntimeAdded.
   ///
   /// In en, this message translates to:
-  /// **'MCP server added for this location'**
+  /// **'MCP server added for this project'**
   String get mcpRuntimeAdded;
 
   /// No description provided for @sessionUnread.
@@ -1967,7 +1967,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportJsonDescription.
   ///
   /// In en, this message translates to:
-  /// **'Downloads the full session from the server, including older messages.'**
+  /// **'Downloads the full conversation from the server, including older messages.'**
   String get exportJsonDescription;
 
   /// No description provided for @exportMarkdown.
@@ -1979,7 +1979,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportMarkdownDescription.
   ///
   /// In en, this message translates to:
-  /// **'Saves the messages currently loaded in this chat. Load older messages first if you need them included.'**
+  /// **'Saves the messages currently loaded in this conversation. Load older messages first if you need them included.'**
   String get exportMarkdownDescription;
 
   /// No description provided for @exportRedact.
@@ -2033,7 +2033,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportChanged.
   ///
   /// In en, this message translates to:
-  /// **'The connection or location changed. Reopen export from the intended conversation.'**
+  /// **'The server or project changed. Reopen export from the intended conversation.'**
   String get exportChanged;
 
   /// No description provided for @exportUnsupported.
@@ -2045,7 +2045,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportAuthorization.
   ///
   /// In en, this message translates to:
-  /// **'The server denied access. Check your connection credentials and try again.'**
+  /// **'The server denied access. Check your server credentials and try again.'**
   String get exportAuthorization;
 
   /// No description provided for @exportMissing.
@@ -2129,7 +2129,7 @@ abstract class AppLocalizations {
   /// No description provided for @importChooseDestination.
   ///
   /// In en, this message translates to:
-  /// **'Choose a directory on this server'**
+  /// **'Choose a project on this server'**
   String get importChooseDestination;
 
   /// No description provided for @importChangeDestination.
@@ -2141,13 +2141,13 @@ abstract class AppLocalizations {
   /// No description provided for @importNoDestinations.
   ///
   /// In en, this message translates to:
-  /// **'No project directories are available. Open a project on this server, then try again.'**
+  /// **'No projects are available. Open a project on this server, then try again.'**
   String get importNoDestinations;
 
   /// No description provided for @importDestinationFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not load destination projects or workspaces. Try again; your file is still selected.'**
+  /// **'Could not load destination projects or cloud environments. Try again; your file is still selected.'**
   String get importDestinationFailed;
 
   /// No description provided for @importPreserves.
@@ -2183,13 +2183,13 @@ abstract class AppLocalizations {
   /// No description provided for @importOpenFailed.
   ///
   /// In en, this message translates to:
-  /// **'The conversation was imported, but could not be opened. Find it in All sessions on the destination server.'**
+  /// **'The conversation was imported, but could not be opened. Find it in All conversations on the destination server.'**
   String get importOpenFailed;
 
   /// No description provided for @importChanged.
   ///
   /// In en, this message translates to:
-  /// **'The connection or location changed. Your file is still here. Reopen import on the intended server before continuing.'**
+  /// **'The server or project changed. Your file is still here. Reopen import on the intended server before continuing.'**
   String get importChanged;
 
   /// No description provided for @importUnsupported.
@@ -2201,7 +2201,7 @@ abstract class AppLocalizations {
   /// No description provided for @importInvalidFile.
   ///
   /// In en, this message translates to:
-  /// **'Choose a valid OpenCode JSON export with session information and message records. Markdown transcripts cannot be imported.'**
+  /// **'Choose a valid OpenCode JSON export with conversation information and message records. Markdown transcripts cannot be imported.'**
   String get importInvalidFile;
 
   /// No description provided for @importTooLarge.
@@ -2213,13 +2213,13 @@ abstract class AppLocalizations {
   /// No description provided for @importConflict.
   ///
   /// In en, this message translates to:
-  /// **'A conversation with this ID already exists on this server. Nothing was replaced. Find it in All sessions, or import this file on another server.'**
+  /// **'A conversation with this ID already exists on this server. Nothing was replaced. Find it in All conversations, or import this file on another server.'**
   String get importConflict;
 
   /// No description provided for @importAuthorization.
   ///
   /// In en, this message translates to:
-  /// **'The server denied access. Check your connection credentials. Your file is still selected.'**
+  /// **'The server denied access. Check your server credentials. Your file is still selected.'**
   String get importAuthorization;
 
   /// No description provided for @importParentMissing.
@@ -2237,7 +2237,7 @@ abstract class AppLocalizations {
   /// No description provided for @importUnconfirmed.
   ///
   /// In en, this message translates to:
-  /// **'Import could not be confirmed. Check All sessions before retrying: the server may have received it. Your source file is unchanged.'**
+  /// **'Import could not be confirmed. Check All conversations before retrying: the server may have received it. Your source file is unchanged.'**
   String get importUnconfirmed;
 
   /// No description provided for @sessionsNoOtherRecent.
@@ -2267,7 +2267,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionPinFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not save this pin. Check device storage and that the session location has not changed, then try again.'**
+  /// **'Could not save this pin. Check device storage and that the conversation’s project has not changed, then try again.'**
   String get sessionPinFailed;
 
   /// No description provided for @sessionPinsLoadFailed.
@@ -2405,25 +2405,25 @@ abstract class AppLocalizations {
   /// No description provided for @shareWaitingForServer.
   ///
   /// In en, this message translates to:
-  /// **'Connect to a server and the shared text opens in a new session.'**
+  /// **'Connect to a server and the shared text opens in a new conversation.'**
   String get shareWaitingForServer;
 
   /// No description provided for @shareSessionFailed.
   ///
   /// In en, this message translates to:
-  /// **'Shared text kept. Could not open a session. Retry when the connection is ready.'**
+  /// **'Shared text kept. Could not open a conversation. Retry when the connection is ready.'**
   String get shareSessionFailed;
 
   /// No description provided for @webSourcesDisclosure.
   ///
   /// In en, this message translates to:
-  /// **'Web search is not available through this connection’s app gateway. Paste a public URL and optionally an excerpt you want to include. No page is fetched. Nothing is sent to the model here.'**
+  /// **'Web search is not available through this server’s app gateway. Paste a public URL and optionally an excerpt you want to include. No page is fetched. Nothing is sent to the model here.'**
   String get webSourcesDisclosure;
 
   /// No description provided for @webSourcesScopeChanged.
   ///
   /// In en, this message translates to:
-  /// **'Connection changed. Close and reopen Add web source.'**
+  /// **'Server changed. Close and reopen Add web source.'**
   String get webSourcesScopeChanged;
 
   /// No description provided for @webSourcesUrl.
@@ -2501,7 +2501,7 @@ abstract class AppLocalizations {
   /// No description provided for @digestEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No ended-run metadata available in this location. Idle alone does not establish successful completion.'**
+  /// **'No ended-run metadata available in this project. Idle alone does not establish successful completion.'**
   String get digestEmpty;
 
   /// No description provided for @digestIdle.
@@ -2525,7 +2525,7 @@ abstract class AppLocalizations {
   /// Session-wide changed-file total; it is not evidence for this run
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0 {No changed files in the session total; this run is unknown.} one {1 changed file in the session total; this run is unknown.} other {{count} changed files in the session total; this run is unknown.}}'**
+  /// **'{count, plural, =0 {No changed files in the conversation total; this run is unknown.} one {1 changed file in the conversation total; this run is unknown.} other {{count} changed files in the conversation total; this run is unknown.}}'**
   String digestChangedFiles(int count);
 
   /// The pending-request snapshot is unavailable
@@ -2597,7 +2597,7 @@ abstract class AppLocalizations {
   /// No description provided for @runResultsScopeChanged.
   ///
   /// In en, this message translates to:
-  /// **'The connection or project changed. Close this view and reopen Run results from the intended project.'**
+  /// **'The server or project changed. Close this view and reopen Run results from the intended project.'**
   String get runResultsScopeChanged;
 
   /// No description provided for @runResultsTitle.
@@ -2873,7 +2873,7 @@ abstract class AppLocalizations {
   /// No description provided for @handoffDisclosure.
   ///
   /// In en, this message translates to:
-  /// **'Metadata only, not a command or link. On your other device, connect to the same server and locate this project and session. Nothing is published or sent.\n\nThe clipboard will contain session and project identifiers. Other apps may read it; share only with people you trust.'**
+  /// **'Metadata only, not a command or link. On your other device, connect to the same server and locate this project and conversation. Nothing is published or sent.\n\nThe clipboard will contain conversation and project identifiers. Other apps may read it; share only with people you trust.'**
   String get handoffDisclosure;
 
   /// No description provided for @handoffCopy.
@@ -2885,7 +2885,7 @@ abstract class AppLocalizations {
   /// No description provided for @handoffCopied.
   ///
   /// In en, this message translates to:
-  /// **'Session metadata reference copied'**
+  /// **'Conversation metadata reference copied'**
   String get handoffCopied;
 
   /// No description provided for @handoffCopyFailed.
@@ -2909,7 +2909,7 @@ abstract class AppLocalizations {
   /// No description provided for @sessionActions.
   ///
   /// In en, this message translates to:
-  /// **'Session actions'**
+  /// **'Conversation actions'**
   String get sessionActions;
 
   /// No description provided for @attentionTitle.
@@ -2933,7 +2933,7 @@ abstract class AppLocalizations {
   /// No description provided for @webSourcesDraftChanged.
   ///
   /// In en, this message translates to:
-  /// **'The draft or connection changed. Your current draft was kept; reopen Add web source to try again.'**
+  /// **'The draft or server changed. Your current draft was kept; reopen Add web source to try again.'**
   String get webSourcesDraftChanged;
 
   /// No description provided for @webSourcesDraftLabel.
@@ -3083,13 +3083,13 @@ abstract class AppLocalizations {
   /// No description provided for @pendingAuthUnsupported.
   ///
   /// In en, this message translates to:
-  /// **'This connection cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.'**
+  /// **'This server cannot recover earlier sign-ins. Legacy sign-ins work only while their original screen and connection remain available.'**
   String get pendingAuthUnsupported;
 
   /// No description provided for @pendingAuthOtherSource.
   ///
   /// In en, this message translates to:
-  /// **'Other pending sign-ins belong to another server origin or location. Return to their original source to manage them.'**
+  /// **'Other pending sign-ins belong to another server or project. Return to their original source to manage them.'**
   String get pendingAuthOtherSource;
 
   /// No description provided for @connectionHelpTitle.
@@ -3377,7 +3377,7 @@ abstract class AppLocalizations {
   /// No description provided for @voiceConversationInstructions.
   ///
   /// In en, this message translates to:
-  /// **'Review and insert your transcript, then tap Send in the composer. Replies are read aloud only while Speak replies is on, and only the reply to what you just sent. Unsent text is discarded when you leave voice mode, the chat, or the app.'**
+  /// **'Review and insert your transcript, then tap Send in the composer. Replies are read aloud only while Speak replies is on, and only the reply to what you just sent. Unsent text is discarded when you leave voice mode, the conversation, or the app.'**
   String get voiceConversationInstructions;
 
   /// No description provided for @desktopDropFailedTitle.
@@ -3467,7 +3467,7 @@ abstract class AppLocalizations {
   /// Reject actions against the wrong provider authentication scope
   ///
   /// In en, this message translates to:
-  /// **'The server or project changed. Return to the original location and reopen sign-in to manage its attempt.'**
+  /// **'The server or project changed. Return to the original project and reopen sign-in to manage its attempt.'**
   String get commandAuthScopeChanged;
 
   /// Unknown dispatch outcome blocks duplicate executable auth attempts
@@ -3509,7 +3509,7 @@ abstract class AppLocalizations {
   /// Discloses external engine access and audible output without promising network isolation
   ///
   /// In en, this message translates to:
-  /// **'The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software and its privacy practices apply. Code blocks and tool details are omitted. Others may hear the audio. Playback stops when this chat is covered or the app goes into the background.'**
+  /// **'The loaded reply prose will be sent to your system speech engine. Only voices marked offline are offered, but the engine is separate software and its privacy practices apply. Code blocks and tool details are omitted. Others may hear the audio. Playback stops when this conversation is covered or the app goes into the background.'**
   String get readAloudConsentDetail;
 
   /// Accept speech disclosure and request installed voice metadata
@@ -3701,7 +3701,7 @@ abstract class AppLocalizations {
   /// Distinguishes runtime MCP removal from persistent configuration changes
   ///
   /// In en, this message translates to:
-  /// **'Remove this MCP server from the current runtime location. Its tools will no longer be available there. This does not erase persistent server configuration; it may return after a server restart.'**
+  /// **'Remove this MCP server from the current project’s runtime. Its tools will no longer be available there. This does not erase persistent server configuration; it may return after a server restart.'**
   String get mcpRemoveRuntimeDetail;
 
   /// Safe feedback for an uncertain removal outcome without raw configuration or server errors
@@ -3833,13 +3833,13 @@ abstract class AppLocalizations {
   /// No description provided for @promptStashLocation.
   ///
   /// In en, this message translates to:
-  /// **'This prompt refers to files in {directory}. Switch to its original project and workspace before restoring it.'**
+  /// **'This prompt refers to files in {directory}. Switch to its original project before restoring it.'**
   String promptStashLocation(String directory);
 
   /// No description provided for @promptStashScopeChanged.
   ///
   /// In en, this message translates to:
-  /// **'The server or location changed. Close and reopen Saved prompts.'**
+  /// **'The server or project changed. Close and reopen Saved prompts.'**
   String get promptStashScopeChanged;
 
   /// No description provided for @transcriptFindTitle.
@@ -3965,7 +3965,7 @@ abstract class AppLocalizations {
   /// No description provided for @skillLocationChanged.
   ///
   /// In en, this message translates to:
-  /// **'The connection or project changed. Reopen Skills from the conversation.'**
+  /// **'The server or project changed. Reopen Skills from the conversation.'**
   String get skillLocationChanged;
 
   /// No description provided for @skillUnsupported.
@@ -4073,7 +4073,7 @@ abstract class AppLocalizations {
   /// No description provided for @activeContextChanged.
   ///
   /// In en, this message translates to:
-  /// **'The connection, project or conversation changed. Reopen this inspector from the conversation.'**
+  /// **'The server, project or conversation changed. Reopen this inspector from the conversation.'**
   String get activeContextChanged;
 
   /// No description provided for @activeContextInvalid.
@@ -4139,7 +4139,7 @@ abstract class AppLocalizations {
   /// No description provided for @activeContextChange.
   ///
   /// In en, this message translates to:
-  /// **'Session change'**
+  /// **'Conversation change'**
   String get activeContextChange;
 
   /// No description provided for @activeContextText.
@@ -4493,7 +4493,7 @@ abstract class AppLocalizations {
   /// Informed consent before sending existing server authentication to an optional same-origin route
   ///
   /// In en, this message translates to:
-  /// **'Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this profile\'s server sign-in. Confirm only if you installed or trust that deployment. Provider tokens stay on the server.'**
+  /// **'Your server operator must install and protect this route at the same origin as OpenCode. Reading it uses this saved server\'s sign-in. Confirm only if you installed or trust that deployment. Provider tokens stay on the server.'**
   String get quotaSetupDescription;
 
   /// Explains operator configuration and visit-only consent
@@ -4739,13 +4739,13 @@ abstract class AppLocalizations {
   /// iOS credential storage guidance
   ///
   /// In en, this message translates to:
-  /// **'Server passwords use this device\'s Keychain. They are not stored in plain profile preferences.'**
+  /// **'Server passwords use this device\'s Keychain. They are not stored in plain app preferences.'**
   String get iosKeychainGuide;
 
   /// Platform-neutral storage copy rather than incorrectly promising Linux libsecret everywhere
   ///
   /// In en, this message translates to:
-  /// **'Server passwords use this platform\'s secure credential storage. They are not stored in plain profile preferences.'**
+  /// **'Server passwords use this platform\'s secure credential storage. They are not stored in plain app preferences.'**
   String get platformSecureStorageGuide;
 
   /// Claude allowances for the operator-selected OAuth login
@@ -4901,7 +4901,7 @@ abstract class AppLocalizations {
   /// No description provided for @pluginsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Plugins reported for this server location. Inspect status and source here; manage plugins on the server.'**
+  /// **'Plugins reported for this project on the server. Inspect status and source here; manage plugins on the server.'**
   String get pluginsDescription;
 
   /// No description provided for @pluginsUnsupported.
@@ -4919,7 +4919,7 @@ abstract class AppLocalizations {
   /// No description provided for @pluginsEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No plugins reported for this location.'**
+  /// **'No plugins reported for this project.'**
   String get pluginsEmpty;
 
   /// No description provided for @pluginsLoadFailed.
@@ -5027,7 +5027,7 @@ abstract class AppLocalizations {
   /// No description provided for @handoffCommandDisclosure.
   ///
   /// In en, this message translates to:
-  /// **'Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and session ID, but no password.'**
+  /// **'Run this command in a POSIX shell on a computer with OpenCode installed and access to this server. Set OPENCODE_SERVER_PASSWORD privately on that computer if the server requires it. The clipboard will contain the server address, username, project directory and conversation ID, but no password.'**
   String get handoffCommandDisclosure;
 
   /// No description provided for @handoffCopyCommand.
@@ -5045,7 +5045,7 @@ abstract class AppLocalizations {
   /// No description provided for @handoffCommandUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'A resume command is unavailable for this connection or workspace. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the session metadata below.'**
+  /// **'A resume command is unavailable for this server or cloud environment. Continuing on another computer needs a supported OpenCode command and a reachable HTTPS server; a localhost address points to each device itself. You can still copy the conversation metadata below.'**
   String get handoffCommandUnavailable;
 
   /// No description provided for @quotaMiniMax.
@@ -5321,7 +5321,7 @@ abstract class AppLocalizations {
   /// No description provided for @monitorScope.
   ///
   /// In en, this message translates to:
-  /// **'Counts cover each server’s last selected location, not every project on that server.'**
+  /// **'Counts cover each server’s last selected project, not every project on that server.'**
   String get monitorScope;
 
   /// No description provided for @monitorDisclosure.
@@ -5351,7 +5351,7 @@ abstract class AppLocalizations {
   /// No description provided for @monitorOptInDetail.
   ///
   /// In en, this message translates to:
-  /// **'Check pending permissions, questions and forms in its last selected location.'**
+  /// **'Check pending permissions, questions and forms in its last selected project.'**
   String get monitorOptInDetail;
 
   /// No description provided for @monitorNotifications.
@@ -5447,7 +5447,7 @@ abstract class AppLocalizations {
   /// No description provided for @monitorAllClear.
   ///
   /// In en, this message translates to:
-  /// **'No pending requests in the checked location'**
+  /// **'No pending requests in the checked project'**
   String get monitorAllClear;
 
   /// No description provided for @monitorNoServers.
@@ -5465,7 +5465,7 @@ abstract class AppLocalizations {
   /// No description provided for @monitorOpenFailed.
   ///
   /// In en, this message translates to:
-  /// **'This request or its server location changed. Refresh the inbox and try again.'**
+  /// **'This request or its project changed. Refresh the inbox and try again.'**
   String get monitorOpenFailed;
 
   /// No description provided for @monitorSwitchTitle.
@@ -5477,7 +5477,7 @@ abstract class AppLocalizations {
   /// No description provided for @monitorSwitchDetail.
   ///
   /// In en, this message translates to:
-  /// **'A run is active on the selected server. Switching changes the connection shown in this app; it does not stop that server’s run.'**
+  /// **'A run is active on the selected server. Switching changes the server shown in this app; it does not stop that server’s run.'**
   String get monitorSwitchDetail;
 
   /// No description provided for @monitorSwitch.
@@ -5489,7 +5489,7 @@ abstract class AppLocalizations {
   /// No description provided for @monitorSession.
   ///
   /// In en, this message translates to:
-  /// **'Session'**
+  /// **'Conversation'**
   String get monitorSession;
 
   /// No description provided for @monitorPermission.
@@ -5566,7 +5566,7 @@ abstract class AppLocalizations {
   /// No description provided for @monitorSelected.
   ///
   /// In en, this message translates to:
-  /// **'Selected location'**
+  /// **'Selected project'**
   String get monitorSelected;
 
   /// No description provided for @monitorNoNotifications.
@@ -5704,7 +5704,7 @@ abstract class AppLocalizations {
   /// No description provided for @managedRecoveryRevokeFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not save or revoke recovery. Keep this profile and retry before removing it.'**
+  /// **'Could not save or revoke recovery. Keep this server and retry before removing it.'**
   String get managedRecoveryRevokeFailed;
 
   /// No description provided for @managedRecoverySettingsUnreadable.
@@ -5740,7 +5740,7 @@ abstract class AppLocalizations {
   /// No description provided for @managedRecoveryStoppedWithCleanupError.
   ///
   /// In en, this message translates to:
-  /// **'The local server is stopped. Recovery settings could not be fully cleared; retry disabling recovery in Servers before removing the profile.'**
+  /// **'The local server is stopped. Recovery settings could not be fully cleared; retry disabling recovery in Servers before removing the server.'**
   String get managedRecoveryStoppedWithCleanupError;
 
   /// No description provided for @pluginMappingPersonal.
@@ -5764,7 +5764,7 @@ abstract class AppLocalizations {
   /// No description provided for @pluginMappingDescription.
   ///
   /// In en, this message translates to:
-  /// **'Choose commands you associate with this plugin. These personal links apply only to this server location. Each action opens a review of the chat and arguments before you run it.'**
+  /// **'Choose commands you associate with this plugin. These personal links apply only to this project on this server. Each action opens a review of the conversation and arguments before you run it.'**
   String get pluginMappingDescription;
 
   /// No description provided for @pluginMappingEmpty.
@@ -5794,7 +5794,7 @@ abstract class AppLocalizations {
   /// No description provided for @pluginMappingSaveFailed.
   ///
   /// In en, this message translates to:
-  /// **'Links could not be saved. Check that this server location is still selected and try again.'**
+  /// **'Links could not be saved. Check that this project is still selected and try again.'**
   String get pluginMappingSaveFailed;
 
   /// No description provided for @pluginMappingLoadFailed.
@@ -5902,7 +5902,7 @@ abstract class AppLocalizations {
   /// No description provided for @pluginMappingClearDescription.
   ///
   /// In en, this message translates to:
-  /// **'Remove personal plugin-command links for every location in this server profile, including previous locations. Server plugins and commands stay installed.'**
+  /// **'Remove personal plugin-command links for every project on this saved server, including previous projects. Server plugins and commands stay installed.'**
   String get pluginMappingClearDescription;
 
   /// No description provided for @pluginMappingClearConfirm.
@@ -5914,7 +5914,7 @@ abstract class AppLocalizations {
   /// No description provided for @pluginMappingClearFailed.
   ///
   /// In en, this message translates to:
-  /// **'Personal links could not be cleared. Check that this server profile is still selected and try again.'**
+  /// **'Personal links could not be cleared. Check that this server is still selected and try again.'**
   String get pluginMappingClearFailed;
 
   /// No description provided for @quotaMonitorTitle.
@@ -6076,13 +6076,13 @@ abstract class AppLocalizations {
   /// No description provided for @webSearchAuthentication.
   ///
   /// In en, this message translates to:
-  /// **'The server did not authorize web search. Check this connection’s credentials.'**
+  /// **'The server did not authorize web search. Check this server’s credentials.'**
   String get webSearchAuthentication;
 
   /// No description provided for @webSearchInvalidResponse.
   ///
   /// In en, this message translates to:
-  /// **'The search response did not match this connection or the supported format. Refresh providers or paste a source.'**
+  /// **'The search response did not match this server or the supported format. Refresh providers or paste a source.'**
   String get webSearchInvalidResponse;
 
   /// No description provided for @webSearchFailed.
@@ -6172,7 +6172,7 @@ abstract class AppLocalizations {
   /// No description provided for @filesViewerScopeChanged.
   ///
   /// In en, this message translates to:
-  /// **'Connection changed. Close and reopen this file.'**
+  /// **'Server changed. Close and reopen this file.'**
   String get filesViewerScopeChanged;
 
   /// No description provided for @filesViewerPathChanged.
@@ -6220,7 +6220,7 @@ abstract class AppLocalizations {
   /// No description provided for @codexTextOnlyPrompt.
   ///
   /// In en, this message translates to:
-  /// **'This connection supports text only. Remove attachments before sending.'**
+  /// **'This server supports text only. Remove attachments before sending.'**
   String get codexTextOnlyPrompt;
 
   /// No description provided for @codexOfflineDraftSaved.
@@ -6370,7 +6370,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectionCredentialUnavailable.
   ///
   /// In en, this message translates to:
-  /// **'A saved connection credential can no longer be read. Edit the active server and re-enter it before connecting.'**
+  /// **'A saved server credential can no longer be read. Edit the active server and re-enter it before connecting.'**
   String get connectionCredentialUnavailable;
 
   /// No description provided for @projectContextTitle.
@@ -6496,67 +6496,67 @@ abstract class AppLocalizations {
   /// Snackbar shown once when the New task home-screen shortcut arrives while the saved server is still connecting
   ///
   /// In en, this message translates to:
-  /// **'Connecting to the saved server. The new task opens when it is ready.'**
+  /// **'Connecting to the saved server. The new conversation opens when it is ready.'**
   String get launchShortcutWaiting;
 
   /// Snackbar shown on the servers screen when the New task shortcut arrives with no saved server selected
   ///
   /// In en, this message translates to:
-  /// **'Choose a server, then start a new task.'**
+  /// **'Choose a server, then start a new conversation.'**
   String get launchShortcutNoServer;
 
   /// Snackbar shown on the servers screen when the New task shortcut arrives while the saved server needs its password or token entered again
   ///
   /// In en, this message translates to:
-  /// **'Enter the credentials for the saved server, then start a new task.'**
+  /// **'Enter the credentials for the saved server, then start a new conversation.'**
   String get launchShortcutReentry;
 
   /// Snackbar shown on the servers screen when the New task shortcut arrives after the saved server connection failed
   ///
   /// In en, this message translates to:
-  /// **'Could not connect to the saved server. Choose or fix a server, then start a new task.'**
+  /// **'Could not connect to the saved server. Choose or fix a server, then start a new conversation.'**
   String get launchShortcutConnectionFailed;
 
   /// Snackbar shown when the New task shortcut reached a connected server but creating the session failed
   ///
   /// In en, this message translates to:
-  /// **'Could not start a new task. {error}'**
+  /// **'Could not start a new conversation. {error}'**
   String launchShortcutNewTaskFailed(String error);
 
   /// Launcher shortcut label for a pinned session that has no title yet
   ///
   /// In en, this message translates to:
-  /// **'Untitled session'**
+  /// **'Untitled conversation'**
   String get launchUiPinnedUntitled;
 
   /// Snackbar shown once when a pinned-session launcher shortcut arrives while the saved server is still connecting
   ///
   /// In en, this message translates to:
-  /// **'Connecting to the saved server. The session opens when it is ready.'**
+  /// **'Connecting to the saved server. The conversation opens when it is ready.'**
   String get launchUiSessionWaiting;
 
   /// Snackbar shown on the servers screen when a pinned-session launcher shortcut arrives with no saved server selected
   ///
   /// In en, this message translates to:
-  /// **'Choose a server, then open the session from its list.'**
+  /// **'Choose a server, then open the conversation from its list.'**
   String get launchUiSessionNoServer;
 
   /// Snackbar shown on the servers screen when a pinned-session launcher shortcut arrives while the saved server needs its password or token entered again
   ///
   /// In en, this message translates to:
-  /// **'Enter the credentials for the saved server, then open the session from its list.'**
+  /// **'Enter the credentials for the saved server, then open the conversation from its list.'**
   String get launchUiSessionReentry;
 
   /// Snackbar shown on the servers screen when a pinned-session launcher shortcut arrives after the saved server connection failed
   ///
   /// In en, this message translates to:
-  /// **'Could not connect to the saved server. Choose or fix a server, then open the session from its list.'**
+  /// **'Could not connect to the saved server. Choose or fix a server, then open the conversation from its list.'**
   String get launchUiSessionConnectionFailed;
 
   /// Snackbar shown when a pinned-session launcher shortcut names a server profile other than the active one; the app never switches servers on its own
   ///
   /// In en, this message translates to:
-  /// **'That shortcut belongs to another server. Connect to that server, then open the session from its list.'**
+  /// **'That shortcut belongs to another server. Connect to that server, then open the conversation from its list.'**
   String get launchUiSessionOtherServer;
 
   /// Snackbar shown on the servers screen when the Quick Settings tile is tapped with no saved server selected
@@ -6616,7 +6616,7 @@ abstract class AppLocalizations {
   /// Discard sheet body for a queued draft whose send was never confirmed
   ///
   /// In en, this message translates to:
-  /// **'Its earlier send was never confirmed; it may already be in the session.'**
+  /// **'Its earlier send was never confirmed; it may already be in the conversation.'**
   String get queuedDiscardUnconfirmedMessage;
 
   /// First-time on-device server runtime selection
@@ -6658,7 +6658,7 @@ abstract class AppLocalizations {
   /// Names the selected runtime and pinned version in the update confirmation
   ///
   /// In en, this message translates to:
-  /// **'The app will install {runtime} {version}, restart only the managed local server, and reconnect this profile.'**
+  /// **'The app will install {runtime} {version}, restart only the managed local server, and reconnect this server.'**
   String setupRuntimeUpdateDetail(String runtime, String version);
 
   /// Connection banner line counting queued drafts whose send was never confirmed
@@ -6724,7 +6724,7 @@ abstract class AppLocalizations {
   /// Status once the worktree reported ready and the session is being opened
   ///
   /// In en, this message translates to:
-  /// **'{name} is ready. Opening a blank session…'**
+  /// **'{name} is ready. Opening a blank conversation…'**
   String isolatedTaskReady(String name);
 
   /// Status when the worktree is ready but the last open attempt failed and nothing is in flight
@@ -6784,13 +6784,13 @@ abstract class AppLocalizations {
   /// Status while switching scope and creating the session
   ///
   /// In en, this message translates to:
-  /// **'Opening a blank session in {name}…'**
+  /// **'Opening a blank conversation in {name}…'**
   String isolatedTaskOpening(String name);
 
   /// Status once the blank session exists in the worktree
   ///
   /// In en, this message translates to:
-  /// **'Session ready in {name}. Nothing has been sent.'**
+  /// **'Conversation ready in {name}. Nothing has been sent.'**
   String isolatedTaskOpened(String name);
 
   /// Branch line under the worktree status
@@ -6844,7 +6844,7 @@ abstract class AppLocalizations {
   /// No description provided for @returnBriefUntitled.
   ///
   /// In en, this message translates to:
-  /// **'Untitled session'**
+  /// **'Untitled conversation'**
   String get returnBriefUntitled;
 
   /// No description provided for @returnBriefStale.
@@ -6868,7 +6868,7 @@ abstract class AppLocalizations {
   /// No description provided for @returnBriefPartial.
   ///
   /// In en, this message translates to:
-  /// **'Loaded sessions only. The session list is still incomplete.'**
+  /// **'Loaded conversations only. The conversation list is still incomplete.'**
   String get returnBriefPartial;
 
   /// No description provided for @returnBriefAnswer.
@@ -6880,7 +6880,7 @@ abstract class AppLocalizations {
   /// No description provided for @returnBriefUnreviewed.
   ///
   /// In en, this message translates to:
-  /// **'Unreviewed session. Open results to check the outcome.'**
+  /// **'Unreviewed conversation. Open results to check the outcome.'**
   String get returnBriefUnreviewed;
 
   /// No description provided for @returnBriefReview.
@@ -6898,7 +6898,7 @@ abstract class AppLocalizations {
   /// No description provided for @returnBriefMore.
   ///
   /// In en, this message translates to:
-  /// **'Additional items: {count}. They remain unacknowledged; see the sessions below or Activity.'**
+  /// **'Additional items: {count}. They remain unacknowledged; see the conversations below or Activity.'**
   String returnBriefMore(int count);
 
   /// No description provided for @returnBriefSaveFailed.
@@ -6928,13 +6928,13 @@ abstract class AppLocalizations {
   /// No description provided for @capsuleEntry.
   ///
   /// In en, this message translates to:
-  /// **'Collect notes, errors and screenshots for this task'**
+  /// **'Collect notes, errors and screenshots for this conversation'**
   String get capsuleEntry;
 
   /// No description provided for @capsuleDescription.
   ///
   /// In en, this message translates to:
-  /// **'Build a bundle for this task. Applying adds it to your existing draft; nothing is sent. Unapplied edits are kept only while this screen is open.'**
+  /// **'Build a bundle for this conversation. Applying adds it to your existing draft; nothing is sent. Unapplied edits are kept only while this screen is open.'**
   String get capsuleDescription;
 
   /// No description provided for @capsuleNote.
@@ -7006,13 +7006,13 @@ abstract class AppLocalizations {
   /// No description provided for @capsuleScopeChanged.
   ///
   /// In en, this message translates to:
-  /// **'The task, connection or draft changed. Close this capsule and reopen it from the intended task.'**
+  /// **'The conversation, server or draft changed. Close this capsule and reopen it from the intended conversation.'**
   String get capsuleScopeChanged;
 
   /// No description provided for @capsuleTextOnly.
   ///
   /// In en, this message translates to:
-  /// **'This connection accepts text only. You can still collect notes, errors and code.'**
+  /// **'This server accepts text only. You can still collect notes, errors and code.'**
   String get capsuleTextOnly;
 
   /// No description provided for @capsuleImagesOnly.
@@ -7846,7 +7846,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentAccountScopeLost.
   ///
   /// In en, this message translates to:
-  /// **'This connection changed. Return to Servers and open the account for the connected profile.'**
+  /// **'This server changed. Return to Servers and open the account for the connected server.'**
   String get agentAccountScopeLost;
 
   /// No description provided for @agentAccountRefresh.
@@ -7930,7 +7930,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentAccountHostNote.
   ///
   /// In en, this message translates to:
-  /// **'The official Codex runtime keeps your provider credentials. Account changes apply to this host, including other profiles connected to it.'**
+  /// **'The official Codex runtime keeps your provider credentials. Account changes apply to this host, including other saved servers connected to it.'**
   String get agentAccountHostNote;
 
   /// No description provided for @agentAccountUnsupportedDetail.
@@ -8122,7 +8122,7 @@ abstract class AppLocalizations {
   /// No description provided for @projectFolderChooserMessage.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode Mobile does not work in the server’s home folder. Create a new folder or open a project folder to start sessions.'**
+  /// **'OpenCode Mobile does not work in the server’s home folder. Create a new folder or open a project folder to start conversations.'**
   String get projectFolderChooserMessage;
 
   /// No description provided for @projectFolderCreate.
@@ -8152,7 +8152,7 @@ abstract class AppLocalizations {
   /// No description provided for @projectFolderCreateMessage.
   ///
   /// In en, this message translates to:
-  /// **'The folder is created in {directory} on this device and opened as the workspace.'**
+  /// **'The folder is created in {directory} on this device and opened as the project.'**
   String projectFolderCreateMessage(String directory);
 
   /// No description provided for @projectFolderNameLabel.
@@ -8218,19 +8218,19 @@ abstract class AppLocalizations {
   /// No description provided for @globalSessionsTitle.
   ///
   /// In en, this message translates to:
-  /// **'All sessions'**
+  /// **'All conversations'**
   String get globalSessionsTitle;
 
   /// No description provided for @globalSessionsSearchLabel.
   ///
   /// In en, this message translates to:
-  /// **'Search session titles'**
+  /// **'Search conversation titles'**
   String get globalSessionsSearchLabel;
 
   /// No description provided for @globalSessionsSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Across every folder on this server'**
+  /// **'Across every project on this server'**
   String get globalSessionsSearchHint;
 
   /// No description provided for @globalSessionsIncludeArchived.
@@ -8248,55 +8248,55 @@ abstract class AppLocalizations {
   /// No description provided for @globalSessionsAllFolders.
   ///
   /// In en, this message translates to:
-  /// **'All folders'**
+  /// **'All projects'**
   String get globalSessionsAllFolders;
 
   /// No description provided for @globalSessionsUnknownLocation.
   ///
   /// In en, this message translates to:
-  /// **'Unknown location'**
+  /// **'Unknown project'**
   String get globalSessionsUnknownLocation;
 
   /// No description provided for @globalSessionsSummary.
   ///
   /// In en, this message translates to:
-  /// **'{count} sessions in {folders} folders'**
+  /// **'{count} conversations in {folders} projects'**
   String globalSessionsSummary(String count, int folders);
 
   /// No description provided for @globalSessionsSummaryOneFolder.
   ///
   /// In en, this message translates to:
-  /// **'{count} sessions in one folder'**
+  /// **'{count} conversations in one project'**
   String globalSessionsSummaryOneFolder(String count);
 
   /// No description provided for @globalSessionsFilteredSummary.
   ///
   /// In en, this message translates to:
-  /// **'{count} of {total} sessions shown'**
+  /// **'{count} of {total} conversations shown'**
   String globalSessionsFilteredSummary(int count, String total);
 
   /// No description provided for @globalSessionsEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No sessions yet'**
+  /// **'No conversations yet'**
   String get globalSessionsEmptyTitle;
 
   /// No description provided for @globalSessionsEmptyMessage.
   ///
   /// In en, this message translates to:
-  /// **'Sessions from every folder on this server will appear here.'**
+  /// **'Conversations from every project on this server will appear here.'**
   String get globalSessionsEmptyMessage;
 
   /// No description provided for @globalSessionsNoMatchTitle.
   ///
   /// In en, this message translates to:
-  /// **'No matching sessions'**
+  /// **'No matching conversations'**
   String get globalSessionsNoMatchTitle;
 
   /// No description provided for @globalSessionsNoMatchMessage.
   ///
   /// In en, this message translates to:
-  /// **'Try a shorter title search or include archived sessions.'**
+  /// **'Try a shorter title search or include archived conversations.'**
   String get globalSessionsNoMatchMessage;
 
   /// No description provided for @globalSessionsRefresh.
@@ -8308,7 +8308,7 @@ abstract class AppLocalizations {
   /// No description provided for @globalSessionsLoadMoreFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not load more sessions'**
+  /// **'Could not load more conversations'**
   String get globalSessionsLoadMoreFailed;
 
   /// No description provided for @globalSessionsOpen.
@@ -8326,7 +8326,7 @@ abstract class AppLocalizations {
   /// No description provided for @globalSessionsActions.
   ///
   /// In en, this message translates to:
-  /// **'Session actions'**
+  /// **'Conversation actions'**
   String get globalSessionsActions;
 
   /// No description provided for @globalSessionsWorking.
@@ -8338,13 +8338,13 @@ abstract class AppLocalizations {
   /// No description provided for @globalSessionsUntitled.
   ///
   /// In en, this message translates to:
-  /// **'Untitled session'**
+  /// **'Untitled conversation'**
   String get globalSessionsUntitled;
 
   /// No description provided for @workspaceNewSession.
   ///
   /// In en, this message translates to:
-  /// **'New session'**
+  /// **'New conversation'**
   String get workspaceNewSession;
 
   /// No description provided for @workspaceIsolatedTask.
@@ -8356,7 +8356,7 @@ abstract class AppLocalizations {
   /// No description provided for @workspaceAllSessions.
   ///
   /// In en, this message translates to:
-  /// **'All sessions'**
+  /// **'All conversations'**
   String get workspaceAllSessions;
 
   /// No description provided for @workspaceDismissNotice.
@@ -8494,7 +8494,7 @@ abstract class AppLocalizations {
   /// More destination summary showing the model used by new chats, not an existing session.
   ///
   /// In en, this message translates to:
-  /// **'New chats: {model}'**
+  /// **'New conversations: {model}'**
   String settingsDiscoveryNewChatsModel(String model);
 
   /// No description provided for @onboardingValueTitle.
@@ -8518,7 +8518,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingDemoNote.
   ///
   /// In en, this message translates to:
-  /// **'A simulated session. No server needed.'**
+  /// **'A simulated conversation. No server needed.'**
   String get onboardingDemoNote;
 
   /// No description provided for @onboardingMoreSetup.
@@ -8584,7 +8584,7 @@ abstract class AppLocalizations {
   /// No description provided for @activityCheckedLocationsClear.
   ///
   /// In en, this message translates to:
-  /// **'Nothing needs you in the checked locations.'**
+  /// **'Nothing needs you in the checked projects.'**
   String get activityCheckedLocationsClear;
 
   /// No description provided for @activityUnknownStatusDetail.
@@ -8608,7 +8608,7 @@ abstract class AppLocalizations {
   /// No description provided for @activitySelectedLocationsOnly.
   ///
   /// In en, this message translates to:
-  /// **'Last selected locations only'**
+  /// **'Last selected projects only'**
   String get activitySelectedLocationsOnly;
 
   /// No description provided for @activityBackgroundUpdates.
@@ -8740,13 +8740,13 @@ abstract class AppLocalizations {
   /// No description provided for @workBackgroundEligible.
   ///
   /// In en, this message translates to:
-  /// **'Run in background is available while a supported agent task or command is blocking this chat.'**
+  /// **'Run in background is available while a supported agent task or command is blocking this conversation.'**
   String get workBackgroundEligible;
 
   /// No description provided for @workBackgroundAutomatic.
   ///
   /// In en, this message translates to:
-  /// **'Ask your agent to delegate work in the background. Results return to this chat automatically.'**
+  /// **'Ask your agent to delegate work in the background. Results return to this conversation automatically.'**
   String get workBackgroundAutomatic;
 
   /// Opens the existing-server editor for someone looking for OpenCode 2; does not force the protocol.
@@ -8800,7 +8800,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupSwitchConfirmDetail.
   ///
   /// In en, this message translates to:
-  /// **'Stops this phone’s server and running tasks. Chats, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.'**
+  /// **'Stops this phone’s server and running tasks. Conversations, provider settings and credentials stay separate; project files and configuration are shared. You can switch back.'**
   String get setupSwitchConfirmDetail;
 
   /// No description provided for @setupSwitchConfirm.
@@ -8878,7 +8878,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupSwitchMissingCredential.
   ///
   /// In en, this message translates to:
-  /// **'The saved credential for the previous runtime is unavailable. Its data is retained; restore the saved profile before returning.'**
+  /// **'The saved credential for the previous runtime is unavailable. Its data is retained; restore the saved server before returning.'**
   String get setupSwitchMissingCredential;
 
   /// No description provided for @setupSwitchOwnDescription.
@@ -8896,7 +8896,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupSwitchDataNotice.
   ///
   /// In en, this message translates to:
-  /// **'Each version keeps its own chats and provider settings. Project files and project configuration are shared.'**
+  /// **'Each version keeps its own conversations and provider settings. Project files and project configuration are shared.'**
   String get setupSwitchDataNotice;
 
   /// No description provided for @setupSwitchHelp.
@@ -9244,7 +9244,7 @@ abstract class AppLocalizations {
   /// Localized shared connection or glossary interface
   ///
   /// In en, this message translates to:
-  /// **'Model Context Protocol. Small add-on servers that give the agent extra tools, like a browser, a database, or a design tool. You connect them once and every session can use them.'**
+  /// **'Model Context Protocol. Small add-on servers that give the agent extra tools, like a browser, a database, or a design tool. You connect them once and every conversation can use them.'**
   String get e7GlossaryMcpExplanation;
 
   /// Localized shared connection or glossary interface
@@ -9274,7 +9274,7 @@ abstract class AppLocalizations {
   /// Localized shared connection or glossary interface
   ///
   /// In en, this message translates to:
-  /// **'Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the session can continue.'**
+  /// **'Everything the model can see right now: your messages, files it read, and tool results. It has a size limit. When it fills up, older parts are summarised so the conversation can continue.'**
   String get e7GlossaryContextExplanation;
 
   /// Localized shared connection or glossary interface
@@ -9412,7 +9412,7 @@ abstract class AppLocalizations {
   /// Shared app interface: Three steps to your first session
   ///
   /// In en, this message translates to:
-  /// **'Three steps to your first session'**
+  /// **'Three steps to your first conversation'**
   String get e7SharedThreeStepsToYourFirstSession;
 
   /// Shared app interface: OpenCode runs on your computer. This app is the remote. Pairing connects the two with one command — no addresses or passwords to type.
@@ -9592,7 +9592,7 @@ abstract class AppLocalizations {
   /// Shared app interface: Session context
   ///
   /// In en, this message translates to:
-  /// **'Session context'**
+  /// **'Conversation context'**
   String get e7SharedSessionContext;
 
   /// Shared app interface: Refresh context
@@ -9610,7 +9610,7 @@ abstract class AppLocalizations {
   /// Shared app interface: Send a prompt and wait for an assistant response. OpenCode will then report token usage for this session.
   ///
   /// In en, this message translates to:
-  /// **'Send a prompt and wait for an assistant response. OpenCode will then report token usage for this session.'**
+  /// **'Send a prompt and wait for an assistant response. OpenCode will then report token usage for this conversation.'**
   String get e7SharedSendAPromptAndWaitForAn;
 
   /// Shared app interface: Current model request
@@ -9628,7 +9628,7 @@ abstract class AppLocalizations {
   /// Shared app interface: Session totals
   ///
   /// In en, this message translates to:
-  /// **'Session totals'**
+  /// **'Conversation totals'**
   String get e7SharedSessionTotals;
 
   /// Shared app interface: Usage comes from the latest completed assistant message. The makeup is an estimate from visible prompt, response, and tool text; Other includes system instructions, tool definitions, and provider overhead.
@@ -9694,7 +9694,7 @@ abstract class AppLocalizations {
   /// Shared app interface: Session tokens · reported by server
   ///
   /// In en, this message translates to:
-  /// **'Session tokens · reported by server'**
+  /// **'Conversation tokens · reported by server'**
   String get e7SharedSessionTokensReportedByServer;
 
   /// Shared app interface: User prompts
@@ -9730,7 +9730,7 @@ abstract class AppLocalizations {
   /// Shared app interface: Session location changed. Close and reopen this sheet.
   ///
   /// In en, this message translates to:
-  /// **'Session location changed. Close and reopen this sheet.'**
+  /// **'The conversation’s project changed. Close and reopen this sheet.'**
   String get e7SharedSessionLocationChangedCloseAndReopenThis;
 
   /// Shared app interface: OpenCode is reconnecting.
@@ -9742,7 +9742,7 @@ abstract class AppLocalizations {
   /// Shared app interface: The session project is not available on this server.
   ///
   /// In en, this message translates to:
-  /// **'The session project is not available on this server.'**
+  /// **'The conversation project is not available on this server.'**
   String get e7SharedTheSessionProjectIsNotAvailableOn;
 
   /// Shared app interface: Local project
@@ -9772,7 +9772,7 @@ abstract class AppLocalizations {
   /// Shared app interface: Move session
   ///
   /// In en, this message translates to:
-  /// **'Move session'**
+  /// **'Move conversation'**
   String get e7SharedMoveSession;
 
   /// Shared app interface: Choose another directory in this project.
@@ -9784,7 +9784,7 @@ abstract class AppLocalizations {
   /// Shared app interface: Choose a connected workspace, or return to the local project.
   ///
   /// In en, this message translates to:
-  /// **'Choose a connected workspace, or return to the local project.'**
+  /// **'Choose a connected cloud environment, or return to the local project.'**
   String get e7SharedChooseAConnectedWorkspaceOrReturnTo;
 
   /// Shared app interface: Filter destinations
@@ -9838,25 +9838,25 @@ abstract class AppLocalizations {
   /// Shared app interface: Session location changed. Return and reopen related sessions.
   ///
   /// In en, this message translates to:
-  /// **'Session location changed. Return and reopen related sessions.'**
+  /// **'The conversation’s project changed. Return and reopen related conversations.'**
   String get e7SharedSessionLocationChangedReturnAndReopenRelated;
 
   /// Shared app interface: Session is no longer related to this session.
   ///
   /// In en, this message translates to:
-  /// **'Session is no longer related to this session.'**
+  /// **'That conversation is no longer related to this one.'**
   String get e7SharedSessionIsNoLongerRelatedToThis;
 
   /// Shared app interface: Session location changed. Return and try again.
   ///
   /// In en, this message translates to:
-  /// **'Session location changed. Return and try again.'**
+  /// **'The conversation’s project changed. Return and try again.'**
   String get e7SharedSessionLocationChangedReturnAndTryAgain;
 
   /// Shared app interface: Session unavailable or location changed. Return or refresh to try again.
   ///
   /// In en, this message translates to:
-  /// **'Session unavailable or location changed. Return or refresh to try again.'**
+  /// **'Conversation unavailable or its project changed. Return or refresh to try again.'**
   String get e7SharedSessionUnavailableOrLocationChangedReturnOr;
 
   /// Shared app interface: Could not update the pin. Return and try again.
@@ -9868,13 +9868,13 @@ abstract class AppLocalizations {
   /// Shared app interface: Refresh subagent sessions
   ///
   /// In en, this message translates to:
-  /// **'Refresh subagent sessions'**
+  /// **'Refresh subagent conversations'**
   String get e7SharedRefreshSubagentSessions;
 
   /// Shared app interface: Parent session
   ///
   /// In en, this message translates to:
-  /// **'Parent session'**
+  /// **'Parent conversation'**
   String get e7SharedParentSession;
 
   /// Shared app interface: Subagents
@@ -9886,31 +9886,31 @@ abstract class AppLocalizations {
   /// Shared app interface: No subagent sessions yet
   ///
   /// In en, this message translates to:
-  /// **'No subagent sessions yet'**
+  /// **'No subagent conversations yet'**
   String get e7SharedNoSubagentSessionsYet;
 
   /// Shared app interface: Delegated work will appear here without mixing child sessions into your main chat list.
   ///
   /// In en, this message translates to:
-  /// **'Delegated work will appear here without mixing child sessions into your main chat list.'**
+  /// **'Delegated work will appear here without mixing subagent conversations into your main list.'**
   String get e7SharedDelegatedWorkWillAppearHereWithoutMixing;
 
   /// Shared app interface: OpenCode has not delegated work from this session.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode has not delegated work from this session.'**
+  /// **'OpenCode has not delegated work from this conversation.'**
   String get e7SharedOpenCodeHasNotDelegatedWorkFromThis;
 
   /// Shared app interface: Unpin session
   ///
   /// In en, this message translates to:
-  /// **'Unpin session'**
+  /// **'Unpin conversation'**
   String get e7SharedUnpinSession;
 
   /// Shared app interface: Pin session
   ///
   /// In en, this message translates to:
-  /// **'Pin session'**
+  /// **'Pin conversation'**
   String get e7SharedPinSession;
 
   /// Shared app interface: Link blocked. This app may open only https:// URLs, or confirmed http:// URLs.
@@ -10006,7 +10006,7 @@ abstract class AppLocalizations {
   /// Shared app interface: Asked by the agent in this session
   ///
   /// In en, this message translates to:
-  /// **'Asked by the agent in this session'**
+  /// **'Asked by the agent in this conversation'**
   String get e7SharedAskedByTheAgentInThisSession;
 
   /// Shared app interface: Input requested
@@ -10096,13 +10096,13 @@ abstract class AppLocalizations {
   /// Shared journey: lib/ui/screens/session_destination_sheet.dart
   ///
   /// In en, this message translates to:
-  /// **'Move session?'**
+  /// **'Move conversation?'**
   String get e7SharedDetail429;
 
   /// Shared journey: lib/ui/screens/session_destination_sheet.dart
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one {1 changed file is present.} other {{count} changed files are present.}} Choose whether those working changes should {action, select, move {move} other {be copied}} with the session.'**
+  /// **'{count, plural, one {1 changed file is present.} other {{count} changed files are present.}} Choose whether those working changes should {action, select, move {move} other {be copied}} with the conversation.'**
   String e7SharedDetail430(int count, String action);
 
   /// Shared journey: lib/ui/screens/session_destination_sheet.dart
@@ -10138,7 +10138,7 @@ abstract class AppLocalizations {
   /// Shared journey: lib/ui/screens/session_relations_screen.dart
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one {1 delegated session · open any transcript directly.} other {{count} delegated sessions · open any transcript directly.}}'**
+  /// **'{count, plural, one {1 delegated conversation · open any transcript directly.} other {{count} delegated conversations · open any transcript directly.}}'**
   String e7SharedDetail517(int count);
 
   /// Shared journey: lib/ui/screens/session_relations_screen.dart
@@ -10306,13 +10306,13 @@ abstract class AppLocalizations {
   /// Locale selection or app shell: NewSession
   ///
   /// In en, this message translates to:
-  /// **'New session'**
+  /// **'New conversation'**
   String get e7LocaleUiNewSession;
 
   /// Locale selection or app shell: NewSessionHint
   ///
   /// In en, this message translates to:
-  /// **'Start a chat in the active project'**
+  /// **'Start a conversation in the active project'**
   String get e7LocaleUiNewSessionHint;
 
   /// Locale selection or app shell: Workspace
@@ -10324,7 +10324,7 @@ abstract class AppLocalizations {
   /// Locale selection or app shell: WorkspaceHint
   ///
   /// In en, this message translates to:
-  /// **'Recent sessions and the active project'**
+  /// **'Recent conversations and the active project'**
   String get e7LocaleUiWorkspaceHint;
 
   /// Locale selection or app shell: Files
@@ -10378,7 +10378,7 @@ abstract class AppLocalizations {
   /// Locale selection or app shell: RefreshSessions
   ///
   /// In en, this message translates to:
-  /// **'Refresh sessions'**
+  /// **'Refresh conversations'**
   String get e7LocaleUiRefreshSessions;
 
   /// Locale selection or app shell: Diagnostics
@@ -10438,7 +10438,7 @@ abstract class AppLocalizations {
   /// App shell command menu or routing: RecentModel
   ///
   /// In en, this message translates to:
-  /// **'Next / previous recent model in this chat'**
+  /// **'Next / previous recent model in this conversation'**
   String get e7LocaleUiRecentModel;
 
   /// App shell command menu or routing: ThisList
@@ -10456,7 +10456,7 @@ abstract class AppLocalizations {
   /// App shell command menu or routing: ContextActions
   ///
   /// In en, this message translates to:
-  /// **'Message, file, and session actions'**
+  /// **'Message, file, and conversation actions'**
   String get e7LocaleUiContextActions;
 
   /// App shell command menu or routing: TypeCommand
@@ -10480,13 +10480,13 @@ abstract class AppLocalizations {
   /// App shell command menu or routing: ShareScopeChanged
   ///
   /// In en, this message translates to:
-  /// **'Shared session scope changed'**
+  /// **'Shared conversation scope changed'**
   String get e7LocaleUiShareScopeChanged;
 
   /// App shell command menu or routing: ConnectionChanged
   ///
   /// In en, this message translates to:
-  /// **'The connection changed.'**
+  /// **'The server changed.'**
   String get e7LocaleUiConnectionChanged;
 
   /// Settings and appearance user interface.
@@ -10528,13 +10528,13 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Use the bright editorial workspace'**
+  /// **'Use the bright editorial theme'**
   String get e7AppearanceLightDescription;
 
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Use the focused low-light workspace'**
+  /// **'Use the focused low-light theme'**
   String get e7AppearanceDarkDescription;
 
   /// Settings and appearance user interface.
@@ -10960,7 +10960,7 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Manage server profiles'**
+  /// **'Manage servers'**
   String get e7SettingsUi63;
 
   /// Settings and appearance user interface.
@@ -11243,13 +11243,13 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Deletes composer text saved for {count} sessions'**
+  /// **'Deletes composer text saved for {count} conversations'**
   String e7SettingsDraftDeleteSummary(int count);
 
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'This deletes the composer text saved for {count} sessions. Nothing on the server is affected.'**
+  /// **'This deletes the composer text saved for {count} conversations. Nothing on the server is affected.'**
   String e7SettingsDraftDeleteBody(int count);
 
   /// Settings and appearance user interface.
@@ -11357,7 +11357,7 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Handled app errors are redacted and kept only in memory. Chat messages and file contents are not collected. Nothing is sent automatically.'**
+  /// **'Handled app errors are redacted and kept only in memory. Your messages and file contents are not collected. Nothing is sent automatically.'**
   String get e7SettingsDetailUi8;
 
   /// Settings and appearance user interface.
@@ -11525,7 +11525,7 @@ abstract class AppLocalizations {
   /// Project management unavailable explanation
   ///
   /// In en, this message translates to:
-  /// **'This connection keeps the configured folder for sessions. Open a new task from Workspace to continue.'**
+  /// **'This server keeps the configured folder for conversations. Start a new conversation from Workspace to continue.'**
   String get e7ProjectProjectSwitchUnavailableDetail;
 
   /// Project browser title
@@ -11573,7 +11573,7 @@ abstract class AppLocalizations {
   /// Empty project catalog guidance
   ///
   /// In en, this message translates to:
-  /// **'Projects opened by this server appear here; choose one for sessions, files, terminals, and coding tools. Create a new folder or open one by its path above, or open a project on this OpenCode server and refresh.'**
+  /// **'Projects opened by this server appear here; choose one for conversations, files, terminals, and coding tools. Create a new folder or open one by its path above, or open a project on this OpenCode server and refresh.'**
   String get e7ProjectProjectsEmptyDetail;
 
   /// No project search results heading
@@ -11663,13 +11663,13 @@ abstract class AppLocalizations {
   /// Attention cached observation scope and freshness disclosure
   ///
   /// In en, this message translates to:
-  /// **'Source: selected connection’s local cache. Scope: currently loaded location and sessions. Last refreshed: unknown.'**
+  /// **'Source: selected server’s local cache. Scope: currently loaded project and conversations. Last refreshed: unknown.'**
   String get e7ProjectAttentionCacheSource;
 
   /// Attention inactive profile scope and unknown state disclosure
   ///
   /// In en, this message translates to:
-  /// **'Source: saved profile only. Attention status: unknown. Last checked: unknown.'**
+  /// **'Source: saved server only. Attention status: unknown. Last checked: unknown.'**
   String get e7ProjectAttentionProfileSource;
 
   /// Unknown pending attention count
@@ -11687,25 +11687,25 @@ abstract class AppLocalizations {
   /// Unknown active session count
   ///
   /// In en, this message translates to:
-  /// **'Running sessions: unknown'**
+  /// **'Running conversations: unknown'**
   String get e7ProjectAttentionRunningUnknown;
 
   /// Positive cached active or retrying session count
   ///
   /// In en, this message translates to:
-  /// **'Last-known running or retrying sessions: {count}'**
+  /// **'Last-known running or retrying conversations: {count}'**
   String e7ProjectAttentionRunningKnown(int count);
 
   /// Unknown unread count
   ///
   /// In en, this message translates to:
-  /// **'Unread sessions: unknown'**
+  /// **'Unread conversations: unknown'**
   String get e7ProjectAttentionUnreadUnknown;
 
   /// Positive cached unread session count
   ///
   /// In en, this message translates to:
-  /// **'Last-known unread sessions: {count}'**
+  /// **'Last-known unread conversations: {count}'**
   String e7ProjectAttentionUnreadKnown(int count);
 
   /// Open selected server attention action
@@ -11723,7 +11723,7 @@ abstract class AppLocalizations {
   /// Unsupported connection background attention explanation
   ///
   /// In en, this message translates to:
-  /// **'Background attention is unavailable for this connection. Open the conversation to review current requests.'**
+  /// **'Background attention is unavailable for this server. Open the conversation to review current requests.'**
   String get e7ProjectMonitorUnsupported;
 
   /// Reader, Files and review user interface.
@@ -11759,13 +11759,13 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Review comment added. Return to the chat to continue.'**
+  /// **'Review comment added. Return to the conversation to continue.'**
   String get readerUiCommentAdded;
 
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Review comment copied. Paste it into a chat.'**
+  /// **'Review comment copied. Paste it into a conversation.'**
   String get readerUiCommentCopied;
 
   /// Reader, Files and review user interface.
@@ -11867,7 +11867,7 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Search workspace symbols'**
+  /// **'Search project symbols'**
   String get readerUiWorkspaceSymbols;
 
   /// Reader, Files and review user interface.
@@ -11885,7 +11885,7 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Try a different name. Some language services do not support workspace-wide symbol search.'**
+  /// **'Try a different name. Some language services do not support project-wide symbol search.'**
   String get readerUiSymbolsUnavailable;
 
   /// Reader, Files and review user interface.
@@ -11951,7 +11951,7 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Changes attributed to this OpenCode session'**
+  /// **'Changes attributed to this OpenCode conversation'**
   String get readerUiSessionScopeHint;
 
   /// Reader, Files and review user interface.
@@ -12089,7 +12089,7 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode has not changed any files in this session.'**
+  /// **'OpenCode has not changed any files in this conversation.'**
   String get readerUiNoChangesHint;
 
   /// Reader, Files and review user interface.
@@ -12239,7 +12239,7 @@ abstract class AppLocalizations {
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
   /// In en, this message translates to:
-  /// **'{name} attached. Return to the chat to add your comment.'**
+  /// **'{name} attached. Return to the conversation to add your comment.'**
   String readerUiAttachedReturn(String name);
 
   /// Reader display, status or accessible label. Technical placeholders remain original.
@@ -12509,7 +12509,7 @@ abstract class AppLocalizations {
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
   /// In en, this message translates to:
-  /// **'Session'**
+  /// **'Conversation'**
   String get readerUiSession;
 
   /// Reader display, status or accessible label. Technical placeholders remain original.
@@ -12658,37 +12658,37 @@ abstract class AppLocalizations {
   /// Workspace and activity: Active sessions
   ///
   /// In en, this message translates to:
-  /// **'Active sessions'**
+  /// **'Active conversations'**
   String get e7WorkspaceActiveSessions;
 
   /// Workspace and activity: Recent sessions
   ///
   /// In en, this message translates to:
-  /// **'Recent sessions'**
+  /// **'Recent conversations'**
   String get e7WorkspaceRecentSessions;
 
   /// Workspace and activity: No recent sessions
   ///
   /// In en, this message translates to:
-  /// **'No recent sessions'**
+  /// **'No recent conversations'**
   String get e7WorkspaceNoRecent;
 
   /// Workspace and activity: Choose a project folder to start a session.
   ///
   /// In en, this message translates to:
-  /// **'Choose a project folder to start a session.'**
+  /// **'Choose a project folder to start a conversation.'**
   String get e7WorkspaceChooseFolderToStart;
 
   /// Workspace and activity: Start a session in the selected workspace.
   ///
   /// In en, this message translates to:
-  /// **'Start a session in the selected workspace.'**
+  /// **'Start a conversation in the selected project.'**
   String get e7WorkspaceStartInWorkspace;
 
   /// Workspace and activity: Archived sessions
   ///
   /// In en, this message translates to:
-  /// **'Archived sessions'**
+  /// **'Archived conversations'**
   String get e7WorkspaceArchivedSessions;
 
   /// Workspace and activity: No project selected
@@ -12730,7 +12730,7 @@ abstract class AppLocalizations {
   /// Workspace and activity: Session is no longer shared
   ///
   /// In en, this message translates to:
-  /// **'Session is no longer shared'**
+  /// **'Conversation is no longer shared'**
   String get e7WorkspaceUnshared;
 
   /// Workspace and activity: OpenCode is reconnecting. Try again shortly.
@@ -12742,7 +12742,7 @@ abstract class AppLocalizations {
   /// Workspace and activity: Rename session
   ///
   /// In en, this message translates to:
-  /// **'Rename session'**
+  /// **'Rename conversation'**
   String get e7WorkspaceRenameSession;
 
   /// Workspace and activity: Title
@@ -12754,19 +12754,19 @@ abstract class AppLocalizations {
   /// Workspace and activity: Archive session?
   ///
   /// In en, this message translates to:
-  /// **'Archive session?'**
+  /// **'Archive conversation?'**
   String get e7WorkspaceArchiveConfirm;
 
   /// Workspace and activity: Share this session?
   ///
   /// In en, this message translates to:
-  /// **'Share this session?'**
+  /// **'Share this conversation?'**
   String get e7WorkspaceShareConfirm;
 
   /// Workspace and activity: Delete session?
   ///
   /// In en, this message translates to:
-  /// **'Delete session?'**
+  /// **'Delete conversation?'**
   String get e7WorkspaceDeleteConfirm;
 
   /// Workspace and activity: Archive
@@ -12778,13 +12778,13 @@ abstract class AppLocalizations {
   /// Workspace and activity: Share session
   ///
   /// In en, this message translates to:
-  /// **'Share session'**
+  /// **'Share conversation'**
   String get e7WorkspaceShareSession;
 
   /// Workspace and activity: Archived session actions
   ///
   /// In en, this message translates to:
-  /// **'Archived session actions'**
+  /// **'Archived conversation actions'**
   String get e7WorkspaceArchivedActions;
 
   /// Workspace and activity: Rename
@@ -12934,67 +12934,67 @@ abstract class AppLocalizations {
   /// Workspace and activity: Session reference unavailable. Refresh and try again.
   ///
   /// In en, this message translates to:
-  /// **'Session reference unavailable. Refresh and try again.'**
+  /// **'Conversation reference unavailable. Refresh and try again.'**
   String get e7WorkspaceReferenceRetry;
 
   /// Workspace and activity: Session location unavailable. Refresh and try again.
   ///
   /// In en, this message translates to:
-  /// **'Session location unavailable. Refresh and try again.'**
+  /// **'The conversation’s project is unavailable. Refresh and try again.'**
   String get e7WorkspaceLocationRetry;
 
   /// Workspace and activity: Session location changed. Return and try again.
   ///
   /// In en, this message translates to:
-  /// **'Session location changed. Return and try again.'**
+  /// **'The conversation’s project changed. Return and try again.'**
   String get e7WorkspaceLocationChangedReturn;
 
   /// Workspace and activity: Session location changed. Refresh and try again.
   ///
   /// In en, this message translates to:
-  /// **'Session location changed. Refresh and try again.'**
+  /// **'The conversation’s project changed. Refresh and try again.'**
   String get e7WorkspaceLocationChangedRetry;
 
   /// Workspace and activity: Session reference unavailable.
   ///
   /// In en, this message translates to:
-  /// **'Session reference unavailable.'**
+  /// **'Conversation reference unavailable.'**
   String get e7WorkspaceReferenceUnavailable;
 
   /// Workspace and activity: Session pagination could not advance. Refresh the list to continue.
   ///
   /// In en, this message translates to:
-  /// **'Session pagination could not advance. Refresh the list to continue.'**
+  /// **'Conversation pagination could not advance. Refresh the list to continue.'**
   String get e7WorkspacePaginationStuck;
 
   /// Workspace and activity: Continue this session here?
   ///
   /// In en, this message translates to:
-  /// **'Continue this session here?'**
+  /// **'Continue this conversation here?'**
   String get e7WorkspaceContinueHereConfirm;
 
   /// Workspace and activity: Could not create a session: {error}
   ///
   /// In en, this message translates to:
-  /// **'Could not create a session: {error}'**
+  /// **'Could not create a conversation: {error}'**
   String e7WorkspaceCreateFailed(String error);
 
   /// Workspace and activity: The server returned no projects. Search all sessions to find previous conversations.
   ///
   /// In en, this message translates to:
-  /// **'The server returned no projects. Search all sessions to find previous conversations.'**
+  /// **'The server returned no projects. Search all conversations to find previous work.'**
   String get e7WorkspaceNoProjectsSearch;
 
   /// Workspace and activity: Active session directory · {directory}
   ///
   /// In en, this message translates to:
-  /// **'Active session directory · {directory}'**
+  /// **'Active conversation’s project · {directory}'**
   String e7WorkspaceActiveDirectory(String directory);
 
   /// Workspace and activity: {count, plural, one {1 archived session} other {{count} archived sessions}}
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one {1 archived session} other {{count} archived sessions}}'**
+  /// **'{count, plural, one {1 archived conversation} other {{count} archived conversations}}'**
   String e7WorkspaceArchivedCount(int count);
 
   /// Workspace and activity: {count, plural, one {1 open on this server} other {{count} open on this server}}
@@ -13012,7 +13012,7 @@ abstract class AppLocalizations {
   /// Workspace and activity: “{title}” will be hidden from recent sessions.
   ///
   /// In en, this message translates to:
-  /// **'“{title}” will be hidden from recent sessions.'**
+  /// **'“{title}” will be hidden from recent conversations.'**
   String e7WorkspaceArchiveDetail(String title);
 
   /// Workspace and activity: “{title}” and its history will be permanently removed.
@@ -13072,19 +13072,19 @@ abstract class AppLocalizations {
   /// Workspace and activity: Session {id}
   ///
   /// In en, this message translates to:
-  /// **'Session {id}'**
+  /// **'Conversation {id}'**
   String e7WorkspaceSessionId(String id);
 
   /// Workspace and activity: “{title}” will belong to your current workspace through the server’s sync system. It stops belonging to the workspace it runs in now.
   ///
   /// In en, this message translates to:
-  /// **'“{title}” will belong to your current workspace through the server’s sync system. It stops belonging to the workspace it runs in now.'**
+  /// **'“{title}” will belong to your current project through the server’s sync system. It stops belonging to the project it runs in now.'**
   String e7WorkspaceContinueHereDetail(String title);
 
   /// Workspace and activity: “{title}” now belongs to this workspace
   ///
   /// In en, this message translates to:
-  /// **'“{title}” now belongs to this workspace'**
+  /// **'“{title}” now belongs to this project'**
   String e7WorkspaceMovedHere(String title);
 
   /// Workspace and activity: Open {title}. {detail}
@@ -13096,7 +13096,7 @@ abstract class AppLocalizations {
   /// Workspace and activity: Loading sessions…
   ///
   /// In en, this message translates to:
-  /// **'Loading sessions…'**
+  /// **'Loading conversations…'**
   String get e7WorkspaceLoadingSessions;
 
   /// Workspace and activity: Older conversations may still be available below.
@@ -13108,7 +13108,7 @@ abstract class AppLocalizations {
   /// Workspace and activity: Search session titles across every project on this server
   ///
   /// In en, this message translates to:
-  /// **'Search session titles across every project on this server'**
+  /// **'Search conversation titles across every project on this server'**
   String get e7WorkspaceSearchServer;
 
   /// Workspace and activity: Unknown project
@@ -13162,19 +13162,19 @@ abstract class AppLocalizations {
   /// Distinguishes phone-side folder filtering of loaded results from server-wide title search.
   ///
   /// In en, this message translates to:
-  /// **'{count} shown from {total} loaded sessions'**
+  /// **'{count} shown from {total} loaded conversations'**
   String e7WorkspaceFilteredLoaded(int count, int total);
 
   /// Distinguishes phone-side folder filtering of loaded results from server-wide title search.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one {1 loaded session} other {{count} loaded sessions}} · {folders, plural, one {1 folder} other {{folders} folders}}'**
+  /// **'{count, plural, one {1 loaded conversation} other {{count} loaded conversations}} · {folders, plural, one {1 project} other {{folders} projects}}'**
   String e7WorkspaceLoadedSummary(int count, int folders);
 
   /// Distinguishes phone-side folder filtering of loaded results from server-wide title search.
   ///
   /// In en, this message translates to:
-  /// **'Loaded folders'**
+  /// **'Loaded projects'**
   String get e7WorkspaceLoadedFolders;
 
   /// Chat journey:  under a message for actions
@@ -13288,7 +13288,7 @@ abstract class AppLocalizations {
   /// Chat journey: Anyone with the link can view this session’s conversation and shared context. Do not share sessions containing secrets, credentials, or private files.
   ///
   /// In en, this message translates to:
-  /// **'Anyone with the link can view this session’s conversation and shared context. Do not share sessions containing secrets, credentials, or private files.'**
+  /// **'Anyone with the link can view this conversation and its shared context. Do not share conversations containing secrets, credentials, or private files.'**
   String get chatUiAnyoneWithTheLinkCanViewThis;
 
   /// Chat journey: App diagnostics
@@ -13396,13 +13396,13 @@ abstract class AppLocalizations {
   /// Chat journey: Change the title shown in the session list
   ///
   /// In en, this message translates to:
-  /// **'Change the title shown in the session list'**
+  /// **'Change the title shown in the conversation list'**
   String get chatUiChangeTheTitleShownInTheSession;
 
   /// Chat journey: Change this session’s experimental workspace
   ///
   /// In en, this message translates to:
-  /// **'Change this session’s experimental workspace'**
+  /// **'Change this conversation’s experimental cloud environment'**
   String get chatUiChangeThisSessionSExperimentalWorkspace;
 
   /// Chat journey: Changed file
@@ -13420,13 +13420,13 @@ abstract class AppLocalizations {
   /// Chat journey: Choose a prompt and continue it in a new session
   ///
   /// In en, this message translates to:
-  /// **'Choose a prompt and continue it in a new session'**
+  /// **'Choose a prompt and continue it in a new conversation'**
   String get chatUiChooseAPromptAndContinueItIn;
 
   /// Chat journey: Choose a prompt to restore it in a new session.
   ///
   /// In en, this message translates to:
-  /// **'Choose a prompt to restore it in a new session.'**
+  /// **'Choose a prompt to restore it in a new conversation.'**
   String get chatUiChooseAPromptToRestoreItIn;
 
   /// Chat journey: Choose a server model by provider and capability
@@ -13510,7 +13510,7 @@ abstract class AppLocalizations {
   /// Chat journey: Compact session
   ///
   /// In en, this message translates to:
-  /// **'Compact session'**
+  /// **'Compact conversation'**
   String get chatUiCompactSession;
 
   /// Chat journey: Compacting conversation…
@@ -13630,13 +13630,13 @@ abstract class AppLocalizations {
   /// Chat journey: Create or copy a public session link
   ///
   /// In en, this message translates to:
-  /// **'Create or copy a public session link'**
+  /// **'Create or copy a public conversation link'**
   String get chatUiCreateOrCopyAPublicSessionLink;
 
   /// Chat journey: Current session
   ///
   /// In en, this message translates to:
-  /// **'Current session'**
+  /// **'Current conversation'**
   String get chatUiCurrentSession;
 
   /// Chat journey: Delegate
@@ -13660,7 +13660,7 @@ abstract class AppLocalizations {
   /// Chat journey: Delegated session
   ///
   /// In en, this message translates to:
-  /// **'Delegated session'**
+  /// **'Delegated conversation'**
   String get chatUiDelegatedSession;
 
   /// Chat journey: Delete message
@@ -13696,7 +13696,7 @@ abstract class AppLocalizations {
   /// Chat journey: Disable the current public session link
   ///
   /// In en, this message translates to:
-  /// **'Disable the current public session link'**
+  /// **'Disable the current public conversation link'**
   String get chatUiDisableTheCurrentPublicSessionLink;
 
   /// Chat journey: Discard
@@ -13756,7 +13756,7 @@ abstract class AppLocalizations {
   /// Chat journey: Empty session was kept because OpenCode could not verify or remove it.
   ///
   /// In en, this message translates to:
-  /// **'Empty session was kept because OpenCode could not verify or remove it.'**
+  /// **'Empty conversation was kept because OpenCode could not verify or remove it.'**
   String get chatUiEmptySessionWasKeptBecauseOpenCodeCould;
 
   /// Chat journey: Error details
@@ -13804,7 +13804,7 @@ abstract class AppLocalizations {
   /// Chat journey: Export session transcript
   ///
   /// In en, this message translates to:
-  /// **'Export session transcript'**
+  /// **'Export conversation transcript'**
   String get chatUiExportSessionTranscript;
 
   /// Chat journey: Export transcript
@@ -13870,7 +13870,7 @@ abstract class AppLocalizations {
   /// Chat journey: Find sessions across every OpenCode project
   ///
   /// In en, this message translates to:
-  /// **'Find sessions across every OpenCode project'**
+  /// **'Find conversations across every OpenCode project'**
   String get chatUiFindSessionsAcrossEveryOpenCodeProject;
 
   /// Chat journey: Follow Android or choose the native light or dark theme
@@ -13894,7 +13894,7 @@ abstract class AppLocalizations {
   /// Chat journey: Fork session
   ///
   /// In en, this message translates to:
-  /// **'Fork session'**
+  /// **'Fork conversation'**
   String get chatUiForkSession;
 
   /// Chat journey: From tool call
@@ -14122,13 +14122,13 @@ abstract class AppLocalizations {
   /// Chat journey: Move session
   ///
   /// In en, this message translates to:
-  /// **'Move session'**
+  /// **'Move conversation'**
   String get chatUiMoveSession;
 
   /// Chat journey: Move this session to another project directory
   ///
   /// In en, this message translates to:
-  /// **'Move this session to another project directory'**
+  /// **'Move this conversation to another project'**
   String get chatUiMoveThisSessionToAnotherProjectDirectory;
 
   /// Chat journey: Moved
@@ -14176,7 +14176,7 @@ abstract class AppLocalizations {
   /// Chat journey: No todos in this session
   ///
   /// In en, this message translates to:
-  /// **'No todos in this session'**
+  /// **'No todos in this conversation'**
   String get chatUiNoTodosInThisSession;
 
   /// Chat journey: Not connected to the server right now.
@@ -14200,13 +14200,13 @@ abstract class AppLocalizations {
   /// Chat journey: Open parent session
   ///
   /// In en, this message translates to:
-  /// **'Open parent session'**
+  /// **'Open parent conversation'**
   String get chatUiOpenParentSession;
 
   /// Chat journey: Open persistent workspace terminals
   ///
   /// In en, this message translates to:
-  /// **'Open persistent workspace terminals'**
+  /// **'Open persistent project terminals'**
   String get chatUiOpenPersistentWorkspaceTerminals;
 
   /// Chat journey: Open providers
@@ -14218,7 +14218,7 @@ abstract class AppLocalizations {
   /// Chat journey: Open subagent session
   ///
   /// In en, this message translates to:
-  /// **'Open subagent session'**
+  /// **'Open subagent conversation'**
   String get chatUiOpenSubagentSession;
 
   /// Chat journey: OpenCode commands are unavailable offline.
@@ -14314,7 +14314,7 @@ abstract class AppLocalizations {
   /// Chat journey: Projects and workspaces
   ///
   /// In en, this message translates to:
-  /// **'Projects and workspaces'**
+  /// **'Projects and worktrees'**
   String get chatUiProjectsAndWorkspaces;
 
   /// Chat journey: Prompt editor
@@ -14434,7 +14434,7 @@ abstract class AppLocalizations {
   /// Chat journey: Rename session
   ///
   /// In en, this message translates to:
-  /// **'Rename session'**
+  /// **'Rename conversation'**
   String get chatUiRenameSession;
 
   /// Chat journey: Restore messages
@@ -14452,7 +14452,7 @@ abstract class AppLocalizations {
   /// Chat journey: Restore the currently reverted session state
   ///
   /// In en, this message translates to:
-  /// **'Restore the currently reverted session state'**
+  /// **'Restore the currently reverted conversation state'**
   String get chatUiRestoreTheCurrentlyRevertedSessionState;
 
   /// Chat journey: Result
@@ -14512,7 +14512,7 @@ abstract class AppLocalizations {
   /// Chat journey: Review the actual diff for this session
   ///
   /// In en, this message translates to:
-  /// **'Review the actual diff for this session'**
+  /// **'Review the actual diff for this conversation'**
   String get chatUiReviewTheActualDiffForThisSession;
 
   /// Chat journey: Roll back messages and file changes after the prompt
@@ -14578,7 +14578,7 @@ abstract class AppLocalizations {
   /// Chat journey: Select a model before compacting this session.
   ///
   /// In en, this message translates to:
-  /// **'Select a model before compacting this session.'**
+  /// **'Select a model before compacting this conversation.'**
   String get chatUiSelectAModelBeforeCompactingThisSession;
 
   /// Chat journey: Send
@@ -14662,31 +14662,31 @@ abstract class AppLocalizations {
   /// Chat journey: Session changes
   ///
   /// In en, this message translates to:
-  /// **'Session changes'**
+  /// **'Conversation changes'**
   String get chatUiSessionChanges;
 
   /// Chat journey: Session context
   ///
   /// In en, this message translates to:
-  /// **'Session context'**
+  /// **'Conversation context'**
   String get chatUiSessionContext;
 
   /// Chat journey: Session is no longer shared
   ///
   /// In en, this message translates to:
-  /// **'Session is no longer shared'**
+  /// **'Conversation is no longer shared'**
   String get chatUiSessionIsNoLongerShared;
 
   /// Chat journey: Session menu
   ///
   /// In en, this message translates to:
-  /// **'Session menu'**
+  /// **'Conversation menu'**
   String get chatUiSessionMenu;
 
   /// Chat journey: Session shared. Copy the visible link manually.
   ///
   /// In en, this message translates to:
-  /// **'Session shared. Copy the visible link manually.'**
+  /// **'Conversation shared. Copy the visible link manually.'**
   String get chatUiSessionSharedCopyTheVisibleLinkManually;
 
   /// Chat journey: Share link copied
@@ -14698,13 +14698,13 @@ abstract class AppLocalizations {
   /// Chat journey: Share session
   ///
   /// In en, this message translates to:
-  /// **'Share session'**
+  /// **'Share conversation'**
   String get chatUiShareSession;
 
   /// Chat journey: Share this session?
   ///
   /// In en, this message translates to:
-  /// **'Share this session?'**
+  /// **'Share this conversation?'**
   String get chatUiShareThisSession;
 
   /// Chat journey: Shared: anyone with the link can view
@@ -14722,7 +14722,7 @@ abstract class AppLocalizations {
   /// Chat journey: Show all subagent sessions
   ///
   /// In en, this message translates to:
-  /// **'Show all subagent sessions'**
+  /// **'Show all subagent conversations'**
   String get chatUiShowAllSubagentSessions;
 
   /// Chat journey: Show all subagents
@@ -14770,13 +14770,13 @@ abstract class AppLocalizations {
   /// Chat journey: Start a clean session in this workspace
   ///
   /// In en, this message translates to:
-  /// **'Start a clean session in this workspace'**
+  /// **'Start a clean conversation in this project'**
   String get chatUiStartACleanSessionInThisWorkspace;
 
   /// Chat journey: Start a new session with this prompt in the composer
   ///
   /// In en, this message translates to:
-  /// **'Start a new session with this prompt in the composer'**
+  /// **'Start a new conversation with this prompt in the composer'**
   String get chatUiStartANewSessionWithThisPrompt;
 
   /// Chat journey: Start coding
@@ -14830,7 +14830,7 @@ abstract class AppLocalizations {
   /// Chat journey: Summarize the session using the selected model
   ///
   /// In en, this message translates to:
-  /// **'Summarize the session using the selected model'**
+  /// **'Summarize the conversation using the selected model'**
   String get chatUiSummarizeTheSessionUsingTheSelectedModel;
 
   /// Chat journey: Switch organization
@@ -14860,7 +14860,7 @@ abstract class AppLocalizations {
   /// Chat journey: That message is no longer in this session.
   ///
   /// In en, this message translates to:
-  /// **'That message is no longer in this session.'**
+  /// **'That message is no longer in this conversation.'**
   String get chatUiThatMessageIsNoLongerInThis;
 
   /// Chat journey: The file has no content to attach.
@@ -15106,7 +15106,7 @@ abstract class AppLocalizations {
   /// Chat journey: in this chat
   ///
   /// In en, this message translates to:
-  /// **'in this chat'**
+  /// **'in this conversation'**
   String get chatUiInThisChat;
 
   /// Chat journey: includes steps not run
@@ -15172,7 +15172,7 @@ abstract class AppLocalizations {
   /// Chat journey: Next turns in this session use {model}.
   ///
   /// In en, this message translates to:
-  /// **'Next turns in this session use {model}.'**
+  /// **'Next turns in this conversation use {model}.'**
   String chatUiNextTurnsModel(Object model);
 
   /// Chat journey: @{name} is already in the prompt
@@ -15370,7 +15370,7 @@ abstract class AppLocalizations {
   /// Chat journey: Shared session link {url}
   ///
   /// In en, this message translates to:
-  /// **'Shared session link {url}'**
+  /// **'Shared conversation link {url}'**
   String chatUiSharedLink(Object url);
 
   /// Chat journey: {count, plural, one{1 attachment} other{{count} attachments}}
@@ -15598,7 +15598,7 @@ abstract class AppLocalizations {
   /// Chat journey: Session actions
   ///
   /// In en, this message translates to:
-  /// **'Session actions'**
+  /// **'Conversation actions'**
   String get chatUiSessionActions;
 
   /// Chat journey: Results
@@ -15616,7 +15616,7 @@ abstract class AppLocalizations {
   /// Chat journey: Main session
   ///
   /// In en, this message translates to:
-  /// **'Main session'**
+  /// **'Main conversation'**
   String get chatUiMainSession;
 
   /// Chat journey: To do
@@ -15664,7 +15664,7 @@ abstract class AppLocalizations {
   /// Chat journey: Open subagent session
   ///
   /// In en, this message translates to:
-  /// **'Open subagent session'**
+  /// **'Open subagent conversation'**
   String get chatUiResultOpenChild;
 
   /// Chat journey: The server returned no result text.
@@ -15748,7 +15748,7 @@ abstract class AppLocalizations {
   /// Chat journey: OpenCode session
   ///
   /// In en, this message translates to:
-  /// **'OpenCode session'**
+  /// **'OpenCode conversation'**
   String get chatUiOpenCodeSession;
 
   /// Chat journey: Tool
@@ -16168,7 +16168,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: OpenCode tools depend on the provider and model used by the active chat.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode tools depend on the provider and model used by the active chat.'**
+  /// **'OpenCode tools depend on the provider and model used by the active conversation.'**
   String get e7LibraryOpenCodeToolsDependOnTheProviderAnd;
 
   /// Library and project tools UI: Choose model
@@ -16357,7 +16357,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: Managed workspaces
   ///
   /// In en, this message translates to:
-  /// **'Managed workspaces'**
+  /// **'Cloud environments'**
   String get e7LibraryManagedWorkspaces;
 
   /// Library and project tools UI: Create, discover, open, and remove adapter-backed environments
@@ -16387,19 +16387,19 @@ abstract class AppLocalizations {
   /// Library and project tools UI: Workspace discovery finished
   ///
   /// In en, this message translates to:
-  /// **'Workspace discovery finished'**
+  /// **'Environment discovery finished'**
   String get e7LibraryWorkspaceDiscoveryFinished;
 
   /// Library and project tools UI: Could not discover workspaces: {detail1}
   ///
   /// In en, this message translates to:
-  /// **'Could not discover workspaces: {detail1}'**
+  /// **'Could not discover environments: {detail1}'**
   String e7LibraryCouldNotDiscoverWorkspaces(String detail1);
 
   /// Library and project tools UI: Could not create workspace: {detail1}
   ///
   /// In en, this message translates to:
-  /// **'Could not create workspace: {detail1}'**
+  /// **'Could not create environment: {detail1}'**
   String e7LibraryCouldNotCreateWorkspace(String detail1);
 
   /// Library and project tools UI: {detail1} was removed
@@ -16411,7 +16411,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: Could not remove workspace: {detail1}
   ///
   /// In en, this message translates to:
-  /// **'Could not delete workspace: {detail1}'**
+  /// **'Could not delete environment: {detail1}'**
   String e7LibraryCouldNotRemoveWorkspace(String detail1);
 
   /// Library and project tools UI: Cloud environments
@@ -16489,13 +16489,13 @@ abstract class AppLocalizations {
   /// Library and project tools UI: No workspace adapters
   ///
   /// In en, this message translates to:
-  /// **'No workspace adapters'**
+  /// **'No environment adapters'**
   String get e7LibraryNoWorkspaceAdapters;
 
   /// Library and project tools UI: This OpenCode project does not expose managed workspace creation.
   ///
   /// In en, this message translates to:
-  /// **'This OpenCode project does not expose managed workspace creation.'**
+  /// **'This OpenCode project does not expose cloud environment creation.'**
   String get e7LibraryThisOpenCodeProjectDoesNotExposeManaged;
 
   /// Library and project tools UI: Adapter refresh failed
@@ -16537,7 +16537,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: New managed workspace
   ///
   /// In en, this message translates to:
-  /// **'New managed workspace'**
+  /// **'New cloud environment'**
   String get e7LibraryNewManagedWorkspace;
 
   /// Library and project tools UI: Adapter
@@ -16561,7 +16561,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: OpenCode configures adapter-specific details on the server. The new workspace opens here after it is ready.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode configures adapter-specific details on the server. The new workspace opens here after it is ready.'**
+  /// **'OpenCode configures adapter-specific details on the server. The new environment opens here after it is ready.'**
   String get e7LibraryOpenCodeConfiguresAdapterSpecificDetailsOnThe;
 
   /// Library and project tools UI: Create and open
@@ -16579,7 +16579,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: The server adapter may permanently delete the remote environment or worktree. Existing chat history remains, but its workspace may no longer be reachable.
   ///
   /// In en, this message translates to:
-  /// **'The server adapter may permanently delete the remote environment or worktree. Existing chat history remains, but its workspace may no longer be reachable.'**
+  /// **'The server adapter may permanently delete the remote environment or worktree. Existing conversations remain in history, but the environment may no longer be reachable.'**
   String get e7LibraryTheServerAdapterMayPermanentlyDeleteThe;
 
   /// Library and project tools UI: Type {detail1} to confirm
@@ -16627,7 +16627,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: OpenCode did not switch locations.
   ///
   /// In en, this message translates to:
-  /// **'OpenCode did not switch locations.'**
+  /// **'OpenCode did not switch projects.'**
   String get e7LibraryOpenCodeDidNotSwitchLocations;
 
   /// Library and project tools UI: Could not verify {detail1} before this destructive action: {detail2}
@@ -16756,7 +16756,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: The worktree directory and its Git branch will be permanently deleted. Existing chats remain in history, but their working directory will no longer exist.
   ///
   /// In en, this message translates to:
-  /// **'The worktree directory and its Git branch will be permanently deleted. Existing chats remain in history, but their working directory will no longer exist.'**
+  /// **'The worktree directory and its Git branch will be permanently deleted. Existing conversations remain in history, but their working directory will no longer exist.'**
   String get e7LibraryTheWorktreeDirectoryAndItsGitBranch;
 
   /// Library and project tools UI: Initialize Git repository?
@@ -16918,7 +16918,7 @@ abstract class AppLocalizations {
   /// Library and project tools UI: Location changed.
   ///
   /// In en, this message translates to:
-  /// **'Location changed.'**
+  /// **'Project changed.'**
   String get e7LibraryLocationChanged;
 
   /// Library and project tools UI: Authenticate from the server machine
@@ -17568,7 +17568,7 @@ abstract class AppLocalizations {
   /// Search aliases for the model destination; preserve English terms to allow either language.
   ///
   /// In en, this message translates to:
-  /// **'AI reasoning favorites recent'**
+  /// **'AI reasoning favorites recent conversation session chat'**
   String get e7LibrarySearchModelAliases;
 
   /// Search aliases for the provider destination; preserve English terms to allow either language.
@@ -17604,13 +17604,13 @@ abstract class AppLocalizations {
   /// Search aliases for the import destination; preserve English terms to allow either language.
   ///
   /// In en, this message translates to:
-  /// **'backup restore transfer JSON conversation'**
+  /// **'backup restore transfer JSON conversation session chat'**
   String get e7LibrarySearchImportAliases;
 
   /// Search aliases for the settings destination; preserve English terms to allow either language.
   ///
   /// In en, this message translates to:
-  /// **'appearance theme language notifications privacy voice background server'**
+  /// **'appearance theme language notifications privacy voice background server profile connection'**
   String get e7LibrarySearchSettingsAliases;
 
   /// Search aliases for the guide destination; preserve English terms to allow either language.
@@ -17658,7 +17658,7 @@ abstract class AppLocalizations {
   /// Setup journey: new terminal detail.
   ///
   /// In en, this message translates to:
-  /// **'Start a shell in the active workspace.'**
+  /// **'Start a shell in the active project.'**
   String get e7SetupNewTerminalDetail;
 
   /// Setup journey: show password.
@@ -17904,7 +17904,7 @@ abstract class AppLocalizations {
   /// Setup journey: unsaved profile.
   ///
   /// In en, this message translates to:
-  /// **'The server profile has not been saved.'**
+  /// **'The server has not been saved.'**
   String get e7SetupUnsavedProfile;
 
   /// Setup journey: checking install.
@@ -18834,7 +18834,7 @@ abstract class AppLocalizations {
   /// Setup journey: save failed.
   ///
   /// In en, this message translates to:
-  /// **'Could not save {name}. The existing profile was left unchanged. Check device storage and try again. ({detail})'**
+  /// **'Could not save {name}. The existing server was left unchanged. Check device storage and try again. ({detail})'**
   String e7SetupSaveFailed(String name, String detail);
 
   /// Setup journey: remove server.
@@ -18852,7 +18852,7 @@ abstract class AppLocalizations {
   /// Setup journey: remove failed.
   ///
   /// In en, this message translates to:
-  /// **'Could not remove {name}. The saved profile and current connection were kept. Check device storage and try again. ({detail})'**
+  /// **'Could not remove {name}. The saved server and current connection were kept. Check device storage and try again. ({detail})'**
   String e7SetupRemoveFailed(String name, String detail);
 
   /// Setup journey: paired choice.
@@ -18942,7 +18942,7 @@ abstract class AppLocalizations {
   /// Setup journey: delete disclosure.
   ///
   /// In en, this message translates to:
-  /// **'This deletes everything this device stored for the server: its password, selected model and agent, workspace choice, and any sessions shown in the home-screen widget.\n\n{queued, plural, =0{} =1{1 queued prompt will be deleted.} other{{queued} queued prompts will be deleted.}} {drafts, plural, =0{} =1{1 unsent draft will be deleted.} other{{drafts} unsent drafts will be deleted.}}\n\nNothing is deleted on the server itself or at your AI providers.'**
+  /// **'This deletes everything this device stored for the server: its password, selected model and agent, project choice, and any conversations shown in the home-screen widget.\n\n{queued, plural, =0{} =1{1 queued prompt will be deleted.} other{{queued} queued prompts will be deleted.}} {drafts, plural, =0{} =1{1 unsent draft will be deleted.} other{{drafts} unsent drafts will be deleted.}}\n\nNothing is deleted on the server itself or at your AI providers.'**
   String e7SetupDeleteDisclosure(int queued, int drafts);
 
   /// Setup journey: pairing failed.
@@ -19374,7 +19374,7 @@ abstract class AppLocalizations {
   /// Setup journey: credential mismatch.
   ///
   /// In en, this message translates to:
-  /// **'The saved profile credential differs from this runtime; restore its original saved credential before returning'**
+  /// **'The saved server credential differs from this runtime; restore its original saved credential before returning'**
   String get e7SetupCredentialMismatch;
 
   /// Setup journey: ubuntu unavailable.
@@ -19560,7 +19560,7 @@ abstract class AppLocalizations {
   /// Setup journey: OpeningWorkspace.
   ///
   /// In en, this message translates to:
-  /// **'Opening your saved workspace.'**
+  /// **'Opening your saved project.'**
   String get e7SetupOpeningWorkspace;
 
   /// Setup journey: WhatToCheck.
@@ -19926,13 +19926,13 @@ abstract class AppLocalizations {
   /// Shared voice or model selection UI: e7ModelUiUseSession
   ///
   /// In en, this message translates to:
-  /// **'Use for this session'**
+  /// **'Use for this conversation'**
   String get e7ModelUiUseSession;
 
   /// Shared voice or model selection UI: e7ModelUiUseNewSessions
   ///
   /// In en, this message translates to:
-  /// **'Use for new sessions'**
+  /// **'Use for new conversations'**
   String get e7ModelUiUseNewSessions;
 
   /// Shared voice or model selection UI: e7ModelUiTools
@@ -20597,7 +20597,7 @@ abstract class AppLocalizations {
   /// Title of the per-session approval settings sheet
   ///
   /// In en, this message translates to:
-  /// **'Approvals for this session'**
+  /// **'Approvals for this conversation'**
   String get approvalsUiTitle;
 
   /// Default approval choice: every permission request waits for the user
@@ -20633,7 +20633,7 @@ abstract class AppLocalizations {
   /// Explanation under the Subagents inherit switch while it is enabled
   ///
   /// In en, this message translates to:
-  /// **'Child sessions started by this one follow the same choice unless they have their own.'**
+  /// **'Subagent conversations started by this one follow the same choice unless they have their own.'**
   String get approvalsUiInheritDetail;
 
   /// Explanation under the disabled Subagents inherit switch while Ask each time is selected
@@ -20645,19 +20645,19 @@ abstract class AppLocalizations {
   /// Banner in the approvals sheet of a child session that follows its parent's choice
   ///
   /// In en, this message translates to:
-  /// **'Inherited from parent session'**
+  /// **'Inherited from parent conversation'**
   String get approvalsUiInheritedFrom;
 
   /// Explanation under the Inherited from parent session banner
   ///
   /// In en, this message translates to:
-  /// **'This session follows its parent’s approvals. Override it to choose for this session only.'**
+  /// **'This conversation follows its parent’s approvals. Override it to choose for this conversation only.'**
   String get approvalsUiInheritedDetail;
 
   /// Button that gives a child session its own approval choice instead of the parent's
   ///
   /// In en, this message translates to:
-  /// **'Override for this session'**
+  /// **'Override for this conversation'**
   String get approvalsUiOverride;
 
   /// Button that removes a child session's own approval choice so it follows its parent again
@@ -20669,7 +20669,7 @@ abstract class AppLocalizations {
   /// Footnote in the approvals sheet about server rules, disconnects, and defaults
   ///
   /// In en, this message translates to:
-  /// **'The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects. New sessions always ask.'**
+  /// **'The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects. New conversations always ask.'**
   String get approvalsUiServerRulesNote;
 
   /// Quiet in-chat indicator while automatic approval is on for this session
@@ -20717,7 +20717,7 @@ abstract class AppLocalizations {
   /// Heading of the list of permissions the app approved automatically in this session since connecting
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Nothing approved automatically on this connection yet} =1{1 request approved automatically on this connection} other{{count} requests approved automatically on this connection}}'**
+  /// **'{count, plural, =0{Nothing approved automatically on this server yet} =1{1 request approved automatically on this server} other{{count} requests approved automatically on this server}}'**
   String approvalsUiRecordTitle(int count);
 
   /// Session menu row and sheet title: resume this session in a terminal on the computer that runs the server
@@ -20729,13 +20729,13 @@ abstract class AppLocalizations {
   /// Sheet lead paragraph. {binary} is the CLI program name (opencode or opencode2); do not translate it.
   ///
   /// In en, this message translates to:
-  /// **'Run this in a terminal on the computer that runs this server. It opens the same session in the {binary} interface. Nothing is sent until you type.'**
+  /// **'Run this in a terminal on the computer that runs this server. It opens the same conversation in the {binary} interface. Nothing is sent until you type.'**
   String handoffUiComputerIntro(String binary);
 
   /// Sheet note explaining the cd prefix of the command
   ///
   /// In en, this message translates to:
-  /// **'Sessions belong to a project folder, so the command changes into this session’s folder first.'**
+  /// **'Conversations belong to a project folder, so the command changes into this conversation’s folder first.'**
   String get handoffUiComputerDirectoryNote;
 
   /// Sheet footnote naming the CLI versions the command syntax was checked against. {verified} is a version list; {binary} is the CLI program name. Keep --help and --session verbatim.
@@ -20747,31 +20747,31 @@ abstract class AppLocalizations {
   /// Sheet state when the session has no directory and no command can be built
   ///
   /// In en, this message translates to:
-  /// **'The server did not report a project folder for this session, so there is no folder to open it in. Reload the session and try again.'**
+  /// **'The server did not report a project folder for this conversation, so there is no folder to open it in. Reload the conversation and try again.'**
   String get handoffUiUnavailableDirectory;
 
   /// Sheet state for OpenCode 2 managed-workspace sessions
   ///
   /// In en, this message translates to:
-  /// **'This session runs inside a managed workspace. Its folder belongs to the workspace host, so a plain terminal command cannot open it. Export and import the session instead.'**
+  /// **'This conversation runs inside a cloud environment. Its folder belongs to the environment’s host, so a plain terminal command cannot open it. Export and import the conversation instead.'**
   String get handoffUiUnavailableWorkspace;
 
   /// Sheet state when the session id fails validation
   ///
   /// In en, this message translates to:
-  /// **'This session’s reference cannot be placed in a command safely.'**
+  /// **'This conversation’s reference cannot be placed in a command safely.'**
   String get handoffUiUnavailableReference;
 
   /// Sheet paragraph pointing at the existing export/import feature for cross-server moves
   ///
   /// In en, this message translates to:
-  /// **'Moving to a different server? Export this session as a file and import it there. That carries the transcript itself, not just a pointer to it.'**
+  /// **'Moving to a different server? Export this conversation as a file and import it there. That carries the transcript itself, not just a pointer to it.'**
   String get handoffUiExportHint;
 
   /// Button in the handoff sheet that opens the existing session export screen
   ///
   /// In en, this message translates to:
-  /// **'Export session'**
+  /// **'Export conversation'**
   String get handoffUiExportAction;
 
   /// Session menu row and sheet title: show a QR code that opens this session in the app on another phone
@@ -20783,13 +20783,13 @@ abstract class AppLocalizations {
   /// QR sheet lead paragraph
   ///
   /// In en, this message translates to:
-  /// **'Scan this with OpenCode Mobile on the other phone. The code carries only this saved server’s ID and the session ID: no messages, no address, no password. The other phone must already have this server saved.'**
+  /// **'Scan this with OpenCode Mobile on the other phone. The code carries only this saved server’s ID and the conversation ID: no messages, no address, no password. The other phone must already have this server saved.'**
   String get handoffUiPhoneIntro;
 
   /// Accessibility label for the QR image
   ///
   /// In en, this message translates to:
-  /// **'QR code that opens this session on another phone'**
+  /// **'QR code that opens this conversation on another phone'**
   String get handoffUiPhoneQrLabel;
 
   /// Caption above the plain-text link shown under the QR code
@@ -20813,7 +20813,7 @@ abstract class AppLocalizations {
   /// QR sheet state when the session or server reference fails validation
   ///
   /// In en, this message translates to:
-  /// **'A link cannot be built for this session. Reload the session and try again.'**
+  /// **'A link cannot be built for this conversation. Reload the conversation and try again.'**
   String get handoffUiPhoneUnavailable;
 
   /// Banner shown when a scanned session link names a server this phone does not have
@@ -20837,7 +20837,7 @@ abstract class AppLocalizations {
   /// Snackbar while a scanned link waits for the saved server to finish connecting
   ///
   /// In en, this message translates to:
-  /// **'Opening the session once the server connects…'**
+  /// **'Opening the conversation once the server connects…'**
   String get handoffUiLinkWaiting;
 
   /// Snackbar when the linked server needs a credential re-entry before it can open the session
@@ -24445,7 +24445,7 @@ abstract class AppLocalizations {
   /// Storage screen: paragraph before the first scan
   ///
   /// In en, this message translates to:
-  /// **'See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and session history stay in place.'**
+  /// **'See the storage used by Termux, including the local server and other tools. Expand a category to inspect it. Only selected regenerable caches can be cleaned here; projects, team data, sign-ins and conversation history stay in place.'**
   String get termuxStorageIntro;
 
   /// Storage screen: heading while a scan runs
@@ -24577,7 +24577,7 @@ abstract class AppLocalizations {
   /// Storage category note
   ///
   /// In en, this message translates to:
-  /// **'The server, its sign-ins and session history. Not removed from here; sessions have their own screen.'**
+  /// **'The server, its sign-ins and conversation history. Not removed from here; conversations have their own screen.'**
   String get termuxStorageNoteOpenCode;
 
   /// Storage category
@@ -25597,13 +25597,13 @@ abstract class AppLocalizations {
   /// Title of the confirmation shown before a shared session link is revoked.
   ///
   /// In en, this message translates to:
-  /// **'Stop sharing this session?'**
+  /// **'Stop sharing this conversation?'**
   String get safetyStopSharingTitle;
 
   /// Body of the stop sharing confirmation.
   ///
   /// In en, this message translates to:
-  /// **'The link stops working for anyone who has it. The session itself is not changed.'**
+  /// **'The link stops working for anyone who has it. The conversation itself is not changed.'**
   String get safetyStopSharingBody;
 
   /// Cancel label of the stop sharing confirmation.

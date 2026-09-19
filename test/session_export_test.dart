@@ -241,10 +241,7 @@ void main() {
       release.complete(Uri.file('/backup.json'));
       await tester.pumpAndSettle();
       expect(find.text('Conversation saved'), findsNothing);
-      expect(
-        find.textContaining('connection or location changed'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('server or project changed'), findsOneWidget);
     },
   );
 
@@ -311,10 +308,7 @@ void main() {
     gateway.wait!.complete();
     await tester.pumpAndSettle();
     expect(saves, 0);
-    expect(
-      find.textContaining('connection or location changed'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('server or project changed'), findsOneWidget);
   });
 
   testWidgets('failed export keeps options and allows retry', (tester) async {
