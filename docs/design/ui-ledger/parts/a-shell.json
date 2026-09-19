@@ -1,0 +1,2496 @@
+{
+  "area": "a-shell",
+  "pages": [
+    {
+      "id": "bootstrap-gate",
+      "title": "OpenCode could not start",
+      "kind": "screen",
+      "file": "lib/main.dart",
+      "widget": "AppBootstrapGate",
+      "presentedBy": [],
+      "line": 73,
+      "purpose": "Pre-app surface shown while AppBootstrap.create loads preferences/secure storage: a spinner with 'Starting OpenCode…', or a start-failure message with a retry.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "app launch: runApp(AppBootstrapGate) at lib/main.dart:66; replaced by OcApp once _bootstrap != null && _controller != null"
+        }
+      ],
+      "gates": [
+        "_bootstrap == null || _controller == null"
+      ],
+      "elements": [
+        {
+          "id": "bootstrap-gate-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": "retry-app-bootstrap",
+          "line": 205,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Calls _AppBootstrapGateState._load() to re-run the bootstrap loader and rebuild the ConnectionController.",
+          "gates": [
+            "shown only when !_loading (bootstrap threw; _error set)"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "root-connecting",
+      "title": "Connecting to {name}",
+      "kind": "screen",
+      "file": "lib/main.dart",
+      "widget": "_Root",
+      "presentedBy": [],
+      "line": 1335,
+      "purpose": "Route '/' while a saved server profile is being reconnected: shows SavedServerConnectionCard (progress, or a diagnosed failure with checks and recovery actions). _Root itself returns ServersScreen when there is no profile or it needs credential re-entry, and HomeScreen once connected.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "initialRoute '/' (main.dart:1227-1229): shown automatically when conn.profile != null, !conn.hasConnectedServer and the profile needs no credential re-entry; _connectSaved() starts conn.connect(profile) on first build"
+        }
+      ],
+      "gates": [
+        "conn.profile != null",
+        "!conn.hasConnectedServer",
+        "!(conn.profile!.requiresPasswordReentry || conn.profile!.requiresCodexTokenReentry)"
+      ],
+      "elements": [
+        {
+          "id": "root-connecting-details-toggle",
+          "type": "button",
+          "label": "Details / Hide details",
+          "key": "saved-server-details",
+          "file": "lib/ui/widgets/saved_server_connection_card.dart",
+          "line": 300,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Toggles _detailsOpen to reveal the raw error text (SelectableText).",
+          "gates": [
+            "failed (error != null || requiresTokenReentry)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "root-connecting-termux-secondary",
+          "type": "button",
+          "label": "Termux setup",
+          "key": "saved-server-open-termux",
+          "file": "lib/ui/widgets/saved_server_connection_card.dart",
+          "line": 446,
+          "action": "navigate",
+          "target": "termux-setup",
+          "targetWidget": "/termux-setup",
+          "effect": "onOpenTermuxSetup -> navigator.pushNamed('/termux-setup') (main.dart:1416).",
+          "gates": [
+            "failed",
+            "primaryIsRetry && onOpenTermuxSetup != null",
+            "widget.supportsTermux && !widget.usesConnectionToken && isLoopbackHost(Uri.tryParse(widget.baseUrl)?.host ?? '') (card) and !conn.usesConnectionToken && platformCapabilities.supportsTermux (_Root)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "root-connecting-change",
+          "type": "button",
+          "label": "Change server",
+          "key": "saved-server-change",
+          "file": "lib/ui/widgets/saved_server_connection_card.dart",
+          "line": 369,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "onChangeServer -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false) (main.dart:1402).",
+          "gates": [
+            "failed",
+            "!primaryIsChange"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "root-connecting-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": "saved-server-retry",
+          "file": "lib/ui/widgets/saved_server_connection_card.dart",
+          "line": 359,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onRetry -> _RootState: _started = false; _connectSaved() which calls conn.connect(profile) (main.dart:1418).",
+          "gates": [
+            "failed",
+            "!primaryIsRetry"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "root-connecting-primary-termux",
+          "type": "button",
+          "label": "Check Termux",
+          "key": "saved-server-open-termux",
+          "file": "lib/ui/widgets/saved_server_connection_card.dart",
+          "line": 380,
+          "action": "navigate",
+          "target": "termux-setup",
+          "targetWidget": "/termux-setup",
+          "effect": "Primary action when ConnectionFailure.primary == openTermuxSetup: navigator.pushNamed('/termux-setup').",
+          "gates": [
+            "failure.primary == ConnectionFailureAction.openTermuxSetup && onOpenTermuxSetup != null",
+            "widget.supportsTermux && !widget.usesConnectionToken && isLoopbackHost(Uri.tryParse(widget.baseUrl)?.host ?? '') (card) and !conn.usesConnectionToken && platformCapabilities.supportsTermux (_Root)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "root-connecting-primary-password",
+          "type": "button",
+          "label": "Update password",
+          "key": "saved-server-update-password",
+          "file": "lib/ui/widgets/saved_server_connection_card.dart",
+          "line": 391,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "onUpdatePassword -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false, arguments: 'edit-active') which opens the active profile editor (main.dart:1409).",
+          "gates": [
+            "failure.primary == ConnectionFailureAction.updatePassword && onUpdatePassword != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "root-connecting-primary-token",
+          "type": "button",
+          "label": "Update token",
+          "key": "saved-server-update-token",
+          "file": "lib/ui/widgets/saved_server_connection_card.dart",
+          "line": 402,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "onUpdateToken -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false, arguments: 'edit-active') (main.dart:1404).",
+          "gates": [
+            "failure.primary == ConnectionFailureAction.updateToken && onUpdateToken != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "root-connecting-primary-change",
+          "type": "button",
+          "label": "Change server",
+          "key": "saved-server-change-primary",
+          "file": "lib/ui/widgets/saved_server_connection_card.dart",
+          "line": 412,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "Primary variant of Change server: pushNamedAndRemoveUntil('/servers').",
+          "gates": [
+            "failure.primary == ConnectionFailureAction.changeServer"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "root-connecting-primary-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": "saved-server-retry-primary",
+          "file": "lib/ui/widgets/saved_server_connection_card.dart",
+          "line": 422,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Primary variant of retry (fallback when the diagnosed primary action has no callback): _started = false; _connectSaved().",
+          "gates": [
+            "failed",
+            "failure.primary == retry or its callback is null"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "home-shell",
+      "title": "{server name} · Workspace / Files / Activity / More",
+      "kind": "screen",
+      "file": "lib/ui/screens/home_screen.dart",
+      "widget": "HomeScreen",
+      "presentedBy": [],
+      "line": 22,
+      "purpose": "Main product shell for a connected server: app bar with server name/status dot and current tab title, overflow menu, connection banner, and four retained root destinations shown as a bottom glass dock (<760dp) or a NavigationRail (>=760dp).",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "route '/' -> _Root returns HomeScreen when conn.hasConnectedServer (main.dart:1380)"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "session handoff link / AI Team link for a non-active saved server: _controller.connect(target) then navigator.pushNamedAndRemoveUntil('/home') (main.dart:782, 859)"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ServersScreen",
+          "file": "lib/ui/screens/servers_screen.dart",
+          "line": 162
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ServersScreen",
+          "file": "lib/ui/screens/servers_screen.dart",
+          "line": 224
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "TermuxSetupScreen",
+          "file": "lib/ui/screens/termux_setup_screen.dart",
+          "line": 1448
+        },
+        {
+          "page": "global-shortcuts",
+          "element": "global-shortcuts-destinations"
+        }
+      ],
+      "gates": [
+        "named route '/home' is ungated; via '/' requires conn.profile != null && conn.hasConnectedServer"
+      ],
+      "elements": [
+        {
+          "id": "home-shell-tab-workspace",
+          "type": "tab",
+          "label": "Workspace",
+          "key": null,
+          "line": 133,
+          "action": "navigate",
+          "target": "workspace",
+          "targetWidget": "WorkspaceScreen",
+          "effect": "_selectTab(0): shows WorkspaceScreen(controller: conn) in the RetainedTabView. Rendered as NavigationBar destination (<760dp wide, keyboard closed; _ShellNavigation line 415) or NavigationRail destination (>=760dp; line 238, extended at >=1040dp).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-tab-files",
+          "type": "tab",
+          "label": "Files",
+          "key": null,
+          "line": 143,
+          "action": "navigate",
+          "target": "files",
+          "targetWidget": "FilesScreen",
+          "effect": "_selectTab(1): shows FilesScreen(controller, focusSearchSignal: _findInFiles, backController: _filesBack). _safeTab falls back to tab 0 when file browsing is unavailable.",
+          "gates": [
+            "conn.capabilities.fileBrowsing (destination hidden and body replaced by SizedBox.shrink otherwise)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-tab-activity",
+          "type": "tab",
+          "label": "Activity",
+          "key": "activity-pending-badge",
+          "line": 151,
+          "action": "navigate",
+          "target": "activity",
+          "targetWidget": "ActivityScreen",
+          "effect": "_selectTab(2): shows ActivityScreen(controller: conn, embedded: true). Icon carries Badge key 'activity-pending-badge' with conn.unifiedAttentionCount when > 0.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-tab-more",
+          "type": "tab",
+          "label": "More",
+          "key": null,
+          "line": 162,
+          "action": "navigate",
+          "target": "library",
+          "targetWidget": "LibraryScreen",
+          "effect": "_selectTab(3): shows LibraryScreen(controller: conn).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-overflow",
+          "type": "icon-button",
+          "label": "[overflow menu]",
+          "key": null,
+          "line": 193,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "opens overflow menu (PopupMenuButton<String>) holding connection-level actions.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-menu-model",
+          "type": "menu-item",
+          "label": "Model / agent",
+          "key": null,
+          "line": 204,
+          "action": "open-sheet",
+          "target": "model-picker",
+          "targetWidget": "showModelPicker",
+          "effect": "showModelPicker(context).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-menu-refresh",
+          "type": "menu-item",
+          "label": "Refresh",
+          "key": null,
+          "line": 208,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "conn.refreshSessions().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-menu-disconnect",
+          "type": "menu-item",
+          "label": "Disconnect",
+          "key": null,
+          "line": 212,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "conn.disconnect() then navigator.pushNamedAndRemoveUntil('/servers', (_) => false). No confirmation.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "home-shell-back-gesture",
+          "type": "gesture",
+          "label": "[system back]",
+          "key": null,
+          "line": 175,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "PopScope(canPop: false) -> _onRootPop: on Files first _filesBack.handleBack(); on any non-Workspace tab _selectTab(0); on Workspace shows snackbar 'Press back again to exit' and a second back within 2s calls SystemNavigator.pop().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-shortcut-destinations",
+          "type": "gesture",
+          "label": "Ctrl/Cmd+1 … 4",
+          "key": null,
+          "line": 58,
+          "action": "navigate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onAppShortcut(SelectDestinationIntent): _selectTab(_safeTab(index, conn.capabilities)).",
+          "gates": [
+            "desktopInteractions (AppShortcuts only installed on desktop)",
+            "HomeScreen route isCurrent"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-shortcut-find",
+          "type": "gesture",
+          "label": "Ctrl/Cmd+F",
+          "key": null,
+          "line": 63,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onAppShortcut(FindInSurfaceIntent): bumps _findInFiles so FilesScreen focuses its search field.",
+          "gates": [
+            "desktopInteractions",
+            "_tab == 1 && conn.capabilities.fileBrowsing"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-shortcut-terminal",
+          "type": "gesture",
+          "label": "Ctrl/Cmd+`",
+          "key": null,
+          "line": 67,
+          "action": "navigate",
+          "target": "terminal",
+          "targetWidget": "TerminalPage",
+          "effect": "onAppShortcut(OpenTerminalIntent): Navigator.push(MaterialPageRoute(TerminalPage(controller: conn))).",
+          "gates": [
+            "desktopInteractions",
+            "conn.capabilities.terminal"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-banner-update-token",
+          "type": "button",
+          "label": "Update token",
+          "key": "banner-update-token",
+          "file": "lib/ui/widgets/connection_status_banner.dart",
+          "line": 44,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "ConnectionStatusBanner (token rejected): Navigator.pushNamed('/servers', arguments: 'edit-active').",
+          "gates": [
+            "conn.status != StreamStatus.connected",
+            "controller.passwordRejected && controller.usesConnectionToken"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-banner-update-password",
+          "type": "button",
+          "label": "Update password",
+          "key": "banner-update-password",
+          "file": "lib/ui/widgets/connection_status_banner.dart",
+          "line": 72,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "ConnectionStatusBanner (password rejected): Navigator.pushNamed('/servers', arguments: 'edit-active').",
+          "gates": [
+            "conn.status != StreamStatus.connected",
+            "controller.passwordRejected && !controller.usesConnectionToken"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-banner-retry",
+          "type": "button",
+          "label": "Try again / Retrying",
+          "key": null,
+          "file": "lib/ui/widgets/connection_status_banner.dart",
+          "line": 120,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.retryConnection(); disabled while controller.manualReconnectInProgress.",
+          "gates": [
+            "conn.status != StreamStatus.connected",
+            "!controller.passwordRejected"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "home-shell-banner-details",
+          "type": "button",
+          "label": "Details",
+          "key": "connection-banner-details",
+          "file": "lib/ui/widgets/connection_status_banner.dart",
+          "line": 128,
+          "action": "open-sheet",
+          "target": "connection-status-details-sheet",
+          "targetWidget": "ConnectionStatusBanner._showDetails",
+          "effect": "_showDetails(...) opens the connection details bottom sheet.",
+          "gates": [
+            "conn.status != StreamStatus.connected",
+            "!controller.passwordRejected"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "connection-status-details-sheet",
+      "title": "Connection lost / Reconnecting",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/connection_status_banner.dart",
+      "widget": "ConnectionStatusBanner._showDetails",
+      "presentedBy": [],
+      "line": 150,
+      "purpose": "Explains the lost/reconnecting state, shows the raw connection error, and offers retry or changing server.",
+      "reachedFrom": [
+        {
+          "page": "home-shell",
+          "element": "home-shell-banner-details"
+        },
+        {
+          "page": "embedded-connection-status-banner",
+          "element": "embedded-connection-status-banner-details"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "connection-status-details-sheet-retry",
+          "type": "button",
+          "label": "Try again / Retrying",
+          "key": null,
+          "line": 196,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops the sheet then controller.retryConnection(); disabled when manualRetry.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "connection-status-details-sheet-change-server",
+          "type": "button",
+          "label": "Change server",
+          "key": null,
+          "line": 211,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "Pops the sheet then Navigator.pushNamed('/servers').",
+          "gates": [
+            "showChangeServer && !manualRetry"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-connection-status-banner",
+      "title": "[Connection status banner]",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/connection_status_banner.dart",
+      "widget": "ConnectionStatusBanner",
+      "presentedBy": [],
+      "line": 11,
+      "purpose": "Same MaterialBanner as on home-shell, embedded by ChatScreen (lib/ui/screens/chat_screen.dart:6537); hidden when controller.status == StreamStatus.connected.",
+      "reachedFrom": [],
+      "gates": [
+        "controller.status != StreamStatus.connected"
+      ],
+      "elements": [
+        {
+          "id": "embedded-connection-status-banner-update-token",
+          "type": "button",
+          "label": "Update token",
+          "key": "banner-update-token",
+          "line": 44,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "Navigator.pushNamed('/servers', arguments: 'edit-active').",
+          "gates": [
+            "controller.passwordRejected && controller.usesConnectionToken"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-connection-status-banner-update-password",
+          "type": "button",
+          "label": "Update password",
+          "key": "banner-update-password",
+          "line": 72,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "Navigator.pushNamed('/servers', arguments: 'edit-active').",
+          "gates": [
+            "controller.passwordRejected && !controller.usesConnectionToken"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-connection-status-banner-retry",
+          "type": "button",
+          "label": "Try again / Retrying",
+          "key": null,
+          "line": 120,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.retryConnection(); disabled while manualReconnectInProgress.",
+          "gates": [
+            "!controller.passwordRejected"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-connection-status-banner-details",
+          "type": "button",
+          "label": "Details",
+          "key": "connection-banner-details",
+          "line": 128,
+          "action": "open-sheet",
+          "target": "connection-status-details-sheet",
+          "targetWidget": "ConnectionStatusBanner._showDetails",
+          "effect": "_showDetails(...).",
+          "gates": [
+            "!controller.passwordRejected"
+          ],
+          "destructive": false
+        }
+      ],
+      "embeddedIn": [
+        "ChatScreen"
+      ]
+    },
+    {
+      "id": "activity",
+      "title": "Activity",
+      "kind": "screen",
+      "file": "lib/ui/screens/activity_screen.dart",
+      "widget": "ActivityScreen",
+      "presentedBy": [],
+      "line": 48,
+      "purpose": "Single cross-session inbox: Needs attention (AI Team gates, permissions, questions, v2 forms, server requests, profile-monitor check-ins), Running sessions, and completion digests. Hosted as root tab (embedded: true, no own Scaffold) or pushed with its own app bar.",
+      "reachedFrom": [
+        {
+          "page": "home-shell",
+          "element": "home-shell-tab-activity"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "named route '/activity' and legacy '/requests' (main.dart:1235-1236); no in-app pushNamed caller found"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "Quick Settings tile / LaunchAction.activity -> _openActivityForLaunch pushes ActivityScreen with route name '/activity/launch' (main.dart:645-663); without a saved profile opens '/servers' instead"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "notification tap, CodingAlertKind.question -> ActivityScreen(initialQuestionSessionID) which auto-opens showQuestionSheet (main.dart:1033-1041)"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "AI Team notification or opencode-mobile://team link, TeamLinkKind.gate -> ActivityScreen(initialTeamGateId) which auto-opens showGateSheet; TeamLinkKind.run without orchestration -> plain ActivityScreen (main.dart:877-897)"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "activity-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": null,
+          "line": 578,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refresh(): controller.profileMonitor.refresh(), controller.prepareActionRepository(), controller.refreshSessions(), then _refreshPending() (refreshPendingPermissions/Questions/Forms).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "activity-appbar-refresh",
+          "type": "icon-button",
+          "label": "Refresh",
+          "key": null,
+          "line": 674,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refresh(); disabled and shows a spinner while _refreshing.",
+          "gates": [
+            "!widget.embedded (pushed Activity only)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "file": "lib/ui/widgets/product_states.dart",
+          "line": 240,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductErrorState.onRetry -> _refresh().",
+          "gates": [
+            "error != null && empty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-error-report-bug",
+          "type": "button",
+          "label": "Report a bug",
+          "key": "product-error-report-bug",
+          "file": "lib/ui/widgets/product_states.dart",
+          "line": 248,
+          "action": "other",
+          "target": null,
+          "targetWidget": "openBugReport",
+          "effect": "openBugReport(context) (lib/feedback/bug_report.dart:88).",
+          "gates": [
+            "error != null && empty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-inline-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 620,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductInlineEmpty 'Could not refresh' action -> _refresh().",
+          "gates": [
+            "error != null && !empty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-status-check-again",
+          "type": "button",
+          "label": "Check again",
+          "key": null,
+          "line": 1384,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_ActivityStatus.onRefresh -> _refresh().",
+          "gates": [
+            "empty && !hasCheckIns",
+            "!known (controller.isConnected && controller.unknownAttentionProfileCount == 0 is false)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-background-hint",
+          "type": "list-tile",
+          "label": "Background updates",
+          "key": "activity-background-settings",
+          "line": 1330,
+          "action": "navigate",
+          "target": "background-settings",
+          "targetWidget": "BackgroundSettingsScreen",
+          "effect": "_openBackgroundSettings: pushes BackgroundSettingsScreen(controller).",
+          "gates": [
+            "empty",
+            "platformCapabilities.supportsBackgroundService && !controller.keepLiveInBackground"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-team-gate-row",
+          "type": "list-tile",
+          "label": "<gate title>",
+          "key": "activity-team-gate-<gate.id>",
+          "line": 861,
+          "action": "open-sheet",
+          "target": "gate-sheet",
+          "targetWidget": "showGateSheet",
+          "effect": "ActivityGateTile: showGateSheet(context, team, gate.id, now). When a mutation record exists and is not confirmed the trailing TeamReceiptChip (key 'activity-team-gate-<id>-receipt', lib/ui/widgets/team_receipt.dart) has onOpen doing the same.",
+          "gates": [
+            "controller.orchestration != null",
+            "!teamGateAnswered(team, gate)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-team-agent-blocked-row",
+          "type": "list-tile",
+          "label": "<agent name>",
+          "key": "activity-team-agent-<agent.id>",
+          "line": 919,
+          "action": "navigate",
+          "target": "agent",
+          "targetWidget": "AgentScreen",
+          "effect": "ActivityAgentBlockedTile: pushes AgentScreen(controller: team, agentId: agent.id).",
+          "gates": [
+            "controller.orchestration != null",
+            "agent.state == AgentState.blocked"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-permission-row",
+          "type": "list-tile",
+          "label": "<permission title> / Permission required",
+          "key": "activity-permission-<permission.id>",
+          "line": 709,
+          "action": "open-sheet",
+          "target": "permission-sheet",
+          "targetWidget": "showPermissionSheet",
+          "effect": "ActivityPermissionTile: showPermissionSheet(context, permission, controller, contextLabel).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "activity-question-row",
+          "type": "list-tile",
+          "label": "<question title> / Assistant question",
+          "key": "activity-question-<question.id>",
+          "line": 751,
+          "action": "open-sheet",
+          "target": "question-sheet",
+          "targetWidget": "showQuestionSheet",
+          "effect": "ActivityQuestionTile: showQuestionSheet(context, controller, question).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "activity-form-row",
+          "type": "list-tile",
+          "label": "<form title> / Input requested",
+          "key": "form-request-tile-<form.id>",
+          "line": 788,
+          "action": "open-sheet",
+          "target": "connection-form",
+          "targetWidget": "presentConnectionForm",
+          "effect": "ActivityFormTile: presentConnectionForm(context, controller, form) (lib/ui/screens/chat/form_flow.dart). Used for session forms and the 'Server requests' (global/MCP) subsection.",
+          "gates": [
+            "controller.capabilities.forms"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-running-row",
+          "type": "list-tile",
+          "label": "<session title>",
+          "key": "activity-running-<session.id>",
+          "line": 989,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionID>",
+          "effect": "_openChat(session.id): controller.ensureSession, controller.selectLocationForExistingSession when the session lives in another directory/workspace, then Navigator.pushNamed('/chat/<id>'); errors via showProductError.",
+          "gates": [
+            "controller.busySessions root sessions (parentID == null)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-digests-toggle",
+          "type": "list-tile",
+          "label": "Completion digests",
+          "key": null,
+          "line": 186,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "expands/collapses the digest section (_showDigests).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "activity-digest-session-row",
+          "type": "list-tile",
+          "label": "<session title>",
+          "key": null,
+          "line": 204,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "expands/collapses the CompletionDigestCard for that idle session (_expandedDigests).",
+          "gates": [
+            "_showDigests",
+            "idle root sessions of the current directory/workspace not busy and not dismissed"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-digest-open-conversation",
+          "type": "button",
+          "label": "Open conversation",
+          "key": null,
+          "file": "lib/ui/widgets/completion_digest.dart",
+          "line": 72,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionID>",
+          "effect": "onOpenConversation -> _openChat(session.id) when the digest scope is unchanged.",
+          "gates": [
+            "digest expanded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-digest-review",
+          "type": "button",
+          "label": "Review next actions",
+          "key": null,
+          "file": "lib/ui/widgets/completion_digest.dart",
+          "line": 75,
+          "action": "open-sheet",
+          "target": "permission-sheet",
+          "targetWidget": "showPermissionSheet | showQuestionSheet | presentConnectionForm | /chat/<sessionID>",
+          "effect": "onReview -> _reviewDigest: opens the first pending showPermissionSheet, else showQuestionSheet, else presentConnectionForm (capabilities.forms) for that session; with nothing pending falls back to _openChat.",
+          "gates": [
+            "digest expanded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-digest-run-results",
+          "type": "button",
+          "label": "Run results",
+          "key": null,
+          "file": "lib/ui/widgets/completion_digest.dart",
+          "line": 79,
+          "action": "navigate",
+          "target": "run-result",
+          "targetWidget": "RunResultScreen",
+          "effect": "onRunResults -> pushes RunResultScreen(controller, sessionID).",
+          "gates": [
+            "digest expanded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "activity-digest-dismiss",
+          "type": "button",
+          "label": "Dismiss",
+          "key": null,
+          "file": "lib/ui/widgets/completion_digest.dart",
+          "line": 104,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onDismiss -> adds (session.id, idle) to _dismissedDigests (view state only, not persisted).",
+          "gates": [
+            "digest expanded"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "question-sheet",
+      "title": "OpenCode needs input",
+      "kind": "sheet",
+      "file": "lib/ui/screens/activity_screen.dart",
+      "widget": "_QuestionSheet",
+      "presentedBy": [
+        "showQuestionSheet"
+      ],
+      "line": 936,
+      "purpose": "Answer surface for a pending assistant question: per-prompt choices (single/multi), optional custom answer, dismiss or send.",
+      "reachedFrom": [
+        {
+          "page": "activity",
+          "element": "activity-question-row"
+        },
+        {
+          "page": "activity",
+          "element": "activity-digest-review"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "ActivityScreen(initialQuestionSessionID) from a question notification tap -> _scheduleInitialQuestion (activity_screen.dart:332-357)"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "openMonitoredRequest / ProfileMonitor",
+          "file": "lib/ui/screens/profile_monitor_screen.dart",
+          "line": 64
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ChatScreen._showQuestionSheet",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 4514
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ReturnBriefPanel",
+          "file": "lib/ui/widgets/return_brief_panel.dart",
+          "line": 69
+        }
+      ],
+      "gates": [
+        "controller.isRequestPending(controller.questionIdentity(question))"
+      ],
+      "elements": [
+        {
+          "id": "question-sheet-option",
+          "type": "list-tile",
+          "label": "<choice label>",
+          "key": null,
+          "file": "lib/ui/widgets/question_options.dart",
+          "line": 1232,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "QuestionOptionRow.onTap -> _toggle: single-select replaces the answer and clears custom text; multi-select toggles.",
+          "gates": [
+            "enabled: !_busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "question-sheet-custom-answer",
+          "type": "text-field",
+          "label": "[custom answer]",
+          "key": null,
+          "file": "lib/ui/widgets/question_options.dart",
+          "line": 1245,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "QuestionCustomAnswerField.onChanged: for single-select prompts typing clears the selected choice.",
+          "gates": [
+            "prompt.custom",
+            "enabled: !_busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "question-sheet-dismiss",
+          "type": "button",
+          "label": "Dismiss",
+          "key": null,
+          "line": 1279,
+          "action": "open-dialog",
+          "target": "question-sheet-dismiss-dialog",
+          "targetWidget": "_reject",
+          "effect": "_reject(): opens the dismiss confirmation dialog.",
+          "gates": [
+            "!_busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "question-sheet-send",
+          "type": "button",
+          "label": "Send answers",
+          "key": null,
+          "line": 1283,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_submit(): controller.answerQuestion(question.id, answers, expectedRequest: request) then routes.close().",
+          "gates": [
+            "_complete && !_busy"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "question-sheet-dismiss-dialog",
+      "title": "Dismiss this request?",
+      "kind": "dialog",
+      "file": "lib/ui/screens/activity_screen.dart",
+      "widget": "_reject",
+      "presentedBy": [],
+      "line": 1129,
+      "purpose": "Confirms rejecting a pending question ('OpenCode will continue without answers to these questions.').",
+      "reachedFrom": [
+        {
+          "page": "question-sheet",
+          "element": "question-sheet-dismiss"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "question-sheet-dismiss-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 1137,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, false).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "question-sheet-dismiss-dialog-confirm",
+          "type": "button",
+          "label": "Dismiss",
+          "key": null,
+          "line": 1141,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, true) then controller.rejectQuestion(question.id, expectedRequest: request) and routes.close().",
+          "gates": [],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "global-shortcuts",
+      "title": "[Global keyboard shortcuts]",
+      "kind": "overlay",
+      "file": "lib/ui/desktop/shortcuts.dart",
+      "widget": "AppShortcuts",
+      "presentedBy": [],
+      "line": 256,
+      "purpose": "App-wide desktop shortcut layer installed above the navigator in MaterialApp.builder (main.dart:1198). Each binding accepts Control or Meta. Surfaces mixing in AppShortcutSurface may claim an intent first (AppShortcutSignals.dispatch, newest first, current route only); otherwise the shell fallback below runs.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "always active on desktop builds while OcApp is mounted"
+        }
+      ],
+      "gates": [
+        "desktopInteractions (platformCapabilities.isDesktop); AppShortcuts returns child untouched otherwise"
+      ],
+      "elements": [
+        {
+          "id": "global-shortcuts-palette",
+          "type": "gesture",
+          "label": "Ctrl/Cmd+K",
+          "key": null,
+          "line": 305,
+          "action": "open-dialog",
+          "target": "command-palette-dialog",
+          "targetWidget": "showCommandPalette",
+          "effect": "OpenCommandPaletteIntent fallback: showCommandPalette(context, handlers.paletteCommands(context)) with _OcAppState._shellCommands.",
+          "gates": [
+            "desktopInteractions (platformCapabilities.isDesktop); AppShortcuts returns child untouched otherwise"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-shortcuts-new-session",
+          "type": "gesture",
+          "label": "Ctrl/Cmd+N",
+          "key": null,
+          "line": 316,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionID>",
+          "effect": "NewSessionIntent fallback: _OcAppState._startNewSession -> _controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()); failure shows a snackbar with productErrorText.",
+          "gates": [
+            "desktopInteractions (platformCapabilities.isDesktop); AppShortcuts returns child untouched otherwise"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-shortcuts-find",
+          "type": "gesture",
+          "label": "Ctrl/Cmd+F",
+          "key": null,
+          "line": 339,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "FindInSurfaceIntent: no shell fallback (no-op) — only a claiming surface (HomeScreen on Files, others) services it; registered so the key does not type a character.",
+          "gates": [
+            "desktopInteractions (platformCapabilities.isDesktop); AppShortcuts returns child untouched otherwise"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-shortcuts-settings",
+          "type": "gesture",
+          "label": "Ctrl/Cmd+,",
+          "key": null,
+          "line": 320,
+          "action": "navigate",
+          "target": "settings",
+          "targetWidget": "SettingsScreen",
+          "effect": "OpenSettingsIntent fallback: _OcAppState._openSettings pushes SettingsScreen(controller).",
+          "gates": [
+            "desktopInteractions (platformCapabilities.isDesktop); AppShortcuts returns child untouched otherwise"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-shortcuts-close-route",
+          "type": "gesture",
+          "label": "Ctrl/Cmd+W",
+          "key": null,
+          "line": 324,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "CloseRouteIntent fallback: navigator.maybePop() (PopScope vetoes respected).",
+          "gates": [
+            "desktopInteractions (platformCapabilities.isDesktop); AppShortcuts returns child untouched otherwise"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-shortcuts-help",
+          "type": "gesture",
+          "label": "Ctrl/Cmd+/",
+          "key": null,
+          "line": 330,
+          "action": "open-dialog",
+          "target": "shortcuts-help-dialog",
+          "targetWidget": "showShortcutsHelp",
+          "effect": "ShowShortcutsHelpIntent fallback: showShortcutsHelp(context).",
+          "gates": [
+            "desktopInteractions (platformCapabilities.isDesktop); AppShortcuts returns child untouched otherwise"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-shortcuts-terminal",
+          "type": "gesture",
+          "label": "Ctrl/Cmd+`",
+          "key": null,
+          "line": 350,
+          "action": "navigate",
+          "target": "terminal",
+          "targetWidget": "TerminalPage",
+          "effect": "OpenTerminalIntent fallback: dispatchAtShellRoot pops to the first route and re-dispatches; HomeScreen.onAppShortcut then pushes TerminalPage when conn.capabilities.terminal.",
+          "gates": [
+            "desktopInteractions (platformCapabilities.isDesktop); AppShortcuts returns child untouched otherwise",
+            "conn.capabilities.terminal (checked by HomeScreen)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-shortcuts-destinations",
+          "type": "gesture",
+          "label": "Ctrl/Cmd+1 … 4",
+          "key": null,
+          "line": 346,
+          "action": "navigate",
+          "target": "home-shell",
+          "targetWidget": "HomeScreen",
+          "effect": "SelectDestinationIntent(0..3) fallback: dispatchAtShellRoot pops every pushed route, then HomeScreen.onAppShortcut selects Workspace/Files/Activity/More.",
+          "gates": [
+            "desktopInteractions (platformCapabilities.isDesktop); AppShortcuts returns child untouched otherwise"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "command-palette-dialog",
+      "title": "[Command launcher]",
+      "kind": "dialog",
+      "file": "lib/ui/desktop/shortcuts.dart",
+      "widget": "_CommandPalette",
+      "presentedBy": [
+        "showCommandPalette"
+      ],
+      "line": 388,
+      "purpose": "Searchable Ctrl+K command launcher listing the shell commands supplied by _OcAppState._shellCommands (main.dart:1080); surfaces that claim OpenCommandPaletteIntent may present their own command list.",
+      "reachedFrom": [
+        {
+          "page": "global-shortcuts",
+          "element": "global-shortcuts-palette"
+        }
+      ],
+      "gates": [
+        "desktopInteractions (platformCapabilities.isDesktop); AppShortcuts returns child untouched otherwise",
+        "commands.isNotEmpty"
+      ],
+      "elements": [
+        {
+          "id": "command-palette-dialog-query",
+          "type": "text-field",
+          "label": "Type a command…",
+          "key": "command-palette-query",
+          "line": 471,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onChanged resets the highlight and filters commands by label/hint; onSubmitted runs the highlighted command (_runHighlighted).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-arrows",
+          "type": "gesture",
+          "label": "Arrow Up / Arrow Down",
+          "key": null,
+          "line": 455,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "CallbackShortcuts: _move(±1) changes the highlighted row.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-row",
+          "type": "list-tile",
+          "label": "<command label>",
+          "key": "command-<label>",
+          "line": 507,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Row template: _run(command) pops the dialog then calls command.onInvoke. Concrete shell commands follow.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-cmd-new-session",
+          "type": "list-tile",
+          "label": "New session (Ctrl + N; ⌘ on macOS)",
+          "key": "command-New session",
+          "file": "lib/main.dart",
+          "line": 1094,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionID>",
+          "effect": "_startNewSession(): createSession then pushNamed('/chat/<id>').",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-cmd-workspace",
+          "type": "list-tile",
+          "label": "Workspace (Ctrl + 1; ⌘ on macOS)",
+          "key": "command-Workspace",
+          "file": "lib/main.dart",
+          "line": 1101,
+          "action": "navigate",
+          "target": "home-shell",
+          "targetWidget": "HomeScreen",
+          "effect": "go(0): dispatchAtShellRoot(SelectDestinationIntent(0)).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-cmd-files",
+          "type": "list-tile",
+          "label": "Files (Ctrl + 2; ⌘ on macOS)",
+          "key": "command-Files",
+          "file": "lib/main.dart",
+          "line": 1108,
+          "action": "navigate",
+          "target": "home-shell",
+          "targetWidget": "HomeScreen",
+          "effect": "go(1): dispatchAtShellRoot(SelectDestinationIntent(1)); HomeScreen falls back to Workspace without capabilities.fileBrowsing.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-cmd-activity",
+          "type": "list-tile",
+          "label": "Activity (Ctrl + 3; ⌘ on macOS)",
+          "key": "command-Activity",
+          "file": "lib/main.dart",
+          "line": 1115,
+          "action": "navigate",
+          "target": "home-shell",
+          "targetWidget": "HomeScreen",
+          "effect": "go(2): dispatchAtShellRoot(SelectDestinationIntent(2)).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-cmd-more",
+          "type": "list-tile",
+          "label": "More (Ctrl + 4; ⌘ on macOS)",
+          "key": "command-More",
+          "file": "lib/main.dart",
+          "line": 1122,
+          "action": "navigate",
+          "target": "home-shell",
+          "targetWidget": "HomeScreen",
+          "effect": "go(3): dispatchAtShellRoot(SelectDestinationIntent(3)).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-cmd-settings",
+          "type": "list-tile",
+          "label": "Settings (Ctrl + ,; ⌘ on macOS)",
+          "key": "command-Settings",
+          "file": "lib/main.dart",
+          "line": 1129,
+          "action": "navigate",
+          "target": "settings",
+          "targetWidget": "SettingsScreen",
+          "effect": "_openSettings(): pushes SettingsScreen(controller).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-cmd-shortcuts",
+          "type": "list-tile",
+          "label": "Keyboard shortcuts (Ctrl + /; ⌘ on macOS)",
+          "key": "command-Keyboard shortcuts",
+          "file": "lib/main.dart",
+          "line": 1135,
+          "action": "open-dialog",
+          "target": "shortcuts-help-dialog",
+          "targetWidget": "showShortcutsHelp",
+          "effect": "showShortcutsHelp(context).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-cmd-refresh",
+          "type": "list-tile",
+          "label": "Refresh sessions",
+          "key": "command-Refresh sessions",
+          "file": "lib/main.dart",
+          "line": 1141,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_controller.refreshSessions().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-palette-dialog-cmd-diagnostics",
+          "type": "list-tile",
+          "label": "Diagnostics",
+          "key": "command-Diagnostics",
+          "file": "lib/main.dart",
+          "line": 1146,
+          "action": "navigate",
+          "target": "app-diagnostics",
+          "targetWidget": "/debug",
+          "effect": "navigator.pushNamed('/debug') -> AppDiagnosticsScreen.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "shortcuts-help-dialog",
+      "title": "Keyboard shortcuts",
+      "kind": "dialog",
+      "file": "lib/ui/desktop/shortcuts.dart",
+      "widget": "showShortcutsHelp",
+      "presentedBy": [
+        "showShortcutsHelp"
+      ],
+      "line": 548,
+      "purpose": "Read-only AlertDialog (key 'keyboard-shortcuts-sheet') listing every shortcut: Mod+K, N, F, 1…4, ',', '`', W, Enter (send prompt), C (copy transcript), F2/Shift+F2 (recent model), '/', Esc, and context-menu keys.",
+      "reachedFrom": [
+        {
+          "page": "global-shortcuts",
+          "element": "global-shortcuts-help"
+        },
+        {
+          "page": "command-palette-dialog",
+          "element": "command-palette-dialog-cmd-shortcuts"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "LibraryScreen (key 'library-keyboard-shortcuts', gated by desktopInteractions)",
+          "file": "lib/ui/screens/library_screen.dart",
+          "line": 225
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "shortcuts-help-dialog-close",
+          "type": "button",
+          "label": "Close",
+          "key": null,
+          "line": 596,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.of(context).pop().",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "system-entry",
+      "title": "[System entry points: share, launcher shortcuts, links, notifications]",
+      "kind": "overlay",
+      "file": "lib/main.dart",
+      "widget": "_OcAppState",
+      "presentedBy": [],
+      "line": 259,
+      "purpose": "Non-UI navigation handled by OcApp: each element is one external trigger and where it lands. Nothing is sent on the user's behalf; an undeliverable trigger is consumed with a snackbar notice and usually opens '/servers' (_showServersForLaunch, skipped when '/servers' is already on top).",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "ShareIntent, LaunchShortcut, SessionLinkIntent listeners and ConnectionController.pendingCodingAlertOpen (consumed on resume)"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "system-entry-share-text",
+          "type": "gesture",
+          "label": "[text shared from another app]",
+          "key": null,
+          "line": 349,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "ChatScreen",
+          "effect": "_scheduleShareRoute: waits for a connected server (snackbar 'Connect to a server and the shared text opens in a new session.' once), then _controller.createSession() and pushes ChatScreen(sessionID, initialText: text); failure shows the share-failed banner.",
+          "gates": [
+            "_controller.hasConnectedServer && !_controller.connectionLoading && !_controller.locationLoading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "system-entry-launch-connect",
+          "type": "gesture",
+          "label": "[launcher shortcut: Connect]",
+          "key": null,
+          "line": 530,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "LaunchAction.connect -> _showServersForLaunch: navigator.pushNamed('/servers').",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "system-entry-launch-new-task",
+          "type": "gesture",
+          "label": "[launcher shortcut: New task]",
+          "key": null,
+          "line": 548,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionID>",
+          "effect": "_openNewTaskForLaunch: createSession then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()); no profile / credential re-entry / failed connection -> '/servers' plus notice.",
+          "gates": [
+            "_controller.profile != null",
+            "!_launchProfileNeedsReentry",
+            "_controller.hasConnectedServer && !_controller.connectionLoading && !_controller.locationLoading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "system-entry-launch-pinned-session",
+          "type": "gesture",
+          "label": "[launcher shortcut / widget row: pinned session]",
+          "key": null,
+          "line": 605,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionID>",
+          "effect": "_openSessionForLaunch: pushNamed('/chat/<launch.sessionID>') unless already on top; a launch for another saved profile is dropped with a notice.",
+          "gates": [
+            "_controller.profile?.id == launch.profileID",
+            "!_launchProfileNeedsReentry",
+            "_controller.hasConnectedServer && !_controller.connectionLoading && !_controller.locationLoading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "system-entry-launch-activity",
+          "type": "gesture",
+          "label": "[Quick Settings tile: Activity]",
+          "key": null,
+          "line": 645,
+          "action": "navigate",
+          "target": "activity",
+          "targetWidget": "ActivityScreen",
+          "effect": "_openActivityForLaunch: pushes ActivityScreen(controller) named '/activity/launch'; without a saved profile opens '/servers'.",
+          "gates": [
+            "_controller.profile != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "system-entry-session-link",
+          "type": "gesture",
+          "label": "[opencode-mobile://session handoff link]",
+          "key": null,
+          "line": 748,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionID>",
+          "effect": "_openSessionForLink: unknown server -> session-link-server-missing banner; other saved server -> _controller.connect(target), pushNamedAndRemoveUntil('/home') then pushNamed('/chat/<id>'); active server -> pushNamed('/chat/<id>').",
+          "gates": [
+            "saved profile with link.profileID exists and needs no credential re-entry"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "system-entry-team-link-gate",
+          "type": "gesture",
+          "label": "[opencode-mobile://team link or AI Team notification: gate]",
+          "key": null,
+          "line": 880,
+          "action": "navigate",
+          "target": "activity",
+          "targetWidget": "ActivityScreen",
+          "effect": "_openTeamLink/_pushTeamDestination: pushes ActivityScreen(initialTeamGateId: link.id) which opens showGateSheet once the orchestration snapshot settles; switches server first like the session link.",
+          "gates": [
+            "saved profile exists, no credential re-entry",
+            "_controller.hasConnectedServer && !_controller.connectionLoading && !_controller.locationLoading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "system-entry-team-link-run",
+          "type": "gesture",
+          "label": "[opencode-mobile://team link or AI Team notification: run]",
+          "key": null,
+          "line": 889,
+          "action": "navigate",
+          "target": "run",
+          "targetWidget": "RunScreen",
+          "effect": "_pushTeamDestination: pushes RunScreen(controller: team, runId: link.id); without _controller.orchestration pushes plain ActivityScreen.",
+          "gates": [
+            "_controller.orchestration != null (else ActivityScreen)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "system-entry-alert-quota",
+          "type": "gesture",
+          "label": "[notification tap: quota alert]",
+          "key": null,
+          "line": 982,
+          "action": "navigate",
+          "target": "quota-monitor",
+          "targetWidget": "QuotaMonitorScreen",
+          "effect": "_scheduleCodingAlertRoute: quotaMonitor.resolveRoute(...) then pushes QuotaMonitorScreen(controller); unresolved -> snackbar quotaMonitorSourceChanged.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "system-entry-alert-monitored-request",
+          "type": "gesture",
+          "label": "[notification tap: monitored profile request]",
+          "key": null,
+          "line": 1011,
+          "action": "other",
+          "target": null,
+          "targetWidget": "openMonitoredRequest",
+          "effect": "target.monitorToken non-empty: profileMonitor.routeForToken(...) then openMonitoredRequest(navigator.context, _controller, route) (lib/ui/screens/profile_monitor_screen.dart); mismatch -> snackbar monitorOpenFailed.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "system-entry-alert-question",
+          "type": "gesture",
+          "label": "[notification tap: question]",
+          "key": null,
+          "line": 1033,
+          "action": "navigate",
+          "target": "activity",
+          "targetWidget": "ActivityScreen",
+          "effect": "Pushes ActivityScreen(initialQuestionSessionID: target.sessionID) which auto-opens the question sheet.",
+          "gates": [
+            "_controller.hasConnectedServer"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "system-entry-alert-session",
+          "type": "gesture",
+          "label": "[notification tap: other coding alert]",
+          "key": null,
+          "line": 1044,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "ChatScreen",
+          "effect": "Pushes ChatScreen(sessionID: target.sessionID).",
+          "gates": [
+            "_controller.hasConnectedServer"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "share-session-failed-banner",
+      "title": "Shared text kept. Could not open a session. Retry when the connection is ready.",
+      "kind": "overlay",
+      "file": "lib/main.dart",
+      "widget": "_scheduleShareRoute",
+      "presentedBy": [],
+      "line": 427,
+      "purpose": "MaterialBanner shown through the app ScaffoldMessenger when creating the session for shared text fails.",
+      "reachedFrom": [
+        {
+          "page": "system-entry",
+          "element": "system-entry-share-text"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "share-session-failed-banner-retry",
+          "type": "button",
+          "label": "Retry",
+          "key": null,
+          "line": 431,
+          "action": "other",
+          "target": null,
+          "targetWidget": "ChatScreen",
+          "effect": "Clears _failedShareText, hides the banner and calls _scheduleShareRoute() again (createSession + push ChatScreen).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "session-link-server-missing-banner",
+      "title": "This server is not saved on this phone. Add it under Servers, then scan the code again.",
+      "kind": "overlay",
+      "file": "lib/main.dart",
+      "widget": "_showSessionLinkServerMissing",
+      "presentedBy": [],
+      "line": 917,
+      "purpose": "MaterialBanner (key 'session-link-server-missing') for a session or AI Team link naming an unknown server.",
+      "reachedFrom": [
+        {
+          "page": "system-entry",
+          "element": "system-entry-session-link"
+        },
+        {
+          "page": "system-entry",
+          "element": "system-entry-team-link-gate"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "session-link-server-missing-banner-dismiss",
+          "type": "button",
+          "label": "Dismiss",
+          "key": null,
+          "line": 930,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "hideCurrentMaterialBanner().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-link-server-missing-banner-open-servers",
+          "type": "button",
+          "label": "Open Servers",
+          "key": null,
+          "line": 936,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "Hides the banner then _showServersForLaunch -> pushNamed('/servers').",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "desktop-release-notice",
+      "title": "OpenCode {tag} is available.",
+      "kind": "overlay",
+      "file": "lib/update/desktop_release_check.dart",
+      "widget": "DesktopReleaseNotice",
+      "presentedBy": [],
+      "line": 147,
+      "purpose": "Snackbar (12s, once per run) when the GitHub releases check finds a newer build; checks on start and resume, throttled to 15 minutes. Hard-coded English.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "automatic: app start / resume when a newer release tag exists"
+        }
+      ],
+      "gates": [
+        "platformCapabilities.supportsDesktopReleaseCheck"
+      ],
+      "elements": [
+        {
+          "id": "desktop-release-notice-view",
+          "type": "button",
+          "label": "View",
+          "key": null,
+          "line": 246,
+          "action": "open-dialog",
+          "target": "external-link-dialog",
+          "targetWidget": "openExternalLink",
+          "effect": "openExternalLink(navigatorContext, trusted release URL or desktopReleasesPageUrl) -> confirmation dialog then launchUrl.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "shorebird-update-notice",
+      "title": "Shorebird update ready — restart to apply.",
+      "kind": "overlay",
+      "file": "lib/update/shorebird_update_notice.dart",
+      "widget": "ShorebirdUpdateNotice",
+      "presentedBy": [],
+      "line": 58,
+      "purpose": "Code-push notices via the app ScaffoldMessenger: a day-long 'Receiving Shorebird update…' progress snackbar (line 130, no action) and a 10s ready snackbar. Hard-coded English.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "automatic: app start / resume when service.checkForUpdate() reports available or restartRequired"
+        }
+      ],
+      "gates": [
+        "platformCapabilities.supportsCodePush (ShorebirdAppUpdateService) && service.isAvailable"
+      ],
+      "elements": [
+        {
+          "id": "shorebird-update-notice-got-it",
+          "type": "button",
+          "label": "Got it",
+          "key": null,
+          "line": 157,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "SnackBarAction with empty callback; dismisses the snackbar.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "external-link-dialog",
+      "title": "Open external link? / Open insecure HTTP link?",
+      "kind": "dialog",
+      "file": "lib/ui/widgets/external_link.dart",
+      "widget": "openExternalLink",
+      "presentedBy": [
+        "openExternalLink"
+      ],
+      "line": 68,
+      "purpose": "The single confirmation every non-app-authored URL passes: shows the destination host (and an insecure warning for http). Non-http(s), credentialed, hostless or >2048-char URLs are blocked with a snackbar before the dialog.",
+      "reachedFrom": [
+        {
+          "page": "desktop-release-notice",
+          "element": "desktop-release-notice-view"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "TailscaleSetupScreen",
+          "file": "lib/ui/screens/tailscale_setup_screen.dart",
+          "line": 150
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "DevelopmentServicesScreen",
+          "file": "lib/ui/screens/development_services_screen.dart",
+          "line": 433
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "AgentAccountScreen",
+          "file": "lib/ui/screens/agent_account_screen.dart",
+          "line": 390
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ExternalAgentsScreen",
+          "file": "lib/ui/screens/external_agents_screen.dart",
+          "line": 892
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "WebSourcesScreen",
+          "file": "lib/ui/screens/web_sources_screen.dart",
+          "line": 198
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "IntegrationsScreen",
+          "file": "lib/ui/screens/library/integrations_screen.dart",
+          "line": 1663
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "MarkdownText link tap",
+          "file": "lib/ui/widgets/markdown.dart",
+          "line": 750
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "FormRenderer external field",
+          "file": "lib/ui/widgets/form_renderer.dart",
+          "line": 1132
+        }
+      ],
+      "gates": [
+        "safeExternalLinkUri(value) != null"
+      ],
+      "elements": [
+        {
+          "id": "external-link-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 96,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, false) -> ExternalLinkOutcome.cancelled.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "external-link-dialog-open",
+          "type": "button",
+          "label": "Open link / Open HTTP link",
+          "key": null,
+          "line": 100,
+          "action": "external-link",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, true) then launchUrl(uri, mode: LaunchMode.externalApplication); snackbar when no handler or on failure.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "confirm-sheet",
+      "title": "[Generic confirmation sheet: caller-supplied title]",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/confirm_sheet.dart",
+      "widget": "showConfirmSheet",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 23,
+      "purpose": "Shared bottom-sheet confirmation (icon, title, message, one primary action, cancel). Callers supply copy, keys and the destructive flag and perform the actual mutation after it returns true; caller agents record their own instances.",
+      "reachedFrom": [],
+      "gates": [
+        "routes?.isPending != false"
+      ],
+      "elements": [
+        {
+          "id": "confirm-sheet-confirm",
+          "type": "button",
+          "label": "<confirmLabel>",
+          "key": "<confirmKey>",
+          "line": 68,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, true) (HapticFeedback.mediumImpact when destructive); the caller then performs the confirmed action.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "confirm-sheet-cancel",
+          "type": "button",
+          "label": "<cancelLabel> (default 'Cancel')",
+          "key": null,
+          "line": 85,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, false).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "file-drop-failed-dialog",
+      "title": "Could not attach dropped files",
+      "kind": "dialog",
+      "file": "lib/ui/desktop/file_drop.dart",
+      "widget": "DesktopFileDropTargetState._handle",
+      "presentedBy": [],
+      "line": 71,
+      "purpose": "Shown when the host's onDrop handler throws; never shows exception text.",
+      "reachedFrom": [
+        {
+          "page": "embedded-desktop-file-drop-target",
+          "element": "embedded-desktop-file-drop-target-drop"
+        }
+      ],
+      "gates": [
+        "desktopInteractions"
+      ],
+      "elements": [
+        {
+          "id": "file-drop-failed-dialog-close",
+          "type": "button",
+          "label": "Close",
+          "key": null,
+          "line": 85,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.of(context).pop().",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-desktop-file-drop-target",
+      "title": "Drop to attach",
+      "kind": "overlay",
+      "file": "lib/ui/desktop/file_drop.dart",
+      "widget": "DesktopFileDropTarget",
+      "presentedBy": [],
+      "line": 37,
+      "purpose": "Desktop drag-and-drop target wrapped around the chat composer; highlights with 'Drop to attach' (key 'composer-drop-highlight', hard-coded English) while dragging.",
+      "reachedFrom": [],
+      "gates": [
+        "desktopInteractions"
+      ],
+      "elements": [
+        {
+          "id": "embedded-desktop-file-drop-target-drop",
+          "type": "gesture",
+          "label": "[drop files]",
+          "key": "composer-drop-highlight",
+          "line": 105,
+          "action": "other",
+          "target": "file-drop-failed-dialog",
+          "targetWidget": null,
+          "effect": "DropTarget.onDragDone -> _handle(files) -> host onDrop(List<DroppedFile>) (ChatScreen attachment pipeline); a throw opens the drop-failed dialog.",
+          "gates": [],
+          "destructive": false
+        }
+      ],
+      "embeddedIn": [
+        "ChatScreen"
+      ]
+    },
+    {
+      "id": "embedded-context-menu-region",
+      "title": "[Desktop right-click context menu]",
+      "kind": "overlay",
+      "file": "lib/ui/desktop/context_menu.dart",
+      "widget": "ContextMenuRegion",
+      "presentedBy": [
+        "showContextMenu"
+      ],
+      "line": 39,
+      "purpose": "Desktop-only wrapper that turns a row's long-press actions into a showMenu context menu; hosts supply the ContextMenuAction list at click time and should record the concrete entries.",
+      "reachedFrom": [],
+      "gates": [
+        "desktopInteractions"
+      ],
+      "elements": [
+        {
+          "id": "embedded-context-menu-region-secondary-tap",
+          "type": "gesture",
+          "label": "[right-click]",
+          "key": null,
+          "line": 100,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "GestureDetector.onSecondaryTapDown -> _open(globalPosition) -> showContextMenu(context, position, widget.actions()); opens overflow menu.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-context-menu-region-keyboard",
+          "type": "gesture",
+          "label": "Shift+F10 / Menu key",
+          "key": null,
+          "line": 78,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "CallbackShortcuts -> _openFromKeyboard opens the same menu at the row centre (row must have focus).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-context-menu-region-item",
+          "type": "menu-item",
+          "label": "<action label>",
+          "key": "<action.menuKey>",
+          "line": 131,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "PopupMenuItem template: after selection calls actions[selected].onSelected() supplied by the host; destructive entries are rendered in the error colour.",
+          "gates": [],
+          "destructive": false
+        }
+      ],
+      "embeddedIn": [
+        "TerminalPage (terminal_screen.dart:493)",
+        "WorkspaceScreen (workspace_screen.dart:1299,1568)",
+        "WorktreesScreen (worktrees_screen.dart:750)",
+        "FilesScreen (files_screen.dart:1040)",
+        "SessionsTab (chat/sessions_tab.dart:83)",
+        "MessageView (chat/message_view.dart:1616)",
+        "GlobalSessionsScreen (global_sessions_screen.dart:1097)",
+        "ManagedWorkspacesScreen (managed_workspaces_screen.dart:528)"
+      ]
+    },
+    {
+      "id": "embedded-product-states",
+      "title": "[Shared empty / error / refresh / gated states]",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/product_states.dart",
+      "widget": "ProductErrorState",
+      "presentedBy": [],
+      "line": 210,
+      "purpose": "Shared state widgets embedded in many screens. Host agents should trace onRetry/onAction to their own methods; Activity's instances are recorded on the activity page.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": [
+        {
+          "id": "embedded-product-states-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 240,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductErrorState: calls host onRetry (Future<void> Function()). Hard-coded English.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-product-states-error-report-bug",
+          "type": "button",
+          "label": "Report a bug",
+          "key": "product-error-report-bug",
+          "line": 248,
+          "action": "other",
+          "target": null,
+          "targetWidget": "openBugReport",
+          "effect": "ProductErrorState: openBugReport(context) (lib/feedback/bug_report.dart:88). Hard-coded English.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-product-states-refresh-retry",
+          "type": "button",
+          "label": "Retry",
+          "key": null,
+          "line": 86,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductRefreshBody MaterialBanner ('refresh failed' + message): calls host onRetry.",
+          "gates": [
+            "message != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-product-states-empty-action",
+          "type": "button",
+          "label": "<actionLabel>",
+          "key": null,
+          "line": 188,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductEmptyState FilledButton.tonal: calls host onAction.",
+          "gates": [
+            "actionLabel != null && onAction != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-product-states-inline-action",
+          "type": "button",
+          "label": "<actionLabel>",
+          "key": null,
+          "line": 318,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductInlineEmpty TextButton: calls host onAction.",
+          "gates": [
+            "actionLabel != null && onAction != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-product-states-gated-row",
+          "type": "list-tile",
+          "label": "<title> (disabled, 55% opacity)",
+          "key": "gated-<feature>",
+          "line": 403,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "GatedRowTile: tap shows snackbar 'Requires an OpenCode {requiresGeneration} server'. Key 'gated-<feature>'. Used by ProjectHealthScreen:301, CodingSettingsScreen:210, ServerSettingsScreen:294.",
+          "gates": [],
+          "destructive": false
+        }
+      ],
+      "embeddedIn": [
+        "ProductErrorState: TerminalPage, SessionContextScreen, ReviewWorkspace, ActiveContextScreen, WorktreesScreen, ProjectsScreen, SavedPermissionsScreen, SessionRelationsScreen, AgentScreen, RunScreen, FilesScreen, SessionDestinationSheet, session_sheets, CommandsScreen, SkillsScreen, ReferencesScreen, TeamHomeScreen, ActivityScreen, GlobalSessionsScreen, ToolsScreen, ChatScreen, ManagedWorkspacesScreen, lib/voice/notices.dart",
+        "ProductRefreshBody: TerminalPage, ReviewWorkspace, SkillsScreen, ReferencesScreen, CommandsScreen",
+        "GatedRowTile: ProjectHealthScreen, CodingSettingsScreen, ServerSettingsScreen"
+      ]
+    },
+    {
+      "id": "demo",
+      "title": "Offline demo",
+      "kind": "screen",
+      "file": "lib/ui/screens/demo_screen.dart",
+      "widget": "DemoScreen",
+      "presentedBy": [],
+      "line": 17,
+      "purpose": "Offline demo: the production ChatScreen (showAppBar: false, prefilled DemoCopy.prompt) over a route-owned DemoGateway and ephemeral stores, under a header with reset/exit and a disclosure line.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ServersScreen (offline demo entry)",
+          "file": "lib/ui/screens/servers_screen.dart",
+          "line": 361
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "demo-reset",
+          "type": "icon-button",
+          "label": "Reset demo",
+          "key": null,
+          "line": 107,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_reset(): closes the gateway, recreates DemoGateway/DemoProfileStore/ConnectionController.isolated, bumps _generation to remount ChatScreen, disposes the old controller and clears its prefs.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "demo-exit",
+          "type": "icon-button",
+          "label": "Exit demo",
+          "key": null,
+          "line": 112,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_exit(): _gateway.close() then Navigator.pop().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "demo-set-up-server",
+          "type": "button",
+          "label": "Set up your own server",
+          "key": null,
+          "line": 130,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_exit(): closes the gateway and pops back to the servers screen.",
+          "gates": [
+            "_gateway.hasFinished && MediaQuery.viewInsetsOf(context).bottom == 0"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "demo-chat",
+          "type": "card",
+          "label": "[embedded ChatScreen]",
+          "key": null,
+          "line": 147,
+          "action": "other",
+          "target": null,
+          "targetWidget": "ChatScreen",
+          "effect": "Embeds ChatScreen(sessionID: DemoGateway.sessionID, showAppBar: false, emptyState: _DemoTaskIntroduction, initialText: DemoCopy.prompt, handoffStore) under a ProviderScope overriding connProvider/bootstrapProvider; all chat elements apply.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "capabilities",
+      "title": "Commands & tools",
+      "kind": "screen",
+      "file": "lib/ui/screens/capabilities_screen.dart",
+      "widget": "CapabilitiesScreen",
+      "presentedBy": [],
+      "line": 11,
+      "purpose": "Tabbed home for the server capability catalogs; each tab embeds another screen with embedded: true.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "LibraryScreen._open",
+          "file": "lib/ui/screens/library_screen.dart",
+          "line": 138
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "capabilities-tab-commands",
+          "type": "tab",
+          "label": "Commands",
+          "key": "capabilities-tab-Commands",
+          "line": 56,
+          "action": "other",
+          "target": "capabilities-commands-tab",
+          "targetWidget": "CommandsScreen",
+          "effect": "TabBar tab -> CommandsScreen(controller, embedded: true).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "capabilities-tab-tools",
+          "type": "tab",
+          "label": "Tools",
+          "key": "capabilities-tab-Tools",
+          "line": 56,
+          "action": "other",
+          "target": "capabilities-tools-tab",
+          "targetWidget": "ToolsScreen",
+          "effect": "TabBar tab -> ToolsScreen(controller, embedded: true).",
+          "gates": [
+            "controller.capabilities.toolInventory"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "capabilities-tab-skills",
+          "type": "tab",
+          "label": "Skills",
+          "key": "capabilities-tab-Skills",
+          "line": 56,
+          "action": "other",
+          "target": "capabilities-skills-tab",
+          "targetWidget": "SkillsScreen",
+          "effect": "TabBar tab -> SkillsScreen(controller, embedded: true).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "capabilities-tab-references",
+          "type": "tab",
+          "label": "References",
+          "key": "capabilities-tab-References",
+          "line": 56,
+          "action": "other",
+          "target": "capabilities-references-tab",
+          "targetWidget": "ReferencesScreen",
+          "effect": "TabBar tab -> ReferencesScreen(controller, embedded: true).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "attention-overview",
+      "title": "Server attention",
+      "kind": "screen",
+      "file": "lib/ui/screens/attention_overview_screen.dart",
+      "widget": "AttentionOverviewScreen",
+      "presentedBy": [],
+      "line": 12,
+      "purpose": "Local per-saved-server overview (selected/inactive, data source, pending/running/unread counts or 'unknown'); never switches profiles itself.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ServersScreen app-bar icon 'Server attention'",
+          "file": "lib/ui/screens/servers_screen.dart",
+          "line": 396
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "attention-overview-monitor-settings",
+          "type": "icon-button",
+          "label": "Monitoring settings",
+          "key": null,
+          "line": 34,
+          "action": "navigate",
+          "target": "profile-monitor",
+          "targetWidget": "ProfileMonitorScreen",
+          "effect": "Pushes ProfileMonitorScreen(controller).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "attention-overview-open-profile",
+          "type": "button",
+          "label": "Open server / Choose server…",
+          "key": null,
+          "line": 141,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Per profile card: when the profile is still readable and saved calls host onOpenProfile(profileID); ServersScreen's host pops this route with the id and runs its own safe switch flow. Disabled (with 'navigation unavailable' text) when onOpenProfile == null.",
+          "gates": [
+            "onOpenProfile != null",
+            "controller.isProfileReadable(item.profileID)"
+          ],
+          "destructive": false
+        }
+      ]
+    }
+  ],
+  "notPages": [
+    {
+      "file": "lib/ui/navigation/chat_route.dart",
+      "reason": "ChatRouteArguments value class (discardIfUntouched) passed to '/chat/<id>'; no UI"
+    },
+    {
+      "file": "lib/ui/desktop/desktop_interaction.dart",
+      "reason": "desktopInteractions gate, shortcutModifierLabel, AppScrollBehavior, DesktopScrollbarArea, OwnScrollbar, DesktopSelectionArea, ClickCursor: behaviour wrappers with no surface and no callbacks of their own"
+    },
+    {
+      "file": "lib/ui/widgets/connection_failure.dart",
+      "reason": "ConnectionFailure.diagnose model + ConnectionFailureAction enum used by SavedServerConnectionCard; no widgets"
+    },
+    {
+      "file": "lib/ui/widgets/glass_surface.dart",
+      "reason": "pure rendering helper (frosted dock surface), no interactive element"
+    },
+    {
+      "file": "lib/ui/widgets/retained_tab_view.dart",
+      "reason": "keeps root tab bodies alive and cross-fades them; no interactive element"
+    },
+    {
+      "file": "lib/ui/widgets/entrance.dart",
+      "reason": "EntranceReveal animation wrapper; no interactive element"
+    },
+    {
+      "file": "lib/ui/app_iconography.dart",
+      "reason": "icon constants, AppGlyph and AppBrandMark rendering widgets; no interactive element"
+    },
+    {
+      "file": "lib/ui/app_theme.dart",
+      "reason": "theme data, semantic colours and layout helpers; no surface"
+    },
+    {
+      "file": "lib/ui/theme_packs.dart",
+      "reason": "theme pack palettes and dynamic-colour pack; no surface"
+    },
+    {
+      "file": "lib/ui/early_l10n.dart",
+      "reason": "localization lookup helper; no UI"
+    },
+    {
+      "file": "lib/ui/permission_presentation.dart",
+      "reason": "permissionRequestTitle string helper; no UI"
+    }
+  ],
+  "notes": [
+    "ROUTE TABLE (lib/main.dart:1227-1260, initialRoute '/'):\n'/' -> _Root (ServersScreen when conn.profile == null or the profile requiresPasswordReentry/requiresCodexTokenReentry; HomeScreen when conn.hasConnectedServer; else the root-connecting card)\n'/servers' -> ServersScreen (RouteSettings.arguments 'edit-active' opens the active profile editor)\n'/home' -> HomeScreen\n'/activity' -> ActivityScreen(controller)\n'/requests' -> ActivityScreen(controller) (legacy deep link alias)\n'/guide' -> GuideScreen(embedded: false)\n'/about' -> AboutScreen\n'/termux-setup' -> TermuxSetupScreen — registered only if platformCapabilities.supportsTermux\n'/debug' -> AppDiagnosticsScreen(controller)\nonGenerateRoute: '/chat/<sessionID>' -> ChatScreen(sessionID, discardIfUntouched: arguments is ChatRouteArguments && arguments.discardIfUntouched); any other name -> null\nUnregistered route name used only for top-of-stack tracking: '/activity/launch' (main.dart:665, pushed as MaterialPageRoute of ActivityScreen)",
+    "main.dart opens no showDialog/showModalBottomSheet itself. Its surfaces are two MaterialBanners (share-session-failed-banner main.dart:427, session-link-server-missing-banner main.dart:925) and action-less snackbars via _messengerKey: shareWaitingForServer (367), _showLaunchNotice (693) with launchShortcutWaiting / launchUiSessionWaiting / launchShortcutNoServer / launchShortcutReentry / launchShortcutConnectionFailed / launchShortcutNewTaskFailed / launchUiSessionNoServer / launchUiSessionOtherServer / launchUiSessionReentry / launchUiSessionConnectionFailed / launchUiActivityNoServer / handoffUiLinkWaiting / handoffUiLinkReentry / handoffUiLinkConnectionFailed, quotaMonitorSourceChanged (991), monitorOpenFailed (1021), new-session failure productErrorText (1066).",
+    "MaterialApp.builder wrapper order (main.dart:1171-1209): Theme(AppTheme.forLocale) > MediaQuery(text scale capped at AppTheme.maxTextScale) > ShorebirdUpdateNotice > DesktopReleaseNotice > AppShortcuts > navigator child.",
+    "page 'system-entry' is a synthetic overlay page added so system-triggered edges into pages owned by other agents (ChatScreen, ServersScreen, QuotaMonitorScreen, RunScreen, openMonitoredRequest) carry a resolvable targetWidget; coordinator may fold its elements into those pages' reachedFrom as {page:'system'}.",
+    "ActivityScreen embeds ProfileMonitorInbox(controller, compact: true) (lib/ui/screens/profile_monitor_screen.dart, owned by g-servers) at activity_screen.dart:595 and :648; its interactive elements are not recorded here.",
+    "CompletionDigestCard (lib/ui/widgets/completion_digest.dart, owned by d-chat-sheets) also has a 'Copy digest' button (line ~84-102, clipboard + snackbar) that is internal to the widget; only the four host callbacks are recorded on 'activity'.",
+    "activity-digest-review has four possible targets chosen at runtime (activity_screen.dart:126-156); target is set to the first (permission-sheet) and the rest are listed in targetWidget.",
+    "TeamReceiptChip onOpen on Activity gate rows (activity_screen.dart:868) is folded into activity-team-gate-row; widget is in lib/ui/widgets/team_receipt.dart (i1-team-core).",
+    "ShortcutHelp lists shortcuts not bound in shortcuts.dart (Mod+Enter send, Mod+C copy transcript, F2/Shift+F2 recent model, context keys): they live in chat/composer code owned by other agents (shortcuts.dart:121-129).",
+    "Hard-coded English strings (not in app_en.arb): 'Try again' and 'Report a bug' in ProductErrorState (product_states.dart:242,252), 'Requires an OpenCode N server' (product_states.dart:410), 'Drop to attach' (file_drop.dart:133), desktop release snackbar + 'View' (desktop_release_check.dart:245-247), Shorebird snackbars + 'Got it' (shorebird_update_notice.dart:140,156-157), MaterialApp title 'OpenCode Mobile', fallback profile name 'OpenCode' (home_screen.dart:183).",
+    "No in-app caller of pushNamed('/activity'), '/requests' or '/home'-with-initialTab was found; HomeScreen.initialTab is only ever the default 0 in lib/.",
+    "CapabilitiesScreen tab bodies are other agents' screens in embedded mode; element targets use the '<owner>-<tab>-tab' naming and targetWidget for resolution."
+  ]
+}

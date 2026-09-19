@@ -1,0 +1,142 @@
+{
+ "roots": [
+  "servers",
+  "root-connecting",
+  "home-shell",
+  "workspace",
+  "files",
+  "activity",
+  "more"
+ ],
+ "widgetToPage": {
+  "/": "root-connecting",
+  "/servers": "servers",
+  "/home": "home-shell",
+  "/activity": "activity",
+  "/requests": "activity",
+  "/guide": "guide",
+  "/about": "about",
+  "/termux-setup": "termux-setup",
+  "/debug": "app-diagnostics",
+  "/chat/": "chat",
+  "/chat/<id>": "chat",
+  "/chat/<sessionID>": "chat",
+  "/chat/$id": "chat",
+  "_discardQueuedPrompt": "chat-discard-queued-draft-sheet",
+  "RunResultView": "run-result",
+  "ActivityGateTile": "activity"
+ },
+ "fileToPage": {},
+ "pageArea": {
+  "bootstrap-gate": "onboarding",
+  "embedded-context-menu-region": "misc",
+  "demo": "onboarding",
+  "confirm-sheet": "misc",
+  "external-link-dialog": "misc",
+  "embedded-product-states": "misc",
+  "embedded-info-label": "misc",
+  "info-label-sheet": "misc",
+  "servers-welcome": "onboarding",
+  "guide": "onboarding"
+ },
+ "nullTargets": [],
+ "pageAlias": {
+  "chat-command-launcher-sheet": "command-launcher-sheet",
+  "system-entry": "system"
+ },
+ "dropPages": {
+  "chat-session-menu-sheet": "session-menu-sheet"
+ },
+ "elementFileByPrefix": {
+  "chat-command-": "lib/ui/screens/chat_screen.dart"
+ },
+ "hostWiringPrefixes": [
+  "chat-composer-",
+  "chat-prompt-error-",
+  "chat-subagent-banner-",
+  "chat-shared-banner-",
+  "chat-find-bar",
+  "chat-pending-sends-strip",
+  "chat-message-error-",
+  "chat-message-tool-file-preview",
+  "chat-message-open-subagent-session",
+  "chat-question-card-",
+  "chat-retry-attention-card",
+  "chat-auto-approval-indicator",
+  "chat-permission-card-review",
+  "chat-connection-status-banner",
+  "chat-voice-conversation-controls",
+  "chat-empty-suggestion",
+  "chat-jump-to-latest",
+  "chat-form-request-"
+ ],
+ "pageFields": {
+  "command-launcher-sheet": {
+   "line": 125,
+   "file": "lib/ui/screens/chat/command_launcher.dart",
+   "widget": "_CommandLauncherSheet"
+  },
+  "session-menu-sheet": {
+   "file": "lib/ui/screens/chat/attention_card.dart",
+   "line": 499,
+   "widget": "SessionMenuSheet"
+  }
+ },
+ "structuralEdges": [
+  {
+   "from": "termux-setup",
+   "to": "termux-setup-unsupported",
+   "note": "phase-driven body of TermuxSetupScreen"
+  },
+  {
+   "from": "termux-setup",
+   "to": "termux-setup-get-termux",
+   "note": "phase-driven body of TermuxSetupScreen"
+  },
+  {
+   "from": "termux-setup",
+   "to": "termux-setup-connect-termux",
+   "note": "phase-driven body of TermuxSetupScreen"
+  },
+  {
+   "from": "termux-setup",
+   "to": "termux-setup-choose",
+   "note": "phase-driven body of TermuxSetupScreen"
+  },
+  {
+   "from": "termux-setup",
+   "to": "termux-setup-checking",
+   "note": "phase-driven body of TermuxSetupScreen"
+  },
+  {
+   "from": "termux-setup",
+   "to": "termux-setup-installing",
+   "note": "phase-driven body of TermuxSetupScreen"
+  },
+  {
+   "from": "termux-setup",
+   "to": "termux-setup-connected",
+   "note": "phase-driven body of TermuxSetupScreen"
+  },
+  {
+   "from": "termux-setup",
+   "to": "termux-setup-failed",
+   "note": "phase-driven body of TermuxSetupScreen"
+  },
+  {
+   "from": "termux-setup",
+   "to": "termux-setup-installed",
+   "note": "phase-driven body of TermuxSetupScreen"
+  },
+  {
+   "from": "servers",
+   "to": "servers-welcome",
+   "note": "ServersScreen body while the profile store is empty"
+  },
+  {
+   "from": "workspace",
+   "to": "workspace-folder-chooser",
+   "note": "replaces the Workspace body while controller.workspaceChoiceRequired"
+  }
+ ]
+}

@@ -1,0 +1,3559 @@
+{
+ "area": "g-servers",
+ "pages": [
+  {
+   "id": "servers",
+   "title": "OpenCode — Servers",
+   "kind": "screen",
+   "file": "lib/ui/screens/servers_screen.dart",
+   "widget": "ServersScreen",
+   "presentedBy": [],
+   "line": 42,
+   "purpose": "Lists saved server profiles (OpenCode 1/2 and Codex), connects to one, and is the hub for every way of adding a server: manual editor, OpenCode 2 shortcut, Termux on-device, Tailscale, demo and external agents.",
+   "reachedFrom": [
+    {
+     "page": "system",
+     "element": null,
+     "trigger": "app root '/' : _Root.build returns ServersScreen when conn.profile == null (lib/main.dart:1379) or when conn.profile!.requiresPasswordReentry || requiresCodexTokenReentry (lib/main.dart:1382-1385)"
+    },
+    {
+     "page": "system",
+     "element": null,
+     "trigger": "launch shortcut / launch action: _showServersForLaunch pushes '/servers' unless already on top (lib/main.dart:690)"
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "SavedServerConnectionCard.onChangeServer / onUpdateToken / onUpdatePassword (pushNamedAndRemoveUntil '/servers', the latter two with arguments 'edit-active')",
+     "file": "lib/main.dart",
+     "line": 1403
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "HomeScreen overflow menu \"disconnect\" (conn.disconnect() then pushNamedAndRemoveUntil '/servers')",
+     "file": "lib/ui/screens/home_screen.dart",
+     "line": 199
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "SettingsScreen disconnect confirm (pushNamedAndRemoveUntil '/servers')",
+     "file": "lib/ui/screens/settings_screen.dart",
+     "line": 143
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "TermuxSetupScreen \"switch to own server\" button (pushNamed '/servers')",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
+     "line": 2558
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "ConnectionStatusBanner update password/token action (pushNamed '/servers', arguments: 'edit-active')",
+     "file": "lib/ui/widgets/connection_status_banner.dart",
+     "line": 48
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "ConnectionStatusBanner update password/token action (pushNamed '/servers', arguments: 'edit-active')",
+     "file": "lib/ui/widgets/connection_status_banner.dart",
+     "line": 76
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "ConnectionStatusBanner retry sheet 'Change server' (pushNamed '/servers')",
+     "file": "lib/ui/widgets/connection_status_banner.dart",
+     "line": 214
+    },
+    {
+     "page": "server-settings",
+     "element": "server-settings-manage-profiles"
+    }
+   ],
+   "gates": [
+    "named route '/servers' (lib/main.dart:1230)",
+    "list body shown when bootstrap.store.profiles.isNotEmpty; otherwise the servers-welcome body is shown",
+    "route argument 'edit-active' auto-opens the active profile's editor with the password/token focused (didChangeDependencies, line 70)"
+   ],
+   "elements": [
+    {
+     "id": "servers-attention",
+     "type": "icon-button",
+     "label": "Server attention",
+     "key": null,
+     "line": 385,
+     "action": "navigate",
+     "target": "attention-overview",
+     "targetWidget": "AttentionOverviewScreen",
+     "effect": "Pushes AttentionOverviewScreen(controller: connProvider, onOpenProfile pops with the profile id); when a readable profile id comes back it calls _connect(profile) for that saved profile.",
+     "gates": [
+      "bootstrap.store.profiles.isNotEmpty",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-about",
+     "type": "icon-button",
+     "label": "About and open source notices",
+     "key": null,
+     "line": 415,
+     "action": "navigate",
+     "target": "about",
+     "targetWidget": "/about",
+     "effect": "Navigator.pushNamed(context, '/about').",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "servers-guide",
+     "type": "icon-button",
+     "label": "Setup guide",
+     "key": null,
+     "line": 422,
+     "action": "navigate",
+     "target": "guide",
+     "targetWidget": "/guide",
+     "effect": "Navigator.pushNamed(context, '/guide').",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "servers-failure-dismiss",
+     "type": "icon-button",
+     "label": "Dismiss",
+     "key": "server-connect-failure",
+     "line": 2622,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Clears _listFailure (setState) so the inline connect-failure card (_InlineFailureCard, key server-connect-failure) disappears.",
+     "gates": [
+      "_listFailure != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-profile-row",
+     "type": "list-tile",
+     "label": "<profile name> / <baseUrl> / OpenCode|OpenCode 1|OpenCode 2 or \"Codex · <directory>\" / \"Password re-entry required\" / \"Connection token re-entry required\"",
+     "key": null,
+     "line": 544,
+     "action": "mutate",
+     "target": "home",
+     "targetWidget": "/home",
+     "effect": "_connect(p): if two Termux-managed profiles of different known generations exist (_needsManagedRuntimeChoice) it opens '/termux-setup' instead; if p.requiresPasswordReentry || p.requiresCodexTokenReentry it opens the profile editor (_edit, password focused for OpenCode); otherwise conn.connect(p) and on success pushNamedAndRemoveUntil('/home'); on failure shows the inline failure card.",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-profile-menu",
+     "type": "icon-button",
+     "label": "[profile row overflow menu]",
+     "key": null,
+     "line": 622,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "opens overflow menu",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-profile-menu-account",
+     "type": "menu-item",
+     "label": "Codex account",
+     "key": null,
+     "line": 642,
+     "action": "navigate",
+     "target": "agent-account",
+     "targetWidget": "AgentAccountScreen",
+     "effect": "Pushes AgentAccountScreen(connection: connProvider).",
+     "gates": [
+      "p.id == activeId && accountConnection.isConnected && accountConnection.capabilities.agentAccount"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-profile-menu-connect",
+     "type": "menu-item",
+     "label": "Connect",
+     "key": null,
+     "line": 648,
+     "action": "mutate",
+     "target": "home",
+     "targetWidget": "/home",
+     "effect": "_connect(p) — same as tapping the row (conn.connect(p), then '/home').",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "servers-profile-menu-edit",
+     "type": "menu-item",
+     "label": "Edit",
+     "key": null,
+     "line": 656,
+     "action": "navigate",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "_edit(existing: p): pushes _ProfileEditorScreen for that profile (reconnectOnSave when it is the active profile; Tailscale mode when pref 'oc.tailscale.<id>' is true).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "servers-profile-menu-remove",
+     "type": "menu-item",
+     "label": "Remove",
+     "key": null,
+     "line": 664,
+     "action": "open-sheet",
+     "target": "servers-remove-server-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_delete(p): opens the remove-server confirm sheet.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "servers-add-server",
+     "type": "button",
+     "label": "Add server",
+     "key": null,
+     "line": 690,
+     "action": "navigate",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "_edit(): pushes _ProfileEditorScreen for a new profile; on a saved result pushNamedAndRemoveUntil('/home').",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-connect-opencode2",
+     "type": "list-tile",
+     "label": "Connect OpenCode 2 — Use a server that is already running.",
+     "key": "connect-existing-opencode2",
+     "line": 700,
+     "action": "navigate",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "_edit(openCode2Intent: true): same autodetecting editor, only the title changes to 'OpenCode 2'.",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-try-demo",
+     "type": "button",
+     "label": "Try demo",
+     "key": null,
+     "line": 703,
+     "action": "navigate",
+     "target": "demo",
+     "targetWidget": "DemoScreen",
+     "effect": "_demo(): pushes DemoScreen.",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-termux-setup",
+     "type": "list-tile",
+     "label": "Termux setup — Set up OpenCode 1 or 2 on this phone.",
+     "key": "quick-add-termux-card",
+     "line": 710,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "_openTermuxSetup(): Navigator.pushNamed('/termux-setup'); on return bumps _termuxRevision so the running-server entry re-reads the phone.",
+     "gates": [
+      "platformCapabilities.supportsTermux",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-more-setup",
+     "type": "list-tile",
+     "label": "More setup options",
+     "key": null,
+     "line": 928,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ExpansionTile (_SetupOptions) expands to reveal Tailscale, Setup guide and External agents rows.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "servers-tailscale",
+     "type": "list-tile",
+     "label": "Connect with Tailscale — Reach a server over your private network",
+     "key": "welcome-tailscale-card",
+     "line": 936,
+     "action": "navigate",
+     "target": "tailscale-setup",
+     "targetWidget": "TailscaleSetupScreen",
+     "effect": "_tailscale(): pushes TailscaleSetupScreen; when it pops with a reviewed URL, opens the profile editor via _edit(tailscale: true, initialUrl: url).",
+     "gates": [
+      "platformCapabilities.supportsTailscaleHandoff",
+      "inside More setup options expansion",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-setup-guide",
+     "type": "list-tile",
+     "label": "Setup guide",
+     "key": "welcome-guide-card",
+     "line": 944,
+     "action": "navigate",
+     "target": "guide",
+     "targetWidget": "/guide",
+     "effect": "Navigator.pushNamed(context, '/guide').",
+     "gates": [
+      "inside More setup options expansion",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-external-agents",
+     "type": "list-tile",
+     "label": "External agents",
+     "key": null,
+     "line": 951,
+     "action": "navigate",
+     "target": "external-agents",
+     "targetWidget": "ExternalAgentsScreen",
+     "effect": "_externalAgents(): builds an ExternalAgentStore(prefs, secure) and pushes ExternalAgentsScreen(store); disposes the store when the route returns.",
+     "gates": [
+      "inside More setup options expansion",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    }
+   ],
+   "states": [
+    "password-reentry banner (Key password-reentry-banner) when the active profile needs its credential re-entered",
+    "inline connect failure card (server-connect-failure)",
+    "LinearProgressIndicator (server-operation-progress) while _busy",
+    "embeds TermuxRunningServerEntry (lib/ui/widgets/termux_running_server_entry.dart) with onConnect -> _connect(profile, detectedRunning: true) and onEnterCredentials -> _edit(existing, connectOnSave: true, initialUrl: TermuxBridge.managedServerUrl, focusPassword: true, openCode2Intent: server.flavor == v2)",
+    "embeds ManagedServerHealth (lib/ui/widgets/managed_server_health.dart) with onManage -> _openTermuxSetup when platformCapabilities.supportsTermux && a profile is Termux-managed"
+   ]
+  },
+  {
+   "id": "servers-welcome",
+   "title": "Keep your work moving.",
+   "kind": "screen",
+   "file": "lib/ui/screens/servers_screen.dart",
+   "widget": "_WelcomeView",
+   "presentedBy": [],
+   "line": 729,
+   "purpose": "First-run empty state of ServersScreen: value statement plus the primary Connect and Try demo actions and the secondary connect methods.",
+   "reachedFrom": [
+    {
+     "page": "system",
+     "element": null,
+     "trigger": "app root '/' : _Root.build returns ServersScreen when conn.profile == null (lib/main.dart:1379) or when conn.profile!.requiresPasswordReentry || requiresCodexTokenReentry (lib/main.dart:1382-1385)"
+    },
+    {
+     "page": "system",
+     "element": null,
+     "trigger": "launch shortcut / launch action: _showServersForLaunch pushes '/servers' unless already on top (lib/main.dart:690)"
+    },
+    {
+     "page": "system",
+     "element": null,
+     "trigger": "any route into ServersScreen while the profile store is empty"
+    }
+   ],
+   "gates": [
+    "store.profiles.isEmpty (servers_screen.dart:432)"
+   ],
+   "elements": [
+    {
+     "id": "servers-welcome-about",
+     "type": "icon-button",
+     "label": "About and open source notices",
+     "key": null,
+     "line": 415,
+     "action": "navigate",
+     "target": "about",
+     "targetWidget": "/about",
+     "effect": "Navigator.pushNamed(context, '/about').",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "servers-welcome-guide",
+     "type": "icon-button",
+     "label": "Setup guide",
+     "key": null,
+     "line": 422,
+     "action": "navigate",
+     "target": "guide",
+     "targetWidget": "/guide",
+     "effect": "Navigator.pushNamed(context, '/guide').",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "servers-welcome-connect",
+     "type": "button",
+     "label": "Connect to a server",
+     "key": "welcome-connect-card",
+     "line": 786,
+     "action": "navigate",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "onConnect -> _edit(): pushes the new-profile editor; a successful save connects and goes to '/home'.",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-welcome-try-demo",
+     "type": "button",
+     "label": "Try demo",
+     "key": null,
+     "line": 802,
+     "action": "navigate",
+     "target": "demo",
+     "targetWidget": "DemoScreen",
+     "effect": "onDemo -> _demo(): pushes DemoScreen ('A simulated session. No server needed.').",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-welcome-connect-opencode2",
+     "type": "list-tile",
+     "label": "Connect OpenCode 2 — Use a server that is already running.",
+     "key": "connect-existing-opencode2",
+     "line": 817,
+     "action": "navigate",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "onConnectOpenCode2 -> _edit(openCode2Intent: true).",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-welcome-termux-setup",
+     "type": "list-tile",
+     "label": "Termux setup — Set up OpenCode 1 or 2 on this phone.",
+     "key": "welcome-termux-card",
+     "line": 819,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "onTermux -> _openTermuxSetup(): pushNamed('/termux-setup').",
+     "gates": [
+      "platformCapabilities.supportsTermux",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-welcome-more-setup",
+     "type": "list-tile",
+     "label": "More setup options",
+     "key": null,
+     "line": 928,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ExpansionTile (_SetupOptions) expands to reveal Tailscale, Setup guide and External agents rows.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "servers-welcome-tailscale",
+     "type": "list-tile",
+     "label": "Connect with Tailscale — Reach a server over your private network",
+     "key": "welcome-tailscale-card",
+     "line": 936,
+     "action": "navigate",
+     "target": "tailscale-setup",
+     "targetWidget": "TailscaleSetupScreen",
+     "effect": "_tailscale(): pushes TailscaleSetupScreen; when it pops with a reviewed URL, opens the profile editor via _edit(tailscale: true, initialUrl: url).",
+     "gates": [
+      "platformCapabilities.supportsTailscaleHandoff",
+      "inside More setup options expansion",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-welcome-setup-guide",
+     "type": "list-tile",
+     "label": "Setup guide",
+     "key": "welcome-guide-card",
+     "line": 944,
+     "action": "navigate",
+     "target": "guide",
+     "targetWidget": "/guide",
+     "effect": "Navigator.pushNamed(context, '/guide').",
+     "gates": [
+      "inside More setup options expansion",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "servers-welcome-external-agents",
+     "type": "list-tile",
+     "label": "External agents",
+     "key": null,
+     "line": 951,
+     "action": "navigate",
+     "target": "external-agents",
+     "targetWidget": "ExternalAgentsScreen",
+     "effect": "_externalAgents(): builds an ExternalAgentStore(prefs, secure) and pushes ExternalAgentsScreen(store); disposes the store when the route returns.",
+     "gates": [
+      "inside More setup options expansion",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    }
+   ],
+   "states": [
+    "embeds TermuxRunningServerEntry above the Connect button; it renders nothing unless a running on-device server was observed"
+   ]
+  },
+  {
+   "id": "servers-remove-server-sheet",
+   "title": "Remove {name}?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/servers_screen.dart",
+   "widget": "_delete",
+   "presentedBy": [
+    "_delete"
+   ],
+   "line": 302,
+   "purpose": "Confirms removing a saved server and discloses what local data (password, model/agent choice, queued prompts, drafts, widget sessions) is deleted.",
+   "reachedFrom": [
+    {
+     "page": "servers",
+     "element": "servers-profile-menu-remove"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "servers-remove-server-sheet-confirm",
+     "type": "button",
+     "label": "Remove",
+     "key": "confirm-remove-server-<profile id>",
+     "line": 302,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "connection.deleteProfileAndLocalData(p.id); reports partialDeletionMessage via error snackbar; if the profile was active also connection.disconnect(keepActive: true).",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "servers-remove-server-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 302,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops the sheet with false; nothing is deleted.",
+     "gates": [],
+     "destructive": false
+    }
+   ],
+   "sheetKey": "remove-server-sheet-<profile id>"
+  },
+  {
+   "id": "profile-editor",
+   "title": "Add server | OpenCode 2 | Edit server | Re-enter password | Re-enter connection token",
+   "kind": "screen",
+   "file": "lib/ui/screens/servers_screen.dart",
+   "widget": "_ProfileEditorScreen",
+   "presentedBy": [
+    "_edit"
+   ],
+   "line": 961,
+   "purpose": "Full-screen server profile editor: choose backend (OpenCode 1/2 autodetect or experimental Codex), pair by code/QR, enter address and credentials, test the connection, attach an optional AI Team host, then save (and connect).",
+   "reachedFrom": [
+    {
+     "page": "servers",
+     "element": "servers-add-server"
+    },
+    {
+     "page": "servers",
+     "element": "servers-connect-opencode2"
+    },
+    {
+     "page": "servers",
+     "element": "servers-profile-menu-edit"
+    },
+    {
+     "page": "servers",
+     "element": "servers-profile-row"
+    },
+    {
+     "page": "servers-welcome",
+     "element": "servers-welcome-connect"
+    },
+    {
+     "page": "servers-welcome",
+     "element": "servers-welcome-connect-opencode2"
+    },
+    {
+     "page": "tailscale-setup",
+     "element": "tailscale-setup-continue"
+    },
+    {
+     "page": "system",
+     "element": null,
+     "trigger": "'/servers' opened with arguments 'edit-active' (connection banner / saved-server card 'Update password/token')"
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "TermuxRunningServerEntry.onEnterCredentials",
+     "file": "lib/ui/widgets/termux_running_server_entry.dart",
+     "line": 228
+    }
+   ],
+   "gates": [
+    "private route pushed only by ServersScreen._edit"
+   ],
+   "elements": [
+    {
+     "id": "profile-editor-close",
+     "type": "icon-button",
+     "label": "Close server editor",
+     "key": null,
+     "line": 1865,
+     "action": "dismiss",
+     "target": "profile-editor-discard-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_close(): pops when not dirty, otherwise opens the discard confirm sheet. System back is routed here too (PopScope canPop: false).",
+     "gates": [
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-save",
+     "type": "button",
+     "label": "Save & connect | Save changes | Saving…",
+     "key": "save-server-profile",
+     "line": 1880,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_save() (or _saveCodex()): normalizes/validates URL (+ Tailscale address when widget.tailscale; Codex: ws/wss URL, project directory, token), builds a ServerProfile caching the probed flavor/version and _orchestration, then widget.onSubmit -> ServersScreen._saveAndConnect: store.upsert(profile), sets pref 'oc.tailscale.<id>' for Tailscale profiles and conn.connect(profile) when new, active, forceConnect or Codex. Pops with the profile on success; otherwise shows the inline failure card (server-save-failure). Label is 'Save & connect' when _isCodex || existing == null || reconnectOnSave, else 'Save changes'.",
+     "gates": [
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-tailscale-help",
+     "type": "button",
+     "label": "Tailscale setup and recovery",
+     "key": null,
+     "line": 1910,
+     "action": "navigate",
+     "target": "tailscale-setup",
+     "targetWidget": "TailscaleSetupScreen",
+     "effect": "_tailscaleHelp(): pushes TailscaleSetupScreen(initialAddress: current URL); a returned reviewed address replaces the URL field if it was not edited meanwhile.",
+     "gates": [
+      "widget.tailscale"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-backend-opencode",
+     "type": "chip",
+     "label": "OpenCode 1 or 2",
+     "key": "server-backend-selector",
+     "line": 1933,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Sets _backend = ServerBackend.openCode and invalidates the probe; shows pairing actions, Server URL, display name, username, password and the AI Team section.",
+     "gates": [
+      "widget.existing == null && !widget.tailscale",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-backend-codex",
+     "type": "chip",
+     "label": "Codex (experimental)",
+     "key": "server-backend-selector",
+     "line": 1945,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Sets _backend = ServerBackend.codex and invalidates the probe; swaps the form to display name, server address (ws/wss), project folder and connection token; hides pairing, username/password and AI Team.",
+     "gates": [
+      "widget.existing == null && !widget.tailscale",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-codex-name",
+     "type": "text-field",
+     "label": "Display name (optional) — hint \"Defaults to the server host\"",
+     "key": "codex-server-name-field",
+     "line": 1687,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Edits _name; invalidates the probe; submit moves focus to the address field.",
+     "gates": [
+      "_isCodex (backend Codex)",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-codex-address",
+     "type": "text-field",
+     "label": "Server address — hint \"wss://codex.example or ws://127.0.0.1:4500\"",
+     "key": "codex-server-address-field",
+     "line": 1701,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_urlChanged: invalidates the probe and expands a pasted scheme-less value with normalizeCodexServerUrl; shows validation errors (_error); submit moves focus to project folder.",
+     "gates": [
+      "_isCodex (backend Codex)",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-codex-directory",
+     "type": "text-field",
+     "label": "Project folder on server — hint \"/work/my-project\"",
+     "key": "codex-project-directory-field",
+     "line": 1722,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Edits _codexDirectory; invalidates the probe; submit moves focus to the token field.",
+     "gates": [
+      "_isCodex (backend Codex)",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-codex-token",
+     "type": "text-field",
+     "label": "Connection token | Re-enter connection token",
+     "key": "codex-connection-token-field",
+     "line": 1737,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Obscured token field (autofocus when the token must be re-entered or focusPassword); invalidates the probe on change; keyboard Done calls _save().",
+     "gates": [
+      "_isCodex (backend Codex)",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-codex-token-visibility",
+     "type": "icon-button",
+     "label": "Show connection token | Hide connection token",
+     "key": "codex-token-visibility",
+     "line": 1763,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Toggles _obscurePassword.",
+     "gates": [
+      "_isCodex (backend Codex)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-codex-token-paste",
+     "type": "icon-button",
+     "label": "Paste connection token",
+     "key": "codex-token-paste",
+     "line": 1776,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_pasteCodexToken(): reads the clipboard, fills the token field and focuses it.",
+     "gates": [
+      "_isCodex (backend Codex)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-pairing-paste",
+     "type": "button",
+     "label": "Paste pairing code | Pairing…",
+     "key": "server-pairing-paste",
+     "line": 2478,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_pastePairing(): reads an `opencode2 pair` payload from the clipboard, parsePairingPayload, then _applyPairing -> selectPairingUrl probes each address and fills URL, username and password plus the probe verdict; failures are shown in server-pairing-failure.",
+     "gates": [
+      "!_isCodex (backend OpenCode)",
+      "!widget.tailscale",
+      "disabled while _pairing"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-pairing-scan",
+     "type": "button",
+     "label": "Scan",
+     "key": "server-pairing-scan",
+     "line": 2498,
+     "action": "navigate",
+     "target": "pairing-scanner",
+     "targetWidget": "PairingScannerScreen",
+     "effect": "_scanPairing(): pushes PairingScannerScreen and applies the returned PairingPayload via _applyPairing.",
+     "gates": [
+      "!_isCodex (backend OpenCode)",
+      "!widget.tailscale",
+      "platformCapabilities.supportsQrPairing",
+      "disabled while _pairing"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-url",
+     "type": "text-field",
+     "label": "Server URL — hint \"https://server.example\"",
+     "key": "server-url-field",
+     "line": 2045,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_urlChanged: invalidates the probe; a pasted pairing payload is removed from the field and routed to _applyPairing; a pasted scheme-less host is expanded by normalizeServerProfileUrl. Helper text is the HTTPS hint, or the Tailscale Serve address hint when widget.tailscale. Submit moves focus to display name.",
+     "gates": [
+      "!_isCodex (backend OpenCode)",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-name",
+     "type": "text-field",
+     "label": "Display name (optional) — hint \"Defaults to the server host\"",
+     "key": "server-name-field",
+     "line": 2072,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Edits _name; invalidates the probe; submit moves focus to username.",
+     "gates": [
+      "!_isCodex (backend OpenCode)",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-username",
+     "type": "text-field",
+     "label": "Username (optional) — hint \"opencode\"",
+     "key": "server-username-field",
+     "line": 2100,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Edits _user; invalidates the probe; submit moves focus to password.",
+     "gates": [
+      "!_isCodex (backend OpenCode)",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-password",
+     "type": "text-field",
+     "label": "Server password | Re-enter password",
+     "key": "server-password-field",
+     "line": 2117,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Obscured password field (autofocus when _needsPassword || widget.focusPassword); invalidates the probe on change; keyboard Done calls _save().",
+     "gates": [
+      "!_isCodex (backend OpenCode)",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-password-visibility",
+     "type": "icon-button",
+     "label": "Show server password | Hide server password",
+     "key": "server-password-visibility",
+     "line": 2153,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Toggles _obscurePassword.",
+     "gates": [
+      "!_isCodex (backend OpenCode)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-password-paste",
+     "type": "icon-button",
+     "label": "Paste server password",
+     "key": "server-password-paste",
+     "line": 2174,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_pastePassword(): pastes the clipboard (stripping a 'server password' prefix) into the password field; a clipboard holding a whole pairing payload is routed to _applyPairing instead.",
+     "gates": [
+      "!_isCodex (backend OpenCode)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-test-connection",
+     "type": "button",
+     "label": "Test connection | Testing…",
+     "key": "test-server-connection",
+     "line": 2188,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_testConnection(): OpenCode -> serverProbe(baseUrl, username, password) detecting flavor v1/v2 and version, verdict in server-probe-verdict (focuses password on v2 401); Codex -> _testCodexConnection() -> probeCodexConnection(baseUrl, token, directory), verdict in codex-probe-verdict.",
+     "gates": [
+      "disabled while _testing"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-test-guide",
+     "type": "link",
+     "label": "Open the setup guide",
+     "key": "server-test-guide",
+     "line": 2345,
+     "action": "navigate",
+     "target": "guide",
+     "targetWidget": "/guide",
+     "effect": "Navigator.pushNamed(context, '/guide').",
+     "gates": [
+      "_testResult != null && !result.ok && result.suggestsMissingServer"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-team-learn",
+     "type": "button",
+     "label": "Learn how",
+     "key": "server-editor-team-learn",
+     "line": 2393,
+     "action": "open-sheet",
+     "target": "team-host-guide-sheet",
+     "targetWidget": "showTeamHostGuideSheet",
+     "effect": "showTeamHostGuideSheet(context).",
+     "gates": [
+      "!_isCodex (backend OpenCode)",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-team-add",
+     "type": "button",
+     "label": "Add manually | Change",
+     "key": "server-editor-team-add",
+     "line": 2400,
+     "action": "open-sheet",
+     "target": "team-host-sheet",
+     "targetWidget": "showTeamHostSheet",
+     "effect": "_addTeamHost(): showTeamHostSheet(initialUrl from _orchestration or teamDiscoveryUrlFor(server URL), initialCity, initialHostKind); the returned OrchestrationConfig is kept in _orchestration and written by the next save.",
+     "gates": [
+      "!_isCodex (backend OpenCode)",
+      "disabled while _submitting"
+     ],
+     "destructive": false
+    }
+   ],
+   "fieldsByBackend": {
+    "OpenCode 1 or 2 (ServerBackend.openCode, default)": [
+     "pairing actions: Paste pairing code, Scan (QR; only when platformCapabilities.supportsQrPairing); hidden in Tailscale mode",
+     "Server URL",
+     "Display name (optional)",
+     "AUTHENTICATION: Username (optional), Server password (show/hide, paste)",
+     "Test connection + probe verdict (OpenCode 1/2 + version)",
+     "AI Team (optional): Learn how, Add manually/Change"
+    ],
+    "Codex (experimental) (ServerBackend.codex)": [
+     "Display name (optional)",
+     "Server address (ws:// or wss://)",
+     "Project folder on server",
+     "Connection token (show/hide, paste)",
+     "approval recovery notice",
+     "Test connection + codex probe verdict"
+    ],
+    "Backend selector (CONNECTION TYPE chips)": "only for a new profile outside Tailscale mode; existing profiles keep their backend",
+    "Tailscale mode (widget.tailscale)": "intro text + 'Tailscale setup and recovery' button, no backend selector, no pairing actions, URL must pass isValidTailscaleAddress"
+   },
+   "states": [
+    "inline save/connect failure card (server-save-failure)",
+    "secure-storage notice card (server-secure-storage-notice) when the keyring cannot keep a password",
+    "missing-password banner when _needsPassword",
+    "pairing notice / pairing failure rows",
+    "AbsorbPointer over the whole form while _submitting"
+   ]
+  },
+  {
+   "id": "profile-editor-discard-sheet",
+   "title": "Discard server changes?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/servers_screen.dart",
+   "widget": "_close",
+   "presentedBy": [
+    "_close"
+   ],
+   "line": 1494,
+   "purpose": "Confirms leaving the server editor with unsaved edits.",
+   "reachedFrom": [
+    {
+     "page": "profile-editor",
+     "element": "profile-editor-close"
+    },
+    {
+     "page": "system",
+     "element": null,
+     "trigger": "system back gesture in the editor while _dirty (PopScope.onPopInvokedWithResult)"
+    }
+   ],
+   "gates": [
+    "_dirty"
+   ],
+   "elements": [
+    {
+     "id": "profile-editor-discard-sheet-confirm",
+     "type": "button",
+     "label": "Discard",
+     "key": null,
+     "line": 1494,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops the sheet with true, then Navigator.pop closes the editor without saving.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "profile-editor-discard-sheet-cancel",
+     "type": "button",
+     "label": "Keep editing",
+     "key": null,
+     "line": 1494,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops the sheet with false; the editor stays open.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "pairing-scanner",
+   "title": "Scan pairing code",
+   "kind": "screen",
+   "file": "lib/ui/screens/pairing_scanner_screen.dart",
+   "widget": "PairingScannerScreen",
+   "presentedBy": [],
+   "line": 24,
+   "purpose": "Camera QR scanner for the `opencode2 pair` code; pops with a parsed PairingPayload, or null on every other exit, with recovery states for denied/blocked/no camera/failed.",
+   "reachedFrom": [
+    {
+     "page": "profile-editor",
+     "element": "profile-editor-pairing-scan"
+    }
+   ],
+   "gates": [
+    "platformCapabilities.supportsQrPairing (otherwise shows the no-camera state)"
+   ],
+   "elements": [
+    {
+     "id": "pairing-scanner-close",
+     "type": "icon-button",
+     "label": "Close the scanner",
+     "key": null,
+     "line": 162,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop() with no payload.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "pairing-scanner-detect",
+     "type": "gesture",
+     "label": "[point camera at pairing QR]",
+     "key": "pairing-scanner-preview",
+     "line": 277,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "MobileScanner.onDetect -> _onDetect: parsePairingPayload(raw); a valid payload stops the controller and pops with it; an invalid QR shows the rejection text (pairing-scanner-rejected) and keeps scanning.",
+     "gates": [
+      "_stage == _ScanStage.scanning"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "pairing-scanner-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": "pairing-scanner-primary",
+     "line": 371,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Sets _stage = starting and re-runs _start() (camera check + cameraPlatform.requestCameraPermission()).",
+     "gates": [
+      "_stage == denied (pairing-scanner-denied) or failed (pairing-scanner-failed)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "pairing-scanner-open-settings",
+     "type": "button",
+     "label": "Open app settings",
+     "key": "pairing-scanner-primary",
+     "line": 371,
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "cameraPlatform.openAppSettings().",
+     "gates": [
+      "_stage == permanentlyDenied (pairing-scanner-blocked)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "pairing-scanner-paste-instead-primary",
+     "type": "button",
+     "label": "Paste it instead",
+     "key": "pairing-scanner-primary",
+     "line": 371,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop() so the user can use Paste pairing code in the editor.",
+     "gates": [
+      "_stage == noCamera (pairing-scanner-no-camera)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "pairing-scanner-paste-instead",
+     "type": "button",
+     "label": "Paste it instead",
+     "key": "pairing-scanner-secondary",
+     "line": 378,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop() with no payload.",
+     "gates": [
+      "_stage == denied, permanentlyDenied or failed"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "connection-help",
+   "title": "Connection help",
+   "kind": "screen",
+   "file": "lib/ui/screens/connection_help_screen.dart",
+   "widget": "ConnectionHelpScreen",
+   "presentedBy": [],
+   "line": 9,
+   "purpose": "Offline explainer for a server address: classifies a typed address (never stored) and shows copyable private-network and SSH-tunnel examples.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "GuideScreen",
+     "file": "lib/ui/screens/guide_screen.dart",
+     "line": 80
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "connection-help-address",
+     "type": "text-field",
+     "label": "Server address",
+     "key": null,
+     "line": 57,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Obscured address input; editing clears the previous advice; keyboard Done calls _explain().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "connection-help-explain",
+     "type": "button",
+     "label": "Explain address",
+     "key": null,
+     "line": 79,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_explain(): explainConnectionAddress(text), clears the field and shows the matching advice text.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "connection-help-copy-example",
+     "type": "icon-button",
+     "label": "Copy example",
+     "key": null,
+     "line": 135,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Copies the app-authored example ('https://server.example', the ssh -L tunnel command, 'http://127.0.0.1:4096') to the clipboard and shows a copied/failed snackbar. One button per example (3).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "tailscale-setup",
+   "title": "Connect with Tailscale",
+   "kind": "screen",
+   "file": "lib/ui/screens/tailscale_setup_screen.dart",
+   "widget": "TailscaleSetupScreen",
+   "presentedBy": [],
+   "line": 13,
+   "purpose": "Hands off to the Tailscale app, then reviews a private HTTPS address and returns it to the server editor; it never probes, saves or authenticates.",
+   "reachedFrom": [
+    {
+     "page": "servers",
+     "element": "servers-tailscale"
+    },
+    {
+     "page": "servers-welcome",
+     "element": "servers-welcome-tailscale"
+    },
+    {
+     "page": "profile-editor",
+     "element": "profile-editor-tailscale-help"
+    }
+   ],
+   "gates": [
+    "entry from the servers screen requires platformCapabilities.supportsTailscaleHandoff"
+   ],
+   "elements": [
+    {
+     "id": "tailscale-setup-open",
+     "type": "button",
+     "label": "Open Tailscale",
+     "key": null,
+     "line": 143,
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_open(): widget.bridge.open() (TailscaleBridge) launches the Tailscale app; on failure shows tailscaleOpenFailed and re-checks.",
+     "gates": [
+      "_state == TailscaleAppState.installed",
+      "disabled while _opening"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "tailscale-setup-install",
+     "type": "button",
+     "label": "Get official Android app",
+     "key": null,
+     "line": 149,
+     "action": "external-link",
+     "target": "external-link-dialog",
+     "targetWidget": "openExternalLink",
+     "effect": "openExternalLink(context, Play Store URL for com.tailscale.ipn) — confirmation dialog then url launcher.",
+     "gates": [
+      "_state != TailscaleAppState.installed"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "tailscale-setup-check-again",
+     "type": "button",
+     "label": "Check app again",
+     "key": null,
+     "line": 157,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_check(): widget.bridge.check() refreshes the installed/missing/unsupported state.",
+     "gates": [
+      "disabled while _checking"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "tailscale-setup-address",
+     "type": "text-field",
+     "label": "Private HTTPS server address — hint \"https://computer.tailnet-name.ts.net\"",
+     "key": null,
+     "line": 173,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Edits the address (max 2048); clears the error on change; keyboard Done calls _continue().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "tailscale-setup-continue",
+     "type": "button",
+     "label": "Continue to authentication",
+     "key": null,
+     "line": 192,
+     "action": "navigate",
+     "target": "profile-editor",
+     "targetWidget": "_ProfileEditorScreen",
+     "effect": "_continue(): validates isValidTailscaleAddress then pops with normalizeTailscaleAddress(text); ServersScreen._tailscale then opens the profile editor in Tailscale mode (the editor's help button just refills its URL).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "tailscale-setup-help-expander",
+     "type": "list-tile",
+     "label": "Tailscale setup and recovery",
+     "key": null,
+     "line": 198,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ExpansionTile expands the Serve help, recovery text and the two doc links.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "tailscale-setup-serve-docs",
+     "type": "link",
+     "label": "Read the official Serve guide",
+     "key": null,
+     "line": 203,
+     "action": "external-link",
+     "target": "external-link-dialog",
+     "targetWidget": "openExternalLink",
+     "effect": "openExternalLink(context, 'https://tailscale.com/docs/features/tailscale-serve').",
+     "gates": [
+      "inside help expansion"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "tailscale-setup-android-docs",
+     "type": "link",
+     "label": "Read the official Android guide",
+     "key": null,
+     "line": 211,
+     "action": "external-link",
+     "target": "external-link-dialog",
+     "targetWidget": "openExternalLink",
+     "effect": "openExternalLink(context, 'https://tailscale.com/docs/install/android').",
+     "gates": [
+      "inside help expansion"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "host-management",
+   "title": "Run as a Linux service",
+   "kind": "screen",
+   "file": "lib/ui/screens/host_management_screen.dart",
+   "widget": "HostManagementScreen",
+   "presentedBy": [],
+   "line": 18,
+   "purpose": "Shows the connected server's facts and copyable commands for the Ubuntu helper script (install service, linger, read password, adb reverse, status/restart/logs/update); the app never runs them.",
+   "reachedFrom": [
+    {
+     "page": "server-settings",
+     "element": "server-settings-host-management"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "host-management-copy-command",
+     "type": "icon-button",
+     "label": "Copy command: {label}",
+     "key": "copy-host-command-<label>",
+     "line": 262,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_HostCommandTile: Clipboard.setData(command) + 'copied' snackbar. One per command tile: Install OpenCode as a background service, Keep it running after logout, Read the server password for this app, Reach it from this phone over USB (adb reverse; only when platformCapabilities.supportsUsbHostBridge, Key host-command-adb-reverse), Service status, Restart the server, Follow the server log, Update OpenCode on the host.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "host-management-docs",
+     "type": "link",
+     "label": "Full walkthrough (opens in browser)",
+     "key": "host-docs-link",
+     "line": 175,
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "launchUrl(docs/ubuntu-host.md on GitHub, LaunchMode.externalApplication).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "server-settings",
+   "title": "Server",
+   "kind": "screen",
+   "file": "lib/ui/screens/settings/server_settings_screen.dart",
+   "widget": "ServerSettingsScreen",
+   "presentedBy": [],
+   "line": 5,
+   "purpose": "Settings category for the connected server: identity, health check, authentication summary, profile management, host service commands and the server update flow.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "SettingsScreen",
+     "file": "lib/ui/screens/settings_screen.dart",
+     "line": 217
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "server-settings-check-health",
+     "type": "icon-button",
+     "label": "Check server health",
+     "key": null,
+     "line": 206,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_checkHealth(): controller.prepareActionTransport() then api.health(); updates the health row (server-health-checking / server-health-result).",
+     "gates": [
+      "disabled while _checking"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "server-settings-manage-profiles",
+     "type": "list-tile",
+     "label": "Manage server profiles — Add, edit, or switch OpenCode servers",
+     "key": null,
+     "line": 271,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "Navigator.pushNamed('/servers').",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "server-settings-host-management",
+     "type": "list-tile",
+     "label": "Run as a Linux service",
+     "key": "host-management-entry",
+     "line": 279,
+     "action": "navigate",
+     "target": "host-management",
+     "targetWidget": "HostManagementScreen",
+     "effect": "Pushes HostManagementScreen(controller).",
+     "gates": [
+      "!managedLocally (not platformCapabilities.supportsTermux && TermuxBridge.managesServerUrl(profile.baseUrl))"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "server-settings-updates-gated",
+     "type": "list-tile",
+     "label": "Server updates — Upgrade from the machine running the server",
+     "key": null,
+     "line": 294,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "GatedRowTile(feature: 'remote-upgrade'): explains that the capability is unavailable (behaviour defined in GatedRowTile, not in this file).",
+     "gates": [
+      "!managedLocally && !controller.capabilities.remoteUpgrade"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "server-settings-updates-managed",
+     "type": "list-tile",
+     "label": "Update managed OpenCode",
+     "key": "server-updates-tile",
+     "line": 301,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "Navigator.pushNamed('/termux-setup').",
+     "gates": [
+      "managedLocally"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "server-settings-updates-restart",
+     "type": "list-tile",
+     "label": "Restart OpenCode to use {version}",
+     "key": "server-updates-tile",
+     "line": 301,
+     "action": "open-dialog",
+     "target": "server-settings-restart-dialog",
+     "targetWidget": "_showRemoteRestartNotice",
+     "effect": "_showRemoteRestartNotice(installedVersion).",
+     "gates": [
+      "!managedLocally && controller.capabilities.remoteUpgrade",
+      "controller.installedServerVersion != null",
+      "disabled while _upgradingServer"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "server-settings-updates-upgrade",
+     "type": "list-tile",
+     "label": "Update OpenCode to {version}",
+     "key": "server-updates-tile",
+     "line": 301,
+     "action": "open-sheet",
+     "target": "server-settings-upgrade-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_upgradeRemoteServer(availableVersion): opens the upgrade confirm sheet.",
+     "gates": [
+      "!managedLocally && controller.capabilities.remoteUpgrade",
+      "installedServerVersion == null && controller.availableServerVersion != null",
+      "disabled while _upgradingServer"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "server-settings-updates-copy",
+     "type": "list-tile",
+     "label": "Server updates are managed externally",
+     "key": "server-updates-tile",
+     "line": 301,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_copyRemoteUpdateCommands(): copies 'opencode upgrade\\nopencode models --refresh' and shows a snackbar.",
+     "gates": [
+      "!managedLocally && controller.capabilities.remoteUpgrade",
+      "no installed or available server version"
+     ],
+     "destructive": false
+    }
+   ],
+   "remarks": [
+    "part of '../settings_screen.dart'"
+   ]
+  },
+  {
+   "id": "server-settings-restart-dialog",
+   "title": "Restart OpenCode on its host",
+   "kind": "dialog",
+   "file": "lib/ui/screens/settings/server_settings_screen.dart",
+   "widget": "_showRemoteRestartNotice",
+   "presentedBy": [
+    "_showRemoteRestartNotice"
+   ],
+   "line": 66,
+   "purpose": "Tells the user the new server version is installed and the host process must be restarted manually.",
+   "reachedFrom": [
+    {
+     "page": "server-settings",
+     "element": "server-settings-updates-restart"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "server-settings-restart-dialog-done",
+     "type": "button",
+     "label": "Done",
+     "key": null,
+     "line": 77,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "server-settings-upgrade-sheet",
+   "title": "Update remote OpenCode?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/settings/server_settings_screen.dart",
+   "widget": "_upgradeRemoteServer",
+   "presentedBy": [
+    "_upgradeRemoteServer"
+   ],
+   "line": 90,
+   "purpose": "Confirms installing an exact OpenCode version on the remote host.",
+   "reachedFrom": [
+    {
+     "page": "server-settings",
+     "element": "server-settings-updates-upgrade"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "server-settings-upgrade-sheet-confirm",
+     "type": "button",
+     "label": "Install {version}",
+     "key": "confirm-server-upgrade",
+     "line": 90,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.prepareActionRepository() then repository.upgradeServer(target); controller.recordServerUpgradeInstalled(installed) and a snackbar; errors land in the updates tile subtitle.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "server-settings-upgrade-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 90,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with false.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "agent-account",
+   "title": "Codex account",
+   "kind": "screen",
+   "file": "lib/ui/screens/agent_account_screen.dart",
+   "widget": "AgentAccountScreen",
+   "presentedBy": [],
+   "line": 15,
+   "purpose": "Shows the Codex host account for the connected profile: sign-in state, device-code ChatGPT login, rate-limit windows and token usage (body rendered by AgentAccountPanel, line 115).",
+   "reachedFrom": [
+    {
+     "page": "servers",
+     "element": "servers-profile-menu-account"
+    }
+   ],
+   "gates": [
+    "connection.isConnected && connection.capabilities.agentAccount && api is AgentAccountGateway; otherwise shows agentAccountScopeLost text only"
+   ],
+   "elements": [
+    {
+     "id": "agent-account-refresh",
+     "type": "icon-button",
+     "label": "Refresh account",
+     "key": null,
+     "line": 153,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.refresh() (AgentAccountController).",
+     "gates": [
+      "disabled when status == loading || !controller.session.active"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "agent-account-sign-in",
+     "type": "button",
+     "label": "Sign in with ChatGPT",
+     "key": null,
+     "line": 257,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.signIn(): starts the device-code login on the Codex host.",
+     "gates": [
+      "controller.canSignIn"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "agent-account-open-sign-in",
+     "type": "button",
+     "label": "Open official sign-in",
+     "key": null,
+     "line": 388,
+     "action": "external-link",
+     "target": "external-link-dialog",
+     "targetWidget": "openExternalLink",
+     "effect": "openExternalLink(context, code.verificationUrl) (auth.openai.com) after the confirmation dialog.",
+     "gates": [
+      "controller.loginStatus != idle && controller.deviceCode != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "agent-account-cancel-sign-in",
+     "type": "button",
+     "label": "Cancel sign-in",
+     "key": null,
+     "line": 399,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.cancel(): cancels the pending login.",
+     "gates": [
+      "controller.loginPending || controller.canCancel",
+      "disabled while status == cancelling"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "external-agents",
+   "title": "External agents",
+   "kind": "screen",
+   "file": "lib/ui/screens/external_agents_screen.dart",
+   "widget": "ExternalAgentsScreen",
+   "presentedBy": [],
+   "line": 72,
+   "purpose": "Lists saved A2A external agent identities and lets the user add, open or finish deleting one.",
+   "reachedFrom": [
+    {
+     "page": "servers",
+     "element": "servers-external-agents"
+    },
+    {
+     "page": "servers-welcome",
+     "element": "servers-welcome-external-agents"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "external-agents-add",
+     "type": "button",
+     "label": "Add agent",
+     "key": null,
+     "line": 139,
+     "action": "navigate",
+     "target": "add-agent",
+     "targetWidget": "_AddAgentScreen",
+     "effect": "_add(): pushes _AddAgentScreen(store, gateway).",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "external-agents-row",
+     "type": "list-tile",
+     "label": "<agent card name> / <card origin>",
+     "key": null,
+     "line": 153,
+     "action": "navigate",
+     "target": "external-agent-detail",
+     "targetWidget": "ExternalAgentDetailScreen",
+     "effect": "Pushes ExternalAgentDetailScreen(store, profile, gatewayFactory).",
+     "gates": [
+      "disabled when profile.deleting || _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "external-agents-retry-delete",
+     "type": "button",
+     "label": "Retry deletion",
+     "key": null,
+     "line": 178,
+     "action": "open-sheet",
+     "target": "external-agents-delete-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_delete(profile): opens the delete confirm sheet.",
+     "gates": [
+      "profile.deleting",
+      "disabled while _busy"
+     ],
+     "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "external-agents-delete-sheet",
+   "title": "Delete agent",
+   "kind": "sheet",
+   "file": "lib/ui/screens/external_agents_screen.dart",
+   "widget": "_ExternalAgentsScreenState._delete",
+   "presentedBy": [
+    "_delete"
+   ],
+   "line": 101,
+   "purpose": "Confirms retrying local deletion of an external agent whose deletion is pending.",
+   "reachedFrom": [
+    {
+     "page": "external-agents",
+     "element": "external-agents-retry-delete"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "external-agents-delete-sheet-confirm",
+     "type": "button",
+     "label": "Delete local data",
+     "key": null,
+     "line": 101,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "widget.store.delete(profile.id) (ExternalAgentStore); storage failures surface as an issue notice.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "external-agents-delete-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 101,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with false.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "add-agent",
+   "title": "Add agent",
+   "kind": "screen",
+   "file": "lib/ui/screens/external_agents_screen.dart",
+   "widget": "_AddAgentScreen",
+   "presentedBy": [],
+   "line": 192,
+   "purpose": "Inspects an A2A Agent Card at an address, shows what it claims, and saves the agent (with a bearer credential when required).",
+   "reachedFrom": [
+    {
+     "page": "external-agents",
+     "element": "external-agents-add"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "add-agent-address",
+     "type": "text-field",
+     "label": "Agent address — hint \"https://agent.example\"",
+     "key": null,
+     "line": 264,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Editing clears the inspected card and the token.",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "add-agent-inspect",
+     "type": "button",
+     "label": "Inspect Agent Card",
+     "key": null,
+     "line": 279,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_inspect(): widget.gateway.discover(address) and shows the card (_AgentCardView) or an issue notice.",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "add-agent-bearer",
+     "type": "text-field",
+     "label": "Agent bearer credential",
+     "key": null,
+     "line": 296,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Obscured credential input (max 8192).",
+     "gates": [
+      "card != null && card.supported && card.auth == ExternalAgentAuth.bearer",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "add-agent-save",
+     "type": "button",
+     "label": "Save agent",
+     "key": null,
+     "line": 306,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_save(): widget.store.add(card, token) then Navigator.pop.",
+     "gates": [
+      "card != null && card.supported",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "external-agent-detail",
+   "title": "<agent card name>",
+   "kind": "screen",
+   "file": "lib/ui/screens/external_agents_screen.dart",
+   "widget": "ExternalAgentDetailScreen",
+   "presentedBy": [],
+   "line": 367,
+   "purpose": "Shows one external agent's card, its saved tasks, and actions to start a task, update the credential or delete the agent.",
+   "reachedFrom": [
+    {
+     "page": "external-agents",
+     "element": "external-agents-row"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "external-agent-detail-new-task",
+     "type": "button",
+     "label": "New task",
+     "key": null,
+     "line": 501,
+     "action": "open-dialog",
+     "target": "external-agent-detail-input-dialog",
+     "targetWidget": "_input",
+     "effect": "_newTask(): opens the input dialog; the entered text becomes an ExternalTaskRecord draft saved with store.saveTask, then ExternalTaskScreen is pushed.",
+     "gates": [
+      "disabled when _busy || !store.contains(profile.id)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "external-agent-detail-task-row",
+     "type": "list-tile",
+     "label": "<task title> / Delivery unconfirmed | Draft | <task state>",
+     "key": null,
+     "line": 513,
+     "action": "navigate",
+     "target": "external-task",
+     "targetWidget": "ExternalTaskScreen",
+     "effect": "_open(record): pushes ExternalTaskScreen(store, profile, record, gateway).",
+     "gates": [
+      "disabled when _busy || !current"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "external-agent-detail-update-credential",
+     "type": "button",
+     "label": "Update credential",
+     "key": null,
+     "line": 533,
+     "action": "open-dialog",
+     "target": "external-agent-detail-input-dialog",
+     "targetWidget": "_input",
+     "effect": "_credential(): opens the secret input dialog, then store.updateCredential(profile.id, value).",
+     "gates": [
+      "profile.card.auth == ExternalAgentAuth.bearer",
+      "disabled when _busy || !current"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "external-agent-detail-delete",
+     "type": "button",
+     "label": "Delete agent",
+     "key": null,
+     "line": 538,
+     "action": "open-sheet",
+     "target": "external-agent-detail-delete-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_delete(): opens the delete confirm sheet.",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "external-agent-detail-input-dialog",
+   "title": "New task | Update credential",
+   "kind": "dialog",
+   "file": "lib/ui/screens/external_agents_screen.dart",
+   "widget": "_InputDialog",
+   "presentedBy": [
+    "_input"
+   ],
+   "line": 568,
+   "purpose": "Single-field dialog reused for composing a new task (multiline, max 16000) and for entering a new bearer credential (obscured, max 8192).",
+   "reachedFrom": [
+    {
+     "page": "external-agent-detail",
+     "element": "external-agent-detail-new-task"
+    },
+    {
+     "page": "external-agent-detail",
+     "element": "external-agent-detail-update-credential"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "external-agent-detail-input-dialog-field",
+     "type": "text-field",
+     "label": "Task text | Agent bearer credential",
+     "key": null,
+     "line": 599,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Free text input; obscured and single-line when secret.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "external-agent-detail-input-dialog-back",
+     "type": "button",
+     "label": "Back",
+     "key": null,
+     "line": 613,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop with null.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "external-agent-detail-input-dialog-submit",
+     "type": "button",
+     "label": "Review task | Save agent",
+     "key": null,
+     "line": 617,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with the trimmed text when non-empty; the caller saves the draft task (store.saveTask) or the credential (store.updateCredential).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "external-agent-detail-delete-sheet",
+   "title": "Delete agent",
+   "kind": "sheet",
+   "file": "lib/ui/screens/external_agents_screen.dart",
+   "widget": "_ExternalAgentDetailScreenState._delete",
+   "presentedBy": [
+    "_delete"
+   ],
+   "line": 458,
+   "purpose": "Confirms removing the agent, its saved tasks and credential from this device.",
+   "reachedFrom": [
+    {
+     "page": "external-agent-detail",
+     "element": "external-agent-detail-delete"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "external-agent-detail-delete-sheet-confirm",
+     "type": "button",
+     "label": "Delete local data",
+     "key": null,
+     "line": 458,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "widget.store.delete(profile.id) then pops the detail screen.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "external-agent-detail-delete-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 458,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with false.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "external-task",
+   "title": "Agent task",
+   "kind": "screen",
+   "file": "lib/ui/screens/external_agents_screen.dart",
+   "widget": "ExternalTaskScreen",
+   "presentedBy": [],
+   "line": 629,
+   "purpose": "One A2A task: review and send the draft, watch polled state and agent output, reply when input is required, cancel remotely or forget locally.",
+   "reachedFrom": [
+    {
+     "page": "external-agent-detail",
+     "element": "external-agent-detail-task-row"
+    },
+    {
+     "page": "external-agent-detail-input-dialog",
+     "element": "external-agent-detail-input-dialog-submit"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "external-task-retry-draft-save",
+     "type": "button",
+     "label": "Retry saving draft",
+     "key": null,
+     "line": 852,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_persistDraft(text): store.saveDraft(profile.id, localId, text).",
+     "gates": [
+      "draft && _draftSaveFailed"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "external-task-review-link",
+     "type": "button",
+     "label": "Review external link",
+     "key": null,
+     "line": 890,
+     "action": "external-link",
+     "target": "external-link-dialog",
+     "targetWidget": "openExternalLink",
+     "effect": "openExternalLink(context, part.url) — policy check + confirmation dialog before launching.",
+     "gates": [
+      "task part has a url"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "external-task-text",
+     "type": "text-field",
+     "label": "Task text | Your reply",
+     "key": null,
+     "line": 906,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Draft mode persists every change via _persistDraft (store.saveDraft); reply mode is local until sent.",
+     "gates": [
+      "draft || task.state == ExternalTaskState.inputRequired",
+      "enabled when !c.busy && c.current && !record.uncertain"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "external-task-send",
+     "type": "button",
+     "label": "Send to agent | Reply to this task",
+     "key": null,
+     "line": 920,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_send(continuation: !draft): _controller.submit(text, continuation) (ExternalTaskController) and clears the field on success.",
+     "gates": [
+      "draft || task.state == inputRequired",
+      "enabled when (draft && c.current && c.foreground && !c.busy && _draftIsSaved) || c.canContinue"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "external-task-refresh",
+     "type": "button",
+     "label": "Refresh task",
+     "key": null,
+     "line": 937,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "c.refresh() (ExternalTaskController); also runs on a 4s poll while non-terminal.",
+     "gates": [
+      "task?.id != null",
+      "disabled when c.busy || !c.current"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "external-task-cancel",
+     "type": "button",
+     "label": "Cancel task",
+     "key": null,
+     "line": 943,
+     "action": "open-sheet",
+     "target": "external-task-cancel-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_cancel(): opens the cancel confirm sheet.",
+     "gates": [
+      "task?.id != null && !task.terminal",
+      "enabled when c.canCancel"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "external-task-forget",
+     "type": "button",
+     "label": "Forget saved task",
+     "key": null,
+     "line": 949,
+     "action": "open-sheet",
+     "target": "external-task-forget-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_forget(): opens the forget confirm sheet.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "external-task-back",
+     "type": "gesture",
+     "label": "[system back]",
+     "key": null,
+     "line": 798,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "PopScope: for an unsaved draft, _leave() persists the draft first and pops only when saved.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "external-task-cancel-sheet",
+   "title": "Cancel task",
+   "kind": "sheet",
+   "file": "lib/ui/screens/external_agents_screen.dart",
+   "widget": "_cancel",
+   "presentedBy": [
+    "_cancel"
+   ],
+   "line": 741,
+   "purpose": "Confirms asking the remote agent to cancel the task.",
+   "reachedFrom": [
+    {
+     "page": "external-task",
+     "element": "external-task-cancel"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "external-task-cancel-sheet-confirm",
+     "type": "button",
+     "label": "Request cancellation",
+     "key": null,
+     "line": 741,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_controller.cancel().",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "external-task-cancel-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 741,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with false.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "external-task-forget-sheet",
+   "title": "Forget saved task",
+   "kind": "sheet",
+   "file": "lib/ui/screens/external_agents_screen.dart",
+   "widget": "_forget",
+   "presentedBy": [
+    "_forget"
+   ],
+   "line": 754,
+   "purpose": "Confirms deleting the locally saved task record (remote work is untouched).",
+   "reachedFrom": [
+    {
+     "page": "external-task",
+     "element": "external-task-forget"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "external-task-forget-sheet-confirm",
+     "type": "button",
+     "label": "Delete local data",
+     "key": null,
+     "line": 754,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "widget.store.removeTask(profile.id, localId) then pops the task screen; storage error shows a snackbar.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "external-task-forget-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 754,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with false.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "profile-monitor",
+   "title": "Saved-server attention",
+   "kind": "screen",
+   "file": "lib/ui/screens/profile_monitor_screen.dart",
+   "widget": "ProfileMonitorScreen",
+   "presentedBy": [],
+   "line": 90,
+   "purpose": "Per saved server opt-in background monitoring of pending permissions/questions/forms and long-run check-ins, with notification, Wi-Fi and quiet-hour rules.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "AttentionOverviewScreen (app bar configure button)",
+     "file": "lib/ui/screens/attention_overview_screen.dart",
+     "line": 41
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "ProfileMonitorInbox summary tile (embedded in ActivityScreen)",
+     "file": "lib/ui/screens/profile_monitor_screen.dart",
+     "line": 167
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "profile-monitor-refresh",
+     "type": "icon-button",
+     "label": "Check monitored servers",
+     "key": null,
+     "line": 100,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.profileMonitor.refresh().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-opt-in",
+     "type": "toggle",
+     "label": "Monitor this server",
+     "key": null,
+     "line": 371,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_save(rules.copyWith(enabled: value)) -> controller.profileMonitor.setRules(profile.id, rules). One block per readable saved profile (_MonitorProfile).",
+     "gates": [
+      "disabled when !monitor.supportsProfile(profile)",
+      "disabled while _saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-notifications",
+     "type": "toggle",
+     "label": "Notify when attention is needed",
+     "key": null,
+     "line": 397,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "profileMonitor.setRules(... notifications: value).",
+     "gates": [
+      "supported && rules.enabled",
+      "disabled while _saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-wifi-only",
+     "type": "toggle",
+     "label": "Wi-Fi only",
+     "key": null,
+     "line": 405,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "profileMonitor.setRules(... wifiOnly: value).",
+     "gates": [
+      "supported && rules.enabled",
+      "disabled when !platformCapabilities.supportsBackgroundService",
+      "disabled while _saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-quiet-hours",
+     "type": "toggle",
+     "label": "Quiet hours",
+     "key": null,
+     "line": 419,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "On: setRules(quietStart 22:00, quietEnd 08:00); off: setRules(clearQuiet: true).",
+     "gates": [
+      "supported && rules.enabled",
+      "disabled while _saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-quiet-start",
+     "type": "list-tile",
+     "label": "Quiet hours start",
+     "key": null,
+     "line": 433,
+     "action": "open-dialog",
+     "target": "profile-monitor-quiet-time-dialog",
+     "targetWidget": "showTimePicker",
+     "effect": "_quietTime(true, rules): showTimePicker then setRules(quietStart).",
+     "gates": [
+      "supported && rules.enabled",
+      "rules.quietStart != null && rules.quietEnd != null",
+      "disabled while _saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-quiet-end",
+     "type": "list-tile",
+     "label": "Quiet hours end",
+     "key": null,
+     "line": 443,
+     "action": "open-dialog",
+     "target": "profile-monitor-quiet-time-dialog",
+     "targetWidget": "showTimePicker",
+     "effect": "_quietTime(false, rules): showTimePicker then setRules(quietEnd).",
+     "gates": [
+      "supported && rules.enabled",
+      "rules.quietStart != null && rules.quietEnd != null",
+      "disabled while _saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-check-in",
+     "type": "toggle",
+     "label": "Check in on long runs",
+     "key": "monitor-check-in-<profile id>",
+     "line": 454,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "On: setRules(checkInAfterMinutes: ProfileNotifyRules.defaultCheckInMinutes); off: setRules(clearCheckIn: true).",
+     "gates": [
+      "supported && rules.enabled",
+      "disabled while _saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-check-in-after",
+     "type": "dropdown",
+     "label": "Check in after — {minutes} minutes (ProfileNotifyRules.checkInChoices)",
+     "key": "monitor-check-in-after-<profile id>",
+     "line": 480,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "setRules(checkInAfterMinutes: minutes).",
+     "gates": [
+      "supported && rules.enabled",
+      "rules.checkInAfterMinutes != null",
+      "disabled while _saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-request-row",
+     "type": "list-tile",
+     "label": "<session title | Session> / {server} · Permission|Question|Form|Check-in due · last checked",
+     "key": "monitor-row-<request identity>",
+     "line": 226,
+     "action": "navigate",
+     "target": "permission-sheet",
+     "targetWidget": "openMonitoredRequest",
+     "effect": "_MonitorRequestRow -> openMonitoredRequest(context, controller, MonitoredRoute): may ask to switch server first, then controller.prepareMonitoredRequest(route) and opens showPermissionSheet / showQuestionSheet / presentConnectionForm, or pushes ChatScreen(sessionID) for a check-in; finally profileMonitor.refresh().",
+     "gates": [
+      "supported && rules.enabled",
+      "snapshot.isCurrent"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-busy-row",
+     "type": "list-tile",
+     "label": "<session title | Session> / [Check-in due ·] observed busy {minutes} min since {time}",
+     "key": "monitor-busy-<session id>",
+     "line": 561,
+     "action": "navigate",
+     "target": "chat",
+     "targetWidget": "ChatScreen",
+     "effect": "_BusyIntervalRow -> openMonitoredRequest(kind: checkIn): switches/validates the profile and pushes ChatScreen(sessionID).",
+     "gates": [
+      "supported && rules.enabled",
+      "snapshot.isCurrent && rules.checkInAfterMinutes != null"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "profile-monitor-quiet-time-dialog",
+   "title": "[Quiet hours time picker]",
+   "kind": "dialog",
+   "file": "lib/ui/screens/profile_monitor_screen.dart",
+   "widget": "_quietTime",
+   "presentedBy": [
+    "_quietTime"
+   ],
+   "line": 335,
+   "purpose": "Material time picker for the quiet-hours start or end.",
+   "reachedFrom": [
+    {
+     "page": "profile-monitor",
+     "element": "profile-monitor-quiet-start"
+    },
+    {
+     "page": "profile-monitor",
+     "element": "profile-monitor-quiet-end"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "profile-monitor-quiet-time-dialog-ok",
+     "type": "button",
+     "label": "OK",
+     "key": null,
+     "line": 335,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Returns the TimeOfDay; _save(rules.copyWith(quietStart|quietEnd: minutes)) -> profileMonitor.setRules.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-quiet-time-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 335,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Closes the picker without saving.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "profile-monitor-switch-server-dialog",
+   "title": "Switch server to review?",
+   "kind": "dialog",
+   "file": "lib/ui/screens/profile_monitor_screen.dart",
+   "widget": "openMonitoredRequest",
+   "presentedBy": [
+    "openMonitoredRequest"
+   ],
+   "line": 25,
+   "purpose": "Asks before switching away from a profile that still has busy sessions in order to open a monitored request on another saved server.",
+   "reachedFrom": [
+    {
+     "page": "profile-monitor",
+     "element": "profile-monitor-request-row"
+    },
+    {
+     "page": "profile-monitor",
+     "element": "profile-monitor-busy-row"
+    },
+    {
+     "page": "embedded-profile-monitor-inbox",
+     "element": "embedded-profile-monitor-inbox-request-row"
+    },
+    {
+     "page": "system",
+     "element": null,
+     "trigger": "notification tap for a monitored request -> openMonitoredRequest (lib/main.dart:1018)"
+    }
+   ],
+   "gates": [
+    "controller.profile?.id != route.profileID && controller.busySessions.isNotEmpty"
+   ],
+   "elements": [
+    {
+     "id": "profile-monitor-switch-server-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 31,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with false; nothing is opened.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "profile-monitor-switch-server-dialog-switch",
+     "type": "button",
+     "label": "Switch server",
+     "key": null,
+     "line": 35,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with true; openMonitoredRequest continues with controller.prepareMonitoredRequest(route) (switches profile/location) and opens the request resolver.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "embedded-profile-monitor-inbox",
+   "title": "Saved servers",
+   "kind": "overlay",
+   "file": "lib/ui/screens/profile_monitor_screen.dart",
+   "widget": "ProfileMonitorInbox",
+   "presentedBy": [],
+   "line": 134,
+   "purpose": "Embedded inbox of pending requests and due check-ins from other monitored saved servers, plus a summary row that opens the monitor screen.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "ActivityScreen (ProfileMonitorInbox(compact: true))",
+     "file": "lib/ui/screens/activity_screen.dart",
+     "line": 595
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "ActivityScreen (ProfileMonitorInbox(compact: true))",
+     "file": "lib/ui/screens/activity_screen.dart",
+     "line": 648
+    }
+   ],
+   "gates": [
+    "!controller.isIsolated"
+   ],
+   "elements": [
+    {
+     "id": "embedded-profile-monitor-inbox-summary",
+     "type": "list-tile",
+     "label": "Saved servers (compact) | Saved-server attention — pending/unknown counts",
+     "key": null,
+     "file": "lib/ui/screens/profile_monitor_screen.dart",
+     "line": 147,
+     "action": "navigate",
+     "target": "profile-monitor",
+     "targetWidget": "ProfileMonitorScreen",
+     "effect": "Pushes ProfileMonitorScreen(controller). Rendered first when !compact, last when compact.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-profile-monitor-inbox-request-row",
+     "type": "list-tile",
+     "label": "<session title | Session> / {server} · Permission|Question|Form|Check-in due",
+     "key": "monitor-row-<request identity>",
+     "file": "lib/ui/screens/profile_monitor_screen.dart",
+     "line": 226,
+     "action": "navigate",
+     "target": "permission-sheet",
+     "targetWidget": "openMonitoredRequest",
+     "effect": "_MonitorRequestRow -> openMonitoredRequest(...): see profile-monitor-request-row. Requests of the currently connected profile are skipped; due check-ins are always listed.",
+     "gates": [
+      "snapshot.isCurrent for that profile"
+     ],
+     "destructive": false
+    }
+   ],
+   "embeddedIn": [
+    "ActivityScreen"
+   ]
+  },
+  {
+   "id": "quota-monitor",
+   "title": "Quota monitoring",
+   "kind": "screen",
+   "file": "lib/ui/screens/quota_monitor_screen.dart",
+   "widget": "QuotaMonitorScreen",
+   "presentedBy": [],
+   "line": 26,
+   "purpose": "Reviews every enrolled provider-quota source (profile x provider) with its last observation and edits its alert policy without connecting to the server.",
+   "reachedFrom": [
+    {
+     "page": "provider-quota",
+     "element": "provider-quota-open-monitor"
+    },
+    {
+     "page": "provider-quota-enroll-dialog",
+     "element": "provider-quota-enroll-dialog-enable"
+    },
+    {
+     "page": "system",
+     "element": null,
+     "trigger": "quota alert notification tap: quotaMonitor.resolveRoute(...) then push QuotaMonitorScreen (lib/main.dart:1004)"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "quota-monitor-notifications",
+     "type": "toggle",
+     "label": "Device alerts for reported quota thresholds",
+     "key": null,
+     "line": 178,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_change(() => monitor.setPolicy(profileID, provider, notifications: value, ...)). One block per monitor.sources entry (_Source).",
+     "gates": [
+      "disabled while saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "quota-monitor-threshold",
+     "type": "dropdown",
+     "label": "{percent}% used (50 / 75 / 90 / 100 / current)",
+     "key": null,
+     "line": 186,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "monitor.setPolicy(... threshold: value).",
+     "gates": [
+      "disabled while saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "quota-monitor-wifi-only",
+     "type": "toggle",
+     "label": "Read only on confirmed Wi-Fi",
+     "key": null,
+     "line": 200,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "monitor.setPolicy(... wifiOnly: value).",
+     "gates": [
+      "disabled while saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "quota-monitor-quiet-hours",
+     "type": "toggle",
+     "label": "Quiet hours: 22:00–08:00 local time",
+     "key": null,
+     "line": 208,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "monitor.setPolicy(... quietStart 22*60 / quietEnd 8*60 or null).",
+     "gates": [
+      "disabled while saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "quota-monitor-refresh-source",
+     "type": "button",
+     "label": "Refresh remaining usage",
+     "key": null,
+     "line": 219,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "monitor.refreshSource(target).",
+     "gates": [
+      "disabled when monitor.refreshing || !monitor.runningAllowed"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "quota-monitor-disable",
+     "type": "button",
+     "label": "Disable quota monitoring",
+     "key": null,
+     "line": 225,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "monitor.disable(target.profileID, target.provider) — removes the source from monitoring.",
+     "gates": [
+      "disabled while saving"
+     ],
+     "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "provider-quota",
+   "title": "Remaining usage",
+   "kind": "screen",
+   "file": "lib/ui/screens/provider_quota_screen.dart",
+   "widget": "ProviderQuotaScreen",
+   "presentedBy": [],
+   "line": 14,
+   "purpose": "Reads remaining provider quota (Codex, Claude, MiniMax, GLM) through a user-installed collector on the connected server, with consent, per-window personal alert thresholds and enrollment into background quota monitoring.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "SettingsScreen (settings-category-quota row, shown when profile != null)",
+     "file": "lib/ui/screens/settings_screen.dart",
+     "line": 270
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "provider-quota-open-monitor",
+     "type": "icon-button",
+     "label": "Quota monitoring",
+     "key": null,
+     "line": 212,
+     "action": "navigate",
+     "target": "quota-monitor",
+     "targetWidget": "QuotaMonitorScreen",
+     "effect": "Pushes QuotaMonitorScreen(controller).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-refresh",
+     "type": "icon-button",
+     "label": "Refresh remaining usage",
+     "key": null,
+     "line": 223,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_overview.refresh() (ProviderQuotaOverview).",
+     "gates": [
+      "_overview.consented",
+      "enabled when _overview.canRead && !_overview.loading"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-provider-chips",
+     "type": "chip",
+     "label": "Codex | Claude | MiniMax | GLM",
+     "key": null,
+     "line": 250,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_overview.selectProvider(provider) and resets the local trust checkbox.",
+     "gates": [
+      "!_overview.detached"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-consent",
+     "type": "toggle",
+     "label": "I installed and trust this collector on this server.",
+     "key": null,
+     "line": 302,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Checkbox sets local _trusted.",
+     "gates": [
+      "_overview.providerSupported && !_overview.consented",
+      "disabled when _overview.setupNeeded"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-read",
+     "type": "button",
+     "label": "Read remaining usage",
+     "key": null,
+     "line": 312,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_overview.allowAndRefresh(): records consent for this collector and reads the quota.",
+     "gates": [
+      "!_overview.consented",
+      "enabled when _trusted && !_overview.setupNeeded"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-retry",
+     "type": "button",
+     "label": "Refresh remaining usage",
+     "key": null,
+     "line": 330,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_overview.refresh().",
+     "gates": [
+      "_overview.consented && _overview.failure != null",
+      "enabled when canRefresh"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-enable-monitoring",
+     "type": "button",
+     "label": "Enable quota monitoring",
+     "key": null,
+     "line": 342,
+     "action": "open-dialog",
+     "target": "provider-quota-enroll-dialog",
+     "targetWidget": "_enroll",
+     "effect": "_enroll(): opens the monitoring consent dialog.",
+     "gates": [
+      "_overview.consented && snapshot != null && snapshot.canShowWindows",
+      "disabled when _overview.snapshotIsStale"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-threshold",
+     "type": "dropdown",
+     "label": "Personal alert threshold — Off | {percent}% used",
+     "key": "quota-threshold-<window id>",
+     "line": 613,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_BudgetControls: budgets.save(snapshot, window, QuotaBudget|null) then budgets.observe(snapshot). One per quota window.",
+     "gates": [
+      "budgets.usable(snapshot, window)",
+      "enabled when !stale && !budgets.saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-threshold-attention",
+     "type": "toggle",
+     "label": "Show threshold attention",
+     "key": null,
+     "line": 645,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "budgets.save(snapshot, window, QuotaBudget(rule.percent, attention: value)).",
+     "gates": [
+      "rule != null",
+      "enabled when !stale && !budgets.saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-clear-thresholds",
+     "type": "button",
+     "label": "Clear saved provider thresholds",
+     "key": null,
+     "line": 368,
+     "action": "open-dialog",
+     "target": "provider-quota-clear-dialog",
+     "targetWidget": "showDialog",
+     "effect": "Opens the clear-all confirmation dialog.",
+     "gates": [
+      "_overview.consented",
+      "disabled while _overview.budgets.saving"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "provider-quota-forget-consent",
+     "type": "button",
+     "label": "Stop using this collector",
+     "key": null,
+     "line": 399,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Resets _trusted and calls _overview.disable() (forgets the collector consent).",
+     "gates": [
+      "_overview.consented"
+     ],
+     "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "provider-quota-enroll-dialog",
+   "title": "Monitor this provider source?",
+   "kind": "dialog",
+   "file": "lib/ui/screens/provider_quota_screen.dart",
+   "widget": "_enroll",
+   "presentedBy": [
+    "_enroll"
+   ],
+   "line": 101,
+   "purpose": "Consent dialog for background quota monitoring of the current source, with initial threshold and alert options.",
+   "reachedFrom": [
+    {
+     "page": "provider-quota",
+     "element": "provider-quota-enable-monitoring"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "provider-quota-enroll-dialog-threshold",
+     "type": "dropdown",
+     "label": "{percent}% used (50 / 75 / 90 / 100)",
+     "key": null,
+     "line": 117,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Local dialog state: threshold.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-enroll-dialog-notifications",
+     "type": "toggle",
+     "label": "Device alerts for reported quota thresholds",
+     "key": null,
+     "line": 131,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Local dialog state: notifications.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-enroll-dialog-wifi",
+     "type": "toggle",
+     "label": "Read only on confirmed Wi-Fi",
+     "key": null,
+     "line": 137,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Local dialog state: wifiOnly.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-enroll-dialog-quiet",
+     "type": "toggle",
+     "label": "Quiet hours: 22:00–08:00 local time",
+     "key": null,
+     "line": 143,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Local dialog state: quiet.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-enroll-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 153,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with false.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-enroll-dialog-enable",
+     "type": "button",
+     "label": "Enable quota monitoring",
+     "key": null,
+     "line": 157,
+     "action": "toggle-setting",
+     "target": "quota-monitor",
+     "targetWidget": "QuotaMonitorScreen",
+     "effect": "Pops with true; _enroll then calls controller.quotaMonitor.enroll(profileID, snapshot, notifications, threshold, wifiOnly, quietStart, quietEnd) and pushes QuotaMonitorScreen (snackbar on failure).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "provider-quota-clear-dialog",
+   "title": "Clear saved provider thresholds",
+   "kind": "dialog",
+   "file": "lib/ui/screens/provider_quota_screen.dart",
+   "widget": "_ProviderQuotaScreenState.build",
+   "presentedBy": [],
+   "line": 372,
+   "purpose": "Confirms clearing every saved personal quota threshold.",
+   "reachedFrom": [
+    {
+     "page": "provider-quota",
+     "element": "provider-quota-clear-thresholds"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "provider-quota-clear-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 380,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with false.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "provider-quota-clear-dialog-confirm",
+     "type": "button",
+     "label": "Clear saved provider thresholds",
+     "key": null,
+     "line": 385,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with true; _overview.budgets.clearAll().",
+     "gates": [],
+     "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "usage",
+   "title": "Usage and cost",
+   "kind": "screen",
+   "file": "lib/ui/screens/usage_screen.dart",
+   "widget": "UsageScreen",
+   "presentedBy": [],
+   "line": 18,
+   "purpose": "Server-reported usage statistics: cost, sessions, tokens, provider and model breakdown and tool reliability, filterable by range, project scope, provider and search, with local consumption budgets.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "SettingsScreen (settings-category-usage row)",
+     "file": "lib/ui/screens/settings_screen.dart",
+     "line": 258
+    }
+   ],
+   "gates": [
+    "entry row shown when controller.supportsUsageStatistics"
+   ],
+   "elements": [
+    {
+     "id": "usage-refresh",
+     "type": "icon-button",
+     "label": "Refresh usage",
+     "key": "refresh-usage",
+     "line": 82,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_overview.refresh() (UsageOverview).",
+     "gates": [
+      "enabled when !_overview.detached && error is not UsageUnsupported && !_overview.loading"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "usage-pull-refresh",
+     "type": "gesture",
+     "label": "[pull to refresh]",
+     "key": null,
+     "line": 97,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "RefreshIndicator.onRefresh -> _overview.refresh().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "usage-range-chips",
+     "type": "chip",
+     "label": "Today | 30 days | This year | All time",
+     "key": "usage-range-<range name>",
+     "line": 115,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_overview.setRange(range).",
+     "gates": [
+      "available (!detached && !unsupported)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "usage-scope",
+     "type": "dropdown",
+     "label": "Project scope — All projects | Current project",
+     "key": "usage-scope-<scope name>",
+     "line": 137,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_overview.setScope(value).",
+     "gates": [
+      "available"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "usage-error-retry",
+     "type": "button",
+     "label": "Refresh usage",
+     "key": null,
+     "line": 182,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_overview.refresh().",
+     "gates": [
+      "_overview.error != null && available",
+      "disabled while loading"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "usage-budget-usd",
+     "type": "button",
+     "label": "Set USD budget",
+     "key": "usage-budget-usd",
+     "line": 352,
+     "action": "open-dialog",
+     "target": "usage-budget-dialog",
+     "targetWidget": "_UsageBudgetControls._edit",
+     "effect": "_UsageBudgetControls._edit(context, UsageBudgetUnit.usd): opens the budget dialog.",
+     "gates": [
+      "snapshot != null && _budgets.available",
+      "enabled && !budgets.saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "usage-budget-tokens",
+     "type": "button",
+     "label": "Set token budget",
+     "key": "usage-budget-tokens",
+     "line": 352,
+     "action": "open-dialog",
+     "target": "usage-budget-dialog",
+     "targetWidget": "_UsageBudgetControls._edit",
+     "effect": "_edit(context, UsageBudgetUnit.tokens): opens the budget dialog.",
+     "gates": [
+      "snapshot != null && _budgets.available",
+      "enabled && !budgets.saving"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "usage-budget-clear-all",
+     "type": "button",
+     "label": "Clear saved consumption budgets",
+     "key": null,
+     "line": 371,
+     "action": "open-dialog",
+     "target": "usage-budget-clear-dialog",
+     "targetWidget": "showDialog",
+     "effect": "Opens the clear-all confirmation dialog.",
+     "gates": [
+      "snapshot != null && _budgets.available",
+      "disabled while budgets.saving"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "usage-provider-filter",
+     "type": "dropdown",
+     "label": "Provider — All providers | <provider id>",
+     "key": null,
+     "line": 524,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "overview.setProviderFilter(value or null).",
+     "gates": [
+      "snapshot != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "usage-search",
+     "type": "text-field",
+     "label": "Search providers, models or variants",
+     "key": "usage-search-<filter revision>",
+     "line": 547,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "overview.setModelSearch(text).",
+     "gates": [
+      "snapshot != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "usage-clear-filters",
+     "type": "button",
+     "label": "Clear filters",
+     "key": null,
+     "line": 559,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "overview.clearInspectionFilters().",
+     "gates": [
+      "enabled when overview.hasInspectionFilters"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "usage-budget-dialog",
+   "title": "Set USD budget | Set token budget",
+   "kind": "dialog",
+   "file": "lib/ui/screens/usage_screen.dart",
+   "widget": "_UsageBudgetControls._edit",
+   "presentedBy": [
+    "_edit"
+   ],
+   "line": 231,
+   "purpose": "Enter, change or remove a local consumption budget in USD or tokens for the current scope.",
+   "reachedFrom": [
+    {
+     "page": "usage",
+     "element": "usage-budget-usd"
+    },
+    {
+     "page": "usage",
+     "element": "usage-budget-tokens"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "usage-budget-dialog-amount",
+     "type": "text-field",
+     "label": "Budget amount",
+     "key": null,
+     "line": 242,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Numeric input validated by UsageBudgets.validLimit.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "usage-budget-dialog-remove",
+     "type": "button",
+     "label": "Remove budget",
+     "key": null,
+     "line": 260,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with -1; budgets.save(snapshot, unit, null).",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "usage-budget-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 264,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with null.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "usage-budget-dialog-save",
+     "type": "button",
+     "label": "Save",
+     "key": null,
+     "line": 268,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Validates then pops with the number; budgets.save(snapshot, unit, value).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "usage-budget-clear-dialog",
+   "title": "Clear saved consumption budgets",
+   "kind": "dialog",
+   "file": "lib/ui/screens/usage_screen.dart",
+   "widget": "_UsageBudgetControls.build",
+   "presentedBy": [],
+   "line": 375,
+   "purpose": "Confirms clearing every saved consumption budget.",
+   "reachedFrom": [
+    {
+     "page": "usage",
+     "element": "usage-budget-clear-all"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "usage-budget-clear-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 381,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with false.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "usage-budget-clear-dialog-confirm",
+     "type": "button",
+     "label": "Clear saved consumption budgets",
+     "key": null,
+     "line": 385,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with true; budgets.clearAll().",
+     "gates": [],
+     "destructive": true
+    }
+   ]
+  }
+ ],
+ "notPages": [
+  {
+   "file": "lib/ui/widgets/connect_methods.dart",
+   "reason": "pure helper functions (connectMethodNeedsServerBrowser, orderConnectMethods, connectMethodHint) used by lib/ui/screens/library/integrations_screen.dart; no widget, no surface, no interactive element"
+  },
+  {
+   "file": "lib/ui/widgets/request_routes.dart",
+   "reason": "non-visual RequestRoutes route-ownership helper (removes routes opened for a pending request once it is resolved); used by permission_sheet.dart, activity_screen.dart, form_flow.dart, return_brief_panel.dart; no interactive element"
+  }
+ ],
+ "notes": [
+  "lib/ui/screens/servers_screen.dart:109 ServersScreen embeds TermuxRunningServerEntry (lib/ui/widgets/termux_running_server_entry.dart, not assigned to g-servers) in both the list and the welcome body. Host callbacks: onConnect -> _connect(profile, detectedRunning: true) (conn.connect then '/home'); onEnterCredentials -> _edit(existing, connectOnSave: true, initialUrl: TermuxBridge.managedServerUrl, focusPassword: true, openCode2Intent: flavor == v2) which opens page profile-editor. Its own elements are left to that file's owner.",
+  "lib/ui/screens/servers_screen.dart:681 ServersScreen embeds ManagedServerHealth (lib/ui/widgets/managed_server_health.dart, not assigned) gated by platformCapabilities.supportsTermux && any profile TermuxBridge.managesServerUrl; onManage -> _openTermuxSetup (pushNamed '/termux-setup').",
+  "lib/ui/screens/servers_screen.dart:2397/1540 showTeamHostGuideSheet and showTeamHostSheet live in lib/ui/widgets/team_host_form.dart (not assigned); target ids 'team-host-guide-sheet' / 'team-host-sheet' are derived, resolve by targetWidget.",
+  "openExternalLink (lib/ui/widgets/external_link.dart, not assigned) always shows an AlertDialog confirmation ('Open external link?') before launching; elements using it carry target 'external-link-dialog' + targetWidget 'openExternalLink' with action external-link.",
+  "lib/ui/screens/profile_monitor_screen.dart:17 openMonitoredRequest opens one of showPermissionSheet / showQuestionSheet / presentConnectionForm / ChatScreen depending on route.kind; the request-row elements record target 'permission-sheet' only as the first branch, resolve the others by name.",
+  "servers-welcome is the empty-state body of ServersScreen (same Scaffold and app bar, minus the attention button); it is recorded as its own page because its controls differ. Shared private widgets _OpenCode2Entry (line 882), _TermuxEntry (899) and _SetupOptions (915) are recorded once per host page with the call-site line for the first two and the widget line for _SetupOptions rows.",
+  "lib/ui/screens/servers_screen.dart:1857 the profile editor has no ValueKey-less system-back element of its own: PopScope(canPop: false) routes back to _close(), recorded on profile-editor-close.",
+  "lib/ui/screens/settings/server_settings_screen.dart:294 GatedRowTile behaviour (tap/explainer) is defined outside the assigned files.",
+  "AgentAccountScreen is only reachable from the servers list overflow menu (grep found no other constructor call in lib/)."
+ ]
+}

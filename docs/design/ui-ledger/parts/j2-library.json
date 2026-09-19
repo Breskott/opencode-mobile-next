@@ -1,0 +1,2464 @@
+{
+ "area": "j2-library",
+ "pages": [
+  {
+   "id": "catalog",
+   "title": "Models and agents",
+   "kind": "screen",
+   "file": "lib/ui/screens/library/catalog_screen.dart",
+   "widget": "CatalogScreen",
+   "presentedBy": [],
+   "line": 51,
+   "purpose": "Full-screen host for the shared ModelCatalogView (lib/ui/widgets/pickers.dart:113, showHeader: false) where the default model and agent for new chats are browsed and chosen.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "LibraryScreen",
+     "file": "lib/ui/screens/library_screen.dart",
+     "line": 101,
+     "note": "row \"Models & agents\""
+    }
+   ],
+   "gates": [
+    "controller.capabilities.serverCatalog (LibraryScreen row gate, library_screen.dart:91)"
+   ],
+   "elements": [
+    {
+     "id": "catalog-legacy-model-search",
+     "type": "text-field",
+     "label": "Search models",
+     "key": null,
+     "line": 125,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Legacy _models(): setState(_query) filters models by name/id/provider.",
+     "gates": [
+      "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "catalog-legacy-pull-refresh",
+     "type": "gesture",
+     "label": "[pull to refresh]",
+     "key": null,
+     "line": 140,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Legacy RefreshIndicators (lines 140,152,222,235,277,290) call _load() -> repository.loadCatalog().",
+     "gates": [
+      "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "catalog-legacy-model-row",
+     "type": "list-tile",
+     "label": "<model name> / <provider>/<id>",
+     "key": null,
+     "line": 168,
+     "action": "open-sheet",
+     "target": "catalog-model-details-sheet",
+     "targetWidget": "_modelDetails",
+     "effect": "Legacy model row; _modelDetails(model) opens the model details sheet. Disabled when !model.enabled.",
+     "gates": [
+      "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "catalog-legacy-provider-row",
+     "type": "list-tile",
+     "label": "<provider name>",
+     "key": null,
+     "line": 245,
+     "action": "navigate",
+     "target": "integrations",
+     "targetWidget": "IntegrationsScreen",
+     "effect": "Legacy provider row; pushes IntegrationsScreen(controller) in mode all.",
+     "gates": [
+      "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "catalog-legacy-agent-row",
+     "type": "list-tile",
+     "label": "<agent id>",
+     "key": null,
+     "line": 298,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Legacy agent row; controller.selectAgent(agent.id) then setState.",
+     "gates": [
+      "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "catalog-model-details-sheet",
+   "title": "<model name>",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/catalog_screen.dart",
+   "widget": "_modelDetails",
+   "presentedBy": [],
+   "line": 320,
+   "purpose": "Legacy model detail sheet with capability chips and a 'Use this model' button; unreachable in the current build.",
+   "reachedFrom": [
+    {
+     "page": "catalog",
+     "element": "catalog-legacy-model-row"
+    }
+   ],
+   "gates": [
+    "dead code: only referenced from _models()/_providers()/_agents(), which are never called (marked // ignore: unused_element); build() renders ModelCatalogView instead"
+   ],
+   "elements": [
+    {
+     "id": "catalog-model-details-sheet-use",
+     "type": "button",
+     "label": "Use this model",
+     "key": null,
+     "line": 413,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.selectModel(ModelRef(providerID, modelID)), then Navigator.pop and setState. Disabled when !model.enabled.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "commands",
+   "title": "Server commands",
+   "kind": "screen",
+   "file": "lib/ui/screens/library/commands_screen.dart",
+   "widget": "CommandsScreen",
+   "presentedBy": [],
+   "line": 3,
+   "purpose": "Searchable list of server slash commands; tapping one opens the run-command dialog and then the chat it ran in. Rendered body-only (embedded: true) as the Commands tab of CapabilitiesScreen.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "CapabilitiesScreen",
+     "file": "lib/ui/screens/capabilities_screen.dart",
+     "line": 29,
+     "note": "tab \"Commands\", embedded: true"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "commands-search",
+     "type": "text-field",
+     "label": "Search server commands",
+     "key": null,
+     "line": 73,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "setState(_query); filters by command name/description.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "commands-pull-refresh",
+     "type": "gesture",
+     "label": "[pull to refresh]",
+     "key": null,
+     "line": 87,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "RefreshIndicator (empty state line 87, list line 99) calls _load() -> repository.listCommands().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "commands-row",
+     "type": "list-tile",
+     "label": "/<command name>",
+     "key": null,
+     "line": 107,
+     "action": "open-dialog",
+     "target": "run-command-dialog",
+     "targetWidget": "showRunCommandDialog",
+     "effect": "_run(command): awaits showRunCommandDialog(context, controller, command); when it returns a sessionID, Navigator.pushNamed('/chat/<sessionID>'). Re-entrancy guarded by _openingCommand.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "commands-row-open-chat",
+     "type": "gesture",
+     "label": "[after run dialog returns a session]",
+     "key": null,
+     "line": 158,
+     "action": "navigate",
+     "target": "chat",
+     "targetWidget": "/chat/<sessionID>",
+     "effect": "Automatic follow-up of commands-row: Navigator.of(context).pushNamed('/chat/$sessionID').",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "commands-refresh-banner-retry",
+     "type": "button",
+     "label": "Retry",
+     "key": null,
+     "file": "lib/ui/widgets/product_states.dart",
+     "line": 86,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ProductRefreshBody MaterialBanner ('Couldn't refresh' + message) action; calls the screen's _load() to refetch while cached rows stay mounted.",
+     "gates": [
+      "shown only when a refresh failed after data was already loaded (message != null)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "commands-error-try-again",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "file": "lib/ui/widgets/product_states.dart",
+     "line": 241,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ProductErrorState retry; calls _load().",
+     "gates": [
+      "shown only when the first load failed and nothing is cached"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "commands-error-report-bug",
+     "type": "button",
+     "label": "Report a bug",
+     "key": "product-error-report-bug",
+     "file": "lib/ui/widgets/product_states.dart",
+     "line": 250,
+     "action": "other",
+     "target": null,
+     "targetWidget": "openBugReport",
+     "effect": "ProductErrorState report affordance; calls openBugReport(context) (shared bug-report flow owned elsewhere).",
+     "gates": [
+      "shown only when the first load failed and nothing is cached"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "skills",
+   "title": "Skills",
+   "kind": "screen",
+   "file": "lib/ui/screens/library/skills_screen.dart",
+   "widget": "SkillsScreen",
+   "presentedBy": [],
+   "line": 3,
+   "purpose": "Lists project and global OpenCode skills; opens a read-only SKILL.md preview, or (when opened from a chat with a sessionID) a sheet that adds the skill to that conversation. Also the Skills tab of CapabilitiesScreen (embedded).",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "CapabilitiesScreen",
+     "file": "lib/ui/screens/capabilities_screen.dart",
+     "line": 38,
+     "note": "tab \"Skills\", embedded: true"
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_ChatScreenState._executeMobileCommand",
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 5232,
+     "note": "_ChatCommandAction.skills; sessionID only when _conn.supportsSessionSkills"
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_ChatScreenState._openSessionMenu",
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 5556,
+     "note": "action 'skills'"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "skills-pull-refresh",
+     "type": "gesture",
+     "label": "[pull to refresh]",
+     "key": null,
+     "line": 121,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "RefreshIndicator (lines 121, 133) calls _load() -> repository.listSkills(); for a chat-scoped screen whose location changed it only sets the 'location changed' error.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "skills-row",
+     "type": "list-tile",
+     "label": "<skill name>",
+     "key": null,
+     "line": 141,
+     "action": "open-sheet",
+     "target": "skill-activation-sheet",
+     "targetWidget": "_SkillActivationSheet",
+     "effect": "_showSkill(skill): with widget.sessionID opens _SkillActivationSheet (non-dismissible) and pops the screen with true when the skill was used; otherwise opens the read-only preview sheet.",
+     "gates": [
+      "target is skills-preview-sheet when widget.sessionID == null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "skills-refresh-banner-retry",
+     "type": "button",
+     "label": "Retry",
+     "key": null,
+     "file": "lib/ui/widgets/product_states.dart",
+     "line": 86,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ProductRefreshBody MaterialBanner ('Couldn't refresh' + message) action; calls the screen's _load() to refetch while cached rows stay mounted.",
+     "gates": [
+      "shown only when a refresh failed after data was already loaded (message != null)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "skills-error-try-again",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "file": "lib/ui/widgets/product_states.dart",
+     "line": 241,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ProductErrorState retry; calls _load().",
+     "gates": [
+      "shown only when the first load failed and nothing is cached"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "skills-error-report-bug",
+     "type": "button",
+     "label": "Report a bug",
+     "key": "product-error-report-bug",
+     "file": "lib/ui/widgets/product_states.dart",
+     "line": 250,
+     "action": "other",
+     "target": null,
+     "targetWidget": "openBugReport",
+     "effect": "ProductErrorState report affordance; calls openBugReport(context) (shared bug-report flow owned elsewhere).",
+     "gates": [
+      "shown only when the first load failed and nothing is cached"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "skills-preview-sheet",
+   "title": "<skill name>",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/skills_screen.dart",
+   "widget": "_showSkill",
+   "presentedBy": [],
+   "line": 173,
+   "purpose": "Read-only preview of a skill: name, selectable location path and rendered SKILL.md (FilePreviewBody, key 'skill-content-preview').",
+   "reachedFrom": [
+    {
+     "page": "skills",
+     "element": "skills-row"
+    }
+   ],
+   "gates": [
+    "widget.sessionID == null (library / capabilities entry)"
+   ],
+   "elements": []
+  },
+  {
+   "id": "skill-activation-sheet",
+   "title": "<skill name>",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/skill_activation.dart",
+   "widget": "_SkillActivationSheet",
+   "presentedBy": [],
+   "line": 3,
+   "purpose": "Previews a skill and adds it to the current conversation, optionally resuming the agent right away.",
+   "reachedFrom": [
+    {
+     "page": "skills",
+     "element": "skills-row"
+    }
+   ],
+   "gates": [
+    "widget.sessionID != null (SkillsScreen opened from a chat)",
+    "isDismissible: false, enableDrag: false"
+   ],
+   "elements": [
+    {
+     "id": "skill-activation-sheet-close",
+     "type": "icon-button",
+     "label": "Close",
+     "key": null,
+     "line": 89,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context); disabled while _sending (PopScope canPop: !_sending).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "skill-activation-sheet-run-now",
+     "type": "toggle",
+     "label": "Run agent now",
+     "key": "skill-resume",
+     "line": 124,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "CheckboxListTile; setState(_resume). Disabled while sending, after an uncertain result, or when applied elsewhere.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "skill-activation-sheet-activate",
+     "type": "button",
+     "label": "Add to conversation",
+     "key": "skill-activate",
+     "line": 147,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_activate(): controller.activateSessionSkill(sessionID, skill.id ?? skill.name, resume: _resume, expectedLocation); pops with true on success, else shows the SessionSkillFailure message inline.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "references",
+   "title": "References",
+   "kind": "screen",
+   "file": "lib/ui/screens/library/references_screen.dart",
+   "widget": "ReferencesScreen",
+   "presentedBy": [],
+   "line": 3,
+   "purpose": "Lists references attached to the project; tapping copies '@name' or, when opened from chat with onSelected, attaches the reference to the composer and pops. Also the References tab of CapabilitiesScreen (embedded).",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "CapabilitiesScreen",
+     "file": "lib/ui/screens/capabilities_screen.dart",
+     "line": 42,
+     "note": "tab \"References\", embedded: true"
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_ChatScreenState._executeMobileCommand",
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 5259,
+     "note": "_ChatCommandAction.references, onSelected: _attachReference"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "references-pull-refresh",
+     "type": "gesture",
+     "label": "[pull to refresh]",
+     "key": null,
+     "line": 83,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "RefreshIndicator (lines 83, 95) calls _load() -> repository.listReferences().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "references-row",
+     "type": "list-tile",
+     "label": "<reference name>",
+     "key": "reference-<name>",
+     "line": 103,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_useReference(reference) (line 126): if widget.onSelected is set, calls it and Navigator.pop(); otherwise Clipboard.setData('@<name>') and shows snackbar '@{name} copied'. Trailing icon is copy vs add-comment accordingly.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "references-refresh-banner-retry",
+     "type": "button",
+     "label": "Retry",
+     "key": null,
+     "file": "lib/ui/widgets/product_states.dart",
+     "line": 86,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ProductRefreshBody MaterialBanner ('Couldn't refresh' + message) action; calls the screen's _load() to refetch while cached rows stay mounted.",
+     "gates": [
+      "shown only when a refresh failed after data was already loaded (message != null)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "references-error-try-again",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "file": "lib/ui/widgets/product_states.dart",
+     "line": 241,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ProductErrorState retry; calls _load().",
+     "gates": [
+      "shown only when the first load failed and nothing is cached"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "references-error-report-bug",
+     "type": "button",
+     "label": "Report a bug",
+     "key": "product-error-report-bug",
+     "file": "lib/ui/widgets/product_states.dart",
+     "line": 250,
+     "action": "other",
+     "target": null,
+     "targetWidget": "openBugReport",
+     "effect": "ProductErrorState report affordance; calls openBugReport(context) (shared bug-report flow owned elsewhere).",
+     "gates": [
+      "shown only when the first load failed and nothing is cached"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "tools",
+   "title": "Tools and capabilities",
+   "kind": "screen",
+   "file": "lib/ui/screens/tools_screen.dart",
+   "widget": "ToolsScreen",
+   "presentedBy": [],
+   "line": 17,
+   "purpose": "Shows the coding tools callable by the selected model, tools registered but not callable, and experimental server capabilities. Also the Tools tab of CapabilitiesScreen (embedded).",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "CapabilitiesScreen",
+     "file": "lib/ui/screens/capabilities_screen.dart",
+     "line": 34,
+     "note": "tab \"Tools\", embedded: true, only when controller.capabilities.toolInventory"
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_ChatScreenState._executeMobileCommand",
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 5250,
+     "note": "_ChatCommandAction.tools"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "tools-appbar-refresh",
+     "type": "icon-button",
+     "label": "Refresh tools",
+     "key": null,
+     "line": 137,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_load(): repository.listCodingTools(providerID, modelID), listCodingToolIDs(), loadExperimentalCapabilities(). Disabled when _model == null.",
+     "gates": [
+      "!widget.embedded"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "tools-choose-model-empty",
+     "type": "button",
+     "label": "Choose model",
+     "key": null,
+     "line": 161,
+     "action": "open-sheet",
+     "target": "model-picker",
+     "targetWidget": "showModelPicker",
+     "effect": "ProductEmptyState action -> _chooseModel(): awaits showModelPicker(context), then adopts controller.selectedModel, clears data and reloads.",
+     "gates": [
+      "shown only when _model == null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "tools-model-summary",
+     "type": "gesture",
+     "label": "<model name> <provider>/<model>",
+     "key": "tools-model-summary",
+     "line": 211,
+     "action": "open-sheet",
+     "target": "model-picker",
+     "targetWidget": "showModelPicker",
+     "effect": "InkWell header -> _chooseModel() (showModelPicker then reload).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "tools-header-refresh",
+     "type": "icon-button",
+     "label": "Refresh tools",
+     "key": null,
+     "line": 250,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_load().",
+     "gates": [
+      "widget.embedded"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "tools-header-change",
+     "type": "button",
+     "label": "Change",
+     "key": null,
+     "line": 255,
+     "action": "open-sheet",
+     "target": "model-picker",
+     "targetWidget": "showModelPicker",
+     "effect": "_chooseModel().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "tools-search",
+     "type": "text-field",
+     "label": "Search tools / Search {n} tools",
+     "key": "tools-search",
+     "line": 176,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "setState(_query); filters callable and registered-only tools.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "tools-search-clear",
+     "type": "icon-button",
+     "label": "Clear search",
+     "key": null,
+     "line": 190,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_search.clear(); setState(_query = '').",
+     "gates": [
+      "_query.isNotEmpty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "tools-pull-refresh",
+     "type": "gesture",
+     "label": "[pull to refresh]",
+     "key": null,
+     "line": 386,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "RefreshIndicator -> _load().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "tools-callable-row",
+     "type": "list-tile",
+     "label": "<tool id>",
+     "key": "coding-tool-<id>",
+     "line": 422,
+     "action": "open-sheet",
+     "target": "tools-detail-sheet",
+     "targetWidget": "_showTool",
+     "effect": "_showTool(tool) opens the tool detail sheet.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "tools-error-try-again",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "file": "lib/ui/widgets/product_states.dart",
+     "line": 241,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ProductErrorState retry -> _load().",
+     "gates": [
+      "_toolsError != null && _tools == null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "tools-error-report-bug",
+     "type": "button",
+     "label": "Report a bug",
+     "key": "product-error-report-bug",
+     "file": "lib/ui/widgets/product_states.dart",
+     "line": 250,
+     "action": "other",
+     "target": null,
+     "targetWidget": "openBugReport",
+     "effect": "openBugReport(context).",
+     "gates": [
+      "_toolsError != null && _tools == null"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "tools-detail-sheet",
+   "title": "<tool id>",
+   "kind": "sheet",
+   "file": "lib/ui/screens/tools_screen.dart",
+   "widget": "_showTool",
+   "presentedBy": [],
+   "line": 484,
+   "purpose": "Tool detail: description and pretty-printed JSON parameter schema (selectable).",
+   "reachedFrom": [
+    {
+     "page": "tools",
+     "element": "tools-callable-row"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "tools-detail-sheet-copy-schema",
+     "type": "icon-button",
+     "label": "Copy parameter schema",
+     "key": null,
+     "line": 507,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Clipboard.setData(schema) and snackbar '<id> schema copied'.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "integrations",
+   "title": "Providers | MCP | MCP and integrations",
+   "kind": "screen",
+   "file": "lib/ui/screens/library/integrations_screen.dart",
+   "widget": "IntegrationsScreen",
+   "presentedBy": [],
+   "line": 8,
+   "purpose": "Provider connections (connect via API key / OAuth / server command, disconnect, manage accounts, recover pending sign-ins) and MCP servers (connect, disconnect, authenticate, remove, add) plus MCP resources; mode selects providers, mcp or both.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "LibraryScreen",
+     "file": "lib/ui/screens/library_screen.dart",
+     "line": 111,
+     "note": "row \"Providers\", mode: IntegrationsMode.providers"
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "LibraryScreen",
+     "file": "lib/ui/screens/library_screen.dart",
+     "line": 125,
+     "note": "row \"MCP\", mode: IntegrationsMode.mcp"
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_ChatScreenState._openProviders",
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 4156,
+     "note": "provider-auth error card, wired at chat_screen.dart:6825; mode all; skipped when _conn.isIsolated"
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_ChatScreenState._executeMobileCommand",
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 5217,
+     "note": "_ChatCommandAction.integrations; mode all"
+    },
+    {
+     "page": "catalog",
+     "element": "catalog-legacy-provider-row"
+    }
+   ],
+   "gates": [
+    "controller.capabilities.serverCatalog (LibraryScreen rows, library_screen.dart:91)"
+   ],
+   "elements": [
+    {
+     "id": "integrations-add-mcp",
+     "type": "icon-button",
+     "label": "Add MCP server",
+     "key": "add-mcp-server",
+     "line": 564,
+     "action": "navigate",
+     "target": "mcp-setup",
+     "targetWidget": "McpSetupScreen",
+     "effect": "_openMcpSetup(): pushes McpSetupScreen; when it pops true and the location is unchanged, _load() and snackbar (runtime added / saved in OpenCode).",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-pull-refresh",
+     "type": "gesture",
+     "label": "[pull to refresh]",
+     "key": null,
+     "line": 574,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_load(): controller.prunePendingIntegrationAuth(), prepareActionRepository(), then listMcpServers / listMcpResources / listIntegrations for the visible sections.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-retry-save-recovery",
+     "type": "button",
+     "label": "Retry saving recovery",
+     "key": null,
+     "line": 629,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.retryPendingAuthPersistence(); on failure shows product error.",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "controller.pendingAuthPersistenceUncertain"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-uncertain-forget",
+     "type": "button",
+     "label": "Forget uncertain start",
+     "key": null,
+     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "line": 187,
+     "action": "open-sheet",
+     "target": "integrations-forget-uncertain-auth-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_UncertainAuthRecoveryTile ('Unconfirmed sign-in: {integrationID}'): opens confirm sheet, then controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "one tile per controller.uncertainIntegrationAuth entry"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "integrations-pending-resume",
+     "type": "button",
+     "label": "Resume / check status",
+     "key": null,
+     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "line": 139,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_PendingAuthRecoveryTile ('Pending sign-in: {integration}') _act(): controller.recoverIntegrationAuth(entry, locationRevision); on complete shows snackbar and runs onComplete (_load + controller.refreshCatalog).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "one tile per controller.pendingIntegrationAuth entry",
+      "!expired && controller.integrationAuthRecoverySupported"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-pending-enter-code",
+     "type": "button",
+     "label": "Enter code",
+     "key": null,
+     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "line": 145,
+     "action": "open-dialog",
+     "target": "integrations-oauth-code-dialog",
+     "targetWidget": "_OAuthCodeDialog",
+     "effect": "_act(enterCode: true): opens _OAuthCodeDialog, then controller.recoverIntegrationAuth(entry, code: providerOAuthCompletionCode(code)).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "!expired && supported",
+      "entry.kind == PendingAuthKind.oauth && entry.mode == IntegrationAuthMode.code"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-pending-cancel",
+     "type": "button",
+     "label": "Cancel sign-in",
+     "key": null,
+     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "line": 151,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_act(cancel: true): controller.recoverIntegrationAuth(entry, cancel: true).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "controller.integrationAuthRecoverySupported"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "integrations-pending-forget",
+     "type": "button",
+     "label": "Forget on this device",
+     "key": null,
+     "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+     "line": 155,
+     "action": "open-sheet",
+     "target": "integrations-forget-pending-auth-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_act(forget: true): confirm sheet, then controller.forgetIntegrationAuth(entry, locationRevision).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "integrations-legacy-oauth-action",
+     "type": "button",
+     "label": "Check | Enter code | Finish | Dismiss",
+     "key": null,
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 584,
+     "action": "mutate",
+     "target": "integrations-oauth-code-dialog",
+     "targetWidget": "_OAuthCodeDialog",
+     "effect": "_PendingOAuthTile ('Connecting {name}', key pending-provider-oauth) primary action. pending+auto mode: _checkOAuth() (repository.integrationOAuthStatus); pending+code mode: _enterOAuthCode() opens _OAuthCodeDialog then repository.completeIntegrationOAuth; complete: _finishOAuth() (refreshProviderRuntime when capabilities.providerRuntimeRefresh, _load, refreshCatalog, snackbar); failed/expired: label 'Dismiss' -> _cancelOAuth().",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "_pendingOAuth != null (legacy flow: !controller.integrationAuthRecoverySupported)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-legacy-oauth-menu",
+     "type": "icon-button",
+     "label": "Authentication options",
+     "key": null,
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 593,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "opens overflow menu",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "_pendingOAuth != null",
+      "!terminal && !checking"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-legacy-oauth-menu-cancel",
+     "type": "menu-item",
+     "label": "Cancel attempt",
+     "key": null,
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 598,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_cancelOAuth(): repository.cancelIntegrationOAuth(attemptID) and clears _pendingOAuth.",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "_pendingOAuth != null",
+      "!terminal && !checking"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "integrations-providers-load-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 911,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_SectionLoadError ('Could not load this section') -> _retryIntegrations(): _loadIntegrations(prepareActionRepository).",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "staleSource (scope changed) or _integrationError != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-providers-empty-refresh",
+     "type": "button",
+     "label": "Refresh",
+     "key": null,
+     "line": 737,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ProductInlineEmpty action -> _retryIntegrations().",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "integrations.isEmpty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-provider-search",
+     "type": "text-field",
+     "label": "Search providers or models",
+     "key": "providers-search",
+     "line": 855,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "setState(_providerQuery); _providerMatchesSearch filters by name, id, aliases, logo domain and catalog model ids/names.",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "integrations loaded and non-empty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-provider-search-clear",
+     "type": "icon-button",
+     "label": "Clear provider search",
+     "key": "providers-search-clear",
+     "line": 868,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_clearProviderSearch().",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "_providerQuery.isNotEmpty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-provider-search-empty-clear",
+     "type": "button",
+     "label": "Clear search",
+     "key": null,
+     "line": 760,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ProductInlineEmpty (key providers-search-empty) action -> _clearProviderSearch().",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "matching.isEmpty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-provider-connect",
+     "type": "button",
+     "label": "Connect",
+     "key": "connect-provider-<integration id>",
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 411,
+     "action": "open-sheet",
+     "target": "integrations-connect-method-sheet",
+     "targetWidget": "_connectIntegration",
+     "effect": "_ProviderIntegrationTile.onConnect -> _connectIntegration(integration): filters methods to key/oauth/(command when supported) via orderConnectMethods; several methods -> method picker sheet; a single method goes straight to: key -> API key dialog, oauth -> _connectWithOAuth (inputs dialog, authorization-launch dialog, browser), command -> _CommandAuthSheet. Disabled when busy or no usable method.",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "provider not connected",
+      "integration.credentialIDs.isEmpty and no legacy oauth connection"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-provider-disconnect",
+     "type": "button",
+     "label": "Disconnect",
+     "key": "disconnect-provider-<integration id>",
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 381,
+     "action": "open-sheet",
+     "target": "integrations-disconnect-provider-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_ProviderIntegrationTile.onDisconnect -> _disconnectIntegration(presented): confirm sheet then repository.disconnectIntegration.",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "integration.credentialIDs.isNotEmpty || (presented.connected && any method.type == 'oauth')",
+      "replaced by a spinner while busy; server-managed/env connections show a passive label instead"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "integrations-provider-server-signin",
+     "type": "button",
+     "label": "Server sign-in",
+     "key": null,
+     "line": 784,
+     "action": "open-sheet",
+     "target": "integrations-connect-method-sheet",
+     "targetWidget": "_connectIntegration",
+     "effect": "_connectIntegration(integration) (same entry as Connect; leads to the method picker or directly to _CommandAuthSheet). Disabled while busy.",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "controller.capabilities.integrationCommandAuth && controller.repository is IntegrationCommandGateway",
+      "integration.methods.any(type == 'command' && id != null)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-provider-manage-accounts",
+     "type": "button",
+     "label": "Manage accounts",
+     "key": null,
+     "line": 806,
+     "action": "open-sheet",
+     "target": "credential-management-sheet",
+     "targetWidget": "_CredentialManagementSheet",
+     "effect": "_openCredentials(integration, name): opens _CredentialManagementSheet; afterwards _retryIntegrations(). Disabled while busy.",
+     "gates": [
+      "_showProviders (widget.mode != IntegrationsMode.mcp)",
+      "controller.capabilities.integrationCredentials && controller.repository is IntegrationCredentialGateway"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-mcp-glossary",
+     "type": "link",
+     "label": "MCP (info label)",
+     "key": null,
+     "line": 896,
+     "action": "open-sheet",
+     "target": "info-label-sheet",
+     "targetWidget": "InfoLabel.show",
+     "effect": "InfoLabel.glossary(Glossary.mcp) in the 'MCP SERVERS' header; tap calls InfoLabel.show (glossary bottom sheet, lib/ui/widgets/info_label.dart:138).",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-mcp-load-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 911,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_SectionLoadError -> _retryServers(): clears _removalError, prepareActionRepository, _loadServers. Shown for _serverError, _removalError and scope-changed (integrations_screen.dart:912-921).",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "_serverError != null || _removalError != null || _serversSource != _mcpSource"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-mcp-empty-add",
+     "type": "button",
+     "label": "Add an MCP server",
+     "key": null,
+     "line": 944,
+     "action": "navigate",
+     "target": "mcp-setup",
+     "targetWidget": "McpSetupScreen",
+     "effect": "ProductInlineEmpty action -> _openMcpSetup().",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "servers.isEmpty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-mcp-server-action",
+     "type": "button",
+     "label": "Connect | Disconnect | Authenticate | Try again | Authorizing",
+     "key": null,
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 44,
+     "action": "mutate",
+     "target": "integrations-authorization-launch-dialog",
+     "targetWidget": "_confirmAuthorizationLaunch",
+     "effect": "_McpServerTile action -> _action(server) (integrations_screen.dart:172): status 'connected' -> repository.disconnectMcp(name); 'needs_auth'/'needs_client_registration' -> _startMcpAuthentication (repository.startMcpAuthentication, authorization-launch dialog, optional McpOAuthLoopbackListener, opens browser; cancelMcpAuthentication when declined); otherwise repository.connectMcp(name); then _load(). Null while that server's OAuth is pending or scope is stale; spinner while busy. Disconnect has no confirmation.",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "replaced by chip when _mcpAuthGated(status)"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "integrations-mcp-auth-gated-chip",
+     "type": "chip",
+     "label": "Authenticate from the server machine",
+     "key": "gated-mcp-oauth",
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 26,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Non-interactive explainer chip replacing the action button.",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "!controller.capabilities.mcpOAuth && status in (needs_auth, needs_client_registration)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-mcp-remove",
+     "type": "button",
+     "label": "Remove",
+     "key": null,
+     "line": 974,
+     "action": "open-sheet",
+     "target": "integrations-remove-mcp-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_removeMcp(server): confirm sheet then controller.removeMcpServer. Disabled while busy/removing/pending OAuth.",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "_canRemoveMcp: capabilities.mcpRuntimeRemovals && repository is McpRemovalGateway && profile readable && inventory from current location/repository"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "integrations-mcp-pending-enter-code",
+     "type": "button",
+     "label": "Enter code",
+     "key": "enter-mcp-oauth-code",
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 176,
+     "action": "open-dialog",
+     "target": "integrations-mcp-oauth-code-dialog",
+     "targetWidget": "_McpOAuthCodeDialog",
+     "effect": "_PendingMcpOAuthTile.onEnterCode -> _enterMcpAuthorizationCode(): opens _McpOAuthCodeDialog then _completeMcpAuthentication (repository.completeMcpAuthentication).",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "_pendingMcpOAuth?.server.name == server.name"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-mcp-pending-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": "cancel-mcp-oauth",
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 185,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onCancel -> _cancelMcpAuthentication(): closes loopback listener, repository.cancelMcpAuthentication(name), reloads servers.",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "_pendingMcpOAuth?.server.name == server.name"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "integrations-mcp-loopback-callback",
+     "type": "gesture",
+     "label": "[automatic OAuth loopback callback]",
+     "key": null,
+     "line": 365,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Non-UI: _watchMcpCallback awaits McpOAuthLoopbackListener.code and calls _completeMcpAuthentication without user input.",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "loopback listener bound"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-resources-load-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": null,
+     "file": "lib/ui/screens/library/integration_tiles.dart",
+     "line": 911,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_SectionLoadError -> _retryResources().",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "_resourceError != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "integrations-resources-empty-add",
+     "type": "button",
+     "label": "Add an MCP server",
+     "key": null,
+     "line": 1039,
+     "action": "navigate",
+     "target": "mcp-setup",
+     "targetWidget": "McpSetupScreen",
+     "effect": "ProductInlineEmpty action -> _openMcpSetup().",
+     "gates": [
+      "_showMcp (widget.mode != IntegrationsMode.providers)",
+      "resources.isEmpty && _servers?.isEmpty == true"
+     ],
+     "destructive": false
+    }
+   ],
+   "variants": [
+    "IntegrationsMode.providers: title 'Providers', provider section only",
+    "IntegrationsMode.mcp: title 'MCP', MCP servers + resources, app-bar add button",
+    "IntegrationsMode.all (default, from chat): title 'MCP and integrations', everything"
+   ]
+  },
+  {
+   "id": "integrations-connect-method-sheet",
+   "title": "[Choose connection method]",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/integrations_screen.dart",
+   "widget": "_connectIntegration",
+   "presentedBy": [],
+   "line": 1333,
+   "purpose": "Picker shown when a provider offers more than one usable connect method.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-provider-connect"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-provider-server-signin"
+    }
+   ],
+   "gates": [
+    "methods.length > 1"
+   ],
+   "elements": [
+    {
+     "id": "integrations-connect-method-sheet-method",
+     "type": "list-tile",
+     "label": "<method label> (API key | OAuth | server command)",
+     "key": null,
+     "line": 1341,
+     "action": "open-dialog",
+     "target": "integrations-connect-key-dialog",
+     "targetWidget": "_connectWithKey",
+     "effect": "Navigator.pop(context, method); caller continues: type 'key' -> _connectWithKey (API key dialog); 'oauth' -> _connectWithOAuth (optional inputs dialog, then authorization-launch dialog and browser); 'command' -> _CommandAuthSheet.",
+     "gates": [
+      "alternative targets: integrations-oauth-inputs-dialog / integrations-authorization-launch-dialog (oauth), command-auth-sheet (command, only when controller.capabilities.integrationCommandAuth && controller.repository is IntegrationCommandGateway)"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "integrations-connect-key-dialog",
+   "title": "Connect {provider}",
+   "kind": "dialog",
+   "file": "lib/ui/screens/library/integrations_screen.dart",
+   "widget": "_connectWithKey",
+   "presentedBy": [],
+   "line": 1390,
+   "purpose": "Obscured API key entry for a provider.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-provider-connect"
+    },
+    {
+     "page": "integrations-connect-method-sheet",
+     "element": "integrations-connect-method-sheet-method"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "integrations-connect-key-dialog-key",
+     "type": "text-field",
+     "label": "<method label>",
+     "key": null,
+     "line": 1398,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Obscured, autofocused key input (LTR).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-connect-key-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 1406,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-connect-key-dialog-connect",
+     "type": "button",
+     "label": "Connect",
+     "key": null,
+     "line": 1414,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops with the trimmed key; caller runs repository.connectIntegrationKey(integration.id, value), then _load() and controller.refreshCatalog(). Empty value is ignored.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "integrations-oauth-inputs-dialog",
+   "title": "<method label>",
+   "kind": "dialog",
+   "file": "lib/ui/screens/library/integration_tiles.dart",
+   "widget": "_OAuthInputsDialog",
+   "presentedBy": [
+    "_oauthInputs"
+   ],
+   "line": 716,
+   "purpose": "Server-defined OAuth prompt form (text and select prompts with conditional visibility) collected before starting provider OAuth.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-provider-connect"
+    },
+    {
+     "page": "integrations-connect-method-sheet",
+     "element": "integrations-connect-method-sheet-method"
+    }
+   ],
+   "gates": [
+    "method.prompts.isNotEmpty"
+   ],
+   "elements": [
+    {
+     "id": "integrations-oauth-inputs-dialog-select",
+     "type": "dropdown",
+     "label": "<prompt message>",
+     "key": "oauth-prompt-<key>",
+     "line": 753,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "DropdownButtonFormField per 'select' prompt; setState(_values[key]); required unless prompt.required == false.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-oauth-inputs-dialog-text",
+     "type": "text-field",
+     "label": "<prompt message>",
+     "key": "oauth-prompt-<key>",
+     "line": 786,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "TextFormField per 'text' prompt; setState(_values[key]).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-oauth-inputs-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 812,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context); OAuth is not started.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-oauth-inputs-dialog-continue",
+     "type": "button",
+     "label": "Continue",
+     "key": null,
+     "line": 820,
+     "action": "submit",
+     "target": "integrations-authorization-launch-dialog",
+     "targetWidget": "_confirmAuthorizationLaunch",
+     "effect": "_submit(): validates the form and pops the visible values; caller (_connectWithOAuth) starts controller.startRecoverableIntegrationOAuth or legacy repository.startIntegrationOAuth, then opens the authorization-launch dialog.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "integrations-authorization-launch-dialog",
+   "title": "Open authorization page?",
+   "kind": "dialog",
+   "file": "lib/ui/screens/library/integrations_screen.dart",
+   "widget": "_confirmAuthorizationLaunch",
+   "presentedBy": [],
+   "line": 1118,
+   "purpose": "Leaving-the-app confirmation showing the destination host and any OpenCode instructions (may contain a device code) before opening the browser for provider or MCP OAuth.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-mcp-server-action"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-provider-connect"
+    },
+    {
+     "page": "integrations-oauth-inputs-dialog",
+     "element": "integrations-oauth-inputs-dialog-continue"
+    },
+    {
+     "page": "integrations-connect-method-sheet",
+     "element": "integrations-connect-method-sheet-method"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "integrations-authorization-launch-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 1161,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops false. MCP: repository.cancelMcpAuthentication(name). Legacy provider OAuth: _cancelOAuth(). Recoverable provider OAuth: the pending attempt row is retained.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-authorization-launch-dialog-open",
+     "type": "button",
+     "label": "Open browser",
+     "key": null,
+     "line": 1169,
+     "action": "external-link",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops true; caller runs _openAuthorization(destination): parseAuthorizationUrl (https only, no userinfo) then openExternalLink with launchUrl(mode: externalApplication) (line 1674) or the injected authorizationLauncher.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "integrations-oauth-code-dialog",
+   "title": "Finish {provider}",
+   "kind": "dialog",
+   "file": "lib/ui/screens/library/integration_tiles.dart",
+   "widget": "_OAuthCodeDialog",
+   "presentedBy": [],
+   "line": 618,
+   "purpose": "Paste the provider authorization code (or callback URL) to finish a code-mode OAuth attempt.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-legacy-oauth-action"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-pending-enter-code"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "integrations-oauth-code-dialog-code",
+     "type": "text-field",
+     "label": "Authorization code",
+     "key": "oauth-completion-code",
+     "line": 650,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onSubmitted -> _complete(): pops the trimmed non-empty value.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-oauth-code-dialog-not-yet",
+     "type": "button",
+     "label": "Not yet",
+     "key": null,
+     "line": 668,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-oauth-code-dialog-complete",
+     "type": "button",
+     "label": "Complete",
+     "key": null,
+     "line": 676,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_complete(); caller sends providerOAuthCompletionCode(code) via repository.completeIntegrationOAuth (legacy) or controller.recoverIntegrationAuth(entry, code) (recovery tile).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "integrations-mcp-oauth-code-dialog",
+   "title": "Complete MCP authorization",
+   "kind": "dialog",
+   "file": "lib/ui/screens/library/integration_tiles.dart",
+   "widget": "_McpOAuthCodeDialog",
+   "presentedBy": [],
+   "line": 206,
+   "purpose": "Manual fallback for MCP OAuth: paste the callback URL or code; validated against the expected OAuth state.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-mcp-pending-enter-code"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "integrations-mcp-oauth-code-dialog-input",
+     "type": "text-field",
+     "label": "Callback URL or code",
+     "key": "mcp-oauth-code-input",
+     "line": 239,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onSubmitted -> _submit(): parseMcpAuthorizationCode(text, expectedState); pops the code or shows errorText.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-mcp-oauth-code-dialog-back",
+     "type": "button",
+     "label": "Back",
+     "key": null,
+     "line": 260,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "integrations-mcp-oauth-code-dialog-complete",
+     "type": "button",
+     "label": "Complete",
+     "key": "complete-mcp-oauth",
+     "line": 266,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_submit(); caller runs _completeMcpAuthentication -> repository.completeMcpAuthentication(server, code), reloads servers/resources, snackbar.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "integrations-disconnect-provider-sheet",
+   "title": "Disconnect {provider}?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/integrations_screen.dart",
+   "widget": "_disconnectIntegration",
+   "presentedBy": [
+    "showConfirmSheet"
+   ],
+   "line": 1265,
+   "purpose": "Confirms removing a provider's stored credential (notes when a server environment connection remains).",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-provider-disconnect"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "integrations-disconnect-provider-sheet-confirm",
+     "type": "button",
+     "label": "Disconnect provider",
+     "key": "confirm-provider-disconnect",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 69,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "repository.disconnectIntegration(integration), then _loadIntegrations + controller.refreshCatalog() and a snackbar.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "integrations-disconnect-provider-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is changed.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "integrations-remove-mcp-sheet",
+   "title": "Remove {name}?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/integrations_screen.dart",
+   "widget": "_removeMcp",
+   "presentedBy": [
+    "showConfirmSheet"
+   ],
+   "line": 243,
+   "purpose": "Confirms runtime removal of an MCP server.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-mcp-remove"
+    }
+   ],
+   "gates": [
+    "_canRemoveMcp"
+   ],
+   "elements": [
+    {
+     "id": "integrations-remove-mcp-sheet-confirm",
+     "type": "button",
+     "label": "Remove",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 69,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.removeMcpServer(server.name, locationRevision), then refetches servers and resources; failure sets _removalError.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "integrations-remove-mcp-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is changed.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "integrations-forget-pending-auth-sheet",
+   "title": "Forget on this device",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+   "widget": "_PendingAuthRecoveryTileState._act",
+   "presentedBy": [
+    "showConfirmSheet"
+   ],
+   "line": 59,
+   "purpose": "Confirms dropping a locally persisted pending sign-in attempt.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-pending-forget"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "integrations-forget-pending-auth-sheet-confirm",
+     "type": "button",
+     "label": "Forget on this device",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 69,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.forgetIntegrationAuth(entry, locationRevision).",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "integrations-forget-pending-auth-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is changed.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "integrations-forget-uncertain-auth-sheet",
+   "title": "Forget uncertain start?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/pending_auth_recovery.dart",
+   "widget": "_UncertainAuthRecoveryTile.build",
+   "presentedBy": [
+    "showConfirmSheet"
+   ],
+   "line": 191,
+   "purpose": "Confirms forgetting a sign-in start whose outcome was never confirmed.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-uncertain-forget"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "integrations-forget-uncertain-auth-sheet-confirm",
+     "type": "button",
+     "label": "Forget uncertain start",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 69,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.forgetUncertainIntegrationAuth(integrationID, kind, locationRevision); shows 'sign-in source changed' error if it throws.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "integrations-forget-uncertain-auth-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is changed.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "command-auth-sheet",
+   "title": "<provider name> / <method label>",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/command_auth_sheet.dart",
+   "widget": "_CommandAuthSheet",
+   "presentedBy": [],
+   "line": 3,
+   "purpose": "Runs a provider sign-in command on the server: start, poll status, cancel.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-provider-connect"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-provider-server-signin"
+    },
+    {
+     "page": "integrations-connect-method-sheet",
+     "element": "integrations-connect-method-sheet-method"
+    }
+   ],
+   "gates": [
+    "controller.capabilities.integrationCommandAuth && controller.repository is IntegrationCommandGateway",
+    "method.type == 'command' && method.id != null"
+   ],
+   "elements": [
+    {
+     "id": "command-auth-sheet-start",
+     "type": "button",
+     "label": "Start server sign-in",
+     "key": null,
+     "line": 203,
+     "action": "open-sheet",
+     "target": "command-auth-sheet-confirm-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_start(): confirm sheet, then controller.startIntegrationCommand(integration.id, method.id, locationRevision); on failure tries controller.pendingIntegrationCommand to recover the attempt.",
+     "gates": [
+      "_current (source/profile unchanged)",
+      "_attempt == null && !_uncertainStart && _status != complete"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "command-auth-sheet-check",
+     "type": "button",
+     "label": "Check status",
+     "key": null,
+     "line": 208,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_check(): controller.integrationCommandStatus(...); on complete clears the attempt and controller.refreshCatalog().",
+     "gates": [
+      "_current",
+      "_attempt != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "command-auth-sheet-cancel",
+     "type": "button",
+     "label": "Cancel sign-in",
+     "key": null,
+     "line": 212,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_check(cancel: true): controller.cancelIntegrationCommand(integration.id, attempt, locationRevision).",
+     "gates": [
+      "_current",
+      "_attempt != null"
+     ],
+     "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "command-auth-sheet-confirm-sheet",
+   "title": "Start sign-in on the server?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/command_auth_sheet.dart",
+   "widget": "_CommandAuthSheetState._start",
+   "presentedBy": [
+    "showConfirmSheet"
+   ],
+   "line": 65,
+   "purpose": "Confirms running the sign-in command on the server.",
+   "reachedFrom": [
+    {
+     "page": "command-auth-sheet",
+     "element": "command-auth-sheet-start"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "command-auth-sheet-confirm-sheet-confirm",
+     "type": "button",
+     "label": "Start server sign-in",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 69,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.startIntegrationCommand(integration.id, method.id, locationRevision); sheet then shows pending state.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "command-auth-sheet-confirm-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is changed.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "credential-management-sheet",
+   "title": "<provider name>",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/credential_sheet.dart",
+   "widget": "_CredentialManagementSheet",
+   "presentedBy": [],
+   "line": 18,
+   "purpose": "Lists a provider's stored accounts (metadata only) and server-environment connections; set active, rename, remove. Tracks the active account from 'credential.switched' events.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-provider-manage-accounts"
+    }
+   ],
+   "gates": [
+    "controller.capabilities.integrationCredentials && controller.repository is IntegrationCredentialGateway",
+    "actions only while _current (same profile/location/repository)"
+   ],
+   "elements": [
+    {
+     "id": "credential-management-sheet-refresh",
+     "type": "button",
+     "label": "Refresh accounts",
+     "key": null,
+     "line": 304,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_load(): repository.listIntegrations() and picks this integration.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "credential-management-sheet-set-active",
+     "type": "button",
+     "label": "Set active",
+     "key": null,
+     "line": 359,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_act(activate): controller.activateIntegrationCredential(integrationID, id, locationRevision), then _load(). Disabled when already active or !_canAct.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "credential-management-sheet-rename",
+     "type": "button",
+     "label": "Rename account",
+     "key": null,
+     "line": 367,
+     "action": "open-dialog",
+     "target": "credential-management-sheet-rename-dialog",
+     "targetWidget": "_CredentialLabelDialog",
+     "effect": "_act(rename): opens _CredentialLabelDialog, then controller.renameIntegrationCredential(...).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "credential-management-sheet-remove",
+     "type": "button",
+     "label": "Remove",
+     "key": null,
+     "line": 374,
+     "action": "open-sheet",
+     "target": "credential-management-sheet-remove-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_act(remove): confirm sheet, then controller.removeIntegrationCredential(...).",
+     "gates": [],
+     "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "credential-management-sheet-rename-dialog",
+   "title": "Rename account",
+   "kind": "dialog",
+   "file": "lib/ui/screens/library/credential_sheet.dart",
+   "widget": "_CredentialLabelDialog",
+   "presentedBy": [],
+   "line": 390,
+   "purpose": "Edits an account label (1-128 chars, no control characters).",
+   "reachedFrom": [
+    {
+     "page": "credential-management-sheet",
+     "element": "credential-management-sheet-rename"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "credential-management-sheet-rename-dialog-label",
+     "type": "text-field",
+     "label": "Account label",
+     "key": null,
+     "line": 418,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onChanged revalidates; onSubmitted pops the trimmed label when valid.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "credential-management-sheet-rename-dialog-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "line": 430,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "credential-management-sheet-rename-dialog-save",
+     "type": "button",
+     "label": "Save label",
+     "key": null,
+     "line": 434,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops the label; caller runs controller.renameIntegrationCredential(integrationID, id, label, locationRevision). Disabled when invalid.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "credential-management-sheet-remove-sheet",
+   "title": "Remove {label}?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/library/credential_sheet.dart",
+   "widget": "_CredentialManagementSheetState._act",
+   "presentedBy": [
+    "showConfirmSheet"
+   ],
+   "line": 184,
+   "purpose": "Confirms removing a stored provider account.",
+   "reachedFrom": [
+    {
+     "page": "credential-management-sheet",
+     "element": "credential-management-sheet-remove"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "credential-management-sheet-remove-sheet-confirm",
+     "type": "button",
+     "label": "Remove",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 69,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.removeIntegrationCredential(integrationID, id, locationRevision), then _load().",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "credential-management-sheet-remove-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is changed.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "mcp-setup",
+   "title": "Add MCP server",
+   "kind": "screen",
+   "file": "lib/ui/screens/mcp_setup_screen.dart",
+   "widget": "McpSetupScreen",
+   "presentedBy": [],
+   "line": 11,
+   "purpose": "Form to add an MCP server: persisted config (project or global scope, then app reconnect) or a runtime add for the current location, remote URL or local command.",
+   "reachedFrom": [
+    {
+     "page": "integrations",
+     "element": "integrations-add-mcp"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-mcp-empty-add"
+    },
+    {
+     "page": "integrations",
+     "element": "integrations-resources-empty-add"
+    }
+   ],
+   "gates": [
+    "form usable only when controller.capabilities.mcpConfigWrites or controller.capabilities.mcpRuntimeAdds (else _detached at init)",
+    "opener itself is not capability-gated beyond _showMcp (widget.mode != IntegrationsMode.providers)"
+   ],
+   "elements": [
+    {
+     "id": "mcp-setup-glossary",
+     "type": "icon-button",
+     "label": "What is MCP?",
+     "key": "mcp-glossary",
+     "line": 268,
+     "action": "open-sheet",
+     "target": "info-label-sheet",
+     "targetWidget": "InfoLabel.show",
+     "effect": "InfoLabel.show(context, term: Glossary.mcp.term, explanation: ...).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-scope",
+     "type": "toggle",
+     "label": "This project | All projects",
+     "key": "mcp-scope",
+     "line": 411,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "SegmentedButton<McpConfigScope>; setState(_scope). 'This project' segment disabled without a project directory.",
+     "gates": [
+      "!_runtime (capabilities.mcpConfigWrites)",
+      "enabled only while _editable (!_saving && !_configurationSaved && !_detached)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-name",
+     "type": "text-field",
+     "label": "Server name",
+     "key": "mcp-name",
+     "line": 460,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Required name.",
+     "gates": [
+      "enabled only while _editable (!_saving && !_configurationSaved && !_detached)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-kind",
+     "type": "toggle",
+     "label": "Remote URL | Local command",
+     "key": "mcp-kind",
+     "line": 484,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "SegmentedButton<McpServerKind>; setState(_kind), clears _saveError; swaps remote/local fields.",
+     "gates": [
+      "enabled only while _editable (!_saving && !_configurationSaved && !_detached)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-url",
+     "type": "text-field",
+     "label": "MCP endpoint URL",
+     "key": "mcp-url",
+     "line": 555,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Validated http/https URL without userinfo.",
+     "gates": [
+      "_kind == McpServerKind.remote",
+      "enabled only while _editable (!_saving && !_configurationSaved && !_detached)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-headers",
+     "type": "text-field",
+     "label": "HTTP headers",
+     "key": "mcp-headers",
+     "line": 586,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Optional KEY=VALUE lines, validated by _pairError.",
+     "gates": [
+      "_kind == McpServerKind.remote",
+      "enabled only while _editable (!_saving && !_configurationSaved && !_detached)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-detect-oauth",
+     "type": "toggle",
+     "label": "Detect OAuth automatically",
+     "key": "mcp-oauth-detection",
+     "line": 613,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "SwitchListTile.adaptive; setState(_detectOAuth) (form state, sent as draft.detectOAuth).",
+     "gates": [
+      "_kind == McpServerKind.remote",
+      "enabled only while _editable (!_saving && !_configurationSaved && !_detached)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-command",
+     "type": "text-field",
+     "label": "Command and arguments",
+     "key": "mcp-command",
+     "line": 634,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "One argument per line; required.",
+     "gates": [
+      "_kind == McpServerKind.local",
+      "enabled only while _editable (!_saving && !_configurationSaved && !_detached)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-cwd",
+     "type": "text-field",
+     "label": "Working directory",
+     "key": "mcp-cwd",
+     "line": 660,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Optional server path.",
+     "gates": [
+      "_kind == McpServerKind.local",
+      "enabled only while _editable (!_saving && !_configurationSaved && !_detached)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-environment",
+     "type": "text-field",
+     "label": "Environment variables",
+     "key": "mcp-environment",
+     "line": 676,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Optional KEY=VALUE lines.",
+     "gates": [
+      "_kind == McpServerKind.local",
+      "enabled only while _editable (!_saving && !_configurationSaved && !_detached)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-timeout",
+     "type": "text-field",
+     "label": "Timeout in milliseconds",
+     "key": "mcp-timeout",
+     "line": 522,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Optional positive integer (digits only).",
+     "gates": [
+      "enabled only while _editable (!_saving && !_configurationSaved && !_detached)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-retry-reconnect",
+     "type": "button",
+     "label": "Retry reconnect",
+     "key": "mcp-retry-reconnect",
+     "line": 321,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_retryReconnect(): controller.reloadAfterConfigurationChange(); pops true when connected.",
+     "gates": [
+      "_configurationSaved && _saveError != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "mcp-setup-save",
+     "type": "button",
+     "label": "Save MCP server | Add MCP server | Close",
+     "key": "mcp-save",
+     "line": 330,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_save(): validates, builds McpServerDraft, repository.addMcpServer(draft, scope: _scope); for persisted config also controller.reloadAfterConfigurationChange(); pops true. After a save whose reconnect failed the label becomes 'Close' and it just Navigator.pop(context, true). Disabled while saving or when detached before saving.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  }
+ ],
+ "notPages": [],
+ "notes": [
+  "lib/ui/screens/library/catalog_screen.dart:108 CatalogScreen's live body is ModelCatalogView (lib/ui/widgets/pickers.dart:113, not assigned here); its interactive elements must be merged into page 'catalog' by whoever owns pickers.dart.",
+  "lib/ui/screens/library/catalog_screen.dart:113-439 _models/_providers/_agents/_modelDetails (and _load, _catalog, _query) are dead code (// ignore: unused_element); recorded with a dead-code gate so grep hits are covered. ModelStatusPill (line 5) and _CapabilityChip (line 448) are non-interactive.",
+  "CommandsScreen, SkillsScreen, ReferencesScreen and ToolsScreen are never pushed standalone from LibraryScreen; they are embedded tab bodies of CapabilitiesScreen (lib/ui/screens/capabilities_screen.dart:29-42, not assigned; opened from library_screen.dart:138 'Commands & tools'). CommandsScreen has no standalone opener anywhere in lib/. Coordinator may want to treat them as capabilities-<tab>-tab pages.",
+  "lib/ui/screens/library/commands_screen.dart:152 showRunCommandDialog lives in lib/ui/widgets/run_command_dialog.dart:10 (not assigned); target id guessed as 'run-command-dialog'.",
+  "lib/ui/screens/tools_screen.dart:110 showModelPicker (lib/ui/widgets/pickers.dart) target id guessed as 'model-picker'.",
+  "InfoLabel.show glossary sheet (lib/ui/widgets/info_label.dart:138) target id guessed as 'info-label-sheet' (integrations_screen.dart:896, mcp_setup_screen.dart:274).",
+  "openBugReport (called from shared ProductErrorState, lib/ui/widgets/product_states.dart:250) not resolved to a page; targetWidget set, target null.",
+  "lib/ui/screens/library/integrations_screen.dart:1312 _connectIntegration skips the method sheet when only one method is usable, so integrations-provider-connect / integrations-provider-server-signin can lead directly to integrations-connect-key-dialog, integrations-oauth-inputs-dialog, integrations-authorization-launch-dialog or command-auth-sheet; those pages list both openers in reachedFrom.",
+  "lib/ui/screens/library/integrations_screen.dart:193 disconnecting a connected MCP server has no confirmation step (direct repository.disconnectMcp).",
+  "lib/ui/screens/library/integrations_screen.dart:62 didChangeAppLifecycleState is intentionally a no-op (returning from the browser does not poll).",
+  "lib/ui/screens/library/integration_tiles.dart helper widgets without interaction: _McpStatus, _SectionHeader, _SectionLoading, _ProviderStateLabel, _ServerManagedLabel, _ProviderSummaryRow; MCP resource rows (integrations_screen.dart:1043) have no onTap.",
+  "Element lines for showConfirmSheet buttons (confirm 69, cancel 86) and ProductRefreshBody/ProductErrorState buttons refer to the shared widget files set in `file`.",
+  "integrations-providers-load-retry, integrations-mcp-load-retry and integrations-resources-load-retry share the _SectionLoadError button at integration_tiles.dart:911; host call sites are integrations_screen.dart:708/715, 912-921 and 1018.",
+  "pending_auth_recovery.dart tiles (_PendingAuthRecoveryTile, _UncertainAuthRecoveryTile) are embedded only in IntegrationsScreen's provider section (integrations_screen.dart:663-677); their elements are attached to page 'integrations'."
+ ]
+}

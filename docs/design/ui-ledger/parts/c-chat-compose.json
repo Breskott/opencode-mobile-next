@@ -1,0 +1,2236 @@
+{
+  "area": "c-chat-compose",
+  "pages": [
+    {
+      "id": "embedded-composer",
+      "title": "[Chat composer]",
+      "kind": "overlay",
+      "file": "lib/ui/screens/chat/composer.dart",
+      "widget": "_ChatComposer",
+      "presentedBy": [],
+      "line": 21,
+      "purpose": "Prompt composer docked at the bottom of ChatScreen: text field, inline slash/@ suggestions, staged attachments and references, delivery toggle, tools button, model chip, full-screen editor button and Send/Stop.",
+      "reachedFrom": [
+        {
+          "page": "chat",
+          "element": null,
+          "widget": "_ChatScreenState.build",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 7180
+        }
+      ],
+      "gates": [],
+      "embeddedIn": [
+        "ChatScreen"
+      ],
+      "elements": [
+        {
+          "id": "embedded-composer-inline-command-row",
+          "type": "list-tile",
+          "label": "/<command slash>  <description>",
+          "key": "inline-command-<slash>",
+          "file": "lib/ui/screens/chat/command_launcher.dart",
+          "line": 606,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Inline slash suggestion (shown while the draft is exactly \"/<query>\"); calls onSelectCommand -> ChatScreen._selectChatCommand (chat_screen.dart:5074): a server command replaces the draft with \"/<name> \" and refocuses; a mobile command clears the slash draft and runs _runMobileCommand(action), which may navigate (see notes).",
+          "gates": [
+            "allowInlineCommands (host: !_conn.isIsolated && !_voiceConversation && bodyConstraints.maxHeight >= 300)",
+            "_slashQuery != null (draft matches ^/(\\S*)$)",
+            "command.enabled && command.matchesQuery(query)",
+            "at most 1 row when compact, else 5"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-inline-command-show-all",
+          "type": "button",
+          "label": "Show all commands",
+          "key": null,
+          "file": "lib/ui/screens/chat/command_launcher.dart",
+          "line": 649,
+          "action": "open-sheet",
+          "target": "command-launcher-sheet",
+          "targetWidget": "_CommandLauncherSheet",
+          "effect": "Calls onOpenCommands -> ChatScreen._openCommandLauncher() which opens the composer tools sheet on the Commands tab.",
+          "gates": [
+            "!compact && matches.length > limit (5)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-inline-agent-row",
+          "type": "list-tile",
+          "label": "@<agent id>  <description|Delegate>",
+          "key": "inline-agent-<agent id>",
+          "file": "lib/ui/screens/chat/command_launcher.dart",
+          "line": 699,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Inline @-mention suggestion; calls onSelectAgent -> ChatScreen._insertAgentMention(agent) (chat_screen.dart:2695) which inserts the @agent mention into the draft.",
+          "gates": [
+            "allowInlineCommands",
+            "_agentQuery != null (_activeAgentQuery(controller.value))",
+            "host passes agents only when _supportsPromptAgentMentions"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-inline-agent-show-all",
+          "type": "button",
+          "label": "Show all subagents",
+          "key": null,
+          "file": "lib/ui/screens/chat/command_launcher.dart",
+          "line": 751,
+          "action": "open-sheet",
+          "target": "command-launcher-sheet",
+          "targetWidget": "_CommandLauncherSheet",
+          "effect": "Calls onOpenAgents -> ChatScreen._openCommandLauncher(initialTab: _ComposerToolTab.agents).",
+          "gates": [
+            "!compact && matches.length > limit (5)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-delivery-toggle",
+          "type": "toggle",
+          "label": "Steer | Queue (SegmentedButton)",
+          "key": "composer-delivery-steer / composer-delivery-queue (segment label keys); container composer-delivery-control",
+          "line": 1323,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSelectionChanged -> onDeliveryChanged(selection.single); host does setState(() => _delivery = delivery), changing whether Send steers the running turn or queues after it.",
+          "gates": [
+            "busy && canSendWhileBusy && _hasPrompt",
+            "canChooseDelivery (host: _conn.supportsInbox) && onDeliveryChanged != null; otherwise a non-interactive _QueueHint (key composer-queue-hint) is shown"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-reference-chip-remove",
+          "type": "icon-button",
+          "label": "Remove reference {name}",
+          "key": null,
+          "line": 1650,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Removes one staged review reference chip; calls onRemoveReference(reference) (host callback in ChatScreen, null disables the button). References are in-memory only.",
+          "gates": [
+            "references.isNotEmpty"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "embedded-composer-attachment-chip-preview",
+          "type": "chip",
+          "label": "<attachment filename> (tooltip: Preview {name})",
+          "key": null,
+          "line": 1525,
+          "action": "open-sheet",
+          "target": "file-preview-sheet",
+          "targetWidget": "showFilePreviewSheet",
+          "effect": "Opens showFilePreviewSheet(context, FilePreviewData.fromDataUrl(name, mimeType, url)) for the pending attachment.",
+          "gates": [
+            "attachments.isNotEmpty",
+            "!attachment.isDirectoryReference (directory references render as non-tappable \"@<name>\")"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-attachment-chip-remove",
+          "type": "icon-button",
+          "label": "Remove attachment {name} / Remove reference @{name}",
+          "key": null,
+          "line": 1565,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Calls onRemoveAttachment(attachment); host removes the pending attachment from the draft.",
+          "gates": [
+            "attachments.isNotEmpty"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "embedded-composer-restore-history-draft",
+          "type": "button",
+          "label": "Restore original draft",
+          "key": "composer-restore-history-draft",
+          "line": 455,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Calls onRestoreHistoryDraft -> ChatScreen._restoreHistoryDraft() (chat_screen.dart:917), putting back the draft that prompt-history navigation replaced.",
+          "gates": [
+            "!conversationMode && onRestoreHistoryDraft != null (host: _promptHistory.original != null)",
+            "disabled while shelfBusy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-field",
+          "type": "text-field",
+          "label": "Ask OpenCode…",
+          "key": "chat-composer-field",
+          "line": 707,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Multiline prompt draft bound to ChatScreen._composer; typing \"/\" or \"@\" drives the inline suggestions; IME image insertion calls onContentInserted -> _handleInsertedContent.",
+          "gates": [
+            "readOnly while shelfBusy",
+            "contentInsertionConfiguration only when !isolated && promptAttachmentsSupported",
+            "enableInteractiveSelection: !isolated"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-submit-shortcut",
+          "type": "gesture",
+          "label": "Ctrl+Enter / Cmd+Enter (desktop: Enter, Numpad Enter)",
+          "key": null,
+          "line": 735,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "CallbackShortcuts -> _submitFromKeyboard(): calls onSend (ChatScreen._send) when _hasPrompt && !sending && !shelfBusy && (!busy || canSendWhileBusy).",
+          "gates": [
+            "!isolated && onSubmitShortcut != null",
+            "plain Enter / numpadEnter only when desktopInteractions"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-tools-button",
+          "type": "icon-button",
+          "label": "Add. Hold to attach a file / Prompt tools",
+          "key": "composer-tools-button",
+          "line": 791,
+          "action": "open-sheet",
+          "target": "prompt-tools-sheet",
+          "targetWidget": "_PromptToolsSheet",
+          "effect": "_openTool(context): opens the Prompt tools sheet, then dispatches the chosen _PromptTool to the matching host callback after the sheet closes. No-op when isolated || shelfBusy || conversationMode.",
+          "gates": [
+            "!isolated && !conversationMode",
+            "shows a spinner while voiceOpening"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-tools-button-long-press",
+          "type": "gesture",
+          "label": "[long-press on tools button: attach a file]",
+          "key": null,
+          "line": 788,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "GestureDetector.onLongPress -> onAttach -> ChatScreen._pickAttachment() (chat_screen.dart:3013), opening the system file picker directly.",
+          "gates": [
+            "!isolated && !conversationMode",
+            "null when _attachBlocked (sending || shelfBusy || (busy && !canSendWhileBusy)) || !promptAttachmentsSupported"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-model-chip",
+          "type": "button",
+          "label": "<agent · model · variant> | Choose model (tooltip: Model and agent: {model}. Tap to change.{cost})",
+          "key": "composer-model-context",
+          "line": 1089,
+          "action": "open-sheet",
+          "target": "model-picker",
+          "targetWidget": "showModelPicker",
+          "effect": "Calls onChooseModel; host calls showModelPicker(context, applyScope: _modelApplyScope, sessionID: widget.sessionID) unless _conn.isIsolated.",
+          "gates": [
+            "!isolated (isolated shows plain text instead)",
+            "collapses to an icon when narrower than 80 scaled px"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-open-editor",
+          "type": "icon-button",
+          "label": "Open full-screen prompt editor",
+          "key": "prompt-editor-button",
+          "line": 515,
+          "action": "navigate",
+          "target": "prompt-editor",
+          "targetWidget": "_PromptEditorScreen",
+          "effect": "Calls onOpenEditor -> ChatScreen._openPromptEditor() (chat_screen.dart:3319) which pushes _PromptEditorScreen with the current draft.",
+          "gates": [
+            "!isolated && _hasPrompt",
+            "disabled when shelfBusy || conversationMode"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-stop",
+          "type": "icon-button",
+          "label": "Stop",
+          "key": "chat-send-button | chat-stop-button",
+          "line": 1188,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_stop(): dismisses tooltips then onStop -> ChatScreen._abort() (chat_screen.dart:3383) aborting the running turn. Rendered with key chat-send-button when busy && !canSendWhileBusy (line 1188), or as chat-stop-button beside Send when busy && canSendWhileBusy (line 1227).",
+          "gates": [
+            "busy",
+            "disabled while stopping"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "embedded-composer-send",
+          "type": "icon-button",
+          "label": "Send | Send after this run | Queue after this run | Send now and steer this run",
+          "key": "chat-send-button",
+          "line": 1206,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSend -> ChatScreen._send() (chat_screen.dart:2425); while busy the tooltip reflects the delivery mode (line 1238). Shows a spinner while sending.",
+          "gates": [
+            "!busy || canSendWhileBusy (host: !_voiceConversation)",
+            "disabled when sending || !(_hasPrompt && !shelfBusy)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-model-cycle-menu",
+          "type": "icon-button",
+          "label": "Switch model for this session",
+          "key": null,
+          "file": "lib/ui/widgets/model_shortcuts.dart",
+          "line": 78,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "PopupMenuButton (opens overflow menu) passed by ChatScreen._modelCycleButton() (chat_screen.dart:5013) as the composer modelSwitch slot beside the model chip.",
+          "gates": [
+            "!_conn.isIsolated",
+            "hasRecent || hasFavorites (modelLibrary.next(...) != null)",
+            "!isolated composer"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-model-cycle-next",
+          "type": "menu-item",
+          "label": "Next recent model · F2",
+          "key": null,
+          "file": "lib/ui/widgets/model_shortcuts.dart",
+          "line": 87,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSelected(\"next\") -> onCycle(reverse: false, favoritesOnly: false) -> ChatScreen._cycleModel (chat_screen.dart:4982) switching the session model.",
+          "gates": [
+            "enabled: hasRecent"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-model-cycle-previous",
+          "type": "menu-item",
+          "label": "Previous recent model · Shift+F2",
+          "key": null,
+          "file": "lib/ui/widgets/model_shortcuts.dart",
+          "line": 96,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSelected(\"previous\") -> onCycle(reverse: true, favoritesOnly: false) -> ChatScreen._cycleModel.",
+          "gates": [
+            "enabled: hasRecent"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-model-cycle-favorite",
+          "type": "menu-item",
+          "label": "Next favorite model",
+          "key": null,
+          "file": "lib/ui/widgets/model_shortcuts.dart",
+          "line": 105,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSelected(\"favorite\") -> onCycle(reverse: false, favoritesOnly: true) -> ChatScreen._cycleModel.",
+          "gates": [
+            "enabled: hasFavorites"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-composer-history-keys",
+          "type": "gesture",
+          "label": "Arrow Up (caret at start) / Arrow Down (caret at end)",
+          "key": null,
+          "file": "lib/ui/widgets/prompt_history_navigation.dart",
+          "line": 4,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "isPromptHistoryKey(event, value, suggestionsOpen:) gates ChatScreen._navigatePromptHistory (chat_screen.dart:893, installed as _focus.onKeyEvent at :573); PromptHistoryNavigation.move() swaps the draft for older/newer sent prompts and keeps the original for \"Restore original draft\".",
+          "gates": [
+            "KeyDownEvent with no Ctrl/Alt/Meta/Shift",
+            "selection collapsed and no active IME composing range",
+            "!suggestionsOpen",
+            "host: !_conn.isIsolated && !_sending && !_promptShelfBusy"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "prompt-tools-sheet",
+      "title": "Prompt tools",
+      "kind": "sheet",
+      "file": "lib/ui/screens/chat/composer.dart",
+      "widget": "_PromptToolsSheet",
+      "presentedBy": [
+        "_ChatComposer._openTool"
+      ],
+      "line": 814,
+      "purpose": "One sheet behind the composer \"+\" button listing commands, attach, photo, voice, advanced and prompt-shelf tools; each tile pops with a _PromptTool that _ChatComposer._openTool dispatches to a ChatScreen callback.",
+      "reachedFrom": [
+        {
+          "page": "embedded-composer",
+          "element": "embedded-composer-tools-button"
+        }
+      ],
+      "gates": [
+        "!isolated && !shelfBusy && !conversationMode"
+      ],
+      "elements": [
+        {
+          "id": "prompt-tools-sheet-commands",
+          "type": "list-tile",
+          "label": "Commands",
+          "key": "composer-tool-commands",
+          "line": 864,
+          "action": "open-sheet",
+          "target": "command-launcher-sheet",
+          "targetWidget": "_CommandLauncherSheet",
+          "effect": "Pops _PromptTool.commands; _openTool calls onOpenCommands -> ChatScreen._openCommandLauncher().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-attach",
+          "type": "list-tile",
+          "label": "Attach file",
+          "key": "composer-tool-attach",
+          "line": 881,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops _PromptTool.attach; _openTool calls onAttach -> ChatScreen._pickAttachment() (system file picker, adds a PromptAttachment).",
+          "gates": [
+            "attachmentsSupported (host: _supportsPromptAttachments)",
+            "disabled when attachBlocked"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-gallery",
+          "type": "list-tile",
+          "label": "Photo library",
+          "key": "composer-tool-gallery",
+          "line": 893,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops _PromptTool.gallery; onPhotoLibrary -> ChatScreen._pickPhoto(ImageSource.gallery).",
+          "gates": [
+            "attachmentsSupported && platformCapabilities.supportsPromptPhotos",
+            "disabled when attachBlocked"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-camera",
+          "type": "list-tile",
+          "label": "Take photo",
+          "key": "composer-tool-camera",
+          "line": 902,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops _PromptTool.camera; onCamera -> ChatScreen._pickPhoto(ImageSource.camera).",
+          "gates": [
+            "attachmentsSupported && platformCapabilities.supportsPromptPhotos",
+            "disabled when attachBlocked"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-voice",
+          "type": "list-tile",
+          "label": "Voice input",
+          "key": "composer-tool-voice",
+          "line": 926,
+          "action": "open-sheet",
+          "target": "voice-composer-result-sheet",
+          "targetWidget": "showVoiceComposerResultSheet",
+          "effect": "Pops _PromptTool.voice; onVoice -> ChatScreen._openVoice() (chat_screen.dart:2801): shows showVoiceModelSetupSheet first when voice.models is not ready, then showVoiceComposerResultSheet; the transcript is merged into the draft and optionally sent.",
+          "gates": [
+            "platformCapabilities.supportsVoice",
+            "disabled when voiceBlocked (busy || sending)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-advanced",
+          "type": "list-tile",
+          "label": "Advanced",
+          "key": "composer-tools-advanced",
+          "line": 930,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ExpansionTile: expands the Context capsule / Add web source / Voice conversation rows.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-context-capsule",
+          "type": "list-tile",
+          "label": "Context capsule",
+          "key": null,
+          "line": 939,
+          "action": "navigate",
+          "target": "context-capsule",
+          "targetWidget": "ContextCapsuleScreen",
+          "effect": "Pops _PromptTool.contextCapsule; onContextCapsule -> ChatScreen._addContextCapsule() (chat_screen.dart:2920) pushes ContextCapsuleScreen and appends the result to the draft.",
+          "gates": [
+            "inside Advanced",
+            "disabled when voiceBlocked (busy || sending)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-web-sources",
+          "type": "list-tile",
+          "label": "Add web source",
+          "key": null,
+          "line": 950,
+          "action": "navigate",
+          "target": "web-sources",
+          "targetWidget": "WebSourcesScreen",
+          "effect": "Pops _PromptTool.webSources; onWebSources -> ChatScreen._addWebSources() (chat_screen.dart:2878) pushes WebSourcesScreen(controller: _conn).",
+          "gates": [
+            "inside Advanced",
+            "webSourcesSupported (host: _conn.capabilities.webSearch)",
+            "disabled when attachBlocked"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-conversation",
+          "type": "list-tile",
+          "label": "Voice conversation",
+          "key": "composer-tool-conversation",
+          "line": 963,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops _PromptTool.conversation; onConversation -> ChatScreen._startVoiceConversation() switching the chat into voice conversation mode.",
+          "gates": [
+            "inside Advanced",
+            "platformCapabilities.supportsVoiceConversation",
+            "disabled when voiceBlocked"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-prompts",
+          "type": "list-tile",
+          "label": "Prompts",
+          "key": "composer-tools-prompts",
+          "line": 974,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ExpansionTile: expands the prompt history / drafts / stash / clear rows.",
+          "gates": [
+            "canReusePrompt || canOpenStash || hasLegacyDrafts || canClearText"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-history",
+          "type": "list-tile",
+          "label": "Reuse a prompt",
+          "key": "composer-tool-history",
+          "line": 984,
+          "action": "open-sheet",
+          "target": "prompt-history-sheet",
+          "targetWidget": "_PromptHistorySheet",
+          "effect": "Pops _PromptTool.history; onReusePrompt -> ChatScreen._reusePrompt() (chat_screen.dart:875) opens _PromptHistorySheet and appends the chosen prompt to the draft.",
+          "gates": [
+            "canReusePrompt (host: _recentPrompts.isNotEmpty)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-legacy-drafts",
+          "type": "list-tile",
+          "label": "Older drafts",
+          "key": "composer-tool-legacy-drafts",
+          "line": 994,
+          "action": "navigate",
+          "target": "legacy-drafts",
+          "targetWidget": "LegacyDraftsScreen",
+          "effect": "Pops _PromptTool.legacyDrafts; onLegacyDrafts -> ChatScreen._recoverLegacyDraft() (chat_screen.dart:3034) pushes LegacyDraftsScreen(controller: _conn).",
+          "gates": [
+            "hasLegacyDrafts (host: _conn.store.profiles.length >= 2 && _conn.legacySessionDrafts.isNotEmpty)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-stash",
+          "type": "list-tile",
+          "label": "Stash current prompt",
+          "key": "composer-tool-stash",
+          "line": 1004,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops _PromptTool.stash; onStashPrompt -> ChatScreen._stashCurrentPrompt() (chat_screen.dart:953) -> _conn.savePromptStash(snapshot, locationRevision).",
+          "gates": [
+            "canOpenStash (host: _conn.canUsePromptShelf && !_sending && !_promptShelfBusy)",
+            "enabled only when canStash (_hasPrompt && onStashPrompt != null)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-saved",
+          "type": "list-tile",
+          "label": "Saved prompts",
+          "key": "composer-tool-saved",
+          "line": 1015,
+          "action": "open-sheet",
+          "target": "prompt-stash-sheet",
+          "targetWidget": "_PromptStashSheet",
+          "effect": "Pops _PromptTool.saved; onOpenStash -> ChatScreen._openPromptStash() (chat_screen.dart:1005) opens _PromptStashSheet.",
+          "gates": [
+            "canOpenStash"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-tools-sheet-clear",
+          "type": "list-tile",
+          "label": "Clear draft text",
+          "key": "composer-tool-clear",
+          "line": 1026,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops _PromptTool.clearText; onClearText -> ChatScreen._clearDraftText() (chat_screen.dart:1164) clears the composer text and shows a snackbar.",
+          "gates": [
+            "canClearText (controller.text.isNotEmpty && onClearText != null)"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "command-launcher-sheet",
+      "title": "Composer tools",
+      "kind": "sheet",
+      "file": "lib/ui/screens/chat/command_launcher.dart",
+      "widget": "_CommandLauncherSheet",
+      "presentedBy": [
+        "_openCommandLauncher"
+      ],
+      "line": 125,
+      "purpose": "Searchable sheet with a Commands tab (mobile actions plus server slash commands) and a Delegate tab (server subagents to @-mention).",
+      "reachedFrom": [
+        {
+          "page": "embedded-composer",
+          "element": "embedded-composer-inline-command-show-all"
+        },
+        {
+          "page": "embedded-composer",
+          "element": "embedded-composer-inline-agent-show-all"
+        },
+        {
+          "page": "prompt-tools-sheet",
+          "element": "prompt-tools-sheet-commands"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._openCommandLauncher",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5034
+        }
+      ],
+      "gates": [
+        "!_conn.isIsolated",
+        "agents tab requires _supportsPromptAgentMentions"
+      ],
+      "elements": [
+        {
+          "id": "command-launcher-sheet-close",
+          "type": "icon-button",
+          "label": "Close composer tools",
+          "key": null,
+          "line": 258,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-launcher-sheet-tabs",
+          "type": "tab",
+          "label": "Commands | Delegate",
+          "key": "composer-tools-commands-tab / composer-tools-agents-tab",
+          "line": 264,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "TabBar on _tabs; _onTabChanged clears the search and rebuilds.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-launcher-sheet-search",
+          "type": "text-field",
+          "label": "Find a command or action | Find a subagent",
+          "key": "command-launcher-search",
+          "line": 292,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onChanged -> setState; filters commands via _ChatCommand.matchesQuery/scoreFor or agents by id/description.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "command-launcher-sheet-search-clear",
+          "type": "icon-button",
+          "label": "Clear search",
+          "key": null,
+          "line": 305,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_search.clear(); setState.",
+          "gates": [
+            "_search.text.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "command-launcher-sheet-retry-commands",
+          "type": "icon-button",
+          "label": "Retry server commands",
+          "key": null,
+          "line": 336,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refresh(): on the Commands tab awaits widget.onRefresh (ChatScreen._loadServerCommands), otherwise controller.refreshCatalog().",
+          "gates": [
+            "!agentTab && widget.error() != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "command-launcher-sheet-command-row",
+          "type": "list-tile",
+          "label": "/<slash> <aliases> mobile|server — <description>",
+          "key": "command-<mobile|server>-<slash>",
+          "line": 566,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSelected(command): host unfocuses, pops the sheet, then ChatScreen._selectChatCommand(command): server commands prefill \"/<name> \" in the composer; mobile commands run _executeMobileCommand(action), which may navigate or mutate (full action list in notes).",
+          "gates": [
+            "Commands tab",
+            "tile disabled when !command.enabled"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "command-launcher-sheet-agents-refresh-gesture",
+          "type": "gesture",
+          "label": "[pull to refresh subagents]",
+          "key": null,
+          "line": 468,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "RefreshIndicator.onRefresh -> _refresh() -> controller.refreshCatalog() (also wraps the empty state at line 431).",
+          "gates": [
+            "Delegate tab"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "command-launcher-sheet-agents-refresh-button",
+          "type": "button",
+          "label": "Refresh",
+          "key": null,
+          "line": 458,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onRefresh -> _refresh() -> controller.refreshCatalog().",
+          "gates": [
+            "Delegate tab",
+            "agents.isEmpty && !loading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "command-launcher-sheet-agent-row",
+          "type": "list-tile",
+          "label": "@<agent id> — <description|Delegate this prompt> <model>",
+          "key": "composer-agent-<agent id>",
+          "line": 505,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSelected(agent) -> widget.onAgentSelected: host pops the sheet and calls ChatScreen._insertAgentMention(agent) (ignored when !_supportsPromptAgentMentions).",
+          "gates": [
+            "Delegate tab"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "prompt-editor",
+      "title": "Prompt editor",
+      "kind": "screen",
+      "file": "lib/ui/screens/chat/prompt_editor.dart",
+      "widget": "_PromptEditorScreen",
+      "presentedBy": [
+        "_openPromptEditor"
+      ],
+      "line": 13,
+      "purpose": "Full-screen editor for the composer draft and its attachments; Done returns the edited value to ChatScreen, closing a dirty editor asks to discard.",
+      "reachedFrom": [
+        {
+          "page": "embedded-composer",
+          "element": "embedded-composer-open-editor"
+        },
+        {
+          "page": "command-launcher-sheet",
+          "element": "command-launcher-sheet-command-row"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._openPromptEditor",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 3319
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "prompt-editor-close",
+          "type": "icon-button",
+          "label": "Close prompt editor",
+          "key": null,
+          "line": 116,
+          "action": "dismiss",
+          "target": "prompt-editor-discard-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "_cancel(): pops immediately when not dirty, otherwise opens the discard confirm sheet; system back goes through the same path via PopScope.onPopInvokedWithResult (line 108).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "prompt-editor-attach",
+          "type": "icon-button",
+          "label": "Attach file | Attachment limit reached",
+          "key": "prompt-editor-attach",
+          "line": 127,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_addAttachment(): awaits widget.chooseAttachment(_attachments) (host file chooser) and appends the result; errors go to showProductError.",
+          "gates": [
+            "widget.chooseAttachment != null",
+            "disabled when _attachments.length >= _maxAttachmentCount"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-editor-done",
+          "type": "button",
+          "label": "Done",
+          "key": "prompt-editor-done",
+          "line": 134,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_save(): Navigator.pop with _PromptEditorResult(value, attachments); ChatScreen._openPromptEditor applies it to the composer.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "prompt-editor-attachment-preview",
+          "type": "chip",
+          "label": "<attachment filename> (tooltip: Preview {name})",
+          "key": null,
+          "file": "lib/ui/screens/chat/composer.dart",
+          "line": 1525,
+          "action": "open-sheet",
+          "target": "file-preview-sheet",
+          "targetWidget": "showFilePreviewSheet",
+          "effect": "_PendingAttachmentChip.openPreview -> showFilePreviewSheet(context, FilePreviewData.fromDataUrl(...)).",
+          "gates": [
+            "_attachments.isNotEmpty",
+            "!attachment.isDirectoryReference"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-editor-attachment-remove",
+          "type": "icon-button",
+          "label": "Remove attachment {name} / Remove reference @{name}",
+          "key": null,
+          "line": 160,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "setState(() => _attachments.removeAt(index)) (local until Done).",
+          "gates": [
+            "_attachments.isNotEmpty"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "prompt-editor-field",
+          "type": "text-field",
+          "label": "Write your OpenCode prompt…",
+          "key": "prompt-editor-field",
+          "line": 169,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Autofocused expanding multiline field on a local TextEditingController seeded from the composer value.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "prompt-editor-discard-sheet",
+      "title": "Discard prompt changes?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/chat/prompt_editor.dart",
+      "widget": "_cancel",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 89,
+      "purpose": "Confirm sheet shown when closing a dirty prompt editor.",
+      "reachedFrom": [
+        {
+          "page": "prompt-editor",
+          "element": "prompt-editor-close"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "system back while the prompt editor is dirty (PopScope, prompt_editor.dart:108)"
+        }
+      ],
+      "gates": [
+        "_dirty (text or attachments differ from initial)"
+      ],
+      "elements": [
+        {
+          "id": "prompt-editor-discard-sheet-confirm",
+          "type": "button",
+          "label": "Discard",
+          "key": null,
+          "line": 96,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "showConfirmSheet returns true; _cancel pops the editor without a result so the composer keeps its original draft and attachments.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "prompt-editor-discard-sheet-cancel",
+          "type": "button",
+          "label": "Keep editing",
+          "key": null,
+          "line": 97,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Closes the sheet and stays in the editor.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "prompt-history-sheet",
+      "title": "Reuse a prompt",
+      "kind": "sheet",
+      "file": "lib/ui/screens/chat/prompt_history.dart",
+      "widget": "_PromptHistorySheet",
+      "presentedBy": [
+        "_reusePrompt"
+      ],
+      "line": 5,
+      "purpose": "Searchable list of prompts already sent in this conversation; picking one appends its text to the draft.",
+      "reachedFrom": [
+        {
+          "page": "prompt-tools-sheet",
+          "element": "prompt-tools-sheet-history"
+        }
+      ],
+      "gates": [
+        "_recentPrompts.isNotEmpty"
+      ],
+      "elements": [
+        {
+          "id": "prompt-history-sheet-search",
+          "type": "text-field",
+          "label": "Search recent prompts",
+          "key": "prompt-history-search",
+          "line": 53,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onChanged -> setState(_query = value.trim().toLowerCase()) filtering the list.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "prompt-history-sheet-prompt-row",
+          "type": "list-tile",
+          "label": "<prompt text>",
+          "key": "reuse-prompt-<index>",
+          "line": 83,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, matches[index]); ChatScreen._reusePrompt appends the text to the composer draft and refocuses.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "prompt-stash-sheet",
+      "title": "Saved prompts",
+      "kind": "sheet",
+      "file": "lib/ui/screens/chat/prompt_stash.dart",
+      "widget": "_PromptStashSheet",
+      "presentedBy": [
+        "_openPromptStash"
+      ],
+      "line": 3,
+      "purpose": "Lists prompts stashed on the prompt shelf for this profile with search, restore and delete.",
+      "reachedFrom": [
+        {
+          "page": "prompt-tools-sheet",
+          "element": "prompt-tools-sheet-saved"
+        }
+      ],
+      "gates": [
+        "_conn.canUsePromptShelf && !_sending && !_promptShelfBusy"
+      ],
+      "elements": [
+        {
+          "id": "prompt-stash-sheet-search",
+          "type": "text-field",
+          "label": "Search saved prompts",
+          "key": null,
+          "line": 182,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onChanged -> setState(_query = value); filters by text, attachment names, directory, workspace and reference descriptions.",
+          "gates": [
+            "enabled: _current"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-stash-sheet-search-clear",
+          "type": "icon-button",
+          "label": "Clear search",
+          "key": null,
+          "line": 194,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_search.clear(); setState(_query = \"\").",
+          "gates": [
+            "_query.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-stash-sheet-retry",
+          "type": "button",
+          "label": "Retry",
+          "key": null,
+          "line": 219,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_prepare() -> controller.preparePromptStash(locationRevision: widget.location) then re-reads controller.promptStash.",
+          "gates": [
+            "current && (_readFailed || _migrationPending)",
+            "disabled while _preparing || _deleting"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-stash-sheet-prompt-expand",
+          "type": "list-tile",
+          "label": "<prompt text | Attachments and references>",
+          "key": null,
+          "line": 247,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ExpansionTile: expands the full selectable prompt text.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "prompt-stash-sheet-restore",
+          "type": "button",
+          "label": "Restore",
+          "key": "restore-stash-<prompt id>",
+          "line": 303,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, prompt); ChatScreen._openPromptStash (chat_screen.dart:1049-1160) then restores attachments via _conn.restorePromptStashAttachments, may ask showConfirmSheet (\"promptAttachmentsUnavailable\" or \"promptRestoreTitle\" when a draft exists), stashes the current draft, applies the prompt and calls _conn.removePromptStash.",
+          "gates": [
+            "disabled when _unsafe (!_current || _preparing || _deleting || _readFailed)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "prompt-stash-sheet-delete",
+          "type": "button",
+          "label": "Delete",
+          "key": "delete-stash-<prompt id>",
+          "line": 322,
+          "action": "open-sheet",
+          "target": "prompt-stash-delete-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "_delete(prompt): opens the delete confirm sheet.",
+          "gates": [
+            "disabled when _unsafe"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "prompt-stash-delete-sheet",
+      "title": "Delete saved prompt?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/chat/prompt_stash.dart",
+      "widget": "_delete",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 99,
+      "purpose": "Confirmation before removing a stashed prompt.",
+      "reachedFrom": [
+        {
+          "page": "prompt-stash-sheet",
+          "element": "prompt-stash-sheet-delete"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "prompt-stash-delete-sheet-confirm",
+          "type": "button",
+          "label": "Delete",
+          "key": null,
+          "line": 104,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "On confirm _delete calls controller.removePromptStash(prompt.id, locationRevision: widget.location).",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "prompt-stash-delete-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 105,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Closes the sheet; nothing is removed.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-transcript-find-bar",
+      "title": "[Transcript find bar]",
+      "kind": "overlay",
+      "file": "lib/ui/screens/chat/transcript_find.dart",
+      "widget": "_TranscriptFindBar",
+      "presentedBy": [],
+      "line": 3,
+      "purpose": "In-conversation search bar shown above the transcript in ChatScreen while _findOpen.",
+      "reachedFrom": [
+        {
+          "page": "chat",
+          "element": null,
+          "widget": "_ChatScreenState.build",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 6625
+        }
+      ],
+      "gates": [
+        "_findOpen"
+      ],
+      "embeddedIn": [
+        "ChatScreen"
+      ],
+      "elements": [
+        {
+          "id": "embedded-transcript-find-bar-input",
+          "type": "text-field",
+          "label": "Search conversation",
+          "key": "transcript-find-input",
+          "line": 53,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onChanged -> ChatScreen._changeFind; onSubmitted -> onNext (ChatScreen._navigateFind(1)).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-transcript-find-bar-close",
+          "type": "icon-button",
+          "label": "Close search",
+          "key": null,
+          "line": 68,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onClose -> ChatScreen._closeFind.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-transcript-find-bar-escape",
+          "type": "gesture",
+          "label": "Esc",
+          "key": null,
+          "line": 44,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "CallbackShortcuts escape -> onClose (ChatScreen._closeFind).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-transcript-find-bar-previous",
+          "type": "icon-button",
+          "label": "Previous match",
+          "key": "transcript-find-previous",
+          "line": 90,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onPrevious -> ChatScreen._navigateFind(-1).",
+          "gates": [
+            "disabled when count == 0"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-transcript-find-bar-next",
+          "type": "icon-button",
+          "label": "Next match",
+          "key": "transcript-find-next",
+          "line": 96,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onNext -> ChatScreen._navigateFind(1).",
+          "gates": [
+            "disabled when count == 0"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-transcript-find-bar-cancel-search-all",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 102,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onCancelLoading -> host setState(() => _findAllLoading = false) stopping the all-history search.",
+          "gates": [
+            "searchingAll (_findAllLoading)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-transcript-find-bar-search-all",
+          "type": "button",
+          "label": "Search all history | Reload recent history",
+          "key": "transcript-find-older",
+          "line": 110,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onLoadOlder -> ChatScreen._searchAllHistory loading older pages to search them; label is \"Reload recent history\" when needsReload (_olderNeedsReload || _resetHistoryOnLoad).",
+          "gates": [
+            "!searchingAll && (hasOlder || error != null)",
+            "disabled while loading"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "chat-read-aloud-consent-sheet",
+      "title": "Use the system speech engine?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/chat/read_aloud.dart",
+      "widget": "_ensureSpeechReady",
+      "presentedBy": [
+        "_ensureSpeechReady",
+        "_readReply"
+      ],
+      "line": 102,
+      "purpose": "One-time consent before a reply is handed to the system text-to-speech engine.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._showMessageActions (readAloud / readAloudOtherVoice)",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 4039
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "voice conversation (_ensureSpeechReady / _readReply)",
+          "file": "lib/ui/screens/chat/voice_conversation.dart",
+          "line": 174
+        }
+      ],
+      "gates": [
+        "!_readAloudConsented",
+        "_canReadReply(message): !_conn.isIsolated && platformCapabilities.supportsReadAloud && !_voiceOpening && (!_voiceConversation || _conversationCanSend) && !_readAloudRequestBusy && assistant message with text"
+      ],
+      "elements": [
+        {
+          "id": "chat-read-aloud-consent-sheet-confirm",
+          "type": "button",
+          "label": "Choose voice",
+          "key": null,
+          "line": 107,
+          "action": "open-sheet",
+          "target": "chat-read-aloud-voice-sheet",
+          "targetWidget": "_ensureSpeechReady",
+          "effect": "Sets _readAloudConsented = true, creates the ReadAloudController and continues to the voice picker when no voice is chosen yet.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "chat-read-aloud-consent-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 108,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Declines; _ensureSpeechReady returns false and nothing is spoken.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "chat-read-aloud-voice-sheet",
+      "title": "Choose a reading voice",
+      "kind": "sheet",
+      "file": "lib/ui/screens/chat/read_aloud.dart",
+      "widget": "_ensureSpeechReady",
+      "presentedBy": [
+        "_ensureSpeechReady",
+        "_readReply"
+      ],
+      "line": 128,
+      "purpose": "Lists the offline system voices returned by ReadAloudController.voices(); the choice is kept for the session scope.",
+      "reachedFrom": [
+        {
+          "page": "chat-read-aloud-consent-sheet",
+          "element": "chat-read-aloud-consent-sheet-confirm"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._showMessageActions (readAloudOtherVoice forces chooseVoice)",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 4039
+        }
+      ],
+      "gates": [
+        "_readAloudVoiceID == null || chooseVoice",
+        "voices.isNotEmpty (else ReadAloudFailure.noOfflineVoice)"
+      ],
+      "elements": [
+        {
+          "id": "chat-read-aloud-voice-sheet-voice-row",
+          "type": "list-tile",
+          "label": "<voice label> / <locale>",
+          "key": null,
+          "line": 152,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, voice); sets _readAloudVoiceID and _readReply then calls speech.speak(sessionID/messageID, prose, voiceID).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-model-shortcuts",
+      "title": "[Chat keyboard shortcuts: model cycle / background]",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/model_shortcuts.dart",
+      "widget": "ModelShortcuts",
+      "presentedBy": [],
+      "line": 11,
+      "purpose": "Focus wrapper around the whole ChatScreen that handles hardware-keyboard shortcuts while the chat route is current.",
+      "reachedFrom": [
+        {
+          "page": "chat",
+          "element": null,
+          "widget": "_ChatScreenState.build",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 7353
+        }
+      ],
+      "gates": [],
+      "embeddedIn": [
+        "ChatScreen"
+      ],
+      "elements": [
+        {
+          "id": "embedded-model-shortcuts-f2",
+          "type": "gesture",
+          "label": "F2",
+          "key": null,
+          "line": 43,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onCycle(reverse: false, favoritesOnly: false) -> ChatScreen._cycleModel: next recent model for the session.",
+          "gates": [
+            "ModalRoute.of(context).isCurrent"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-model-shortcuts-shift-f2",
+          "type": "gesture",
+          "label": "Shift+F2",
+          "key": null,
+          "line": 47,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onCycle(reverse: true, favoritesOnly: false) -> ChatScreen._cycleModel: previous recent model.",
+          "gates": [
+            "ModalRoute.of(context).isCurrent"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-model-shortcuts-ctrl-b",
+          "type": "gesture",
+          "label": "Ctrl+B",
+          "key": null,
+          "line": 36,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onBackground -> ChatScreen._backgroundRunningWork.",
+          "gates": [
+            "onBackground != null (host: _canBackgroundWork)",
+            "ModalRoute.of(context).isCurrent"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-transcript-display-toggles",
+      "title": "[Transcript display toggles]",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/transcript_display_toggles.dart",
+      "widget": "TranscriptDisplayToggles",
+      "presentedBy": [],
+      "line": 21,
+      "purpose": "Two switches for transcript display preferences, embedded in the session menu sheet.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "SessionMenuSheet",
+          "file": "lib/ui/screens/chat/attention_card.dart",
+          "line": 631
+        }
+      ],
+      "gates": [],
+      "embeddedIn": [
+        "SessionMenuSheet"
+      ],
+      "elements": [
+        {
+          "id": "embedded-transcript-display-toggles-reasoning",
+          "type": "toggle",
+          "label": "Reasoning",
+          "key": "session-view-thinking",
+          "line": 75,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_setReasoning(value) -> connection.setTranscriptReasoningExpanded(value) (connProvider).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-transcript-display-toggles-timestamps",
+          "type": "toggle",
+          "label": "Timestamps & usage",
+          "key": "session-view-timestamps",
+          "line": 89,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_setTimestamps(value) -> connection.setTranscriptTimestampsVisible(value).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-prompt-error-banner",
+      "title": "[Prompt error banner]",
+      "kind": "overlay",
+      "file": "lib/ui/screens/chat/message_view.dart",
+      "widget": "_PromptErrorBanner",
+      "presentedBy": [],
+      "line": 3,
+      "purpose": "Live-region banner above the transcript showing the last failed prompt send with dismiss, details and a model fix.",
+      "reachedFrom": [
+        {
+          "page": "chat",
+          "element": null,
+          "widget": "_ChatScreenState.build",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 6543
+        }
+      ],
+      "gates": [
+        "_promptError != null"
+      ],
+      "embeddedIn": [
+        "ChatScreen"
+      ],
+      "elements": [
+        {
+          "id": "embedded-prompt-error-banner-dismiss",
+          "type": "icon-button",
+          "label": "Dismiss prompt error",
+          "key": null,
+          "line": 64,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onDismiss -> host setState(() => _promptError = null).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-prompt-error-banner-details",
+          "type": "button",
+          "label": "Details",
+          "key": "prompt-error-details",
+          "line": 85,
+          "action": "open-dialog",
+          "target": "chat-prompt-error-details-dialog",
+          "targetWidget": "_PromptErrorBanner.build",
+          "effect": "showDialog with an AlertDialog holding the full selectable error text.",
+          "gates": [
+            "errorHasDetails(message)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-prompt-error-banner-choose-model",
+          "type": "button",
+          "label": "Choose model",
+          "key": "prompt-error-choose-model",
+          "line": 111,
+          "action": "open-sheet",
+          "target": "model-picker",
+          "targetWidget": "showModelPicker",
+          "effect": "onChooseModel -> host showModelPicker(context, applyScope: _modelApplyScope, sessionID: widget.sessionID).",
+          "gates": [
+            "MessageErrorKind.refineFromText(unknown, message) == MessageErrorKind.modelNotFound",
+            "onChooseModel != null (host: !_conn.isIsolated)"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "chat-prompt-error-details-dialog",
+      "title": "Error details",
+      "kind": "dialog",
+      "file": "lib/ui/screens/chat/message_view.dart",
+      "widget": "_PromptErrorBanner.build",
+      "presentedBy": [],
+      "line": 85,
+      "purpose": "Full server error text (stack trace included) for a failed prompt, selectable monospace.",
+      "reachedFrom": [
+        {
+          "page": "embedded-prompt-error-banner",
+          "element": "embedded-prompt-error-banner-details"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "chat-prompt-error-details-dialog-close",
+          "type": "button",
+          "label": "Close",
+          "key": null,
+          "line": 99,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.of(context).pop().",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-subagent-context-banner",
+      "title": "[Subagent session banner: \"Subagent · {count}\"]",
+      "kind": "overlay",
+      "file": "lib/ui/screens/chat/message_view.dart",
+      "widget": "_SubagentContextBanner",
+      "presentedBy": [],
+      "line": 2290,
+      "purpose": "Banner shown in a delegated (child) session with links to the parent session and the sibling list.",
+      "reachedFrom": [
+        {
+          "page": "chat",
+          "element": null,
+          "widget": "_ChatScreenState.build",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 6555
+        }
+      ],
+      "gates": [
+        "_promptError == null",
+        "!_conn.isIsolated && parentID != null"
+      ],
+      "embeddedIn": [
+        "ChatScreen"
+      ],
+      "elements": [
+        {
+          "id": "embedded-subagent-context-banner-parent",
+          "type": "icon-button",
+          "label": "Open parent session",
+          "key": "subagent-parent-session",
+          "line": 2328,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<id>",
+          "effect": "onParent -> ChatScreen._openParentSession() -> _openRelatedSession(parent): _conn.selectLocationForExistingSession then pushReplacementNamed(\"/chat/<parent id>\").",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-subagent-context-banner-all",
+          "type": "icon-button",
+          "label": "Show all subagent sessions",
+          "key": "subagent-session-list",
+          "line": 2334,
+          "action": "navigate",
+          "target": "session-relations",
+          "targetWidget": "SessionRelationsScreen",
+          "effect": "onAll -> ChatScreen._showSubagents() (chat_screen.dart:5703) pushes SessionRelationsScreen.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-shared-session-banner",
+      "title": "[Shared session banner: \"Shared: anyone with the link can view\"]",
+      "kind": "overlay",
+      "file": "lib/ui/screens/chat/message_view.dart",
+      "widget": "_SharedSessionBanner",
+      "presentedBy": [],
+      "line": 2344,
+      "purpose": "Banner shown while the session has a public share URL.",
+      "reachedFrom": [
+        {
+          "page": "chat",
+          "element": null,
+          "widget": "_ChatScreenState.build",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 6562
+        }
+      ],
+      "gates": [
+        "_promptError == null && parentID == null",
+        "!_conn.isIsolated && shareUrl != null"
+      ],
+      "embeddedIn": [
+        "ChatScreen"
+      ],
+      "elements": [
+        {
+          "id": "embedded-shared-session-banner-copy",
+          "type": "icon-button",
+          "label": "Copy share link",
+          "key": null,
+          "line": 2381,
+          "action": "copy",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Clipboard.setData(ClipboardData(text: url)).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-shared-session-banner-stop",
+          "type": "button",
+          "label": "Stop sharing",
+          "key": null,
+          "line": 2385,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onStop -> ChatScreen._stopSharing() (chat_screen.dart:3455): repository.unshareSession(widget.sessionID), clears _localShareUrl, _conn.refreshSessions(). No confirmation.",
+          "gates": [],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "embedded-message-view",
+      "title": "[Chat transcript: messages, empty state, floating pills]",
+      "kind": "overlay",
+      "file": "lib/ui/screens/chat/message_view.dart",
+      "widget": "_MessageView",
+      "presentedBy": [],
+      "line": 1311,
+      "purpose": "Transcript body of ChatScreen: the empty-state suggestions, each rendered message (user bubble, assistant prose, tool groups, reasoning, attachments, error cards, v2 notices and background-agent results) and the floating jump/timeline pills.",
+      "reachedFrom": [
+        {
+          "page": "chat",
+          "element": null,
+          "widget": "_ChatScreenState.build",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 6738
+        }
+      ],
+      "gates": [],
+      "embeddedIn": [
+        "ChatScreen"
+      ],
+      "elements": [
+        {
+          "id": "embedded-message-view-empty-suggestion",
+          "type": "chip",
+          "label": "Explain the {name} project | What changed recently? | Find and fix a bug | List what's in this directory",
+          "key": "empty-suggestion-<text>",
+          "line": 256,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSuggestion(suggestion) -> ChatScreen._insertSuggestion, inserting the text into the composer.",
+          "gates": [
+            "_visibleHistory.isEmpty && _olderCursor == null && widget.emptyState == null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-jump-to-latest",
+          "type": "button",
+          "label": "Jump to latest",
+          "key": "jump-to-latest",
+          "line": 338,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onTap -> ChatScreen._jumpToLatest scrolling the transcript to the newest message.",
+          "gates": [
+            "host shows it while scrolled away from the latest message (_awayFromLatest)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-earlier-messages-pill",
+          "type": "button",
+          "label": "{count} earlier messages",
+          "key": "earlier-messages-pill",
+          "line": 386,
+          "action": "open-sheet",
+          "target": "timeline-sheet",
+          "targetWidget": "_TimelineSheet",
+          "effect": "onTap -> ChatScreen._openTimeline() (chat_screen.dart:3496) opening the timeline sheet.",
+          "gates": [
+            "_awayFromLatest and at least one message above the viewport"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-notice-expand",
+          "type": "card",
+          "label": "<notice header> (compaction / skill / failure notice)",
+          "key": null,
+          "line": 544,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "TranscriptNotice: setState(() => _open = !_open) expanding the body (markdown for compaction summaries).",
+          "gates": [
+            "v2 tagged message (v2:notice / v2:compaction, via V2TranscriptRow)",
+            "body.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-background-result-open-child",
+          "type": "button",
+          "label": "Open subagent session",
+          "key": null,
+          "line": 2845,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<id>",
+          "effect": "widget.onOpenChild(result.childID) -> ChatScreen._openSubagentSession(id, requireChild: ...) -> pushReplacementNamed(\"/chat/<child id>\").",
+          "gates": [
+            "BackgroundAgentResult.fromPart(part) != null",
+            "result.isKnownChild(parentSessionID, knownSessions)",
+            "_conn.capabilities.projectManagement"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-background-result-details",
+          "type": "button",
+          "label": "Server message details",
+          "key": null,
+          "line": 2850,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "setState(() => _details = !_details) revealing the raw protocol text.",
+          "gates": [
+            "BackgroundAgentResult.fromPart(part) != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-tool-group-toggle",
+          "type": "list-tile",
+          "label": "Tools | Running tools | Explored | Exploring — <summary>",
+          "key": "tool-call-group-header",
+          "line": 1069,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_toggle(): flips _expanded and records the choice in widget.expansionStore[\"tools:<id>\"]; expanded groups render ToolCard rows (lib/ui/widgets tool card, not in this area) with onAttachFile/onDownloadFile/onOpenSession passed through.",
+          "gates": [
+            "assistant message with a grouped tool run (_groupAssistantParts)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-choice-option",
+          "type": "button",
+          "label": "<option from a ```choices block>",
+          "key": null,
+          "line": 1243,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "MarkdownText.onChoice -> _insertChoice: ChatScreen._insertSuggestion(option); without a ChatScreen ancestor copies to the clipboard and shows \"Copied. Paste it into the composer\" snackbar.",
+          "gates": [
+            "assistant text part containing a choices block"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-reasoning-toggle",
+          "type": "list-tile",
+          "label": "Reasoning (tap to expand) (semantics: Expand/Collapse reasoning details)",
+          "key": "reasoning-toggle",
+          "line": 2211,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "setState(_open = !_open) and _persist(_open) into the expansion store.",
+          "gates": [
+            "reasoning part whose text is not short (_isShort renders short reasoning inline without a toggle)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-attachment-preview",
+          "type": "card",
+          "label": "<attachment filename> (tooltip: Preview attachment)",
+          "key": null,
+          "line": 1991,
+          "action": "open-sheet",
+          "target": "file-preview-sheet",
+          "targetWidget": "showFilePreviewSheet",
+          "effect": "openPreview -> showFilePreviewSheet(context, FilePreviewData.fromDataUrl(name, mimeType, url)).",
+          "gates": [
+            "user message file part",
+            "!_isReference (directory references are not tappable)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-long-press",
+          "type": "gesture",
+          "label": "[long-press on a message]",
+          "key": null,
+          "line": 1413,
+          "action": "open-sheet",
+          "target": "chat-message-actions-sheet",
+          "targetWidget": "_showMessageActions",
+          "effect": "onLongPress -> ChatScreen._showMessageActions(m) (chat_screen.dart:3959) opening the message actions sheet (copy, fork, revert, delete, read aloud).",
+          "gates": [
+            "!_conn.isIsolated"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-actions-button",
+          "type": "icon-button",
+          "label": "Message actions",
+          "key": "message-actions-<message id>",
+          "line": 1561,
+          "action": "open-sheet",
+          "target": "chat-message-actions-sheet",
+          "targetWidget": "_showMessageActions",
+          "effect": "Same callback as long-press: ChatScreen._showMessageActions(m).",
+          "gates": [
+            "onLongPress != null (!_conn.isIsolated)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-context-menu",
+          "type": "gesture",
+          "label": "[right-click on a message]",
+          "key": null,
+          "line": 1616,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ContextMenuRegion(actions: contextActions) -> ChatScreen._messageContextActions(m): desktop menu mirroring the message actions sheet; entries are built in chat_screen.dart.",
+          "gates": [
+            "contextActions != null (!_conn.isIsolated)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-error-details",
+          "type": "button",
+          "label": "Details",
+          "key": "error-action-details",
+          "line": 1839,
+          "action": "open-dialog",
+          "target": "chat-message-error-details-dialog",
+          "targetWidget": "_ErrorActionCard._showDetails",
+          "effect": "_ErrorActionCard._showDetails: AlertDialog with the full server error text.",
+          "gates": [
+            "m.info.errorText != null",
+            "errorHasDetails(raw) (never for providerAuth cards)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-error-choose-model",
+          "type": "button",
+          "label": "Choose model",
+          "key": "error-action-choose-model",
+          "line": 1845,
+          "action": "open-sheet",
+          "target": "model-picker",
+          "targetWidget": "showModelPicker",
+          "effect": "onAction = onChooseModel -> host showModelPicker(context, applyScope: _modelApplyScope, sessionID: widget.sessionID).",
+          "gates": [
+            "error kind == MessageErrorKind.modelNotFound",
+            "!_conn.isIsolated"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-error-compact",
+          "type": "button",
+          "label": "Compact session",
+          "key": "error-action-compact",
+          "line": 1845,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onAction = onCompact -> ChatScreen._compact() summarizing the session.",
+          "gates": [
+            "error kind == MessageErrorKind.contextOverflow",
+            "!_conn.isIsolated && _supportsSessionCompact"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-error-open-providers",
+          "type": "button",
+          "label": "Open providers",
+          "key": "error-action-providers",
+          "line": 1845,
+          "action": "navigate",
+          "target": "integrations",
+          "targetWidget": "IntegrationsScreen",
+          "effect": "onAction = onOpenProviders -> ChatScreen._openProviders() (chat_screen.dart:4152) pushes IntegrationsScreen(controller: _conn).",
+          "gates": [
+            "error kind == MessageErrorKind.providerAuth",
+            "!_conn.isIsolated"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-message-view-error-continue",
+          "type": "button",
+          "label": "Continue",
+          "key": "error-action-continue",
+          "line": 1845,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onAction = onContinue -> ChatScreen._continueTruncated() sending a \"Continue\" prompt after an output-length cut.",
+          "gates": [
+            "error kind == MessageErrorKind.outputLength",
+            "!_conn.isIsolated"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "chat-message-error-details-dialog",
+      "title": "Error details",
+      "kind": "dialog",
+      "file": "lib/ui/screens/chat/message_view.dart",
+      "widget": "_ErrorActionCard._showDetails",
+      "presentedBy": [],
+      "line": 1778,
+      "purpose": "Full server error text for a failed assistant message.",
+      "reachedFrom": [
+        {
+          "page": "embedded-message-view",
+          "element": "embedded-message-view-error-details"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "chat-message-error-details-dialog-close",
+          "type": "button",
+          "label": "Close",
+          "key": null,
+          "line": 1792,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.of(context).pop().",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-pending-sends-strip",
+      "title": "[Pending sends strip]",
+      "kind": "overlay",
+      "file": "lib/ui/screens/chat/message_view.dart",
+      "widget": "_PendingSendsStrip",
+      "presentedBy": [],
+      "line": 2401,
+      "purpose": "List between transcript and composer of offline queued drafts and OpenCode 2 inbox items that have not reached the agent yet.",
+      "reachedFrom": [
+        {
+          "page": "chat",
+          "element": null,
+          "widget": "_ChatScreenState.build",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 6994
+        }
+      ],
+      "gates": [
+        "pendingSends.drafts.isNotEmpty || pendingSends.inbox.isNotEmpty"
+      ],
+      "embeddedIn": [
+        "ChatScreen"
+      ],
+      "elements": [
+        {
+          "id": "embedded-pending-sends-strip-queued-resend",
+          "type": "icon-button",
+          "label": "Send again",
+          "key": "queued-action-resend",
+          "line": 2665,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onResend(entry) -> ChatScreen._resendQueuedPrompt: explicit resend of a dispatched-but-unconfirmed draft.",
+          "gates": [
+            "entry.dispatched && !sending && !acceptedUnrecorded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-pending-sends-strip-queued-edit",
+          "type": "icon-button",
+          "label": "Edit draft",
+          "key": "queued-action-edit",
+          "line": 2671,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onEdit(entry) -> ChatScreen._editQueuedPrompt: moves the queued draft back into the composer.",
+          "gates": [
+            "disabled while sending"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-pending-sends-strip-queued-discard",
+          "type": "icon-button",
+          "label": "Discard draft",
+          "key": "queued-action-discard",
+          "line": 2677,
+          "action": "open-sheet",
+          "target": "chat-discard-queued-prompt-sheet",
+          "targetWidget": "_discardQueuedPrompt",
+          "effect": "onDiscard(entry) -> ChatScreen._discardQueuedPrompt (chat_screen.dart:2293) which confirms through showConfirmSheet before removing the queued prompt.",
+          "gates": [
+            "disabled while sending"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "embedded-pending-sends-strip-inbox-flip-to-queue",
+          "type": "icon-button",
+          "label": "Wait for this run instead",
+          "key": "inbox-action-queue",
+          "line": 2729,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onFlipDelivery(item) -> ChatScreen._flipInboxDelivery: changes the inbox item from steer to queue.",
+          "gates": [
+            "item.type == \"user\" && item.delivery == Api2Delivery.steer"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-pending-sends-strip-inbox-flip-to-steer",
+          "type": "icon-button",
+          "label": "Send now and steer instead",
+          "key": "inbox-action-steer",
+          "line": 2735,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onFlipDelivery(item) -> ChatScreen._flipInboxDelivery: changes the inbox item from queue to steer.",
+          "gates": [
+            "item.type == \"user\" && item.delivery != Api2Delivery.steer"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-pending-sends-strip-inbox-cancel",
+          "type": "icon-button",
+          "label": "Cancel and return to the composer",
+          "key": "inbox-action-cancel",
+          "line": 2742,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onCancelInbox(item) -> ChatScreen._cancelInboxSend: cancels the server inbox item and restores its text to the composer.",
+          "gates": [
+            "item.type == \"user\""
+          ],
+          "destructive": true
+        }
+      ]
+    }
+  ],
+  "notPages": [
+    {
+      "file": "lib/ui/widgets/transcript_highlight.dart",
+      "reason": "TranscriptHighlight (InheritedWidget that tints find matches inside spans) and TranscriptMatchExcerpt (static excerpt card); no surface and no interactive element."
+    },
+    {
+      "file": "lib/ui/screens/chat/form_flow.dart",
+      "reason": "presentConnectionForm is glue only: it calls presentForm (lib/ui/widgets/form_renderer.dart, another agent) and routes submit/cancel to connection.replyForm / connection.cancelForm, plus a snackbar 'Already answered elsewhere'. Callers: chat_screen.dart:4451, activity_screen.dart:148/807, profile_monitor_screen.dart:70, return_brief_panel.dart:77."
+    }
+  ],
+  "notes": [
+    "command_launcher.dart:566 / composer inline rows: a mobile _ChatCommand runs ChatScreen._executeMobileCommand (chat_screen.dart:5098, not my file). Its targets by _ChatCommandAction: newSession -> _conn.createSession + pushReplacementNamed(\"/chat/<id>\"); sessions -> GlobalSessionsScreen; workspaces -> HomeScreen(initialTab: 0); files -> FilesScreen; projectHealth -> ProjectHealthScreen; move/warp -> showSessionDestinationSheet; promptEditor -> _PromptEditorScreen; terminal -> TerminalScreen; model -> showModelPicker; integrations -> IntegrationsScreen; organization -> showConsoleOrganizationSheet; skills -> SkillsScreen; tools -> ToolsScreen; references -> ReferencesScreen; status -> SettingsScreen; diagnostics -> AppDiagnosticsScreen; appearance -> showAppearancePicker; diff/context/share/unshare/rename/timeline/fork/compact/thinking/timestamps/undo/redo/copy/export/help -> ChatScreen helper methods. The command list itself (_chatCommands, gating per capability) lives in chat_screen.dart; the chat-screen owner should emit those edges.",
+    "chat_screen.dart:7179 host wraps the composer in ChatScreen._composerDropTarget (drag-and-drop attach) - defined in chat_screen.dart, not recorded here.",
+    "prompt_stash.dart:303 Restore: the follow-up confirm sheets (titles promptAttachmentsUnavailable / promptRestoreTitle) are opened by ChatScreen._openPromptStash at chat_screen.dart:1069 and :1082 - not in my files, not emitted as pages here.",
+    "read_aloud.dart has no visible \"read-aloud bar\"; it only contributes the consent sheet (:102) and voice picker sheet (:128). The openers are the message actions sheet in chat_screen.dart:3959-4039 and voice_conversation.dart:174/522 (other agents).",
+    "message_view.dart:1413/1561 open ChatScreen._showMessageActions (chat_screen.dart:3959, showModalBottomSheet with copy/fork/revert/delete/readAloud/readAloudOtherVoice) and :1616 uses ChatScreen._messageContextActions; both live in chat_screen.dart (other agent). I used target id \"chat-message-actions-sheet\"; coordinator should resolve by targetWidget \"_showMessageActions\".",
+    "message_view.dart:1158/1266 embed ToolCard (not in my assignment); its file preview/attach/download/open-session controls receive ChatScreen._loadToolOutputFile, _attachToolOutputFile (only when _supportsPromptAttachments), _downloadToolOutputFile, _openSubagentSession (only when !_conn.isIsolated && _conn.capabilities.projectManagement).",
+    "message_view.dart:2677 Discard draft: confirmation sheet is built in ChatScreen._discardQueuedPrompt (chat_screen.dart:2293-2340, showConfirmSheet at :2314/:2336); id \"chat-discard-queued-prompt-sheet\" is a guess to be resolved by targetWidget.",
+    "message_view.dart:2233 the reasoning header embeds InfoLabel.glossary(Glossary.reasoning) (key reasoning-glossary), a shared widget from another area that may open its own glossary popup; not traced here.",
+    "chat_screen.dart:6657 (host) wraps the transcript in MarkdownFileLinks(validate: _validatePathLink, open: _openPathLink); markdown link taps inside MarkdownText are handled by that shared widget, not by message_view.dart."
+  ]
+}

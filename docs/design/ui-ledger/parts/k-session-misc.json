@@ -1,0 +1,1353 @@
+{
+  "area": "k-session-misc",
+  "pages": [
+    {
+      "id": "session-context",
+      "title": "Session context",
+      "kind": "screen",
+      "file": "lib/ui/screens/session_context_screen.dart",
+      "widget": "SessionContextScreen",
+      "presentedBy": [],
+      "line": 176,
+      "purpose": "Shows context-window usage, token metrics, estimated input makeup and session totals for one session, with a link to the active-context inspector.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._showContext",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5693
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "session-context-refresh",
+          "type": "icon-button",
+          "label": "Refresh context",
+          "key": null,
+          "line": 368,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Reloads the session message history via _load(); disabled while _loading or when !_sameLocation.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-context-open-active-context",
+          "type": "list-tile",
+          "label": "Active context",
+          "key": "open-active-context",
+          "line": 395,
+          "action": "navigate",
+          "target": "active-context",
+          "targetWidget": "ActiveContextScreen",
+          "effect": "Pushes ActiveContextScreen for the same controller and sessionID.",
+          "gates": [
+            "widget.controller.repository is ActiveContextGateway && (repository as ActiveContextGateway).activeContextSupported",
+            "_sameLocation"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-context-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 416,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductErrorState.onRetry calls _load() after a failed first load.",
+          "gates": [
+            "_error != null && _messages.isEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-context-empty-action",
+          "type": "button",
+          "label": "Reload recent history | Load older messages | Refresh",
+          "key": null,
+          "line": 433,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductEmptyState action: _load(older: true) when _olderCursor != null, else _load(); null while _loading.",
+          "gates": [
+            "metrics.currentMessage == null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-context-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": "session-context-list",
+          "line": 442,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "RefreshIndicator.onRefresh calls _load().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-context-inline-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 891,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_InlineContextError retry calls _load(older: _failedOlder) (wired at line 451).",
+          "gates": [
+            "_error != null with messages already loaded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-context-load-older",
+          "type": "button",
+          "label": "Load older messages | Reload recent history",
+          "key": null,
+          "line": 460,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Calls _load(older: true) to page older messages into the metrics; label is 'Reload recent history' when _olderNeedsReload.",
+          "gates": [
+            "_hasOlder"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "active-context",
+      "title": "Active context",
+      "kind": "screen",
+      "file": "lib/ui/screens/active_context_screen.dart",
+      "widget": "ActiveContextScreen",
+      "presentedBy": [],
+      "line": 10,
+      "purpose": "Inspector listing the messages currently in the model's active context (after compaction), searchable and filterable by type.",
+      "reachedFrom": [
+        {
+          "page": "session-context",
+          "element": "session-context-open-active-context"
+        }
+      ],
+      "gates": [
+        "widget.controller.repository is ActiveContextGateway && activeContextSupported (gate on the opener tile, session_context_screen.dart:382)"
+      ],
+      "elements": [
+        {
+          "id": "active-context-refresh",
+          "type": "icon-button",
+          "label": "Refresh active context",
+          "key": null,
+          "line": 157,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Calls _load(); disabled while _loading or !_sameLocation.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "active-context-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 173,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductErrorState.onRetry calls _load().",
+          "gates": [
+            "messages == null && _error != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "active-context-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": "active-context-list",
+          "line": 177,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "RefreshIndicator.onRefresh calls _load().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "active-context-search",
+          "type": "text-field",
+          "label": "Search active messages",
+          "key": "active-context-search",
+          "line": 207,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Sets _query (trimmed, lower-cased) to filter the visible messages.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "active-context-search-clear",
+          "type": "icon-button",
+          "label": "Clear search",
+          "key": null,
+          "line": 221,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Clears the _search controller and resets _query.",
+          "gates": [
+            "_query.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "active-context-filter-all",
+          "type": "chip",
+          "label": "All",
+          "key": null,
+          "line": 241,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Sets _type = null (no type filter).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "active-context-filter-type",
+          "type": "chip",
+          "label": "{type} · {count}",
+          "key": null,
+          "line": 254,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "One ChoiceChip per message type present; sets _type = entry.key.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "active-context-message-tile",
+          "type": "list-tile",
+          "label": "<message type label> / <preview text>",
+          "key": "active-context-<message.id>",
+          "line": 307,
+          "action": "navigate",
+          "target": "active-context-message",
+          "targetWidget": "_ContextMessageScreen",
+          "effect": "Pushes _ContextMessageScreen for the tapped active-context message.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "active-context-message",
+      "title": "<message type label> (User / Assistant / System / ...)",
+      "kind": "screen",
+      "file": "lib/ui/screens/active_context_screen.dart",
+      "widget": "_ContextMessageScreen",
+      "presentedBy": [],
+      "line": 347,
+      "purpose": "Shows the full content parts (text, reasoning, tool input/output, files, notices) of one active-context message.",
+      "reachedFrom": [
+        {
+          "page": "active-context",
+          "element": "active-context-message-tile"
+        }
+      ],
+      "gates": [
+        "body replaced by 'changed' notice when controller.locationRevision != location || controller.sessionHistoryRevision(sessionID) != history"
+      ],
+      "elements": [
+        {
+          "id": "active-context-message-copy-part",
+          "type": "icon-button",
+          "label": "Copy",
+          "key": null,
+          "line": 430,
+          "action": "copy",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Clipboard.setData with the part's text (one button per content part).",
+          "gates": [
+            "part.text.isNotEmpty"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "session-relations",
+      "title": "Subagent sessions",
+      "kind": "screen",
+      "file": "lib/ui/screens/session_relations_screen.dart",
+      "widget": "SessionRelationsScreen",
+      "presentedBy": [],
+      "line": 13,
+      "purpose": "Lists the parent session and its subagent (child) sessions; selecting one pops it back to the opener, which opens that session.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._showSubagents",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5707
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_open(result, related: true)",
+          "file": "lib/ui/screens/global_sessions_screen.dart",
+          "line": 419
+        }
+      ],
+      "gates": [
+        "_conn.capabilities.projectManagement (chat opener, chat_screen.dart:5704)"
+      ],
+      "elements": [
+        {
+          "id": "session-relations-refresh",
+          "type": "icon-button",
+          "label": "Refresh subagent sessions",
+          "key": null,
+          "line": 239,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Calls _load(): repository.getSessionDetails + listSessionChildren.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-relations-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 254,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductErrorState.onRetry calls _load().",
+          "gates": [
+            "_error != null && (parent == null || !_scope.matches(controller))"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-relations-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": null,
+          "line": 262,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "RefreshIndicator.onRefresh calls _load().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-relations-parent-tile",
+          "type": "list-tile",
+          "label": "<parent session title>",
+          "key": "session-relation-<session.id>",
+          "line": 273,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_select(parent): revalidates the session via repository.getSessionDetails then Navigator.pop(current) so the opener navigates to it; disabled when it is the current session or while _selecting.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-relations-child-tile",
+          "type": "list-tile",
+          "label": "<subagent session title>",
+          "key": "session-relation-<session.id>",
+          "line": 316,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_select(child): revalidates then pops the screen with the chosen Session; the opener (chat _openRelatedSession / global sessions) opens it.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-relations-tile-menu",
+          "type": "icon-button",
+          "label": "Session actions",
+          "key": null,
+          "line": 464,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Opens overflow menu (PopupMenuButton) on each relation tile; disabled while _selecting.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-relations-menu-handoff",
+          "type": "menu-item",
+          "label": "Copy handoff",
+          "key": null,
+          "line": 474,
+          "action": "open-dialog",
+          "target": "session-handoff-dialog",
+          "targetWidget": "showSessionHandoff",
+          "effect": "Calls showSessionHandoff(context, controller, sessionID, projectID) for that session (wired at lines 274/317).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-relations-menu-pin",
+          "type": "menu-item",
+          "label": "Pin session | Unpin session",
+          "key": null,
+          "line": 483,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_pin(session): revalidates then controller.setSessionPinned(id, !isSessionPinned(id), locationRevision).",
+          "gates": [
+            "widget.controller.canPinSessions"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "session-handoff-dialog",
+      "title": "Copy handoff reference? | Continue on computer",
+      "kind": "dialog",
+      "file": "lib/ui/widgets/session_handoff.dart",
+      "widget": "showSessionHandoff",
+      "presentedBy": [
+        "showSessionHandoff"
+      ],
+      "line": 85,
+      "purpose": "Previews the resume command (or a metadata reference when the repository cannot create one) and copies it to the clipboard on confirm.",
+      "reachedFrom": [
+        {
+          "page": "session-relations",
+          "element": "session-relations-menu-handoff"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_open(result, handoff: true)",
+          "file": "lib/ui/screens/global_sessions_screen.dart",
+          "line": 410
+        }
+      ],
+      "gates": [
+        "sessionID and projectID match ^[A-Za-z0-9_-]+$ (else product error)",
+        "command variant when repository is SessionCommandHandoffGateway"
+      ],
+      "elements": [
+        {
+          "id": "session-handoff-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 117,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, false).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-handoff-dialog-copy",
+          "type": "button",
+          "label": "Copy reference | Copy command",
+          "key": null,
+          "line": 121,
+          "action": "copy",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops true; showSessionHandoff revalidates session/location/command and Clipboard.setData(command ?? reference) (line 157), then shows a snackbar.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "session-export",
+      "title": "Export conversation",
+      "kind": "screen",
+      "file": "lib/ui/screens/session_export_screen.dart",
+      "widget": "SessionExportScreen",
+      "presentedBy": [],
+      "line": 19,
+      "purpose": "Exports the session as complete JSON (server export, optionally redacted) or a Markdown transcript and saves it to a file.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._exportTranscript",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5473
+        },
+        {
+          "page": "continue-on-computer-sheet",
+          "element": "continue-on-computer-sheet-export"
+        }
+      ],
+      "gates": [
+        "repository is SessionExportGateway && sessionExportSupported (chat_screen.dart:5469); otherwise chat saves Markdown directly via FilePicker"
+      ],
+      "elements": [
+        {
+          "id": "session-export-format-json",
+          "type": "list-tile",
+          "label": "Complete conversation · JSON",
+          "key": null,
+          "line": 240,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Selects JSON format (_json = true), clears error/saved state.",
+          "gates": [
+            "_supported",
+            "enabled: !_busy && _current"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-export-format-markdown",
+          "type": "list-tile",
+          "label": "Readable transcript · Markdown",
+          "key": null,
+          "line": 251,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Selects Markdown format (_json = false).",
+          "gates": [
+            "enabled: !_busy && _current"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-export-redact-switch",
+          "type": "toggle",
+          "label": "Redact sensitive data",
+          "key": null,
+          "line": 263,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Sets _sanitize (local, not persisted) passed as sanitize: to exportSession; shows an unredacted warning when off.",
+          "gates": [
+            "_json && _supported",
+            "disabled when _busy || !_current"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-export-save",
+          "type": "button",
+          "label": "Save file",
+          "key": null,
+          "line": 203,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_export(): for JSON calls SessionExportGateway.exportSession(sessionID, sanitize) with progress, else uses widget.markdown(); then saves via _saveFile (file save dialog).",
+          "gates": [
+            "_current && (!_json || _supported)",
+            "shown when !_busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-export-cancel-download",
+          "type": "button",
+          "label": "Cancel download",
+          "key": null,
+          "line": 198,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Cancels the in-flight export CancelToken.",
+          "gates": [
+            "_busy && !_saving"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "session-import",
+      "title": "Import conversation",
+      "kind": "screen",
+      "file": "lib/ui/screens/session_import_screen.dart",
+      "widget": "SessionImportScreen",
+      "presentedBy": [],
+      "line": 37,
+      "purpose": "Picks an exported session JSON file, reviews it, chooses a destination directory/workspace and imports it to the connected server.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_LibraryScreenState (library-import-session row)",
+          "file": "lib/ui/screens/library_screen.dart",
+          "line": 178
+        }
+      ],
+      "gates": [
+        "controller.capabilities.sessionImportExport && controller.repository is SessionImportGateway && sessionImportSupported (library_screen.dart:166)"
+      ],
+      "elements": [
+        {
+          "id": "session-import-choose-file",
+          "type": "button",
+          "label": "Choose JSON file | Choose another file",
+          "key": null,
+          "line": 458,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_pick(): opens the system file picker (json), reads and validates SessionImportDocument (size limit).",
+          "gates": [
+            "!_busy && _current && _supported"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-import-change-destination",
+          "type": "button",
+          "label": "Change destination",
+          "key": null,
+          "line": 520,
+          "action": "open-sheet",
+          "target": "session-import-destination-sheet",
+          "targetWidget": "_chooseDestination",
+          "effect": "_chooseDestination(): loads repository.listProjects() (+ listWorkspaces() when capabilities.managedWorkspaces) then opens the destination sheet.",
+          "gates": [
+            "_imported == null",
+            "!_busy && _current"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-import-submit",
+          "type": "button",
+          "label": "Import conversation",
+          "key": null,
+          "line": 430,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_import(): SessionImportGateway.importSession(document, destination), verifies the returned session, then controller.refreshSessions().",
+          "gates": [
+            "_current && _supported && document != null && _destination != null",
+            "shown when _imported == null && !_busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-import-open",
+          "type": "button",
+          "label": "Open conversation",
+          "key": null,
+          "line": 421,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/{sessionID}",
+          "effect": "_open(): controller.selectLocation(directory, workspace) then pushReplacementNamed('/chat/<session.id>') (line 376).",
+          "gates": [
+            "_imported != null",
+            "!_busy && _current"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "session-import-destination-sheet",
+      "title": "Import into",
+      "kind": "sheet",
+      "file": "lib/ui/screens/session_import_screen.dart",
+      "widget": "_chooseDestination",
+      "presentedBy": [],
+      "line": 248,
+      "purpose": "Lists project directories, worktrees and managed workspaces as import destinations.",
+      "reachedFrom": [
+        {
+          "page": "session-import",
+          "element": "session-import-change-destination"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "session-import-destination-sheet-choice",
+          "type": "list-tile",
+          "label": "<project or workspace name> / <directory>",
+          "key": null,
+          "line": 275,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, choice.destination); the screen stores it as _destination.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "session-note",
+      "title": "Note for the agent",
+      "kind": "screen",
+      "file": "lib/ui/screens/session_note_screen.dart",
+      "widget": "SessionNoteScreen",
+      "presentedBy": [],
+      "line": 13,
+      "purpose": "Edits, saves or removes the per-session note that is given to the agent.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._openSessionMenu (case 'note')",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5570
+        }
+      ],
+      "gates": [
+        "_conn.locationRevision == menuLocation at open (chat_screen.dart:5564)"
+      ],
+      "elements": [
+        {
+          "id": "session-note-editor",
+          "type": "text-field",
+          "label": "Note for the agent",
+          "key": "session-note-editor",
+          "line": 258,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Edits the note draft; onChanged rebuilds byte counter; readOnly while saving or not current.",
+          "gates": [
+            "_review != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-note-save",
+          "type": "button",
+          "label": "Save note",
+          "key": "save-session-note",
+          "line": 283,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_save(): controller.saveSessionNote(review, text) then leaves the screen.",
+          "gates": [
+            "enabled && _dirty && text non-empty && bytes <= _maxBytes"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-note-remove",
+          "type": "button",
+          "label": "Remove saved note",
+          "key": "remove-session-note",
+          "line": 303,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_save(remove: true): controller.saveSessionNote(review, null) then leaves.",
+          "gates": [
+            "_review!.value != null"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "session-note-refresh",
+          "type": "button",
+          "label": "Refresh saved note",
+          "key": null,
+          "line": 314,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load(): controller.loadSessionNote(sessionID), keeping the draft.",
+          "gates": [
+            "_sameLocation && !loading && !saving && (_error != null || !current)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-note-back",
+          "type": "gesture",
+          "label": "[back with unsaved changes]",
+          "key": null,
+          "line": 212,
+          "action": "open-dialog",
+          "target": "session-note-discard-dialog",
+          "targetWidget": "_confirmLeave",
+          "effect": "PopScope.onPopInvokedWithResult calls _confirmLeave() when the pop was blocked (dirty draft).",
+          "gates": [
+            "!(_allowLeave || (!saving && !_dirty))"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "session-note-discard-dialog",
+      "title": "Discard your note changes?",
+      "kind": "dialog",
+      "file": "lib/ui/screens/session_note_screen.dart",
+      "widget": "_confirmLeave",
+      "presentedBy": [],
+      "line": 112,
+      "purpose": "Confirms discarding unsaved note edits when leaving.",
+      "reachedFrom": [
+        {
+          "page": "session-note",
+          "element": "session-note-back"
+        }
+      ],
+      "gates": [
+        "!_savingForScope"
+      ],
+      "elements": [
+        {
+          "id": "session-note-discard-dialog-keep",
+          "type": "button",
+          "label": "Keep editing",
+          "key": null,
+          "line": 118,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, false).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-note-discard-dialog-discard",
+          "type": "button",
+          "label": "Discard changes",
+          "key": null,
+          "line": 122,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops true; _leave() then pops the note screen, dropping the draft.",
+          "gates": [],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "context-capsule",
+      "title": "Context capsule",
+      "kind": "screen",
+      "file": "lib/ui/screens/context_capsule_screen.dart",
+      "widget": "ContextCapsuleScreen",
+      "presentedBy": [],
+      "line": 10,
+      "purpose": "Builds a bundle of labelled text excerpts and images that is applied to the chat prompt draft.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._addContextCapsule",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 2968
+        }
+      ],
+      "gates": [
+        "!(_conn.isIsolated || _sending || _promptShelfBusy || _voiceConversation) (chat_screen.dart:2921)",
+        "controls hidden when _invalid (scope changed)"
+      ],
+      "elements": [
+        {
+          "id": "context-capsule-add-excerpt",
+          "type": "button",
+          "label": "Note | Error | Code",
+          "key": null,
+          "line": 201,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_add(label): appends an excerpt card pre-labelled with the chosen kind (max 8); three buttons from one loop.",
+          "gates": [
+            "!_invalid",
+            "disabled when _busy || _excerpts.length >= 8"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "context-capsule-excerpt-label",
+          "type": "text-field",
+          "label": "Label",
+          "key": null,
+          "line": 218,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Edits the excerpt label (max 80 chars).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "context-capsule-excerpt-text",
+          "type": "text-field",
+          "label": "Excerpt",
+          "key": null,
+          "line": 228,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Edits the excerpt body (max 16000 chars); onChanged rebuilds to enable Apply.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "context-capsule-excerpt-paste",
+          "type": "button",
+          "label": "Paste",
+          "key": null,
+          "line": 246,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_paste(excerpt): reads Clipboard.getData (line 97) and inserts at the selection, enforcing the 16000 limit.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "context-capsule-excerpt-remove",
+          "type": "button",
+          "label": "Remove",
+          "key": null,
+          "line": 251,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Removes the excerpt from _excerpts and disposes its controllers.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "context-capsule-add-image",
+          "type": "button",
+          "label": "Add screenshot or image",
+          "key": null,
+          "line": 268,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_pick(): calls widget.pickImage (chat's _chooseAttachment) and adds an image/* attachment.",
+          "gates": [
+            "widget.pickImage != null (chat _supportsPromptAttachments)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "context-capsule-image-tile",
+          "type": "list-tile",
+          "label": "<image filename> / Tap to preview",
+          "key": null,
+          "line": 283,
+          "action": "open-sheet",
+          "target": "file-preview-sheet",
+          "targetWidget": "showFilePreviewSheet",
+          "effect": "showFilePreviewSheet(context, FilePreviewData.fromDataUrl(...)).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "context-capsule-image-remove",
+          "type": "button",
+          "label": "Remove",
+          "key": null,
+          "line": 295,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Removes the image from _images.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "context-capsule-apply",
+          "type": "button",
+          "label": "Apply to draft",
+          "key": null,
+          "line": 319,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_apply(): composes the capsule text and Navigator.pop(ContextCapsule(text, images)) (line 160); chat merges it into the draft.",
+          "gates": [
+            "!_busy && hasContent",
+            "!_invalid"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "context-capsule-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 325,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop() without a result.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "run-result",
+      "title": "Run results",
+      "kind": "screen",
+      "file": "lib/ui/screens/run_result_screen.dart",
+      "widget": "RunResultScreen",
+      "presentedBy": [],
+      "line": 17,
+      "purpose": "Shows the outcome, changed files and commands of the latest run of a session, rebuilt from server history.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ActivityScreenState (digest onRunResults)",
+          "file": "lib/ui/screens/activity_screen.dart",
+          "line": 253
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ReturnBriefPanelState._review",
+          "file": "lib/ui/widgets/return_brief_panel.dart",
+          "line": 92
+        }
+      ],
+      "gates": [
+        "body replaced by scope-changed notice when !_current (profile/connection/location/directory/workspace changed)"
+      ],
+      "elements": [
+        {
+          "id": "run-result-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": null,
+          "line": 215,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "RefreshIndicator.onRefresh calls _load() (loadRunHistory via controller.prepareActionTransport()).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "run-result-error-retry",
+          "type": "button",
+          "label": "Retry",
+          "key": null,
+          "line": 183,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Calls _load() after a failed first load.",
+          "gates": [
+            "_error != null && !_loaded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "run-result-banner-retry",
+          "type": "button",
+          "label": "Retry",
+          "key": null,
+          "line": 223,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "MaterialBanner (key run-result-refresh-error) action calls _load() after a failed refresh.",
+          "gates": [
+            "_error != null && _loaded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "run-result-file-row",
+          "type": "list-tile",
+          "label": "<changed file path> / Edited|Written|Patched",
+          "key": "run-result-file-<path>",
+          "file": "lib/ui/widgets/run_result_view.dart",
+          "line": 305,
+          "action": "open-sheet",
+          "target": "run-result-output-sheet",
+          "targetWidget": "_openOutput",
+          "effect": "RunResultView._openOutput(toolName, state) opens the recorded tool output sheet; disabled when file.state.pruned.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "run-result-command-row",
+          "type": "list-tile",
+          "label": "<command> / exit code caption",
+          "key": "run-result-command-<partID|command>",
+          "file": "lib/ui/widgets/run_result_view.dart",
+          "line": 346,
+          "action": "open-sheet",
+          "target": "run-result-output-sheet",
+          "targetWidget": "_openOutput",
+          "effect": "RunResultView._openOutput(command.toolName, command.state); disabled when command.outputPruned.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "run-result-open-conversation",
+          "type": "button",
+          "label": "Open conversation",
+          "key": "run-result-open-conversation",
+          "file": "lib/ui/widgets/run_result_view.dart",
+          "line": 117,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/{sessionID}",
+          "effect": "onOpenConversation -> _openConversation() (run_result_screen.dart:140): Navigator.pushNamed('/chat/<sessionID>') when _current.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "run-result-output-sheet",
+      "title": "Recorded tool output",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/run_result_view.dart",
+      "widget": "_openOutput",
+      "presentedBy": [],
+      "line": 360,
+      "purpose": "Draggable sheet rendering the recorded tool call with the transcript's ToolCard.",
+      "reachedFrom": [
+        {
+          "page": "run-result",
+          "element": "run-result-file-row"
+        },
+        {
+          "page": "run-result",
+          "element": "run-result-command-row"
+        }
+      ],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "continue-on-computer-sheet",
+      "title": "Continue on computer",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/session_handoff_sheets.dart",
+      "widget": "ContinueOnComputerSheet",
+      "presentedBy": [],
+      "line": 25,
+      "purpose": "Shows the terminal command that resumes this session on the server's computer, with a hint to export for another server.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._continueOnComputer",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5650
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "continue-on-computer-sheet-command-copy",
+          "type": "icon-button",
+          "label": "[copy command, inside AgentCommandBlock]",
+          "key": null,
+          "file": "lib/ui/widgets/agent_blocks.dart",
+          "line": 70,
+          "action": "copy",
+          "target": null,
+          "targetWidget": null,
+          "effect": "AgentCommandBlock(commands: [text]) from lib/ui/widgets/agent_blocks.dart owns the copy button (clipboard write only); line is the embed site in session_handoff_sheets.dart.",
+          "gates": [
+            "command.command != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "continue-on-computer-sheet-export",
+          "type": "button",
+          "label": "Export session",
+          "key": "continue-on-computer-export",
+          "line": 115,
+          "action": "navigate",
+          "target": "session-export",
+          "targetWidget": "SessionExportScreen",
+          "effect": "Navigator.pop(context, 'export'); chat's _continueOnComputer then calls _exportTranscript() which pushes SessionExportScreen.",
+          "gates": [
+            "exportAvailable: _conn.capabilities.sessionImportExport && repository is SessionExportGateway && sessionExportSupported"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "continue-on-phone-sheet",
+      "title": "Open on another phone",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/session_handoff_sheets.dart",
+      "widget": "ContinueOnPhoneSheet",
+      "presentedBy": [],
+      "line": 132,
+      "purpose": "Shows a QR code and the opencode-mobile://session link that opens this session in the app on another phone.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._continueOnPhone",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5676
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "continue-on-phone-sheet-copy-link",
+          "type": "icon-button",
+          "label": "Copy link",
+          "key": "continue-on-phone-copy",
+          "line": 230,
+          "action": "copy",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_copy(): Clipboard.setData(link) (line 140) and shows a 'link copied' snackbar.",
+          "gates": [
+            "link != null"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "info-label-sheet",
+      "title": "<glossary term> (MCP, Worktree, Provider, Context, Agent, Reasoning, Permission, Variant)",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/info_label.dart",
+      "widget": "InfoLabel.show",
+      "presentedBy": [
+        "InfoLabel.show"
+      ],
+      "line": 150,
+      "purpose": "Short plain-language explanation of a glossary term.",
+      "reachedFrom": [
+        {
+          "page": "embedded-info-label",
+          "element": "embedded-info-label-term"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "InfoLabel.show call (Glossary.mcp)",
+          "file": "lib/ui/screens/mcp_setup_screen.dart",
+          "line": 274
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "info-label-sheet-got-it",
+          "type": "button",
+          "label": "Got it",
+          "key": null,
+          "line": 174,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.of(context).pop().",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-info-label",
+      "title": "[Info label: term with info glyph]",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/info_label.dart",
+      "widget": "InfoLabel",
+      "presentedBy": [],
+      "line": 110,
+      "embeddedIn": [
+        "lib/ui/screens/worktrees_screen.dart:623 (Glossary.worktree)",
+        "lib/ui/screens/library/integrations_screen.dart:896 (Glossary.mcp)",
+        "lib/ui/screens/chat/message_view.dart:2233 (Glossary.reasoning)"
+      ],
+      "purpose": "Inline term + info icon; tapping opens the explanation sheet.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": [
+        {
+          "id": "embedded-info-label-term",
+          "type": "link",
+          "label": "<term> [info icon] (semantics: '{term}. Tap for an explanation.')",
+          "key": null,
+          "file": "lib/ui/widgets/info_label.dart",
+          "line": 208,
+          "action": "open-sheet",
+          "target": "info-label-sheet",
+          "targetWidget": "InfoLabel.show",
+          "effect": "InkWell.onTap (and Semantics.onTap line 205) calls InfoLabel.show(context, term, explanation).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    }
+  ],
+  "notPages": [
+    {
+      "file": "lib/ui/widgets/technical_direction.dart",
+      "reason": "Directionality(ltr) wrapper only; no surface and no interactive element"
+    },
+    {
+      "file": "lib/ui/widgets/agent_color.dart",
+      "reason": "colour helper functions and AgentColorScope InheritedWidget; no interactive element"
+    },
+    {
+      "file": "lib/ui/widgets/provider_logo.dart",
+      "reason": "ProviderLogo / ProviderMonogram / BrandTile pure rendering; no tap handlers or tooltips"
+    },
+    {
+      "file": "lib/ui/widgets/relative_time.dart",
+      "reason": "relativeTimeLabel() string formatter; no widget"
+    }
+  ],
+  "notes": [
+    "Chat openers are private methods of _ChatScreenState (lib/ui/screens/chat_screen.dart): _showContext:5690, _showSubagents:5703, _exportTranscript:5467, _openSessionMenu case 'note':5563, _addContextCapsule:2920, _continueOnComputer:5628, _continueOnPhone:5664; the menu elements that call them belong to the chat agent.",
+    "continue-on-computer-sheet: the copy button is inside AgentCommandBlock (lib/ui/widgets/agent_blocks.dart, not assigned to me); recorded as one element with file pointing there, line is the embed site session_handoff_sheets.dart:70.",
+    "session-relations tiles pop the screen with the selected Session; actual navigation happens in the opener (chat _openRelatedSession chat_screen.dart:5714, global_sessions_screen.dart:419 onward).",
+    "embedded-info-label embeddedIn lists host files/lines rather than class names; host widget classes not resolved (worktrees_screen.dart:623, library/integrations_screen.dart:896, chat/message_view.dart:2233). chat_screen.dart:53 and library_screen.dart:23 import info_label.dart but do not use InfoLabel.",
+    "Glossary entries provider/context/agent/permission/variant have no InfoLabel usage in lib/ (only mcp, worktree, reasoning are used).",
+    "session_handoff.dart also defines SessionNavigationScope (non-UI guard). showSessionHandoff error paths use showProductError (no page).",
+    "session_relations_screen.dart:498 _relativeTime uses hard-coded English strings ('Now', 'm ago') rather than relative_time.dart."
+  ]
+}

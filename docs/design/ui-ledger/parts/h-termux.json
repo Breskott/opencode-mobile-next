@@ -1,0 +1,2468 @@
+{
+  "area": "h-termux",
+  "pages": [
+    {
+      "id": "termux-setup",
+      "title": "On-device setup",
+      "kind": "screen",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "TermuxSetupScreen",
+      "presentedBy": [],
+      "line": 23,
+      "purpose": "Parent of the on-device (Termux) setup wizard: app bar plus the controls shared by several steps (connect an existing server, runtime switch, setup log copy). The screen has no app-bar actions or overflow menu; build() picks one of four Scaffolds by state (unsupported card, install progress, installed-runtime view, 3-step wizard list).",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ServersScreen._openTermuxSetup",
+          "file": "lib/ui/screens/servers_screen.dart",
+          "line": 98
+        },
+        {
+          "page": "embedded-managed-server-health",
+          "element": "embedded-managed-server-health-manage"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ServerSettingsScreen (serverUpdateAction, managedLocally)",
+          "file": "lib/ui/screens/settings/server_settings_screen.dart",
+          "line": 158
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "TeamPhoneSection._openSetup",
+          "file": "lib/ui/widgets/team_phone_section.dart",
+          "line": 268
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "TeamPhoneReofferCard._setUp",
+          "file": "lib/ui/widgets/team_phone_section.dart",
+          "line": 590
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "SavedServerConnectionCard.onOpenTermuxSetup (built in main.dart)",
+          "file": "lib/main.dart",
+          "line": 1416
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "LibraryScreen (_DestinationRow \"phone tools\")",
+          "file": "lib/ui/screens/library_screen.dart",
+          "line": 85
+        },
+        {
+          "page": "termux-processes",
+          "element": "termux-processes-row-protected"
+        },
+        {
+          "page": "termux-processes-details-sheet",
+          "element": "termux-processes-details-sheet-server-controls"
+        }
+      ],
+      "gates": [
+        "named route `/termux-setup` is registered only `if (platformCapabilities.supportsTermux)` (lib/main.dart:1242-1243)",
+        "LibraryScreen and TermuxProcessesScreen push `TermuxSetupScreen` directly via MaterialPageRoute (library entry itself gated by `platformCapabilities.supportsTermux`)",
+        "initState schedules `_refresh()`; app resume re-runs `_refresh()` (or `_verifyAfterTermuxReturn()` after a Termux round trip)"
+      ],
+      "states": {
+        "_Phase.checking": "initial; wizard view, all steps idle, step 3 shows \"Checking Termux...\"",
+        "_Phase.needTermux": "`!capabilities.installed`",
+        "_Phase.needUnlock": "`!capabilities.permissionGranted`, or `TermuxBridge.verifyBridge()` threw, or install threw permission_denied",
+        "_Phase.ready": "bridge verified and setup snapshot neither running, failed nor ready (or ready without a saved credential)",
+        "_Phase.installing": "install / update / restart / start-existing / runtime switch in progress (own Scaffold)",
+        "_Phase.connected": "manager snapshot `isReady` with a saved local profile",
+        "_Phase.failed": "snapshot failed, switch pending, bridge/protocol unsupported, or monitoring lost"
+      },
+      "elements": [
+        {
+          "id": "termux-setup-back",
+          "type": "icon-button",
+          "label": "[AppBar back button]",
+          "key": null,
+          "line": 1641,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Implicit AppBar leading back button (same AppBar in all four Scaffolds: lines 1566, 1619, 1641, 2119); pops the route. No PopScope: leaving during install is allowed, the Termux setup keeps running and is re-read by `_refresh()` on return.",
+          "gates": [
+            "shown when the route can pop"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-connect-existing",
+          "type": "button",
+          "label": "Connect existing server",
+          "key": null,
+          "line": 2555,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "`Navigator.pushNamed('/servers')` from `_existingServerChoice()` (\"Use your own setup\").",
+          "gates": [
+            "shown at the top of the wizard view (line 1679), in the unsupported card (line 1607), and inside the \"Setup help\" expansion of the installed view (line 2285); not shown in the installing view",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-switch-retry",
+          "type": "button",
+          "label": "Retry {runtime}",
+          "key": null,
+          "line": 508,
+          "action": "open-sheet",
+          "target": "termux-setup-switch-runtime-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirmRuntimeSwitch(status.switchTarget!)`: opens the switch confirm sheet, then re-runs the runtime switch.",
+          "gates": [
+            "`_runtimeSwitchChoices()` is shown in the wizard view when `_knownRuntime != null || _status?.switchPending == true` (line 1655) and always in the installed view (line 2200)",
+            "this button only when `_status?.switchPending == true`",
+            "disabled while `_busy || _connecting`",
+            "callback no-ops when `_status?.isRunning == true`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-switch-return-previous",
+          "type": "button",
+          "label": "Return to {runtime}",
+          "key": null,
+          "line": 517,
+          "action": "open-sheet",
+          "target": "termux-setup-switch-runtime-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirmRuntimeSwitch(status.switchPrevious!)`: confirm, then switch back to the previous runtime.",
+          "gates": [
+            "`_status?.switchPending == true` and `status.switchTarget != status.switchPrevious`",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-switch-runtime",
+          "type": "button",
+          "label": "Try {runtime} | Return to {runtime}",
+          "key": "switch-managed-runtime",
+          "line": 532,
+          "action": "open-sheet",
+          "target": "termux-setup-switch-runtime-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirmRuntimeSwitch(target)` where target is the other runtime (OpenCode 2 beta when on OpenCode 1, else OpenCode 1). Label is \"Try OpenCode 2 beta\" when target is OC2, \"Return to OpenCode 1\" when target is OC1.",
+          "gates": [
+            "not switchPending, and `_runtime == TermuxRuntime.openCode1 || status?.switchReturnAvailable == true`; otherwise the static text \"This OpenCode 2 installation keeps its existing data. Switching it to OpenCode 1 is not available.\" is shown",
+            "disabled while `_busy || _connecting`",
+            "callback no-ops when `_status?.isRunning == true`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-terminal-copy-failure-report",
+          "type": "icon-button",
+          "label": "Copy failure report",
+          "key": null,
+          "file": "lib/ui/widgets/setup_terminal.dart",
+          "line": 135,
+          "action": "copy",
+          "target": null,
+          "effect": "SetupTerminal copy button with `onCopy: _copyFailureReport`: gathers `TermuxBridge.diagnostics()`, the last launcher result and the raw `_error`, puts them on the clipboard and shows snackbar \"Failure report copied.\"",
+          "gates": [
+            "SetupTerminal (running: false, header \"LAST OUTPUT\") is shown only when `_phase == _Phase.failed`: wizard step 3 (line 2041) and installed view (line 2270)"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-setup-unsupported",
+      "title": "On-device setup is Android only",
+      "kind": "onboarding-step",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "TermuxSetupScreen",
+      "presentedBy": [],
+      "line": 1564,
+      "purpose": "Plain card shown when the screen is reached on a platform without Termux support: explains setup is Android only and offers only the shared \"Connect existing server\" button.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "deep link / restored route / direct push on a non-Termux platform; build() branch `!platformCapabilities.supportsTermux`"
+        }
+      ],
+      "gates": [
+        "`!platformCapabilities.supportsTermux`"
+      ],
+      "key": "termux-setup-unsupported",
+      "sharedElements": [
+        "termux-setup-back",
+        "termux-setup-connect-existing"
+      ],
+      "elements": []
+    },
+    {
+      "id": "termux-setup-checking",
+      "title": "[Checking Termux]",
+      "kind": "onboarding-step",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "TermuxSetupScreen",
+      "presentedBy": [],
+      "line": 1883,
+      "purpose": "Initial wizard state while `_refresh()` inspects Termux: steps 1-2 idle, step 3 locked (\"Not yet\") with a \"Checking Termux...\" progress line; no controls of its own.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "initial state on open (`_phase = _Phase.checking`)"
+        }
+      ],
+      "gates": [
+        "wizard view: `platformCapabilities.supportsTermux` and `_phase != _Phase.installing` and NOT (`_knownRuntime != null && (_installation?.openCodeVersion != null || _status?.version.isNotEmpty == true || _status?.switchPending == true) && {ready, connected, failed}.contains(_phase)`)",
+        "`_phase == _Phase.checking`"
+      ],
+      "sharedElements": [
+        "termux-setup-back",
+        "termux-setup-connect-existing"
+      ],
+      "elements": []
+    },
+    {
+      "id": "termux-setup-get-termux",
+      "title": "Get Termux",
+      "kind": "onboarding-step",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "TermuxSetupScreen",
+      "presentedBy": [],
+      "line": 1684,
+      "purpose": "Wizard step 1 body: Termux is not installed, so the user is sent to the F-Droid download page and can re-check.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "automatic: `_refresh()` found `!capabilities.installed` -> `_phase = _Phase.needTermux`"
+        }
+      ],
+      "gates": [
+        "wizard view: `platformCapabilities.supportsTermux` and `_phase != _Phase.installing` and NOT (`_knownRuntime != null && (_installation?.openCodeVersion != null || _status?.version.isNotEmpty == true || _status?.switchPending == true) && {ready, connected, failed}.contains(_phase)`)",
+        "`_phase == _Phase.needTermux` (steps 2 and 3 render disabled with \"Not yet\")"
+      ],
+      "sharedElements": [
+        "termux-setup-back",
+        "termux-setup-connect-existing"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-get-termux-download",
+          "type": "button",
+          "label": "Download page",
+          "key": null,
+          "line": 1707,
+          "action": "external-link",
+          "target": null,
+          "effect": "`_getTermux()`: `launchUrl(https://f-droid.org/en/packages/com.termux/, LaunchMode.externalApplication)`.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-get-termux-check-again",
+          "type": "button",
+          "label": "Check again",
+          "key": null,
+          "line": 1716,
+          "action": "other",
+          "target": null,
+          "effect": "`_refresh()`: re-reads `TermuxBridge.capabilities()` and advances `_phase` (also runs automatically on app resume).",
+          "gates": [
+            "always enabled; `_refresh()` itself no-ops while `_refreshing || _launching || _busy || _connecting`"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-setup-connect-termux",
+      "title": "Connect Termux once",
+      "kind": "onboarding-step",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "TermuxSetupScreen",
+      "presentedBy": [],
+      "line": 1731,
+      "purpose": "Wizard step 2 body: grant the Termux RUN_COMMAND permission and unlock the bridge by pasting a copied command into Termux, with an illustrated 3-step paste guide and automatic verification on return.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "automatic: `!capabilities.permissionGranted`, `verifyBridge()` failure, or install failing with `permission_denied` -> `_phase = _Phase.needUnlock`"
+        },
+        {
+          "page": "termux-setup-get-termux",
+          "element": "termux-setup-get-termux-check-again"
+        }
+      ],
+      "gates": [
+        "wizard view: `platformCapabilities.supportsTermux` and `_phase != _Phase.installing` and NOT (`_knownRuntime != null && (_installation?.openCodeVersion != null || _status?.version.isNotEmpty == true || _status?.switchPending == true) && {ready, connected, failed}.contains(_phase)`)",
+        "`_phase == _Phase.needUnlock` (step 3 renders disabled with \"Not yet\")",
+        "error text (live region) shown when `_error != null`"
+      ],
+      "sharedElements": [
+        "termux-setup-back",
+        "termux-setup-connect-existing"
+      ],
+      "nonInteractive": [
+        "_TermuxPasteGuide (line 2856): three illustrated cards \"1. Copy & open\", \"2. Press and hold, then Paste\", \"3. Enter, then return\"; illustrations are ExcludeSemantics and not tappable"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-connect-termux-copy-open",
+          "type": "button",
+          "label": "Copy & open Termux (busy: \"Opening Termux...\")",
+          "key": "termux-copy-open",
+          "line": 1810,
+          "action": "external-link",
+          "target": null,
+          "effect": "`_openTermuxAndCopy()`: requests the Termux permission (`TermuxBridge.requestPermission()`), copies `TermuxBridge.unlockCommand` to the clipboard, then `TermuxBridge.openTermux()`; on return to the app `_verifyAfterTermuxReturn()` runs automatically. Rendered as the primary FilledButton before the round trip (line 1810) and as a secondary OutlinedButton after it (line 1795).",
+          "gates": [
+            "primary (filled) when `!_returnedFromTermux`; secondary (outlined) when `_returnedFromTermux`",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-connect-termux-verify",
+          "type": "button",
+          "label": "Verify & continue (busy: \"Verifying...\")",
+          "key": "termux-verify-unlock",
+          "line": 1824,
+          "action": "other",
+          "target": null,
+          "effect": "`_verifyUnlock()`: requests permission, `TermuxBridge.verifyBridge()`, `_refreshStatus()` then `_checkInstallation()`; on failure stays on this step with `_error`. Rendered as secondary OutlinedButton before the round trip (line 1824) and as the primary FilledButton with spinner after it (line 1772).",
+          "gates": [
+            "primary (filled) when `_returnedFromTermux`; secondary (outlined) otherwise",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-connect-termux-app-settings",
+          "type": "button",
+          "label": "App settings",
+          "key": null,
+          "line": 1840,
+          "action": "external-link",
+          "target": null,
+          "effect": "`TermuxBridge.openAppSettings` opens this app's Android settings page (to allow the denied Termux command permission).",
+          "gates": [
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-connect-termux-show-command",
+          "type": "list-tile",
+          "label": "Show command",
+          "key": null,
+          "line": 1856,
+          "action": "other",
+          "target": null,
+          "effect": "ExpansionTile; expands `CmdPreview`, a SelectableText of `TermuxBridge.unlockCommand` (line 3064).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-setup-choose",
+      "title": "Choose how to continue",
+      "kind": "onboarding-step",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "TermuxSetupScreen",
+      "presentedBy": [],
+      "line": 1866,
+      "purpose": "Wizard step 3 in the ready state: shows what was found in Termux, lets the user pick OpenCode 1 or OpenCode 2 beta (fresh phones only) and start the managed Ubuntu install.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "automatic: bridge verified and snapshot idle/stopped -> `_phase = _Phase.ready` (`_refreshStatus`), also after `_stopServer()` when no installation remains known"
+        },
+        {
+          "page": "termux-setup-connect-termux",
+          "element": "termux-setup-connect-termux-verify"
+        }
+      ],
+      "gates": [
+        "wizard view: `platformCapabilities.supportsTermux` and `_phase != _Phase.installing` and NOT (`_knownRuntime != null && (_installation?.openCodeVersion != null || _status?.version.isNotEmpty == true || _status?.switchPending == true) && {ready, connected, failed}.contains(_phase)`)",
+        "`_phase == _Phase.ready`",
+        "optional `_error` text above the choices"
+      ],
+      "sharedElements": [
+        "termux-setup-back",
+        "termux-setup-connect-existing",
+        "termux-setup-switch-runtime (only when `_knownRuntime != null`)"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-choose-check-install-again",
+          "type": "button",
+          "label": "Check again",
+          "key": null,
+          "line": 2374,
+          "action": "other",
+          "target": null,
+          "effect": "`_checkInstallation()`: re-runs `TermuxBridge.inspectInstallation()`.",
+          "gates": [
+            "`_installationError != null` and not `_checkingInstallation` (while checking a \"Checking installed environment...\" progress line is shown instead)",
+            "disabled while `_busy || _connecting`",
+            "hidden when `_status?.switchPending == true` (whole `_setupChoices()` collapses)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-choose-start-installed",
+          "type": "button",
+          "label": "Start installed OpenCode",
+          "key": null,
+          "line": 2402,
+          "action": "open-sheet",
+          "target": "termux-setup-start-installed-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_startInstalled()`: confirm sheet, then `_restartServer(profile, startExisting: true)`.",
+          "gates": [
+            "`installed.openCodeVersion != null && _localProfile() != null`",
+            "effectively unreachable: a non-null `_installation.openCodeVersion` makes `_knownRuntime` non-null, which switches build() to the installed view (see notes)",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-choose-runtime",
+          "type": "toggle",
+          "label": "Which OpenCode would you like to use? [OpenCode 1 | OpenCode 2 beta]",
+          "key": "setup-runtime-opencode1 / setup-runtime-opencode2",
+          "line": 2425,
+          "action": "other",
+          "target": null,
+          "effect": "RadioGroup<TermuxRuntime> with two RadioListTiles; `setState(() => _selectedRuntime = value)` (local only, used by the next install).",
+          "gates": [
+            "`installed != null && installed.openCodeVersion == null && _knownRuntime == null` (nothing installed or selected yet)",
+            "ignored while `_busy || _connecting || _checkingInstallation`; tiles disabled while `_busy || _checkingInstallation`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-choose-install-start",
+          "type": "button",
+          "label": "Install & start",
+          "key": null,
+          "line": 2490,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_reviewInstallChoice()`: when `_installation == null` (check failed) first opens the unchecked-install confirm sheet, otherwise goes straight to `_installAndStart()` which saves a local ServerProfile with a generated password, runs `TermuxBridge.installAndServeScript(...)` and moves to the installing view.",
+          "gates": [
+            "`installed?.openCodeVersion == null`",
+            "disabled while `_busy || _checkingInstallation`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-choose-reinstall-start",
+          "type": "button",
+          "label": "Reinstall & start | Install {version} & start",
+          "key": null,
+          "line": 2474,
+          "action": "open-sheet",
+          "target": "termux-setup-replace-installed-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_reviewInstallChoice()` -> replace-installed confirm sheet -> `_installAndStart()`. Label is \"Reinstall & start\" when the installed version equals `_runtime.pinnedVersion`.",
+          "gates": [
+            "`installed?.openCodeVersion != null`",
+            "effectively unreachable: a non-null `_installation.openCodeVersion` makes `_knownRuntime` non-null, which switches build() to the installed view (see notes)",
+            "disabled while `_busy || _checkingInstallation`"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-setup-installing",
+      "title": "[Setup progress: Preparing setup / Setting up Ubuntu / Installing OpenCode / Getting models ready / Starting local server / Restarting local server / Switching to {runtime}]",
+      "kind": "onboarding-step",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "_buildSetupProgress",
+      "presentedBy": [],
+      "line": 2570,
+      "purpose": "Full-screen progress view for install, update, restart, start-existing and runtime switch: stage title, status message, elapsed time, hint and the live Termux output log. There is no cancel button; leaving the screen does not stop setup.",
+      "reachedFrom": [
+        {
+          "page": "termux-setup-choose",
+          "element": "termux-setup-choose-install-start"
+        },
+        {
+          "page": "termux-setup-unchecked-install-sheet",
+          "element": "termux-setup-unchecked-install-sheet-confirm"
+        },
+        {
+          "page": "termux-setup-replace-installed-sheet",
+          "element": "termux-setup-replace-installed-sheet-confirm"
+        },
+        {
+          "page": "termux-setup-update-sheet",
+          "element": "termux-setup-update-sheet-confirm"
+        },
+        {
+          "page": "termux-setup-restart-sheet",
+          "element": "termux-setup-restart-sheet-confirm"
+        },
+        {
+          "page": "termux-setup-start-installed-sheet",
+          "element": "termux-setup-start-installed-sheet-confirm"
+        },
+        {
+          "page": "termux-setup-switch-runtime-sheet",
+          "element": "termux-setup-switch-runtime-sheet-confirm"
+        },
+        {
+          "page": "termux-setup-failed",
+          "element": "termux-setup-failed-retry"
+        },
+        {
+          "page": "termux-setup-failed",
+          "element": "termux-setup-failed-resume-live"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "automatic: on open/resume `_refreshStatus()` finds `status.isRunning` (setup still running in Termux) -> `_phase = _Phase.installing`"
+        }
+      ],
+      "gates": [
+        "`platformCapabilities.supportsTermux`",
+        "`_phase == _Phase.installing` (checked before the installed/wizard branches, line 1617)"
+      ],
+      "sharedElements": [
+        "termux-setup-back"
+      ],
+      "nonInteractive": [
+        "log is a SelectableText; SetupTerminal key `setup-live-output`; polling every 1s via `_startPolling()`"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-installing-copy-output",
+          "type": "icon-button",
+          "label": "Copy output",
+          "key": null,
+          "file": "lib/ui/widgets/setup_terminal.dart",
+          "line": 135,
+          "action": "copy",
+          "target": null,
+          "effect": "SetupTerminal copy button with `onCopy: _copySetupOutput`: copies `_setupOutput` and shows snackbar \"Setup output copied.\"",
+          "gates": [
+            "disabled (`onCopy == null`) while `_setupOutput.isEmpty`"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-setup-connected",
+      "title": "[OpenCode is running on this phone]",
+      "kind": "onboarding-step",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "TermuxSetupScreen",
+      "presentedBy": [],
+      "line": 1908,
+      "purpose": "Wizard step 3 in the connected state (server ready but no installed version known, so the installed view is not used): continue to the app or restart, update or stop the managed local server.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "automatic: snapshot `isReady` with a saved profile -> `_phase = _Phase.connected` (after `_finishConnect` / `_finishRestart`, or when found already running)"
+        }
+      ],
+      "gates": [
+        "wizard view: `platformCapabilities.supportsTermux` and `_phase != _Phase.installing` and NOT (`_knownRuntime != null && (_installation?.openCodeVersion != null || _status?.version.isNotEmpty == true || _status?.switchPending == true) && {ready, connected, failed}.contains(_phase)`)",
+        "`_phase == _Phase.connected`"
+      ],
+      "sharedElements": [
+        "termux-setup-back",
+        "termux-setup-connect-existing",
+        "termux-setup-switch-* (when `_knownRuntime != null`)"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-connected-connect-runtime",
+          "type": "button",
+          "label": "Connect to {runtime}",
+          "key": null,
+          "line": 1951,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_finishConnect(_localProfile()!)`: `_readyHandoff` -> saves the observed version and `connProvider.connect(profile)`; on failure stays here with `_error`.",
+          "gates": [
+            "`ref.read(connProvider).profile?.id != _localProfile()?.id && _localProfile() != null` (app is on another server); preceded by text \"The local runtime is ready. Your current remote connection is unchanged.\"",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-connected-continue",
+          "type": "button",
+          "label": "Continue to app",
+          "key": null,
+          "line": 1964,
+          "action": "navigate",
+          "target": "home",
+          "targetWidget": "/home",
+          "effect": "`_continueToApp()`: `Navigator.pushNamedAndRemoveUntil('/home', (_) => false)`.",
+          "gates": [
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-connected-restart",
+          "type": "button",
+          "label": "Restart local server (busy: \"Restarting local server...\")",
+          "key": "restart-managed-opencode",
+          "line": 1975,
+          "action": "open-sheet",
+          "target": "termux-setup-restart-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirmRestart()`: if the saved credential is missing sets `_phase = ready` with an error; otherwise opens the restart confirm sheet.",
+          "gates": [
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-connected-update",
+          "type": "button",
+          "label": "Update OpenCode",
+          "key": "update-managed-opencode",
+          "line": 1987,
+          "action": "open-sheet",
+          "target": "termux-setup-update-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirmUpdate()`: if `connProvider.busySessions.isNotEmpty` only shows snackbar \"Stop active generation before updating OpenCode.\"; otherwise opens the update confirm sheet.",
+          "gates": [
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-connected-stop",
+          "type": "button",
+          "label": "Stop local server (busy: \"Stopping...\")",
+          "key": null,
+          "line": 1999,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_stopServer()` with NO confirmation: disables `ManagedServerRecovery` for managed profiles, runs `TermuxBridge.stopScript`, `connProvider.disconnect()`, then `_phase = ready` with \"The local server is stopped. Its installed files are kept.\"",
+          "gates": [
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "termux-setup-connected-team-open-workspace",
+          "type": "button",
+          "label": "[TeamPhoneOnboardingBlock \"Open Workspace\" callback]",
+          "key": null,
+          "file": "lib/ui/widgets/team_phone_onboarding.dart",
+          "line": 1462,
+          "action": "navigate",
+          "target": "home",
+          "targetWidget": "/home",
+          "effect": "`onOpenWorkspace` passed to `TeamPhoneOnboardingBlock` (key `team-phone-block-<profile.id>`): when the app is not connected to this profile first `_finishConnect(profile)`, then `_continueToApp()` (`/home`). The block's own controls are in lib/ui/widgets/team_phone_onboarding.dart (another area).",
+          "gates": [
+            "block embedded when `_localProfile() != null` (line 2016); the block renders nothing unless the runtime supports the on-device AI Team",
+            "callback no-ops while `_busy || _connecting`"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-setup-failed",
+      "title": "[Setup failed]",
+      "kind": "onboarding-step",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "TermuxSetupScreen",
+      "presentedBy": [],
+      "line": 2022,
+      "purpose": "Wizard step 3 in the failed state: friendly error text, the last setup output with a copy-failure-report button, and retry / resume actions.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "automatic: `_phase = _Phase.failed` (snapshot failed, switch pending, unsupported Termux protocol, PlatformException, lost monitoring)"
+        }
+      ],
+      "gates": [
+        "wizard view: `platformCapabilities.supportsTermux` and `_phase != _Phase.installing` and NOT (`_knownRuntime != null && (_installation?.openCodeVersion != null || _status?.version.isNotEmpty == true || _status?.switchPending == true) && {ready, connected, failed}.contains(_phase)`)",
+        "`_phase == _Phase.failed`"
+      ],
+      "sharedElements": [
+        "termux-setup-back",
+        "termux-setup-connect-existing",
+        "termux-setup-terminal-copy-failure-report",
+        "termux-setup-switch-* (when `_knownRuntime != null || switchPending`)"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-failed-check-install-again",
+          "type": "button",
+          "label": "Check again",
+          "key": null,
+          "line": 2374,
+          "action": "other",
+          "target": null,
+          "effect": "`_checkInstallation()` from `_setupChoices(showInstall: false)`.",
+          "gates": [
+            "`_installationError != null`, not `_checkingInstallation`, and `_status?.switchPending != true`",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-failed-start-installed",
+          "type": "button",
+          "label": "Start installed OpenCode",
+          "key": null,
+          "line": 2402,
+          "action": "open-sheet",
+          "target": "termux-setup-start-installed-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_startInstalled()` from `_setupChoices(showInstall: false)`.",
+          "gates": [
+            "`installed.openCodeVersion != null && _localProfile() != null`",
+            "effectively unreachable: a non-null `_installation.openCodeVersion` makes `_knownRuntime` non-null, which switches build() to the installed view (see notes)",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-failed-resume-live",
+          "type": "button",
+          "label": "Resume live view",
+          "key": null,
+          "line": 2060,
+          "action": "other",
+          "target": null,
+          "effect": "`_resumeLiveOutput()`: sets `_phase = installing`, clears the error and restarts status polling.",
+          "gates": [
+            "`_monitoringFailed` (status reads failed while setup may still be running) and `_status?.switchPending != true`",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-failed-retry",
+          "type": "button",
+          "label": "Retry — resumes where setup left off",
+          "key": null,
+          "line": 2082,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_retry()`: runs `TermuxBridge.stopScript` then `_installAndStart()`. FilledButton when not `_monitoringFailed` (line 2082); OutlinedButton next to \"Resume live view\" when `_monitoringFailed` (line 2071).",
+          "gates": [
+            "hidden when `_status?.switchPending == true` (only the shared runtime-switch Retry/Return buttons remain)",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-setup-installed",
+      "title": "On this phone: {runtime}",
+      "kind": "onboarding-step",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "_buildInstalledRuntime",
+      "presentedBy": [],
+      "line": 2103,
+      "purpose": "Management view shown once a managed OpenCode runtime is known on the phone: status, connect/continue or start, runtime switch, restart/update/stop, storage and process tools, AI Team block, failure log and a \"Setup help\" expansion.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "automatic: build() branch at line 1629 once an installed/running runtime version is known"
+        }
+      ],
+      "gates": [
+        "installed view (`_buildInstalledRuntime`): `_knownRuntime != null && (_installation?.openCodeVersion != null || _status?.version.isNotEmpty == true || _status?.switchPending == true)` and `_phase` in {ready, connected, failed}"
+      ],
+      "key": "termux-installed-runtime",
+      "sharedElements": [
+        "termux-setup-back",
+        "termux-setup-switch-retry",
+        "termux-setup-switch-return-previous",
+        "termux-setup-switch-runtime",
+        "termux-setup-terminal-copy-failure-report (when `_phase == failed`)",
+        "termux-setup-connect-existing (inside Setup help)"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-installed-continue",
+          "type": "button",
+          "label": "Continue to app",
+          "key": null,
+          "line": 2164,
+          "action": "navigate",
+          "target": "home",
+          "targetWidget": "/home",
+          "effect": "`_continueToApp()` -> `/home` (pushNamedAndRemoveUntil). Stays enabled even while `_connecting` when `activeHere`.",
+          "gates": [
+            "`running && profile != null` where running = `status?.isReady == true && !switchPending`",
+            "`activeHere` (connProvider.profile is this local profile and `hasConnectedServer`)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-installed-connect",
+          "type": "button",
+          "label": "Connect to {runtime}",
+          "key": null,
+          "line": 2164,
+          "action": "mutate",
+          "target": null,
+          "effect": "Same FilledButton when not `activeHere`: `_finishConnect(profile)` -> `connProvider.connect(profile)`.",
+          "gates": [
+            "`running && profile != null && !activeHere`",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-installed-start",
+          "type": "button",
+          "label": "Start installed OpenCode",
+          "key": null,
+          "line": 2182,
+          "action": "open-sheet",
+          "target": "termux-setup-start-installed-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_startInstalled()`: confirm sheet then `_restartServer(profile, startExisting: true)`.",
+          "gates": [
+            "`!running && !pending && profile != null`; when `profile == null` the text \"This app has no saved credential for that installation...\" is shown instead",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-installed-cancel-connection",
+          "type": "button",
+          "label": "Cancel connection",
+          "key": null,
+          "line": 2194,
+          "action": "other",
+          "target": null,
+          "effect": "`_cancelConnection(profile)`: completes the cancel completer, bumps the attempt counter and, if this screen owns the attempt, `connection.disconnect(keepActive: true)`.",
+          "gates": [
+            "`_connecting && profile != null` (shown under \"Connecting to {name}\")"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-installed-restart",
+          "type": "button",
+          "label": "Restart local server",
+          "key": "restart-managed-opencode",
+          "line": 2219,
+          "action": "open-sheet",
+          "target": "termux-setup-restart-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirmRestart()`.",
+          "gates": [
+            "`running`",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-installed-update",
+          "type": "button",
+          "label": "Update OpenCode",
+          "key": "update-managed-opencode",
+          "line": 2225,
+          "action": "open-sheet",
+          "target": "termux-setup-update-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirmUpdate()` (snackbar instead of sheet when sessions are generating).",
+          "gates": [
+            "`running`",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-installed-stop",
+          "type": "button",
+          "label": "Stop local server",
+          "key": null,
+          "line": 2235,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_stopServer()` without confirmation: stops the managed server via `TermuxBridge.stopScript` and `connProvider.disconnect()`.",
+          "gates": [
+            "`running`",
+            "disabled while `_busy || _connecting`"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "termux-setup-installed-reinstall",
+          "type": "button",
+          "label": "Reinstall & start | Install {version} & start",
+          "key": null,
+          "line": 2248,
+          "action": "open-sheet",
+          "target": "termux-setup-replace-installed-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_reviewInstallChoice()`: replace-installed confirm sheet (when a version is installed) and/or unchecked-install sheet (when `_installation == null`), then `_installAndStart()`.",
+          "gates": [
+            "`!running && !pending`",
+            "disabled while `_busy || _checkingInstallation`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-installed-storage-row",
+          "type": "list-tile",
+          "label": "Storage on this phone",
+          "key": "termux-storage-row",
+          "file": "lib/ui/widgets/termux_phone_tools.dart",
+          "line": 108,
+          "action": "navigate",
+          "target": "termux-storage",
+          "targetWidget": "TermuxStorageScreen",
+          "effect": "`TermuxPhoneToolsRows._open(const TermuxStorageScreen())`; reloads the row summaries on return. Subtitle: \"{size} used\" / \"Measuring…\" / \"Not scanned yet\" / \"Checking…\".",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-installed-processes-row",
+          "type": "list-tile",
+          "label": "Running now",
+          "key": "termux-procs-row",
+          "file": "lib/ui/widgets/termux_phone_tools.dart",
+          "line": 129,
+          "action": "navigate",
+          "target": "termux-processes",
+          "targetWidget": "TermuxProcessesScreen",
+          "effect": "`TermuxPhoneToolsRows._open(const TermuxProcessesScreen())`. Subtitle: \"{count} processes · CPU {cpu}%\" / \"Not available right now\" / \"Checking…\".",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-installed-team-open-workspace",
+          "type": "button",
+          "label": "[TeamPhoneOnboardingBlock \"Open Workspace\" callback]",
+          "key": null,
+          "file": "lib/ui/widgets/team_phone_onboarding.dart",
+          "line": 1462,
+          "action": "navigate",
+          "target": "home",
+          "targetWidget": "/home",
+          "effect": "`onOpenWorkspace`: connects to the local profile first when not `activeHere`, then `_continueToApp()`.",
+          "gates": [
+            "block embedded when `running && profile != null` (line 2264)",
+            "callback no-ops while `_busy || _connecting`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-installed-help",
+          "type": "list-tile",
+          "label": "Setup help",
+          "key": null,
+          "line": 2281,
+          "action": "other",
+          "target": null,
+          "effect": "ExpansionTile; expands the shared \"Use your own setup / Connect existing server\" block and the runtime install description.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-setup-switch-runtime-sheet",
+      "title": "Switch to {runtime}?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "_confirmRuntimeSwitch",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 395,
+      "purpose": "Confirms switching the managed runtime between OpenCode 1 and OpenCode 2 beta (stops this phone's server and running tasks).",
+      "reachedFrom": [
+        {
+          "page": "termux-setup",
+          "element": "termux-setup-switch-retry"
+        },
+        {
+          "page": "termux-setup",
+          "element": "termux-setup-switch-return-previous"
+        },
+        {
+          "page": "termux-setup",
+          "element": "termux-setup-switch-runtime"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "termux-setup-switch-runtime-sheet-confirm",
+          "type": "button",
+          "label": "Switch version",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "Verifies the bridge, refuses when the previous runtime credential is missing, `connProvider.prepareManagedRuntimeSwitch()`, ensures a profile for the target, then runs `TermuxBridge.restartScript(switchTarget:, switchPassword:)` and shows the installing view.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "termux-setup-switch-runtime-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
+          "gates": [],
+          "destructive": false
+        }
+      ],
+      "notes": "showConfirmSheet is called without `destructive: true` (primary-colored button), but the action stops the running server, so the ledger marks it destructive."
+    },
+    {
+      "id": "termux-setup-update-sheet",
+      "title": "Update managed OpenCode?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "_confirmUpdate",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 693,
+      "purpose": "Confirms installing the pinned runtime version and restarting the managed local server.",
+      "reachedFrom": [
+        {
+          "page": "termux-setup-connected",
+          "element": "termux-setup-connected-update"
+        },
+        {
+          "page": "termux-setup-installed",
+          "element": "termux-setup-installed-update"
+        }
+      ],
+      "gates": [
+        "not opened while `connProvider.busySessions.isNotEmpty` (snackbar instead)"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-update-sheet-confirm",
+          "type": "button",
+          "label": "Update",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_installAndStart()`: re-runs the install script for `_runtime` and reconnects this profile.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-update-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-setup-restart-sheet",
+      "title": "Restart the local server?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "_confirmRestart",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 732,
+      "purpose": "Confirms restarting the managed local server; mentions how many sessions are generating.",
+      "reachedFrom": [
+        {
+          "page": "termux-setup-connected",
+          "element": "termux-setup-connected-restart"
+        },
+        {
+          "page": "termux-setup-installed",
+          "element": "termux-setup-installed-restart"
+        }
+      ],
+      "gates": [
+        "requires `_localProfile() != null`"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-restart-sheet-confirm",
+          "type": "button",
+          "label": "Restart",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_restartServer(profile)`: runs `TermuxBridge.restartScript`, shows the installing view, then `_finishRestart` reconnects (`connection.retryConnection`) and shows snackbar \"Local server restarted and reconnected.\"",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "termux-setup-restart-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
+          "gates": [],
+          "destructive": false
+        }
+      ],
+      "notes": "Sheet is not styled destructive; marked destructive in the ledger because it interrupts generating sessions."
+    },
+    {
+      "id": "termux-setup-start-installed-sheet",
+      "title": "Start installed OpenCode?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "_startInstalled",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 2340,
+      "purpose": "Confirms starting the already-installed OpenCode and connecting to it.",
+      "reachedFrom": [
+        {
+          "page": "termux-setup-installed",
+          "element": "termux-setup-installed-start"
+        },
+        {
+          "page": "termux-setup-choose",
+          "element": "termux-setup-choose-start-installed"
+        },
+        {
+          "page": "termux-setup-failed",
+          "element": "termux-setup-failed-start-installed"
+        }
+      ],
+      "gates": [
+        "requires `_localProfile() != null`"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-start-installed-sheet-confirm",
+          "type": "button",
+          "label": "Start & connect",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_restartServer(profile, startExisting: true)` then `_connectReadyProfile`.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-start-installed-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-setup-replace-installed-sheet",
+      "title": "Replace installed OpenCode?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "_reviewInstallChoice",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 2511,
+      "purpose": "Confirms replacing the installed OpenCode version with the pinned one and restarting the local server.",
+      "reachedFrom": [
+        {
+          "page": "termux-setup-installed",
+          "element": "termux-setup-installed-reinstall"
+        },
+        {
+          "page": "termux-setup-choose",
+          "element": "termux-setup-choose-reinstall-start"
+        }
+      ],
+      "gates": [
+        "`_installation?.openCodeVersion != null`"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-replace-installed-sheet-confirm",
+          "type": "button",
+          "label": "Install & restart",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "Continues `_reviewInstallChoice()` -> (optional unchecked-install sheet) -> `_installAndStart()`.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "termux-setup-replace-installed-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
+          "gates": [],
+          "destructive": false
+        }
+      ],
+      "notes": "Not styled destructive in code; marked destructive because it overwrites the installed version."
+    },
+    {
+      "id": "termux-setup-unchecked-install-sheet",
+      "title": "Continue without an installation check?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/termux_setup_screen.dart",
+      "widget": "_reviewInstallChoice",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 2525,
+      "purpose": "Shown when the installation check failed: confirms installing anyway.",
+      "reachedFrom": [
+        {
+          "page": "termux-setup-choose",
+          "element": "termux-setup-choose-install-start"
+        },
+        {
+          "page": "termux-setup-installed",
+          "element": "termux-setup-installed-reinstall"
+        }
+      ],
+      "gates": [
+        "`_installation == null` (inspectInstallation failed or not yet run)"
+      ],
+      "elements": [
+        {
+          "id": "termux-setup-unchecked-install-sheet-confirm",
+          "type": "button",
+          "label": "Continue with Ubuntu",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_installAndStart()`.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "termux-setup-unchecked-install-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-processes",
+      "title": "Running now",
+      "kind": "screen",
+      "file": "lib/ui/screens/termux_processes_screen.dart",
+      "widget": "TermuxProcessesScreen",
+      "presentedBy": [],
+      "line": 47,
+      "purpose": "Lists every process owned by the app's Termux user, grouped (OpenCode server, AI Team, Build daemons, Orphans, Other) with CPU/memory, auto-refreshing every 10s, with stop actions for single processes and whole groups.",
+      "reachedFrom": [
+        {
+          "page": "termux-setup-installed",
+          "element": "termux-setup-installed-processes-row"
+        },
+        {
+          "page": "embedded-termux-attention-line",
+          "element": "embedded-termux-attention-line-open"
+        },
+        {
+          "page": "termux-storage",
+          "element": "termux-storage-open-running"
+        }
+      ],
+      "gates": [
+        "no gate in the screen itself; all openers are Termux-only surfaces"
+      ],
+      "elements": [
+        {
+          "id": "termux-processes-refresh",
+          "type": "icon-button",
+          "label": "Refresh",
+          "key": "termux-procs-refresh",
+          "line": 292,
+          "action": "other",
+          "target": null,
+          "effect": "`_refresh()` -> `TermuxProcesses.scan()`.",
+          "gates": [
+            "disabled while `_busy`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-processes-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": null,
+          "line": 302,
+          "action": "other",
+          "target": null,
+          "effect": "RefreshIndicator `onRefresh: _refresh`.",
+          "gates": [
+            "not while `_loading`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-processes-stop-group",
+          "type": "button",
+          "label": "Stop all",
+          "key": "termux-procs-stop-group-<group.wireName>",
+          "line": 397,
+          "action": "open-sheet",
+          "target": "termux-processes-stop-group-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_stopGroup(group)`: opens the stop-group confirm sheet.",
+          "gates": [
+            "per group header: `group.stoppable && stoppable > 0` (at least one non-protected member)",
+            "disabled while `_busy`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-processes-row",
+          "type": "list-tile",
+          "label": "<process name> (CPU {cpu}% · {memory} · {elapsed})",
+          "key": "termux-proc-<pid>",
+          "line": 469,
+          "action": "open-sheet",
+          "target": "termux-processes-details-sheet",
+          "targetWidget": "_showDetails",
+          "effect": "`_showDetails(process)` opens the process details sheet.",
+          "gates": [
+            "`!process.protected`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-processes-row-protected",
+          "type": "list-tile",
+          "label": "<process name> · \"Protected · open the server controls\"",
+          "key": "termux-proc-<pid>",
+          "line": 522,
+          "action": "navigate",
+          "target": "termux-setup",
+          "targetWidget": "TermuxSetupScreen",
+          "effect": "`_openServerControls()`: calls `widget.onOpenServerControls` when provided, else pushes `MaterialPageRoute(TermuxSetupScreen)` (line 194).",
+          "gates": [
+            "`process.protected` (OpenCode server, sshd)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-processes-row-stop",
+          "type": "icon-button",
+          "label": "Stop {name}",
+          "key": "termux-proc-stop-<pid>",
+          "line": 513,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_stopProcess(process, confirm: !process.isOrphan)`: orphans are stopped in one tap with no confirmation via `TermuxProcesses.stopPid(pid)`; result line shown and list refreshed.",
+          "gates": [
+            "`!process.protected && process.isOrphan`",
+            "disabled while `_busy`"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "termux-processes-details-sheet",
+      "title": "<process name>",
+      "kind": "sheet",
+      "file": "lib/ui/screens/termux_processes_screen.dart",
+      "widget": "_showDetails",
+      "presentedBy": [
+        "_showDetails"
+      ],
+      "line": 200,
+      "purpose": "Process details: PID/parent, full command, folder, and either a stop button or a link to the server controls.",
+      "reachedFrom": [
+        {
+          "page": "termux-processes",
+          "element": "termux-processes-row"
+        }
+      ],
+      "gates": [],
+      "key": "termux-procs-details",
+      "elements": [
+        {
+          "id": "termux-processes-details-sheet-server-controls",
+          "type": "button",
+          "label": "Protected · open the server controls",
+          "key": null,
+          "line": 252,
+          "action": "navigate",
+          "target": "termux-setup",
+          "targetWidget": "TermuxSetupScreen",
+          "effect": "Pops the sheet then `_openServerControls()` (TermuxSetupScreen or the injected callback).",
+          "gates": [
+            "`process.protected` (not reachable from the list today: protected rows navigate directly instead of opening this sheet)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-processes-details-sheet-stop",
+          "type": "button",
+          "label": "Stop",
+          "key": "termux-procs-details-stop",
+          "line": 261,
+          "action": "open-sheet",
+          "target": "termux-processes-stop-one-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "Pops the sheet then `_stopProcess(process, confirm: !process.isOrphan)`: non-orphans get the stop-one confirm sheet; orphans are stopped immediately (`TermuxProcesses.stopPid`).",
+          "gates": [
+            "`!process.protected`"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "termux-processes-stop-one-sheet",
+      "title": "Stop {name}?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/termux_processes_screen.dart",
+      "widget": "_stopProcess",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 117,
+      "purpose": "Confirms stopping one non-orphan process (polite stop, forced after 5 seconds).",
+      "reachedFrom": [
+        {
+          "page": "termux-processes-details-sheet",
+          "element": "termux-processes-details-sheet-stop"
+        }
+      ],
+      "gates": [
+        "only when `confirm == true`, i.e. `!process.isOrphan`"
+      ],
+      "key": "termux-procs-confirm",
+      "elements": [
+        {
+          "id": "termux-processes-stop-one-sheet-confirm",
+          "type": "button",
+          "label": "Stop",
+          "key": "termux-procs-confirm-stop",
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_runStop(() => TermuxProcesses.stopPid(process.pid))`, shows a result line and refreshes.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "termux-processes-stop-one-sheet-cancel",
+          "type": "button",
+          "label": "Keep",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-processes-stop-group-sheet",
+      "title": "Stop every process in {group}?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/termux_processes_screen.dart",
+      "widget": "_stopGroup",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 137,
+      "purpose": "Confirms stopping every non-protected process in a group.",
+      "reachedFrom": [
+        {
+          "page": "termux-processes",
+          "element": "termux-processes-stop-group"
+        }
+      ],
+      "gates": [],
+      "key": "termux-procs-confirm",
+      "elements": [
+        {
+          "id": "termux-processes-stop-group-sheet-confirm",
+          "type": "button",
+          "label": "Stop {count}",
+          "key": "termux-procs-confirm-stop",
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_runStop(() => TermuxProcesses.stopGroup(group))`.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "termux-processes-stop-group-sheet-cancel",
+          "type": "button",
+          "label": "Keep",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-storage",
+      "title": "Storage on this phone",
+      "kind": "screen",
+      "file": "lib/ui/screens/termux_storage_screen.dart",
+      "widget": "TermuxStorageScreen",
+      "presentedBy": [],
+      "line": 71,
+      "purpose": "Shows what Termux uses per category with exact paths; runs a cancellable background scan with a live log, and cleans regenerable caches after confirmation. Three body states: intro (no report), scanning, report.",
+      "reachedFrom": [
+        {
+          "page": "termux-setup-installed",
+          "element": "termux-setup-installed-storage-row"
+        }
+      ],
+      "gates": [
+        "no gate in the screen itself; opened only from TermuxPhoneToolsRows"
+      ],
+      "nonInteractive": [
+        "project rows (`termux-storage-project-<name>`) are ListTiles without onTap"
+      ],
+      "elements": [
+        {
+          "id": "termux-storage-rescan",
+          "type": "icon-button",
+          "label": "Scan again",
+          "key": "termux-storage-rescan",
+          "line": 260,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_startScan()` -> `TermuxStorage.startScan()`; switches to the scanning body.",
+          "gates": [
+            "`_report != null && !_scanning`",
+            "disabled while `_busy`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-storage-scan",
+          "type": "button",
+          "label": "Scan storage",
+          "key": "termux-storage-scan",
+          "line": 338,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_startScan()`.",
+          "gates": [
+            "intro state: `_report == null` and not scanning",
+            "disabled while `_busy`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-storage-cancel-scan",
+          "type": "button",
+          "label": "Cancel scan",
+          "key": "termux-storage-cancel",
+          "line": 382,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_cancelScan()` -> `TermuxStorage.cancelScan()` then `_refresh()`.",
+          "gates": [
+            "scanning state: `_status?.state == running || (_busy && _report == null)`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-storage-copy-log",
+          "type": "icon-button",
+          "label": "Copy output",
+          "key": null,
+          "file": "lib/ui/widgets/setup_terminal.dart",
+          "line": 135,
+          "action": "copy",
+          "target": null,
+          "effect": "SetupTerminal copy button with `onCopy: _copyLog`: copies the scan log (no snackbar; no-op when empty).",
+          "gates": [
+            "scanning state"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-storage-open-running",
+          "type": "button",
+          "label": "Open Running now",
+          "key": "termux-storage-open-running",
+          "line": 464,
+          "action": "navigate",
+          "target": "termux-processes",
+          "targetWidget": "TermuxProcessesScreen",
+          "effect": "Pushes `MaterialPageRoute(TermuxProcessesScreen)`.",
+          "gates": [
+            "`_resultIsProblem` (clean refused: \"In use by {process}. Stop it under Running now first.\")"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-storage-category",
+          "type": "list-tile",
+          "label": "<category label> ({size} | \"Nothing here\" | \"{size} · Not removed from here\")",
+          "key": "termux-storage-cat-<category.key>",
+          "line": 545,
+          "action": "other",
+          "target": null,
+          "effect": "ExpansionTile; expands the category note and the list of paths with sizes (\"What Clean removes\").",
+          "gates": [
+            "report state"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "termux-storage-category-clean",
+          "type": "button",
+          "label": "Clean (busy: \"Removing…\")",
+          "key": "termux-storage-clean-<category.key>",
+          "line": 611,
+          "action": "open-sheet",
+          "target": "termux-storage-clean-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_clean(category)` opens the clean confirm sheet.",
+          "gates": [
+            "`category.canClean && category.paths.isNotEmpty`",
+            "enabled only when `!_busy && !report.isStale` (after a clean that requires a rescan the report is stale)"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "termux-storage-clean-sheet",
+      "title": "Remove {size} of {category}?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/termux_storage_screen.dart",
+      "widget": "_clean",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 184,
+      "purpose": "Confirms removing the listed cache paths of one category.",
+      "reachedFrom": [
+        {
+          "page": "termux-storage",
+          "element": "termux-storage-category-clean"
+        }
+      ],
+      "gates": [],
+      "key": "termux-storage-confirm",
+      "elements": [
+        {
+          "id": "termux-storage-clean-sheet-confirm",
+          "type": "button",
+          "label": "Remove {size}",
+          "key": "termux-storage-confirm-remove",
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`TermuxStorage.clean(category.key)`; shows \"Removed {size}\" or the in-use problem line; marks the report stale when a rescan is required.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "termux-storage-clean-sheet-cancel",
+          "type": "button",
+          "label": "Keep",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops the sheet with false; the caller returns without acting (barrier tap / back does the same).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "development-services",
+      "title": "Development services",
+      "kind": "screen",
+      "file": "lib/ui/screens/development_services_screen.dart",
+      "widget": "DevelopmentServicesScreen",
+      "presentedBy": [],
+      "line": 16,
+      "purpose": "Per-project registry of development commands and preview links: register, start/stop/restart tracked commands on the server, read logs, open the preview URL.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ManageProjectScreen (ListTile \"Development services\")",
+          "file": "lib/ui/screens/manage_project_screen.dart",
+          "line": 95
+        }
+      ],
+      "gates": [
+        "opener enabled only when `widget.controller.directory?.isNotEmpty == true`",
+        "body replaced by \"The server or project changed...\" when `!_current` (profile/location/directory/workspace scope changed or profile unreadable)",
+        "when `!capabilities.developmentServices` the screen still opens: saving commands works, Start/Logs are hidden and \"This connection cannot start and track development commands...\" is shown"
+      ],
+      "elements": [
+        {
+          "id": "development-services-refresh",
+          "type": "icon-button",
+          "label": "Refresh status",
+          "key": null,
+          "line": 253,
+          "action": "other",
+          "target": null,
+          "effect": "`_refresh()` -> `_model.refresh()`.",
+          "gates": [
+            "`_current` (scope unchanged)",
+            "disabled while `_model.busy`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "development-services-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": null,
+          "line": 267,
+          "action": "other",
+          "target": null,
+          "effect": "RefreshIndicator `onRefresh: _refresh`; also auto-refreshes every 5s in foreground.",
+          "gates": [
+            "`_current`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "development-services-register",
+          "type": "button",
+          "label": "Register service",
+          "key": null,
+          "line": 304,
+          "action": "open-sheet",
+          "target": "development-services-editor-sheet",
+          "targetWidget": "_ServiceEditor",
+          "effect": "`_register()` opens the `_ServiceEditor` sheet; on result `_model.register(result)`.",
+          "gates": [
+            "disabled while `_model.busy || !_model.readable`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "development-services-card",
+          "type": "card",
+          "label": "<service name>",
+          "key": null,
+          "line": 355,
+          "action": "other",
+          "target": null,
+          "effect": "Service card template (status, command as SelectableText, URL); not tappable itself.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "development-services-start",
+          "type": "button",
+          "label": "Start",
+          "key": null,
+          "line": 404,
+          "action": "open-sheet",
+          "target": "development-services-confirm-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirm(service, 'start')`.",
+          "gates": [
+            "`widget.controller.capabilities.developmentServices`",
+            "enabled only when `_model.canStart(service)`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "development-services-stop",
+          "type": "button",
+          "label": "Stop",
+          "key": null,
+          "line": 412,
+          "action": "open-sheet",
+          "target": "development-services-confirm-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirm(service, 'stop')`.",
+          "gates": [
+            "`_model.canStop(service)`"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "development-services-restart",
+          "type": "button",
+          "label": "Restart",
+          "key": null,
+          "line": 416,
+          "action": "open-sheet",
+          "target": "development-services-confirm-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirm(service, 'restart')`.",
+          "gates": [
+            "`_model.canStop(service)`"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "development-services-logs",
+          "type": "button",
+          "label": "Logs",
+          "key": null,
+          "line": 424,
+          "action": "open-sheet",
+          "target": "development-services-logs-sheet",
+          "targetWidget": "_logs",
+          "effect": "`_logs(service)`: `_model.readLogs(service.id)` and opens the logs sheet.",
+          "gates": [
+            "`service.run != null && !service.run!.stopped` and `widget.controller.capabilities.developmentServices`",
+            "disabled while `_model.busy`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "development-services-visit",
+          "type": "button",
+          "label": "Visit",
+          "key": null,
+          "line": 430,
+          "action": "external-link",
+          "target": null,
+          "targetWidget": "openExternalLink",
+          "effect": "`openExternalLink(context, service.url)` when `_current`.",
+          "gates": [
+            "`safeExternalLinkUri(service.url) != null`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "development-services-copy-command",
+          "type": "icon-button",
+          "label": "Copy command",
+          "key": null,
+          "line": 439,
+          "action": "copy",
+          "target": null,
+          "effect": "`Clipboard.setData(service.command)` (no snackbar).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "development-services-forget",
+          "type": "button",
+          "label": "Forget last run",
+          "key": null,
+          "line": 451,
+          "action": "open-sheet",
+          "target": "development-services-confirm-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirm(service, 'forget')`.",
+          "gates": [
+            "`status == DevelopmentServiceStatus.unknown`",
+            "disabled while `_model.busy`"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "development-services-remove",
+          "type": "button",
+          "label": "Remove configuration",
+          "key": null,
+          "line": 457,
+          "action": "open-sheet",
+          "target": "development-services-confirm-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "`_confirm(service, 'remove')`.",
+          "gates": [
+            "disabled while `_model.busy`"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "development-services-editor-sheet",
+      "title": "Register service",
+      "kind": "sheet",
+      "file": "lib/ui/screens/development_services_screen.dart",
+      "widget": "_ServiceEditor",
+      "presentedBy": [
+        "_register"
+      ],
+      "line": 472,
+      "purpose": "Form to register a development service for the current project directory.",
+      "reachedFrom": [
+        {
+          "page": "development-services",
+          "element": "development-services-register"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "development-services-editor-sheet-name",
+          "type": "text-field",
+          "label": "Service name",
+          "key": null,
+          "line": 533,
+          "action": "other",
+          "target": null,
+          "effect": "Name field (max 80).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "development-services-editor-sheet-command",
+          "type": "text-field",
+          "label": "Development command",
+          "key": null,
+          "line": 539,
+          "action": "other",
+          "target": null,
+          "effect": "Command field (max 4096, up to 5 lines, LTR).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "development-services-editor-sheet-url",
+          "type": "text-field",
+          "label": "Preview URL (optional)",
+          "key": null,
+          "line": 552,
+          "action": "other",
+          "target": null,
+          "effect": "URL field (max 2048, url keyboard).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "development-services-editor-sheet-save",
+          "type": "button",
+          "label": "Save service",
+          "key": null,
+          "line": 572,
+          "action": "submit",
+          "target": null,
+          "effect": "`_save()`: validates (name and command required; URL must pass `safeExternalLinkUri`), else shows \"Enter a name, a foreground command...\"; pops with a `DevelopmentService`, which the screen passes to `_model.register`.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "development-services-logs-sheet",
+      "title": "{service name} · Logs",
+      "kind": "sheet",
+      "file": "lib/ui/screens/development_services_screen.dart",
+      "widget": "_logs",
+      "presentedBy": [
+        "_logs"
+      ],
+      "line": 189,
+      "purpose": "Bounded log tail of a tracked service (SelectableText), live-bound to the model.",
+      "reachedFrom": [
+        {
+          "page": "development-services",
+          "element": "development-services-logs"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "development-services-logs-sheet-refresh",
+          "type": "button",
+          "label": "Refresh status",
+          "key": null,
+          "line": 228,
+          "action": "other",
+          "target": null,
+          "effect": "`_model.readLogs(service.id)`.",
+          "gates": [
+            "`_current` (otherwise only the scope-changed text is shown)",
+            "disabled while `_model.busy`"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "development-services-confirm-sheet",
+      "title": "{Start | Stop | Restart | Forget last run | Remove configuration} · {service name}",
+      "kind": "sheet",
+      "file": "lib/ui/screens/development_services_screen.dart",
+      "widget": "_confirm",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 164,
+      "purpose": "One shared confirm sheet for the five service actions; destructive styling for everything except start.",
+      "reachedFrom": [
+        {
+          "page": "development-services",
+          "element": "development-services-start"
+        },
+        {
+          "page": "development-services",
+          "element": "development-services-stop"
+        },
+        {
+          "page": "development-services",
+          "element": "development-services-restart"
+        },
+        {
+          "page": "development-services",
+          "element": "development-services-forget"
+        },
+        {
+          "page": "development-services",
+          "element": "development-services-remove"
+        }
+      ],
+      "gates": [
+        "`_current && !_model.busy`"
+      ],
+      "elements": [
+        {
+          "id": "development-services-confirm-sheet-start",
+          "type": "button",
+          "label": "Start",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_model.start(service.id)`.",
+          "gates": [
+            "action == 'start'"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "development-services-confirm-sheet-stop",
+          "type": "button",
+          "label": "Stop",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_model.stop(service.id)` (server also removes retained logs).",
+          "gates": [
+            "action == 'stop'"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "development-services-confirm-sheet-restart",
+          "type": "button",
+          "label": "Restart",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_model.restart(service.id)`.",
+          "gates": [
+            "action == 'restart'"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "development-services-confirm-sheet-forget",
+          "type": "button",
+          "label": "Forget last run",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_model.forgetRun(service.id)` (clears the local run record only).",
+          "gates": [
+            "action == 'forget'"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "development-services-confirm-sheet-remove",
+          "type": "button",
+          "label": "Remove configuration",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_model.remove(service.id)` (does not stop the command on the server).",
+          "gates": [
+            "action == 'remove'"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "development-services-confirm-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops with false.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-termux-running-server-entry",
+      "title": "Server found on this phone",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/termux_running_server_entry.dart",
+      "widget": "TermuxRunningServerEntry",
+      "presentedBy": [],
+      "line": 21,
+      "purpose": "Card on the Servers / welcome screen shown only while a read-only Termux check reports the app-managed server running and it is not the connected profile.",
+      "reachedFrom": [],
+      "gates": [
+        "`platformCapabilities.supportsTermux`",
+        "`_server != null` and state not `unsupported`/`absent`",
+        "hidden when the running server's saved profile id equals `widget.connectedProfileID`"
+      ],
+      "embeddedIn": [
+        "ServersScreen"
+      ],
+      "key": "termux-running-server",
+      "elements": [
+        {
+          "id": "embedded-termux-running-server-entry-recheck-icon",
+          "type": "icon-button",
+          "label": "Check status",
+          "key": null,
+          "line": 142,
+          "action": "other",
+          "target": null,
+          "effect": "`_check()` re-runs `detectTermuxRunningServer`. Trailing icon of a ListTile titled \"Allow Termux access in phone setup to check for a server.\" (denied) or \"Could not check the server on this phone.\".",
+          "gates": [
+            "`!server.isRunning` and state not unsupported/absent",
+            "disabled while `widget.busy || _checking`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-termux-running-server-entry-connect",
+          "type": "button",
+          "label": "Connect to running server",
+          "key": "termux-running-server-connect",
+          "line": 193,
+          "action": "mutate",
+          "target": null,
+          "effect": "Revalidates the observation, then calls host `onConnect(saved)` (ServersScreen `_connect(profile, detectedRunning: true)`) or, when no saved profile / `fresh.needsCredentials` / `saved.requiresPasswordReentry`, host `onEnterCredentials(fresh, saved)` (ServersScreen `_edit(... connectOnSave: true, focusPassword: true)` profile editor).",
+          "gates": [
+            "`server.isRunning`",
+            "disabled while `widget.busy || _checking`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-termux-running-server-entry-recheck",
+          "type": "button",
+          "label": "Check status",
+          "key": "termux-running-server-recheck",
+          "line": 236,
+          "action": "other",
+          "target": null,
+          "effect": "`_check()`.",
+          "gates": [
+            "`server.isRunning`",
+            "disabled while `widget.busy || _checking`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-termux-running-server-entry-details",
+          "type": "list-tile",
+          "label": "Server details",
+          "key": null,
+          "line": 247,
+          "action": "other",
+          "target": null,
+          "effect": "ExpansionTile; expands runtime name · version and \"Last checked at {time}\".",
+          "gates": [
+            "`server.isRunning`"
+          ],
+          "destructive": false
+        }
+      ],
+      "notes": "Embedded via ServersScreen._runningServerEntry (lib/ui/screens/servers_screen.dart:105-124), used by both the welcome view and the list."
+    },
+    {
+      "id": "embedded-managed-server-health",
+      "title": "On-device server",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/managed_server_health.dart",
+      "widget": "ManagedServerHealth",
+      "presentedBy": [],
+      "line": 11,
+      "purpose": "Section on the Servers screen for the app-managed Termux server: explicit health check, storage summary and the opt-in foreground crash-recovery policy.",
+      "reachedFrom": [],
+      "gates": [
+        "widget: `platformCapabilities.supportsTermux`",
+        "host (servers_screen.dart:677-680): `platformCapabilities.supportsTermux && store.profiles.any((p) => TermuxBridge.managesServerUrl(p.baseUrl))`"
+      ],
+      "embeddedIn": [
+        "ServersScreen"
+      ],
+      "elements": [
+        {
+          "id": "embedded-managed-server-health-recovery-toggle",
+          "type": "toggle",
+          "label": "Recover a crashed managed server",
+          "key": null,
+          "line": 193,
+          "action": "toggle-setting",
+          "target": null,
+          "effect": "`_setRecovery(enabled)` -> `ManagedServerRecovery.setEnabled` (persisted per profile in SharedPreferences).",
+          "gates": [
+            "`_recovery != null` (prefs and profileID supplied and `platformCapabilities.supportsTermux`)",
+            "disabled when `recovery.busy && !recovery.enabled`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-managed-server-health-retry-disable",
+          "type": "button",
+          "label": "Retry disabling recovery",
+          "key": null,
+          "line": 234,
+          "action": "toggle-setting",
+          "target": null,
+          "effect": "`_setRecovery(false)`.",
+          "gates": [
+            "`_policyError == true`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-managed-server-health-check-recovery",
+          "type": "button",
+          "label": "Check recovery status",
+          "key": null,
+          "line": 239,
+          "action": "other",
+          "target": null,
+          "effect": "`recovery.retryCheck()`.",
+          "gates": [
+            "`recovery.enabled && recovery.error != null`",
+            "disabled while `recovery.busy`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-managed-server-health-reset-budget",
+          "type": "button",
+          "label": "Reset retry budget",
+          "key": null,
+          "line": 252,
+          "action": "mutate",
+          "target": null,
+          "effect": "`_setRecovery(true)` re-enables recovery and resets the 3-attempt budget.",
+          "gates": [
+            "`recovery.exhausted`",
+            "disabled while `recovery.busy`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-managed-server-health-check",
+          "type": "button",
+          "label": "Check status",
+          "key": null,
+          "line": 262,
+          "action": "other",
+          "target": null,
+          "effect": "`_check()`: `TermuxBridge.status()` then `TermuxBridge.storage()`.",
+          "gates": [
+            "disabled while `_checking`"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-managed-server-health-manage",
+          "type": "button",
+          "label": "Open setup controls",
+          "key": null,
+          "line": 270,
+          "action": "navigate",
+          "target": "termux-setup",
+          "targetWidget": "/termux-setup",
+          "effect": "Host callback `onManage`; ServersScreen passes `_openTermuxSetup` = `Navigator.pushNamed('/termux-setup')` then bumps `_termuxRevision`.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-termux-attention-line",
+      "title": "Something is still running on this phone",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/termux_phone_tools.dart",
+      "widget": "TermuxAttentionLine",
+      "presentedBy": [],
+      "line": 159,
+      "purpose": "Workspace line shown only while an orphaned Termux helper has burned more than 10 minutes of CPU (polled every 60s).",
+      "reachedFrom": [],
+      "gates": [
+        "`TermuxBridge.supported`",
+        "`_worst != null` (an orphan over `threshold` = 10 min CPU)",
+        "host gate at lib/ui/screens/workspace_screen.dart:632 to be read by the workspace agent"
+      ],
+      "embeddedIn": [
+        "WorkspaceScreen"
+      ],
+      "elements": [
+        {
+          "id": "embedded-termux-attention-line-open",
+          "type": "list-tile",
+          "label": "Something is still running on this phone — {name} has used {cpu} of CPU with nothing waiting on it",
+          "key": "termux-attention-line",
+          "line": 212,
+          "action": "navigate",
+          "target": "termux-processes",
+          "targetWidget": "TermuxProcessesScreen",
+          "effect": "Pushes `MaterialPageRoute(TermuxProcessesScreen)`; re-checks on return.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-setup-terminal",
+      "title": "LIVE OUTPUT / LAST OUTPUT",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/setup_terminal.dart",
+      "widget": "SetupTerminal",
+      "presentedBy": [],
+      "line": 9,
+      "purpose": "Reusable setup log panel (selectable, ANSI-stripped, colored lines) with one copy button; hosted in my pages (termux-setup*, termux-storage) and in TeamPhoneOnboardingBlock.",
+      "reachedFrom": [],
+      "gates": [],
+      "embeddedIn": [
+        "TeamPhoneOnboardingBlock"
+      ],
+      "key": "setup-live-output",
+      "elements": [
+        {
+          "id": "embedded-setup-terminal-copy",
+          "type": "icon-button",
+          "label": "Copy output (or host-supplied `copyTooltip`)",
+          "key": null,
+          "line": 130,
+          "action": "copy",
+          "target": null,
+          "effect": "Calls host `onCopy`; disabled when `onCopy == null`. In TeamPhoneOnboardingBlock the host passes `_log.isEmpty ? null : _copyLog` (team_phone_onboarding.dart:746, 855).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    }
+  ],
+  "notPages": [
+    {
+      "file": "lib/ui/widgets/setup_ui_messages.dart",
+      "reason": "pure function `setupUiMessage(l10n, message)` mapping raw setup/bridge messages to localized text; no widget, surface or interactive element"
+    }
+  ],
+  "notes": [
+    "TermuxSetupScreen has no AppBar actions, overflow menu or separate advanced/troubleshooting screen: all four Scaffolds use a title-only AppBar (lib/ui/screens/termux_setup_screen.dart:1566, 1619, 1641, 2119). The closest things to \"advanced\" are the \"Show command\" ExpansionTile (1856), the \"Setup help\" ExpansionTile (2281) and the failure-report copy button.",
+    "Probable dead branches in `_setupChoices` (termux_setup_screen.dart:2401-2410 \"Start installed OpenCode\", 2473-2488 \"Reinstall & start\"): `_setupChoices` is only used by the wizard view (1904, 2051), but whenever `_installation.openCodeVersion != null` the getter `_knownRuntime` (55-67) is non-null and build() (1629-1638) switches to `_buildInstalledRuntime()` for ready/failed phases. Recorded with a gate note rather than omitted.",
+    "\"Stop local server\" (termux_setup_screen.dart:1999, 2235) calls `_stopServer()` with no confirmation sheet, unlike restart/update/switch.",
+    "Runtime-switch, restart and replace confirm sheets are opened without `destructive: true`; the ledger marks their confirm buttons destructive by effect (termux_setup_screen.dart:395, 732, 2511).",
+    "`termux-setup-installed-reinstall` can chain two sheets (replace-installed at 2511, then unchecked-install at 2525 when `_installation == null`); in practice `installedVersion != null` implies `_installation != null`, so only one appears per tap.",
+    "TeamPhoneOnboardingBlock (lib/ui/widgets/team_phone_onboarding.dart, not assigned to h-termux) is embedded in TermuxSetupScreen at termux_setup_screen.dart:2018 and 2266; only its `onOpenWorkspace` callback is recorded here. Its owner should emit `embeddedIn: [\"TermuxSetupScreen\"]` (host pages `termux-setup-connected`, `termux-setup-installed`).",
+    "termux_processes_screen.dart:251-259: the details sheet has a protected-process branch, but protected rows call `onProtected` instead of `onOpen` (line 522), so that branch is currently unreachable from the list.",
+    "Host-side gates for TermuxAttentionLine (lib/ui/screens/workspace_screen.dart:632) were not read; ServersScreen hosts were read only around lines 97-124 and 677-689.",
+    "showConfirmSheet elements carry `file: lib/ui/widgets/confirm_sheet.dart` with lines 68 (confirm) and 86 (cancel); the default cancel label is the hard-coded English string \"Cancel\" (confirm_sheet.dart:15), not l10n."
+  ]
+}
