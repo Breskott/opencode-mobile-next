@@ -206,6 +206,15 @@ Applied:
 - **Menus and sheets:** the conversation menu's groups are ordered
   Look → Steer → History → Share & move (frequency, then risk). Destructive
   items are last in their group.
+- **Servers:** a working server detected on this phone comes first, above
+  saved servers, and is controlled where it is shown (owner direction,
+  2026-09-19): Connect or Open, Disconnect, Start, Restart, Stop, Refresh,
+  Manage setup, Forget. The general rule this sets: *a live thing the app
+  found outranks a saved thing the app remembers, and its everyday controls
+  sit on it rather than behind a setup screen.* Built as
+  `TermuxRunningServerEntry` + `LocalServerControls`. Still open: the saved
+  row for the same server is listed again below the card; it should fold into
+  the card once the card can also edit the sign-in.
 - **Buttons:** one primary action per screen, bottom, full width. The safe
   choice is never the visually loudest when the other choice is destructive.
 - **Forms:** required before optional, optional collapsed; the field order
