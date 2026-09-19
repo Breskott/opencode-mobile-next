@@ -30,5 +30,12 @@
   "teamUiStartRunRefused": "رفض المضيف الهدف: {reason}",
   "teamUiStartRunPlannerOutput": "مخرجات المخطِّط",
   "teamUiStartRunDismiss": "تجاهل",
-  "teamUiStartRunSentAt": "أُرسل {time}"
+  "teamUiStartRunSentAt": "أُرسل {time}",
+  "teamUiStartRunDirectIntro": "المخطِّط متوقف على هذا المضيف. أعطِ مهمة واحدة مباشرةً إلى وكيل المشروع.",
+  "teamUiStartRunDirectTitle": "المهمة",
+  "teamUiStartRunDirectTitleHint": "سطر واحد: ماذا ينبغي أن يفعل الوكيل؟",
+  "teamUiStartRunDirectTitleRequired": "اكتب مهمة أولًا.",
+  "teamUiStartRunDirectDetails": "التفاصيل (اختياري)",
+  "teamUiStartRunDirectSend": "إرسال إلى وكيل",
+  "teamUiStartRunDirectRefused": "رفض المضيف المهمة: {reason}"
 }

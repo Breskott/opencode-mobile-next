@@ -13,7 +13,7 @@
 ///
 /// Writes (TEAM-202, §6) go through [mutate] and its typed helpers
 /// ([answerGate], [messageAgent], [controlAgent], [cancelRun],
-/// [assignWork]): a [MutationRecord] with a fresh idempotency key is
+/// [assignWork], [createWork] and the two-step [giveTask]): a [MutationRecord] with a fresh idempotency key is
 /// persisted BEFORE the gateway is called, the receipt updates it, and the
 /// host's matching `request.result` event (or the effect's own event)
 /// marks it confirmed. A record still sent after [mutationTimeout] becomes
@@ -1093,6 +1093,53 @@ class OrchestrationController extends ChangeNotifier {
   Future<MutationRecord> assignWork(String workId, {required String agentId}) =>
       mutate(MutationRequest.assign(workId, agentId: agentId));
 
+  /// Creates one work item (TEAM-306) titled [title] in the project
+  /// [projectId]; the created id is the record's
+  /// [MutationReceipt.createdId].
+  Future<MutationRecord> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+  }) => mutate(
+    MutationRequest.createWork(
+      title: title,
+      description: description,
+      projectId: projectId,
+    ),
+  );
+
+  /// Gives one task straight to an agent when the planner is off
+  /// (TEAM-306): creates the work item, then — when the host accepted it
+  /// and answered its id — assigns it to [agentId] (a pool id such as
+  /// `<rig>/gastown.polecat`). Work and runs are fetched again afterwards
+  /// so the new item shows without waiting for the stream. `assigned` is
+  /// null when the create was refused or came back without an id.
+  Future<({MutationRecord created, MutationRecord? assigned})> giveTask({
+    required String title,
+    String? description,
+    required String projectId,
+    required String agentId,
+  }) async {
+    final created = await createWork(
+      title: title,
+      description: description,
+      projectId: projectId,
+    );
+    final receipt = created.receipt;
+    final workId = receipt?.createdId;
+    MutationRecord? assigned;
+    if (receipt != null && receipt.isAccepted && workId != null) {
+      assigned = await assignWork(workId, agentId: agentId);
+    }
+    if (!_disposed && !_stoppedMeanwhile) {
+      _dirty
+        ..add(OrchestrationScope.work)
+        ..add(OrchestrationScope.runs);
+      unawaited(_refetchDirty());
+    }
+    return (created: created, assigned: assigned);
+  }
+
   /// Approves the merge request [mergeRequestId] (TEAM-205). The run's
   /// readiness is fetched again once the host answered.
   Future<MutationRecord> approveMergeRequest(
@@ -1243,6 +1290,7 @@ class OrchestrationController extends ChangeNotifier {
     MutationKind.controlAgent => _capabilities.controlAgent,
     MutationKind.cancelRun => _capabilities.controlCancelRun,
     MutationKind.assign => _capabilities.controlAssign,
+    MutationKind.createWork => _capabilities.controlCreateWork,
     MutationKind.approveMerge ||
     MutationKind.merge => _capabilities.mergeReadiness && _merges != null,
   };
@@ -1299,6 +1347,12 @@ class OrchestrationController extends ChangeNotifier {
       agentId: request.agentId ?? '',
       requestId: key,
     ),
+    MutationKind.createWork => gateway.createWork(
+      title: request.targetId,
+      description: request.text,
+      projectId: request.projectId,
+      requestId: key,
+    ),
   };
 
   /// Folds the gateway's receipt into the record: rejected settles it;
@@ -1340,7 +1394,10 @@ class OrchestrationController extends ChangeNotifier {
                   ),
           );
         }
-        if (receipt.upstreamStatus == 200) {
+        // A synchronous answer: 200, or 201 carrying the created resource
+        // (createWork's bead) — there is no later result event to wait for.
+        if (receipt.upstreamStatus == 200 ||
+            (receipt.upstreamStatus == 201 && receipt.createdId != null)) {
           return _update(
             key,
             status: MutationStatus.confirmed,
@@ -1379,6 +1436,7 @@ class OrchestrationController extends ChangeNotifier {
   /// | [RunChanged] cancelled / completed | cancelRun on that run |
   /// | [SessionChanged] stopped / woke | controlAgent stop, pause / resume, start, restart on that agent or session |
   /// | [BeadChanged] updated | assign on that work item; approveMerge on that request bead |
+  /// | [BeadChanged] created | createWork whose receipt carries that bead's id |
   void _settleMutations(OrchestrationEvent event) {
     if (event is RequestResult) {
       var matched = false;
@@ -1461,6 +1519,10 @@ class OrchestrationController extends ChangeNotifier {
                 event.beadId == _agentById(target)?.sessionId;
           }
           return false;
+        }
+        if (record.kind == MutationKind.createWork) {
+          return event.change == BeadChange.created &&
+              event.beadId == record.receipt?.createdId;
         }
         return (record.kind == MutationKind.assign ||
                 record.kind == MutationKind.approveMerge) &&

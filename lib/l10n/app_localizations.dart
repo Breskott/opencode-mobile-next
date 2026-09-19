@@ -23677,6 +23677,12 @@ abstract class AppLocalizations {
   /// **'Reassign work…'**
   String get teamUiControlReassign;
 
+  /// Receipt name of a direct task (TEAM-306): the work item created from the phone and handed to the project's agent pool
+  ///
+  /// In en, this message translates to:
+  /// **'Task sent to an agent'**
+  String get teamUiControlCreateWork;
+
   /// Title of the message sheet; {agent} is the agent name
   ///
   /// In en, this message translates to:
@@ -23976,6 +23982,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waking the planner…'**
   String get teamUiStartRunWaking;
+
+  /// Intro line of the direct-task form shown instead of the Start-a-run form when the planner is off and the host can create work (TEAM-306, phone lean profile)
+  ///
+  /// In en, this message translates to:
+  /// **'The planner is off on this host. Give one task straight to the project\'s agent.'**
+  String get teamUiStartRunDirectIntro;
+
+  /// Label of the required title field of the direct-task form
+  ///
+  /// In en, this message translates to:
+  /// **'Task'**
+  String get teamUiStartRunDirectTitle;
+
+  /// Hint inside the title field of the direct-task form
+  ///
+  /// In en, this message translates to:
+  /// **'One line: what should the agent do?'**
+  String get teamUiStartRunDirectTitleHint;
+
+  /// Field error when Send is tapped with an empty task title
+  ///
+  /// In en, this message translates to:
+  /// **'Write a task first.'**
+  String get teamUiStartRunDirectTitleRequired;
+
+  /// Label of the optional multi-line description field of the direct-task form
+  ///
+  /// In en, this message translates to:
+  /// **'Details (optional)'**
+  String get teamUiStartRunDirectDetails;
+
+  /// Primary button of the direct-task form: creates the work item and assigns it to the project's agent pool
+  ///
+  /// In en, this message translates to:
+  /// **'Send to an agent'**
+  String get teamUiStartRunDirectSend;
+
+  /// Inline error under the direct-task form when the host rejected the create
+  ///
+  /// In en, this message translates to:
+  /// **'The host refused the task: {reason}'**
+  String teamUiStartRunDirectRefused(String reason);
 
   /// Title of the pending card on the AI Team home after the objective was sent, until a run appears
   ///

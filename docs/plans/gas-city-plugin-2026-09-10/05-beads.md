@@ -586,6 +586,49 @@ Acceptance Criteria:
       here (no push notification in v1)
 - [ ] Quality gates
 
+### TEAM-306: Direct task to an agent when the planner is off (phone lean profile)
+Found during the TEAM-303 emulator proof on 2026-09-12: the phone's lean
+profile keeps `gastown.mayor` suspended, so the Start-a-run sheet stopped
+at "The planner (Mayor) is off on this host" and a phone-only user could
+start nothing. Depends on TEAM-301 (loopback controls); independent of
+TEAM-304/305.
+
+As a phone-hosted user with no PC, I want to hand one task straight to a
+project's agent pool from the Start-a-run sheet, so that the team does
+work for me even though the planner is off on this host.
+
+### Impact Table
+| Path | Change | Purpose | Notes |
+|---|---|---|---|
+| lib/domain/orchestration_gateway.dart | modify | `OrchestrationControlGateway.createWork`, `OrchestrationCapabilities.controlCreateWork` (on for `gascityLoopback` and `fixture`, off for `gascityFront`), `MutationReceipt.createdId` | the front has no create route; a PC-hosted city keeps its planner |
+| lib/orchestration/adapters/gascity/gascity_control.dart, gascity_gateway.dart | modify | `POST /beads` with the write-proof body (`title, description?, rig?, type: task, priority: 2, labels: [opencode-mobile]`) | 201 body is the bead; `raw['id']` is the new work id |
+| lib/orchestration/adapters/fixture/fixture_gateway.dart, none.dart | modify | `createWork` double answering `fx-new-1`; the none adapter rejects | |
+| tool/qa/gascity_fixture/fixture_server.py (+ test) | modify | `POST /beads` → 201 `fx-<n>` and a `bead.created` event | |
+| lib/state/mutation_store.dart, lib/state/orchestration.dart | modify | `MutationKind.createWork` (target = title, text = details, new `projectId`), `createWork`, `giveTask` (create → sling the created id → refetch work and runs); a 201 with an id confirms at once, `bead.created` confirms too | |
+| lib/state/team_planning.dart | modify | `teamWorkerPoolId(rig)` = `<rig>/gastown.polecat` | |
+| lib/ui/screens/team/start_run_sheet.dart, team_home_screen.dart | modify | Direct task form (`team-start-run-direct*`) when the planner is off, the host creates work and a project is listed; the home shows "Task sent to an agent · Confirmed" or the refusal | the host guide stays below the form |
+| lib/ui/widgets/team_controls.dart, team_receipt.dart | modify | Receipt word "Task sent to an agent"; gate matching ignores the kind | |
+| lib/l10n/app_en.arb, docs/qa/ai-team/messages_ar-startrun.json, messages_ar-control.json | modify | `teamUiStartRunDirect*`, `teamUiControlCreateWork` | |
+| test/team_controls_test.dart, team_control_test.dart, team_gascity_gateway_test.dart, team_fixture_gateway_test.dart, team_models_test.dart, team_runtime_test.dart | modify | Form → `createWork` then `assign` to `ocproof/gastown.polecat`; refused create stays on the sheet; front host keeps the planner-off copy; route body and headers; receipt `createdId`; request round-trip | |
+
+Acceptance Criteria:
+- [x] With the planner suspended or missing on a host that creates work
+      (loopback) and at least one project, the sheet shows the direct task
+      form: intro line, project (first by default), required title,
+      optional details, "Send to an agent", host guide below
+- [x] Send creates one bead (`POST /beads`) in the chosen rig and slings
+      it at `<rig>/gastown.polecat` with `reassign: true`; the sheet closes
+      and the home shows the receipt "Task sent to an agent · Confirmed"
+- [x] An empty title shows "Write a task first." and sends nothing; a
+      refused create stays on the sheet with the host's reason and slings
+      nothing; a refused sling reaches the home as its own receipt
+- [x] A front host (`gascityFront`, no `controlCreateWork`) keeps the
+      planner-off copy; so does a loopback host with no project listed
+- [x] Records persist with the title, details and rig; the fixture server
+      answers 201 and emits `bead.created`
+- [x] Quality gates: `flutter analyze`, the team suites and the fixture
+      server tests green; Arabic strings assembled, never hand-edited
+
 ## Dependency summary
 
 ```

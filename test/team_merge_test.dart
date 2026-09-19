@@ -165,6 +165,14 @@ class _Gateway implements OrchestrationGateway, OrchestrationMergeGateway {
   }) => _call(_Call('assign', workId, requestId));
 
   @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) => _call(_Call('createWork', title, requestId));
+
+  @override
   Future<MergeReadiness?> mergeReadiness(String runId) async {
     readinessReads += 1;
     final error = readinessError;

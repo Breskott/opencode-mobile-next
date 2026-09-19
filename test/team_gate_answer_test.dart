@@ -191,6 +191,14 @@ class _Gateway implements OrchestrationGateway {
     required String agentId,
     required String requestId,
   }) => _call(_Call('assign', workId, requestId, arg: agentId));
+
+  @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) => _call(_Call('createWork', title, requestId, arg: projectId));
 }
 
 class _Repository implements ProductRepository {

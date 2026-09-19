@@ -218,6 +218,19 @@ class _CountingGateway implements OrchestrationGateway {
     required String agentId,
     required String requestId,
   }) => inner.assign(workId, agentId: agentId, requestId: requestId);
+
+  @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) => inner.createWork(
+    title: title,
+    description: description,
+    projectId: projectId,
+    requestId: requestId,
+  );
 }
 
 const _profileId = 'srv-1';

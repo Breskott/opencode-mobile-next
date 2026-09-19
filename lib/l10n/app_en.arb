@@ -15493,6 +15493,10 @@
   "@teamUiControlReassign": {
     "description": "Button: open the picker of ready work items to move one onto this agent"
   },
+  "teamUiControlCreateWork": "Task sent to an agent",
+  "@teamUiControlCreateWork": {
+    "description": "Receipt name of a direct task (TEAM-306): the work item created from the phone and handed to the project's agent pool"
+  },
   "teamUiControlMessageTitle": "Message {agent}",
   "@teamUiControlMessageTitle": {
     "description": "Title of the message sheet; {agent} is the agent name",
@@ -15720,6 +15724,39 @@
   "teamUiStartRunWaking": "Waking the planner…",
   "@teamUiStartRunWaking": {
     "description": "Progress line while the sheet wakes a planner without a session before sending"
+  },
+  "teamUiStartRunDirectIntro": "The planner is off on this host. Give one task straight to the project's agent.",
+  "@teamUiStartRunDirectIntro": {
+    "description": "Intro line of the direct-task form shown instead of the Start-a-run form when the planner is off and the host can create work (TEAM-306, phone lean profile)"
+  },
+  "teamUiStartRunDirectTitle": "Task",
+  "@teamUiStartRunDirectTitle": {
+    "description": "Label of the required title field of the direct-task form"
+  },
+  "teamUiStartRunDirectTitleHint": "One line: what should the agent do?",
+  "@teamUiStartRunDirectTitleHint": {
+    "description": "Hint inside the title field of the direct-task form"
+  },
+  "teamUiStartRunDirectTitleRequired": "Write a task first.",
+  "@teamUiStartRunDirectTitleRequired": {
+    "description": "Field error when Send is tapped with an empty task title"
+  },
+  "teamUiStartRunDirectDetails": "Details (optional)",
+  "@teamUiStartRunDirectDetails": {
+    "description": "Label of the optional multi-line description field of the direct-task form"
+  },
+  "teamUiStartRunDirectSend": "Send to an agent",
+  "@teamUiStartRunDirectSend": {
+    "description": "Primary button of the direct-task form: creates the work item and assigns it to the project's agent pool"
+  },
+  "teamUiStartRunDirectRefused": "The host refused the task: {reason}",
+  "@teamUiStartRunDirectRefused": {
+    "description": "Inline error under the direct-task form when the host rejected the create",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   },
   "teamUiStartRunPlanning": "Planning… (Mayor)",
   "@teamUiStartRunPlanning": {

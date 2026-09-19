@@ -26,6 +26,8 @@ import '../../widgets/relative_time.dart';
 import '../../widgets/team_agent_row.dart';
 import '../../widgets/team_discovery_card.dart' show teamHostKindFor;
 import '../../widgets/team_host_form.dart' show teamHostKindLabel;
+import '../../widgets/team_controls.dart'
+    show teamControlReceiptWord, teamControlWord;
 import '../../widgets/team_receipt.dart';
 import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
@@ -138,8 +140,25 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
   }
 
   Future<void> _startRun() async {
-    await showStartRunSheet(context, widget.controller);
-    if (mounted) setState(() => _segment = TeamHomeSegment.runs);
+    final record = await showStartRunSheet(context, widget.controller);
+    if (!mounted) return;
+    setState(() => _segment = TeamHomeSegment.runs);
+    // A planner message shows as the Planning card; a direct task
+    // (TEAM-306) has no card of its own, so its receipt is said once here:
+    // "Task sent to an agent · Confirmed", or the host's refusal.
+    if (record == null || record.kind == MutationKind.message) return;
+    final l10n = _copy(context);
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        key: const ValueKey('team-home-direct-receipt'),
+        content: Text(
+          record.status == MutationStatus.rejected
+              ? teamReceiptLine(l10n, record)
+              : '${teamControlWord(l10n, record.request)} · '
+                    '${teamControlReceiptWord(l10n, record.status)}',
+        ),
+      ),
+    );
   }
 
   @override

@@ -14933,6 +14933,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiControlReassign => 'إعادة إسناد العمل…';
 
   @override
+  String get teamUiControlCreateWork => 'أُرسلت المهمة إلى وكيل';
+
+  @override
   String teamUiControlMessageTitle(String agent) {
     return 'رسالة إلى $agent';
   }
@@ -15104,6 +15107,31 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiStartRunWaking => 'جارٍ إيقاظ المخطِّط…';
+
+  @override
+  String get teamUiStartRunDirectIntro =>
+      'المخطِّط متوقف على هذا المضيف. أعطِ مهمة واحدة مباشرةً إلى وكيل المشروع.';
+
+  @override
+  String get teamUiStartRunDirectTitle => 'المهمة';
+
+  @override
+  String get teamUiStartRunDirectTitleHint =>
+      'سطر واحد: ماذا ينبغي أن يفعل الوكيل؟';
+
+  @override
+  String get teamUiStartRunDirectTitleRequired => 'اكتب مهمة أولًا.';
+
+  @override
+  String get teamUiStartRunDirectDetails => 'التفاصيل (اختياري)';
+
+  @override
+  String get teamUiStartRunDirectSend => 'إرسال إلى وكيل';
+
+  @override
+  String teamUiStartRunDirectRefused(String reason) {
+    return 'رفض المضيف المهمة: $reason';
+  }
 
   @override
   String get teamUiStartRunPlanning => 'جارٍ التخطيط… (Mayor)';

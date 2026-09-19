@@ -14653,6 +14653,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiControlReassign => 'Reassign work…';
 
   @override
+  String get teamUiControlCreateWork => 'Task sent to an agent';
+
+  @override
   String teamUiControlMessageTitle(String agent) {
     return 'Message $agent';
   }
@@ -14824,6 +14827,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiStartRunWaking => 'Waking the planner…';
+
+  @override
+  String get teamUiStartRunDirectIntro =>
+      'The planner is off on this host. Give one task straight to the project\'s agent.';
+
+  @override
+  String get teamUiStartRunDirectTitle => 'Task';
+
+  @override
+  String get teamUiStartRunDirectTitleHint =>
+      'One line: what should the agent do?';
+
+  @override
+  String get teamUiStartRunDirectTitleRequired => 'Write a task first.';
+
+  @override
+  String get teamUiStartRunDirectDetails => 'Details (optional)';
+
+  @override
+  String get teamUiStartRunDirectSend => 'Send to an agent';
+
+  @override
+  String teamUiStartRunDirectRefused(String reason) {
+    return 'The host refused the task: $reason';
+  }
 
   @override
   String get teamUiStartRunPlanning => 'Planning… (Mayor)';

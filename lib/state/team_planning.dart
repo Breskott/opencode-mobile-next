@@ -47,6 +47,15 @@ enum TeamSupervision {
 /// The planner every Gas Town city configures (06-decisions §A.1).
 const teamPlannerAgentId = 'gastown.mayor';
 
+/// The worker pool every Gas Town rig configures; a task slung at it is
+/// picked up by the next free polecat.
+const teamWorkerPoolName = 'gastown.polecat';
+
+/// The sling target of the worker pool of the rig [projectId]
+/// (`<rig>/gastown.polecat`), where a direct task goes when the planner
+/// is off (TEAM-306).
+String teamWorkerPoolId(String projectId) => '$projectId/$teamWorkerPoolName';
+
 /// First line of every Start-a-run message; how a record is recognised
 /// as a planning request after a restart.
 const teamPlanningMarker = '[OpenCode Mobile · Start a run]';
