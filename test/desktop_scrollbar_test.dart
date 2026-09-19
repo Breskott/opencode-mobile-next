@@ -182,7 +182,7 @@ void main() {
       'Workspace',
       'Files',
       'Activity',
-      'More',
+      'Settings',
     ]) {
       await tester.tap(
         find.descendant(

@@ -6235,9 +6235,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LocaleUiActivityHint => 'Permissions, questions, and forms';
 
   @override
-  String get e7LocaleUiMore => 'More';
-
-  @override
   String get e7LocaleUiMoreHint => 'Models, providers, terminal, settings';
 
   @override
@@ -6262,7 +6259,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LocaleUiFindSurface => 'Find in this surface';
 
   @override
-  String get e7LocaleUiDestinations => 'Workspace, Files, Activity, More';
+  String get e7LocaleUiDestinations => 'Workspace, Files, Activity, Settings';
 
   @override
   String get e7LocaleUiTerminal => 'Terminal';
@@ -7758,9 +7755,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7WorkspaceActivity => 'Activity';
-
-  @override
-  String get e7WorkspaceMore => 'More';
 
   @override
   String get e7WorkspaceModelAgent => 'Model / agent';
@@ -15825,4 +15819,156 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get safetyStopOrphanBody =>
       'Nothing is waiting on it, but whatever it was still doing is lost. It gets a polite stop, then a forced one after 5 seconds.';
+
+  @override
+  String get settingsHubGroupConnection => 'Connection';
+
+  @override
+  String get settingsHubGroupConversation => 'Conversation defaults';
+
+  @override
+  String get settingsHubGroupNotifications => 'Notifications';
+
+  @override
+  String get settingsHubGroupAgentSetup => 'Agent setup';
+
+  @override
+  String get settingsHubGroupUsage => 'Usage';
+
+  @override
+  String get settingsHubGroupPrivacy => 'Privacy';
+
+  @override
+  String get settingsHubGroupHelp => 'Help';
+
+  @override
+  String get settingsHubThisServer => 'This server';
+
+  @override
+  String settingsHubThisServerStatus(String name, String status) {
+    return '$name · $status';
+  }
+
+  @override
+  String get settingsHubAccounts => 'Accounts';
+
+  @override
+  String get settingsHubAccountsSubtitle =>
+      'Sign-in used by the agent on this server';
+
+  @override
+  String get settingsHubModelAndMode => 'Model and mode';
+
+  @override
+  String get settingsHubTranscriptSubtitle => 'Reasoning, timestamps and usage';
+
+  @override
+  String get settingsHubVoice => 'Voice';
+
+  @override
+  String get settingsHubVoiceSubtitle => 'Speech models stored on this phone';
+
+  @override
+  String get settingsHubPrivacyRow => 'Privacy and local data';
+
+  @override
+  String settingsHubNoResults(String query) {
+    return 'Nothing matches “$query”.';
+  }
+
+  @override
+  String get settingsHubSearchServerAliases =>
+      'server host url address password profile connection health status version update service';
+
+  @override
+  String get settingsHubSearchSavedServersAliases =>
+      'servers profiles host url password switch add edit remove';
+
+  @override
+  String get settingsHubSearchPhoneAliases =>
+      'phone termux local on-device on device android install setup storage services';
+
+  @override
+  String get settingsHubSearchAccountsAliases =>
+      'account codex sign in login logout';
+
+  @override
+  String get settingsHubSearchExternalAgentsAliases =>
+      'a2a external agents remote';
+
+  @override
+  String get settingsHubSearchTailscaleAliases =>
+      'tailscale vpn network remote private';
+
+  @override
+  String get settingsHubSearchDisconnectAliases => 'disconnect leave server';
+
+  @override
+  String get settingsHubSearchModelModeAliases =>
+      'model mode agent variant thinking default selected';
+
+  @override
+  String get settingsHubSearchShellAliases => 'shell terminal bash zsh command';
+
+  @override
+  String get settingsHubSearchPermissionsAliases =>
+      'permissions approvals always allow allowed revoke';
+
+  @override
+  String get settingsHubSearchTranscriptAliases =>
+      'transcript display thinking reasoning timestamps usage';
+
+  @override
+  String get settingsHubSearchVoiceAliases =>
+      'voice speech microphone dictation model';
+
+  @override
+  String get settingsHubSearchNotificationsAliases =>
+      'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers';
+
+  @override
+  String get settingsHubSearchAppearanceAliases =>
+      'appearance theme dark light language arabic english font text size colors';
+
+  @override
+  String get settingsHubSearchModelsAliases =>
+      'models agents provider AI reasoning favorites recent';
+
+  @override
+  String get settingsHubSearchProvidersAliases =>
+      'provider api key keys authentication connect';
+
+  @override
+  String get settingsHubSearchMcpAliases => 'mcp integrations servers tools';
+
+  @override
+  String get settingsHubSearchCommandsAliases =>
+      'commands tools skills references slash capabilities';
+
+  @override
+  String get settingsHubSearchPluginsAliases =>
+      'plugins plugin installed source status AI Team Gas City';
+
+  @override
+  String get settingsHubSearchUsageAliases =>
+      'usage cost tokens budget quota limit spent remaining';
+
+  @override
+  String get settingsHubSearchPrivacyAliases =>
+      'privacy drafts queue queued prompts read state storage clear delete';
+
+  @override
+  String get settingsHubSearchGuideAliases =>
+      'help guide connect tutorial start';
+
+  @override
+  String get settingsHubSearchBugAliases => 'bug feedback issue support report';
+
+  @override
+  String get settingsHubSearchDiagnosticsAliases =>
+      'diagnostics debug errors log';
+
+  @override
+  String get settingsHubSearchAboutAliases =>
+      'about version licenses open source notices privacy data';
 }

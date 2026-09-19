@@ -4260,10 +4260,6 @@
   "@e7LocaleUiActivityHint": {
     "description": "Locale selection or app shell: ActivityHint"
   },
-  "e7LocaleUiMore": "More",
-  "@e7LocaleUiMore": {
-    "description": "Locale selection or app shell: More"
-  },
   "e7LocaleUiMoreHint": "Models, providers, terminal, settings",
   "@e7LocaleUiMoreHint": {
     "description": "Locale selection or app shell: MoreHint"
@@ -4296,7 +4292,7 @@
   "@e7LocaleUiFindSurface": {
     "description": "App shell command menu or routing: FindSurface"
   },
-  "e7LocaleUiDestinations": "Workspace, Files, Activity, More",
+  "e7LocaleUiDestinations": "Workspace, Files, Activity, Settings",
   "@e7LocaleUiDestinations": {
     "description": "App shell command menu or routing: Destinations"
   },
@@ -6322,10 +6318,6 @@
   "e7WorkspaceActivity": "Activity",
   "@e7WorkspaceActivity": {
     "description": "Workspace and activity: Activity"
-  },
-  "e7WorkspaceMore": "More",
-  "@e7WorkspaceMore": {
-    "description": "Workspace and activity: More"
   },
   "e7WorkspaceModelAgent": "Model / agent",
   "@e7WorkspaceModelAgent": {
@@ -17147,5 +17139,186 @@
   "safetyStopOrphanBody": "Nothing is waiting on it, but whatever it was still doing is lost. It gets a polite stop, then a forced one after 5 seconds.",
   "@safetyStopOrphanBody": {
     "description": "Body of the confirmation shown before an orphaned helper process is stopped."
+  },
+  "settingsHubGroupConnection": "Connection",
+  "@settingsHubGroupConnection": {
+    "description": "Settings hub group header: the server connection."
+  },
+  "settingsHubGroupConversation": "Conversation defaults",
+  "@settingsHubGroupConversation": {
+    "description": "Settings hub group header: defaults for new conversations."
+  },
+  "settingsHubGroupNotifications": "Notifications",
+  "@settingsHubGroupNotifications": {
+    "description": "Settings hub group header."
+  },
+  "settingsHubGroupAgentSetup": "Agent setup",
+  "@settingsHubGroupAgentSetup": {
+    "description": "Settings hub group header: models, providers, MCP, plugins."
+  },
+  "settingsHubGroupUsage": "Usage",
+  "@settingsHubGroupUsage": {
+    "description": "Settings hub group header and title of the combined usage screen."
+  },
+  "settingsHubGroupPrivacy": "Privacy",
+  "@settingsHubGroupPrivacy": {
+    "description": "Settings hub group header."
+  },
+  "settingsHubGroupHelp": "Help",
+  "@settingsHubGroupHelp": {
+    "description": "Settings hub group header."
+  },
+  "settingsHubThisServer": "This server",
+  "@settingsHubThisServer": {
+    "description": "Settings hub row: the connected server, its status and details."
+  },
+  "settingsHubThisServerStatus": "{name} · {status}",
+  "@settingsHubThisServerStatus": {
+    "description": "Subtitle of the This server row: server name and its health line.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsHubAccounts": "Accounts",
+  "@settingsHubAccounts": {
+    "description": "Settings hub row: the agent account on the connected server."
+  },
+  "settingsHubAccountsSubtitle": "Sign-in used by the agent on this server",
+  "@settingsHubAccountsSubtitle": {
+    "description": "Subtitle of the Accounts row."
+  },
+  "settingsHubModelAndMode": "Model and mode",
+  "@settingsHubModelAndMode": {
+    "description": "Settings hub row: default model and agent mode for new conversations."
+  },
+  "settingsHubTranscriptSubtitle": "Reasoning, timestamps and usage",
+  "@settingsHubTranscriptSubtitle": {
+    "description": "Subtitle of the Transcript display row."
+  },
+  "settingsHubVoice": "Voice",
+  "@settingsHubVoice": {
+    "description": "Settings hub row: on-device voice input models."
+  },
+  "settingsHubVoiceSubtitle": "Speech models stored on this phone",
+  "@settingsHubVoiceSubtitle": {
+    "description": "Subtitle of the Voice row."
+  },
+  "settingsHubPrivacyRow": "Privacy and local data",
+  "@settingsHubPrivacyRow": {
+    "description": "Settings hub row and screen title: read-state sync and unsent work held on this device."
+  },
+  "settingsHubNoResults": "Nothing matches “{query}”.",
+  "@settingsHubNoResults": {
+    "description": "Shown when the settings search has no matching rows.",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsHubSearchServerAliases": "server host url address password profile connection health status version update service",
+  "@settingsHubSearchServerAliases": {
+    "description": "Search aliases for the This server row; preserve English terms to allow either language."
+  },
+  "settingsHubSearchSavedServersAliases": "servers profiles host url password switch add edit remove",
+  "@settingsHubSearchSavedServersAliases": {
+    "description": "Search aliases for the Saved servers row; preserve English terms."
+  },
+  "settingsHubSearchPhoneAliases": "phone termux local on-device on device android install setup storage services",
+  "@settingsHubSearchPhoneAliases": {
+    "description": "Search aliases for the On this phone row; preserve English terms."
+  },
+  "settingsHubSearchAccountsAliases": "account codex sign in login logout",
+  "@settingsHubSearchAccountsAliases": {
+    "description": "Search aliases for the Accounts row; preserve English terms."
+  },
+  "settingsHubSearchExternalAgentsAliases": "a2a external agents remote",
+  "@settingsHubSearchExternalAgentsAliases": {
+    "description": "Search aliases for the External agents row; preserve English terms."
+  },
+  "settingsHubSearchTailscaleAliases": "tailscale vpn network remote private",
+  "@settingsHubSearchTailscaleAliases": {
+    "description": "Search aliases for the Tailscale row; preserve English terms."
+  },
+  "settingsHubSearchDisconnectAliases": "disconnect leave server",
+  "@settingsHubSearchDisconnectAliases": {
+    "description": "Search aliases for the Disconnect row; preserve English terms."
+  },
+  "settingsHubSearchModelModeAliases": "model mode agent variant thinking default selected",
+  "@settingsHubSearchModelModeAliases": {
+    "description": "Search aliases for the Model and mode row; preserve English terms."
+  },
+  "settingsHubSearchShellAliases": "shell terminal bash zsh command",
+  "@settingsHubSearchShellAliases": {
+    "description": "Search aliases for the Default shell row; preserve English terms."
+  },
+  "settingsHubSearchPermissionsAliases": "permissions approvals always allow allowed revoke",
+  "@settingsHubSearchPermissionsAliases": {
+    "description": "Search aliases for the Always allowed actions row; preserve English terms."
+  },
+  "settingsHubSearchTranscriptAliases": "transcript display thinking reasoning timestamps usage",
+  "@settingsHubSearchTranscriptAliases": {
+    "description": "Search aliases for the Transcript display row; preserve English terms."
+  },
+  "settingsHubSearchVoiceAliases": "voice speech microphone dictation model",
+  "@settingsHubSearchVoiceAliases": {
+    "description": "Search aliases for the Voice row; preserve English terms."
+  },
+  "settingsHubSearchNotificationsAliases": "notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers",
+  "@settingsHubSearchNotificationsAliases": {
+    "description": "Search aliases for the Notifications row; preserve English terms."
+  },
+  "settingsHubSearchAppearanceAliases": "appearance theme dark light language arabic english font text size colors",
+  "@settingsHubSearchAppearanceAliases": {
+    "description": "Search aliases for the Appearance row; preserve English terms."
+  },
+  "settingsHubSearchModelsAliases": "models agents provider AI reasoning favorites recent",
+  "@settingsHubSearchModelsAliases": {
+    "description": "Search aliases for the Models row; preserve English terms."
+  },
+  "settingsHubSearchProvidersAliases": "provider api key keys authentication connect",
+  "@settingsHubSearchProvidersAliases": {
+    "description": "Search aliases for the Providers row; preserve English terms."
+  },
+  "settingsHubSearchMcpAliases": "mcp integrations servers tools",
+  "@settingsHubSearchMcpAliases": {
+    "description": "Search aliases for the MCP row; preserve English terms."
+  },
+  "settingsHubSearchCommandsAliases": "commands tools skills references slash capabilities",
+  "@settingsHubSearchCommandsAliases": {
+    "description": "Search aliases for the Commands and tools row; preserve English terms."
+  },
+  "settingsHubSearchPluginsAliases": "plugins plugin installed source status AI Team Gas City",
+  "@settingsHubSearchPluginsAliases": {
+    "description": "Search aliases for the Plugins row; preserve English terms."
+  },
+  "settingsHubSearchUsageAliases": "usage cost tokens budget quota limit spent remaining",
+  "@settingsHubSearchUsageAliases": {
+    "description": "Search aliases for the Usage rows; preserve English terms."
+  },
+  "settingsHubSearchPrivacyAliases": "privacy drafts queue queued prompts read state storage clear delete",
+  "@settingsHubSearchPrivacyAliases": {
+    "description": "Search aliases for the Privacy row; preserve English terms."
+  },
+  "settingsHubSearchGuideAliases": "help guide connect tutorial start",
+  "@settingsHubSearchGuideAliases": {
+    "description": "Search aliases for the Setup guide row; preserve English terms."
+  },
+  "settingsHubSearchBugAliases": "bug feedback issue support report",
+  "@settingsHubSearchBugAliases": {
+    "description": "Search aliases for the Report a bug row; preserve English terms."
+  },
+  "settingsHubSearchDiagnosticsAliases": "diagnostics debug errors log",
+  "@settingsHubSearchDiagnosticsAliases": {
+    "description": "Search aliases for the App diagnostics row; preserve English terms."
+  },
+  "settingsHubSearchAboutAliases": "about version licenses open source notices privacy data",
+  "@settingsHubSearchAboutAliases": {
+    "description": "Search aliases for the About rows; preserve English terms."
   }
 }

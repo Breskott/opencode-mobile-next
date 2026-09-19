@@ -438,7 +438,12 @@ void main() {
     addTearDown(h.disposeOverview);
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
-      expect(connection.repositoryCalls, 0);
+      // The quota screens never read the repository. The Settings hub does,
+      // exactly once, for its own Default shell row; that read is not quota's.
+      expect(
+        connection.repositoryCalls,
+        connection.allowSettingsHealth ? 1 : 0,
+      );
       expect(connection.wakeCalls, 0);
       expect(connection.transportCalls, connection.allowSettingsHealth ? 1 : 0);
     });

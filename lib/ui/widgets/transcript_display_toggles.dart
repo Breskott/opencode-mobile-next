@@ -24,7 +24,12 @@ class TranscriptDisplayToggles extends StatefulWidget {
     required this.reasoningExpanded,
     required this.timestampsVisible,
     this.dense = false,
+    this.connection,
   });
+
+  /// The connection to write to when the host already holds one (the Settings
+  /// hub); otherwise it is read from the provider scope.
+  final ConnectionController? connection;
 
   final bool reasoningExpanded;
   final bool timestampsVisible;
@@ -43,6 +48,7 @@ class _TranscriptDisplayTogglesState extends State<TranscriptDisplayToggles> {
   /// without a provider scope (isolated widget tests), where the switch still
   /// flips locally.
   ConnectionController? _connection() {
+    if (widget.connection != null) return widget.connection;
     try {
       return ProviderScope.containerOf(
         context,

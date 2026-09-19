@@ -6290,9 +6290,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiActivityHint => 'الأذونات والأسئلة والنماذج';
 
   @override
-  String get e7LocaleUiMore => 'المزيد';
-
-  @override
   String get e7LocaleUiMoreHint => 'النماذج ومزوّدو الخدمة والطرفية والإعدادات';
 
   @override
@@ -6317,7 +6314,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiFindSurface => 'البحث في هذه الصفحة';
 
   @override
-  String get e7LocaleUiDestinations => 'مساحة العمل، الملفات، النشاط، المزيد';
+  String get e7LocaleUiDestinations =>
+      'مساحة العمل، الملفات، النشاط، الإعدادات';
 
   @override
   String get e7LocaleUiTerminal => 'الطرفية';
@@ -7857,9 +7855,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7WorkspaceActivity => 'النشاط';
-
-  @override
-  String get e7WorkspaceMore => 'المزيد';
 
   @override
   String get e7WorkspaceModelAgent => 'النموذج / الوكيل';
@@ -16103,4 +16098,161 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get safetyStopOrphanBody =>
       'لا شيء ينتظرها، لكن ما كانت تنفذه يضيع. تتلقى إيقافًا لطيفًا، ثم إيقافًا قسريًا بعد 5 ثوانٍ.';
+
+  @override
+  String get settingsHubGroupConnection => 'الاتصال';
+
+  @override
+  String get settingsHubGroupConversation => 'افتراضيات المحادثة';
+
+  @override
+  String get settingsHubGroupNotifications => 'الإشعارات';
+
+  @override
+  String get settingsHubGroupAgentSetup => 'إعداد الوكيل';
+
+  @override
+  String get settingsHubGroupUsage => 'الاستخدام';
+
+  @override
+  String get settingsHubGroupPrivacy => 'الخصوصية';
+
+  @override
+  String get settingsHubGroupHelp => 'المساعدة';
+
+  @override
+  String get settingsHubThisServer => 'هذا الخادم';
+
+  @override
+  String settingsHubThisServerStatus(String name, String status) {
+    return '$name · $status';
+  }
+
+  @override
+  String get settingsHubAccounts => 'الحسابات';
+
+  @override
+  String get settingsHubAccountsSubtitle =>
+      'تسجيل الدخول الذي يستخدمه الوكيل على هذا الخادم';
+
+  @override
+  String get settingsHubModelAndMode => 'النموذج والوضع';
+
+  @override
+  String get settingsHubTranscriptSubtitle =>
+      'الاستدلال والطوابع الزمنية والاستخدام';
+
+  @override
+  String get settingsHubVoice => 'الصوت';
+
+  @override
+  String get settingsHubVoiceSubtitle => 'نماذج الكلام المخزنة على هذا الهاتف';
+
+  @override
+  String get settingsHubPrivacyRow => 'الخصوصية والبيانات المحلية';
+
+  @override
+  String settingsHubNoResults(String query) {
+    return 'لا توجد نتائج مطابقة لـ «$query».';
+  }
+
+  @override
+  String get settingsHubSearchServerAliases =>
+      'server host url address password profile connection health status version update service خادم مضيف عنوان كلمة مرور ملف اتصال حالة إصدار تحديث خدمة';
+
+  @override
+  String get settingsHubSearchSavedServersAliases =>
+      'servers profiles host url password switch add edit remove خوادم ملفات مضيف عنوان كلمة مرور تبديل إضافة تعديل إزالة';
+
+  @override
+  String get settingsHubSearchPhoneAliases =>
+      'phone termux local on-device on device android install setup storage services هاتف محلي جهاز أندرويد تثبيت إعداد تخزين خدمات';
+
+  @override
+  String get settingsHubSearchAccountsAliases =>
+      'account codex sign in login logout حساب تسجيل دخول خروج';
+
+  @override
+  String get settingsHubSearchExternalAgentsAliases =>
+      'a2a external agents remote وكلاء خارجيون';
+
+  @override
+  String get settingsHubSearchTailscaleAliases =>
+      'tailscale vpn network remote private شبكة خاصة بعيد';
+
+  @override
+  String get settingsHubSearchDisconnectAliases =>
+      'disconnect leave server قطع الاتصال مغادرة خادم';
+
+  @override
+  String get settingsHubSearchModelModeAliases =>
+      'model mode agent variant thinking default selected نموذج وضع وكيل تفكير افتراضي';
+
+  @override
+  String get settingsHubSearchShellAliases =>
+      'shell terminal bash zsh command صدفة طرفية أوامر';
+
+  @override
+  String get settingsHubSearchPermissionsAliases =>
+      'permissions approvals always allow allowed revoke أذونات موافقات سماح دائم إلغاء';
+
+  @override
+  String get settingsHubSearchTranscriptAliases =>
+      'transcript display thinking reasoning timestamps usage سجل عرض تفكير استدلال طوابع زمنية استخدام';
+
+  @override
+  String get settingsHubSearchVoiceAliases =>
+      'voice speech microphone dictation model صوت كلام ميكروفون إملاء نموذج';
+
+  @override
+  String get settingsHubSearchNotificationsAliases =>
+      'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers إشعارات تنبيهات ساعات الهدوء بطارية خلفية متابعة واي فاي مراقبة خوادم محفوظة';
+
+  @override
+  String get settingsHubSearchAppearanceAliases =>
+      'appearance theme dark light language arabic english font text size colors مظهر سمة داكن فاتح لغة عربية إنجليزية خط حجم نص ألوان';
+
+  @override
+  String get settingsHubSearchModelsAliases =>
+      'models agents provider AI reasoning favorites recent نماذج وكلاء مزود ذكاء اصطناعي استدلال مفضلة';
+
+  @override
+  String get settingsHubSearchProvidersAliases =>
+      'provider api key keys authentication connect مزود مفتاح مفاتيح مصادقة اتصال';
+
+  @override
+  String get settingsHubSearchMcpAliases =>
+      'mcp integrations servers tools تكاملات خوادم أدوات';
+
+  @override
+  String get settingsHubSearchCommandsAliases =>
+      'commands tools skills references slash capabilities أوامر أدوات مهارات مراجع إمكانات';
+
+  @override
+  String get settingsHubSearchPluginsAliases =>
+      'plugins plugin installed source status AI Team Gas City إضافات مثبت مصدر حالة فريق';
+
+  @override
+  String get settingsHubSearchUsageAliases =>
+      'usage cost tokens budget quota limit spent remaining استخدام تكلفة رموز ميزانية حصة حد منفق متبقي';
+
+  @override
+  String get settingsHubSearchPrivacyAliases =>
+      'privacy drafts queue queued prompts read state storage clear delete خصوصية مسودات قائمة انتظار حالة القراءة تخزين مسح حذف';
+
+  @override
+  String get settingsHubSearchGuideAliases =>
+      'help guide connect tutorial start مساعدة دليل اتصال بدء';
+
+  @override
+  String get settingsHubSearchBugAliases =>
+      'bug feedback issue support report خطأ ملاحظات مشكلة دعم بلاغ';
+
+  @override
+  String get settingsHubSearchDiagnosticsAliases =>
+      'diagnostics debug errors log تشخيص أخطاء سجل';
+
+  @override
+  String get settingsHubSearchAboutAliases =>
+      'about version licenses open source notices privacy data حول إصدار تراخيص مفتوح المصدر إشعارات خصوصية بيانات';
 }

@@ -41,6 +41,10 @@ class _V1Api extends OpenCodeApi with CompleteMessageHistory {
 
   @override
   Future<List<MessageWithParts>> messages(String id) async => [];
+
+  // The Settings hub probes health on open; keep it off the network.
+  @override
+  Future<Health> health() async => Health(healthy: true, version: '1.0.0');
 }
 
 /// A transport reporting the exact OpenCode 2 capability truth. Only the
@@ -489,9 +493,7 @@ void main() {
       final controller = await _controller(v2: false);
       addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _app(CodingSettingsScreen(controller: controller)),
-      );
+      await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
       await tester.pump();
 
       expect(
@@ -505,9 +507,7 @@ void main() {
       final controller = await _controller(v2: true);
       addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _app(CodingSettingsScreen(controller: controller)),
-      );
+      await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
       await tester.pump();
 
       // The row survives — a vanished settings row reads as a bug.
@@ -525,6 +525,8 @@ void main() {
       );
 
       // Tapping explains instead of doing nothing at all.
+      await tester.ensureVisible(row);
+      await tester.pump();
       await tester.tap(row);
       await tester.pumpAndSettle();
       expect(find.text('Requires an OpenCode 1 server'), findsOneWidget);

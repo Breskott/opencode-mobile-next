@@ -1,16 +1,17 @@
 part of '../settings_screen.dart';
 
-/// Coding defaults category: the server-backed default shell, the selected
-/// model and agent, and experimental notes.
-class CodingSettingsScreen extends StatefulWidget {
+/// The server-backed default shell, as one hub row that opens the shell
+/// sheet. It owns its own load/save state so the hub does not spend a request
+/// for a row a search has filtered out.
+class DefaultShellRow extends StatefulWidget {
   final ConnectionController controller;
-  const CodingSettingsScreen({super.key, required this.controller});
+  const DefaultShellRow({super.key, required this.controller});
 
   @override
-  State<CodingSettingsScreen> createState() => _CodingSettingsScreenState();
+  State<DefaultShellRow> createState() => _DefaultShellRowState();
 }
 
-class _CodingSettingsScreenState extends State<CodingSettingsScreen>
+class _DefaultShellRowState extends State<DefaultShellRow>
     with WidgetsBindingObserver {
   TerminalShellSettings? _shellSettings;
   String? _shellError;
@@ -40,8 +41,9 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
   Future<void> _loadShellSettings() async {
     // Runs from initState, so inherited lookups are not yet allowed.
     final copy = earlyAppLocalizations(context);
-    // The row is gated (§7 row 22) rather than removed, so it must not spend a
-    // request that can only come back as an "unavailable" error.
+    // The hub only builds this row when the server has shell settings; the
+    // guard keeps a capability change mid-life from spending a request that
+    // can only come back as an "unavailable" error.
     if (!widget.controller.capabilities.shellSettings) return;
     final generation = ++_shellLoadGeneration;
     setState(() {
@@ -200,84 +202,34 @@ class _CodingSettingsScreenState extends State<CodingSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final controller = widget.controller;
-    return Scaffold(
-      appBar: AppBar(title: Text(_settingsCopy(context).e7SettingsUi2)),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 24),
-        children: [
-          if (!controller.capabilities.shellSettings)
-            GatedRowTile(
-              feature: 'shell-settings',
-              title: _settingsCopy(context).e7SettingsUi35,
-              explainer: _settingsCopy(context).e7SettingsUi40,
-              leading: Icon(AppIconography.terminal),
-            )
-          else
-            ListTile(
-              key: const ValueKey('default-shell-settings-entry'),
-              leading: const Icon(AppIconography.terminal),
-              title: Text(_settingsCopy(context).e7SettingsUi35),
-              subtitle: Text(
-                _shellError != null
-                    ? _settingsCopy(context).e7SettingsRetryError(_shellError!)
-                    : _shellSettings == null
-                    ? _settingsCopy(context).e7SettingsUi41
-                    : _selectedShellLabel(_shellSettings!),
-              ),
-              trailing: _loadingShell || _savingShell
-                  ? const SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(AppIconography.chevronRight),
-              onTap: _loadingShell || _savingShell
-                  ? null
-                  : _shellError != null
-                  ? _loadShellSettings
-                  : _chooseShell,
-            ),
-          ListTile(
-            leading: const Icon(AppIconography.model),
-            title: Text(_settingsCopy(context).e7SettingsUi42),
-            subtitle: Text(
-              controller.selectedModel == null
-                  ? _settingsCopy(context).modelServerDefault
-                  : [
-                      controller.catalog?.models
-                              .where(
-                                (model) =>
-                                    model.providerID ==
-                                        controller.selectedModel!.providerID &&
-                                    model.id ==
-                                        controller.selectedModel!.modelID,
-                              )
-                              .firstOrNull
-                              ?.name ??
-                          presentedModelLabel(
-                            controller.selectedModel!.providerID,
-                            controller.selectedModel!.modelID,
-                          ),
-                      if (controller.selectedVariant.isNotEmpty)
-                        controller.selectedVariant,
-                    ].join(' · '),
-            ),
-            trailing: const Icon(AppIconography.chevronRight),
-            onTap: () => showModelPicker(context),
-          ),
-          ListTile(
-            leading: const Icon(AppIconography.support),
-            title: Text(_settingsCopy(context).e7SettingsUi44),
-            subtitle: Text(
-              controller.selectedAgent.isEmpty
-                  ? _settingsCopy(context).modelServerDefault
-                  : controller.selectedAgent,
-            ),
-            trailing: const Icon(AppIconography.chevronRight),
-            onTap: () => showModelPicker(context, focusAgent: true),
-          ),
-        ],
+    final copy = _settingsCopy(context);
+    final busy = _loadingShell || _savingShell;
+    return ListTile(
+      key: const ValueKey('default-shell-settings-entry'),
+      minTileHeight: 72,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+      minLeadingWidth: 32,
+      horizontalTitleGap: 12,
+      leading: const _CategoryIcon(icon: AppIconography.terminal),
+      title: Text(copy.e7SettingsUi35),
+      subtitle: Text(
+        _shellError != null
+            ? copy.e7SettingsRetryError(_shellError!)
+            : _shellSettings == null
+            ? copy.e7SettingsUi41
+            : _selectedShellLabel(_shellSettings!),
       ),
+      trailing: busy
+          ? const SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(AppIconography.chevronRight, size: 20),
+      onTap: busy
+          ? null
+          : _shellError != null
+          ? _loadShellSettings
+          : _chooseShell,
     );
   }
 

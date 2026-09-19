@@ -10351,12 +10351,6 @@ abstract class AppLocalizations {
   /// **'Permissions, questions, and forms'**
   String get e7LocaleUiActivityHint;
 
-  /// Locale selection or app shell: More
-  ///
-  /// In en, this message translates to:
-  /// **'More'**
-  String get e7LocaleUiMore;
-
   /// Locale selection or app shell: MoreHint
   ///
   /// In en, this message translates to:
@@ -10408,7 +10402,7 @@ abstract class AppLocalizations {
   /// App shell command menu or routing: Destinations
   ///
   /// In en, this message translates to:
-  /// **'Workspace, Files, Activity, More'**
+  /// **'Workspace, Files, Activity, Settings'**
   String get e7LocaleUiDestinations;
 
   /// App shell command menu or routing: Terminal
@@ -12822,12 +12816,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Activity'**
   String get e7WorkspaceActivity;
-
-  /// Workspace and activity: More
-  ///
-  /// In en, this message translates to:
-  /// **'More'**
-  String get e7WorkspaceMore;
 
   /// Workspace and activity: Model / agent
   ///
@@ -25563,6 +25551,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing is waiting on it, but whatever it was still doing is lost. It gets a polite stop, then a forced one after 5 seconds.'**
   String get safetyStopOrphanBody;
+
+  /// Settings hub group header: the server connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get settingsHubGroupConnection;
+
+  /// Settings hub group header: defaults for new conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation defaults'**
+  String get settingsHubGroupConversation;
+
+  /// Settings hub group header.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get settingsHubGroupNotifications;
+
+  /// Settings hub group header: models, providers, MCP, plugins.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent setup'**
+  String get settingsHubGroupAgentSetup;
+
+  /// Settings hub group header and title of the combined usage screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get settingsHubGroupUsage;
+
+  /// Settings hub group header.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get settingsHubGroupPrivacy;
+
+  /// Settings hub group header.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get settingsHubGroupHelp;
+
+  /// Settings hub row: the connected server, its status and details.
+  ///
+  /// In en, this message translates to:
+  /// **'This server'**
+  String get settingsHubThisServer;
+
+  /// Subtitle of the This server row: server name and its health line.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · {status}'**
+  String settingsHubThisServerStatus(String name, String status);
+
+  /// Settings hub row: the agent account on the connected server.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get settingsHubAccounts;
+
+  /// Subtitle of the Accounts row.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in used by the agent on this server'**
+  String get settingsHubAccountsSubtitle;
+
+  /// Settings hub row: default model and agent mode for new conversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Model and mode'**
+  String get settingsHubModelAndMode;
+
+  /// Subtitle of the Transcript display row.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning, timestamps and usage'**
+  String get settingsHubTranscriptSubtitle;
+
+  /// Settings hub row: on-device voice input models.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get settingsHubVoice;
+
+  /// Subtitle of the Voice row.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech models stored on this phone'**
+  String get settingsHubVoiceSubtitle;
+
+  /// Settings hub row and screen title: read-state sync and unsent work held on this device.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy and local data'**
+  String get settingsHubPrivacyRow;
+
+  /// Shown when the settings search has no matching rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches “{query}”.'**
+  String settingsHubNoResults(String query);
+
+  /// Search aliases for the This server row; preserve English terms to allow either language.
+  ///
+  /// In en, this message translates to:
+  /// **'server host url address password profile connection health status version update service'**
+  String get settingsHubSearchServerAliases;
+
+  /// Search aliases for the Saved servers row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'servers profiles host url password switch add edit remove'**
+  String get settingsHubSearchSavedServersAliases;
+
+  /// Search aliases for the On this phone row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'phone termux local on-device on device android install setup storage services'**
+  String get settingsHubSearchPhoneAliases;
+
+  /// Search aliases for the Accounts row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'account codex sign in login logout'**
+  String get settingsHubSearchAccountsAliases;
+
+  /// Search aliases for the External agents row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'a2a external agents remote'**
+  String get settingsHubSearchExternalAgentsAliases;
+
+  /// Search aliases for the Tailscale row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'tailscale vpn network remote private'**
+  String get settingsHubSearchTailscaleAliases;
+
+  /// Search aliases for the Disconnect row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'disconnect leave server'**
+  String get settingsHubSearchDisconnectAliases;
+
+  /// Search aliases for the Model and mode row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'model mode agent variant thinking default selected'**
+  String get settingsHubSearchModelModeAliases;
+
+  /// Search aliases for the Default shell row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'shell terminal bash zsh command'**
+  String get settingsHubSearchShellAliases;
+
+  /// Search aliases for the Always allowed actions row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'permissions approvals always allow allowed revoke'**
+  String get settingsHubSearchPermissionsAliases;
+
+  /// Search aliases for the Transcript display row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'transcript display thinking reasoning timestamps usage'**
+  String get settingsHubSearchTranscriptAliases;
+
+  /// Search aliases for the Voice row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'voice speech microphone dictation model'**
+  String get settingsHubSearchVoiceAliases;
+
+  /// Search aliases for the Notifications row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'notifications alerts quiet hours battery background check-in check in wi-fi wifi monitor saved servers'**
+  String get settingsHubSearchNotificationsAliases;
+
+  /// Search aliases for the Appearance row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'appearance theme dark light language arabic english font text size colors'**
+  String get settingsHubSearchAppearanceAliases;
+
+  /// Search aliases for the Models row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'models agents provider AI reasoning favorites recent'**
+  String get settingsHubSearchModelsAliases;
+
+  /// Search aliases for the Providers row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'provider api key keys authentication connect'**
+  String get settingsHubSearchProvidersAliases;
+
+  /// Search aliases for the MCP row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'mcp integrations servers tools'**
+  String get settingsHubSearchMcpAliases;
+
+  /// Search aliases for the Commands and tools row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'commands tools skills references slash capabilities'**
+  String get settingsHubSearchCommandsAliases;
+
+  /// Search aliases for the Plugins row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'plugins plugin installed source status AI Team Gas City'**
+  String get settingsHubSearchPluginsAliases;
+
+  /// Search aliases for the Usage rows; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'usage cost tokens budget quota limit spent remaining'**
+  String get settingsHubSearchUsageAliases;
+
+  /// Search aliases for the Privacy row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'privacy drafts queue queued prompts read state storage clear delete'**
+  String get settingsHubSearchPrivacyAliases;
+
+  /// Search aliases for the Setup guide row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'help guide connect tutorial start'**
+  String get settingsHubSearchGuideAliases;
+
+  /// Search aliases for the Report a bug row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'bug feedback issue support report'**
+  String get settingsHubSearchBugAliases;
+
+  /// Search aliases for the App diagnostics row; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'diagnostics debug errors log'**
+  String get settingsHubSearchDiagnosticsAliases;
+
+  /// Search aliases for the About rows; preserve English terms.
+  ///
+  /// In en, this message translates to:
+  /// **'about version licenses open source notices privacy data'**
+  String get settingsHubSearchAboutAliases;
 }
 
 class _AppLocalizationsDelegate

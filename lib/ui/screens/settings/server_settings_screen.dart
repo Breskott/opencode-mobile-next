@@ -1,7 +1,8 @@
 part of '../settings_screen.dart';
 
-/// Server category: connection identity, health, profiles, host management,
-/// and the server update flow.
+/// "This server": connection identity, health, host management, and the
+/// server update flow. Saved servers are a sibling row in the hub, not a row
+/// here, so each has one home.
 class ServerSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
   const ServerSettingsScreen({super.key, required this.controller});
@@ -267,13 +268,6 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                     )
                   : _settingsCopy(context).e7SettingsUi62,
             ),
-          ),
-          ListTile(
-            leading: const Icon(AppIconography.database),
-            title: Text(_settingsCopy(context).e7SettingsUi63),
-            subtitle: Text(_settingsCopy(context).e7SettingsUi64),
-            trailing: const Icon(AppIconography.chevronRight),
-            onTap: () => Navigator.of(context).pushNamed('/servers'),
           ),
           if (!managedLocally)
             ListTile(

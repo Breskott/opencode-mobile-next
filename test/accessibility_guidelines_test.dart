@@ -18,7 +18,6 @@ import 'package:opencode_mobile/ui/screens/activity_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat/permission_sheet.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
-import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -260,13 +259,15 @@ void main() {
       await _expectAccessible(tester);
     });
 
-    testWidgets('$label: the More hub meets the guidelines', (tester) async {
+    testWidgets('$label: the Settings tab meets the guidelines', (
+      tester,
+    ) async {
       final conn = await _controller();
       addTearDown(conn.dispose);
       await tester.pumpWidget(
         _scoped(
           conn,
-          Scaffold(body: LibraryScreen(controller: conn)),
+          Scaffold(body: SettingsScreen(controller: conn, embedded: true)),
           brightness,
         ),
       );
@@ -302,20 +303,6 @@ void main() {
         _scoped(
           conn,
           ManageProjectScreen(controller: conn, project: _project),
-          brightness,
-        ),
-      );
-      await _settle(tester);
-      await _expectAccessible(tester);
-    });
-
-    testWidgets('$label: the More hub meets the guidelines', (tester) async {
-      final conn = await _controller();
-      addTearDown(conn.dispose);
-      await tester.pumpWidget(
-        _scoped(
-          conn,
-          Scaffold(body: LibraryScreen(controller: conn)),
           brightness,
         ),
       );

@@ -121,9 +121,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('On · running now'), findsOneWidget);
 
-    await tester.tap(
-      find.byKey(const ValueKey('settings-category-background')),
-    );
+    final row = find.byKey(const ValueKey('settings-category-background'));
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    await tester.tap(row);
     await tester.pumpAndSettle();
     expect(find.text('Running now'), findsOneWidget);
 

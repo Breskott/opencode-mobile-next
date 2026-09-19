@@ -12,7 +12,7 @@ class LanguageSettingsTile extends StatelessWidget {
   Widget build(BuildContext context) => ValueListenableBuilder<Locale?>(
     valueListenable: controller.appLocale,
     builder: (context, locale, _) {
-      final l10n = AppLocalizations.of(context);
+      final l10n = lookupAppLocalizations(Localizations.localeOf(context));
       return ListTile(
         leading: const Icon(Icons.language_rounded),
         title: Text(l10n.e7LocaleUiLanguage),
@@ -70,7 +70,7 @@ class _LanguageSheetState extends State<_LanguageSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return PopScope(
       canPop: !_saving,
       child: ConstrainedBox(
