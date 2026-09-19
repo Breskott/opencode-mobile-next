@@ -146,9 +146,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get appTitle => 'OpenCode Mobile';
 
   @override
-  String get libraryBrowseSection => 'تصفّح';
-
-  @override
   String get libraryManageSection => 'إدارة';
 
   @override
@@ -2668,10 +2665,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get quotaTitle => 'رصيد الاستخدام المتبقي';
 
   @override
-  String get quotaSettingsSummary =>
-      'جامع بيانات Codex اختياري · يتطلب إعدادًا';
-
-  @override
   String get quotaDescription =>
       'اختر مزوّد خدمة لعرض فترات استخدام الحساب التي يُبلّغ عنها. وهي منفصلة عن استخدام الرموز والتكلفة في OpenCode.';
 
@@ -2988,9 +2981,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'أغلق هذه اللوحة واستخدم صف تسجيل الدخول غير المؤكد لإزالة منع إعادة المحاولة المحلي بعد التحقق من الخادم.';
 
   @override
-  String get pluginsTitle => 'الإضافات';
-
-  @override
   String get pluginsDescription =>
       'الإضافات التي أُبلغ عنها لهذا المشروع على الخادم. افحص الحالة والمصدر هنا؛ وأدِر الإضافات على الخادم.';
 
@@ -3249,21 +3239,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get monitorNotifications => 'الإشعار عند الحاجة إلى انتباه';
 
   @override
-  String get monitorWifi => 'Wi-Fi فقط';
-
-  @override
   String get monitorWifiDetail =>
       'تتوقف الفحوص مؤقتًا ما لم يرصد Android شبكة Wi-Fi نشطة. قد تؤدي شبكة VPN أو عدم توفر معلومات الشبكة إلى إيقاف الفحوص مؤقتًا.';
 
   @override
-  String get monitorWifiUnsupported => 'اكتشاف Wi-Fi غير متاح على هذه المنصة.';
-
-  @override
   String get monitorQuiet => 'ساعات الهدوء';
-
-  @override
-  String get monitorQuietDetail =>
-      'كتم تنبيهات الانتباه خلال هذه الأوقات المحلية. تستمر الفحوص.';
 
   @override
   String get monitorQuietStart => 'بداية ساعات الهدوء';
@@ -3367,10 +3347,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get monitorSelected => 'المشروع المحدد';
-
-  @override
-  String get monitorNoNotifications =>
-      'تتطلب إشعارات الخلفية أيضًا تفعيل «إبقاء الاتصال نشطًا» وإذن الإشعارات في إعدادات الخلفية.';
 
   @override
   String get monitorCheckIn => 'متابعة العمليات الطويلة';
@@ -3609,16 +3585,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get quotaMonitorEnable => 'تفعيل مراقبة الحصص';
-
-  @override
-  String get quotaMonitorNotifications =>
-      'تنبيهات الجهاز لحدود الحصص المبلّغ عنها';
-
-  @override
-  String get quotaMonitorWifi => 'القراءة على شبكة Wi-Fi مؤكدة فقط';
-
-  @override
-  String get quotaMonitorQuiet => 'ساعات الهدوء: 22:00–08:00 بالتوقيت المحلي';
 
   @override
   String get quotaMonitorDisabled => 'المراقبة متوقفة.';
@@ -6441,21 +6407,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SettingsUi1 => 'الخادم';
 
   @override
-  String get e7SettingsUi2 => 'إعدادات البرمجة الافتراضية';
-
-  @override
-  String get e7SettingsUi3 => 'الإشعارات والخلفية';
-
-  @override
-  String get e7SettingsUi5 => 'الخصوصية والأذونات';
-
-  @override
-  String get e7SettingsUi6 => 'التشخيص';
-
-  @override
-  String get e7SettingsUi7 => 'حول التطبيق';
-
-  @override
   String get e7SettingsUi8 => 'قطع الاتصال';
 
   @override
@@ -6557,12 +6508,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7SettingsUi41 => 'جارٍ تحميل الصدف من OpenCode…';
 
   @override
-  String get e7SettingsUi42 => 'النموذج المحدّد';
-
-  @override
-  String get e7SettingsUi44 => 'الوكيل المحدّد';
-
-  @override
   String get e7SettingsUi45 => 'تم نسخ أوامر تحديث الخادم';
 
   @override
@@ -6614,9 +6559,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SettingsUi62 => 'لم تُحفظ كلمة مرور للخادم';
-
-  @override
-  String get e7SettingsUi63 => 'إدارة الخوادم';
 
   @override
   String get e7SettingsUi64 =>
@@ -11068,48 +11010,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'يستخدم مزوّد الخدمة هذا أيضًا بيئة الخادم، التي لا يستطيع تطبيق الهاتف إزالتها وستبقى نشطة.';
 
   @override
-  String get e7LibrarySearchPhoneAliases =>
-      'termux local on device setup install server android terminal محلي هاتف جهاز إعداد تثبيت خادم أندرويد طرفية';
-
-  @override
-  String get e7LibrarySearchModelAliases =>
-      'AI reasoning favorites recent conversation session chat محادثة جلسة ذكاء اصطناعي استدلال مفضلة حديث';
-
-  @override
-  String get e7LibrarySearchProviderAliases =>
-      'API keys authentication connect مفاتيح مصادقة مزود اتصال';
-
-  @override
-  String get e7LibrarySearchMcpAliases =>
-      'integrations servers تكاملات خوادم أدوات';
-
-  @override
-  String get e7LibrarySearchCommandsAliases =>
-      'slash skills references capabilities أوامر مهارات مراجع إمكانات';
-
-  @override
-  String get e7LibrarySearchPluginsAliases =>
-      'plugin installed source status إضافات مثبت مصدر حالة';
-
-  @override
   String get e7LibrarySearchTerminalAliases =>
       'shell command line طرفية صدفة سطر أوامر';
 
   @override
   String get e7LibrarySearchImportAliases =>
       'backup restore transfer JSON conversation session chat جلسة نسخ احتياطي استعادة نقل محادثة';
-
-  @override
-  String get e7LibrarySearchSettingsAliases =>
-      'appearance theme language notifications privacy voice background server profile connection ملف شخصي مظهر سمة لغة إشعارات خصوصية صوت خلفية خادم';
-
-  @override
-  String get e7LibrarySearchGuideAliases =>
-      'help connect tutorial start مساعدة اتصال دليل بدء';
-
-  @override
-  String get e7LibrarySearchBugAliases =>
-      'feedback issue support ملاحظات مشكلة دعم';
 
   @override
   String get e7LibrarySearchShortcutsAliases =>
@@ -16032,9 +15938,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String teamUiPhoneFailedNoSpace(String detail) {
     return 'لا توجد مساحة كافية على هذا الهاتف. $detail حرّر بعض المساحة (يمكن لقسم «التخزين على هذا الهاتف» تنظيف ذاكرة البناء المؤقتة)، ثم حاول مجددًا.';
   }
-
-  @override
-  String get calmMoreToolsAndHelp => 'الأدوات والمساعدة';
 
   @override
   String get calmCodeOptions => 'خيارات الشفرة';

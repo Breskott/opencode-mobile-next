@@ -309,9 +309,6 @@ void main() {
     expect(find.text(_en.quotaMonitorDisable), findsOneWidget);
     // The three notification toggles moved to Notifications.
     expect(find.byType(Switch), findsNothing);
-    expect(find.text(_en.quotaMonitorNotifications), findsNothing);
-    expect(find.text(_en.quotaMonitorWifi), findsNothing);
-    expect(find.text(_en.quotaMonitorQuiet), findsNothing);
 
     // Changing the threshold leaves the record's other fields alone.
     await tester.tap(threshold);

@@ -1313,9 +1313,6 @@ void main() {
       expect(rules.notifications, isFalse);
       // Alerts, Wi-Fi only and quiet hours are not asked here, nor offered on
       // the source: they are shared and live in Notifications.
-      expect(find.text(_l10n.quotaMonitorNotifications), findsNothing);
-      expect(find.text(_l10n.quotaMonitorWifi), findsNothing);
-      expect(find.text(_l10n.quotaMonitorQuiet), findsNothing);
       expect(find.byType(Switch), findsNothing);
       // The threshold stays with the source.
       expect(

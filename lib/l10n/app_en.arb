@@ -50,10 +50,6 @@
   "@appTitle": {
     "description": "Application title shown in the task switcher / window title"
   },
-  "libraryBrowseSection": "Browse",
-  "@libraryBrowseSection": {
-    "description": "Section label above the More hub's browse destination grid"
-  },
   "libraryManageSection": "Manage",
   "@libraryManageSection": {
     "description": "Section label above the More hub's manage destination grid"
@@ -1388,10 +1384,6 @@
   "@quotaTitle": {
     "description": "Read-only subscription quota screen title"
   },
-  "quotaSettingsSummary": "Optional Codex collector · setup required",
-  "@quotaSettingsSummary": {
-    "description": "Settings row explaining remaining quota requires an optional server extension"
-  },
   "quotaDescription": "Choose a provider to view its reported account windows. These are separate from OpenCode token usage and cost.",
   "@quotaDescription": {
     "description": "Distinguishes account-wide rate-limit windows from project consumption"
@@ -1708,7 +1700,6 @@
   "uncertainAuthForgetDetail": "This clears only the local retry block. It does not cancel sign-in on the server. Check the server first to avoid running a second sign-in. No new sign-in will start.",
   "uncertainAuthForget": "Forget uncertain start",
   "uncertainAuthCloseHint": "Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.",
-  "pluginsTitle": "Plugins",
   "pluginsDescription": "Plugins reported for this project on the server. Inspect status and source here; manage plugins on the server.",
   "pluginsUnsupported": "This server does not support plugin inspection.",
   "pluginsDisconnected": "Connect to a server to inspect its plugins.",
@@ -1820,11 +1811,8 @@
   "monitorOptIn": "Monitor this server",
   "monitorOptInDetail": "Check pending permissions, questions and forms in its last selected project.",
   "monitorNotifications": "Notify when attention is needed",
-  "monitorWifi": "Wi-Fi only",
   "monitorWifiDetail": "Checks pause unless Android reports an active Wi-Fi network. VPN or unavailable network information may pause checks.",
-  "monitorWifiUnsupported": "Wi-Fi detection is unavailable on this platform.",
   "monitorQuiet": "Quiet hours",
-  "monitorQuietDetail": "Mute attention alerts during these local times. Checks continue.",
   "monitorQuietStart": "Quiet hours start",
   "monitorQuietEnd": "Quiet hours end",
   "monitorDisabled": "Not monitored · attention unknown",
@@ -1893,7 +1881,6 @@
     }
   },
   "monitorSelected": "Selected project",
-  "monitorNoNotifications": "Background notifications also require Keep live and notification permission in Background settings.",
   "monitorCheckIn": "Check in on long runs",
   "monitorCheckInDetail": "Shows when busy checks span the chosen time. Work may pause or restart between checks. At most one notification is attempted per observed interval, while Keep live is on.",
   "monitorCheckInDetailForeground": "Shows a check-in row when busy checks span the chosen time. Work may pause or restart between checks. This device cannot deliver reminders in the background.",
@@ -2027,9 +2014,6 @@
   "quotaMonitorRuntime": "Sources are checked in rotation, at most three per cycle; larger lists take several cycles. Background reads require the existing live service to be active; Android may stop it. Displayed readings expire when the collector says they do. Device alerts record past threshold readings, not current remaining allowance. This page never switches your active server.",
   "quotaMonitorEmpty": "No provider sources are monitored. Read Remaining for a trusted collector, then enable monitoring for that source.",
   "quotaMonitorEnable": "Enable quota monitoring",
-  "quotaMonitorNotifications": "Device alerts for reported quota thresholds",
-  "quotaMonitorWifi": "Read only on confirmed Wi-Fi",
-  "quotaMonitorQuiet": "Quiet hours: 22:00–08:00 local time",
   "quotaMonitorDisabled": "Monitoring is off.",
   "quotaMonitorWaiting": "Waiting for a fresh reading.",
   "quotaMonitorChecking": "Checking the trusted collector…",
@@ -4445,26 +4429,6 @@
   "@e7SettingsUi1": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi2": "Coding defaults",
-  "@e7SettingsUi2": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsUi3": "Notifications & background",
-  "@e7SettingsUi3": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsUi5": "Privacy & permissions",
-  "@e7SettingsUi5": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsUi6": "Diagnostics",
-  "@e7SettingsUi6": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsUi7": "About",
-  "@e7SettingsUi7": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsUi8": "Disconnect",
   "@e7SettingsUi8": {
     "description": "Settings and appearance user interface."
@@ -4589,14 +4553,6 @@
   "@e7SettingsUi41": {
     "description": "Settings and appearance user interface."
   },
-  "e7SettingsUi42": "Selected model",
-  "@e7SettingsUi42": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsUi44": "Selected agent",
-  "@e7SettingsUi44": {
-    "description": "Settings and appearance user interface."
-  },
   "e7SettingsUi45": "Server update commands copied",
   "@e7SettingsUi45": {
     "description": "Settings and appearance user interface."
@@ -4663,10 +4619,6 @@
   },
   "e7SettingsUi62": "No server password saved",
   "@e7SettingsUi62": {
-    "description": "Settings and appearance user interface."
-  },
-  "e7SettingsUi63": "Manage servers",
-  "@e7SettingsUi63": {
     "description": "Settings and appearance user interface."
   },
   "e7SettingsUi64": "Add, edit, or switch OpenCode servers",
@@ -10371,30 +10323,6 @@
   "@e7LibraryEnvironmentRemainsAfterDisconnect": {
     "description": "Library and project tools confirmation or count."
   },
-  "e7LibrarySearchPhoneAliases": "termux local on device setup install server android terminal",
-  "@e7LibrarySearchPhoneAliases": {
-    "description": "Search aliases for the phone destination; preserve English terms to allow either language."
-  },
-  "e7LibrarySearchModelAliases": "AI reasoning favorites recent conversation session chat",
-  "@e7LibrarySearchModelAliases": {
-    "description": "Search aliases for the model destination; preserve English terms to allow either language."
-  },
-  "e7LibrarySearchProviderAliases": "API keys authentication connect",
-  "@e7LibrarySearchProviderAliases": {
-    "description": "Search aliases for the provider destination; preserve English terms to allow either language."
-  },
-  "e7LibrarySearchMcpAliases": "integrations servers",
-  "@e7LibrarySearchMcpAliases": {
-    "description": "Search aliases for the mcp destination; preserve English terms to allow either language."
-  },
-  "e7LibrarySearchCommandsAliases": "slash skills references capabilities",
-  "@e7LibrarySearchCommandsAliases": {
-    "description": "Search aliases for the commands destination; preserve English terms to allow either language."
-  },
-  "e7LibrarySearchPluginsAliases": "plugin installed source status",
-  "@e7LibrarySearchPluginsAliases": {
-    "description": "Search aliases for the plugins destination; preserve English terms to allow either language."
-  },
   "e7LibrarySearchTerminalAliases": "shell command line",
   "@e7LibrarySearchTerminalAliases": {
     "description": "Search aliases for the terminal destination; preserve English terms to allow either language."
@@ -10402,18 +10330,6 @@
   "e7LibrarySearchImportAliases": "backup restore transfer JSON conversation session chat",
   "@e7LibrarySearchImportAliases": {
     "description": "Search aliases for the import destination; preserve English terms to allow either language."
-  },
-  "e7LibrarySearchSettingsAliases": "appearance theme language notifications privacy voice background server profile connection",
-  "@e7LibrarySearchSettingsAliases": {
-    "description": "Search aliases for the settings destination; preserve English terms to allow either language."
-  },
-  "e7LibrarySearchGuideAliases": "help connect tutorial start",
-  "@e7LibrarySearchGuideAliases": {
-    "description": "Search aliases for the guide destination; preserve English terms to allow either language."
-  },
-  "e7LibrarySearchBugAliases": "feedback issue support",
-  "@e7LibrarySearchBugAliases": {
-    "description": "Search aliases for the bug destination; preserve English terms to allow either language."
   },
   "e7LibrarySearchShortcutsAliases": "hotkeys help desktop",
   "@e7LibrarySearchShortcutsAliases": {
@@ -17085,7 +17001,6 @@
       }
     }
   },
-  "calmMoreToolsAndHelp": "Tools & help",
   "calmCodeOptions": "Code options",
   "phoneServerConnect": "Connect",
   "phoneServerOpen": "Open",

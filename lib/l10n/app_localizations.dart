@@ -338,12 +338,6 @@ abstract class AppLocalizations {
   /// **'OpenCode Mobile'**
   String get appTitle;
 
-  /// Section label above the More hub's browse destination grid
-  ///
-  /// In en, this message translates to:
-  /// **'Browse'**
-  String get libraryBrowseSection;
-
   /// Section label above the More hub's manage destination grid
   ///
   /// In en, this message translates to:
@@ -4448,12 +4442,6 @@ abstract class AppLocalizations {
   /// **'Remaining usage'**
   String get quotaTitle;
 
-  /// Settings row explaining remaining quota requires an optional server extension
-  ///
-  /// In en, this message translates to:
-  /// **'Optional Codex collector · setup required'**
-  String get quotaSettingsSummary;
-
   /// Distinguishes account-wide rate-limit windows from project consumption
   ///
   /// In en, this message translates to:
@@ -4891,12 +4879,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close this sheet and use the unconfirmed sign-in row to clear its local retry block after checking the server.'**
   String get uncertainAuthCloseHint;
-
-  /// No description provided for @pluginsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Plugins'**
-  String get pluginsTitle;
 
   /// No description provided for @pluginsDescription.
   ///
@@ -5360,35 +5342,17 @@ abstract class AppLocalizations {
   /// **'Notify when attention is needed'**
   String get monitorNotifications;
 
-  /// No description provided for @monitorWifi.
-  ///
-  /// In en, this message translates to:
-  /// **'Wi-Fi only'**
-  String get monitorWifi;
-
   /// No description provided for @monitorWifiDetail.
   ///
   /// In en, this message translates to:
   /// **'Checks pause unless Android reports an active Wi-Fi network. VPN or unavailable network information may pause checks.'**
   String get monitorWifiDetail;
 
-  /// No description provided for @monitorWifiUnsupported.
-  ///
-  /// In en, this message translates to:
-  /// **'Wi-Fi detection is unavailable on this platform.'**
-  String get monitorWifiUnsupported;
-
   /// No description provided for @monitorQuiet.
   ///
   /// In en, this message translates to:
   /// **'Quiet hours'**
   String get monitorQuiet;
-
-  /// No description provided for @monitorQuietDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Mute attention alerts during these local times. Checks continue.'**
-  String get monitorQuietDetail;
 
   /// No description provided for @monitorQuietStart.
   ///
@@ -5568,12 +5532,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Selected project'**
   String get monitorSelected;
-
-  /// No description provided for @monitorNoNotifications.
-  ///
-  /// In en, this message translates to:
-  /// **'Background notifications also require Keep live and notification permission in Background settings.'**
-  String get monitorNoNotifications;
 
   /// No description provided for @monitorCheckIn.
   ///
@@ -5952,24 +5910,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable quota monitoring'**
   String get quotaMonitorEnable;
-
-  /// No description provided for @quotaMonitorNotifications.
-  ///
-  /// In en, this message translates to:
-  /// **'Device alerts for reported quota thresholds'**
-  String get quotaMonitorNotifications;
-
-  /// No description provided for @quotaMonitorWifi.
-  ///
-  /// In en, this message translates to:
-  /// **'Read only on confirmed Wi-Fi'**
-  String get quotaMonitorWifi;
-
-  /// No description provided for @quotaMonitorQuiet.
-  ///
-  /// In en, this message translates to:
-  /// **'Quiet hours: 22:00–08:00 local time'**
-  String get quotaMonitorQuiet;
 
   /// No description provided for @quotaMonitorDisabled.
   ///
@@ -10624,36 +10564,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Coding defaults'**
-  String get e7SettingsUi2;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Notifications & background'**
-  String get e7SettingsUi3;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Privacy & permissions'**
-  String get e7SettingsUi5;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Diagnostics'**
-  String get e7SettingsUi6;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'About'**
-  String get e7SettingsUi7;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Disconnect'**
   String get e7SettingsUi8;
 
@@ -10840,18 +10750,6 @@ abstract class AppLocalizations {
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:
-  /// **'Selected model'**
-  String get e7SettingsUi42;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Selected agent'**
-  String get e7SettingsUi44;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
   /// **'Server update commands copied'**
   String get e7SettingsUi45;
 
@@ -10950,12 +10848,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No server password saved'**
   String get e7SettingsUi62;
-
-  /// Settings and appearance user interface.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage servers'**
-  String get e7SettingsUi63;
 
   /// Settings and appearance user interface.
   ///
@@ -17547,42 +17439,6 @@ abstract class AppLocalizations {
   /// **'This provider also uses the server environment, which mobile cannot remove and which will remain active.'**
   String get e7LibraryEnvironmentRemainsAfterDisconnect;
 
-  /// Search aliases for the phone destination; preserve English terms to allow either language.
-  ///
-  /// In en, this message translates to:
-  /// **'termux local on device setup install server android terminal'**
-  String get e7LibrarySearchPhoneAliases;
-
-  /// Search aliases for the model destination; preserve English terms to allow either language.
-  ///
-  /// In en, this message translates to:
-  /// **'AI reasoning favorites recent conversation session chat'**
-  String get e7LibrarySearchModelAliases;
-
-  /// Search aliases for the provider destination; preserve English terms to allow either language.
-  ///
-  /// In en, this message translates to:
-  /// **'API keys authentication connect'**
-  String get e7LibrarySearchProviderAliases;
-
-  /// Search aliases for the mcp destination; preserve English terms to allow either language.
-  ///
-  /// In en, this message translates to:
-  /// **'integrations servers'**
-  String get e7LibrarySearchMcpAliases;
-
-  /// Search aliases for the commands destination; preserve English terms to allow either language.
-  ///
-  /// In en, this message translates to:
-  /// **'slash skills references capabilities'**
-  String get e7LibrarySearchCommandsAliases;
-
-  /// Search aliases for the plugins destination; preserve English terms to allow either language.
-  ///
-  /// In en, this message translates to:
-  /// **'plugin installed source status'**
-  String get e7LibrarySearchPluginsAliases;
-
   /// Search aliases for the terminal destination; preserve English terms to allow either language.
   ///
   /// In en, this message translates to:
@@ -17594,24 +17450,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'backup restore transfer JSON conversation session chat'**
   String get e7LibrarySearchImportAliases;
-
-  /// Search aliases for the settings destination; preserve English terms to allow either language.
-  ///
-  /// In en, this message translates to:
-  /// **'appearance theme language notifications privacy voice background server profile connection'**
-  String get e7LibrarySearchSettingsAliases;
-
-  /// Search aliases for the guide destination; preserve English terms to allow either language.
-  ///
-  /// In en, this message translates to:
-  /// **'help connect tutorial start'**
-  String get e7LibrarySearchGuideAliases;
-
-  /// Search aliases for the bug destination; preserve English terms to allow either language.
-  ///
-  /// In en, this message translates to:
-  /// **'feedback issue support'**
-  String get e7LibrarySearchBugAliases;
 
   /// Search aliases for the shortcuts destination; preserve English terms to allow either language.
   ///
@@ -25431,12 +25269,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not enough space on this phone. {detail} Free some space (Storage on this phone can clean build caches), then try again.'**
   String teamUiPhoneFailedNoSpace(String detail);
-
-  /// No description provided for @calmMoreToolsAndHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Tools & help'**
-  String get calmMoreToolsAndHelp;
 
   /// No description provided for @calmCodeOptions.
   ///
