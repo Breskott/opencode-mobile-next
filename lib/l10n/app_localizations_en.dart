@@ -5480,7 +5480,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7ConnectionFailure44 =>
-      'Is the Codex listener running, and is this the right address?';
+      'Is the agent server running, and is this the right address?';
 
   @override
   String get e7ConnectionFailure45 =>

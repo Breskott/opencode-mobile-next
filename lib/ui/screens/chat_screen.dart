@@ -7252,9 +7252,13 @@ class _ChatScreenState extends State<ChatScreen>
                                   !_conn.busySessions.contains(
                                     widget.sessionID,
                                   ) &&
+                                  // A reply that failed is not the moment
+                                  // to offer "get told when it's done".
+                                  _promptError == null &&
                                   _messages.any(
                                     (message) =>
-                                        message.info.role == 'assistant',
+                                        message.info.role == 'assistant' &&
+                                        message.info.errorText == null,
                                   ),
                             ),
                             Center(

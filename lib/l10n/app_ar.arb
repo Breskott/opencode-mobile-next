@@ -1504,7 +1504,7 @@
   "e7ConnectionFailure41": "تأكّد من أن هذا التطبيق يدعم إصدار الخادم.",
   "e7ConnectionFailure42": "تعذّر الاتصال",
   "e7ConnectionFailure43": "فشل الاتصال بـ {hostLabel}. التفاصيل أدناه.",
-  "e7ConnectionFailure44": "هل خدمة استقبال اتصالات Codex قيد التشغيل، وهل هذا هو العنوان الصحيح؟",
+  "e7ConnectionFailure44": "هل خادم الوكيل يعمل، وهل هذا هو العنوان الصحيح؟",
   "e7ConnectionFailure45": "هل opencode serve قيد التشغيل، وهل هذا هو العنوان الصحيح؟",
   "e7PermissionAction1": "تشغيل أمر في الطرفية",
   "e7PermissionAction2": "تعديل ملف",

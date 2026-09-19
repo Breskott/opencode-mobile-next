@@ -1153,10 +1153,13 @@ class _LocalAgentProjectSheetState extends State<LocalAgentProjectSheet> {
       final initial = widget.initial;
       if (initial != null && projects.contains(initial)) {
         _selected = initial;
+      } else if (projects.isNotEmpty) {
+        // A typed path wins over the list on Continue, so a remembered folder
+        // that is no longer offered (seen live: `/root` from an older setup,
+        // outside the agent user's home) must not be pre-typed over it.
+        _selected = projects.first;
       } else if (initial != null && initial.isNotEmpty) {
         _path.text = initial;
-      } else if (projects.isNotEmpty) {
-        _selected = projects.first;
       }
     });
   }

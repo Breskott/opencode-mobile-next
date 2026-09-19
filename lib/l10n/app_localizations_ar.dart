@@ -5525,7 +5525,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7ConnectionFailure44 =>
-      'هل خدمة استقبال اتصالات Codex قيد التشغيل، وهل هذا هو العنوان الصحيح؟';
+      'هل خادم الوكيل يعمل، وهل هذا هو العنوان الصحيح؟';
 
   @override
   String get e7ConnectionFailure45 =>

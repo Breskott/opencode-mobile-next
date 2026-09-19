@@ -95,7 +95,7 @@ void main() {
   test('unknown Codex loopback errors stay an honest generic failure', () {
     final f = d('Health check failed', codex: true);
     expect(f.title, 'Could not connect');
-    expect(f.checks.join(' '), contains('Codex listener'));
+    expect(f.checks.join(' '), contains('agent server'));
     expect(f.checks.join(' '), isNot(contains('Nothing is listening')));
   });
 
