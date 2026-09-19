@@ -69,7 +69,8 @@ Files, diffs, git, terminal, attachments, slash commands, session fork/revert,
 todos and questions are off for this backend (the daemon has RPCs for several
 of them; they are not mapped yet). Pi has not completed a live turn in
 verification because the only Pi credential on the test machine was over quota.
-On-device hosting of the daemon in Termux is unexplored.
+Hosting the daemon on the phone itself is built but not yet verified on a
+device: see [claude-on-this-phone.md](claude-on-this-phone.md).
 
 ## Verification
 
