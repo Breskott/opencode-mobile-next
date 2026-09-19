@@ -48,6 +48,7 @@ import '../widgets/appearance_picker.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/entrance.dart';
 import '../widgets/confirm_sheet.dart';
+import '../widgets/safety_confirms.dart';
 import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/info_label.dart';
@@ -3452,7 +3453,10 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+  /// Every entry point (banner, session menu, /unshare) lands here, so the
+  /// confirmation cannot be skipped by choosing a different one.
   Future<void> _stopSharing() async {
+    if (!await confirmStopSharing(context) || !mounted) return;
     try {
       final repository = await _requireActionRepository();
       await repository.unshareSession(widget.sessionID);

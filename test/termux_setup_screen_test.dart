@@ -1602,7 +1602,10 @@ void main() {
       await _revealGuideTarget(tester, find.text('Stop local server'));
       fixture.pendingInventory = Completer<Map<String, Object>>();
       await tester.tap(find.text('Stop local server').hitTestable());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('confirm-stop-local-server')));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       expect(find.byType(RadioGroup<TermuxRuntime>), findsNothing);
       fixture.pendingInventory!.complete(
         _commandResult(stdout: fixture.inventoryOutput),
@@ -2064,10 +2067,41 @@ pid=
         'oc.managedServerRecovery.${store.profiles.first.id}',
         '{"enabled":true,"token":"synthetic-permit"}',
       );
-      await tester.ensureVisible(find.text('Stop local server'));
-      await tester.tap(find.text('Stop local server'));
+      // Stopping interrupts whatever the agent is running, so it asks first;
+      // both "Keep running" and the scrim leave the server alone.
+      Future<void> tapStop() async {
+        await tester.ensureVisible(find.text('Stop local server'));
+        await tester.tap(find.text('Stop local server'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+      }
+
+      await tapStop();
+      expect(
+        find.byKey(const ValueKey('stop-local-server-confirm-sheet')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('is interrupted'), findsOneWidget);
+      await tester.tap(find.text('Keep running'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(stopCalls, 0);
+      expect(connection.api, isNotNull);
+
+      await tapStop();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        find.byKey(const ValueKey('stop-local-server-confirm-sheet')),
+        findsNothing,
+      );
+      expect(stopCalls, 0);
+
+      await tapStop();
+      await tester.tap(find.byKey(const ValueKey('confirm-stop-local-server')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(stopCalls, 1);
       expect(connection.api, isNull);

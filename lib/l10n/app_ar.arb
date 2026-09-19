@@ -4249,5 +4249,15 @@
   "termuxRunningUnavailable": "تعذر التحقق من الخادم على هذا الهاتف.",
   "termuxStorageCatSharedCaches": "ملفات مؤقتة وبيانات حزم أخرى",
   "termuxStorageNoteSharedCaches": "قد تستخدم أدوات أخرى الملفات المؤقتة المشتركة والحزم المثبتة ومجلدات التنزيل، أو قد تحتوي على ملفات تحتاج إلى الاحتفاظ بها. لا يمكن حذفها من هنا.",
-  "termuxStorageRescanRequired": "فحص سابق · أعد الفحص قبل تنظيف المزيد"
+  "termuxStorageRescanRequired": "فحص سابق · أعد الفحص قبل تنظيف المزيد",
+  "safetyStopSharingTitle": "إيقاف مشاركة هذه الجلسة؟",
+  "safetyStopSharingBody": "يتوقف الرابط عن العمل لدى كل من يملكه. لا يتغير شيء في الجلسة نفسها.",
+  "safetyStopSharingKeep": "مواصلة المشاركة",
+  "safetyStopLocalServerTitle": "إيقاف الخادم المحلي؟",
+  "safetyStopLocalServerBody": "يتوقف كل ما ينفذه الوكيل على هذا الهاتف، وينقطع اتصال التطبيق بالخادم. تبقى مشاريعك ومحادثاتك على الهاتف؛ شغّل الخادم مرة أخرى للمتابعة.",
+  "safetyStopLocalServerKeep": "إبقاؤه قيد التشغيل",
+  "safetyMcpDisconnectTitle": "قطع الاتصال بـ {server}؟",
+  "safetyMcpDisconnectBody": "تفقد الوكلاء أدواته حتى تعيد توصيله، وقد يفشل استدعاء أداة قيد التنفيذ. تبقى إعداداته محفوظة.",
+  "safetyMcpDisconnectKeep": "البقاء متصلًا",
+  "safetyStopOrphanBody": "لا شيء ينتظرها، لكن ما كانت تنفذه يضيع. تتلقى إيقافًا لطيفًا، ثم إيقافًا قسريًا بعد 5 ثوانٍ."
 }

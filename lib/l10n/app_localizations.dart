@@ -25655,6 +25655,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Previous scan · Scan again before cleaning more'**
   String get termuxStorageRescanRequired;
+
+  /// Title of the confirmation shown before a shared session link is revoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing this session?'**
+  String get safetyStopSharingTitle;
+
+  /// Body of the stop sharing confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'The link stops working for anyone who has it. The session itself is not changed.'**
+  String get safetyStopSharingBody;
+
+  /// Cancel label of the stop sharing confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep sharing'**
+  String get safetyStopSharingKeep;
+
+  /// Title of the confirmation shown before the server on this phone is stopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the local server?'**
+  String get safetyStopLocalServerTitle;
+
+  /// Body of the stop local server confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything the agent is running on this phone is interrupted, and this app disconnects from it. Your projects and conversations stay on the phone; start the server again to continue.'**
+  String get safetyStopLocalServerBody;
+
+  /// Cancel label of the stop local server confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep running'**
+  String get safetyStopLocalServerKeep;
+
+  /// Title of the confirmation shown before an MCP server is disconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect {server}?'**
+  String safetyMcpDisconnectTitle(String server);
+
+  /// Body of the MCP server disconnect confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents lose its tools until you connect it again, and a tool call in progress may fail. Its configuration stays saved.'**
+  String get safetyMcpDisconnectBody;
+
+  /// Cancel label of the MCP server disconnect confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay connected'**
+  String get safetyMcpDisconnectKeep;
+
+  /// Body of the confirmation shown before an orphaned helper process is stopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is waiting on it, but whatever it was still doing is lost. It gets a polite stop, then a forced one after 5 seconds.'**
+  String get safetyStopOrphanBody;
 }
 
 class _AppLocalizationsDelegate

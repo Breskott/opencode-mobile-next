@@ -16183,4 +16183,40 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get termuxStorageRescanRequired =>
       'فحص سابق · أعد الفحص قبل تنظيف المزيد';
+
+  @override
+  String get safetyStopSharingTitle => 'إيقاف مشاركة هذه الجلسة؟';
+
+  @override
+  String get safetyStopSharingBody =>
+      'يتوقف الرابط عن العمل لدى كل من يملكه. لا يتغير شيء في الجلسة نفسها.';
+
+  @override
+  String get safetyStopSharingKeep => 'مواصلة المشاركة';
+
+  @override
+  String get safetyStopLocalServerTitle => 'إيقاف الخادم المحلي؟';
+
+  @override
+  String get safetyStopLocalServerBody =>
+      'يتوقف كل ما ينفذه الوكيل على هذا الهاتف، وينقطع اتصال التطبيق بالخادم. تبقى مشاريعك ومحادثاتك على الهاتف؛ شغّل الخادم مرة أخرى للمتابعة.';
+
+  @override
+  String get safetyStopLocalServerKeep => 'إبقاؤه قيد التشغيل';
+
+  @override
+  String safetyMcpDisconnectTitle(String server) {
+    return 'قطع الاتصال بـ $server؟';
+  }
+
+  @override
+  String get safetyMcpDisconnectBody =>
+      'تفقد الوكلاء أدواته حتى تعيد توصيله، وقد يفشل استدعاء أداة قيد التنفيذ. تبقى إعداداته محفوظة.';
+
+  @override
+  String get safetyMcpDisconnectKeep => 'البقاء متصلًا';
+
+  @override
+  String get safetyStopOrphanBody =>
+      'لا شيء ينتظرها، لكن ما كانت تنفذه يضيع. تتلقى إيقافًا لطيفًا، ثم إيقافًا قسريًا بعد 5 ثوانٍ.';
 }

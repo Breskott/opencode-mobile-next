@@ -16,6 +16,7 @@ import '../../termux/bridge.dart';
 import '../../termux/managed_server_recovery.dart';
 import '../app_theme.dart';
 import '../widgets/confirm_sheet.dart';
+import '../widgets/safety_confirms.dart';
 import '../widgets/setup_terminal.dart';
 import '../widgets/team_phone_onboarding.dart';
 import '../widgets/termux_phone_tools.dart';
@@ -1476,6 +1477,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
 
   Future<void> _stopServer() async {
     if (_busy || _connecting) return;
+    if (!await confirmStopLocalServer(context)) return;
+    // The screen kept polling while the sheet was open; re-check the guards.
+    if (!mounted || _busy || _connecting) return;
     final runtime = _runtime;
     _stopPolling();
     setState(() {
