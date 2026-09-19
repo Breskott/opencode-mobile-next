@@ -61,7 +61,7 @@ Widget _app(ProfileStore store, ConnectionController controller) =>
     );
 
 Future<void> _openEditor(WidgetTester tester) async {
-  final connect = find.byKey(const ValueKey('welcome-connect-card'));
+  final connect = find.byKey(const ValueKey('welcome-choice-computer'));
   await tester.ensureVisible(connect);
   await tester.pumpAndSettle();
   await tester.tap(connect);

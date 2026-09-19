@@ -73,7 +73,7 @@ Widget _app(_RecordingProfileStore store, ConnectionController controller) =>
     );
 
 Future<void> _openEditor(WidgetTester tester) async {
-  await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
+  await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
   await tester.pumpAndSettle();
 }
 

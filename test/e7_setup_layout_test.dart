@@ -191,7 +191,7 @@ void main() {
             expect(docs.hitTestable(), findsOneWidget);
           }
           if (page == 'servers') {
-            final connect = find.byKey(const ValueKey('welcome-connect-card'));
+            final connect = find.byKey(const ValueKey('welcome-choice-computer'));
             await tester.ensureVisible(connect);
             await tester.tap(connect);
             await tester.pumpAndSettle();

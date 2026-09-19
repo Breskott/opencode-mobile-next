@@ -464,7 +464,7 @@ void main() {
         ),
       );
       await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
+      await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
       await tester.pumpAndSettle();
       // The editor's entry point is meant to be there; the host form and
       // every other plugin widget are not.

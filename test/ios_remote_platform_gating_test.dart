@@ -428,11 +428,12 @@ void main() {
       final controller = ConnectionController(store);
       addTearDown(controller.dispose);
       await tester.pumpWidget(_screen(controller, const ServersScreen()));
-      expect(find.text('Connect to a server'), findsOneWidget);
+      expect(find.text('On my computer'), findsOneWidget);
+      expect(find.text('On this phone'), findsNothing);
       expect(find.text('Set up OpenCode 1 or 2 on this phone.'), findsNothing);
       expect(find.textContaining('Termux'), findsNothing);
 
-      await tester.tap(find.text('Connect to a server'));
+      await tester.tap(find.text('On my computer'));
       await _pumpFrames(tester);
       expect(find.text('Paste pairing code'), findsOneWidget);
       expect(find.text('Scan'), findsNothing);

@@ -1644,7 +1644,7 @@ void main() {
         child: const MaterialApp(home: ServersScreen()),
       ),
     );
-    await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
+    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
     await tester.pumpAndSettle();
 
     expect(find.text('Add server'), findsOneWidget);

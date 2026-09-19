@@ -16004,4 +16004,67 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverSwitcherOpen => 'Switch server';
+
+  @override
+  String get firstRunWhereQuestion => 'Where does your coding agent run?';
+
+  @override
+  String get firstRunOnComputer => 'On my computer';
+
+  @override
+  String get firstRunOnComputerDetail => 'Connect to an agent that runs there.';
+
+  @override
+  String get firstRunOnPhoneDetail => 'Set one up here. No computer needed.';
+
+  @override
+  String get firstRunJustShowMe => 'Just show me';
+
+  @override
+  String get firstRunWhichAgent => 'Which agent?';
+
+  @override
+  String get firstRunAgentOpenCode => 'OpenCode';
+
+  @override
+  String get firstRunAgentClaudeOrPi => 'Claude Code or Pi';
+
+  @override
+  String get firstRunAgentClaudeOrPiDetail =>
+      'Through the Paseo daemon. Experimental.';
+
+  @override
+  String get firstRunAgentCodex => 'Codex';
+
+  @override
+  String get firstRunAgentCodexDetail =>
+      'Through Codex app-server. Experimental.';
+
+  @override
+  String get firstRunRunOnComputer => 'On your computer, run:';
+
+  @override
+  String get firstRunPairingNextScan =>
+      'Then paste or scan the code it prints.';
+
+  @override
+  String get firstRunPairingNextPaste => 'Then paste the code it prints.';
+
+  @override
+  String get firstRunNotSameNetwork => 'Not on the same network?';
+
+  @override
+  String get firstRunShowCommands => 'Show the commands';
+
+  @override
+  String get firstRunCommandsPaseoNetwork =>
+      'To reach it from this phone over your private network, listen on that address and set a password:';
+
+  @override
+  String get firstRunCommandsCodexToken =>
+      'Create the connection token before you start it:';
+
+  @override
+  String get firstRunCommandsCodexUsb =>
+      'A phone on a USB cable reaches it with:';
 }

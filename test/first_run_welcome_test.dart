@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
+import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
+import 'package:opencode_mobile/ui/widgets/first_run_choice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<(ProfileStore, ConnectionController)> _state() async {
@@ -39,6 +41,7 @@ Widget _app(
   ProfileStore store,
   ConnectionController controller, {
   double textScale = 1,
+  TextDirection direction = TextDirection.ltr,
   Map<String, WidgetBuilder> routes = const {},
 }) => ProviderScope(
   overrides: [
@@ -46,11 +49,14 @@ Widget _app(
     connProvider.overrideWithValue(controller),
   ],
   child: MaterialApp(
-    builder: (context, child) => MediaQuery(
-      data: MediaQuery.of(
-        context,
-      ).copyWith(textScaler: TextScaler.linear(textScale)),
-      child: child ?? const SizedBox.shrink(),
+    builder: (context, child) => Directionality(
+      textDirection: direction,
+      child: MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child ?? const SizedBox.shrink(),
+      ),
     ),
     routes: routes,
     home: const ServersScreen(),
@@ -96,31 +102,80 @@ void main() {
     expect(normalizeServerProfileUrl(''), '');
   });
 
-  testWidgets('first run shows the welcome paths instead of an empty list', (
+  testWidgets('first run asks one question with exactly three choices', (
     tester,
   ) async {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
 
-    expect(find.byKey(const ValueKey('first-run-welcome')), findsOneWidget);
-    expect(find.text('Connect to a server'), findsOneWidget);
-    expect(find.text('Try demo'), findsOneWidget);
-    expect(find.text('More setup options'), findsOneWidget);
-    expect(find.text('On this phone'), findsOneWidget);
+    final welcome = find.byKey(const ValueKey('first-run-welcome'));
+    expect(welcome, findsOneWidget);
+    expect(find.text('Keep your work moving.'), findsOneWidget);
+    expect(find.text('Where does your coding agent run?'), findsOneWidget);
     expect(
-      find.text('Set up OpenCode 1 or 2 here with Termux.'),
-      findsOneWidget,
+      find.descendant(of: welcome, matching: find.byType(FirstRunChoice)),
+      findsNWidgets(3),
     );
-
-    await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
-    expect(tester.testTextInput.isVisible, isFalse);
-    expect(find.text('Save & connect'), findsOneWidget);
+    expect(find.text('On my computer'), findsOneWidget);
+    expect(find.text('On this phone'), findsOneWidget);
+    expect(find.text('Just show me'), findsOneWidget);
+    // The value sentence leads, the question follows, and the choices keep
+    // the plan's order.
+    double top(String text) => tester.getTopLeft(find.text(text)).dy;
+    expect(top('Keep your work moving.'), lessThan(top('On my computer')));
+    expect(
+      top('Where does your coding agent run?'),
+      lessThan(top('On my computer')),
+    );
+    expect(top('On my computer'), lessThan(top('On this phone')));
+    expect(top('On this phone'), lessThan(top('Just show me')));
+    // No product names before the person has chosen a path.
+    for (final name in ['OpenCode 2', 'Termux', 'Tailscale', 'Codex']) {
+      expect(
+        find.descendant(of: welcome, matching: find.textContaining(name)),
+        findsNothing,
+        reason: name,
+      );
+    }
   });
 
-  testWidgets('welcome routes reach the guide and Termux setup', (
+  testWidgets('a platform without the phone path offers two choices', (
+    tester,
+  ) async {
+    debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
+    addTearDown(() => debugPlatformCapabilities = null);
+    final (store, controller) = await _state();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(store, controller));
+
+    expect(find.byType(FirstRunChoice), findsNWidgets(2));
+    expect(find.text('On my computer'), findsOneWidget);
+    expect(find.text('Just show me'), findsOneWidget);
+    expect(find.text('On this phone'), findsNothing);
+  });
+
+  testWidgets('the doors that left the welcome are gone from it', (
+    tester,
+  ) async {
+    final (store, controller) = await _state();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(store, controller));
+
+    expect(find.text('More setup options'), findsNothing);
+    expect(find.byKey(const ValueKey('welcome-tailscale-card')), findsNothing);
+    expect(find.byKey(const ValueKey('welcome-guide-card')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('connect-existing-opencode2')),
+      findsNothing,
+    );
+    expect(find.text('External agents'), findsNothing);
+    expect(find.byTooltip('Setup guide'), findsNothing);
+    // About stays: notices must be readable before any connection exists.
+    expect(find.byTooltip('About and open source notices'), findsOneWidget);
+  });
+
+  testWidgets('the phone choice and the demo open their destinations', (
     tester,
   ) async {
     final (store, controller) = await _state();
@@ -130,10 +185,6 @@ void main() {
         store,
         controller,
         routes: {
-          '/guide': (_) => Scaffold(
-            appBar: AppBar(title: const Text('Guide')),
-            body: const Text('guide-route'),
-          ),
           '/termux-setup': (_) => Scaffold(
             appBar: AppBar(title: const Text('Termux')),
             body: const Text('termux-route'),
@@ -142,26 +193,21 @@ void main() {
       ),
     );
 
-    await tester.ensureVisible(find.text('More setup options'));
-    await tester.tap(find.text('More setup options'));
+    await tester.tap(find.byKey(const ValueKey('welcome-choice-phone')));
     await tester.pumpAndSettle();
-    final guideCard = find.byKey(const ValueKey('welcome-guide-card'));
-    await Scrollable.ensureVisible(tester.element(guideCard), alignment: .5);
-    await tester.pumpAndSettle();
-    expect(guideCard.hitTestable(), findsOneWidget);
-    await tester.tap(guideCard);
-    await tester.pumpAndSettle();
-    expect(find.text('guide-route'), findsOneWidget);
+    expect(find.text('termux-route'), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    final termuxCard = find.byKey(const ValueKey('welcome-termux-card'));
-    await Scrollable.ensureVisible(tester.element(termuxCard), alignment: .5);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('welcome-choice-demo')),
+    );
     await tester.pumpAndSettle();
-    expect(termuxCard.hitTestable(), findsOneWidget);
-    await tester.tap(termuxCard);
-    await tester.pumpAndSettle();
-    expect(find.text('termux-route'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('welcome-choice-demo')));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Offline demo'), findsOneWidget);
   });
 
   testWidgets('a saved profile keeps the ordinary server list', (tester) async {
@@ -230,28 +276,35 @@ void main() {
     );
   }
 
-  testWidgets('welcome renders at 320dp with 2x text', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final (store, controller) = await _state();
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(_app(store, controller, textScale: 2));
+  for (final direction in TextDirection.values) {
+    testWidgets('welcome fits 320dp at 2.5x text, ${direction.name}', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final (store, controller) = await _state();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _app(store, controller, textScale: 2.5, direction: direction),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('first-run-welcome')), findsOneWidget);
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('More setup options'));
-    await tester.ensureVisible(find.text('More setup options'));
-    await tester.tap(find.text('More setup options'));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('welcome-guide-card')),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.byKey(const ValueKey('welcome-guide-card')), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      expect(tester.takeException(), isNull);
+      for (final key in ['computer', 'phone', 'demo']) {
+        final choice = find.byKey(ValueKey('welcome-choice-$key'));
+        await tester.scrollUntilVisible(
+          choice,
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        final rect = tester.getRect(choice);
+        expect(rect.left, greaterThanOrEqualTo(0), reason: key);
+        expect(rect.right, lessThanOrEqualTo(320), reason: key);
+        expect(rect.height, greaterThanOrEqualTo(48), reason: key);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('pasting a bare address into the editor fills the scheme', (
     tester,
@@ -259,7 +312,7 @@ void main() {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
+    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -291,7 +344,7 @@ void main() {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
+    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -330,7 +383,7 @@ void main() {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
+    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -386,7 +439,7 @@ void main() {
         },
       ),
     );
-    await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
+    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -433,7 +486,7 @@ void main() {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
+    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -468,7 +521,7 @@ void main() {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
+    await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
     await tester.pumpAndSettle();
 
     await tester.enterText(

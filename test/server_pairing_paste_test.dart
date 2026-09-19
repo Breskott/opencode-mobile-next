@@ -70,7 +70,7 @@ Future<void> pumpEditor(WidgetTester tester) async {
   );
   await tester.pumpAndSettle();
   // Open the editor from the first-run welcome card.
-  await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
+  await tester.tap(find.byKey(const ValueKey('welcome-choice-computer')));
   await tester.pumpAndSettle();
   expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
 }

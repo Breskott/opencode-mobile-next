@@ -336,7 +336,7 @@ void main() {
             case 'editor':
               await tapVisible(
                 tester,
-                find.byKey(const ValueKey('welcome-connect-card')),
+                find.byKey(const ValueKey('welcome-choice-computer')),
               );
               final section = find.byKey(
                 const ValueKey('server-editor-team-section'),

@@ -129,42 +129,38 @@ void main() {
       debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
 
   group('the first-run welcome', () {
-    testWidgets('offers the Termux path on Android', (tester) async {
+    testWidgets('offers the phone path on Android', (tester) async {
       final (store, controller) = await _emptyState();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_servers(store, controller));
-      expect(find.byKey(const ValueKey('welcome-termux-card')), findsOneWidget);
-      await tester.ensureVisible(find.text('More setup options'));
-      await tester.tap(find.text('More setup options'));
-      await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('welcome-termux-card')), findsOneWidget);
-      expect(find.text('On this phone'), findsOneWidget);
       expect(
-        find.text('Set up OpenCode 1 or 2 here with Termux.'),
+        find.byKey(const ValueKey('welcome-choice-phone')),
         findsOneWidget,
       );
-      expect(find.text('Setup guide'), findsOneWidget);
+      expect(find.text('On this phone'), findsOneWidget);
+      // The welcome asks one question. Product names are met on the path
+      // that needs them, not here.
+      expect(find.textContaining('Termux'), findsNothing);
+      expect(find.text('More setup options'), findsNothing);
+      expect(find.text('Setup guide'), findsNothing);
     });
 
-    testWidgets('never mentions Termux on desktop', (tester) async {
+    testWidgets('never mentions the phone path on desktop', (tester) async {
       onDesktop();
       final (store, controller) = await _emptyState();
       addTearDown(controller.dispose);
       await tester.pumpWidget(_servers(store, controller));
-      await tester.ensureVisible(find.text('More setup options'));
-      await tester.tap(find.text('More setup options'));
-      await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('welcome-termux-card')), findsNothing);
+      expect(find.byKey(const ValueKey('welcome-choice-phone')), findsNothing);
       expect(find.textContaining('Termux'), findsNothing);
       expect(find.textContaining('phone'), findsNothing);
       // The remaining paths are intact — this is a gate, not a deletion.
       expect(
-        find.byKey(const ValueKey('welcome-connect-card')),
+        find.byKey(const ValueKey('welcome-choice-computer')),
         findsOneWidget,
       );
-      expect(find.byKey(const ValueKey('welcome-guide-card')), findsOneWidget);
+      expect(find.byKey(const ValueKey('welcome-choice-demo')), findsOneWidget);
     });
   });
 

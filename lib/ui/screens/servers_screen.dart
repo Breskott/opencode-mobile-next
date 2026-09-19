@@ -19,6 +19,7 @@ import '../../state/external_agents.dart';
 import '../../termux/bridge.dart';
 import '../app_theme.dart';
 import '../widgets/confirm_sheet.dart';
+import '../widgets/first_run_choice.dart';
 import '../widgets/managed_server_health.dart';
 import '../widgets/product_states.dart';
 import '../widgets/team_host_form.dart';
@@ -516,11 +517,15 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
             icon: const Icon(AppIconography.info),
             onPressed: () => Navigator.pushNamed(context, '/about'),
           ),
-          IconButton(
-            tooltip: _connectionL10n(context).onboardingSetupGuide,
-            icon: const Icon(AppIconography.question),
-            onPressed: () => Navigator.pushNamed(context, '/guide'),
-          ),
+          // First run asks one question; the guide is reference material and
+          // lives in Settings → Help (UX plan 5.4). It stays here once there
+          // are servers to manage.
+          if (bootstrap.store.profiles.isNotEmpty)
+            IconButton(
+              tooltip: _connectionL10n(context).onboardingSetupGuide,
+              icon: const Icon(AppIconography.question),
+              onPressed: () => Navigator.pushNamed(context, '/guide'),
+            ),
         ],
       ),
       body: Builder(
@@ -533,13 +538,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                 store.profiles,
                 accountConnection,
               ),
-              onConnect: () => _edit(),
-              onConnectOpenCode2: () => _edit(openCode2Intent: true),
-              onTailscale: _tailscale,
-              onTermux: _openTermuxSetup,
-              onGuide: () => Navigator.pushNamed(context, '/guide'),
+              onComputer: () => _edit(),
+              onPhone: _openTermuxSetup,
               onDemo: _demo,
-              onExternalAgents: _externalAgents,
             );
           }
           final activeId = store.activeId;
@@ -822,36 +823,32 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   }
 }
 
-/// First run has two immediate jobs: connect an existing server or try safely.
+/// First run asks the only real fork, one question with plain answers (UX
+/// plan 5.6 step 1). Product names, private networks and the guide are met
+/// later, at the step where each one matters.
 class _WelcomeView extends StatelessWidget {
   final bool busy;
 
-  /// The detected on-device server, above every generic choice. It renders
-  /// nothing unless a running server was actually observed.
+  /// The detected on-device server, above the question. It renders nothing
+  /// unless a running server was actually observed: a live thing the app
+  /// found outranks every generic choice.
   final Widget runningServer;
-  final VoidCallback onConnect;
-  final VoidCallback onConnectOpenCode2;
-  final VoidCallback onTailscale;
-  final VoidCallback onTermux;
-  final VoidCallback onGuide;
+  final VoidCallback onComputer;
+  final VoidCallback onPhone;
   final VoidCallback onDemo;
-  final VoidCallback onExternalAgents;
 
   const _WelcomeView({
     required this.busy,
     required this.runningServer,
-    required this.onConnect,
-    required this.onConnectOpenCode2,
-    required this.onTailscale,
-    required this.onTermux,
-    required this.onGuide,
+    required this.onComputer,
+    required this.onPhone,
     required this.onDemo,
-    required this.onExternalAgents,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final copy = _connectionL10n(context);
     return SafeArea(
       child: LayoutBuilder(
         builder: (context, constraints) => SingleChildScrollView(
@@ -868,60 +865,48 @@ class _WelcomeView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        _connectionL10n(context).onboardingValueTitle,
+                        copy.onboardingValueTitle,
                         style: theme.textTheme.headlineMedium,
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        _connectionL10n(context).onboardingValueBody,
+                        copy.onboardingValueBody,
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 32),
                       runningServer,
-                      FilledButton(
-                        key: const ValueKey('welcome-connect-card'),
-                        onPressed: busy ? null : onConnect,
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(48, 56),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                        ),
+                      Semantics(
+                        header: true,
                         child: Text(
-                          _connectionL10n(context).onboardingConnect,
-                          textAlign: TextAlign.center,
+                          copy.firstRunWhereQuestion,
+                          key: const ValueKey('welcome-question'),
+                          style: theme.textTheme.titleMedium,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: busy ? null : onDemo,
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(48, 48),
-                        ),
-                        child: const Text(DemoCopy.tryDemo),
+                      const SizedBox(height: 12),
+                      FirstRunChoice(
+                        key: const ValueKey('welcome-choice-computer'),
+                        icon: AppIconography.server,
+                        title: copy.firstRunOnComputer,
+                        detail: copy.firstRunOnComputerDetail,
+                        onTap: busy ? null : onComputer,
                       ),
-                      Text(
-                        _connectionL10n(context).onboardingDemoNote,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _OpenCode2Entry(onTap: busy ? null : onConnectOpenCode2),
                       if (platformCapabilities.supportsTermux)
-                        _TermuxEntry(
-                          key: const ValueKey('welcome-termux-card'),
-                          onTap: busy ? null : onTermux,
+                        FirstRunChoice(
+                          key: const ValueKey('welcome-choice-phone'),
+                          icon: AppIconography.phone,
+                          title: copy.onboardingTermuxSetup,
+                          detail: copy.firstRunOnPhoneDetail,
+                          onTap: busy ? null : onPhone,
                         ),
-                      _SetupOptions(
-                        busy: busy,
-                        onTailscale: onTailscale,
-                        onGuide: onGuide,
-                        onExternalAgents: onExternalAgents,
+                      FirstRunChoice(
+                        key: const ValueKey('welcome-choice-demo'),
+                        icon: AppIconography.playCircle,
+                        title: copy.firstRunJustShowMe,
+                        detail: copy.onboardingDemoNote,
+                        onTap: busy ? null : onDemo,
                       ),
                     ],
                   ),
