@@ -25456,6 +25456,96 @@ abstract class AppLocalizations {
   /// **'Code options'**
   String get calmCodeOptions;
 
+  /// No description provided for @phoneServerConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get phoneServerConnect;
+
+  /// No description provided for @phoneServerOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get phoneServerOpen;
+
+  /// No description provided for @phoneServerStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get phoneServerStart;
+
+  /// No description provided for @phoneServerStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get phoneServerStop;
+
+  /// No description provided for @phoneServerConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to the server on this phone'**
+  String get phoneServerConnected;
+
+  /// No description provided for @phoneServerStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Server on this phone is stopped'**
+  String get phoneServerStopped;
+
+  /// No description provided for @phoneServerStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting the server on this phone…'**
+  String get phoneServerStarting;
+
+  /// No description provided for @phoneServerRestarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Restarting the server on this phone…'**
+  String get phoneServerRestarting;
+
+  /// No description provided for @phoneServerStopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping the server on this phone…'**
+  String get phoneServerStopping;
+
+  /// No description provided for @phoneServerMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More server actions'**
+  String get phoneServerMore;
+
+  /// No description provided for @phoneServerManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage setup'**
+  String get phoneServerManage;
+
+  /// No description provided for @phoneServerForget.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget saved sign-in'**
+  String get phoneServerForget;
+
+  /// No description provided for @phoneServerStartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server did not start. Open Manage setup to see why.'**
+  String get phoneServerStartFailed;
+
+  /// No description provided for @phoneServerRestartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server did not restart. Open Manage setup to see why.'**
+  String get phoneServerRestartFailed;
+
+  /// No description provided for @phoneServerStopFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The server could not be stopped. Try again.'**
+  String get phoneServerStopFailed;
+
   /// No description provided for @termuxRunningDetected.
   ///
   /// In en, this message translates to:

@@ -15763,6 +15763,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calmCodeOptions => 'Code options';
 
   @override
+  String get phoneServerConnect => 'Connect';
+
+  @override
+  String get phoneServerOpen => 'Open';
+
+  @override
+  String get phoneServerStart => 'Start';
+
+  @override
+  String get phoneServerStop => 'Stop';
+
+  @override
+  String get phoneServerConnected => 'Connected to the server on this phone';
+
+  @override
+  String get phoneServerStopped => 'Server on this phone is stopped';
+
+  @override
+  String get phoneServerStarting => 'Starting the server on this phone…';
+
+  @override
+  String get phoneServerRestarting => 'Restarting the server on this phone…';
+
+  @override
+  String get phoneServerStopping => 'Stopping the server on this phone…';
+
+  @override
+  String get phoneServerMore => 'More server actions';
+
+  @override
+  String get phoneServerManage => 'Manage setup';
+
+  @override
+  String get phoneServerForget => 'Forget saved sign-in';
+
+  @override
+  String get phoneServerStartFailed =>
+      'The server did not start. Open Manage setup to see why.';
+
+  @override
+  String get phoneServerRestartFailed =>
+      'The server did not restart. Open Manage setup to see why.';
+
+  @override
+  String get phoneServerStopFailed =>
+      'The server could not be stopped. Try again.';
+
+  @override
   String get termuxRunningDetected => 'Server found on this phone';
 
   @override

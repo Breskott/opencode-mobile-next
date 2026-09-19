@@ -23,6 +23,8 @@ import '../widgets/managed_server_health.dart';
 import '../widgets/product_states.dart';
 import '../widgets/team_host_form.dart';
 import '../widgets/termux_running_server_entry.dart';
+import '../widgets/safety_confirms.dart';
+import '../../state/local_server_controls.dart';
 import 'demo_screen.dart';
 import 'attention_overview_screen.dart';
 import 'agent_account_screen.dart';
@@ -114,6 +116,23 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       connectedProfileID: connection.api == null
           ? null
           : connection.profile?.id,
+      busyConversations: connection.busySessions.length,
+      actions: () {
+        final controls = LocalServerControls(
+          store: ref.read(bootstrapProvider).store,
+          connection: connection,
+        );
+        return LocalServerCardActions(
+          restart: () async => controls.restart(),
+          stop: controls.stop,
+        );
+      }(),
+      onDisconnect: () async {
+        if (!await confirmDisconnectServer(context, connection)) return;
+        await connection.disconnect(keepActive: true);
+      },
+      onForget: _delete,
+      onManage: _openTermuxSetup,
       onConnect: (profile) => _connect(profile, detectedRunning: true),
       onEnterCredentials: (server, existing) => _edit(
         existing: existing,

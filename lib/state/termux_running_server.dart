@@ -159,6 +159,10 @@ enum TermuxRunningServerState {
   /// The bridge answered with an error or timed out. Nothing is known.
   unavailable,
 
+  /// The app-managed server is set up on this phone and was stopped. It can
+  /// be started again in place.
+  stopped,
+
   /// A live OpenCode response confirms the ready managed process.
   running,
 }
@@ -186,6 +190,13 @@ class TermuxRunningServer {
   const TermuxRunningServer.unavailable()
     : this._(state: TermuxRunningServerState.unavailable);
 
+  const TermuxRunningServer.stopped({required TermuxRuntime runtime})
+    : this._(
+        state: TermuxRunningServerState.stopped,
+        runtime: runtime,
+        phase: 'stopped',
+      );
+
   const TermuxRunningServer.running({
     required TermuxRuntime runtime,
     required String version,
@@ -202,7 +213,8 @@ class TermuxRunningServer {
 
   final TermuxRunningServerState state;
 
-  /// The runtime the manager reports; only meaningful when [isRunning].
+  /// The runtime the manager reports; only meaningful when [isRunning] or
+  /// [isStopped].
   final TermuxRuntime? runtime;
 
   /// The server version the manager reports; may be empty.
@@ -218,6 +230,7 @@ class TermuxRunningServer {
   final bool needsCredentials;
 
   bool get isRunning => state == TermuxRunningServerState.running;
+  bool get isStopped => state == TermuxRunningServerState.stopped;
 
   /// The profile generation that speaks to [runtime].
   ServerFlavor get flavor =>
@@ -311,6 +324,14 @@ Future<TermuxRunningServer> detectTermuxRunningServer({
       }
       return const TermuxRunningServer.unavailable();
     }
+    // A deliberate stop leaves a selected runtime behind; a phone that was
+    // never set up reports `idle` with none. Only the former can be started
+    // in place.
+    if (status.phase == 'stopped' &&
+        status.runtimeSelected &&
+        !status.switchPending) {
+      return TermuxRunningServer.stopped(runtime: status.runtime);
+    }
     return TermuxRunningServer.absent(phase: status.phase);
   } finally {
     observation.cancel();
@@ -329,7 +350,7 @@ ServerProfile? savedProfileForTermuxServer(
   Iterable<ServerProfile> profiles,
   TermuxRunningServer server,
 ) {
-  if (!server.isRunning) return null;
+  if (!server.isRunning && !server.isStopped) return null;
   for (final profile in profiles) {
     if (profile.backend == ServerBackend.openCode &&
         TermuxBridge.managesServerUrl(profile.baseUrl) &&

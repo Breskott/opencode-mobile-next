@@ -72,6 +72,27 @@ Future<bool> confirmStopLocalServer(BuildContext context) {
   );
 }
 
+/// Restarting the phone's server interrupts whatever is running on it.
+Future<bool> confirmRestartLocalServer(
+  BuildContext context, {
+  required int busyConversations,
+}) {
+  final l10n = _copy(context);
+  return showConfirmSheet(
+    context,
+    title: l10n.termuxRestartTitle,
+    message: [
+      l10n.termuxRestartMessage,
+      if (busyConversations > 0)
+        l10n.termuxRestartBusyMessage(busyConversations),
+    ].join('\n\n'),
+    confirmLabel: l10n.termuxRestartConfirm,
+    icon: AppIconography.restart,
+    sheetKey: const ValueKey('restart-local-server-sheet'),
+    confirmKey: const ValueKey('confirm-restart-local-server'),
+  );
+}
+
 /// Disconnecting an MCP server removes its tools from agents mid-session.
 Future<bool> confirmDisconnectMcp(
   BuildContext context, {
