@@ -152,6 +152,7 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
                     "runInTermux" -> runInTermux(call, result)
+                    "openTermuxSession" -> openTermuxSession(call, result)
                     else -> result.notImplemented()
                 }
             }
@@ -781,6 +782,54 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    /**
+     * Starts [command] in a Termux terminal the person can see and type into
+     * (Claude's sign-in asks for a pasted code). Unlike [runInTermux] the
+     * command travels as a `bash -c` argument, because Termux feeds stdin only
+     * to background commands, and no result is awaited: the session lives as
+     * long as the person needs it. Termux may not raise its own window from a
+     * service on Android 10+, so this activity opens it.
+     */
+    private fun openTermuxSession(call: MethodCall, result: MethodChannel.Result) {
+        val script = call.argument<String>("command").orEmpty()
+        if (script.isBlank() || script.length > 512) {
+            result.error("invalid_script", "The Termux command is empty or too long.", null)
+            return
+        }
+        if (!hasRunCommandPermission()) {
+            result.error(
+                "permission_denied",
+                "OpenCode does not have Termux's RUN_COMMAND permission.",
+                null
+            )
+            return
+        }
+        if (!isRunCommandServiceAvailable()) {
+            result.error(
+                "service_unavailable",
+                "This Termux build does not expose RunCommandService.",
+                null
+            )
+            return
+        }
+        val command = Intent(ACTION_RUN_COMMAND).apply {
+            component = ComponentName(TERMUX_PACKAGE, RUN_COMMAND_SERVICE)
+            putExtra(EXTRA_COMMAND_PATH, TERMUX_BASH)
+            putExtra(EXTRA_ARGUMENTS, arrayOf("-c", script))
+            putExtra(EXTRA_WORKDIR, TERMUX_HOME)
+            putExtra(EXTRA_BACKGROUND, false)
+            putExtra(EXTRA_SESSION_ACTION, "0")
+            putExtra(EXTRA_COMMAND_LABEL, "OpenCode mobile")
+        }
+        try {
+            startService(command)
+        } catch (error: Exception) {
+            result.error("dispatch_failed", error.message ?: "Termux rejected the command.", null)
+            return
+        }
+        result.success(openTermux())
+    }
+
     private fun openTermux(): Boolean {
         val intent = packageManager.getLaunchIntentForPackage(TERMUX_PACKAGE) ?: return false
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -857,6 +906,7 @@ class MainActivity : FlutterActivity() {
         private const val EXTRA_STDIN = "com.termux.RUN_COMMAND_STDIN"
         private const val EXTRA_WORKDIR = "com.termux.RUN_COMMAND_WORKDIR"
         private const val EXTRA_BACKGROUND = "com.termux.RUN_COMMAND_BACKGROUND"
+        private const val EXTRA_SESSION_ACTION = "com.termux.RUN_COMMAND_SESSION_ACTION"
         private const val EXTRA_PENDING_INTENT = "com.termux.RUN_COMMAND_PENDING_INTENT"
         private const val EXTRA_COMMAND_LABEL = "com.termux.RUN_COMMAND_COMMAND_LABEL"
         private const val EXTRA_EXECUTION_ID = "oc.executionId"
