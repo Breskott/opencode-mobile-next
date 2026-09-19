@@ -332,15 +332,23 @@ reply (new person); resume the last
 conversation; answer a pending permission; review a change and send a
 follow-up; switch project; switch server.
 
-## 10. Decisions needed from the owner
+## 10. Decisions (owner delegated them on 2026-09-19: "you decide")
 
-1. **Vocabulary:** Conversation / Project / Server / Inbox as proposed?
-   (Largest string churn is "session" → "conversation".)
-2. **Tabs:** Work / Inbox / Project / Settings as proposed, replacing
-   Workspace / Files / Activity / More?
-3. **Slash commands:** hide the navigation-only commands from the visible list
-   (aliases keep working)?
-4. **Order:** start with phases 0–1 (safe, no layout change), then 2?
-5. **First run:** the three-way opening question ("On my computer / On this
-   phone / Just show me") and landing new people directly in a conversation?
-6. **Nudges:** the five one-time contextual nudges, or none at all?
+1. **Vocabulary: adopted.** Server, Project, Conversation, Inbox. The visible
+   word "session" becomes "conversation"; typed aliases (`/sessions`, `/new`)
+   and code identifiers keep their names. Done as its own pass right after the
+   phase 1 wording merge, because both rewrite the same string files.
+2. **Tabs: adopted.** Work / Inbox / Project / Settings.
+3. **Slash commands: adopted.** Navigation-only commands leave the visible
+   list and keep working when typed.
+4. **First run: adopted.** One opening question, the agent choice only on the
+   "computer" path, automatic test, land in a conversation, notification ask
+   after the first reply.
+5. **Nudges: adopted, all five, each shown once,** with "Show tips again" in
+   Settings → Help. A nudge that cannot name a concrete benefit at its trigger
+   moment is dropped rather than reworded.
+6. **Order: 0 → 1 → 2 → 3 → 3b → 3c → 4 → 5.** Phase 2 starts when phase 1 is
+   merged, since both edit the Settings screen.
+
+Reversible by design: every phase ships alone, and the ledger numbers in
+section 9 show whether it helped.
