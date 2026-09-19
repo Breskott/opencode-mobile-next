@@ -403,6 +403,14 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         widget.controller.hasMoreSessions ||
         widget.controller.sessionsLoading ||
         widget.controller.sessionsError != null;
+    // Teach only when the list is known to be empty. A partial or failed
+    // load cannot claim "no conversations yet", and a row waiting out its
+    // Undo snackbar is hidden, not gone.
+    final nothingYet =
+        !partial &&
+        sessions.isEmpty &&
+        archived.isEmpty &&
+        _pendingArchive.isEmpty;
 
     // No project folder yet (or an older build saved the server's home
     // folder): sessions cannot start until the user creates or opens one.
@@ -749,19 +757,32 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 26),
                             child: ProductInlineEmpty(
+                              key: ValueKey(
+                                nothingYet
+                                    ? 'work-empty-teaching'
+                                    : 'work-empty-recent',
+                              ),
                               icon: AppIconography.chat,
                               title: partial
                                   ? l10n.sessionsNoLoadedRecent
+                                  : nothingYet
+                                  ? l10n.emptyTeachWorkTitle
                                   : pinned.isNotEmpty
                                   ? l10n.sessionsNoOtherRecent
                                   : _l10n(context).e7WorkspaceNoRecent,
                               message: partial
                                   ? _l10n(context).e7WorkspaceLoadedRecentEmpty
+                                  : nothingYet
+                                  ? l10n.emptyTeachWorkMessage
                                   : widget.controller.directory == null
                                   ? _l10n(
                                       context,
                                     ).e7WorkspaceChooseFolderToStart
                                   : _l10n(context).e7WorkspaceStartInWorkspace,
+                              // No button here: the docked New conversation
+                              // is the one action that fills this list, and
+                              // an empty Work tab keeps exactly one of them
+                              // (workspace_hierarchy_test pins that).
                             ),
                           ),
                         )

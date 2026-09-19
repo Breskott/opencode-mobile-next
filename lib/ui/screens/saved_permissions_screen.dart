@@ -276,7 +276,7 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
                 ).e7LibraryNoAlwaysAllowedActions,
                 message: lookupAppLocalizations(
                   Localizations.localeOf(context),
-                ).e7LibraryGrantsCreatedWithAlwaysAllowForThis,
+                ).emptyTeachAllowedMessage,
               )
             : permissions?.isEmpty != false && _error != null
             ? ProductErrorState(message: _error!, onRetry: _load)

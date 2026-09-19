@@ -17335,5 +17335,45 @@
   "serverSwitcherOpen": "Switch server",
   "@serverSwitcherOpen": {
     "description": "Shell app bar: accessibility hint on the server name and status, which open the server switcher sheet."
+  },
+  "emptyTeachInboxMessage": "Nothing needs you. Approvals and questions from running work appear here.",
+  "@emptyTeachInboxMessage": {
+    "description": "Inbox: body of the all-clear empty state; says what will appear in the list."
+  },
+  "emptyTeachWorkTitle": "No conversations yet",
+  "@emptyTeachWorkTitle": {
+    "description": "Work tab: title of the empty state shown when the project has no conversations at all."
+  },
+  "emptyTeachWorkMessage": "Conversations you start in this project are listed here, with the ones that need you first. Start one with New conversation.",
+  "@emptyTeachWorkMessage": {
+    "description": "Work tab: body of the empty state. It names the docked New conversation button instead of repeating it, so the label must match workspaceNewSession."
+  },
+  "emptyTeachChangesTitle": "No changes yet",
+  "@emptyTeachChangesTitle": {
+    "description": "Project > Changes: title of the empty review."
+  },
+  "emptyTeachChangesMessage": "Edits the agent makes show up here to review.",
+  "@emptyTeachChangesMessage": {
+    "description": "Project > Changes: body of the empty review."
+  },
+  "emptyTeachWorktreesMessage": "A worktree is a separate copy of this project on its own branch, so parallel work does not mix. Worktrees of this project appear here.",
+  "@emptyTeachWorktreesMessage": {
+    "description": "Worktrees: body of the empty list."
+  },
+  "emptyTeachAllowedMessage": "When you choose Always allow on an approval in this project, it is listed here so you can take it back.",
+  "@emptyTeachAllowedMessage": {
+    "description": "Always allowed actions: body of the empty list."
+  },
+  "emptyTeachTeamRunsMessage": "A run is a job the team works through. Start one and its progress shows here.",
+  "@emptyTeachTeamRunsMessage": {
+    "description": "AI Team home, Runs: body of the empty list when this phone can start a run."
+  },
+  "emptyTeachSkillsMessage": "Skills are reusable instructions the agent can follow. Skills from this project and this server appear here.",
+  "@emptyTeachSkillsMessage": {
+    "description": "Skills: body of the empty list."
+  },
+  "emptyTeachToolsMessage": "Tools the agent can call with this model appear here. This model has none.",
+  "@emptyTeachToolsMessage": {
+    "description": "Tools: body of the empty list for the chosen model."
   }
 }
