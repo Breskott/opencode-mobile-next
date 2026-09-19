@@ -12,6 +12,7 @@ import '../widgets/setup_ui_messages.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/codex_connection_probe.dart';
+import '../../state/paseo_connection_probe.dart';
 import '../../state/pairing.dart';
 import '../../state/profiles.dart';
 import '../../state/external_agents.dart';
@@ -449,14 +450,14 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           final needsCredential = store.profiles.any(
             (profile) =>
                 profile.id == activeId &&
-                (profile.backend == ServerBackend.codex
+                (profile.usesAgentSocket
                     ? profile.requiresCodexTokenReentry
                     : profile.requiresPasswordReentry),
           );
           final needsToken = store.profiles.any(
             (profile) =>
                 profile.id == activeId &&
-                profile.backend == ServerBackend.codex &&
+                profile.usesAgentSocket &&
                 profile.requiresCodexTokenReentry,
           );
           return ListView(
@@ -597,9 +598,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                        if (p.backend == ServerBackend.codex)
+                        if (p.usesAgentSocket)
                           Text(
-                            'Codex${p.codexDirectory.isEmpty ? '' : ' · ${p.codexDirectory}'}',
+                            '${p.backend == ServerBackend.paseo ? 'Paseo' : 'Codex'}${p.codexDirectory.isEmpty ? '' : ' · ${p.codexDirectory}'}',
                             key: ValueKey('codex-profile-${p.id}'),
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary,
@@ -1060,7 +1061,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// put the server behind TLS.
   String? _pairingFailure;
 
-  bool get _isCodex => _backend == ServerBackend.codex;
+  /// True for both socket-style backends (Codex app-server and the Paseo
+  /// daemon): they share the address, project folder and secret fields.
+  bool get _isCodex => _backend != ServerBackend.openCode;
+  bool get _isPaseo => _backend == ServerBackend.paseo;
 
   bool get _needsPassword =>
       !_isCodex && (widget.existing?.requiresPasswordReentry ?? false);
@@ -1102,7 +1106,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       final pasted = value.length - _urlLength >= 4;
       _urlLength = value.length;
       if (pasted && !value.contains('://')) {
-        final normalized = normalizeCodexServerUrl(value);
+        final normalized = _isPaseo
+            ? normalizePaseoServerUrl(value)
+            : normalizeCodexServerUrl(value);
         if (normalized != value.trim()) {
           _urlLength = normalized.length;
           _url.value = TextEditingValue(
@@ -1217,8 +1223,18 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     }
   }
 
+  String? _validateSocketFields(String url) => _isPaseo
+      ? validatePaseoServerUrl(url) ??
+            validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
+            validatePaseoPassword(_codexToken.text)
+      : validateCodexServerUrl(url) ??
+            validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
+            validateCodexConnectionToken(_codexToken.text);
+
   Future<void> _testCodexConnection() async {
-    var url = normalizeCodexServerUrl(_url.text);
+    var url = _isPaseo
+        ? normalizePaseoServerUrl(_url.text)
+        : normalizeCodexServerUrl(_url.text);
     if (url != _url.text.trim()) {
       _urlLength = url.length;
       _url.value = TextEditingValue(
@@ -1226,16 +1242,16 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         selection: TextSelection.collapsed(offset: url.length),
       );
     }
-    final error =
-        validateCodexServerUrl(url) ??
-        validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
-        validateCodexConnectionToken(_codexToken.text);
+    final error = _validateSocketFields(url);
     if (error != null) {
       setState(() {
         _error = error;
         _codexTestResult = null;
       });
-      if (validateCodexServerUrl(url) != null) {
+      if ((_isPaseo
+              ? validatePaseoServerUrl(url)
+              : validateCodexServerUrl(url)) !=
+          null) {
         _urlFocus.requestFocus();
       } else if (validateCodexProjectDirectory(_codexDirectory.text.trim()) !=
           null) {
@@ -1252,11 +1268,17 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _error = null;
     });
     try {
-      final result = await probeCodexConnection(
-        baseUrl: url,
-        token: _codexToken.text,
-        directory: _codexDirectory.text.trim(),
-      );
+      final result = _isPaseo
+          ? await probePaseoConnection(
+              baseUrl: url,
+              password: _codexToken.text,
+              directory: _codexDirectory.text.trim(),
+            )
+          : await probeCodexConnection(
+              baseUrl: url,
+              token: _codexToken.text,
+              directory: _codexDirectory.text.trim(),
+            );
       if (!mounted || generation != _probeGeneration) return;
       setState(() {
         _testing = false;
@@ -1629,11 +1651,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   }
 
   Future<void> _saveCodex() async {
-    var url = normalizeCodexServerUrl(_url.text);
-    final error =
-        validateCodexServerUrl(url) ??
-        validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
-        validateCodexConnectionToken(_codexToken.text);
+    var url = _isPaseo
+        ? normalizePaseoServerUrl(_url.text)
+        : normalizeCodexServerUrl(_url.text);
+    final error = _validateSocketFields(url);
     if (error != null) {
       setState(() => _error = error);
       return;
@@ -1648,7 +1669,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
           DateTime.now().microsecondsSinceEpoch.toString(),
       name: _name.text.trim().isEmpty ? uri.host : _name.text.trim(),
       baseUrl: url,
-      backend: ServerBackend.codex,
+      backend: _backend,
       codexDirectory: _codexDirectory.text.trim(),
       codexToken: _codexToken.text,
       serverVersion: probed?.version ?? widget.existing?.serverVersion,
@@ -1711,10 +1732,14 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       onChanged: _urlChanged,
       decoration: InputDecoration(
         labelText: _connectionL10n(context).connectionServerAddress,
-        hintText: _connectionL10n(context).codexAddressHint,
+        hintText: _isPaseo
+            ? _connectionL10n(context).paseoAddressHint
+            : _connectionL10n(context).codexAddressHint,
         errorText: _error,
         errorMaxLines: 3,
-        helperText: _connectionL10n(context).codexAddressHelp,
+        helperText: _isPaseo
+            ? _connectionL10n(context).paseoAddressHelp
+            : _connectionL10n(context).codexAddressHelp,
         helperMaxLines: 3,
       ),
     ),
@@ -1754,8 +1779,12 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       decoration: InputDecoration(
         labelText: _needsCodexToken
             ? _connectionL10n(context).codexTokenReentry
+            : _isPaseo
+            ? _connectionL10n(context).paseoPasswordLabel
             : _connectionL10n(context).codexTokenLabel,
-        helperText: _connectionL10n(context).codexTokenStorageHelp,
+        helperText: _isPaseo
+            ? _connectionL10n(context).paseoPasswordHelp
+            : _connectionL10n(context).codexTokenStorageHelp,
         helperMaxLines: 2,
         suffixIcon: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1946,11 +1975,24 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                           label: Text(
                             _connectionL10n(context).codexExperimentalLabel,
                           ),
-                          selected: _isCodex,
+                          selected: _isCodex && !_isPaseo,
                           onSelected: _submitting
                               ? null
                               : (_) => setState(() {
                                   _backend = ServerBackend.codex;
+                                  _invalidateProbe();
+                                }),
+                        ),
+                        ChoiceChip(
+                          key: const ValueKey('server-backend-paseo'),
+                          label: Text(
+                            _connectionL10n(context).paseoExperimentalLabel,
+                          ),
+                          selected: _isPaseo,
+                          onSelected: _submitting
+                              ? null
+                              : (_) => setState(() {
+                                  _backend = ServerBackend.paseo;
                                   _invalidateProbe();
                                 }),
                         ),
@@ -2016,9 +2058,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: Text(
-                        lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).codexApprovalRecoveryNotice,
+                        _isPaseo
+                            ? _connectionL10n(context).paseoSetupNotice
+                            : lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).codexApprovalRecoveryNotice,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
