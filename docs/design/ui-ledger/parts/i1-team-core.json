@@ -310,6 +310,22 @@
             "upkeep.isNotEmpty (teamUpkeepRuns(snapshot.runs))"
           ],
           "destructive": false
+        },
+        {
+          "id": "team-home-runs-tab-empty-start-run",
+          "type": "button",
+          "label": "Start a run",
+          "key": null,
+          "line": 825,
+          "action": "open-sheet",
+          "target": "start-run-sheet",
+          "targetWidget": "showStartRunSheet",
+          "effect": "Action of the teaching empty state (key team-home-runs-empty): onStartRun -> _startRun(), the same as team-home-start-run.",
+          "gates": [
+            "the run list is empty (not failed)",
+            "controller.capabilities.controlMessage"
+          ],
+          "destructive": false
         }
       ]
     },

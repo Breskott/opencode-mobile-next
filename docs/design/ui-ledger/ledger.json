@@ -1,5 +1,5 @@
 {
- "generatedFrom": "6afcf9086054ce9c08be464c50bdb15be6523821",
+ "generatedFrom": "2421b1a1f4d6c11c907dafd7a2212805e83ca018",
  "pages": [
   {
    "id": "system",
@@ -167,6 +167,19 @@
      "action": "open-sheet",
      "target": "prompt-editor-discard-sheet",
      "effect": "system back while the prompt editor is dirty (PopScope, prompt_editor.dart:108)",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "system-conversationnudgewatcher-offers-a-nudge-at-its-moment-third--to-embedded-chat-nudge-slot",
+     "type": "gesture",
+     "label": "ConversationNudgeWatcher offers a nudge at its moment (third permission request of one kind answered; first finished run that changed files; 60 s wait with finished-run notifications ready; context usage >= 80%)",
+     "key": null,
+     "file": "lib/main.dart",
+     "line": null,
+     "action": "open-sheet",
+     "target": "embedded-chat-nudge-slot",
+     "effect": "ConversationNudgeWatcher offers a nudge at its moment (third permission request of one kind answered; first finished run that changed files; 60 s wait with finished-run notifications ready; context usage >= 80%)",
      "gates": [],
      "destructive": false
     },
@@ -1298,6 +1311,22 @@
      "destructive": false
     },
     {
+     "id": "command-palette-dialog-cmd-search-index",
+     "type": "list-tile",
+     "label": "<search index entry title> (In <parent screen>)",
+     "key": null,
+     "file": "lib/main.dart",
+     "line": 1166,
+     "action": "navigate",
+     "target": null,
+     "effect": "One DesktopCommand per gated entry of searchIndex(l10n, scope) except the four tabs, Keyboard shortcuts and Diagnostics (already listed): entry.open(navigator overlay context, scope). The palette also matches the entry's hidden keywords.",
+     "gates": [
+      "desktopInteractions",
+      "each entry's own gate in lib/ui/search/search_index.dart"
+     ],
+     "destructive": false
+    },
+    {
      "id": "command-palette-dialog-arrows",
      "type": "gesture",
      "label": "Arrow Up / Arrow Down",
@@ -1352,7 +1381,7 @@
     "showShortcutsHelp"
    ],
    "line": 548,
-   "purpose": "Read-only AlertDialog (key 'keyboard-shortcuts-sheet') listing every shortcut: Mod+K, N, F, 1…4, ',', '`', W, Enter (send prompt), C (copy transcript), F2/Shift+F2 (recent model), '/', Esc, and context-menu keys.",
+   "purpose": "Read-only AlertDialog (key 'keyboard-shortcuts-sheet') listing every shortcut: Mod+K, N, F, 1…4, ',', '`', W, Enter (send prompt), C (copy transcript), F2/Shift+F2 (recent model), Ctrl+B (move running work to background), F3/Shift+F3 (next/previous find match), ↑/↓ (prompt history), '/', Esc, and context-menu keys.",
    "reachedFrom": [
     {
      "page": "global-shortcuts",
@@ -2878,6 +2907,10 @@
     {
      "page": "chat",
      "element": "chat-auto-approval-indicator"
+    },
+    {
+     "page": "embedded-chat-nudge-slot",
+     "element": "embedded-chat-nudge-slot-approvals-action"
     }
    ],
    "gates": [
@@ -3684,6 +3717,23 @@
      "effect": "_refresh(): on the Commands tab awaits widget.onRefresh (ChatScreen._loadServerCommands), otherwise controller.refreshCatalog().",
      "gates": [
       "!agentTab && widget.error() != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "command-launcher-sheet-search-result",
+     "type": "list-tile",
+     "label": "<search index entry title> (In <parent screen>)",
+     "key": "command-launcher-result-<entry id>",
+     "file": "lib/ui/screens/chat/command_launcher.dart",
+     "line": 417,
+     "action": "navigate",
+     "target": null,
+     "effect": "Listed under 'Go to' while the Commands tab's search has text: searchEntries(l10n, SearchScope.of(context, controller), query). Tap pops the sheet and runs entry.open from the route below it (a settings screen is pushed over the conversation; a tab result returns to the shell).",
+     "gates": [
+      "Commands tab only",
+      "search text is not empty",
+      "each entry's own gate in lib/ui/search/search_index.dart"
      ],
      "destructive": false
     },
@@ -5761,6 +5811,123 @@
       "item.type == \"user\""
      ],
      "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "embedded-chat-nudge-slot",
+   "title": "[One-time tip above the composer]",
+   "kind": "overlay",
+   "area": "chat",
+   "file": "lib/ui/screens/chat/nudge_slot.dart",
+   "widget": "_ChatNudges._nudgeSlot",
+   "presentedBy": [],
+   "line": 73,
+   "purpose": "The single inline slot for the four conversation nudges (approvals, review changes, leave and be told, compact), drawn with the shared NudgeCard (lib/ui/widgets/nudge_card.dart). Triggers live in lib/state/conversation_nudges.dart.",
+   "reachedFrom": [
+    {
+     "page": "system",
+     "element": "system-conversationnudgewatcher-offers-a-nudge-at-its-moment-third--to-embedded-chat-nudge-slot"
+    },
+    {
+     "page": "chat",
+     "element": null,
+     "via": "embedded"
+    }
+   ],
+   "gates": [
+    "registry.firstReplySeen (never during first run before the first reply)",
+    "each nudge is offered at most once ever (NudgeRegistry, oc.nudges.shown); never two at once; hidden while _nudgeSuppressed (pending permission/question/form, retry banner)",
+    "body height >= 420 dp (keyboard down)"
+   ],
+   "embeddedIn": [
+    "ChatScreen"
+   ],
+   "hostPages": [
+    "chat"
+   ],
+   "elements": [
+    {
+     "id": "embedded-chat-nudge-slot-approvals-action",
+     "type": "button",
+     "label": "Approvals",
+     "key": "nudge-approvals-action",
+     "file": "lib/ui/screens/chat/nudge_slot.dart",
+     "line": 81,
+     "action": "open-sheet",
+     "target": "session-approvals-sheet",
+     "targetWidget": "showSessionApprovalsSheet",
+     "effect": "Card text 'Asked for “{action}” 3 times: this conversation can approve requests for you.'; dismisses the nudge, then showSessionApprovalsSheet(context, controller: _conn, sessionID).",
+     "gates": [
+      "third distinct permission request of one kind in this conversation this app run",
+      "no request pending",
+      "!_conn.autoApprovalFor(id).automatic",
+      "not the demo"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-chat-nudge-slot-review-action",
+     "type": "button",
+     "label": "Review changes",
+     "key": "nudge-review-changes-action",
+     "file": "lib/ui/screens/chat/nudge_slot.dart",
+     "line": 95,
+     "action": "navigate",
+     "target": "review-workspace",
+     "targetWidget": "ReviewWorkspace",
+     "effect": "Card text 'This run changed files: review what changed before you continue.'; dismisses the nudge, then _showDiff() (the same review the app bar opens).",
+     "gates": [
+      "busy→idle edge with runChangedFiles(_messages) or session.summary.files > 0",
+      "capabilities.sessionDiff"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-chat-nudge-slot-compact-action",
+     "type": "button",
+     "label": "Compact conversation",
+     "key": "nudge-compact-action",
+     "file": "lib/ui/screens/chat/nudge_slot.dart",
+     "line": 101,
+     "action": "mutate",
+     "target": null,
+     "effect": "Card text 'The context is {percent}% full: compact to keep going.'; dismisses the nudge, then _compact() (the existing compact action).",
+     "gates": [
+      "_contextWindowUsage() >= 0.8",
+      "capabilities.sessionCompact",
+      "conversation idle"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-chat-nudge-slot-leave-action",
+     "type": "button",
+     "label": "Got it",
+     "key": "nudge-leave-action",
+     "file": "lib/ui/screens/chat/nudge_slot.dart",
+     "line": 108,
+     "action": "dismiss",
+     "target": null,
+     "effect": "Card text 'You can leave: this phone tells you when the run is done.'; dismisses the nudge.",
+     "gates": [
+      "conversation open and busy for 60 s",
+      "controller.finishedRunNotificationsReady (platform, background connection on, notification permission granted, finished-run rule on, not quiet hours)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-chat-nudge-slot-dismiss",
+     "type": "icon-button",
+     "label": "Hide tip",
+     "key": "nudge-<id>-dismiss",
+     "file": "lib/ui/widgets/nudge_card.dart",
+     "line": 99,
+     "action": "dismiss",
+     "target": null,
+     "effect": "onDismiss -> NudgeRegistry.dismiss(id): records the nudge as dismissed so it never shows again (until Settings → Help → Show tips again).",
+     "gates": [],
+     "destructive": false
     }
    ]
   },
@@ -15212,6 +15379,40 @@
      "destructive": false
     },
     {
+     "id": "workspace-nudge-pin-got-it",
+     "type": "button",
+     "label": "Got it",
+     "key": "nudge-pin-action",
+     "file": "lib/ui/widgets/nudge_card.dart",
+     "line": 93,
+     "action": "dismiss",
+     "target": null,
+     "effect": "One-time tip above Recent (workspace_screen.dart:793): 'Pin conversations you return to from their menu; they stay at the top of Work.' -> controller.nudges.dismiss(NudgeId.pinConversations).",
+     "gates": [
+      "second distinct project directory used on this server (NudgeRegistry.noteProjectUsed)",
+      "registry.firstReplySeen (never during first run before the first reply)",
+      "Work visible and its route current",
+      "controller.canPinSessions, nothing pinned in this scope, Recent not empty",
+      "offered once ever; never while another nudge is showing"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "workspace-nudge-pin-dismiss",
+     "type": "icon-button",
+     "label": "Hide tip",
+     "key": "nudge-pin-dismiss",
+     "file": "lib/ui/widgets/nudge_card.dart",
+     "line": 99,
+     "action": "dismiss",
+     "target": null,
+     "effect": "controller.nudges.dismiss(NudgeId.pinConversations).",
+     "gates": [
+      "same as workspace-nudge-pin-got-it"
+     ],
+     "destructive": false
+    },
+    {
      "id": "workspace-team-card",
      "type": "card",
      "label": "[AI Team card]",
@@ -15942,6 +16143,23 @@
      "widgetFile": "lib/ui/widgets/product_states.dart"
     },
     {
+     "id": "worktrees-empty-create",
+     "type": "button",
+     "label": "New worktree",
+     "key": null,
+     "file": "lib/ui/screens/worktrees_screen.dart",
+     "line": 497,
+     "action": "open-dialog",
+     "target": "worktrees-create-dialog",
+     "targetWidget": "_CreateWorktreeDialog",
+     "effect": "Action of the teaching empty state (key no-worktrees): _create(), the same as worktrees-create.",
+     "gates": [
+      "the worktree list is empty (not failed)",
+      "widget.controller.capabilities.worktreeCreate"
+     ],
+     "destructive": false
+    },
+    {
      "id": "worktrees-primary-tile",
      "type": "list-tile",
      "label": "<project folder> / Default project · {directory}",
@@ -16174,6 +16392,10 @@
     {
      "page": "worktrees",
      "element": "worktrees-create"
+    },
+    {
+     "page": "worktrees",
+     "element": "worktrees-empty-create"
     }
    ],
    "gates": [
@@ -16714,6 +16936,20 @@
      "destructive": false
     },
     {
+     "id": "files-row-actions-button",
+     "type": "icon-button",
+     "label": "Actions for {name}",
+     "key": "project-file-actions-<path>",
+     "file": "lib/ui/screens/files_screen.dart",
+     "line": 1094,
+     "action": "open-sheet",
+     "target": "files-row-actions-sheet",
+     "targetWidget": "_showFileRowActions",
+     "effect": "_showFileRowActions(node, change): the visible equivalent of the long-press and right-click on the row (gesture audit).",
+     "gates": [],
+     "destructive": false
+    },
+    {
      "id": "files-row-menu-open-folder",
      "type": "menu-item",
      "label": "Open folder",
@@ -16894,6 +17130,10 @@
     {
      "page": "files",
      "element": "files-row-long-press"
+    },
+    {
+     "page": "files",
+     "element": "files-row-actions-button"
     }
    ],
    "gates": [
@@ -17411,6 +17651,10 @@
     {
      "page": "session-menu-sheet",
      "element": "session-menu-sheet-changes"
+    },
+    {
+     "page": "embedded-chat-nudge-slot",
+     "element": "embedded-chat-nudge-slot-review-action"
     },
     {
      "page": "project-hub",
@@ -27170,6 +27414,10 @@
     {
      "page": "team-home",
      "element": "team-home-start-run"
+    },
+    {
+     "page": "team-home-runs-tab",
+     "element": "team-home-runs-tab-empty-start-run"
     }
    ],
    "gates": [],
@@ -27623,6 +27871,23 @@
      "effect": "Expands/collapses the completed runs group: setState(_completedExpanded = !_completedExpanded).",
      "gates": [
       "completed.isNotEmpty (only under `filter == TeamRunFilter.all`)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-home-runs-tab-empty-start-run",
+     "type": "button",
+     "label": "Start a run",
+     "key": null,
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 825,
+     "action": "open-sheet",
+     "target": "start-run-sheet",
+     "targetWidget": "showStartRunSheet",
+     "effect": "Action of the teaching empty state (key team-home-runs-empty): onStartRun -> _startRun(), the same as team-home-start-run.",
+     "gates": [
+      "the run list is empty (not failed)",
+      "controller.capabilities.controlMessage"
      ],
      "destructive": false
     },
@@ -32214,6 +32479,27 @@
    ]
   },
   {
+   "id": "server-capabilities",
+   "title": "Available on this server",
+   "kind": "screen",
+   "area": "settings",
+   "file": "lib/ui/screens/server_capabilities_screen.dart",
+   "widget": "ServerCapabilitiesScreen",
+   "presentedBy": [],
+   "line": 239,
+   "purpose": "Read-only explanation for every row rule 7 hides: lists, for the connected server and this device, what is 'Available here', 'Not available on this server' and (only when something is) 'Not available on this device', from ServerCapabilities, platformCapabilities and supportsUsageStatistics. No interactive elements besides the app bar back button.",
+   "reachedFrom": [
+    {
+     "page": "settings",
+     "element": "settings-server-capabilities"
+    }
+   ],
+   "gates": [
+    "controller.isConnected (hub row and search entry gate)"
+   ],
+   "elements": []
+  },
+  {
    "id": "coding-settings-shell-sheet",
    "title": "Default shell",
    "kind": "sheet",
@@ -33206,8 +33492,8 @@
    "file": "lib/ui/screens/settings_screen.dart",
    "widget": "SettingsScreen",
    "presentedBy": [],
-   "line": 81,
-   "purpose": "The one Settings hub (root tab 3 of the shell, also pushed by Ctrl/Cmd+,): a search field, then eight groups (Connection, Conversation defaults, Notifications, Appearance, Agent setup, Usage, Privacy, Help), each keyed settings-group-<slug>. Replaces the former More tab and Settings screen. Rows the server cannot serve and empty groups are absent; SettingsScreen(initialGroup:) scrolls to a group.",
+   "line": 61,
+   "purpose": "The one Settings hub (root tab 3 of the shell, also pushed by Ctrl/Cmd+,): a search field, then eight groups (Connection, Conversation defaults, Notifications, Appearance, Agent setup, Usage, Privacy, Help). Row titles, keywords, gates and tap actions come from the app-wide search index (lib/ui/search/search_index.dart); the hub only decides order and the live subtitle. Typing also lists what sits inside second-level screens ('Inside settings') and places outside Settings ('Go to'). A row or result the connected server or device cannot serve is absent.",
    "reachedFrom": [
     {
      "page": "home-shell",
@@ -33233,45 +33519,12 @@
    "gates": [],
    "elements": [
     {
-     "id": "settings-default-shell",
-     "type": "list-tile",
-     "label": "Default shell",
-     "key": "default-shell-settings-entry",
-     "file": "lib/ui/screens/settings/default_shell_row.dart",
-     "line": 208,
-     "action": "open-sheet",
-     "target": "coding-settings-shell-sheet",
-     "targetWidget": "_chooseShell",
-     "effect": "DefaultShellRow: loads repository.loadTerminalShellSettings() on first build and on resume; tap opens the shell sheet (_chooseShell) or retries a failed load (_loadShellSettings).",
-     "gates": [
-      "capabilities.shellSettings (otherwise the disabled GatedRowTile gated-shell-settings with its reason)",
-      "row hidden when it does not match the search query (_HubRow.matches(_query))"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "settings-category-server",
-     "type": "list-tile",
-     "label": "This server",
-     "key": "settings-category-server",
-     "file": "lib/ui/screens/settings_screen.dart",
-     "line": 265,
-     "action": "navigate",
-     "target": "server-settings",
-     "targetWidget": "ServerSettingsScreen",
-     "effect": "Pushes ServerSettingsScreen(controller) via _open. Subtitle \"<server name> · <health line>\" from _checkHealth (runs on open); wrapped in KeyedSubtree settings-connection-summary.",
-     "gates": [
-      "row hidden when it does not match the search query (_HubRow.matches(_query))"
-     ],
-     "destructive": false
-    },
-    {
      "id": "settings-server-try-again",
      "type": "icon-button",
      "label": "Try again",
      "key": "settings-server-try-again",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 294,
+     "line": 240,
      "action": "other",
      "target": null,
      "targetWidget": null,
@@ -33282,12 +33535,28 @@
      "destructive": false
     },
     {
+     "id": "settings-category-server",
+     "type": "list-tile",
+     "label": "This server",
+     "key": "settings-category-server",
+     "file": "lib/ui/screens/settings_screen.dart",
+     "line": 286,
+     "action": "navigate",
+     "target": "server-settings",
+     "targetWidget": "ServerSettingsScreen",
+     "effect": "Pushes ServerSettingsScreen(controller) via _open. Subtitle \"<server name> · <health line>\" from _checkHealth (runs on open); wrapped in KeyedSubtree settings-connection-summary.",
+     "gates": [
+      "row hidden when it does not match the search query (_HubRow.matches(_query))"
+     ],
+     "destructive": false
+    },
+    {
      "id": "settings-saved-servers",
      "type": "list-tile",
      "label": "Saved servers",
      "key": "settings-saved-servers",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 323,
+     "line": 289,
      "action": "navigate",
      "target": "servers",
      "targetWidget": "/servers",
@@ -33303,7 +33572,7 @@
      "label": "On this phone",
      "key": "settings-on-this-phone",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 334,
+     "line": 290,
      "action": "navigate",
      "target": "termux-setup",
      "targetWidget": "TermuxSetupScreen",
@@ -33320,7 +33589,7 @@
      "label": "Accounts",
      "key": "settings-accounts",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 343,
+     "line": 291,
      "action": "navigate",
      "target": "agent-account",
      "targetWidget": "AgentAccountScreen",
@@ -33337,7 +33606,7 @@
      "label": "External agents",
      "key": "settings-external-agents",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 351,
+     "line": 292,
      "action": "navigate",
      "target": "external-agents",
      "targetWidget": "ExternalAgentsScreen",
@@ -33353,7 +33622,7 @@
      "label": "Connect with Tailscale",
      "key": "settings-tailscale",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 359,
+     "line": 293,
      "action": "navigate",
      "target": "tailscale-setup",
      "targetWidget": "TailscaleSetupScreen",
@@ -33370,7 +33639,7 @@
      "label": "Disconnect",
      "key": "settings-disconnect",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 377,
+     "line": 297,
      "action": "open-sheet",
      "target": "settings-disconnect-sheet",
      "targetWidget": "confirmDisconnectServer",
@@ -33387,7 +33656,7 @@
      "label": "Model and mode",
      "key": "settings-model-and-mode",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 387,
+     "line": 315,
      "action": "open-sheet",
      "target": "model-picker-sheet",
      "targetWidget": "showModelPicker",
@@ -33398,12 +33667,29 @@
      "destructive": false
     },
     {
+     "id": "settings-default-shell",
+     "type": "list-tile",
+     "label": "Default shell",
+     "key": "default-shell-settings-entry",
+     "file": "lib/ui/screens/settings_screen.dart",
+     "line": 323,
+     "action": "open-sheet",
+     "target": "coding-settings-shell-sheet",
+     "targetWidget": "_chooseShell",
+     "effect": "DefaultShellRow: loads repository.loadTerminalShellSettings() on first build and on resume; tap opens the shell sheet (_chooseShell) or retries a failed load (_loadShellSettings).",
+     "gates": [
+      "controller.capabilities.shellSettings (search index gate; the row is absent otherwise — UX plan rule 7; Help → 'Available on this server' lists it as not available)"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/screens/settings/default_shell_row.dart"
+    },
+    {
      "id": "settings-saved-permissions",
      "type": "list-tile",
      "label": "Always allowed actions",
      "key": "saved-permissions-entry",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 416,
+     "line": 326,
      "action": "navigate",
      "target": "saved-permissions",
      "targetWidget": "SavedPermissionsScreen",
@@ -33419,7 +33705,7 @@
      "label": "Transcript display",
      "key": "settings-transcript-display",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 424,
+     "line": 328,
      "action": "open-sheet",
      "target": "settings-transcript-display-sheet",
      "targetWidget": "_openTranscriptDisplay",
@@ -33435,7 +33721,7 @@
      "label": "Voice",
      "key": "settings-voice",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 434,
+     "line": 331,
      "action": "open-sheet",
      "target": "voice-model-setup-sheet",
      "targetWidget": "showVoiceModelSetupSheet",
@@ -33452,7 +33738,7 @@
      "label": "Notifications",
      "key": "settings-category-background",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 451,
+     "line": 339,
      "action": "navigate",
      "target": "notifications-settings",
      "targetWidget": "NotificationsSettingsScreen",
@@ -33468,7 +33754,7 @@
      "label": "Appearance",
      "key": "settings-category-appearance",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 462,
+     "line": 347,
      "action": "navigate",
      "target": "appearance-settings",
      "targetWidget": "AppearanceSettingsScreen",
@@ -33484,7 +33770,7 @@
      "label": "Models & agents",
      "key": "settings-models",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 474,
+     "line": 354,
      "action": "navigate",
      "target": "catalog",
      "targetWidget": "CatalogScreen",
@@ -33501,7 +33787,7 @@
      "label": "Providers",
      "key": "settings-providers",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 484,
+     "line": 359,
      "action": "navigate",
      "target": "integrations",
      "targetWidget": "IntegrationsScreen",
@@ -33518,7 +33804,7 @@
      "label": "MCP",
      "key": "settings-mcp",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 496,
+     "line": 360,
      "action": "navigate",
      "target": "integrations",
      "targetWidget": "IntegrationsScreen",
@@ -33535,7 +33821,7 @@
      "label": "Commands & tools",
      "key": "settings-commands-tools",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 508,
+     "line": 361,
      "action": "navigate",
      "target": "capabilities",
      "targetWidget": "CapabilitiesScreen",
@@ -33552,7 +33838,7 @@
      "label": "Plugins",
      "key": "settings-category-plugins",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 519,
+     "line": 363,
      "action": "navigate",
      "target": "plugins-settings",
      "targetWidget": "PluginsSettingsScreen",
@@ -33569,7 +33855,7 @@
      "label": "Import conversation",
      "key": "library-import-session",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 528,
+     "line": 366,
      "action": "navigate",
      "target": "session-import",
      "targetWidget": "SessionImportScreen",
@@ -33586,7 +33872,7 @@
      "label": "Usage",
      "key": "settings-category-usage",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 557,
+     "line": 371,
      "action": "navigate",
      "target": "usage-hub",
      "targetWidget": "UsageHubScreen",
@@ -33603,7 +33889,7 @@
      "label": "Privacy and local data",
      "key": "settings-category-privacy",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 566,
+     "line": 381,
      "action": "navigate",
      "target": "privacy-settings",
      "targetWidget": "PrivacySettingsScreen",
@@ -33619,7 +33905,7 @@
      "label": "Setup guide",
      "key": "settings-setup-guide",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 575,
+     "line": 383,
      "action": "navigate",
      "target": "guide",
      "targetWidget": "GuideScreen",
@@ -33630,12 +33916,28 @@
      "destructive": false
     },
     {
+     "id": "settings-server-capabilities",
+     "type": "list-tile",
+     "label": "Available on this server",
+     "key": "settings-server-capabilities",
+     "file": "lib/ui/screens/settings_screen.dart",
+     "line": 386,
+     "action": "navigate",
+     "target": "server-capabilities",
+     "targetWidget": "ServerCapabilitiesScreen",
+     "effect": "Search index entry settings-server-capabilities: pushes ServerCapabilitiesScreen(controller).",
+     "gates": [
+      "controller.isConnected"
+     ],
+     "destructive": false
+    },
+    {
      "id": "settings-keyboard-shortcuts",
      "type": "list-tile",
      "label": "Keyboard shortcuts",
      "key": "library-keyboard-shortcuts",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 586,
+     "line": 389,
      "action": "open-dialog",
      "target": "shortcuts-help-dialog",
      "targetWidget": "showShortcutsHelp",
@@ -33647,12 +33949,25 @@
      "destructive": false
     },
     {
+     "id": "settings-show-tips-again",
+     "type": "list-tile",
+     "label": "Show tips again",
+     "key": "settings-show-tips-again",
+     "file": "lib/ui/screens/settings_screen.dart",
+     "line": 395,
+     "action": "mutate",
+     "target": null,
+     "effect": "_showTipsAgain(): controller.nudges.reset() clears which one-time nudges were shown, then a snackbar 'Tips will show again.'; no navigation.",
+     "gates": [],
+     "destructive": false
+    },
+    {
      "id": "settings-report-bug",
      "type": "list-tile",
      "label": "Report a bug",
      "key": "library-report-bug",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 595,
+     "line": 405,
      "action": "external-link",
      "target": null,
      "targetWidget": "openBugReport",
@@ -33668,7 +33983,7 @@
      "label": "App diagnostics",
      "key": "app-diagnostics-entry",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 609,
+     "line": 407,
      "action": "navigate",
      "target": "app-diagnostics",
      "targetWidget": "AppDiagnosticsScreen",
@@ -33684,7 +33999,7 @@
      "label": "Privacy and data use",
      "key": "settings-privacy-data-use",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 622,
+     "line": 425,
      "action": "navigate",
      "target": "about",
      "targetWidget": "AboutScreen",
@@ -33700,7 +34015,7 @@
      "label": "Voice licenses and provenance",
      "key": "settings-voice-notices",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 634,
+     "line": 429,
      "action": "navigate",
      "target": "voice-notices",
      "targetWidget": "showVoiceNotices",
@@ -33717,7 +34032,7 @@
      "label": "About and open source notices",
      "key": "settings-about-notices",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 642,
+     "line": 430,
      "action": "navigate",
      "target": "about",
      "targetWidget": "AboutScreen",
@@ -33733,11 +34048,11 @@
      "label": "Find settings, tools, and help",
      "key": "library-search",
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 686,
+     "line": 511,
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "onChanged sets _query (trimmed, lower-cased); every group keeps only rows whose title or keywords contain every word, empty groups disappear, and a result count (key library-search-summary) or \"Nothing matches\" line is shown.",
+     "effect": "Filters the hub through searchEntries(l10n, scope, query): hub rows that match stay in their groups, and matching index entries that are not hub rows are listed under 'Inside settings' and 'Go to'.",
      "gates": [],
      "destructive": false
     },
@@ -33747,13 +34062,29 @@
      "label": "Clear search",
      "key": null,
      "file": "lib/ui/screens/settings_screen.dart",
-     "line": 696,
+     "line": 521,
      "action": "other",
      "target": null,
      "targetWidget": null,
      "effect": "Clears the search field and _query.",
      "gates": [
       "_query.isNotEmpty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "settings-search-result",
+     "type": "list-tile",
+     "label": "<result title> (In <parent screen>)",
+     "key": "search-result-<entry id>",
+     "file": "lib/ui/screens/settings_screen.dart",
+     "line": 578,
+     "action": "navigate",
+     "target": null,
+     "effect": "_openEntry(entry, scope) runs the search index entry's open callback: an 'Inside settings' result pushes its screen scrolled to that section (NotificationsSettingsScreen / AppearanceSettingsScreen / UsageHubScreen initialSection, CapabilitiesScreen initialTab, TermuxProcessesScreen, TermuxStorageScreen, ProfileMonitorScreen, ConnectionHelpScreen); a 'Go to' result selects a shell tab through AppShortcutSignals (SelectDestinationIntent / OpenProjectToolIntent), or pushes the Project tool (openProjectTool), GlobalSessionsScreen or TeamHomeScreen.",
+     "gates": [
+      "shown only while the search field has text",
+      "each entry's own gate in lib/ui/search/search_index.dart; tab results need the shell's AppShortcutScope"
      ],
      "destructive": false
     }
@@ -36584,6 +36915,11 @@
    },
    {
     "from": "system",
+    "element": "system-conversationnudgewatcher-offers-a-nudge-at-its-moment-third--to-embedded-chat-nudge-slot",
+    "to": "embedded-chat-nudge-slot"
+   },
+   {
+    "from": "system",
     "element": "system-automatic-replaces-the-workspace-tab-body-while-controller-w-to-workspace-folder-chooser",
     "to": "workspace-folder-chooser"
    },
@@ -37363,6 +37699,16 @@
     "to": "chat-discard-queued-draft-sheet"
    },
    {
+    "from": "embedded-chat-nudge-slot",
+    "element": "embedded-chat-nudge-slot-approvals-action",
+    "to": "session-approvals-sheet"
+   },
+   {
+    "from": "embedded-chat-nudge-slot",
+    "element": "embedded-chat-nudge-slot-review-action",
+    "to": "review-workspace"
+   },
+   {
     "from": "permission-sheet",
     "element": "permission-sheet-see-full-diff",
     "to": "diff-view"
@@ -37754,6 +38100,11 @@
    },
    {
     "from": "worktrees",
+    "element": "worktrees-empty-create",
+    "to": "worktrees-create-dialog"
+   },
+   {
+    "from": "worktrees",
     "element": "worktrees-glossary-label",
     "to": "info-label-sheet"
    },
@@ -37881,6 +38232,11 @@
     "from": "files",
     "element": "files-row",
     "to": "files-file-viewer-sheet"
+   },
+   {
+    "from": "files",
+    "element": "files-row-actions-button",
+    "to": "files-row-actions-sheet"
    },
    {
     "from": "files",
@@ -38513,6 +38869,11 @@
     "to": "team-run"
    },
    {
+    "from": "team-home-runs-tab",
+    "element": "team-home-runs-tab-empty-start-run",
+    "to": "start-run-sheet"
+   },
+   {
     "from": "team-home-agents-tab",
     "element": "team-home-agents-row",
     "to": "team-agent"
@@ -38886,6 +39247,11 @@
     "from": "settings",
     "element": "settings-setup-guide",
     "to": "guide"
+   },
+   {
+    "from": "settings",
+    "element": "settings-server-capabilities",
+    "to": "server-capabilities"
    },
    {
     "from": "settings",
@@ -39879,6 +40245,12 @@
     "from": "chat",
     "element": null,
     "to": "embedded-pending-sends-strip",
+    "via": "embedded"
+   },
+   {
+    "from": "chat",
+    "element": null,
+    "to": "embedded-chat-nudge-slot",
     "via": "embedded"
    },
    {
