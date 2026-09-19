@@ -311,7 +311,7 @@ void main() {
     expect(find.byKey(const ValueKey('activity-all-clear')), findsNothing);
     expect(find.text('Status incomplete'), findsOneWidget);
     expect(find.textContaining('2 unknown'), findsOneWidget);
-    await tester.tap(find.text('Check again'));
+    await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(controller.refreshCalls, 1);
     expect(find.text('Status incomplete'), findsOneWidget);

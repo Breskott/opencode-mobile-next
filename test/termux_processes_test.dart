@@ -302,7 +302,7 @@ void main() {
         find.byKey(const Key('termux-procs-group-build_daemons')),
         findsOneWidget,
       );
-      expect(find.text('Managed from the server controls'), findsOneWidget);
+      expect(find.text('Managed from On this phone'), findsOneWidget);
       expect(
         find.byKey(const Key('termux-procs-stop-group-opencode_server')),
         findsNothing,

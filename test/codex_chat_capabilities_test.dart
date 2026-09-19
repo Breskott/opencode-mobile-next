@@ -176,8 +176,8 @@ void main() {
     expect(find.text('Compact context'), findsNothing);
     expect(find.text('Run shell command'), findsNothing);
     expect(find.text('Share session'), findsNothing);
-    await tester.ensureVisible(find.text('Reload messages'));
-    expect(find.text('Reload messages'), findsOneWidget);
+    await tester.ensureVisible(find.text('Refresh messages'));
+    expect(find.text('Refresh messages'), findsOneWidget);
     // Codex has no `opencode --session` CLI, so no resume command is offered.
     expect(find.text('Continue on computer'), findsNothing);
   });

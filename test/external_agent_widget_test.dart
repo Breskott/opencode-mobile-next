@@ -170,10 +170,10 @@ void main() {
       expect(gateway.queries, greaterThanOrEqualTo(1));
       expect(gateway.sends, 2);
       await tap(tester, 'Forget saved task');
-      await tap(tester, 'Delete local data');
+      await tap(tester, 'Remove from this phone');
       expect(store.tasks(store.profiles.single.id), isEmpty);
-      await tap(tester, 'Delete agent');
-      await tap(tester, 'Delete local data');
+      await tap(tester, 'Remove agent');
+      await tap(tester, 'Remove from this phone');
       expect(store.profiles, isEmpty);
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
@@ -232,8 +232,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tap(tester, 'Cancel task');
-    await tap(tester, 'Request cancellation');
+    await tap(tester, 'Stop task');
+    await tap(tester, 'Ask to stop');
     expect(gateway.cancels, 1);
     expect(
       find.textContaining('Cancellation is not confirmed'),
@@ -293,7 +293,7 @@ void main() {
         'Edited draft to keep',
       );
       refusing.refuse = false;
-      await tap(tester, 'Retry saving draft');
+      await tap(tester, 'Try saving draft again');
       await tester.pageBack();
       await tester.pumpAndSettle();
       expect(store.tasks(profile.id).single.draft, 'Edited draft to keep');

@@ -254,7 +254,7 @@ void main() {
       expect(find.text('Could not copy code. Try again.'), findsOneWidget);
       expect(find.text('Code copied'), findsNothing);
       fail = false;
-      await tester.tap(find.text('Retry'));
+      await tester.tap(find.text('Try again'));
       await tester.pumpAndSettle();
       expect(copied, [source]);
       expect(tester.takeException(), isNull);

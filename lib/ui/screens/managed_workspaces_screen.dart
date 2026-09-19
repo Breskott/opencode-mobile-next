@@ -515,7 +515,7 @@ class _WorkspaceTile extends StatelessWidget {
             child: Text(
               lookupAppLocalizations(
                 Localizations.localeOf(context),
-              ).capsuleRemove,
+              ).promptStashDelete,
             ),
           ),
         ],
@@ -545,7 +545,7 @@ class _WorkspaceTile extends StatelessWidget {
                 menuKey: const ValueKey('environment-menu-remove'),
                 label: lookupAppLocalizations(
                   Localizations.localeOf(context),
-                ).capsuleRemove,
+                ).promptStashDelete,
                 icon: AppIconography.delete,
                 destructive: true,
                 onSelected: onRemove,

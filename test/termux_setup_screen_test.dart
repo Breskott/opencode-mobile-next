@@ -779,7 +779,7 @@ void main() {
       await tester.tap(find.text('Switch version'));
       await tester.pumpAndSettle();
       expect(fixture.connection.api, isNull);
-      expect(find.text('Retry OpenCode 2 beta'), findsOneWidget);
+      expect(find.text('Try OpenCode 2 beta again'), findsOneWidget);
       expect(find.text('Return to OpenCode 1'), findsOneWidget);
       fixture.switchFails = false;
       await tester.tap(find.text('Return to OpenCode 1'));

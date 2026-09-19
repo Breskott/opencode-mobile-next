@@ -272,7 +272,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workClose => 'إغلاق';
 
   @override
-  String get workRetry => 'المحاولة مجددًا';
+  String get workRetry => 'إعادة المحاولة';
 
   @override
   String get workCancel => 'إلغاء';
@@ -416,7 +416,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fileSave => 'حفظ';
 
   @override
-  String get fileReload => 'إعادة التحميل';
+  String get fileReload => 'تحديث';
 
   @override
   String get queueRemoveFailed =>
@@ -594,17 +594,17 @@ class AppLocalizationsAr extends AppLocalizations {
       'قد تبقى محادثاتك متاحة. ابحث في كل الجلسات للعثور على أعمالك السابقة.';
 
   @override
-  String get workspaceRetryProjects => 'إعادة تحميل المشاريع';
+  String get workspaceRetryProjects => 'إعادة المحاولة';
 
   @override
   String get historyLoadOlder => 'تحميل الرسائل الأقدم';
 
   @override
-  String get historyReload => 'إعادة تحميل السجل الحديث';
+  String get historyReload => 'تحديث السجل الحديث';
 
   @override
   String get historyCursorExpired =>
-      'تغيّر السجل الأقدم أو انتهت صلاحيته. أعد تحميل السجل الحديث للمتابعة.';
+      'تغيّر السجل الأقدم أو انتهت صلاحيته. حدّث السجل الحديث للمتابعة.';
 
   @override
   String get historyRefreshed =>
@@ -642,7 +642,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sessionsLoadMore => 'تحميل المزيد من الجلسات';
 
   @override
-  String get sessionsReload => 'إعادة تحميل الجلسات الأخيرة';
+  String get sessionsReload => 'تحديث الجلسات الأخيرة';
 
   @override
   String get sessionsNoLoadedRecent =>
@@ -774,13 +774,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sessionNoteSave => 'حفظ الملاحظة';
 
   @override
-  String get sessionNoteRemove => 'إزالة الملاحظة المحفوظة';
+  String get sessionNoteRemove => 'حذف الملاحظة المحفوظة';
 
   @override
   String get sessionNoteSaved => 'حُفظت الملاحظة';
 
   @override
-  String get sessionNoteRemoved => 'أُزيلت الملاحظة';
+  String get sessionNoteRemoved => 'حُذفت الملاحظة';
 
   @override
   String get sessionNotePending => 'تسري في خطوة الوكيل التالية.';
@@ -1804,7 +1804,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'تابع تسجيل الدخول المفتوح في المتصفّح، ثم تحقّق من حالته يدويًا أو أدخل رمزه. لا يُحفظ رابط المتصفّح.';
 
   @override
-  String get pendingAuthResume => 'استئناف / التحقق من الحالة';
+  String get pendingAuthResume => 'استئناف / التحقق من تسجيل الدخول';
 
   @override
   String get pendingAuthEnterCode => 'إدخال الرمز';
@@ -1833,7 +1833,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر حفظ بيانات الاسترداد بشكل موثوق. أبقِ هذا التطبيق مفتوحًا وأعد محاولة الحفظ؛ فقد تضيع هذه المحاولة عند إعادة التشغيل. إذا لم تُفتح صفحة في المتصفّح، فألغِ المحاولة قبل البدء مجددًا.';
 
   @override
-  String get pendingAuthRetrySave => 'إعادة حفظ بيانات الاسترداد';
+  String get pendingAuthRetrySave => 'إعادة محاولة حفظ بيانات الاسترداد';
 
   @override
   String get pendingAuthForget => 'إزالة السجل من هذا الجهاز';
@@ -2055,7 +2055,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'تسجيل الدخول معلّق على الخادم. أكمل أي تفاعل مطلوب على الخادم، ثم تحقّق من حالته. إغلاق هذه اللوحة لا يلغيه.';
 
   @override
-  String get commandAuthCheck => 'التحقق من الحالة';
+  String get commandAuthCheck => 'التحقق من تسجيل الدخول';
 
   @override
   String get commandAuthCancel => 'إلغاء تسجيل الدخول';
@@ -2265,7 +2265,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get promptStashedDraftPending =>
-      'أُضيف الطلب إلى طلباتك المحفوظة. لا تزال مسودة محرّر الرسالة بحاجة إلى الحفظ؛ اضغط «إعادة المحاولة» في تنبيه المسودة.';
+      'أُضيف الطلب إلى طلباتك المحفوظة. لا تزال مسودة محرّر الرسالة بحاجة إلى الحفظ؛ أعد المحاولة من تنبيه المسودة.';
 
   @override
   String get promptStashReadFailed =>
@@ -2520,7 +2520,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'أُزيل الخادم الأصلي. انسخ مسودتك للاحتفاظ بها.';
 
   @override
-  String get draftRetrySave => 'إعادة حفظ المسودة';
+  String get draftRetrySave => 'إعادة محاولة حفظ المسودة';
 
   @override
   String get draftClearFailed =>
@@ -2954,13 +2954,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get setupConnectExisting => 'الاتصال بخادم موجود';
 
   @override
-  String get setupScreenTitle => 'الإعداد على الجهاز';
+  String get setupScreenTitle => 'على هذا الهاتف';
 
   @override
   String get setupInstallStart => 'تثبيت وتشغيل';
 
   @override
-  String get setupCheckAgain => 'التحقق مجددًا';
+  String get setupCheckAgain => 'إعادة المحاولة';
 
   @override
   String uncertainAuthTitle(String integrationID) {
@@ -3085,7 +3085,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'افحص الخادم الذي يديره هذا التطبيق في Termux.';
 
   @override
-  String get managedHealthCheck => 'التحقق من الحالة';
+  String get managedHealthCheck => 'تحديث';
 
   @override
   String get managedHealthChecking => 'جارٍ فحص Termux…';
@@ -3113,7 +3113,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get managedHealthUnknown => 'حالة الخادم غير متاحة';
 
   @override
-  String get managedHealthManage => 'فتح أدوات الإعداد';
+  String get managedHealthManage => 'على هذا الهاتف';
 
   @override
   String managedHealthObserved(String time) {
@@ -3421,7 +3421,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get managedStorageFailed =>
-      'تعذّر فحص مساحة Termux. أعد محاولة التحقق من الحالة.';
+      'تعذّر فحص مساحة Termux. اضغط «تحديث» لإعادة المحاولة.';
 
   @override
   String get managedRecoveryTitle => 'استعادة خادم يديره التطبيق بعد تعطّله';
@@ -3480,7 +3480,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get managedRecoveryUncertain =>
-      'توقفت الاستعادة مؤقتًا لأن Termux لم يؤكد النتيجة. تحقّق من الحالة للمتابعة.';
+      'توقفت الاستعادة مؤقتًا لأن Termux لم يؤكد النتيجة. اضغط «تحديث» للمتابعة.';
 
   @override
   String get managedRecoveryRetryDisable => 'إعادة محاولة تعطيل الاستعادة';
@@ -4428,21 +4428,21 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا وكلاء خارجيون بعد. ابدأ بعنوان HTTPS لوكيل أو برابط بطاقة وكيل عامة.';
 
   @override
-  String get a2aDeleteAgent => 'حذف الوكيل';
+  String get a2aDeleteAgent => 'إزالة الوكيل';
 
   @override
   String get a2aDeleteAgentDetail =>
       'إزالة هذا الوكيل ومهامه المحفوظة وبيانات اعتماده من هذا الهاتف. لا يوقف هذا العمل البعيد، ولا يحذف البيانات التي يحتفظ بها الوكيل.';
 
   @override
-  String get a2aDeleteLocal => 'حذف البيانات المحلية';
+  String get a2aDeleteLocal => 'إزالة من هذا الهاتف';
 
   @override
   String get a2aDeletionPending =>
-      'الحذف المحلي غير مكتمل. هذا الوكيل غير متاح حتى تُزال بياناته المتبقية.';
+      'الإزالة من هذا الهاتف غير مكتملة. هذا الوكيل غير متاح حتى تُزال بياناته المتبقية.';
 
   @override
-  String get a2aRetryDelete => 'إعادة محاولة الحذف';
+  String get a2aRetryDelete => 'إعادة محاولة الإزالة';
 
   @override
   String get a2aInspectIntro => 'افحص قبل الاتصال';
@@ -4521,14 +4521,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'محفوظة محليًا. حدّث مهمة معروفة للتحقق من حالتها الحالية.';
 
   @override
-  String get a2aCancelTask => 'إلغاء المهمة';
+  String get a2aCancelTask => 'إيقاف المهمة';
 
   @override
   String get a2aCancelDetail =>
-      'اطلب من هذا الوكيل إلغاء هذه المهمة. ربما اكتمل العمل بالفعل؛ ويقرر الوكيل ما إذا كان الإلغاء ممكنًا.';
+      'اطلب من هذا الوكيل إيقاف هذه المهمة. ربما اكتمل العمل بالفعل؛ ويقرر الوكيل ما إذا كان الإيقاف ممكنًا.';
 
   @override
-  String get a2aRequestCancel => 'طلب الإلغاء';
+  String get a2aRequestCancel => 'طلب الإيقاف';
 
   @override
   String get a2aForgetTask => 'نسيان المهمة المحفوظة';
@@ -5140,7 +5140,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get onboardingPrivateNetwork => 'الوصول إلى خادم عبر شبكتك الخاصة';
 
   @override
-  String get onboardingRunOnPhone => 'تشغيل OpenCode على هذا الهاتف';
+  String get onboardingRunOnPhone => 'تشغيل OpenCode هنا عبر Termux';
 
   @override
   String get onboardingTermuxNote => 'إعداد Termux خطوة بخطوة';
@@ -5155,7 +5155,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get onboardingSaveChanges => 'حفظ التغييرات';
 
   @override
-  String get onboardingTermuxSetup => 'إعداد Termux';
+  String get onboardingTermuxSetup => 'على هذا الهاتف';
 
   @override
   String get activityClearHere => 'لا شيء يحتاج إلى انتباه هنا';
@@ -5172,7 +5172,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'لم تُحمّل طلبات. لا يزال بعض نشاط الخوادم غير معروف.';
 
   @override
-  String get activityCheckAgain => 'التحقق مجددًا';
+  String get activityCheckAgain => 'إعادة المحاولة';
 
   @override
   String get activitySavedServers => 'الخوادم المحفوظة';
@@ -5288,7 +5288,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get oc2DiscoveryAutodetect => 'يكتشف OpenCode 1 أو 2 تلقائيًا.';
 
   @override
-  String get oc2DiscoveryPhone => 'إعداد OpenCode 1 أو 2 على هذا الهاتف.';
+  String get oc2DiscoveryPhone => 'إعداد OpenCode 1 أو 2 هنا عبر Termux.';
 
   @override
   String setupSwitchUse(String runtime) {
@@ -6263,7 +6263,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiUnknownStartupError => 'خطأ غير معروف عند بدء التشغيل';
 
   @override
-  String get e7LocaleUiRetry => 'حاول مجددًا';
+  String get e7LocaleUiRetry => 'إعادة المحاولة';
 
   @override
   String get e7LocaleUiNewSession => 'جلسة جديدة';
@@ -7215,6 +7215,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get readerUiOpenFolder => 'فتح المجلد';
+
+  @override
+  String get readerUiOpen => 'فتح';
+
+  @override
+  String get readerUiExpand => 'إظهار المزيد';
 
   @override
   String get readerUiAttachPrompt => 'إرفاق بالطلب';
@@ -8828,7 +8834,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiReject1 => 'رفض…';
 
   @override
-  String get chatUiReloadMessages => 'إعادة تحميل الرسائل';
+  String get chatUiReloadMessages => 'تحديث الرسائل';
 
   @override
   String get chatUiRemovesItFromTheConversationPermanently =>
@@ -8854,13 +8860,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiResult => 'النتيجة';
 
   @override
-  String get chatUiRetryImagePreview => 'إعادة محاولة معاينة الصورة';
+  String get chatUiRetryImagePreview => 'إعادة المحاولة';
 
   @override
   String get chatUiRetryLastPrompt => 'إعادة محاولة الطلب الأخير';
 
   @override
-  String get chatUiRetryServerCommands => 'إعادة محاولة أوامر الخادم';
+  String get chatUiRetryServerCommands => 'إعادة المحاولة';
 
   @override
   String get chatUiRevert => 'تراجع';
@@ -10335,12 +10341,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7LibraryWasRemoved(String detail1) {
-    return 'أُزيل $detail1';
+    return 'حُذف $detail1';
   }
 
   @override
   String e7LibraryCouldNotRemoveWorkspace(String detail1) {
-    return 'تعذّرت إزالة مساحة العمل: $detail1';
+    return 'تعذّر حذف مساحة العمل: $detail1';
   }
 
   @override
@@ -10370,8 +10376,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LibraryEnvironmentRefreshFailed => 'فشل تحديث البيئات';
 
   @override
-  String get e7LibraryRetryCloudEnvironments =>
-      'إعادة محاولة تحميل البيئات السحابية';
+  String get e7LibraryRetryCloudEnvironments => 'إعادة المحاولة';
 
   @override
   String get e7LibraryAdapters => 'المهايئات';
@@ -10380,8 +10385,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LibraryAdaptersUnavailable => 'المهايئات غير متاحة';
 
   @override
-  String get e7LibraryRetryWorkspaceAdapters =>
-      'إعادة محاولة تحميل مهايئات مساحات العمل';
+  String get e7LibraryRetryWorkspaceAdapters => 'إعادة المحاولة';
 
   @override
   String get e7LibraryNoWorkspaceAdapters => 'لا توجد مهايئات لمساحات العمل';
@@ -10430,7 +10434,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7LibraryRemove(String detail1) {
-    return 'إزالة $detail1؟';
+    return 'حذف $detail1؟';
   }
 
   @override
@@ -10443,7 +10447,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get e7LibraryRemovePermanently => 'إزالة نهائية';
+  String get e7LibraryRemovePermanently => 'حذف نهائي';
 
   @override
   String e7LibraryIsReady(String detail1) {
@@ -10487,7 +10491,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7LibraryAndItsBranchWereRemoved(String detail1) {
-    return 'أُزيل $detail1 وفرعه';
+    return 'حُذف $detail1 وفرعه';
   }
 
   @override
@@ -11065,7 +11069,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7LibrarySearchPhoneAliases =>
-      'local on device setup install server android terminal محلي هاتف جهاز إعداد تثبيت خادم أندرويد طرفية';
+      'termux local on device setup install server android terminal محلي هاتف جهاز إعداد تثبيت خادم أندرويد طرفية';
 
   @override
   String get e7LibrarySearchModelAliases =>
@@ -11570,7 +11574,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'اتركها فارغة فقط إذا لم يعد هذا الخادم يستخدم كلمة مرور.';
 
   @override
-  String get e7SetupAndroidOnly => 'الإعداد على الجهاز متاح على Android فقط';
+  String get e7SetupAndroidOnly =>
+      'الإعداد على هذا الهاتف متاح على Android فقط';
 
   @override
   String get e7SetupEditServer => 'تعديل الخادم';
@@ -12317,7 +12322,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get e7SetupCheckTermux => 'التحقق من Termux';
+  String get e7SetupCheckTermux => 'على هذا الهاتف';
 
   @override
   String get e7SetupCommandFailed => 'فشل تنفيذ الأمر في Termux.';
@@ -12372,7 +12377,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7ModelUiLoadFailed => 'تعذّر تحميل النماذج';
 
   @override
-  String get e7ModelUiRetry => 'حاول مجددًا';
+  String get e7ModelUiRetry => 'إعادة المحاولة';
 
   @override
   String get e7ModelUiBasicCatalog =>
@@ -12576,7 +12581,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7VoiceUiOpenSettings => 'فتح إعدادات التطبيق';
 
   @override
-  String get e7VoiceUiRetry => 'حاول مجددًا';
+  String get e7VoiceUiRetry => 'إعادة المحاولة';
 
   @override
   String get e7VoiceUiStartListening => 'بدء الاستماع';
@@ -14746,13 +14751,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiGateAnswerRunLogs => 'عرض السجلات';
 
   @override
-  String get teamUiGateAnswerRunCancel => 'إلغاء العمل';
+  String get teamUiGateAnswerRunCancel => 'إيقاف العمل';
 
   @override
   String get teamUiGateAnswerRetry => 'إعادة المحاولة';
 
   @override
-  String get teamUiGateAnswerTryAgain => 'حاول مجددًا';
+  String get teamUiGateAnswerTryAgain => 'إعادة المحاولة';
 
   @override
   String teamUiGateAnswerRejected(String message) {
@@ -14791,7 +14796,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'يصنّف المضيف هذا الإجراء مدمّرًا. لا يمكن التراجع عنه من الهاتف.';
 
   @override
-  String get teamUiGateAnswerConfirmCancelRunTitle => 'إلغاء هذا العمل؟';
+  String get teamUiGateAnswerConfirmCancelRunTitle => 'إيقاف هذا العمل؟';
 
   @override
   String get teamUiGateAnswerConfirmCancelRunBody =>
@@ -14909,13 +14914,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiControlMoreActions => 'إجراءات أخرى';
 
   @override
-  String get teamUiControlCancelRun => 'إلغاء التشغيل';
+  String get teamUiControlCancelRun => 'إيقاف التشغيل';
 
   @override
   String get teamUiControlCloseBatch => 'إغلاق الدفعة';
 
   @override
-  String get teamUiControlCancelRunConfirmTitle => 'إلغاء هذا التشغيل؟';
+  String get teamUiControlCancelRunConfirmTitle => 'إيقاف هذا التشغيل؟';
 
   @override
   String get teamUiControlCancelRunConfirmBody =>
@@ -15387,10 +15392,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'قد تستغرق الذاكرات المؤقتة الكبيرة دقيقة أو دقيقتين. يمكنك مغادرة هذه الشاشة؛ سيستمر الفحص.';
 
   @override
-  String get termuxStorageCancel => 'إلغاء الفحص';
+  String get termuxStorageCancel => 'إيقاف الفحص';
 
   @override
-  String get termuxStorageCancelled => 'أُلغي الفحص';
+  String get termuxStorageCancelled => 'أُوقف الفحص';
 
   @override
   String get termuxStorageFailed => 'لم يكتمل الفحص. حاول مرة أخرى.';
@@ -15593,7 +15598,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get termuxProcsGroupOther => 'أخرى';
 
   @override
-  String get termuxProcsGroupOpenCodeHint => 'يُدار من عناصر التحكم في الخادم';
+  String get termuxProcsGroupOpenCodeHint => 'يُدار من «على هذا الهاتف»';
 
   @override
   String get termuxProcsOrphansHint =>
@@ -15638,7 +15643,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get termuxProcsKeep => 'إبقاء';
 
   @override
-  String get termuxProcsProtected => 'محمية · افتح عناصر التحكم في الخادم';
+  String get termuxProcsProtected => 'محمية · افتح «على هذا الهاتف»';
 
   @override
   String termuxProcsOrphanParentGone(String elapsed) {
@@ -15982,21 +15987,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiPhoneTipsCopied => 'نُسخت الأوامر';
 
   @override
-  String get teamUiPhoneRemove => 'إزالة من هذا الهاتف';
+  String get teamUiPhoneRemove => 'حذف من هذا الهاتف';
 
   @override
   String get teamUiPhoneRemoveTitle =>
-      'إزالة فريق الذكاء الاصطناعي من هذا الهاتف؟';
+      'حذف فريق الذكاء الاصطناعي من هذا الهاتف؟';
 
   @override
   String get teamUiPhoneRemoveBody =>
       'يوقف المشرف ويحذف gc والمدينة ومخزنها. تبقى ملفات مشروعك وسجل git الخاص بها. تُعطَّل الإضافة لهذا الخادم.';
 
   @override
-  String get teamUiPhoneRemoveConfirm => 'إزالة';
+  String get teamUiPhoneRemoveConfirm => 'حذف';
 
   @override
-  String get teamUiPhoneRemoved => 'أُزيل فريق الذكاء الاصطناعي من هذا الهاتف.';
+  String get teamUiPhoneRemoved => 'حُذف فريق الذكاء الاصطناعي من هذا الهاتف.';
 
   @override
   String teamUiPhoneActionFailed(String reason) {

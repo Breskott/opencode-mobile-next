@@ -64,7 +64,7 @@ void main() {
     (tester) async {
       await pump(tester);
       expect(calls, isEmpty);
-      await tester.tap(find.text('Check status'));
+      await tester.tap(find.text('Refresh'));
       await tester.pumpAndSettle();
       expect(find.text('Server process running'), findsOneWidget);
       expect(find.text('OpenCode 1.18.29'), findsOneWidget);
@@ -92,11 +92,11 @@ void main() {
       response = Completer();
       var opened = 0;
       await pump(tester, onManage: () => opened++);
-      await tester.tap(find.text('Check status'));
+      await tester.tap(find.text('Refresh'));
       await tester.pump();
       expect(find.text('Checking Termux…'), findsOneWidget);
-      await tester.tap(find.text('Check status'));
-      await tester.tap(find.text('Open setup controls'));
+      await tester.tap(find.text('Refresh'));
+      await tester.tap(find.text('On this phone'));
       expect(opened, 1);
       expect(calls, hasLength(1));
       await tester.pumpWidget(const SizedBox());
@@ -114,10 +114,10 @@ void main() {
     tester,
   ) async {
     await pump(tester);
-    await tester.tap(find.text('Check status'));
+    await tester.tap(find.text('Refresh'));
     await tester.pumpAndSettle();
     response = Completer();
-    await tester.tap(find.text('Check status'));
+    await tester.tap(find.text('Refresh'));
     await tester.pump();
     response!.completeError(
       PlatformException(code: 'broken', message: 'secret fixture'),
@@ -133,7 +133,7 @@ void main() {
   ) async {
     debugPlatformCapabilities = const PlatformCapabilities.linuxDesktop();
     await pump(tester);
-    expect(find.text('Check status'), findsNothing);
+    expect(find.text('Refresh'), findsNothing);
     expect(calls, isEmpty);
   });
 
@@ -168,11 +168,8 @@ void main() {
         'stdout': 'phase=failed\nrunner=proot\n',
         'stderr': '',
       });
-    await tester.scrollUntilVisible(
-      find.text('Check status').hitTestable(),
-      200,
-    );
-    await tester.tap(find.text('Check status').hitTestable());
+    await tester.scrollUntilVisible(find.text('Refresh').hitTestable(), 200);
+    await tester.tap(find.text('Refresh').hitTestable());
     await tester.pumpAndSettle();
     expect(find.text('Setup needs attention'), findsOneWidget);
     expect(find.text('Server process running'), findsNothing);

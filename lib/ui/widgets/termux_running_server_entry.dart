@@ -140,7 +140,7 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
               : l10n.termuxRunningUnavailable,
         ),
         trailing: IconButton(
-          tooltip: l10n.managedHealthCheck,
+          tooltip: l10n.commonRetry,
           onPressed: widget.busy || _checking
               ? null
               : () => unawaited(_check()),

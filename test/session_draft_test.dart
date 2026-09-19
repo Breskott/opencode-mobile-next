@@ -364,7 +364,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 700));
       expect(c.savedSessionDraft('session-1')!.text, 'Keep text');
       expect(c.savedSessionDraft('session-1')!.attachments, hasLength(1));
-      await tester.tap(find.byTooltip('Retry saving draft'));
+      await tester.tap(find.byTooltip('Try saving draft again'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Use available attachments'));
       await tester.pumpAndSettle();
@@ -583,7 +583,7 @@ void main() {
     );
     expect(c.sessionDraft('session-1'), isNull);
     disk.refuse = false;
-    await tester.tap(find.byTooltip('Retry saving draft'));
+    await tester.tap(find.byTooltip('Try saving draft again'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('draft-save-error')), findsNothing);
     expect(c.sessionDraft('session-1'), 'Keep this draft');

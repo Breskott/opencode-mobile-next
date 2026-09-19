@@ -381,7 +381,7 @@ void main() {
       expect(find.text('Connect to running server'), findsNothing);
       capabilities['permissionGranted'] = true;
       health = const ServerProbeResult.failure('unreachable');
-      await tester.tap(find.byTooltip('Check status'));
+      await tester.tap(find.byTooltip('Try again'));
       await tester.pumpAndSettle();
       expect(
         find.text('Could not check the server on this phone.'),

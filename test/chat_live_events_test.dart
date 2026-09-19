@@ -4851,9 +4851,9 @@ void main() {
     await tester.tap(find.text('Session actions'));
     await tester.pumpAndSettle();
     expect(find.text('Retry last prompt'), findsOneWidget);
-    await tester.ensureVisible(find.text('Reload messages'));
+    await tester.ensureVisible(find.text('Refresh messages'));
     await tester.pumpAndSettle();
-    expect(find.text('Reload messages'), findsOneWidget);
+    expect(find.text('Refresh messages'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
