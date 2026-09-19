@@ -141,8 +141,13 @@ class _ScriptedGateway implements OrchestrationGateway {
   Future<List<OrchestrationRun>> runs({String? projectId}) async => const [];
   @override
   Future<OrchestrationRun?> run(String id) async => null;
+  int workReads = 0;
   @override
-  Future<List<WorkItem>> work({String? projectId}) async => const [];
+  Future<List<WorkItem>> work({String? projectId}) async {
+    workReads += 1;
+    return const [];
+  }
+
   @override
   Future<List<WorkItem>> readyWork({String? projectId}) async => const [];
   @override
@@ -210,6 +215,14 @@ class _ScriptedGateway implements OrchestrationGateway {
     required String agentId,
     required String requestId,
   }) => _call(_Call('assign', workId, requestId, arg: agentId));
+
+  @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) => _call(_Call('createWork', title, requestId, arg: projectId));
 }
 
 /// [_ScriptedGateway] with the merge roles (TEAM-205): readiness from a
@@ -790,6 +803,103 @@ void main() {
       );
     });
 
+    test('giveTask (TEAM-306): creates, then slings the created id; a 201 '
+        'bead confirms at once and the work is fetched again', () async {
+      final gateway = _ScriptedGateway();
+      gateway.answer = (call) async => call.verb == 'createWork'
+          ? MutationReceipt(
+              id: call.requestId,
+              status: MutationReceiptStatus.accepted,
+              raw: {'id': 'gc-77', 'status': 'open', 'title': call.target},
+              upstreamStatus: 201,
+            )
+          : MutationReceipt(
+              id: call.requestId,
+              status: MutationReceiptStatus.accepted,
+              correlationId: 'corr-${call.requestId}',
+              upstreamStatus: 202,
+            );
+      final controller = await boot(gateway);
+      final reads = gateway.workReads;
+      final result = await controller.giveTask(
+        title: 'Add a docstring',
+        description: 'One line.',
+        projectId: 'ocproof',
+        agentId: 'ocproof/gastown.polecat',
+      );
+      expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+      expect(gateway.calls[0].target, 'Add a docstring');
+      expect(gateway.calls[0].arg, 'ocproof');
+      expect(gateway.calls[1].target, 'gc-77');
+      expect(gateway.calls[1].arg, 'ocproof/gastown.polecat');
+      expect(result.created.status, MutationStatus.confirmed);
+      expect(result.created.receipt?.createdId, 'gc-77');
+      expect(result.assigned?.status, MutationStatus.sent);
+      expect(stored('key-1')?['request'], {
+        'kind': 'createWork',
+        'targetId': 'Add a docstring',
+        'text': 'One line.',
+        'projectId': 'ocproof',
+      });
+      await settle();
+      expect(gateway.workReads, greaterThan(reads));
+      gateway.push(
+        const BeadChanged(beadId: 'gc-77', change: BeadChange.updated),
+      );
+      await settle();
+      expect(result.assigned!.key, 'key-2');
+      expect(controller.mutation('key-2')?.status, MutationStatus.confirmed);
+    });
+
+    test('giveTask: a refused create slings nothing; a create without an '
+        'id waits for its bead.created event', () async {
+      final gateway = _ScriptedGateway();
+      gateway.answer = (call) async =>
+          MutationReceipt.rejected(call.requestId, 'rig nope unknown');
+      final controller = await boot(gateway);
+      final refused = await controller.giveTask(
+        title: 'T',
+        projectId: 'nope',
+        agentId: 'nope/gastown.polecat',
+      );
+      expect(refused.created.status, MutationStatus.rejected);
+      expect(refused.assigned, isNull);
+      expect(gateway.calls.map((c) => c.verb), ['createWork']);
+
+      gateway.answer = (call) async => MutationReceipt(
+        id: call.requestId,
+        status: MutationReceiptStatus.accepted,
+        correlationId: 'corr-async',
+        upstreamStatus: 202,
+      );
+      final pending = await controller.giveTask(
+        title: 'U',
+        projectId: 'ocproof',
+        agentId: 'ocproof/gastown.polecat',
+      );
+      expect(pending.created.status, MutationStatus.sent);
+      expect(pending.assigned, isNull);
+      expect(gateway.calls.map((c) => c.verb), ['createWork', 'createWork']);
+      gateway.push(const RequestResult(requestId: 'corr-async', ok: true));
+      await settle();
+      expect(
+        controller.mutation(pending.created.key)?.status,
+        MutationStatus.confirmed,
+      );
+    });
+
+    test('createWork is refused by the controller when the host lacks '
+        'controlCreateWork', () async {
+      final gateway = _ScriptedGateway(
+        capabilities: OrchestrationCapabilities.gascityFront,
+      );
+      final controller = await boot(gateway);
+      final record = await controller.createWork(title: 'T');
+      expect(record.status, MutationStatus.rejected);
+      expect(record.receipt?.message, 'the host does not allow this control');
+      expect(gateway.calls, isEmpty);
+    });
+
     test('a stop and a batch close confirm on bead.closed of the session '
         'and convoy beads (Gas City 1.4.1, proven live in TEAM-207)', () async {
       final gateway = _ScriptedGateway()
@@ -978,6 +1088,12 @@ void main() {
         MutationRequest.controlAgent('a', AgentControlAction.pause),
         MutationRequest.cancelRun('r'),
         MutationRequest.assign('w', agentId: 'a'),
+        MutationRequest.createWork(
+          title: 'Add a docstring',
+          description: 'One line.',
+          projectId: 'ocproof',
+        ),
+        MutationRequest.createWork(title: 'Bare'),
       ];
       for (final request in requests) {
         final back = MutationRequest.fromJson(
@@ -987,6 +1103,37 @@ void main() {
       }
       expect(requests[1].response?.confirmed, isFalse);
       expect(requests[2].response, isNull);
+      // TEAM-306: the title is the target (no id yet), the details the
+      // text and the rig its own field.
+      final create = requests[6];
+      expect(create.kind, MutationKind.createWork);
+      expect(create.targetId, 'Add a docstring');
+      expect(create.text, 'One line.');
+      expect(create.projectId, 'ocproof');
+      expect(create.toJson(), {
+        'kind': 'createWork',
+        'targetId': 'Add a docstring',
+        'text': 'One line.',
+        'projectId': 'ocproof',
+      });
+      expect(requests[7].toJson(), {'kind': 'createWork', 'targetId': 'Bare'});
+      final record = MutationRecord(
+        key: 'k',
+        request: create,
+        createdAt: DateTime.utc(2026, 9, 12),
+        status: MutationStatus.confirmed,
+        receipt: const MutationReceipt(
+          id: 'k',
+          status: MutationReceiptStatus.accepted,
+          raw: {'id': 'gc-77', 'status': 'open'},
+          upstreamStatus: 201,
+        ),
+      );
+      final back = MutationRecord.fromJson(
+        jsonDecode(jsonEncode(record.toJson())),
+      )!;
+      expect(back.request.projectId, 'ocproof');
+      expect(back.receipt?.createdId, 'gc-77');
     });
   });
 

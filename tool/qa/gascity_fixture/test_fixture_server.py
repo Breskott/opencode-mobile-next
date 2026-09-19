@@ -237,6 +237,26 @@ class EventStreamTest(FixtureCase):
         self.assertEqual([b["status"] for b in beads], ["open", "in_progress"])
         self.assertEqual(self.get_json(f"{CITY_PATH}/bead/oc-loy")["status"], "in_progress")
 
+    def test_bead_create_answers_201_and_appends_bead_created(self) -> None:
+        self.stream_to_end("normal", LAST_SEQ)
+        status, _, body = self.request("POST", f"{CITY_PATH}/beads", {"X-GC-Request": "1"}, {"rig": "ocproof"})
+        self.assertEqual(status, 400)
+        status, headers, body = self.request(
+            "POST", f"{CITY_PATH}/beads", {"X-GC-Request": "1"},
+            {"title": "Add a docstring", "rig": "ocproof", "type": "task", "priority": 2, "labels": ["opencode-mobile"]},
+        )
+        self.assertEqual(status, 201)
+        self.assertEqual(body["status"], "open")
+        self.assertEqual(body["title"], "Add a docstring")
+        self.assertEqual(body["rig"], "ocproof")
+        self.assertTrue(body["id"].startswith("fx-"))
+        self.assertEqual(headers["Location"], f"{CITY_PATH}/bead/{body['id']}")
+        response = self.open_stream(f"{CITY_PATH}/events/stream", {"Last-Event-ID": str(LAST_SEQ)})
+        frames = self.read_frames(response, lambda f: f.get("id") == str(LAST_SEQ + 1))
+        self.assertEqual([f["data"]["type"] for f in frames], ["bead.created"])
+        self.assertEqual(frames[0]["data"]["payload"]["bead"]["id"], body["id"])
+        self.assertEqual(self.get_json(f"{CITY_PATH}/bead/{body['id']}")["title"], "Add a docstring")
+
 
 class ScenarioTest(FixtureCase):
     def test_blocked_bead_and_pending_choice(self) -> None:

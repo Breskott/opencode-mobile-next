@@ -11,7 +11,14 @@
 /// the message ([composeTeamPlanningMessage]). A planner the host lists as
 /// suspended or stopped (the lean profile) turns the form into "The
 /// planner (Mayor) is off on this host" with the host guide; nothing is
-/// sent. A planner with no live session is woken (`controlAgent(start)`)
+/// sent — unless the host can create work itself
+/// (`controlCreateWork`, the phone's loopback supervisor, TEAM-306), in
+/// which case the sheet offers the **direct task** form instead: a
+/// project, a title and optional details go as one bead
+/// (`createWork`) slung at the project's worker pool
+/// (`<rig>/gastown.polecat`, [teamWorkerPoolId]) through
+/// [OrchestrationController.giveTask]. A planner with no live session is
+/// woken (`controlAgent(start)`)
 /// before the message goes. The home then shows [TeamPlanningCard]
 /// ("Planning… (Mayor)") until a run carrying the objective appears, or
 /// "Still planning — check the planner's output" after 30 minutes.
@@ -32,8 +39,9 @@ import 'policy_block.dart';
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// Opens the sheet; resolves with the message record once sent, null when
-/// the person backed out or the planner was off.
+/// Opens the sheet; resolves with the message record once sent (the
+/// `createWork` record for a direct task), null when the person backed
+/// out or the planner was off with no direct path.
 Future<MutationRecord?> showStartRunSheet(
   BuildContext context,
   OrchestrationController controller,
@@ -75,21 +83,29 @@ class StartRunSheet extends StatefulWidget {
 
 class _StartRunSheetState extends State<StartRunSheet> {
   final _objective = TextEditingController();
+  final _task = TextEditingController();
+  final _details = TextEditingController();
   String? _projectId;
+  String? _directProjectId;
   TeamSupervision _supervision = TeamSupervision.balanced;
   bool _sending = false;
   bool _waking = false;
   bool _showEmpty = false;
+  bool _showTaskEmpty = false;
+  String? _directError;
 
   @override
   void initState() {
     super.initState();
     _objective.addListener(_changed);
+    _task.addListener(_changed);
   }
 
   @override
   void dispose() {
     _objective.dispose();
+    _task.dispose();
+    _details.dispose();
     super.dispose();
   }
 
@@ -142,6 +158,65 @@ class _StartRunSheetState extends State<StartRunSheet> {
     }
   }
 
+  /// The direct-task project: the chosen one, else the first listed.
+  String? get _directProject {
+    final projects = widget.controller.snapshot.projects;
+    for (final project in projects) {
+      if (project.id == _directProjectId) return project.id;
+    }
+    return projects.isEmpty ? null : projects.first.id;
+  }
+
+  /// The planner is off, but this host creates work: the direct form.
+  bool get _direct {
+    final controller = widget.controller;
+    final planner = teamPlannerAgent(controller.snapshot.agents);
+    final off = planner == null || teamPlannerIsOff(planner);
+    return off &&
+        controller.capabilities.controlCreateWork &&
+        controller.snapshot.projects.isNotEmpty;
+  }
+
+  Future<void> _sendDirect() async {
+    final title = _task.text.trim();
+    if (title.isEmpty) {
+      setState(() => _showTaskEmpty = true);
+      return;
+    }
+    final projectId = _directProject;
+    if (_sending || projectId == null) return;
+    setState(() {
+      _sending = true;
+      _directError = null;
+    });
+    try {
+      final details = _details.text.trim();
+      final result = await widget.controller.giveTask(
+        title: title,
+        description: details.isEmpty ? null : details,
+        projectId: projectId,
+        agentId: teamWorkerPoolId(projectId),
+      );
+      if (!mounted) return;
+      final created = result.created;
+      if (created.status == MutationStatus.rejected) {
+        // The bead was not made: stay, say why, let the person edit.
+        setState(() => _directError = created.receipt?.message?.trim() ?? '');
+        return;
+      }
+      // The bead exists; a refused sling comes back as its own record so
+      // the home says so instead of "sent".
+      final assigned = result.assigned;
+      Navigator.of(context).pop(
+        assigned != null && assigned.status == MutationStatus.rejected
+            ? assigned
+            : created,
+      );
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: widget.controller,
@@ -151,7 +226,9 @@ class _StartRunSheetState extends State<StartRunSheet> {
       final inset = MediaQuery.viewInsetsOf(context).bottom;
       final planner = teamPlannerAgent(widget.controller.snapshot.agents);
       final Widget body;
-      if (planner == null) {
+      if (_direct) {
+        body = _directForm(context);
+      } else if (planner == null) {
         body = _PlannerOff(
           key: const ValueKey('team-start-run-planner-missing'),
           title: l10n.teamUiStartRunPlannerMissingTitle,
@@ -334,6 +411,134 @@ class _StartRunSheetState extends State<StartRunSheet> {
           onPressed: _sending ? null : () => _send(planner),
           icon: const Icon(AppIconography.send, size: 18),
           label: Text(l10n.teamUiStartRunSend),
+        ),
+      ],
+    );
+  }
+
+  /// The direct task (TEAM-306): intro, project, title, details, Send to
+  /// an agent, the host's refusal when any, and the host guide below for
+  /// the person who would rather wake the planner.
+  Widget _directForm(BuildContext context) {
+    final l10n = _copy(context);
+    final theme = Theme.of(context);
+    final muted = AppTheme.mutedOf(theme);
+    final projects = widget.controller.snapshot.projects;
+    final labelStyle = theme.textTheme.labelLarge?.copyWith(color: muted);
+    final error = _directError;
+    final failure = AppTheme.statusColor(theme, AppStatusTone.failure);
+    return Column(
+      key: const ValueKey('team-start-run-direct'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(AppIconography.agent, size: 20, color: muted),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.teamUiStartRunDirectIntro,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(l10n.teamUiStartRunProjectLabel, style: labelStyle),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          key: const ValueKey('team-start-run-direct-project'),
+          initialValue: _directProject,
+          isExpanded: true,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+          items: [
+            for (final project in projects)
+              DropdownMenuItem<String>(
+                key: ValueKey('team-start-run-direct-project-${project.id}'),
+                value: project.id,
+                child: Text(
+                  project.name,
+                  textDirection: TextDirection.ltr,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+          onChanged: _sending
+              ? null
+              : (value) => setState(() => _directProjectId = value),
+        ),
+        const SizedBox(height: 16),
+        Text(l10n.teamUiStartRunDirectTitle, style: labelStyle),
+        const SizedBox(height: 6),
+        TextField(
+          key: const ValueKey('team-start-run-direct-title'),
+          controller: _task,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          textInputAction: TextInputAction.next,
+          enabled: !_sending,
+          decoration: InputDecoration(
+            hintText: l10n.teamUiStartRunDirectTitleHint,
+            border: const OutlineInputBorder(),
+            errorText: _showTaskEmpty && _task.text.trim().isEmpty
+                ? l10n.teamUiStartRunDirectTitleRequired
+                : null,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(l10n.teamUiStartRunDirectDetails, style: labelStyle),
+        const SizedBox(height: 6),
+        TextField(
+          key: const ValueKey('team-start-run-direct-details'),
+          controller: _details,
+          minLines: 2,
+          maxLines: 6,
+          textCapitalization: TextCapitalization.sentences,
+          enabled: !_sending,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        if (error != null) ...[
+          const SizedBox(height: 12),
+          Row(
+            key: const ValueKey('team-start-run-direct-error'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(AppIconography.error, size: 18, color: failure),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  error.isEmpty
+                      ? l10n.teamUiGateAnswerRejectedNoMessage
+                      : l10n.teamUiStartRunDirectRefused(error),
+                  style: theme.textTheme.bodySmall?.copyWith(color: failure),
+                ),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 20),
+        FilledButton.icon(
+          key: const ValueKey('team-start-run-direct-send'),
+          onPressed: _sending ? null : _sendDirect,
+          icon: _sending
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(AppIconography.send, size: 18),
+          label: Text(l10n.teamUiStartRunDirectSend),
+        ),
+        const SizedBox(height: 12),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: OutlinedButton.icon(
+            key: const ValueKey('team-start-run-host-guide'),
+            onPressed: () => showTeamHostGuideSheet(context),
+            icon: const Icon(AppIconography.guide, size: 18),
+            label: Text(l10n.teamUiStartRunHostGuide),
+          ),
         ),
       ],
     );

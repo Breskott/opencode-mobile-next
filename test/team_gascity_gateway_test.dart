@@ -505,6 +505,150 @@ void main() {
     });
   });
 
+  group('createWork (TEAM-306)', () {
+    /// A loopback "supervisor" answering `POST /beads` with a 201 bead and
+    /// recording what it got.
+    Future<
+      (
+        GasCityGateway,
+        List<({String path, Map<String, String?> headers, String body})>,
+      )
+    >
+    loopback({
+      int status = 201,
+      String answer =
+          '{"id":"gc-77","status":"open","title":"Add a docstring"}',
+    }) async {
+      final seen =
+          <({String path, Map<String, String?> headers, String body})>[];
+      final server = await HttpServer.bind('127.0.0.1', 0);
+      server.listen((request) async {
+        final body = await utf8.decoder.bind(request).join();
+        seen.add((
+          path: request.uri.path,
+          headers: {
+            'x-gc-request': request.headers.value(mutationRequestHeader),
+            'idempotency-key': request.headers.value('idempotency-key'),
+          },
+          body: body,
+        ));
+        request.response
+          ..statusCode = status
+          ..headers.contentType = ContentType.json
+          ..write(answer)
+          ..close();
+      });
+      addTearDown(() => server.close(force: true));
+      final gateway = GasCityGateway(
+        url: 'http://127.0.0.1:${server.port}',
+        city: _city,
+        hostMode: OrchestrationHostMode.phone,
+      );
+      addTearDown(gateway.close);
+      expect(gateway.loopbackControl, isTrue);
+      expect(gateway.capabilities.controlCreateWork, isTrue);
+      return (gateway, seen);
+    }
+
+    test(
+      'posts the proof body to /beads with X-GC-Request and no '
+      'Idempotency-Key; a 201 bead is an accepted receipt with createdId',
+      () async {
+        final (gateway, seen) = await loopback();
+        final receipt = await gateway.createWork(
+          title: '  Add a docstring  ',
+          description: 'One line, nothing else.',
+          projectId: 'ocproof',
+          requestId: 'req-306',
+        );
+        expect(seen, hasLength(1));
+        expect(seen.single.path, '/v0/city/$_city/beads');
+        expect(seen.single.headers['x-gc-request'], 'req-306');
+        expect(seen.single.headers['idempotency-key'], isNull);
+        expect(jsonDecode(seen.single.body), {
+          'title': 'Add a docstring',
+          'description': 'One line, nothing else.',
+          'rig': 'ocproof',
+          'type': 'task',
+          'priority': 2,
+          'labels': ['opencode-mobile'],
+        });
+        expect(receipt.status, MutationReceiptStatus.accepted);
+        expect(receipt.id, 'req-306');
+        expect(receipt.upstreamStatus, 201);
+        expect(receipt.createdId, 'gc-77');
+        expect(receipt.raw['title'], 'Add a docstring');
+      },
+    );
+
+    test('description and rig are omitted when empty; an empty title is '
+        'rejected before any request', () async {
+      final (gateway, seen) = await loopback();
+      final empty = await gateway.createWork(title: '   ', requestId: 'r0');
+      expect(empty.status, MutationReceiptStatus.rejected);
+      expect(seen, isEmpty);
+      await gateway.createWork(title: 'T', description: ' ', requestId: 'r1');
+      expect(jsonDecode(seen.single.body), {
+        'title': 'T',
+        'type': 'task',
+        'priority': 2,
+        'labels': ['opencode-mobile'],
+      });
+    });
+
+    test(
+      'a supervisor problem is a rejected receipt with its message',
+      () async {
+        final (gateway, _) = await loopback(
+          status: 422,
+          answer:
+              '{"type":"urn:gascity:invalid-request","title":"Invalid Request",'
+              '"status":422,"detail":"rig nope unknown"}',
+        );
+        final receipt = await gateway.createWork(
+          title: 'T',
+          projectId: 'nope',
+          requestId: 'r2',
+        );
+        expect(receipt.status, MutationReceiptStatus.rejected);
+        expect(receipt.createdId, isNull);
+        expect(receipt.message, contains('rig nope unknown'));
+      },
+    );
+
+    test('createdId reads a front receipt\'s inner body too', () {
+      const front = MutationReceipt(
+        id: 'k',
+        status: MutationReceiptStatus.accepted,
+        raw: {
+          'status': 'accepted',
+          'upstream_status': 201,
+          'body': {'id': 'gc-9'},
+        },
+      );
+      expect(front.createdId, 'gc-9');
+      const none = MutationReceipt(
+        id: 'k',
+        status: MutationReceiptStatus.accepted,
+        raw: {'id': ''},
+      );
+      expect(none.createdId, isNull);
+    });
+
+    test(
+      'without a front or loopback control the gateway rejects it',
+      () async {
+        final fx = needFixture();
+        if (fx == null) return;
+        final gateway = gatewayFor(fx, 'normal');
+        addTearDown(gateway.close);
+        final receipt = await gateway.createWork(title: 'T', requestId: 'r3');
+        expect(receipt.status, MutationReceiptStatus.rejected);
+        expect(receipt.message, 'front required');
+      },
+    );
+  });
+
   group('reads against normal', () {
     final requests = <RequestOptions>[];
     late GasCityGateway gateway;

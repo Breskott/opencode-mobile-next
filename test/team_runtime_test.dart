@@ -841,7 +841,11 @@ void main() {
         expect(busy.exitCode, 75);
         expect(busy.stderr, contains('aiteam-busy:install:'));
         final done = await fx.waitIdle();
-        expect(done.phase, TeamRuntimePhase.installed, reason: '$done\n${fx.log}');
+        expect(
+          done.phase,
+          TeamRuntimePhase.installed,
+          reason: '$done\n${fx.log}',
+        );
         expect(done.verb, 'install');
         // The inline verbs run through the same dispatch.
         final status = await Process.run('bash', [
@@ -861,7 +865,11 @@ void main() {
         expect(ready.isReady, isTrue, reason: fx.log);
         final stop = await fx.dispatch('stop');
         expect(stop.exitCode, 0);
-        expect((await fx.waitIdle()).phase, TeamRuntimePhase.stopped, reason: fx.log);
+        expect(
+          (await fx.waitIdle()).phase,
+          TeamRuntimePhase.stopped,
+          reason: fx.log,
+        );
       },
     );
   });
@@ -1263,21 +1271,22 @@ void main() {
       expect(tailnet.capabilities.anyControl, isFalse);
     });
 
-    test(
-      'gascityLoopback is gascityRead plus the control switches and phoneHost',
-      () {
-        final read = OrchestrationCapabilities.gascityRead.asMap();
-        final loopback = OrchestrationCapabilities.gascityLoopback.asMap();
-        final front = OrchestrationCapabilities.gascityFront.asMap();
-        for (final entry in loopback.entries) {
-          final expected = entry.key == 'phoneHost'
-              ? true
-              : entry.key.startsWith('control')
-              ? front[entry.key]
-              : read[entry.key];
-          expect(entry.value, expected, reason: entry.key);
-        }
-      },
-    );
+    test('gascityLoopback is gascityRead plus the control switches, '
+        'controlCreateWork (TEAM-306) and phoneHost', () {
+      final read = OrchestrationCapabilities.gascityRead.asMap();
+      final loopback = OrchestrationCapabilities.gascityLoopback.asMap();
+      final front = OrchestrationCapabilities.gascityFront.asMap();
+      for (final entry in loopback.entries) {
+        final expected = switch (entry.key) {
+          // The direct task path exists only where the planner can be
+          // off and the supervisor is reachable: the phone's loopback.
+          'phoneHost' || 'controlCreateWork' => true,
+          final key when key.startsWith('control') => front[key],
+          final key => read[key],
+        };
+        expect(entry.value, expected, reason: entry.key);
+      }
+      expect(front['controlCreateWork'], isFalse);
+    });
   });
 }

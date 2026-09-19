@@ -137,6 +137,19 @@ class _Gateway implements OrchestrationGateway {
     required String agentId,
     required String requestId,
   }) => inner.assign(workId, agentId: agentId, requestId: requestId);
+
+  @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) => inner.createWork(
+    title: title,
+    description: description,
+    projectId: projectId,
+    requestId: requestId,
+  );
 }
 
 /// A day's usage as the PC's Gas City reports it once agents have run:

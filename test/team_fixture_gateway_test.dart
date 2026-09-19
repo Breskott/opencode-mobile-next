@@ -165,6 +165,31 @@ void main() {
     expect(gateway.controlCalls.last.arg, 'polecat');
   });
 
+  test(
+    'createWork (TEAM-306) answers the new bead so createdId is set',
+    () async {
+      expect(gateway.capabilities.controlCreateWork, isTrue);
+      final receipt = await gateway.createWork(
+        title: 'Add a docstring',
+        description: 'One line.',
+        projectId: 'ocproof',
+        requestId: 'req-6',
+      );
+      expect(receipt.status, MutationReceiptStatus.accepted);
+      expect(receipt.createdId, 'fx-new-1');
+      expect(receipt.raw, {
+        'id': 'fx-new-1',
+        'status': 'open',
+        'title': 'Add a docstring',
+      });
+      final call = gateway.controlCalls.single;
+      expect(call.verb, 'createWork');
+      expect(call.target, 'Add a docstring');
+      expect(call.arg, 'ocproof');
+      expect(call.requestId, 'req-6');
+    },
+  );
+
   test('close ends the stream and further events are dropped', () async {
     var done = false;
     final sub = gateway.events().listen((_) {}, onDone: () => done = true);

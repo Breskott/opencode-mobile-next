@@ -354,6 +354,7 @@ void main() {
         'controlAgent',
         'controlCancelRun',
         'controlAssign',
+        'controlCreateWork',
         'changes',
         'verification',
         'mergeReadiness',

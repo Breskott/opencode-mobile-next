@@ -147,6 +147,14 @@ class _Gateway implements OrchestrationGateway {
     required String agentId,
     required String requestId,
   }) => _ok(requestId);
+
+  @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) => _ok(requestId);
 }
 
 /// The same gateway with a policy side: what a front with the route is.

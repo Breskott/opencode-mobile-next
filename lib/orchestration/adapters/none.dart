@@ -94,4 +94,12 @@ class NullOrchestrationGateway implements OrchestrationGateway {
     required String agentId,
     required String requestId,
   }) async => MutationReceipt.rejected(requestId, _rejectedMessage);
+
+  @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) async => MutationReceipt.rejected(requestId, _rejectedMessage);
 }

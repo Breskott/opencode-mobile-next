@@ -43,6 +43,7 @@ String teamControlWord(AppLocalizations l10n, MutationRequest request) =>
       MutationKind.respond => l10n.teamUiReceiptAnswered,
       MutationKind.approveMerge => l10n.teamUiMergeApprove,
       MutationKind.merge => l10n.teamUiMergeMerge,
+      MutationKind.createWork => l10n.teamUiControlCreateWork,
     };
 
 /// "Nudge · Sent": glyph + words in the receipt's tone, the host's reason
