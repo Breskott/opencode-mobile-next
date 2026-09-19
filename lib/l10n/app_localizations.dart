@@ -6250,7 +6250,7 @@ abstract class AppLocalizations {
   /// No description provided for @paseoExperimentalLabel.
   ///
   /// In en, this message translates to:
-  /// **'Claude Code, Pi and more via Paseo (experimental)'**
+  /// **'Paseo: Claude Code, Pi (experimental)'**
   String get paseoExperimentalLabel;
 
   /// No description provided for @paseoAddressHint.

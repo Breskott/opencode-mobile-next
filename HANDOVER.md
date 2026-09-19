@@ -129,6 +129,10 @@ still stand.
   is connected and lets children inherit it. `feature/e7-session-auto-approval`
   is an empty branch waiting for that work.
 - Codex chat stays text-only (see `docs/codex-connection.md`).
+- Paseo backend (Claude Code, Pi) is on `feat/paseo-backend-20260919`, proven
+  on the emulator against daemon 0.8.0; Pi has no live turn yet (Copilot quota)
+  and the physical-phone pass over Tailscale is the owner's to run (see
+  `docs/paseo-connection.md`).
 
 ## Next backlog work
 

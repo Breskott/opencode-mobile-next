@@ -3788,8 +3788,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get openCodeConnectionLabel => 'OpenCode';
 
   @override
-  String get paseoExperimentalLabel =>
-      'Claude Code وPi وغيرهما عبر Paseo (تجريبي)';
+  String get paseoExperimentalLabel => 'Paseo: Claude Code وPi (تجريبي)';
 
   @override
   String get paseoAddressHint => 'ws://100.64.0.1:6767 أو wss://paseo.example';

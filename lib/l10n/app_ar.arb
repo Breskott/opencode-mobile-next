@@ -1024,7 +1024,7 @@
   "codexReconnectBeforeSending": "أعد الاتصال قبل الإرسال.",
   "connectionTypeLabel": "نوع الاتصال",
   "openCodeConnectionLabel": "OpenCode",
-  "paseoExperimentalLabel": "Claude Code وPi وغيرهما عبر Paseo (تجريبي)",
+  "paseoExperimentalLabel": "Paseo: Claude Code وPi (تجريبي)",
   "paseoAddressHint": "ws://100.64.0.1:6767 أو wss://paseo.example",
   "paseoAddressHelp": "خدمة Paseo على حاسوبك. يعمل ws:// على هذا الجهاز وعلى عناوين Tailscale؛ استخدم wss:// في غير ذلك.",
   "paseoPasswordLabel": "كلمة مرور الخدمة (اختيارية)",
