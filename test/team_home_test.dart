@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/models.dart' show Session, SessionTime;
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -24,6 +25,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
+import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Directory _findFixtureRoot() {
@@ -1157,6 +1159,43 @@ void main() {
   });
 
   group('workspace wiring', () {
+    testWidgets('the card follows Recent and precedes Archived', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final (controller, _) = await boot();
+      final connection = _Connection(ProfileStore(prefs: prefs))
+        ..team = controller;
+      addTearDown(connection.dispose);
+      connection.sessionsById = {
+        'recent': Session(
+          id: 'recent',
+          title: 'recent conversation',
+          time: SessionTime(created: 1, updated: 5),
+        ),
+        'old': Session(
+          id: 'old',
+          title: 'old conversation',
+          time: SessionTime(created: 1, updated: 2, archived: 3),
+        ),
+      };
+      await tester.pumpWidget(
+        app(Scaffold(body: WorkspaceScreen(controller: connection))),
+      );
+      await tester.pumpAndSettle();
+
+      // UX plan 5.5 and 5.7: the person's own conversations come first.
+      double top(Finder finder) => tester.getTopLeft(finder).dy;
+      final card = find.byType(TeamCard);
+      expect(card, findsOneWidget);
+      expect(top(card), greaterThan(top(find.text('Recent conversations'))));
+      expect(top(card), greaterThan(top(find.text('recent conversation'))));
+      expect(top(card), lessThan(top(find.text('Archived conversations'))));
+    });
+
     testWidgets('Open on the card pushes the home', (tester) async {
       final (controller, _) = await boot();
       final connection = _Connection(ProfileStore(prefs: prefs))
@@ -1165,6 +1204,9 @@ void main() {
       await tester.pumpWidget(app(WorkspaceScreen(controller: connection)));
       await tester.pumpAndSettle();
       expect(find.byType(TeamHomeScreen), findsNothing);
+      // The card follows the person's own conversations (UX plan 5.7).
+      await tester.ensureVisible(find.byKey(const ValueKey('team-card-open')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('team-card-open')));
       await tester.pumpAndSettle();
       expect(find.byType(TeamHomeScreen), findsOneWidget);

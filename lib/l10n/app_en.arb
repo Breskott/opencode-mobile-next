@@ -6207,10 +6207,6 @@
   "@e7WorkspaceNeedsYou": {
     "description": "Workspace and activity: Needs you"
   },
-  "e7WorkspaceActiveSessions": "Active conversations",
-  "@e7WorkspaceActiveSessions": {
-    "description": "Workspace and activity: Active sessions"
-  },
   "e7WorkspaceRecentSessions": "Recent conversations",
   "@e7WorkspaceRecentSessions": {
     "description": "Workspace and activity: Recent sessions"

@@ -7681,9 +7681,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7WorkspaceNeedsYou => 'Needs you';
 
   @override
-  String get e7WorkspaceActiveSessions => 'Active conversations';
-
-  @override
   String get e7WorkspaceRecentSessions => 'Recent conversations';
 
   @override

@@ -7778,9 +7778,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7WorkspaceNeedsYou => 'بانتظارك';
 
   @override
-  String get e7WorkspaceActiveSessions => 'المحادثات النشطة';
-
-  @override
   String get e7WorkspaceRecentSessions => 'المحادثات الأخيرة';
 
   @override

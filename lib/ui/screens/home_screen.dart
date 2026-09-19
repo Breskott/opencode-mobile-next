@@ -23,9 +23,12 @@ import 'workspace_screen.dart';
 
 /// Main mobile product shell for a connected OpenCode server.
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key, this.initialTab = 0});
+  const HomeScreen({super.key, this.initialTab});
 
-  final int initialTab;
+  /// The destination to open on, by visible position. Null is a cold start:
+  /// open on Inbox when something is waiting on the person, otherwise Work
+  /// (UX plan 5.6, "Returning").
+  final int? initialTab;
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -42,6 +45,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   late int _tab;
 
+  /// True from a cold start until the first read of what is waiting settles
+  /// or the person picks a tab. Anything that arrives later belongs to the
+  /// badge: moving someone who is already reading would be a hijack.
+  bool _choosingColdStartTab = false;
+
   /// Bumped by Ctrl+F while the Project destination is showing. The hub opens
   /// Files and focuses its search field. Desktop-only in practice — nothing
   /// dispatches shortcuts off desktop.
@@ -52,7 +60,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     final conn = ref.read(connProvider);
-    _tab = _safeTab(widget.initialTab, conn.capabilities);
+    _tab = _safeTab(widget.initialTab ?? _workTab, conn.capabilities);
+    if (widget.initialTab == null) {
+      _choosingColdStartTab = true;
+      _chooseColdStartTab(conn);
+    }
     conn.addListener(_onConnChanged);
     // If the SSE stream cannot connect at all, fall back to polling.
     if (conn.status == StreamStatus.disconnected) {
@@ -88,7 +100,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
+  /// Connect starts the pending-request reads before this shell mounts, so
+  /// "nothing waiting" is only known once none of them is still loading.
+  void _chooseColdStartTab(ConnectionController conn) {
+    if (!_choosingColdStartTab) return;
+    if (conn.unifiedAttentionCount > 0) {
+      _choosingColdStartTab = false;
+      // A notification may already have opened its conversation over the
+      // shell; the tab underneath still changes, the conversation does not.
+      _tab = _inboxTab;
+      return;
+    }
+    final reading =
+        conn.permissionsLoading ||
+        conn.questionsLoading ||
+        (conn.capabilities.forms && conn.formsLoading);
+    if (!reading) _choosingColdStartTab = false;
+  }
+
   void _selectTab(int next) {
+    _choosingColdStartTab = false;
     if (_tab == next) return;
     _lastBackAt = null;
     setState(() => _tab = next);
@@ -96,7 +127,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _onConnChanged() {
     if (!mounted) return;
-    final next = _safeTab(_tab, ref.read(connProvider).capabilities);
+    final conn = ref.read(connProvider);
+    _chooseColdStartTab(conn);
+    final next = _safeTab(_tab, conn.capabilities);
     setState(() => _tab = next);
   }
 

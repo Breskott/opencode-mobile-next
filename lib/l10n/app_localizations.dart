@@ -12649,12 +12649,6 @@ abstract class AppLocalizations {
   /// **'Needs you'**
   String get e7WorkspaceNeedsYou;
 
-  /// Workspace and activity: Active sessions
-  ///
-  /// In en, this message translates to:
-  /// **'Active conversations'**
-  String get e7WorkspaceActiveSessions;
-
   /// Workspace and activity: Recent sessions
   ///
   /// In en, this message translates to:

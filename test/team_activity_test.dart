@@ -579,6 +579,47 @@ void main() {
       },
     );
 
+    testWidgets('within a kind, the request blocked longest comes first', (
+      tester,
+    ) async {
+      final (team, _) = await boot(configure: variants);
+      final connection = await connect(team);
+      connection.permissions = {
+        for (final id in ['perm-first', 'perm-second', 'perm-third'])
+          id: PermissionRequest(
+            id: id,
+            sessionID: 'ses_run',
+            permission: 'edit',
+            patterns: const ['lib/main.dart'],
+          ),
+      };
+      await pumpActivity(tester, connection);
+
+      // UX plan 5.7. The four decisions share a rank; they were raised 5, 4,
+      // 3 and 2 minutes ago. Permissions carry no time: arrival order.
+      final order = [
+        gateRow('text'),
+        gateRow('confirm-safe'),
+        gateRow('confirm'),
+        gateRow('choice'),
+        find.byKey(const ValueKey('activity-permission-perm-first')),
+        find.byKey(const ValueKey('activity-permission-perm-second')),
+        find.byKey(const ValueKey('activity-permission-perm-third')),
+        find.byKey(const ValueKey('activity-question-q-1')),
+      ];
+      for (final row in order) {
+        expect(row, findsOneWidget);
+      }
+      for (var i = 1; i < order.length; i++) {
+        expect(
+          top(tester, order[i - 1]),
+          lessThan(top(tester, order[i])),
+          reason: 'row $i below row ${i - 1}',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('disconnecting removes the rows', (tester) async {
       final (team, _) = await boot(configure: everyKind);
       final connection = await connect(team);

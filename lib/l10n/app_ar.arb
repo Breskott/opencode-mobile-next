@@ -2089,7 +2089,6 @@
   "e7WorkspaceServerNoProjects": "لم يُرجع الخادم أي مشاريع.",
   "e7WorkspaceChooseProject": "اختر مشروعًا",
   "e7WorkspaceNeedsYou": "بانتظارك",
-  "e7WorkspaceActiveSessions": "المحادثات النشطة",
   "e7WorkspaceRecentSessions": "المحادثات الأخيرة",
   "e7WorkspaceNoRecent": "لا توجد محادثات حديثة",
   "e7WorkspaceChooseFolderToStart": "اختر مجلد مشروع لبدء محادثة.",
