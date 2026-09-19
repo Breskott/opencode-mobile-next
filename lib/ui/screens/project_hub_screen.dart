@@ -20,6 +20,80 @@ import 'worktrees_screen.dart';
 /// them.
 enum ProjectTool { files, changes, terminal, health, worktrees, search }
 
+/// Asks the shell for a tool that lives inside the Project tab (Files and its
+/// search), from a search result on any route.
+class OpenProjectToolIntent extends Intent {
+  const OpenProjectToolIntent(this.tool);
+  final ProjectTool tool;
+}
+
+/// Opens a Project tool that is a screen of its own. Shared by the tab's rows
+/// and by search, so both doors do exactly the same thing. Files and Search
+/// are not here: they live inside the tab ([OpenProjectToolIntent]).
+Future<void> openProjectTool(
+  BuildContext context,
+  ConnectionController controller,
+  ProjectTool tool,
+) async {
+  final l10n = _l10n(context);
+  final navigator = Navigator.of(context);
+  try {
+    switch (tool) {
+      case ProjectTool.files || ProjectTool.search:
+        return;
+      case ProjectTool.changes:
+        final prompt = await pushWorkingTreeReview(context, controller);
+        if (context.mounted) await deliverReviewPrompt(context, prompt);
+      case ProjectTool.terminal:
+        await navigator.push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => TerminalPage(controller: controller),
+          ),
+        );
+      case ProjectTool.health:
+        final repository = await controller.prepareActionRepository();
+        if (!context.mounted) return;
+        if (repository == null) {
+          throw ProductException(l10n.e7WorkspaceDisconnected);
+        }
+        await navigator.push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => ProjectHealthScreen(
+              repository: repository,
+              repositoryResolver: controller.prepareActionRepository,
+              capabilities: controller.capabilities,
+            ),
+          ),
+        );
+      case ProjectTool.worktrees:
+        final repository = await controller.prepareActionRepository();
+        if (!context.mounted) return;
+        if (repository == null) {
+          throw ProductException(l10n.e7WorkspaceDisconnected);
+        }
+        final directory = controller.directory;
+        final project = directory == null
+            ? null
+            : WorkspaceScreen.projectForDirectory(
+                await repository.listProjects(),
+                directory,
+              );
+        if (!context.mounted) return;
+        if (project == null) {
+          throw ProductException(l10n.e7LibraryNoProjectFolderIsOpenChooseOne);
+        }
+        await navigator.push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                WorktreesScreen(controller: controller, project: project),
+          ),
+        );
+    }
+  } catch (error) {
+    if (context.mounted) showProductError(context, error);
+  }
+}
+
 /// Lets the shell offer system Back to the Project tab before leaving it.
 class ProjectHubBackController {
   bool Function()? _handler;
@@ -38,6 +112,7 @@ class ProjectHub extends StatefulWidget {
     super.key,
     required this.controller,
     this.focusSearchSignal,
+    this.openFilesSignal,
     this.backController,
   });
 
@@ -45,6 +120,9 @@ class ProjectHub extends StatefulWidget {
 
   /// Bumped by the shell's Ctrl/Cmd+F while this tab is showing.
   final ValueListenable<int>? focusSearchSignal;
+
+  /// Bumped by the shell when a search result means Files.
+  final ValueListenable<int>? openFilesSignal;
   final ProjectHubBackController? backController;
 
   /// Changes and Search ride on Files' gate: the working-tree review and the
@@ -80,6 +158,7 @@ class _ProjectHubState extends State<ProjectHub> {
   void initState() {
     super.initState();
     widget.focusSearchSignal?.addListener(_searchFiles);
+    widget.openFilesSignal?.addListener(_openFiles);
     widget.backController?._handler = _handleBack;
   }
 
@@ -90,6 +169,10 @@ class _ProjectHubState extends State<ProjectHub> {
       oldWidget.focusSearchSignal?.removeListener(_searchFiles);
       widget.focusSearchSignal?.addListener(_searchFiles);
     }
+    if (oldWidget.openFilesSignal != widget.openFilesSignal) {
+      oldWidget.openFilesSignal?.removeListener(_openFiles);
+      widget.openFilesSignal?.addListener(_openFiles);
+    }
     if (oldWidget.backController != widget.backController) {
       oldWidget.backController?._handler = null;
       widget.backController?._handler = _handleBack;
@@ -99,6 +182,7 @@ class _ProjectHubState extends State<ProjectHub> {
   @override
   void dispose() {
     widget.focusSearchSignal?.removeListener(_searchFiles);
+    widget.openFilesSignal?.removeListener(_openFiles);
     widget.backController?._handler = null;
     _focusFilesSearch.dispose();
     super.dispose();
@@ -114,7 +198,7 @@ class _ProjectHubState extends State<ProjectHub> {
   }
 
   void _openFiles() {
-    if (!_canBrowse) return;
+    if (!mounted || !_canBrowse) return;
     setState(() {
       _filesBuilt = true;
       _filesOpen = true;
@@ -137,69 +221,13 @@ class _ProjectHubState extends State<ProjectHub> {
     _opening = true;
     try {
       await open();
-    } catch (error) {
-      if (mounted) showProductError(context, error);
     } finally {
       _opening = false;
     }
   }
 
-  Future<void> _openChanges() => _guard(() async {
-    final prompt = await pushWorkingTreeReview(context, widget.controller);
-    if (mounted) await deliverReviewPrompt(context, prompt);
-  });
-
-  Future<void> _openTerminal() => _guard(
-    () => Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) => TerminalPage(controller: widget.controller),
-      ),
-    ),
-  );
-
-  Future<void> _openHealth() => _guard(() async {
-    final l10n = _l10n(context);
-    final repository = await widget.controller.prepareActionRepository();
-    if (!mounted) return;
-    if (repository == null) {
-      throw ProductException(l10n.e7WorkspaceDisconnected);
-    }
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) => ProjectHealthScreen(
-          repository: repository,
-          repositoryResolver: widget.controller.prepareActionRepository,
-          capabilities: widget.controller.capabilities,
-        ),
-      ),
-    );
-  });
-
-  Future<void> _openWorktrees() => _guard(() async {
-    final l10n = _l10n(context);
-    final repository = await widget.controller.prepareActionRepository();
-    if (!mounted) return;
-    if (repository == null) {
-      throw ProductException(l10n.e7WorkspaceDisconnected);
-    }
-    final directory = widget.controller.directory;
-    final project = directory == null
-        ? null
-        : WorkspaceScreen.projectForDirectory(
-            await repository.listProjects(),
-            directory,
-          );
-    if (!mounted) return;
-    if (project == null) {
-      throw ProductException(l10n.e7LibraryNoProjectFolderIsOpenChooseOne);
-    }
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            WorktreesScreen(controller: widget.controller, project: project),
-      ),
-    );
-  });
+  Future<void> _openTool(ProjectTool tool) =>
+      _guard(() => openProjectTool(context, widget.controller, tool));
 
   @override
   Widget build(BuildContext context) {
@@ -300,14 +328,14 @@ class _ProjectHubState extends State<ProjectHub> {
                 icon: AppIconography.review,
                 title: l10n.readerUiChanges,
                 subtitle: l10n.projectHubChangesSubtitle,
-                onTap: _openChanges,
+                onTap: () => _openTool(tool),
               ),
               ProjectTool.terminal => _row(
                 tool,
                 icon: AppIconography.terminal,
                 title: l10n.libraryTerminalTitle,
                 subtitle: l10n.chatUiOpenPersistentWorkspaceTerminals,
-                onTap: _openTerminal,
+                onTap: () => _openTool(tool),
               ),
               ProjectTool.health => _row(
                 tool,
@@ -315,14 +343,14 @@ class _ProjectHubState extends State<ProjectHub> {
                 title: l10n.e7LibraryProjectHealth,
                 subtitle: l10n
                     .e7LibraryBranchChangedFilesLanguageServicesAndFormatters,
-                onTap: _openHealth,
+                onTap: () => _openTool(tool),
               ),
               ProjectTool.worktrees => _row(
                 tool,
                 icon: AppIconography.branch,
                 title: l10n.e7LibraryWorktrees,
                 subtitle: l10n.e7LibraryCreateAndManageIsolatedGitBranches,
-                onTap: _openWorktrees,
+                onTap: () => _openTool(tool),
               ),
               ProjectTool.search => _row(
                 tool,

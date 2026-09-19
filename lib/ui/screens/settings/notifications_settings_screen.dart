@@ -9,7 +9,16 @@ part of '../settings_screen.dart';
 /// is absent.
 class NotificationsSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
-  const NotificationsSettingsScreen({super.key, required this.controller});
+
+  /// A section slug (`what`, `quiet`, `background`, `servers`) a search
+  /// result means: the screen opens scrolled to it.
+  final String? initialSection;
+
+  const NotificationsSettingsScreen({
+    super.key,
+    required this.controller,
+    this.initialSection,
+  });
 
   @override
   State<NotificationsSettingsScreen> createState() =>
@@ -20,10 +29,17 @@ class _NotificationsSettingsScreenState
     extends State<NotificationsSettingsScreen>
     with WidgetsBindingObserver {
   bool _saving = false;
+  final _sectionKeys = <String, GlobalKey>{};
 
   @override
   void initState() {
     super.initState();
+    if (widget.initialSection case final slug?) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _sectionKeys[slug]?.currentContext;
+        if (mounted && target != null) Scrollable.ensureVisible(target);
+      });
+    }
     WidgetsBinding.instance.addObserver(this);
     widget.controller.addListener(_changed);
     widget.controller.backgroundLive.addListener(_changed);
@@ -368,10 +384,16 @@ class _NotificationsSettingsScreenState
               ),
             for (final (slug, title, rows) in sections)
               if (rows.isNotEmpty)
-                Column(
-                  key: ValueKey('notifications-section-$slug'),
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [SectionLabel(title), ...rows],
+                KeyedSubtree(
+                  key: _sectionKeys.putIfAbsent(
+                    slug,
+                    () => GlobalKey(debugLabel: 'notifications-$slug'),
+                  ),
+                  child: Column(
+                    key: ValueKey('notifications-section-$slug'),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [SectionLabel(title), ...rows],
+                  ),
                 ),
           ],
         ),

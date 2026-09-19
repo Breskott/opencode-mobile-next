@@ -207,6 +207,13 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
     for (final command in commands) {
       groups.putIfAbsent(command.group, () => []).add(command);
     }
+    // Typing also searches the rest of the app (settings, Project tools,
+    // tabs) through the same index the Settings search uses, so a person in
+    // a conversation does not have to leave it to look for something.
+    final scope = SearchScope.of(context, widget.controller);
+    final elsewhere = agentTab
+        ? const <SearchEntry>[]
+        : searchEntries(_chatL10n(context), scope, _search.text);
     final query = _search.text.trim().toLowerCase().replaceFirst('@', '');
     final agents = widget.agents().where((agent) {
       return query.isEmpty ||
@@ -348,7 +355,7 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
                       onRefresh: _refresh,
                       onSelected: widget.onAgentSelected,
                     )
-                  : commands.isEmpty
+                  : commands.isEmpty && elsewhere.isEmpty
                   ? Center(
                       child: Text(
                         _chatL10n(context).chatUiNoMatchingCommands,
@@ -386,6 +393,48 @@ class _CommandLauncherSheetState extends State<_CommandLauncherSheet>
                             _CommandRow(
                               command: command,
                               onSelected: widget.onSelected,
+                            ),
+                        ],
+                        if (elsewhere.isNotEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsetsDirectional.fromSTEB(
+                              16,
+                              18,
+                              16,
+                              6,
+                            ),
+                            child: Text(
+                              _chatL10n(context).discoverSearchGoTo,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          for (final entry in elsewhere)
+                            ListTile(
+                              key: ValueKey(
+                                'command-launcher-result-${entry.id}',
+                              ),
+                              leading: Icon(entry.icon),
+                              title: Text(entry.title),
+                              subtitle: entry.parent == null
+                                  ? null
+                                  : Text(
+                                      _chatL10n(
+                                        context,
+                                      ).discoverSearchIn(entry.parent!),
+                                    ),
+                              onTap: () {
+                                // The sheet's context dies with the sheet;
+                                // the result opens from the route below it.
+                                final navigator = Navigator.of(context);
+                                final below = navigator.overlay?.context;
+                                navigator.pop();
+                                if (below != null) {
+                                  unawaited(entry.open(below, scope));
+                                }
+                              },
                             ),
                         ],
                       ],

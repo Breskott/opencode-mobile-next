@@ -16275,4 +16275,136 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get serverSwitcherOpen => 'تبديل الخادم';
+
+  @override
+  String get discoverSearchGoTo => 'انتقل إلى';
+
+  @override
+  String get discoverSearchInsideSettings => 'داخل الإعدادات';
+
+  @override
+  String discoverSearchIn(String parent) {
+    return 'في $parent';
+  }
+
+  @override
+  String get discoverWorkAliases =>
+      'work home conversations sessions chats recent pinned العمل الرئيسية محادثات الأخيرة المثبتة محادثة جديدة';
+
+  @override
+  String get discoverInboxAliases =>
+      'inbox activity approvals permissions questions forms الوارد النشاط بانتظارك موافقات أذونات أسئلة نماذج قيد التشغيل منتهية';
+
+  @override
+  String get discoverProjectAliases =>
+      'project tools code folder المشروع أدوات الشيفرة مجلد ملفات تغييرات طرفية';
+
+  @override
+  String get discoverFilesAliases =>
+      'files browse folder tree preview ملفات تصفح مجلد شجرة معاينة شيفرة';
+
+  @override
+  String get discoverChangesAliases =>
+      'changes review diff git تغييرات مراجعة التغييرات فروقات غير مودعة تعديلات';
+
+  @override
+  String get discoverTerminalAliases =>
+      'terminal shell console طرفية صدفة سطر الأوامر';
+
+  @override
+  String get discoverHealthAliases =>
+      'project health branch lsp صحة المشروع فرع ملفات متغيرة خدمات اللغة منسقات';
+
+  @override
+  String get discoverWorktreesAliases =>
+      'worktrees branches git أشجار العمل فروع معزولة';
+
+  @override
+  String get discoverSearchFilesAliases =>
+      'search files find بحث في الملفات اعثر على ملف اسم';
+
+  @override
+  String get discoverAllConversationsAliases =>
+      'all conversations sessions chats history كل المحادثات السجل كل المشاريع بحث';
+
+  @override
+  String get discoverTeamAliases =>
+      'ai team agents runs فريق الذكاء الاصطناعي وكلاء عمليات بانتظارك إضافة';
+
+  @override
+  String get discoverNotifyServersTitle => 'إشعارات الخوادم المحفوظة';
+
+  @override
+  String get discoverNotifyWhatAliases =>
+      'finished approvals questions check-in quota العمليات المنتهية موافقات أسئلة متابعة تنبيهات الحصص ما الذي ينبهني';
+
+  @override
+  String get discoverNotifyQuietAliases =>
+      'quiet hours do not disturb mute ساعات الهدوء عدم الإزعاج ليل كتم جدول';
+
+  @override
+  String get discoverNotifyBackgroundAliases =>
+      'background battery keep alive الخلفية البقاء متصلا بطارية خدمة';
+
+  @override
+  String get discoverNotifyServersAliases =>
+      'monitor saved servers wi-fi wifi مراقبة الخوادم المحفوظة انتباه واي فاي فحص في الخلفية';
+
+  @override
+  String get discoverAppearanceModeAliases =>
+      'light dark mode system فاتح داكن الوضع النظام ليلي';
+
+  @override
+  String get discoverLanguageAliases =>
+      'language arabic english locale اللغة العربية الإنجليزية ترجمة';
+
+  @override
+  String get discoverThemeAliases => 'theme colors palette السمة ألوان لوحة';
+
+  @override
+  String get discoverSpentAliases =>
+      'spent cost tokens usage المصروف التكلفة الرموز الاستخدام إحصاءات';
+
+  @override
+  String get discoverRemainingAliases =>
+      'remaining quota limit provider المتبقي الحصة الحد المزود الخطة';
+
+  @override
+  String get discoverBudgetAliases =>
+      'budget usd token ميزانية ميزانيات دولار رموز حد الإنفاق';
+
+  @override
+  String get discoverQuotaMonitorAliases =>
+      'quota monitoring threshold alert مراقبة الحصص حد تنبيه منخفض';
+
+  @override
+  String get discoverCommandsAliases =>
+      'commands slash أوامر أوامر الخادم تشغيل';
+
+  @override
+  String get discoverToolsAliases =>
+      'tools capabilities inventory أدوات الأدوات والإمكانات';
+
+  @override
+  String get discoverSkillsAliases => 'skills skill مهارات مهارة تعليمات';
+
+  @override
+  String get discoverReferencesAliases =>
+      'references docs sources مراجع مرجع مستندات مصادر سياق';
+
+  @override
+  String get discoverRunningNowAliases =>
+      'running processes termux يعمل الآن عمليات خدمات إيقاف على هذا الهاتف';
+
+  @override
+  String get discoverStorageAliases =>
+      'storage disk space termux التخزين على هذا الهاتف مساحة القرص تنظيف';
+
+  @override
+  String get discoverMonitorAliases =>
+      'monitor attention انتباه الخوادم المحفوظة مراقبة خوادم أخرى بانتظارك';
+
+  @override
+  String get discoverConnectionHelpAliases =>
+      'connection help troubleshooting مساعدة الاتصال تعذر الاتصال استكشاف الأخطاء الشبكة';
 }

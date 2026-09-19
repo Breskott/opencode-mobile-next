@@ -187,6 +187,11 @@ class AppShortcutScope extends InheritedWidget {
   static AppShortcutSignals? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<AppShortcutScope>()?.signals;
 
+  /// For a callback, which may not subscribe: a tap handler only needs the
+  /// bus as it is now.
+  static AppShortcutSignals? read(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<AppShortcutScope>()?.signals;
+
   @override
   bool updateShouldNotify(AppShortcutScope oldWidget) =>
       signals != oldWidget.signals;
@@ -251,8 +256,8 @@ class AppShortcutHandlers {
 
 /// Installs the app-wide shortcut layer above the navigator.
 ///
-/// Off desktop this returns [child] untouched, so Android keeps exactly the
-/// key handling it had — Ctrl+Enter in the composer, and nothing else.
+/// Off desktop no key binding is installed, so Android keeps exactly the key
+/// handling it had — Ctrl+Enter in the composer, and nothing else.
 class AppShortcuts extends StatefulWidget {
   const AppShortcuts({
     super.key,
@@ -295,7 +300,12 @@ class _AppShortcutsState extends State<AppShortcuts> {
 
   @override
   Widget build(BuildContext context) {
-    if (!desktopInteractions) return widget.child;
+    // Off desktop only the bus is installed, with no key bindings: search
+    // results use it to reach the shell's tabs from any route, the same way
+    // Ctrl+1..4 does here.
+    if (!desktopInteractions) {
+      return AppShortcutScope(signals: _signals, child: widget.child);
+    }
     return AppShortcutScope(
       signals: _signals,
       child: Shortcuts(
@@ -371,6 +381,7 @@ class DesktopCommand {
     required this.onInvoke,
     this.hint,
     this.keys,
+    this.keywords,
   });
 
   final String label;
@@ -382,6 +393,9 @@ class DesktopCommand {
 
   /// The accelerator that reaches the same command, when one exists.
   final String? keys;
+
+  /// Words that find the command without being shown (search-index aliases).
+  final String? keywords;
 }
 
 /// Opens the searchable command launcher.
@@ -417,7 +431,8 @@ class _CommandPaletteState extends State<_CommandPalette> {
         .where(
           (command) =>
               command.label.toLowerCase().contains(query) ||
-              (command.hint?.toLowerCase().contains(query) ?? false),
+              (command.hint?.toLowerCase().contains(query) ?? false) ||
+              (command.keywords?.toLowerCase().contains(query) ?? false),
         )
         .toList();
   }

@@ -16004,4 +16004,133 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverSwitcherOpen => 'Switch server';
+
+  @override
+  String get discoverSearchGoTo => 'Go to';
+
+  @override
+  String get discoverSearchInsideSettings => 'Inside settings';
+
+  @override
+  String discoverSearchIn(String parent) {
+    return 'In $parent';
+  }
+
+  @override
+  String get discoverWorkAliases =>
+      'work home conversations sessions chats recent pinned new conversation';
+
+  @override
+  String get discoverInboxAliases =>
+      'inbox activity needs you approvals permissions questions forms waiting running finished';
+
+  @override
+  String get discoverProjectAliases =>
+      'project tools code folder files changes terminal health worktrees';
+
+  @override
+  String get discoverFilesAliases =>
+      'files browse folder tree preview code open file';
+
+  @override
+  String get discoverChangesAliases =>
+      'changes review changes diff uncommitted git edits working tree';
+
+  @override
+  String get discoverTerminalAliases =>
+      'terminal shell console command line pty';
+
+  @override
+  String get discoverHealthAliases =>
+      'project health branch changed files language services formatters lsp';
+
+  @override
+  String get discoverWorktreesAliases =>
+      'worktrees branches isolated git branch';
+
+  @override
+  String get discoverSearchFilesAliases => 'search files find file name';
+
+  @override
+  String get discoverAllConversationsAliases =>
+      'all conversations sessions chats history every project search';
+
+  @override
+  String get discoverTeamAliases =>
+      'ai team agents runs needs you orchestration plugin';
+
+  @override
+  String get discoverNotifyServersTitle => 'Notifications from saved servers';
+
+  @override
+  String get discoverNotifyWhatAliases =>
+      'finished runs approvals questions check-ins check in quota alerts what notifies';
+
+  @override
+  String get discoverNotifyQuietAliases =>
+      'quiet hours do not disturb night silence mute schedule';
+
+  @override
+  String get discoverNotifyBackgroundAliases =>
+      'background connection stay connected battery keep alive service';
+
+  @override
+  String get discoverNotifyServersAliases =>
+      'monitor saved servers attention wi-fi wifi check in the background';
+
+  @override
+  String get discoverAppearanceModeAliases =>
+      'light dark mode system appearance night';
+
+  @override
+  String get discoverLanguageAliases =>
+      'language arabic english locale translation rtl';
+
+  @override
+  String get discoverThemeAliases => 'theme colors palette pack accent';
+
+  @override
+  String get discoverSpentAliases => 'spent cost tokens usage statistics money';
+
+  @override
+  String get discoverRemainingAliases =>
+      'remaining quota limit provider plan left';
+
+  @override
+  String get discoverBudgetAliases =>
+      'budget budgets usd token budget spending limit';
+
+  @override
+  String get discoverQuotaMonitorAliases =>
+      'quota monitoring threshold alert warn low';
+
+  @override
+  String get discoverCommandsAliases => 'commands server commands slash run';
+
+  @override
+  String get discoverToolsAliases =>
+      'tools tools and capabilities inventory model tools';
+
+  @override
+  String get discoverSkillsAliases => 'skills skill instructions playbook';
+
+  @override
+  String get discoverReferencesAliases =>
+      'references reference docs sources context';
+
+  @override
+  String get discoverRunningNowAliases =>
+      'running now processes termux services stop on this phone';
+
+  @override
+  String get discoverStorageAliases =>
+      'storage on this phone disk space clean termux';
+
+  @override
+  String get discoverMonitorAliases =>
+      'saved-server attention monitor other servers waiting server attention';
+
+  @override
+  String get discoverConnectionHelpAliases =>
+      'connection help cannot connect troubleshooting network refused timeout';
 }

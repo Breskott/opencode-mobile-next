@@ -12,6 +12,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat/permission_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -207,6 +208,58 @@ void main() {
     );
     await tester.pump();
     expect(find.byKey(const Key('command-mobile-editor')), findsOneWidget);
+  });
+
+  testWidgets('the command launcher also searches the rest of the app', (
+    tester,
+  ) async {
+    await _pumpChat(tester, _CodexApi());
+    await tester.tap(find.byKey(const Key('composer-tools-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('composer-tool-commands')));
+    await tester.pumpAndSettle();
+    final search = find.byKey(const Key('command-launcher-search'));
+
+    // Nothing extra until the person types.
+    expect(
+      find.byKey(
+        const ValueKey('command-launcher-result-settings-category-appearance'),
+      ),
+      findsNothing,
+    );
+    // The same gates as the Settings search: Codex has no MCP screen and no
+    // terminal, so neither is offered from inside a conversation either.
+    for (final query in ['mcp', 'terminal', 'skills']) {
+      await tester.enterText(search, query);
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('command-launcher-result-settings-mcp')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('command-launcher-result-project-terminal')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const ValueKey('command-launcher-result-inside-capabilities-skills'),
+        ),
+        findsNothing,
+      );
+    }
+
+    await tester.enterText(search, 'theme');
+    await tester.pump();
+    final result = find.byKey(
+      const ValueKey('command-launcher-result-inside-appearance-theme'),
+    );
+    expect(result, findsOneWidget);
+    await tester.ensureVisible(result);
+    await tester.tap(result);
+    await tester.pumpAndSettle();
+    // The sheet is gone and the setting is open over the conversation.
+    expect(search, findsNothing);
+    expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
   });
 
   testWidgets('Codex timeline keeps message navigation without fork actions', (

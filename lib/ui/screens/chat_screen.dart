@@ -43,6 +43,7 @@ import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../desktop/file_drop.dart';
 import '../desktop/shortcuts.dart';
+import '../search/search_index.dart';
 import '../widgets/agent_color.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/confirm_sheet.dart';

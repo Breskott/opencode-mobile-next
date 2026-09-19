@@ -1,3 +1,4 @@
+import 'ui/search/search_index.dart';
 import 'ui/screens/profile_monitor_screen.dart';
 import 'ui/screens/usage_hub_screen.dart';
 import 'dart:async';
@@ -1102,6 +1103,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       );
     }
 
+    final scope = SearchScope(controller: _controller, hasShell: true);
     return [
       DesktopCommand(
         label: l10n.e7LocaleUiNewSession,
@@ -1158,6 +1160,27 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         hint: l10n.e7LocaleUiDiagnosticsHint,
         onInvoke: () => _navigatorKey.currentState?.pushNamed('/debug'),
       ),
+      // The rest of the launcher is the app-wide search index, so a setting
+      // or a Project tool is found here exactly as it is in Settings. The
+      // four tabs are the numbered commands above.
+      for (final entry in searchIndex(l10n, scope))
+        if (!entry.id.startsWith('tab-') &&
+            entry.id != 'library-keyboard-shortcuts' &&
+            entry.id != 'app-diagnostics-entry')
+          DesktopCommand(
+            label: entry.title,
+            icon: entry.icon,
+            hint: entry.parent == null
+                ? null
+                : l10n.discoverSearchIn(entry.parent!),
+            keywords: entry.keywords,
+            onInvoke: () {
+              // A context under the navigator: the launcher's own is gone by
+              // the time a command runs.
+              final target = _navigatorKey.currentState?.overlay?.context;
+              if (target != null) unawaited(entry.open(target, scope));
+            },
+          ),
     ];
   }
 

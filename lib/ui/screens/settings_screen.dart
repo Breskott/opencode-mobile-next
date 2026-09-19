@@ -7,43 +7,24 @@ import '../../api/models.dart';
 import '../../api/product_repository.dart';
 import '../../api/provider_presentation.dart';
 import '../../background/live_background.dart';
-import '../../feedback/bug_report.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
-import '../../state/external_agents.dart';
 import '../../state/offline_queue.dart';
 import '../../state/profile_monitor.dart';
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
-import '../../voice/model_manager.dart';
-import '../../voice/notices.dart';
-import '../../voice/voice_ui.dart';
 import '../app_theme.dart';
 import '../desktop/desktop_interaction.dart';
-import '../desktop/shortcuts.dart';
 import '../early_l10n.dart';
 import '../theme_packs.dart';
 import '../widgets/appearance_picker.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/language_picker.dart';
-import '../widgets/pickers.dart';
 import '../widgets/product_states.dart';
-import '../widgets/safety_confirms.dart';
-import '../widgets/transcript_display_toggles.dart';
-import 'about_screen.dart';
-import 'agent_account_screen.dart';
-import 'app_diagnostics_screen.dart';
-import 'capabilities_screen.dart';
-import 'external_agents_screen.dart';
-import 'guide_screen.dart';
 import 'host_management_screen.dart';
 import 'library_screen.dart';
-import 'saved_permissions_screen.dart';
-import 'session_import_screen.dart';
-import 'settings/plugins_screen.dart';
-import 'tailscale_setup_screen.dart';
-import 'termux_setup_screen.dart';
+import '../search/search_index.dart';
 import 'usage_hub_screen.dart';
 
 part 'settings/server_settings_screen.dart';
@@ -194,55 +175,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _openExternalAgents() async {
-    final profiles = widget.controller.store;
-    final store = ExternalAgentStore(profiles.prefs, profiles.secure);
-    try {
-      await _open(ExternalAgentsScreen(store: store));
-    } finally {
-      store.dispose();
-    }
-  }
-
-  Future<void> _openTranscriptDisplay() => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    builder: (context) => SafeArea(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SectionLabel(_settingsCopy(context).chatUiTranscriptDisplay),
-            // The same two stored values the conversation menu flips.
-            TranscriptDisplayToggles(
-              connection: widget.controller,
-              reasoningExpanded: widget.controller.transcriptReasoningExpanded,
-              timestampsVisible: widget.controller.transcriptTimestampsVisible,
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-
-  Future<void> _openVoice() async {
-    try {
-      final models = await VoiceModelManager.shared();
-      if (!mounted) return;
-      await showVoiceModelSetupSheet(context, models);
-    } catch (error) {
-      if (mounted) showProductError(context, error);
-    }
-  }
-
-  Future<void> _disconnect() async {
-    final confirmed = await confirmDisconnectServer(context, widget.controller);
-    if (!confirmed || !mounted) return;
-    await widget.controller.disconnect();
-    if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil('/servers', (_) => false);
+  /// Runs an index entry, then redraws: most of them change something a row's
+  /// subtitle shows.
+  Future<void> _openEntry(SearchEntry entry, SearchScope scope) async {
+    await entry.open(context, scope);
+    if (mounted) setState(() {});
   }
 
   Widget _thisServerRow(ConnectionController controller) {
@@ -301,102 +238,80 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  List<_HubGroup> _groups(ConnectionController controller) {
+  /// The hub's layout: which index entries are rows, in which order, and what
+  /// each shows beside its title. Titles, keywords, gates and what a tap does
+  /// come from the search index, so the hub, its search and every other
+  /// search surface cannot disagree. A row whose entry is gated out is absent.
+  List<_HubGroup> _groups(
+    ConnectionController controller,
+    Map<String, SearchEntry> entries,
+    SearchScope scope,
+  ) {
     final copy = _settingsCopy(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final capabilities = controller.capabilities;
-    final profile = controller.profile;
-    final repository = controller.repository;
-    final canImport =
-        capabilities.sessionImportExport &&
-        repository is SessionImportGateway &&
-        (repository as SessionImportGateway).sessionImportSupported;
-    return [
-      _HubGroup(SettingsGroup.connection, copy.settingsHubGroupConnection, [
-        _HubRow.custom(
-          title: copy.settingsHubThisServer,
-          keywords: copy.settingsHubSearchServerAliases,
+    _HubRow? row(String id, {String? subtitle, WidgetBuilder? builder}) {
+      final entry = entries[id];
+      if (entry == null) return null;
+      return _HubRow(
+        entry: entry,
+        subtitle: subtitle,
+        builder: builder,
+        onTap: () => _openEntry(entry, scope),
+      );
+    }
+
+    final titles = {
+      SettingsGroup.connection: copy.settingsHubGroupConnection,
+      SettingsGroup.conversation: copy.settingsHubGroupConversation,
+      SettingsGroup.notifications: copy.settingsHubGroupNotifications,
+      SettingsGroup.appearance: copy.e7AppearanceTitle,
+      SettingsGroup.agentSetup: copy.settingsHubGroupAgentSetup,
+      SettingsGroup.usage: copy.settingsHubGroupUsage,
+      SettingsGroup.privacy: copy.settingsHubGroupPrivacy,
+      SettingsGroup.help: copy.settingsHubGroupHelp,
+    };
+    final rows = <SettingsGroup, List<_HubRow?>>{
+      SettingsGroup.connection: [
+        row(
+          'settings-category-server',
           builder: (_) => _thisServerRow(controller),
         ),
-        _HubRow(
-          rowKey: 'settings-saved-servers',
-          icon: AppIconography.database,
-          title: l10n.activitySavedServers,
-          subtitle: copy.e7SettingsUi64,
-          keywords: copy.settingsHubSearchSavedServersAliases,
-          onTap: () => Navigator.of(context).pushNamed('/servers'),
-        ),
-        // Local Android tools belong to the phone, not the connected server's
-        // capability set. Keep this entry visible even on a remote profile.
-        if (platformCapabilities.supportsTermux)
-          _HubRow(
-            rowKey: 'settings-on-this-phone',
-            icon: AppIconography.phone,
-            title: l10n.onboardingTermuxSetup,
-            subtitle: l10n.onboardingRunOnPhone,
-            keywords: copy.settingsHubSearchPhoneAliases,
-            onTap: () => _open(const TermuxSetupScreen()),
-          ),
-        if (controller.isConnected && capabilities.agentAccount)
-          _HubRow(
-            rowKey: 'settings-accounts',
-            icon: AppIconography.person,
-            title: copy.settingsHubAccounts,
-            subtitle: copy.settingsHubAccountsSubtitle,
-            keywords: copy.settingsHubSearchAccountsAliases,
-            onTap: () => _open(AgentAccountScreen(connection: controller)),
-          ),
-        _HubRow(
-          rowKey: 'settings-external-agents',
-          icon: AppIconography.support,
-          title: l10n.a2aTitle,
-          keywords: copy.settingsHubSearchExternalAgentsAliases,
-          onTap: _openExternalAgents,
-        ),
-        if (platformCapabilities.supportsTailscaleHandoff)
-          _HubRow(
-            rowKey: 'settings-tailscale',
-            icon: AppIconography.network,
-            title: l10n.tailscaleTitle,
-            keywords: copy.settingsHubSearchTailscaleAliases,
-            onTap: () => _open(const TailscaleSetupScreen()),
-          ),
+        row('settings-saved-servers', subtitle: copy.e7SettingsUi64),
+        row('settings-on-this-phone', subtitle: l10n.onboardingRunOnPhone),
+        row('settings-accounts', subtitle: copy.settingsHubAccountsSubtitle),
+        row('settings-external-agents'),
+        row('settings-tailscale'),
         // Destructive rows come last in their group and stand apart from
         // the doors above (plan 5.7).
-        if (profile != null)
-          _HubRow.custom(
-            title: copy.e7SettingsUi8,
-            keywords: copy.settingsHubSearchDisconnectAliases,
-            builder: (context) => Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(4, 12, 4, 0),
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error,
-                ),
-                key: const ValueKey('settings-disconnect'),
-                onPressed: _disconnect,
-                icon: const Icon(AppIconography.unlink),
-                label: Text(copy.e7SettingsUi8),
+        row(
+          'settings-disconnect',
+          builder: (context) => Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(4, 12, 4, 0),
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
               ),
+              key: const ValueKey('settings-disconnect'),
+              onPressed: () =>
+                  _openEntry(entries['settings-disconnect']!, scope),
+              icon: const Icon(AppIconography.unlink),
+              label: Text(copy.e7SettingsUi8),
             ),
           ),
-      ]),
-      _HubGroup(SettingsGroup.conversation, copy.settingsHubGroupConversation, [
-        _HubRow(
-          rowKey: 'settings-model-and-mode',
-          icon: AppIconography.model,
-          title: copy.settingsHubModelAndMode,
+        ),
+      ],
+      SettingsGroup.conversation: [
+        row(
+          'settings-model-and-mode',
           subtitle: _modelAndModeSummary(controller),
-          keywords: copy.settingsHubSearchModelModeAliases,
-          onTap: () => showModelPicker(context),
         ),
         // §7 row 22 of the OpenCode 2 port keeps this one row visible but
         // disabled with its reason, because a setting that was there
         // yesterday and vanished reads as a bug. Everything else the server
         // cannot serve is absent.
-        _HubRow.custom(
-          title: copy.e7SettingsUi35,
-          keywords: copy.settingsHubSearchShellAliases,
+        row(
+          'default-shell-settings-entry',
           builder: (_) => capabilities.shellSettings
               ? DefaultShellRow(controller: controller)
               : ListTileTheme.merge(
@@ -411,192 +326,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
         ),
-        _HubRow(
-          rowKey: 'saved-permissions-entry',
-          icon: AppIconography.privacy,
-          title: copy.e7SettingsUi74,
-          subtitle: copy.e7SettingsUi75,
-          keywords: copy.settingsHubSearchPermissionsAliases,
-          onTap: () => _open(SavedPermissionsScreen(controller: controller)),
-        ),
-        _HubRow(
-          rowKey: 'settings-transcript-display',
-          icon: AppIconography.clock,
-          title: copy.chatUiTranscriptDisplay,
+        row('saved-permissions-entry', subtitle: copy.e7SettingsUi75),
+        row(
+          'settings-transcript-display',
           subtitle: copy.settingsHubTranscriptSubtitle,
-          keywords: copy.settingsHubSearchTranscriptAliases,
-          onTap: _openTranscriptDisplay,
         ),
-        // The speech models can neither download nor run off Android.
-        if (platformCapabilities.supportsVoice)
-          _HubRow(
-            rowKey: 'settings-voice',
-            icon: AppIconography.policy,
-            title: copy.settingsHubVoice,
-            subtitle: copy.settingsHubVoiceSubtitle,
-            keywords: copy.settingsHubSearchVoiceAliases,
-            onTap: _openVoice,
-          ),
-      ]),
-      _HubGroup(
-        SettingsGroup.notifications,
-        copy.settingsHubGroupNotifications,
-        [
-          // One screen for everything that notifies. It stays off Android
-          // too: saved-server monitoring and check-ins work in the open app
-          // there, and the screen drops the rows that device cannot do. The
-          // key predates the merge and is kept for tests and deep links.
-          _HubRow(
-            rowKey: 'settings-category-background',
-            icon: AppIconography.notificationImportant,
-            title: copy.settingsHubGroupNotifications,
-            subtitle: platformCapabilities.supportsBackgroundService
-                ? copy.notifyHubBackgroundSummary(
-                    _backgroundSummary(controller),
-                  )
-                : null,
-            keywords: copy.settingsHubSearchNotificationsAliases,
-            onTap: () =>
-                _open(NotificationsSettingsScreen(controller: controller)),
-          ),
-        ],
-      ),
-      _HubGroup(SettingsGroup.appearance, copy.e7AppearanceTitle, [
-        _HubRow(
-          rowKey: 'settings-category-appearance',
-          icon: AppIconography.appearance,
-          title: copy.e7AppearanceTitle,
+        row('settings-voice', subtitle: copy.settingsHubVoiceSubtitle),
+      ],
+      SettingsGroup.notifications: [
+        // One screen for everything that notifies. It stays off Android
+        // too: saved-server monitoring and check-ins work in the open app
+        // there, and the screen drops the rows that device cannot do. The
+        // key predates the merge and is kept for tests and deep links.
+        row(
+          'settings-category-background',
+          subtitle: platformCapabilities.supportsBackgroundService
+              ? copy.notifyHubBackgroundSummary(_backgroundSummary(controller))
+              : null,
+        ),
+      ],
+      SettingsGroup.appearance: [
+        row(
+          'settings-category-appearance',
           subtitle:
               '${appearanceLabel(controller.appearance.value, context)} · ${themePackLabels[controller.themePack.value]}',
-          keywords: copy.settingsHubSearchAppearanceAliases,
-          onTap: () => _open(AppearanceSettingsScreen(controller: controller)),
         ),
-      ]),
-      _HubGroup(SettingsGroup.agentSetup, copy.settingsHubGroupAgentSetup, [
-        if (capabilities.serverCatalog) ...[
-          _HubRow(
-            rowKey: 'settings-models',
-            icon: AppIconography.model,
-            title: l10n.libraryModelsAgentsTitle,
-            subtitle: l10n.settingsDiscoveryNewChatsModel(
-              defaultModelLabel(controller, l10n),
-            ),
-            keywords: copy.settingsHubSearchModelsAliases,
-            onTap: () => _open(CatalogScreen(controller: controller)),
+      ],
+      SettingsGroup.agentSetup: [
+        row(
+          'settings-models',
+          subtitle: l10n.settingsDiscoveryNewChatsModel(
+            defaultModelLabel(controller, l10n),
           ),
-          _HubRow(
-            rowKey: 'settings-providers',
-            icon: AppIconography.cloud,
-            title: l10n.libraryProvidersTitle,
-            keywords: copy.settingsHubSearchProvidersAliases,
-            onTap: () => _open(
-              IntegrationsScreen(
-                controller: controller,
-                mode: IntegrationsMode.providers,
-              ),
-            ),
-          ),
-          _HubRow(
-            rowKey: 'settings-mcp',
-            icon: AppIconography.network,
-            title: l10n.libraryMcpTitle,
-            keywords: copy.settingsHubSearchMcpAliases,
-            onTap: () => _open(
-              IntegrationsScreen(
-                controller: controller,
-                mode: IntegrationsMode.mcp,
-              ),
-            ),
-          ),
-          _HubRow(
-            rowKey: 'settings-commands-tools',
-            icon: AppIconography.tools,
-            title: l10n.libraryCommandsToolsTitle,
-            keywords: copy.settingsHubSearchCommandsAliases,
-            onTap: () => _open(CapabilitiesScreen(controller: controller)),
-          ),
-        ],
-        // One Plugins screen: "In this app" needs a saved server, "On the
-        // server" needs the plugin inventory. Either is enough for the row.
-        if (profile != null || capabilities.pluginInventory)
-          _HubRow(
-            rowKey: 'settings-category-plugins',
-            icon: AppIconography.extensions,
-            title: copy.teamUiPluginsTitle,
-            subtitle: copy.teamUiPluginsHubSubtitle,
-            keywords: copy.settingsHubSearchPluginsAliases,
-            onTap: () => _open(PluginsSettingsScreen(controller: controller)),
-          ),
-        if (canImport)
-          _HubRow(
-            rowKey: 'library-import-session',
-            icon: AppIconography.fileUpload,
-            title: l10n.importTitle,
-            keywords: l10n.e7LibrarySearchImportAliases,
-            onTap: () => _open(SessionImportScreen(controller: controller)),
-          ),
-      ]),
-      _HubGroup(SettingsGroup.usage, copy.settingsHubGroupUsage, [
-        // One Usage screen: "Spent" needs usage statistics, "Remaining"
-        // needs a saved server. Either is enough for the row; the subtitle
-        // names the sections this connection really has.
-        if (UsageHubScreen.sectionsFor(controller) case final sections
-            when sections.isNotEmpty)
-          _HubRow(
-            rowKey: 'settings-category-usage',
-            icon: AppIconography.usage,
-            title: copy.settingsHubGroupUsage,
-            subtitle: [
-              for (final section in sections)
-                switch (section) {
-                  UsageSection.spent => copy.usageSectionSpent,
-                  UsageSection.remaining => copy.usageSectionRemaining,
-                },
-            ].join(' · '),
-            keywords: copy.settingsHubSearchUsageAliases,
-            onTap: () => _open(UsageHubScreen(controller: controller)),
-          ),
-      ]),
-      _HubGroup(SettingsGroup.privacy, copy.settingsHubGroupPrivacy, [
-        _HubRow(
-          rowKey: 'settings-category-privacy',
-          icon: AppIconography.privacy,
-          title: copy.settingsHubPrivacyRow,
-          keywords: copy.settingsHubSearchPrivacyAliases,
-          onTap: () => _open(PrivacySettingsScreen(controller: controller)),
         ),
-      ]),
-      _HubGroup(SettingsGroup.help, copy.settingsHubGroupHelp, [
-        _HubRow(
-          rowKey: 'settings-setup-guide',
-          icon: AppIconography.guide,
-          title: copy.onboardingSetupGuide,
-          subtitle: copy.e7SettingsUi91,
-          keywords: copy.settingsHubSearchGuideAliases,
-          onTap: () => _open(GuideScreen(embedded: false)),
+        row('settings-providers'),
+        row('settings-mcp'),
+        row('settings-commands-tools'),
+        row(
+          'settings-category-plugins',
+          subtitle: copy.teamUiPluginsHubSubtitle,
         ),
-        // The shortcut layer must be discoverable without already knowing a
-        // shortcut.
-        if (desktopInteractions)
-          _HubRow(
-            rowKey: 'library-keyboard-shortcuts',
-            icon: AppIconography.keyboard,
-            title: l10n.e7LibraryKeyboardShortcuts,
-            keywords: l10n.e7LibrarySearchShortcutsAliases,
-            onTap: () => unawaited(showShortcutsHelp(context)),
-          ),
+        row('library-import-session'),
+      ],
+      SettingsGroup.usage: [
+        // The subtitle names the sections this connection really has.
+        row(
+          'settings-category-usage',
+          subtitle: [
+            for (final section in UsageHubScreen.sectionsFor(controller))
+              switch (section) {
+                UsageSection.spent => copy.usageSectionSpent,
+                UsageSection.remaining => copy.usageSectionRemaining,
+              },
+          ].join(' · '),
+        ),
+      ],
+      SettingsGroup.privacy: [row('settings-category-privacy')],
+      SettingsGroup.help: [
+        row('settings-setup-guide', subtitle: copy.e7SettingsUi91),
+        row('library-keyboard-shortcuts'),
         // The bug form lives in the failure states themselves; this row is
         // the deliberate path for everything noticed outside a failure.
-        _HubRow(
-          rowKey: 'library-report-bug',
-          icon: AppIconography.bug,
-          title: l10n.e7LibraryReportABug,
-          keywords: copy.settingsHubSearchBugAliases,
-          onTap: () => unawaited(openBugReport(context)),
-        ),
-        _HubRow.custom(
-          title: copy.e7SettingsUi88,
-          keywords: copy.settingsHubSearchDiagnosticsAliases,
+        row('library-report-bug'),
+        row(
+          'app-diagnostics-entry',
           builder: (context) => ListenableBuilder(
             listenable: controller.diagnostics,
             builder: (context, _) {
@@ -609,40 +402,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ? copy.e7SettingsUi89
                     : copy.e7SettingsDiagnosticCount(count),
                 onTap: () =>
-                    _open(AppDiagnosticsScreen(controller: controller)),
+                    _openEntry(entries['app-diagnostics-entry']!, scope),
               );
             },
           ),
         ),
-        _HubRow(
-          rowKey: 'settings-privacy-data-use',
-          icon: Icons.privacy_tip_outlined,
-          title: copy.e7SettingsUi92,
-          subtitle: copy.e7SettingsUi93,
-          keywords: copy.settingsHubSearchAboutAliases,
-          onTap: () => _open(const AboutScreen()),
-        ),
+        row('settings-privacy-data-use', subtitle: copy.e7SettingsUi93),
         // The voice notices cover models this build can neither download
         // nor run off Android; the general notices below still list every
         // component that ships here.
-        if (platformCapabilities.supportsVoice)
-          _HubRow(
-            rowKey: 'settings-voice-notices',
-            icon: AppIconography.policy,
-            title: copy.e7SettingsUi94,
-            subtitle: copy.e7SettingsUi95,
-            keywords: copy.settingsHubSearchAboutAliases,
-            onTap: () => showVoiceNotices(context),
-          ),
-        _HubRow(
-          rowKey: 'settings-about-notices',
-          icon: AppIconography.info,
-          title: copy.e7SettingsUi96,
-          subtitle: copy.e7SettingsUi97,
-          keywords: copy.settingsHubSearchAboutAliases,
-          onTap: () => _open(const AboutScreen(initialTab: 1)),
-        ),
-      ]),
+        row('settings-voice-notices', subtitle: copy.e7SettingsUi95),
+        row('settings-about-notices', subtitle: copy.e7SettingsUi97),
+      ],
+    };
+    return [
+      for (final group in SettingsGroup.values)
+        _HubGroup(group, titles[group]!, rows[group]!.nonNulls.toList()),
     ];
   }
 
@@ -651,17 +426,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final controller = widget.controller;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final theme = Theme.of(context);
+    final copy = _settingsCopy(context);
+    final scope = SearchScope.of(context, controller);
+    final entries = {
+      for (final entry in searchIndex(copy, scope)) entry.id: entry,
+    };
+    // One index answers the hub's search: the rows it draws itself, what
+    // sits inside their screens, and the places outside Settings.
+    final searching = _query.isNotEmpty;
+    final matches = searching
+        ? searchEntries(copy, scope, _query)
+        : const <SearchEntry>[];
+    final matchedIds = {for (final entry in matches) entry.id};
     final groups = [
-      for (final group in _groups(controller))
+      for (final group in _groups(controller, entries, scope))
         (
           group: group,
-          rows: group.rows.where((row) => row.matches(_query)).toList(),
+          rows: searching
+              ? group.rows
+                    .where((row) => matchedIds.contains(row.entry.id))
+                    .toList()
+              : group.rows,
         ),
     ].where((entry) => entry.rows.isNotEmpty).toList();
-    final matchCount = groups.fold<int>(
-      0,
-      (total, entry) => total + entry.rows.length,
-    );
+    // This hub is the Settings tab, so that result would lead nowhere new.
+    final others = [
+      for (final entry in matches)
+        if (entry.kind != SearchEntryKind.hubRow && entry.id != 'tab-settings')
+          entry,
+    ];
+    final resultSections = [
+      (
+        slug: 'inside',
+        title: copy.discoverSearchInsideSettings,
+        entries: [
+          for (final entry in others)
+            if (entry.kind == SearchEntryKind.insideSettings) entry,
+        ],
+      ),
+      (
+        slug: 'places',
+        title: copy.discoverSearchGoTo,
+        entries: [
+          for (final entry in others)
+            if (entry.kind == SearchEntryKind.destination) entry,
+        ],
+      ),
+    ].where((section) => section.entries.isNotEmpty).toList();
+    final matchCount =
+        groups.fold<int>(0, (total, entry) => total + entry.rows.length) +
+        others.length;
     // Not a lazy list: every group must exist for an entry point to scroll
     // to it, and the hub is a few dozen plain rows.
     final body = DesktopScrollbarArea(
@@ -727,6 +541,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
+            for (final section in resultSections)
+              Column(
+                key: ValueKey('search-results-${section.slug}'),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(4, 20, 4, 4),
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        section.title,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: AppTheme.mutedOf(theme),
+                        ),
+                      ),
+                    ),
+                  ),
+                  for (final entry in section.entries)
+                    _CategoryRow(
+                      rowKey: 'search-result-${entry.id}',
+                      icon: entry.icon,
+                      title: entry.title,
+                      subtitle: entry.parent == null
+                          ? null
+                          : copy.discoverSearchIn(entry.parent!),
+                      onTap: () => _openEntry(entry, scope),
+                    ),
+                ],
+              ),
             if (_query.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -770,50 +613,32 @@ class _HubGroup {
   const _HubGroup(this.group, this.title, this.rows);
 }
 
-/// One searchable hub row. Search reads [title] and [keywords]; the keywords
-/// also name what sits inside the row's second-level screen, so "quiet hours"
-/// or "language" finds the door to it.
+/// One hub row: a search-index entry plus what only the hub shows beside
+/// it (a live subtitle, or a row that draws itself).
 class _HubRow {
-  final String? rowKey;
-  final IconData? icon;
-  final String title;
+  final SearchEntry entry;
   final String? subtitle;
-  final String keywords;
-  final VoidCallback? onTap;
-  final WidgetBuilder? builder;
-
-  const _HubRow({
-    required String this.rowKey,
-    required IconData this.icon,
-    required this.title,
-    required this.keywords,
-    required VoidCallback this.onTap,
-    this.subtitle,
-  }) : builder = null;
+  final VoidCallback onTap;
 
   /// A row that draws itself (live status, its own loading state, or the
   /// separated Disconnect button) but is searched like any other.
-  const _HubRow.custom({
-    required this.title,
-    required this.keywords,
-    required WidgetBuilder this.builder,
-  }) : rowKey = null,
-       icon = null,
-       subtitle = null,
-       onTap = null;
+  final WidgetBuilder? builder;
 
-  bool matches(String query) => query
-      .split(RegExp(r'\s+'))
-      .every((word) => '$title $keywords'.toLowerCase().contains(word));
+  const _HubRow({
+    required this.entry,
+    required this.onTap,
+    this.subtitle,
+    this.builder,
+  });
 
   Widget build(BuildContext context) =>
       builder?.call(context) ??
       _CategoryRow(
-        rowKey: rowKey!,
-        icon: icon!,
-        title: title,
+        rowKey: entry.id,
+        icon: entry.icon,
+        title: entry.title,
         subtitle: subtitle,
-        onTap: onTap!,
+        onTap: onTap,
       );
 }
 

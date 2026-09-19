@@ -25845,6 +25845,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch server'**
   String get serverSwitcherOpen;
+
+  /// Header above search results that are places in the app rather than settings rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to'**
+  String get discoverSearchGoTo;
+
+  /// Header above search results that sit inside a second-level settings screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Inside settings'**
+  String get discoverSearchInsideSettings;
+
+  /// Second line of a search result: the screen that holds it.
+  ///
+  /// In en, this message translates to:
+  /// **'In {parent}'**
+  String discoverSearchIn(String parent);
+
+  /// No description provided for @discoverWorkAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'work home conversations sessions chats recent pinned new conversation'**
+  String get discoverWorkAliases;
+
+  /// No description provided for @discoverInboxAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'inbox activity needs you approvals permissions questions forms waiting running finished'**
+  String get discoverInboxAliases;
+
+  /// No description provided for @discoverProjectAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'project tools code folder files changes terminal health worktrees'**
+  String get discoverProjectAliases;
+
+  /// No description provided for @discoverFilesAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'files browse folder tree preview code open file'**
+  String get discoverFilesAliases;
+
+  /// No description provided for @discoverChangesAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'changes review changes diff uncommitted git edits working tree'**
+  String get discoverChangesAliases;
+
+  /// No description provided for @discoverTerminalAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'terminal shell console command line pty'**
+  String get discoverTerminalAliases;
+
+  /// No description provided for @discoverHealthAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'project health branch changed files language services formatters lsp'**
+  String get discoverHealthAliases;
+
+  /// No description provided for @discoverWorktreesAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'worktrees branches isolated git branch'**
+  String get discoverWorktreesAliases;
+
+  /// No description provided for @discoverSearchFilesAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'search files find file name'**
+  String get discoverSearchFilesAliases;
+
+  /// No description provided for @discoverAllConversationsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'all conversations sessions chats history every project search'**
+  String get discoverAllConversationsAliases;
+
+  /// No description provided for @discoverTeamAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'ai team agents runs needs you orchestration plugin'**
+  String get discoverTeamAliases;
+
+  /// Search result title for the saved-server monitoring section of Notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications from saved servers'**
+  String get discoverNotifyServersTitle;
+
+  /// No description provided for @discoverNotifyWhatAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'finished runs approvals questions check-ins check in quota alerts what notifies'**
+  String get discoverNotifyWhatAliases;
+
+  /// No description provided for @discoverNotifyQuietAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'quiet hours do not disturb night silence mute schedule'**
+  String get discoverNotifyQuietAliases;
+
+  /// No description provided for @discoverNotifyBackgroundAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'background connection stay connected battery keep alive service'**
+  String get discoverNotifyBackgroundAliases;
+
+  /// No description provided for @discoverNotifyServersAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'monitor saved servers attention wi-fi wifi check in the background'**
+  String get discoverNotifyServersAliases;
+
+  /// No description provided for @discoverAppearanceModeAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'light dark mode system appearance night'**
+  String get discoverAppearanceModeAliases;
+
+  /// No description provided for @discoverLanguageAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'language arabic english locale translation rtl'**
+  String get discoverLanguageAliases;
+
+  /// No description provided for @discoverThemeAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'theme colors palette pack accent'**
+  String get discoverThemeAliases;
+
+  /// No description provided for @discoverSpentAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'spent cost tokens usage statistics money'**
+  String get discoverSpentAliases;
+
+  /// No description provided for @discoverRemainingAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'remaining quota limit provider plan left'**
+  String get discoverRemainingAliases;
+
+  /// No description provided for @discoverBudgetAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'budget budgets usd token budget spending limit'**
+  String get discoverBudgetAliases;
+
+  /// No description provided for @discoverQuotaMonitorAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'quota monitoring threshold alert warn low'**
+  String get discoverQuotaMonitorAliases;
+
+  /// No description provided for @discoverCommandsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'commands server commands slash run'**
+  String get discoverCommandsAliases;
+
+  /// No description provided for @discoverToolsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'tools tools and capabilities inventory model tools'**
+  String get discoverToolsAliases;
+
+  /// No description provided for @discoverSkillsAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'skills skill instructions playbook'**
+  String get discoverSkillsAliases;
+
+  /// No description provided for @discoverReferencesAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'references reference docs sources context'**
+  String get discoverReferencesAliases;
+
+  /// No description provided for @discoverRunningNowAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'running now processes termux services stop on this phone'**
+  String get discoverRunningNowAliases;
+
+  /// No description provided for @discoverStorageAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'storage on this phone disk space clean termux'**
+  String get discoverStorageAliases;
+
+  /// No description provided for @discoverMonitorAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'saved-server attention monitor other servers waiting server attention'**
+  String get discoverMonitorAliases;
+
+  /// No description provided for @discoverConnectionHelpAliases.
+  ///
+  /// In en, this message translates to:
+  /// **'connection help cannot connect troubleshooting network refused timeout'**
+  String get discoverConnectionHelpAliases;
 }
 
 class _AppLocalizationsDelegate
