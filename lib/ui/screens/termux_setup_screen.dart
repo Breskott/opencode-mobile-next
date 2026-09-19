@@ -393,6 +393,46 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     return profile;
   }
 
+  /// The server is installed on this phone but the app holds no password for
+  /// it (a reinstall, cleared app data, an unreadable keystore). The app wrote
+  /// that password into Termux at setup, so it takes it back from there rather
+  /// than telling the person to run setup again or type a secret they were
+  /// never shown.
+  Future<void> _restoreLocalProfileIfMissing(TermuxRuntime runtime) async {
+    if (_localProfile(runtime: runtime) != null) return;
+    final password = await TermuxBridge.managedServerPassword();
+    if (password == null || !mounted) return;
+    final store = ref.read(bootstrapProvider).store;
+    final flavor = runtime == TermuxRuntime.openCode2
+        ? ServerFlavor.v2
+        : ServerFlavor.v1;
+    ServerProfile? existing;
+    for (final profile in store.profiles) {
+      if (profile.backend == ServerBackend.openCode &&
+          profile.baseUrl == localUrl &&
+          profile.flavor == flavor) {
+        existing = profile;
+        break;
+      }
+    }
+    final profile =
+        existing ??
+        ServerProfile(
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          name: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupThisDevice,
+          baseUrl: localUrl,
+          flavor: flavor,
+        );
+    profile
+      ..username = 'opencode'
+      ..password = password
+      ..requiresPasswordReentry = false;
+    await store.upsert(profile);
+    if (mounted) setState(() {});
+  }
+
   ServerProfile? _localProfile({TermuxRuntime? runtime}) {
     final selectedRuntime = runtime ?? _runtime;
     for (final profile in ref.read(bootstrapProvider).store.profiles) {
@@ -737,6 +777,8 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _confirmRestart() async {
+    await _restoreLocalProfileIfMissing(_runtime);
+    if (!mounted) return;
     final profile = _localProfile();
     if (profile == null) {
       setState(() {
@@ -2361,6 +2403,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
           _committedRuntime = null;
         }
       });
+      if (installation.openCodeVersion != null) {
+        await _restoreLocalProfileIfMissing(installation.runtime);
+      }
     } on TermuxBridgeException {
       if (!mounted || epoch != _statusEpoch) return;
       setState(() {

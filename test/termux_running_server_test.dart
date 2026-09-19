@@ -504,6 +504,54 @@ void main() {
   });
 
   testWidgets(
+    'a running phone server whose password the app lost is restored from the phone',
+    (tester) async {
+      // A reinstall or cleared app data: the server still runs, the app has no
+      // saved server for it, and the person was never shown the password.
+      SharedPreferences.setMockInitialValues({});
+      final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+      final connection = _Connection(store);
+      addTearDown(connection.dispose);
+      TermuxBridge.managedServerPasswordOverride = () async =>
+          'the-password-setup-wrote';
+      addTearDown(() => TermuxBridge.managedServerPasswordOverride = null);
+      health = const ServerProbeResult.failure(
+        'password required',
+        needsPassword: true,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            bootstrapProvider.overrideWithValue(AppBootstrap(store)),
+            connProvider.overrideWithValue(connection),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routes: {'/home': (_) => const Scaffold(body: Text('home'))},
+            home: const ServersScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final connect = find.byKey(
+        const ValueKey('termux-running-server-connect'),
+      );
+      await tester.ensureVisible(connect);
+      await tester.tap(connect);
+      await tester.pumpAndSettle();
+
+      // No password is asked for: the saved server comes back and connects.
+      expect(find.byKey(const ValueKey('server-password-field')), findsNothing);
+      final restored = store.profiles.single;
+      expect(restored.baseUrl, TermuxBridge.managedServerUrl);
+      expect(restored.username, 'opencode');
+      expect(restored.password, 'the-password-setup-wrote');
+      expect(connection.attempted.single.id, restored.id);
+    },
+  );
+
+  testWidgets(
     'welcome running entry opens password editor with authored local URL',
     (tester) async {
       SharedPreferences.setMockInitialValues({});

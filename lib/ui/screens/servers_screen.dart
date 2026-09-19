@@ -206,12 +206,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           await _connect(target, detectedRunning: request.detectedRunning);
         }
       case ServersRouteRequestKind.enterPhoneCredentials:
-        await _edit(
+        await _enterPhoneCredentials(
           existing: target,
-          connectOnSave: true,
-          initialUrl: TermuxBridge.managedServerUrl,
-          focusPassword: true,
-          openCode2Intent: request.openCode2,
+          openCode2: request.openCode2,
         );
       case ServersRouteRequestKind.forget:
         if (target != null) await _delete(target);
@@ -299,13 +296,56 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       onForget: _delete,
       onManage: _openTermuxSetup,
       onConnect: (profile) => _connect(profile, detectedRunning: true),
-      onEnterCredentials: (server, existing) => _edit(
+      onEnterCredentials: (server, existing) => _enterPhoneCredentials(
         existing: existing,
-        connectOnSave: true,
-        initialUrl: TermuxBridge.managedServerUrl,
-        focusPassword: true,
-        openCode2Intent: server.flavor == ServerFlavor.v2,
+        openCode2: server.flavor == ServerFlavor.v2,
       ),
+    );
+  }
+
+  /// The phone's own server is running but the app has no usable password for
+  /// it. The app wrote that password, so it first restores it from the phone;
+  /// only when that is impossible (or the restored one was already refused)
+  /// does it ask the person to type one.
+  Future<void> _enterPhoneCredentials({
+    required ServerProfile? existing,
+    required bool openCode2,
+  }) async {
+    if (_busy) return;
+    final recovered = await TermuxBridge.managedServerPassword();
+    if (!mounted) return;
+    final alreadyRefused =
+        existing != null &&
+        !existing.requiresPasswordReentry &&
+        existing.password == recovered;
+    if (recovered != null && !alreadyRefused) {
+      final store = ref.read(bootstrapProvider).store;
+      final profile =
+          existing ??
+          ServerProfile(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            name: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupThisDevice,
+            baseUrl: TermuxBridge.managedServerUrl,
+            flavor: openCode2 ? ServerFlavor.v2 : ServerFlavor.v1,
+          );
+      profile
+        ..username = 'opencode'
+        ..password = recovered
+        ..requiresPasswordReentry = false;
+      await store.upsert(profile);
+      if (!mounted) return;
+      setState(() {});
+      await _connect(profile, detectedRunning: true);
+      return;
+    }
+    await _edit(
+      existing: existing,
+      connectOnSave: true,
+      initialUrl: TermuxBridge.managedServerUrl,
+      focusPassword: true,
+      openCode2Intent: openCode2,
     );
   }
 
