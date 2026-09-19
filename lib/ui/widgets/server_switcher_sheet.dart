@@ -9,6 +9,7 @@ import '../app_theme.dart';
 import '../screens/servers_screen.dart' show ServersRouteRequest;
 import 'product_states.dart';
 import 'safety_confirms.dart';
+import 'local_agent_server_entry.dart';
 import 'termux_running_server_entry.dart';
 
 /// What the person chose in the server switcher. The sheet only chooses; the
@@ -146,6 +147,45 @@ class ServerSwitcherSheet extends StatelessWidget {
                       openCode2: server.flavor == ServerFlavor.v2,
                     ),
                   ),
+                ),
+              ),
+            ),
+            // The Claude Code daemon on this phone, under the same rule.
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: LocalAgentServerEntry(
+                profiles: profiles,
+                busy: false,
+                revision: 0,
+                connectedProfileID: controller.api == null ? null : current?.id,
+                busyConversations: controller.busySessions.length,
+                onDisconnect: () async {
+                  if (!await confirmDisconnectServer(context, controller)) {
+                    return;
+                  }
+                  await controller.disconnect(keepActive: true);
+                  if (navigator.mounted) {
+                    navigator.pop(
+                      const ServerSwitcherLeave(alreadyDisconnected: true),
+                    );
+                  }
+                },
+                onForget: (profile) => navigator.pop(
+                  ServerSwitcherOpenServers(
+                    ServersRouteRequest.forget(profile.id),
+                  ),
+                ),
+                onManage: () =>
+                    navigator.pop(const ServerSwitcherOpenPhoneSetup()),
+                onConnect: (profile) => navigator.pop(
+                  controller.api != null && profile.id == current?.id
+                      ? null
+                      : ServerSwitcherOpenServers(
+                          ServersRouteRequest.connect(
+                            profile.id,
+                            detectedRunning: true,
+                          ),
+                        ),
                 ),
               ),
             ),

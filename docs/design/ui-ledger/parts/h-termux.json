@@ -455,6 +455,22 @@
           "destructive": false
         },
         {
+          "id": "termux-setup-choose-runtime-claude",
+          "type": "toggle",
+          "label": "Claude Code",
+          "key": "setup-runtime-claude",
+          "line": 2500,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Sets _claudeAfterSetup and keeps the default OpenCode runtime selected: the manager has no Ubuntu-only path, so Install & start runs the normal setup and the Claude Code block then starts its install by itself (LocalAgentOnboardingBlock.autoStart).",
+          "gates": [
+            "shown with the runtime choice: installed != null && installed.openCodeVersion == null && _knownRuntime == null",
+            "disabled while _busy || _checkingInstallation"
+          ],
+          "destructive": false
+        },
+        {
           "id": "termux-setup-choose-install-start",
           "type": "button",
           "label": "Install & start",
@@ -2203,7 +2219,7 @@
       "widget": "TermuxRunningServerEntry",
       "presentedBy": [],
       "line": 37,
-      "purpose": "Card for the app-managed server on this phone, first on the Servers screen, the welcome screen and in the server switcher: connect or open, start, restart, stop, and a menu with Disconnect, Refresh, Manage setup and Forget saved sign-in. Hosts wire connect, credentials, disconnect, manage and forget.",
+      "purpose": "Card for the app-managed OpenCode server on this phone, first on the Servers screen, the welcome screen and in the server switcher: connect or open, start, restart, stop, and a menu with Disconnect, Refresh, Manage setup and Forget saved sign-in. It owns the server's state; the look is LocalServerCard, shared with the Claude Code daemon's card.",
       "reachedFrom": [],
       "gates": [
         "platformCapabilities.supportsTermux",
@@ -2227,7 +2243,7 @@
           "destructive": false,
           "type": "button",
           "label": "Connect | Open",
-          "line": 427,
+          "line": 347,
           "action": "mutate",
           "effect": "_connect(): re-reads the phone (detectTermuxRunningServer), then host onConnect(saved) or, with no saved profile / needsCredentials / requiresPasswordReentry, host onEnterCredentials(fresh, saved)."
         },
@@ -2243,7 +2259,7 @@
           "destructive": false,
           "type": "button",
           "label": "Start",
-          "line": 417,
+          "line": 346,
           "action": "mutate",
           "effect": "_start(): widget.actions.restart() (LocalServerControls.restart) with a progress bar, then re-reads the phone; a failure is shown on the card."
         },
@@ -2260,7 +2276,7 @@
           "destructive": true,
           "type": "button",
           "label": "Restart",
-          "line": 439,
+          "line": 348,
           "action": "mutate",
           "effect": "_restart(): confirmRestartLocalServer(busyConversations) confirm sheet, then widget.actions.restart()."
         },
@@ -2277,7 +2293,7 @@
           "destructive": true,
           "type": "button",
           "label": "Stop",
-          "line": 448,
+          "line": 349,
           "action": "mutate",
           "effect": "_stop(): confirmStopLocalServer confirm sheet, then widget.actions.stop() (LocalServerControls.stop)."
         },
@@ -2292,7 +2308,7 @@
           "destructive": false,
           "type": "icon-button",
           "label": "More server actions",
-          "line": 355,
+          "line": 315,
           "action": "other",
           "effect": "opens overflow menu (PopupMenuButton<VoidCallback>)"
         },
@@ -2308,7 +2324,7 @@
           "destructive": true,
           "type": "menu-item",
           "label": "Disconnect",
-          "line": 362,
+          "line": 319,
           "action": "open-sheet",
           "effect": "Host onDisconnect: confirmDisconnectServer then connection.disconnect(keepActive: true); the server keeps running."
         },
@@ -2321,7 +2337,7 @@
           "destructive": false,
           "type": "menu-item",
           "label": "Refresh",
-          "line": 367,
+          "line": 324,
           "action": "other",
           "effect": "_check(): re-reads the phone server state."
         },
@@ -2336,7 +2352,7 @@
           "destructive": false,
           "type": "menu-item",
           "label": "Manage setup",
-          "line": 373,
+          "line": 330,
           "action": "navigate",
           "effect": "Host onManage: opens the setup wizard ('/termux-setup')."
         },
@@ -2352,7 +2368,7 @@
           "destructive": true,
           "type": "menu-item",
           "label": "Forget saved sign-in",
-          "line": 379,
+          "line": 336,
           "action": "open-sheet",
           "effect": "Host onForget(profile): ServersScreen._delete confirm sheet, then connection.deleteProfileAndLocalData(profile.id). The server itself is untouched."
         },
@@ -2367,7 +2383,7 @@
           "destructive": false,
           "type": "list-tile",
           "label": "Server details",
-          "line": 466,
+          "line": 350,
           "action": "other",
           "effect": "ExpansionTile: expands version and last check time."
         }
@@ -2543,12 +2559,622 @@
           "destructive": false
         }
       ]
+    },
+    {
+      "id": "embedded-local-agent-onboarding-block",
+      "title": "Claude Code on this phone",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/local_agent_onboarding.dart",
+      "widget": "LocalAgentOnboardingBlock",
+      "presentedBy": [],
+      "line": 185,
+      "purpose": "The one door to Claude Code on the phone: offer, install (Node.js, Paseo daemon, Claude Code) with a step list and the live output, Claude's own sign-in in a Termux terminal, start, and Connect through one saved Paseo server on ws://127.0.0.1:6767. Reads and drives LocalAgentRuntime (~/.oc/claude.sh).",
+      "reachedFrom": [],
+      "gates": [
+        "platformCapabilities.supportsTermux",
+        "hidden when claude.sh status cannot be read or the offer was dismissed (prefs local_agents_offer_skipped)"
+      ],
+      "embeddedIn": [
+        "TermuxSetupScreen"
+      ],
+      "key": "local-agent-block",
+      "elements": [
+        {
+          "id": "embedded-local-agent-onboarding-block-skip",
+          "type": "button",
+          "label": "Not now",
+          "key": "local-agent-skip",
+          "line": 733,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_skip(): stores local_agents_offer_skipped and hides the offer.",
+          "gates": [
+            "offer view: status phase absent"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-set-up",
+          "type": "button",
+          "label": "Set up Claude Code",
+          "key": "local-agent-set-up",
+          "line": 738,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_install(): LocalAgentRuntime.install() (claude.sh install, detached) with the steps view polling status and the log; goes on to start when a sign-in already exists.",
+          "gates": [
+            "offer view: status phase absent"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-needs-ubuntu-refresh",
+          "type": "button",
+          "label": "Refresh",
+          "key": "local-agent-needs-ubuntu-refresh",
+          "line": 763,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refresh(): re-reads claude.sh status.",
+          "gates": [
+            "needs-ubuntu view"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-open-setup",
+          "type": "button",
+          "label": "Open phone setup",
+          "key": "local-agent-open-setup",
+          "line": 769,
+          "action": "navigate",
+          "target": "termux-setup",
+          "targetWidget": "TermuxSetupScreen",
+          "effect": "Host onOpenPhoneSetup: opens the On this phone wizard, the only place Ubuntu is installed.",
+          "gates": [
+            "needs-ubuntu view",
+            "widget.onOpenPhoneSetup != null (null inside the wizard itself)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-menu",
+          "type": "icon-button",
+          "label": "More Claude Code actions",
+          "key": "local-agent-menu",
+          "line": 628,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "opens overflow menu (PopupMenuButton<VoidCallback>)",
+          "gates": [
+            "sign-in, stopped, ready views; failed view when installed",
+            "disabled while _busy || _connecting"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-menu-refresh",
+          "type": "menu-item",
+          "label": "Refresh",
+          "key": "local-agent-refresh",
+          "line": 634,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refresh(): re-reads claude.sh status.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-menu-remove",
+          "type": "menu-item",
+          "label": "Remove from this phone",
+          "key": "local-agent-remove",
+          "line": 639,
+          "action": "open-sheet",
+          "target": "remove-local-agents-confirm-sheet",
+          "targetWidget": "confirmRemoveLocalAgents",
+          "effect": "_remove(): confirmRemoveLocalAgents, then LocalAgentRuntime.remove() without --forget-signin, so the person's Claude sign-in stays.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-sign-in",
+          "type": "button",
+          "label": "Sign in to Claude",
+          "key": "local-agent-sign-in-open",
+          "line": 863,
+          "action": "external-link",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_signIn(): LocalAgentRuntime.openSignIn() opens a foreground Termux terminal running claude.sh signin (Claude Code's own sign-in inside Ubuntu); status is re-read when the app resumes. The app never sees the credential.",
+          "gates": [
+            "sign-in view: installed and signed_in=no"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-sign-in-refresh",
+          "type": "button",
+          "label": "Refresh",
+          "key": "local-agent-sign-in-refresh",
+          "line": 856,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refresh(afterSignIn: true): re-reads status and says when no sign-in was found.",
+          "gates": [
+            "sign-in view"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-sign-in-already",
+          "type": "button",
+          "label": "I already signed in",
+          "key": "local-agent-sign-in-already",
+          "line": 851,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_start(): starts the daemon without a detected sign-in, for a sign-in the script's file check cannot see.",
+          "gates": [
+            "sign-in view"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-start",
+          "type": "button",
+          "label": "Start",
+          "key": "local-agent-start",
+          "line": 926,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_start(): LocalAgentRuntime.start(); ready only after /api/health answers.",
+          "gates": [
+            "stopped view: installed, not running"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-connect",
+          "type": "button",
+          "label": "Connect | Open",
+          "key": "local-agent-connect",
+          "line": 982,
+          "action": "open-sheet",
+          "target": "local-agent-project-sheet",
+          "targetWidget": "LocalAgentProjectSheet",
+          "effect": "_connect(): project chooser, then saveLocalAgentProfile (one Paseo server, ws://127.0.0.1:6767, password from claude.sh password) and ConnectionController.connect; when already connected through it, host onConnected.",
+          "gates": [
+            "ready view",
+            "disabled while _busy || _connecting"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": "local-agent-retry",
+          "line": 1030,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_retry(): start again when the failed step was Start and the install is present, else install again (resume-safe).",
+          "gates": [
+            "failed view"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-onboarding-block-copy-log",
+          "type": "icon-button",
+          "label": "[copy output]",
+          "key": null,
+          "line": 568,
+          "action": "copy",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_copyLog(): copies the install log tail shown in the SetupTerminal panel.",
+          "gates": [
+            "steps and failed views, log not empty"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "local-agent-project-sheet",
+      "title": "Choose a project folder",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/local_agent_onboarding.dart",
+      "widget": "LocalAgentProjectSheet",
+      "presentedBy": [],
+      "line": 1108,
+      "purpose": "Picks the folder Claude Code works in, as a path inside Ubuntu: a folder under ~/projects (the script creates my-first-project with git init when there are none) or a typed path.",
+      "reachedFrom": [
+        {
+          "page": "embedded-local-agent-onboarding-block",
+          "element": "embedded-local-agent-onboarding-block-connect"
+        }
+      ],
+      "gates": [],
+      "key": "local-agent-project-sheet",
+      "elements": [
+        {
+          "id": "local-agent-project-sheet-folder",
+          "type": "toggle",
+          "label": "<folder name>",
+          "key": "local-agent-project-<i>",
+          "line": 1236,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Selects that folder and clears the typed path.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "local-agent-project-sheet-path",
+          "type": "text-field",
+          "label": "Or type a path inside Ubuntu",
+          "key": "local-agent-project-path",
+          "line": 1256,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "A typed absolute path wins over the selection; validated by localAgentProjectPathProblem.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "local-agent-project-sheet-continue",
+          "type": "button",
+          "label": "Continue",
+          "key": "local-agent-project-continue",
+          "line": 1273,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_continue(): pops with the selected folder, or LocalAgentRuntime.ensureProject(typed) then pops with it.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-local-agent-server-entry",
+      "title": "Claude Code on this phone",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/local_agent_server_entry.dart",
+      "widget": "LocalAgentServerEntry",
+      "presentedBy": [],
+      "line": 25,
+      "purpose": "Card for the Claude Code daemon on this phone, beside the OpenCode server's card on the Servers screen, the welcome screen and in the server switcher, controlled where it is shown. Same look (LocalServerCard), its own state: claude.sh status on mount, on resume, on revision and after every control.",
+      "reachedFrom": [],
+      "gates": [
+        "platformCapabilities.supportsTermux",
+        "status readable and status.installed (nothing installed is the wizard's business)"
+      ],
+      "embeddedIn": [
+        "ServersScreen",
+        "ServerSwitcherSheet"
+      ],
+      "key": "local-agent-server",
+      "elements": [
+        {
+          "id": "embedded-local-agent-server-entry-connect",
+          "type": "button",
+          "label": "Connect | Open",
+          "key": "local-agent-server-connect",
+          "line": 286,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_connect(): re-reads status; with a saved server that has a project folder, host onConnect(saved); otherwise host onManage (the folder is chosen in the wizard).",
+          "gates": [
+            "status.isReady",
+            "disabled while locked or a verb runs"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-server-entry-start",
+          "type": "button",
+          "label": "Start",
+          "key": "local-agent-server-start",
+          "line": 285,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_start(): LocalAgentRuntime.start(); a failure is shown on the card in its own sentence.",
+          "gates": [
+            "not running"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-server-entry-restart",
+          "type": "button",
+          "label": "Restart",
+          "key": "local-agent-server-restart",
+          "line": 287,
+          "action": "open-sheet",
+          "target": "restart-local-agents-sheet",
+          "targetWidget": "confirmRestartLocalAgents",
+          "effect": "_restart(): confirmRestartLocalAgents(busyConversations), then LocalAgentRuntime.restart().",
+          "gates": [
+            "status.isReady"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "embedded-local-agent-server-entry-stop",
+          "type": "button",
+          "label": "Stop",
+          "key": "local-agent-server-stop",
+          "line": 288,
+          "action": "open-sheet",
+          "target": "stop-local-agents-confirm-sheet",
+          "targetWidget": "confirmStopLocalAgents",
+          "effect": "_stop(): confirmStopLocalAgents, then LocalAgentRuntime.stop().",
+          "gates": [
+            "status.isReady"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "embedded-local-agent-server-entry-menu",
+          "type": "icon-button",
+          "label": "More Claude Code actions",
+          "key": "local-agent-server-menu",
+          "line": 254,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "opens overflow menu (PopupMenuButton<VoidCallback>)",
+          "gates": [
+            "disabled while locked"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-server-entry-menu-disconnect",
+          "type": "menu-item",
+          "label": "Disconnect",
+          "key": "local-agent-server-disconnect",
+          "line": 258,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Host onDisconnect: confirmDisconnectServer, then connection.disconnect(keepActive: true); the daemon keeps running.",
+          "gates": [
+            "connected through the saved server",
+            "widget.onDisconnect != null"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "embedded-local-agent-server-entry-recheck",
+          "type": "menu-item",
+          "label": "Refresh",
+          "key": "local-agent-server-recheck",
+          "line": 263,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_check(): re-reads claude.sh status.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-server-entry-menu-manage",
+          "type": "menu-item",
+          "label": "Manage setup",
+          "key": "local-agent-server-manage",
+          "line": 269,
+          "action": "navigate",
+          "target": "termux-setup",
+          "targetWidget": "TermuxSetupScreen",
+          "effect": "Host onManage: opens the On this phone wizard.",
+          "gates": [
+            "widget.onManage != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-local-agent-server-entry-menu-forget",
+          "type": "menu-item",
+          "label": "Forget saved sign-in",
+          "key": "local-agent-server-forget",
+          "line": 275,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Host onForget(profile): forgets the saved server on this device; the daemon and the Claude sign-in are untouched.",
+          "gates": [
+            "a saved server exists",
+            "widget.onForget != null"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "embedded-local-agent-server-entry-details",
+          "type": "list-tile",
+          "label": "Details",
+          "key": null,
+          "line": 289,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "expands the installed versions of Claude Code, Paseo and Node.js.",
+          "gates": [
+            "versions recorded"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "stop-local-agents-confirm-sheet",
+      "title": "Stop Claude Code on this phone?",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/safety_confirms.dart",
+      "widget": "confirmStopLocalAgents",
+      "presentedBy": [
+        "confirmStopLocalAgents"
+      ],
+      "line": 99,
+      "purpose": "Confirms stopping the Claude Code daemon: what it is doing is interrupted and the app disconnects; projects, conversations and the Claude sign-in stay.",
+      "reachedFrom": [
+        {
+          "page": "embedded-local-agent-server-entry",
+          "element": "embedded-local-agent-server-entry-stop"
+        }
+      ],
+      "gates": [],
+      "key": "stop-local-agents-confirm-sheet",
+      "elements": [
+        {
+          "id": "stop-local-agents-confirm-sheet-confirm",
+          "type": "button",
+          "label": "Stop",
+          "key": "confirm-stop-local-agents",
+          "line": 110,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops true; the caller then runs the action.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "stop-local-agents-confirm-sheet-cancel",
+          "type": "button",
+          "label": "Keep running",
+          "key": null,
+          "line": 109,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops false; nothing changes.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "restart-local-agents-sheet",
+      "title": "Restart Claude Code on this phone?",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/safety_confirms.dart",
+      "widget": "confirmRestartLocalAgents",
+      "presentedBy": [
+        "confirmRestartLocalAgents"
+      ],
+      "line": 115,
+      "purpose": "Confirms restarting the Claude Code daemon, counting the conversations it would interrupt.",
+      "reachedFrom": [
+        {
+          "page": "embedded-local-agent-server-entry",
+          "element": "embedded-local-agent-server-entry-restart"
+        }
+      ],
+      "gates": [],
+      "key": "restart-local-agents-sheet",
+      "elements": [
+        {
+          "id": "restart-local-agents-sheet-confirm",
+          "type": "button",
+          "label": "Restart",
+          "key": "confirm-restart-local-agents",
+          "line": 131,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops true; the caller then runs the action.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "restart-local-agents-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 130,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops false; nothing changes.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "remove-local-agents-confirm-sheet",
+      "title": "Remove Claude Code from this phone?",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/safety_confirms.dart",
+      "widget": "confirmRemoveLocalAgents",
+      "presentedBy": [
+        "confirmRemoveLocalAgents"
+      ],
+      "line": 137,
+      "purpose": "Confirms removing Node.js, Paseo and Claude Code from Ubuntu, and says that projects and the Claude sign-in stay.",
+      "reachedFrom": [
+        {
+          "page": "embedded-local-agent-onboarding-block",
+          "element": "embedded-local-agent-onboarding-block-menu-remove"
+        }
+      ],
+      "gates": [],
+      "key": "remove-local-agents-confirm-sheet",
+      "elements": [
+        {
+          "id": "remove-local-agents-confirm-sheet-confirm",
+          "type": "button",
+          "label": "Remove from this phone",
+          "key": "confirm-remove-local-agents",
+          "line": 148,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops true; the caller then runs the action.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "remove-local-agents-confirm-sheet-cancel",
+          "type": "button",
+          "label": "Keep it",
+          "key": null,
+          "line": 147,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops false; nothing changes.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
     }
   ],
   "notPages": [
     {
       "file": "lib/ui/widgets/setup_ui_messages.dart",
       "reason": "pure function `setupUiMessage(l10n, message)` mapping raw setup/bridge messages to localized text; no widget, surface or interactive element"
+    },
+    {
+      "file": "lib/ui/widgets/local_server_card.dart",
+      "reason": "shared presentation of the two on-phone server cards (LocalServerCard); every control is a callback wired by TermuxRunningServerEntry or LocalAgentServerEntry and is recorded on their pages"
     }
   ],
   "notes": [

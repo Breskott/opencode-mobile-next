@@ -93,6 +93,62 @@ Future<bool> confirmRestartLocalServer(
   );
 }
 
+/// Stopping the Claude Code daemon on the phone. It has its own sheet rather
+/// than the OpenCode server's because that copy names OpenCode, and a person
+/// running both must be able to tell which one they are about to stop.
+Future<bool> confirmStopLocalAgents(BuildContext context) {
+  final l10n = _copy(context);
+  return showConfirmSheet(
+    context,
+    title: l10n.localAgentStopTitle,
+    message: l10n.localAgentStopBody,
+    confirmLabel: l10n.phoneServerStop,
+    cancelLabel: l10n.safetyStopLocalServerKeep,
+    icon: AppIcons.stop,
+    destructive: true,
+    sheetKey: const ValueKey('stop-local-agents-confirm-sheet'),
+    confirmKey: const ValueKey('confirm-stop-local-agents'),
+  );
+}
+
+/// Restarting the Claude Code daemon interrupts whatever it is running.
+Future<bool> confirmRestartLocalAgents(
+  BuildContext context, {
+  required int busyConversations,
+}) {
+  final l10n = _copy(context);
+  return showConfirmSheet(
+    context,
+    title: l10n.localAgentRestartTitle,
+    message: [
+      l10n.localAgentRestartBody,
+      if (busyConversations > 0)
+        l10n.termuxRestartBusyMessage(busyConversations),
+    ].join('\n\n'),
+    confirmLabel: l10n.termuxRestartConfirm,
+    icon: AppIconography.restart,
+    sheetKey: const ValueKey('restart-local-agents-sheet'),
+    confirmKey: const ValueKey('confirm-restart-local-agents'),
+  );
+}
+
+/// Removing Claude Code from the phone. Says what goes and, because people
+/// fear losing it, what stays: projects and the Claude sign-in.
+Future<bool> confirmRemoveLocalAgents(BuildContext context) {
+  final l10n = _copy(context);
+  return showConfirmSheet(
+    context,
+    title: l10n.localAgentRemoveTitle,
+    message: l10n.localAgentRemoveBody,
+    confirmLabel: l10n.localAgentRemove,
+    cancelLabel: l10n.localAgentRemoveKeep,
+    icon: AppIconography.unlink,
+    destructive: true,
+    sheetKey: const ValueKey('remove-local-agents-confirm-sheet'),
+    confirmKey: const ValueKey('confirm-remove-local-agents'),
+  );
+}
+
 /// Disconnecting an MCP server removes its tools from agents mid-session.
 Future<bool> confirmDisconnectMcp(
   BuildContext context, {

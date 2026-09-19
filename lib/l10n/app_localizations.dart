@@ -26733,6 +26733,354 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not now'**
   String get firstRunNotifyDecline;
+
+  /// On this phone setup: title of the block that installs and runs Claude Code in the managed Ubuntu; also the saved server's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code on this phone'**
+  String get localAgentTitle;
+
+  /// Claude Code block, offer: what setting it up does.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Claude Code here with no computer. The app installs Node.js, the Paseo daemon and Claude Code into the Ubuntu it already manages, and reaches them on this phone only.'**
+  String get localAgentOfferBody;
+
+  /// Claude Code block, offer: honest download and disk size.
+  ///
+  /// In en, this message translates to:
+  /// **'About 60 MB to download for Node.js, plus the packages; about 1 GB once installed. Needs 2 GB free.'**
+  String get localAgentOfferSize;
+
+  /// Claude Code block, offer: the background-kill caveat.
+  ///
+  /// In en, this message translates to:
+  /// **'Android may stop Termux in the background. The battery settings that keep the OpenCode server alive keep this alive too.'**
+  String get localAgentOfferWarning;
+
+  /// Claude Code block, offer: starts the install.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up Claude Code'**
+  String get localAgentSetUp;
+
+  /// Claude Code block, offer: hides the offer.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get localAgentNotNow;
+
+  /// Claude Code block: shown when the managed Ubuntu is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code runs inside the Ubuntu this app sets up. Finish the On this phone setup first, then come back here.'**
+  String get localAgentNeedsUbuntuBody;
+
+  /// Claude Code block: opens the On this phone wizard when Ubuntu is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Open phone setup'**
+  String get localAgentOpenSetup;
+
+  /// Claude Code block, step list: installing the pinned Node.js.
+  ///
+  /// In en, this message translates to:
+  /// **'Node.js'**
+  String get localAgentStepNode;
+
+  /// Claude Code block, step list: installing the Paseo daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Paseo daemon'**
+  String get localAgentStepPaseo;
+
+  /// Claude Code block, step list: installing Claude Code.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code'**
+  String get localAgentStepClaude;
+
+  /// Claude Code block, step list and button: the person's own sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Claude'**
+  String get localAgentStepSignIn;
+
+  /// Claude Code block, step list: starting the daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Start on this phone'**
+  String get localAgentStepStart;
+
+  /// Claude Code block: heading while install or start runs.
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up Claude Code'**
+  String get localAgentInstalling;
+
+  /// Claude Code block: reassurance under the live output.
+  ///
+  /// In en, this message translates to:
+  /// **'You can leave this screen. The install keeps going in Termux.'**
+  String get localAgentLeaveNote;
+
+  /// Claude Code block, sign-in step: what will happen.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux opens and Claude Code shows a link. Approve it in your browser, paste the code back into Termux, then return here. This app never sees or stores your Claude sign-in.'**
+  String get localAgentSignInBody;
+
+  /// Claude Code block, sign-in step: continues when the app cannot see a sign-in the person knows exists.
+  ///
+  /// In en, this message translates to:
+  /// **'I already signed in'**
+  String get localAgentSignInAlready;
+
+  /// Claude Code block, sign-in step: fallback when the terminal did not open.
+  ///
+  /// In en, this message translates to:
+  /// **'Termux could not be opened. Open Termux yourself and run: {command}'**
+  String localAgentSignInOpenFailed(String command);
+
+  /// Claude Code block, sign-in step: shown after returning without a saved sign-in.
+  ///
+  /// In en, this message translates to:
+  /// **'No Claude sign-in was found yet.'**
+  String get localAgentSignInMissing;
+
+  /// Claude Code block and card: the daemon answered its health check.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code is running on this phone'**
+  String get localAgentReadyTitle;
+
+  /// Claude Code block, ready: the loopback and password guarantee.
+  ///
+  /// In en, this message translates to:
+  /// **'It listens on this phone only (127.0.0.1), behind a password this app keeps.'**
+  String get localAgentReadyBody;
+
+  /// Claude Code block and card: installed versions.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code {claude} · Paseo {paseo} · Node.js {node}'**
+  String localAgentVersions(String claude, String paseo, String node);
+
+  /// Claude Code block: installed, daemon not running.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code is installed and stopped'**
+  String get localAgentInstalledTitle;
+
+  /// Claude Code block: the daemon was killed in the background.
+  ///
+  /// In en, this message translates to:
+  /// **'Android stopped Claude Code while the app was away. Nothing is lost.'**
+  String get localAgentKilled;
+
+  /// Claude Code block: heading of the failure view.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code setup stopped'**
+  String get localAgentFailedTitle;
+
+  /// Claude Code block: the free-space guard refused.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough space on this phone. {detail} Free some space, then try again.'**
+  String localAgentFailedNoSpace(String detail);
+
+  /// Claude Code block: download failure.
+  ///
+  /// In en, this message translates to:
+  /// **'Node.js could not be downloaded. Check the network, then try again.'**
+  String get localAgentFailedDownload;
+
+  /// Claude Code block: checksum refusal.
+  ///
+  /// In en, this message translates to:
+  /// **'The Node.js download did not match its pinned checksum, so nothing was installed. Try again; if it happens twice, something on the network is changing the file.'**
+  String get localAgentFailedChecksum;
+
+  /// Claude Code block: npm reported a native build failure.
+  ///
+  /// In en, this message translates to:
+  /// **'A package needs a native module with no ready-made build for this phone. Nothing was compiled; the output below names it.'**
+  String get localAgentFailedNativeBuild;
+
+  /// Claude Code block: npm failed for another reason.
+  ///
+  /// In en, this message translates to:
+  /// **'The packages could not be installed. Check the network, then try again.'**
+  String get localAgentFailedPackages;
+
+  /// Claude Code block: the daemon port is taken by something else.
+  ///
+  /// In en, this message translates to:
+  /// **'Port 6767 on this phone is already used by another program. Stop that program, then try again.'**
+  String get localAgentFailedPortInUse;
+
+  /// Claude Code block: health check timed out.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code did not answer within two minutes. The output below shows what it printed.'**
+  String get localAgentFailedTimeout;
+
+  /// Claude Code block: a verb was killed mid-way.
+  ///
+  /// In en, this message translates to:
+  /// **'Android stopped the step before it finished. Try again; it picks up where it stopped.'**
+  String get localAgentFailedInterrupted;
+
+  /// Claude Code block: unsupported CPU.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code needs a 64-bit phone.'**
+  String get localAgentFailedUnsupported;
+
+  /// Claude Code block and card: the daemon exited or is unhealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code stopped or does not answer. Start it again.'**
+  String get localAgentFailedDaemon;
+
+  /// Claude Code block: any other failure, with the script's own sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'It stopped: {detail}'**
+  String localAgentFailedReason(String detail);
+
+  /// Claude Code connect: title of the folder chooser.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a project folder'**
+  String get localAgentProjectTitle;
+
+  /// Claude Code connect: what the folder is for.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code works inside one folder of the Ubuntu on this phone.'**
+  String get localAgentProjectBody;
+
+  /// Claude Code connect: free path field.
+  ///
+  /// In en, this message translates to:
+  /// **'Or type a path inside Ubuntu'**
+  String get localAgentProjectPathLabel;
+
+  /// Claude Code connect: the typed path is not absolute.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a full path, like /root/projects/my-app.'**
+  String get localAgentProjectPathInvalid;
+
+  /// Claude Code connect: the connection attempt failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to Claude Code on this phone. {detail}'**
+  String localAgentConnectFailed(String detail);
+
+  /// Servers card: the daemon is installed and not running.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code on this phone is stopped'**
+  String get localAgentCardStopped;
+
+  /// Servers card: this app is connected through the daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to Claude Code on this phone'**
+  String get localAgentCardConnected;
+
+  /// Servers card: start in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting Claude Code…'**
+  String get localAgentCardStarting;
+
+  /// Servers card: restart in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Restarting Claude Code…'**
+  String get localAgentCardRestarting;
+
+  /// Servers card: stop in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping Claude Code…'**
+  String get localAgentCardStopping;
+
+  /// Servers card: what runtime this card is.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code through Paseo'**
+  String get localAgentCardSubtitle;
+
+  /// Servers card: a control failed.
+  ///
+  /// In en, this message translates to:
+  /// **'That did not work. {detail}'**
+  String localAgentCardActionFailed(String detail);
+
+  /// Confirm sheet: restarting the daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart Claude Code on this phone?'**
+  String get localAgentRestartTitle;
+
+  /// Confirm sheet: what restarting the daemon costs.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code is briefly unavailable and anything it is doing right now is interrupted. Your conversations stay on the phone.'**
+  String get localAgentRestartBody;
+
+  /// Confirm sheet: stopping the daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop Claude Code on this phone?'**
+  String get localAgentStopTitle;
+
+  /// Confirm sheet: what stopping the daemon costs.
+  ///
+  /// In en, this message translates to:
+  /// **'Anything Claude Code is doing on this phone is interrupted, and this app disconnects from it. Your projects, conversations and Claude sign-in stay; start it again to continue.'**
+  String get localAgentStopBody;
+
+  /// Claude Code block: menu action that uninstalls it.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from this phone'**
+  String get localAgentRemove;
+
+  /// Confirm sheet: removing the install.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Claude Code from this phone?'**
+  String get localAgentRemoveTitle;
+
+  /// Confirm sheet: what removing deletes and keeps.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops it and deletes Node.js, Paseo and Claude Code from Ubuntu, about 1 GB. Your projects and your Claude sign-in stay.'**
+  String get localAgentRemoveBody;
+
+  /// Confirm sheet: cancels the removal.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it'**
+  String get localAgentRemoveKeep;
+
+  /// Claude Code block: tooltip of the overflow menu.
+  ///
+  /// In en, this message translates to:
+  /// **'More Claude Code actions'**
+  String get localAgentMore;
+
+  /// On this phone setup, runtime choice: what picking Claude Code does.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets up Ubuntu and the OpenCode server first, then installs Claude Code next to it.'**
+  String get localAgentRuntimeChoiceDetail;
 }
 
 class _AppLocalizationsDelegate

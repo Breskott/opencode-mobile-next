@@ -16528,4 +16528,213 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get firstRunNotifyDecline => 'Not now';
+
+  @override
+  String get localAgentTitle => 'Claude Code on this phone';
+
+  @override
+  String get localAgentOfferBody =>
+      'Run Claude Code here with no computer. The app installs Node.js, the Paseo daemon and Claude Code into the Ubuntu it already manages, and reaches them on this phone only.';
+
+  @override
+  String get localAgentOfferSize =>
+      'About 60 MB to download for Node.js, plus the packages; about 1 GB once installed. Needs 2 GB free.';
+
+  @override
+  String get localAgentOfferWarning =>
+      'Android may stop Termux in the background. The battery settings that keep the OpenCode server alive keep this alive too.';
+
+  @override
+  String get localAgentSetUp => 'Set up Claude Code';
+
+  @override
+  String get localAgentNotNow => 'Not now';
+
+  @override
+  String get localAgentNeedsUbuntuBody =>
+      'Claude Code runs inside the Ubuntu this app sets up. Finish the On this phone setup first, then come back here.';
+
+  @override
+  String get localAgentOpenSetup => 'Open phone setup';
+
+  @override
+  String get localAgentStepNode => 'Node.js';
+
+  @override
+  String get localAgentStepPaseo => 'Paseo daemon';
+
+  @override
+  String get localAgentStepClaude => 'Claude Code';
+
+  @override
+  String get localAgentStepSignIn => 'Sign in to Claude';
+
+  @override
+  String get localAgentStepStart => 'Start on this phone';
+
+  @override
+  String get localAgentInstalling => 'Setting up Claude Code';
+
+  @override
+  String get localAgentLeaveNote =>
+      'You can leave this screen. The install keeps going in Termux.';
+
+  @override
+  String get localAgentSignInBody =>
+      'Termux opens and Claude Code shows a link. Approve it in your browser, paste the code back into Termux, then return here. This app never sees or stores your Claude sign-in.';
+
+  @override
+  String get localAgentSignInAlready => 'I already signed in';
+
+  @override
+  String localAgentSignInOpenFailed(String command) {
+    return 'Termux could not be opened. Open Termux yourself and run: $command';
+  }
+
+  @override
+  String get localAgentSignInMissing => 'No Claude sign-in was found yet.';
+
+  @override
+  String get localAgentReadyTitle => 'Claude Code is running on this phone';
+
+  @override
+  String get localAgentReadyBody =>
+      'It listens on this phone only (127.0.0.1), behind a password this app keeps.';
+
+  @override
+  String localAgentVersions(String claude, String paseo, String node) {
+    return 'Claude Code $claude · Paseo $paseo · Node.js $node';
+  }
+
+  @override
+  String get localAgentInstalledTitle => 'Claude Code is installed and stopped';
+
+  @override
+  String get localAgentKilled =>
+      'Android stopped Claude Code while the app was away. Nothing is lost.';
+
+  @override
+  String get localAgentFailedTitle => 'Claude Code setup stopped';
+
+  @override
+  String localAgentFailedNoSpace(String detail) {
+    return 'Not enough space on this phone. $detail Free some space, then try again.';
+  }
+
+  @override
+  String get localAgentFailedDownload =>
+      'Node.js could not be downloaded. Check the network, then try again.';
+
+  @override
+  String get localAgentFailedChecksum =>
+      'The Node.js download did not match its pinned checksum, so nothing was installed. Try again; if it happens twice, something on the network is changing the file.';
+
+  @override
+  String get localAgentFailedNativeBuild =>
+      'A package needs a native module with no ready-made build for this phone. Nothing was compiled; the output below names it.';
+
+  @override
+  String get localAgentFailedPackages =>
+      'The packages could not be installed. Check the network, then try again.';
+
+  @override
+  String get localAgentFailedPortInUse =>
+      'Port 6767 on this phone is already used by another program. Stop that program, then try again.';
+
+  @override
+  String get localAgentFailedTimeout =>
+      'Claude Code did not answer within two minutes. The output below shows what it printed.';
+
+  @override
+  String get localAgentFailedInterrupted =>
+      'Android stopped the step before it finished. Try again; it picks up where it stopped.';
+
+  @override
+  String get localAgentFailedUnsupported => 'Claude Code needs a 64-bit phone.';
+
+  @override
+  String get localAgentFailedDaemon =>
+      'Claude Code stopped or does not answer. Start it again.';
+
+  @override
+  String localAgentFailedReason(String detail) {
+    return 'It stopped: $detail';
+  }
+
+  @override
+  String get localAgentProjectTitle => 'Choose a project folder';
+
+  @override
+  String get localAgentProjectBody =>
+      'Claude Code works inside one folder of the Ubuntu on this phone.';
+
+  @override
+  String get localAgentProjectPathLabel => 'Or type a path inside Ubuntu';
+
+  @override
+  String get localAgentProjectPathInvalid =>
+      'Enter a full path, like /root/projects/my-app.';
+
+  @override
+  String localAgentConnectFailed(String detail) {
+    return 'Could not connect to Claude Code on this phone. $detail';
+  }
+
+  @override
+  String get localAgentCardStopped => 'Claude Code on this phone is stopped';
+
+  @override
+  String get localAgentCardConnected =>
+      'Connected to Claude Code on this phone';
+
+  @override
+  String get localAgentCardStarting => 'Starting Claude Code…';
+
+  @override
+  String get localAgentCardRestarting => 'Restarting Claude Code…';
+
+  @override
+  String get localAgentCardStopping => 'Stopping Claude Code…';
+
+  @override
+  String get localAgentCardSubtitle => 'Claude Code through Paseo';
+
+  @override
+  String localAgentCardActionFailed(String detail) {
+    return 'That did not work. $detail';
+  }
+
+  @override
+  String get localAgentRestartTitle => 'Restart Claude Code on this phone?';
+
+  @override
+  String get localAgentRestartBody =>
+      'Claude Code is briefly unavailable and anything it is doing right now is interrupted. Your conversations stay on the phone.';
+
+  @override
+  String get localAgentStopTitle => 'Stop Claude Code on this phone?';
+
+  @override
+  String get localAgentStopBody =>
+      'Anything Claude Code is doing on this phone is interrupted, and this app disconnects from it. Your projects, conversations and Claude sign-in stay; start it again to continue.';
+
+  @override
+  String get localAgentRemove => 'Remove from this phone';
+
+  @override
+  String get localAgentRemoveTitle => 'Remove Claude Code from this phone?';
+
+  @override
+  String get localAgentRemoveBody =>
+      'Stops it and deletes Node.js, Paseo and Claude Code from Ubuntu, about 1 GB. Your projects and your Claude sign-in stay.';
+
+  @override
+  String get localAgentRemoveKeep => 'Keep it';
+
+  @override
+  String get localAgentMore => 'More Claude Code actions';
+
+  @override
+  String get localAgentRuntimeChoiceDetail =>
+      'Sets up Ubuntu and the OpenCode server first, then installs Claude Code next to it.';
 }

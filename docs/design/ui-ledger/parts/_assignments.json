@@ -121,7 +121,10 @@
   "lib/ui/widgets/termux_running_server_entry.dart",
   "lib/ui/widgets/setup_terminal.dart",
   "lib/ui/widgets/setup_ui_messages.dart",
-  "lib/ui/widgets/managed_server_health.dart"
+  "lib/ui/widgets/managed_server_health.dart",
+  "lib/ui/widgets/local_agent_onboarding.dart",
+  "lib/ui/widgets/local_agent_server_entry.dart",
+  "lib/ui/widgets/local_server_card.dart"
  ],
  "i1-team-core": [
   "lib/ui/screens/team/team_home_screen.dart",

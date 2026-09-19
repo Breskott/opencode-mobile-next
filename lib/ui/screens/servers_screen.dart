@@ -25,6 +25,7 @@ import '../widgets/first_run_choice.dart';
 import '../widgets/managed_server_health.dart';
 import '../widgets/product_states.dart';
 import '../widgets/team_host_form.dart';
+import '../widgets/local_agent_server_entry.dart';
 import '../widgets/termux_running_server_entry.dart';
 import '../widgets/safety_confirms.dart';
 import '../../state/local_server_controls.dart';
@@ -238,6 +239,38 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   /// whether anything is shown, so both the welcome and the list embed it
   /// unconditionally and stay platform-gated through it.
   Widget _runningServerEntry(
+    List<ServerProfile> profiles,
+    ConnectionController connection,
+  ) {
+    // Both servers this app can run on the phone lead the list and are
+    // controlled in place: OpenCode first, then the Claude Code daemon. Each
+    // entry decides on its own whether it has anything to show.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _openCodeServerEntry(profiles, connection),
+        LocalAgentServerEntry(
+          profiles: profiles,
+          busy: _busy,
+          revision: _termuxRevision,
+          connectedProfileID: connection.api == null
+              ? null
+              : connection.profile?.id,
+          busyConversations: connection.busySessions.length,
+          onDisconnect: () async {
+            if (!await confirmDisconnectServer(context, connection)) return;
+            await connection.disconnect(keepActive: true);
+          },
+          onForget: _delete,
+          onManage: _openTermuxSetup,
+          onConnect: (profile) => _connect(profile, detectedRunning: true),
+        ),
+      ],
+    );
+  }
+
+  Widget _openCodeServerEntry(
     List<ServerProfile> profiles,
     ConnectionController connection,
   ) {

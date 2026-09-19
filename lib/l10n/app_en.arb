@@ -17578,5 +17578,281 @@
   "firstRunNotifyDecline": "Not now",
   "@firstRunNotifyDecline": {
     "description": "Conversation, first run: dismisses the notification card for good; Settings, Notifications stays the place to turn it on."
+  },
+  "localAgentTitle": "Claude Code on this phone",
+  "@localAgentTitle": {
+    "description": "On this phone setup: title of the block that installs and runs Claude Code in the managed Ubuntu; also the saved server's name."
+  },
+  "localAgentOfferBody": "Run Claude Code here with no computer. The app installs Node.js, the Paseo daemon and Claude Code into the Ubuntu it already manages, and reaches them on this phone only.",
+  "@localAgentOfferBody": {
+    "description": "Claude Code block, offer: what setting it up does."
+  },
+  "localAgentOfferSize": "About 60 MB to download for Node.js, plus the packages; about 1 GB once installed. Needs 2 GB free.",
+  "@localAgentOfferSize": {
+    "description": "Claude Code block, offer: honest download and disk size."
+  },
+  "localAgentOfferWarning": "Android may stop Termux in the background. The battery settings that keep the OpenCode server alive keep this alive too.",
+  "@localAgentOfferWarning": {
+    "description": "Claude Code block, offer: the background-kill caveat."
+  },
+  "localAgentSetUp": "Set up Claude Code",
+  "@localAgentSetUp": {
+    "description": "Claude Code block, offer: starts the install."
+  },
+  "localAgentNotNow": "Not now",
+  "@localAgentNotNow": {
+    "description": "Claude Code block, offer: hides the offer."
+  },
+  "localAgentNeedsUbuntuBody": "Claude Code runs inside the Ubuntu this app sets up. Finish the On this phone setup first, then come back here.",
+  "@localAgentNeedsUbuntuBody": {
+    "description": "Claude Code block: shown when the managed Ubuntu is missing."
+  },
+  "localAgentOpenSetup": "Open phone setup",
+  "@localAgentOpenSetup": {
+    "description": "Claude Code block: opens the On this phone wizard when Ubuntu is missing."
+  },
+  "localAgentStepNode": "Node.js",
+  "@localAgentStepNode": {
+    "description": "Claude Code block, step list: installing the pinned Node.js."
+  },
+  "localAgentStepPaseo": "Paseo daemon",
+  "@localAgentStepPaseo": {
+    "description": "Claude Code block, step list: installing the Paseo daemon."
+  },
+  "localAgentStepClaude": "Claude Code",
+  "@localAgentStepClaude": {
+    "description": "Claude Code block, step list: installing Claude Code."
+  },
+  "localAgentStepSignIn": "Sign in to Claude",
+  "@localAgentStepSignIn": {
+    "description": "Claude Code block, step list and button: the person's own sign-in."
+  },
+  "localAgentStepStart": "Start on this phone",
+  "@localAgentStepStart": {
+    "description": "Claude Code block, step list: starting the daemon."
+  },
+  "localAgentInstalling": "Setting up Claude Code",
+  "@localAgentInstalling": {
+    "description": "Claude Code block: heading while install or start runs."
+  },
+  "localAgentLeaveNote": "You can leave this screen. The install keeps going in Termux.",
+  "@localAgentLeaveNote": {
+    "description": "Claude Code block: reassurance under the live output."
+  },
+  "localAgentSignInBody": "Termux opens and Claude Code shows a link. Approve it in your browser, paste the code back into Termux, then return here. This app never sees or stores your Claude sign-in.",
+  "@localAgentSignInBody": {
+    "description": "Claude Code block, sign-in step: what will happen."
+  },
+  "localAgentSignInAlready": "I already signed in",
+  "@localAgentSignInAlready": {
+    "description": "Claude Code block, sign-in step: continues when the app cannot see a sign-in the person knows exists."
+  },
+  "localAgentSignInOpenFailed": "Termux could not be opened. Open Termux yourself and run: {command}",
+  "@localAgentSignInOpenFailed": {
+    "description": "Claude Code block, sign-in step: fallback when the terminal did not open.",
+    "placeholders": {
+      "command": {
+        "type": "String",
+        "example": "bash ~/.oc/claude.sh signin"
+      }
+    }
+  },
+  "localAgentSignInMissing": "No Claude sign-in was found yet.",
+  "@localAgentSignInMissing": {
+    "description": "Claude Code block, sign-in step: shown after returning without a saved sign-in."
+  },
+  "localAgentReadyTitle": "Claude Code is running on this phone",
+  "@localAgentReadyTitle": {
+    "description": "Claude Code block and card: the daemon answered its health check."
+  },
+  "localAgentReadyBody": "It listens on this phone only (127.0.0.1), behind a password this app keeps.",
+  "@localAgentReadyBody": {
+    "description": "Claude Code block, ready: the loopback and password guarantee."
+  },
+  "localAgentVersions": "Claude Code {claude} · Paseo {paseo} · Node.js {node}",
+  "@localAgentVersions": {
+    "description": "Claude Code block and card: installed versions.",
+    "placeholders": {
+      "claude": {
+        "type": "String",
+        "example": "2.1.278"
+      },
+      "paseo": {
+        "type": "String",
+        "example": "0.8.0"
+      },
+      "node": {
+        "type": "String",
+        "example": "v24.21.0"
+      }
+    }
+  },
+  "localAgentInstalledTitle": "Claude Code is installed and stopped",
+  "@localAgentInstalledTitle": {
+    "description": "Claude Code block: installed, daemon not running."
+  },
+  "localAgentKilled": "Android stopped Claude Code while the app was away. Nothing is lost.",
+  "@localAgentKilled": {
+    "description": "Claude Code block: the daemon was killed in the background."
+  },
+  "localAgentFailedTitle": "Claude Code setup stopped",
+  "@localAgentFailedTitle": {
+    "description": "Claude Code block: heading of the failure view."
+  },
+  "localAgentFailedNoSpace": "Not enough space on this phone. {detail} Free some space, then try again.",
+  "@localAgentFailedNoSpace": {
+    "description": "Claude Code block: the free-space guard refused.",
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "example": "900 MB free, 1536 MB needed."
+      }
+    }
+  },
+  "localAgentFailedDownload": "Node.js could not be downloaded. Check the network, then try again.",
+  "@localAgentFailedDownload": {
+    "description": "Claude Code block: download failure."
+  },
+  "localAgentFailedChecksum": "The Node.js download did not match its pinned checksum, so nothing was installed. Try again; if it happens twice, something on the network is changing the file.",
+  "@localAgentFailedChecksum": {
+    "description": "Claude Code block: checksum refusal."
+  },
+  "localAgentFailedNativeBuild": "A package needs a native module with no ready-made build for this phone. Nothing was compiled; the output below names it.",
+  "@localAgentFailedNativeBuild": {
+    "description": "Claude Code block: npm reported a native build failure."
+  },
+  "localAgentFailedPackages": "The packages could not be installed. Check the network, then try again.",
+  "@localAgentFailedPackages": {
+    "description": "Claude Code block: npm failed for another reason."
+  },
+  "localAgentFailedPortInUse": "Port 6767 on this phone is already used by another program. Stop that program, then try again.",
+  "@localAgentFailedPortInUse": {
+    "description": "Claude Code block: the daemon port is taken by something else."
+  },
+  "localAgentFailedTimeout": "Claude Code did not answer within two minutes. The output below shows what it printed.",
+  "@localAgentFailedTimeout": {
+    "description": "Claude Code block: health check timed out."
+  },
+  "localAgentFailedInterrupted": "Android stopped the step before it finished. Try again; it picks up where it stopped.",
+  "@localAgentFailedInterrupted": {
+    "description": "Claude Code block: a verb was killed mid-way."
+  },
+  "localAgentFailedUnsupported": "Claude Code needs a 64-bit phone.",
+  "@localAgentFailedUnsupported": {
+    "description": "Claude Code block: unsupported CPU."
+  },
+  "localAgentFailedDaemon": "Claude Code stopped or does not answer. Start it again.",
+  "@localAgentFailedDaemon": {
+    "description": "Claude Code block and card: the daemon exited or is unhealthy."
+  },
+  "localAgentFailedReason": "It stopped: {detail}",
+  "@localAgentFailedReason": {
+    "description": "Claude Code block: any other failure, with the script's own sentence.",
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "example": "Node.js v24 could not be unpacked in Ubuntu"
+      }
+    }
+  },
+  "localAgentProjectTitle": "Choose a project folder",
+  "@localAgentProjectTitle": {
+    "description": "Claude Code connect: title of the folder chooser."
+  },
+  "localAgentProjectBody": "Claude Code works inside one folder of the Ubuntu on this phone.",
+  "@localAgentProjectBody": {
+    "description": "Claude Code connect: what the folder is for."
+  },
+  "localAgentProjectPathLabel": "Or type a path inside Ubuntu",
+  "@localAgentProjectPathLabel": {
+    "description": "Claude Code connect: free path field."
+  },
+  "localAgentProjectPathInvalid": "Enter a full path, like /root/projects/my-app.",
+  "@localAgentProjectPathInvalid": {
+    "description": "Claude Code connect: the typed path is not absolute."
+  },
+  "localAgentConnectFailed": "Could not connect to Claude Code on this phone. {detail}",
+  "@localAgentConnectFailed": {
+    "description": "Claude Code connect: the connection attempt failed.",
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "example": "The daemon password on this phone is missing."
+      }
+    }
+  },
+  "localAgentCardStopped": "Claude Code on this phone is stopped",
+  "@localAgentCardStopped": {
+    "description": "Servers card: the daemon is installed and not running."
+  },
+  "localAgentCardConnected": "Connected to Claude Code on this phone",
+  "@localAgentCardConnected": {
+    "description": "Servers card: this app is connected through the daemon."
+  },
+  "localAgentCardStarting": "Starting Claude Code…",
+  "@localAgentCardStarting": {
+    "description": "Servers card: start in progress."
+  },
+  "localAgentCardRestarting": "Restarting Claude Code…",
+  "@localAgentCardRestarting": {
+    "description": "Servers card: restart in progress."
+  },
+  "localAgentCardStopping": "Stopping Claude Code…",
+  "@localAgentCardStopping": {
+    "description": "Servers card: stop in progress."
+  },
+  "localAgentCardSubtitle": "Claude Code through Paseo",
+  "@localAgentCardSubtitle": {
+    "description": "Servers card: what runtime this card is."
+  },
+  "localAgentCardActionFailed": "That did not work. {detail}",
+  "@localAgentCardActionFailed": {
+    "description": "Servers card: a control failed.",
+    "placeholders": {
+      "detail": {
+        "type": "String",
+        "example": "Port 6767 on this phone is already used by another program"
+      }
+    }
+  },
+  "localAgentRestartTitle": "Restart Claude Code on this phone?",
+  "@localAgentRestartTitle": {
+    "description": "Confirm sheet: restarting the daemon."
+  },
+  "localAgentRestartBody": "Claude Code is briefly unavailable and anything it is doing right now is interrupted. Your conversations stay on the phone.",
+  "@localAgentRestartBody": {
+    "description": "Confirm sheet: what restarting the daemon costs."
+  },
+  "localAgentStopTitle": "Stop Claude Code on this phone?",
+  "@localAgentStopTitle": {
+    "description": "Confirm sheet: stopping the daemon."
+  },
+  "localAgentStopBody": "Anything Claude Code is doing on this phone is interrupted, and this app disconnects from it. Your projects, conversations and Claude sign-in stay; start it again to continue.",
+  "@localAgentStopBody": {
+    "description": "Confirm sheet: what stopping the daemon costs."
+  },
+  "localAgentRemove": "Remove from this phone",
+  "@localAgentRemove": {
+    "description": "Claude Code block: menu action that uninstalls it."
+  },
+  "localAgentRemoveTitle": "Remove Claude Code from this phone?",
+  "@localAgentRemoveTitle": {
+    "description": "Confirm sheet: removing the install."
+  },
+  "localAgentRemoveBody": "Stops it and deletes Node.js, Paseo and Claude Code from Ubuntu, about 1 GB. Your projects and your Claude sign-in stay.",
+  "@localAgentRemoveBody": {
+    "description": "Confirm sheet: what removing deletes and keeps."
+  },
+  "localAgentRemoveKeep": "Keep it",
+  "@localAgentRemoveKeep": {
+    "description": "Confirm sheet: cancels the removal."
+  },
+  "localAgentMore": "More Claude Code actions",
+  "@localAgentMore": {
+    "description": "Claude Code block: tooltip of the overflow menu."
+  },
+  "localAgentRuntimeChoiceDetail": "Sets up Ubuntu and the OpenCode server first, then installs Claude Code next to it.",
+  "@localAgentRuntimeChoiceDetail": {
+    "description": "On this phone setup, runtime choice: what picking Claude Code does."
   }
 }
