@@ -451,11 +451,12 @@ void main() {
           await _pumpFrames(tester);
           expect(tester.takeException(), isNull);
           expect(find.text('Refresh recent conversations'), findsOneWidget);
+          // Terminal is a Project tool now, not a Work menu entry.
           expect(
             find.byKey(const ValueKey('workspace-terminal')),
-            findsOneWidget,
+            findsNothing,
           );
-          expect(find.text('Terminal'), findsOneWidget);
+          expect(find.text('Terminal'), findsNothing);
         });
       }
     }

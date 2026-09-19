@@ -6236,7 +6236,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LocaleUiFiles => 'Project';
 
   @override
-  String get e7LocaleUiFilesHint => 'Browse the project tree';
+  String get e7LocaleUiFilesHint =>
+      'Files, changes, terminal and other project tools';
 
   @override
   String get e7LocaleUiActivity => 'Inbox';
@@ -6245,7 +6246,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7LocaleUiActivityHint => 'Permissions, questions, and forms';
 
   @override
-  String get e7LocaleUiMoreHint => 'Models, providers, terminal, settings';
+  String get e7LocaleUiMoreHint => 'Models, providers, notifications, settings';
 
   @override
   String get e7LocaleUiSettings => 'Settings';
@@ -10877,9 +10878,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7LibrarySearchPluginsAliases => 'plugin installed source status';
-
-  @override
-  String get e7LibrarySearchTerminalAliases => 'shell command line';
 
   @override
   String get e7LibrarySearchImportAliases =>
@@ -16040,4 +16038,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shellTabProject => 'Project';
+
+  @override
+  String get projectHubFilesSubtitle => 'Browse and preview project files';
+
+  @override
+  String get projectHubChangesSubtitle => 'Review uncommitted changes';
+
+  @override
+  String get projectHubSearchSubtitle => 'Find a file by name';
 }

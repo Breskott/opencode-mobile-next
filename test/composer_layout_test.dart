@@ -240,6 +240,27 @@ void main() {
     },
   );
 
+  testWidgets('/terminal stays a typed door after Terminal left the menus', (
+    tester,
+  ) async {
+    final conn = await _controller();
+    addTearDown(conn.dispose);
+    await _pumpChat(tester, conn, size: const Size(390, 844), textScale: 1);
+    expect(conn.capabilities.terminal, isTrue);
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      '/terminal',
+    );
+    await tester.pump();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('inline-command-suggestions')),
+        matching: find.textContaining('/terminal'),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets(
     'local image attachments show a thumbnail with independent removal',
     (tester) async {

@@ -2,6 +2,145 @@
   "area": "f-files-review-terminal",
   "pages": [
     {
+      "id": "project-hub",
+      "title": "Project",
+      "kind": "tab",
+      "file": "lib/ui/screens/project_hub_screen.dart",
+      "widget": "ProjectHub",
+      "presentedBy": [],
+      "line": 36,
+      "purpose": "Root tab 2: the tools that act on the current project, one row each (Files, Changes, Terminal, Project health, Worktrees, Search files) under the project name and folder. Files opens inside the tab and stays alive behind the hub; the other rows push their existing screens.",
+      "reachedFrom": [
+        {
+          "page": "home-shell",
+          "element": "home-shell-tab-files"
+        }
+      ],
+      "gates": [
+        "ProjectHub.isAvailable(conn.capabilities): at least one row is available"
+      ],
+      "elements": [
+        {
+          "id": "project-hub-files",
+          "type": "list-tile",
+          "label": "Files",
+          "key": "project-hub-files",
+          "line": 291,
+          "action": "navigate",
+          "target": "files",
+          "targetWidget": "FilesScreen",
+          "effect": "_openFiles(): builds FilesScreen inside the tab on first use and shows it in place of the hub.",
+          "gates": [
+            "capabilities.fileBrowsing"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-changes",
+          "type": "list-tile",
+          "label": "Changes",
+          "key": "project-hub-changes",
+          "line": 298,
+          "action": "navigate",
+          "target": "review-workspace",
+          "targetWidget": "ReviewWorkspace",
+          "effect": "_openChanges(): pushWorkingTreeReview(context, controller) pushes ReviewWorkspace on the working-tree scope; a returned review comment is copied to the clipboard (deliverReviewPrompt).",
+          "gates": [
+            "capabilities.fileBrowsing"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-terminal",
+          "type": "list-tile",
+          "label": "Terminal",
+          "key": "project-hub-terminal",
+          "line": 305,
+          "action": "navigate",
+          "target": "terminal",
+          "targetWidget": "TerminalPage",
+          "effect": "_openTerminal(): Navigator.push(MaterialPageRoute(TerminalPage(controller))).",
+          "gates": [
+            "capabilities.terminal"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-health",
+          "type": "list-tile",
+          "label": "Project health",
+          "key": "project-hub-health",
+          "line": 312,
+          "action": "navigate",
+          "target": "project-health",
+          "targetWidget": "ProjectHealthScreen",
+          "effect": "_openHealth(): controller.prepareActionRepository() then pushes ProjectHealthScreen; a missing repository shows the product error.",
+          "gates": [
+            "capabilities.projectManagement"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-worktrees",
+          "type": "list-tile",
+          "label": "Worktrees",
+          "key": "project-hub-worktrees",
+          "line": 320,
+          "action": "navigate",
+          "target": "worktrees",
+          "targetWidget": "WorktreesScreen",
+          "effect": "_openWorktrees(): resolves the catalog project that owns controller.directory (WorkspaceScreen.projectForDirectory over repository.listProjects()) and pushes WorktreesScreen; no matching project shows \"No project folder is open. Choose one from Work.\"",
+          "gates": [
+            "capabilities.projectManagement"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-search",
+          "type": "list-tile",
+          "label": "Search files",
+          "key": "project-hub-search",
+          "line": 327,
+          "action": "navigate",
+          "target": "files",
+          "targetWidget": "FilesScreen",
+          "effect": "_searchFiles(): opens Files inside the tab and focuses its search field (same path as Ctrl/Cmd+F).",
+          "gates": [
+            "capabilities.fileBrowsing"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-files-back",
+          "type": "icon-button",
+          "label": "Back",
+          "key": "project-hub-files-back",
+          "line": 234,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Hides Files and shows the hub again; Files keeps its folder and search.",
+          "gates": [
+            "Files is showing inside the tab"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-system-back",
+          "type": "gesture",
+          "label": "[system back]",
+          "key": null,
+          "line": 109,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_handleBack(): FilesBackController.handleBack() first (keyboard, search, parent folder); at the Files root it returns to the hub; on the hub it declines so the shell returns to Work.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
       "id": "files",
       "title": "Files",
       "kind": "tab",
@@ -9,11 +148,11 @@
       "widget": "FilesScreen",
       "presentedBy": [],
       "line": 35,
-      "purpose": "Project file browser with file/symbol search, breadcrumbs, VCS change badges and an inline preview pane on wide layouts.",
+      "purpose": "Project file browser with file/symbol search, breadcrumbs, VCS change badges and an inline preview pane on wide layouts. Hosted inside the Project tab (kept alive behind the hub) or pushed from a conversation.",
       "reachedFrom": [
         {
-          "page": "home-shell",
-          "element": "home-shell-tab-files"
+          "page": "project-hub",
+          "element": "project-hub-files"
         },
         {
           "page": "?",
@@ -1289,20 +1428,6 @@
           "page": "system",
           "element": null,
           "trigger": "OpenTerminalIntent keyboard shortcut handled in _HomeScreenState (lib/ui/screens/home_screen.dart:67), gated by capabilities.terminal"
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "_SettingsScreenState (_DestinationRow)",
-          "file": "lib/ui/screens/library_screen.dart",
-          "line": 162
-        },
-        {
-          "page": "?",
-          "element": null,
-          "widget": "_WorkspaceScreenState._openTerminal",
-          "file": "lib/ui/screens/workspace_screen.dart",
-          "line": 870
         }
       ],
       "gates": [

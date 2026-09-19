@@ -15,7 +15,6 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
-import 'package:opencode_mobile/ui/screens/terminal_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Api extends OpenCodeApi {
@@ -200,7 +199,6 @@ void main() {
       _en.libraryCommandsToolsTitle: ['settings-commands-tools'],
       _en.teamUiPluginsTitle: ['settings-category-plugins'],
       _en.importTitle: ['library-import-session'],
-      _en.libraryTerminalTitle: ['library-terminal'],
       _en.usageTitle: ['settings-category-usage'],
       _en.quotaTitle: ['settings-category-quota'],
       _en.settingsHubPrivacyRow: ['settings-category-privacy'],
@@ -323,7 +321,8 @@ void main() {
     final search = find.byKey(const Key('library-search'));
     await tester.enterText(search, 'shell');
     await tester.pumpAndSettle();
-    expect(_row('library-terminal'), findsOneWidget);
+    // Terminal moved to the Project tab; "shell" still finds the setting.
+    expect(_row('library-terminal'), findsNothing);
     expect(_row('default-shell-settings-entry'), findsOneWidget);
     expect(_row('settings-providers'), findsNothing);
     await tester.enterText(search, 'not-a-real-tool');
@@ -346,7 +345,6 @@ void main() {
       'settings-mcp',
       'settings-commands-tools',
       'library-import-session',
-      'library-terminal',
     ];
 
     for (final backend in {
@@ -367,10 +365,7 @@ void main() {
         expect(_row('settings-providers'), findsNothing);
         expect(_row('settings-mcp'), findsNothing);
         expect(_row('settings-commands-tools'), findsNothing);
-        expect(
-          _row('library-terminal'),
-          capabilities.terminal ? findsOneWidget : findsNothing,
-        );
+        expect(_row('library-terminal'), findsNothing);
         expect(
           _row('library-import-session'),
           capabilities.sessionImportExport ? findsOneWidget : findsNothing,
@@ -488,37 +483,22 @@ void main() {
     expect(find.text('Requests'), findsNothing);
   });
 
-  testWidgets(
-    'Terminal stays reachable from the hub and opens with an app bar',
-    (tester) async {
-      final controller = await _controller();
-      addTearDown(controller.dispose);
+  testWidgets('Terminal is not a Settings row: it lives on the Project tab', (
+    tester,
+  ) async {
+    final controller = await _controller();
+    addTearDown(controller.dispose);
 
-      await tester.pumpWidget(_app(controller));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
 
-      final row = _row('library-terminal');
-      expect(row, findsOneWidget);
-      expect(
-        find.descendant(of: _row('settings-group-agent-setup'), matching: row),
-        findsOneWidget,
-      );
-
-      await tester.ensureVisible(row);
-      await tester.pumpAndSettle();
-      await tester.tap(row);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(TerminalScreen), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.text('Terminal'),
-        ),
-        findsOneWidget,
-      );
-    },
-  );
+    expect(controller.capabilities.terminal, isTrue);
+    expect(_row('library-terminal'), findsNothing);
+    expect(find.text('Terminal'), findsNothing);
+    await tester.enterText(find.byKey(const Key('library-search')), 'terminal');
+    await tester.pumpAndSettle();
+    expect(_row('library-terminal'), findsNothing);
+  });
 
   testWidgets('an entry point can open the hub scrolled to a group', (
     tester,

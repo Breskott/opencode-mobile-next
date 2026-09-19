@@ -227,6 +227,8 @@ void main() {
       await _pumpShell(tester, controller);
       await tester.tap(find.byIcon(AppIconography.files));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('project-hub-files')));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('lib'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('src'));
@@ -263,6 +265,21 @@ void main() {
       expect(tester.widget<TextField>(search).focusNode?.hasFocus, isFalse);
       tester.view.resetViewInsets();
       await tester.pump();
+      // At the root of Files, Back returns to the Project hub first.
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.text('Press back again to exit'), findsNothing);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
+            .data,
+        'Project',
+      );
+      expect(
+        find.byKey(const ValueKey('project-hub-files')).hitTestable(),
+        findsOneWidget,
+      );
+      expect(search.hitTestable(), findsNothing);
       await tester.binding.handlePopRoute();
       await tester.pump();
       expect(find.text('Press back again to exit'), findsNothing);
@@ -290,6 +307,8 @@ void main() {
     await _pumpShell(tester, controller);
     await tester.tap(find.byIcon(AppIconography.files));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('project-hub-files')));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('lib'));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(AppIconography.settings));
@@ -314,6 +333,8 @@ void main() {
     addTearDown(controller.dispose);
     await _pumpShell(tester, controller);
     await tester.tap(find.byIcon(AppIconography.files));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('project-hub-files')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('lib'));
     await tester.pumpAndSettle();
@@ -384,6 +405,8 @@ void main() {
       addTearDown(controller.dispose);
       await _pumpShell(tester, controller);
       await tester.tap(find.byIcon(AppIconography.files));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('project-hub-files')));
       await tester.pumpAndSettle();
       expect(
         tester.widget<Scaffold>(find.byType(Scaffold).first).extendBody,

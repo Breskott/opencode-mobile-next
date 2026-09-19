@@ -3,7 +3,7 @@
   "pages": [
     {
       "id": "workspace",
-      "title": "Workspace",
+      "title": "Work",
       "kind": "tab",
       "file": "lib/ui/screens/workspace_screen.dart",
       "widget": "WorkspaceScreen",
@@ -518,21 +518,6 @@
           "effect": "controller.refreshSessions().",
           "gates": [
             "enabled: !controller.sessionsLoading"
-          ],
-          "destructive": false
-        },
-        {
-          "id": "workspace-section-menu-terminal",
-          "type": "menu-item",
-          "label": "Terminal",
-          "key": "workspace-terminal",
-          "line": 1837,
-          "action": "navigate",
-          "target": "terminal",
-          "targetWidget": "TerminalPage",
-          "effect": "onOpenTerminal -> _openTerminal() pushes TerminalPage(controller).",
-          "gates": [
-            "capabilities.terminal"
           ],
           "destructive": false
         },

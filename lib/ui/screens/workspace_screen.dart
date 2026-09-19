@@ -30,12 +30,32 @@ import 'project_folder_actions.dart';
 import 'projects_screen.dart';
 import 'settings_screen.dart';
 import 'team/team_home_screen.dart';
-import 'terminal_screen.dart';
 import '../app_theme.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   final ConnectionController controller;
   const WorkspaceScreen({super.key, required this.controller});
+
+  /// The catalog project that owns [directory]: its root or a listed
+  /// worktree first, then any project containing it. Shared with the Project
+  /// tab so both name the same project for the same folder.
+  static WorkspaceProject? projectForDirectory(
+    List<WorkspaceProject> projects,
+    String directory,
+  ) {
+    for (final project in projects) {
+      if (project.directory == directory ||
+          project.worktrees.contains(directory)) {
+        return project;
+      }
+    }
+    for (final project in projects) {
+      if (ConnectionController.projectContainsDirectory(project, directory)) {
+        return project;
+      }
+    }
+    return null;
+  }
 
   @override
   State<WorkspaceScreen> createState() => _WorkspaceScreenState();
@@ -126,7 +146,10 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         if (controllerDirectory != null) {
           _selectedDirectory = controllerDirectory;
           _selectedWorkspaceID = widget.controller.workspace;
-          final matching = _projectForDirectory(projects, controllerDirectory);
+          final matching = WorkspaceScreen.projectForDirectory(
+            projects,
+            controllerDirectory,
+          );
           // An unlisted explicit folder is still the active context. Never
           // label it with a different catalog project's name.
           _selectedProjectID = matching?.id;
@@ -196,24 +219,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   WorkspaceProject? get _selectedProject {
     for (final project in _projects ?? const <WorkspaceProject>[]) {
       if (project.id == _selectedProjectID) return project;
-    }
-    return null;
-  }
-
-  static WorkspaceProject? _projectForDirectory(
-    List<WorkspaceProject> projects,
-    String directory,
-  ) {
-    for (final project in projects) {
-      if (project.directory == directory ||
-          project.worktrees.contains(directory)) {
-        return project;
-      }
-    }
-    for (final project in projects) {
-      if (ConnectionController.projectContainsDirectory(project, directory)) {
-        return project;
-      }
     }
     return null;
   }
@@ -718,9 +723,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                       onSearch: capabilities.globalSessionSearch
                           ? _openAllSessions
                           : null,
-                      onOpenTerminal: capabilities.terminal
-                          ? _openTerminal
-                          : null,
                       onOpenBackgroundSettings:
                           platformCapabilities.supportsBackgroundService
                           ? _openBackgroundSettings
@@ -865,12 +867,6 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       ),
     );
   }
-
-  Future<void> _openTerminal() => Navigator.of(context).push(
-    MaterialPageRoute<void>(
-      builder: (_) => TerminalPage(controller: widget.controller),
-    ),
-  );
 
   Future<void> _openAllSessions() => Navigator.of(context).push(
     MaterialPageRoute<void>(
@@ -1752,7 +1748,7 @@ class _ProjectHeader extends StatelessWidget {
   );
 }
 
-enum _SectionAction { refresh, terminal, background }
+enum _SectionAction { refresh, background }
 
 /// The Recent-sessions caption's controls: Search as a one-tap icon, and the
 /// occasional actions (reload, terminal, background updates) behind a single
@@ -1765,7 +1761,6 @@ class _SectionActions extends StatelessWidget {
   const _SectionActions({
     required this.controller,
     required this.onSearch,
-    required this.onOpenTerminal,
     required this.onOpenBackgroundSettings,
   });
 
@@ -1773,9 +1768,6 @@ class _SectionActions extends StatelessWidget {
 
   /// Null hides the icon: the server has no cross-directory session search.
   final VoidCallback? onSearch;
-
-  /// Null omits the entry: the server has no terminal.
-  final VoidCallback? onOpenTerminal;
 
   /// Null omits the entry: this platform has no background service.
   final VoidCallback? onOpenBackgroundSettings;
@@ -1826,8 +1818,6 @@ class _SectionActions extends StatelessWidget {
             switch (action) {
               case _SectionAction.refresh:
                 unawaited(controller.refreshSessions());
-              case _SectionAction.terminal:
-                onOpenTerminal?.call();
               case _SectionAction.background:
                 onOpenBackgroundSettings?.call();
             }
@@ -1842,17 +1832,6 @@ class _SectionActions extends StatelessWidget {
                 label: l10n.sessionsReload,
               ),
             ),
-            // Terminal gave its navigation slot to Activity; this keeps it
-            // one tap from the workspace it runs in.
-            if (onOpenTerminal != null)
-              PopupMenuItem(
-                key: const ValueKey('workspace-terminal'),
-                value: _SectionAction.terminal,
-                child: _MenuRow(
-                  icon: AppIconography.terminal,
-                  label: l10n.libraryTerminalTitle,
-                ),
-              ),
             // Whether runs keep updating after the app closes was only
             // discoverable two levels into Settings; say it where the runs
             // are.

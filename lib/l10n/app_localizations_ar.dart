@@ -6286,7 +6286,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiFiles => 'المشروع';
 
   @override
-  String get e7LocaleUiFilesHint => 'تصفّح شجرة ملفات المشروع';
+  String get e7LocaleUiFilesHint =>
+      'الملفات والتغييرات والطرفية وأدوات المشروع الأخرى';
 
   @override
   String get e7LocaleUiActivity => 'الوارد';
@@ -6295,7 +6296,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get e7LocaleUiActivityHint => 'الأذونات والأسئلة والنماذج';
 
   @override
-  String get e7LocaleUiMoreHint => 'النماذج ومزوّدو الخدمة والطرفية والإعدادات';
+  String get e7LocaleUiMoreHint =>
+      'النماذج ومزوّدو الخدمة والإشعارات والإعدادات';
 
   @override
   String get e7LocaleUiSettings => 'الإعدادات';
@@ -11083,10 +11085,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get e7LibrarySearchPluginsAliases =>
       'plugin installed source status إضافات مثبت مصدر حالة';
-
-  @override
-  String get e7LibrarySearchTerminalAliases =>
-      'shell command line طرفية صدفة سطر أوامر';
 
   @override
   String get e7LibrarySearchImportAliases =>
@@ -16314,4 +16312,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get shellTabProject => 'المشروع';
+
+  @override
+  String get projectHubFilesSubtitle => 'تصفّح ملفات المشروع ومعاينتها';
+
+  @override
+  String get projectHubChangesSubtitle => 'راجع التغييرات غير المودَعة';
+
+  @override
+  String get projectHubSearchSubtitle => 'اعثر على ملف باسمه';
 }

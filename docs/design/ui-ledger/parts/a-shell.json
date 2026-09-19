@@ -214,13 +214,13 @@
     },
     {
       "id": "home-shell",
-      "title": "{server name} · Workspace / Files / Activity / More",
+      "title": "{server name} · Work / Inbox / Project / Settings",
       "kind": "screen",
       "file": "lib/ui/screens/home_screen.dart",
       "widget": "HomeScreen",
       "presentedBy": [],
-      "line": 22,
-      "purpose": "Main product shell for a connected server: app bar with server name/status dot and current tab title, overflow menu, connection banner, and four retained root destinations shown as a bottom glass dock (<760dp) or a NavigationRail (>=760dp).",
+      "line": 25,
+      "purpose": "Main product shell for a connected server: app bar whose server name and status open the server switcher, current tab title, connection banner, and four retained root destinations, one per noun (Work, Inbox, Project, Settings), shown as a bottom glass dock (<760dp) or a NavigationRail (>=760dp).",
       "reachedFrom": [
         {
           "page": "system",
@@ -265,41 +265,41 @@
         {
           "id": "home-shell-tab-workspace",
           "type": "tab",
-          "label": "Workspace",
+          "label": "Work",
           "key": null,
-          "line": 133,
+          "line": 148,
           "action": "navigate",
           "target": "workspace",
           "targetWidget": "WorkspaceScreen",
-          "effect": "_selectTab(0): shows WorkspaceScreen(controller: conn) in the RetainedTabView. Rendered as NavigationBar destination (<760dp wide, keyboard closed; _ShellNavigation line 415) or NavigationRail destination (>=760dp; line 238, extended at >=1040dp).",
+          "effect": "_selectTab(_workTab): shows WorkspaceScreen(controller: conn) in the RetainedTabView. Rendered as NavigationBar destination (<760dp wide, keyboard closed) or NavigationRail destination (>=760dp, extended at >=1040dp).",
           "gates": [],
           "destructive": false
         },
         {
           "id": "home-shell-tab-files",
           "type": "tab",
-          "label": "Files",
+          "label": "Project",
           "key": null,
-          "line": 143,
+          "line": 168,
           "action": "navigate",
-          "target": "files",
-          "targetWidget": "FilesScreen",
-          "effect": "_selectTab(1): shows FilesScreen(controller, focusSearchSignal: _findInFiles, backController: _filesBack). _safeTab falls back to tab 0 when file browsing is unavailable.",
+          "target": "project-hub",
+          "targetWidget": "ProjectHub",
+          "effect": "_selectTab(_projectTab): shows ProjectHub(controller, focusSearchSignal: _findInFiles, backController: _projectBack). _safeTab falls back to Work when the server offers no project tool.",
           "gates": [
-            "conn.capabilities.fileBrowsing (destination hidden and body replaced by SizedBox.shrink otherwise)"
+            "ProjectHub.isAvailable(conn.capabilities): fileBrowsing || terminal || projectManagement (destination hidden and body replaced by SizedBox.shrink otherwise, e.g. Codex and Paseo)"
           ],
           "destructive": false
         },
         {
           "id": "home-shell-tab-activity",
           "type": "tab",
-          "label": "Activity",
+          "label": "Inbox",
           "key": "activity-pending-badge",
-          "line": 151,
+          "line": 156,
           "action": "navigate",
           "target": "activity",
           "targetWidget": "ActivityScreen",
-          "effect": "_selectTab(2): shows ActivityScreen(controller: conn, embedded: true). Icon carries Badge key 'activity-pending-badge' with conn.unifiedAttentionCount when > 0.",
+          "effect": "_selectTab(_inboxTab): shows ActivityScreen(controller: conn, embedded: true). The icon carries Badge key 'activity-pending-badge' with conn.unifiedAttentionCount (permissions, questions, forms, AI Team gates, other servers' pending counts) when > 0; no badge at zero.",
           "gates": [],
           "destructive": false
         },
@@ -308,11 +308,11 @@
           "type": "tab",
           "label": "Settings",
           "key": null,
-          "line": 168,
+          "line": 176,
           "action": "navigate",
           "target": "settings",
           "targetWidget": "SettingsScreen",
-          "effect": "_selectTab(3): shows the Settings hub, SettingsScreen(controller: conn, embedded: true).",
+          "effect": "_selectTab(_settingsTab): shows the Settings hub, SettingsScreen(controller: conn, embedded: true).",
           "gates": [],
           "destructive": false
         },
@@ -373,11 +373,11 @@
           "type": "gesture",
           "label": "[system back]",
           "key": null,
-          "line": 175,
+          "line": 306,
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "PopScope(canPop: false) -> _onRootPop: on Files first _filesBack.handleBack(); on any non-Workspace tab _selectTab(0); on Workspace shows snackbar 'Press back again to exit' and a second back within 2s calls SystemNavigator.pop().",
+          "effect": "_onRootPop: on Project, ProjectHubBackController.handleBack() first unwinds Files (keyboard, search, folder) and then returns to the hub; any other tab returns to Work; on Work a second Back within 2 s calls SystemNavigator.pop().",
           "gates": [],
           "destructive": false
         },
@@ -386,11 +386,11 @@
           "type": "gesture",
           "label": "Ctrl/Cmd+1 … 4",
           "key": null,
-          "line": 58,
+          "line": 68,
           "action": "navigate",
           "target": null,
           "targetWidget": null,
-          "effect": "onAppShortcut(SelectDestinationIntent): _selectTab(_safeTab(index, conn.capabilities)).",
+          "effect": "onAppShortcut(SelectDestinationIntent): _selectTab(_safeTab(index, conn.capabilities)); the index is the visible position (1 Work, 2 Inbox, 3 Project, 4 Settings).",
           "gates": [
             "desktopInteractions (AppShortcuts only installed on desktop)",
             "HomeScreen route isCurrent"
@@ -402,14 +402,14 @@
           "type": "gesture",
           "label": "Ctrl/Cmd+F",
           "key": null,
-          "line": 63,
+          "line": 73,
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "onAppShortcut(FindInSurfaceIntent): bumps _findInFiles so FilesScreen focuses its search field.",
+          "effect": "onAppShortcut(FindInSurfaceIntent): bumps _findInFiles; ProjectHub opens Files and focuses its search field.",
           "gates": [
             "desktopInteractions",
-            "_tab == 1 && conn.capabilities.fileBrowsing"
+            "_tab == _projectTab && conn.capabilities.fileBrowsing"
           ],
           "destructive": false
         },
@@ -418,7 +418,7 @@
           "type": "gesture",
           "label": "Ctrl/Cmd+`",
           "key": null,
-          "line": 67,
+          "line": 78,
           "action": "navigate",
           "target": "terminal",
           "targetWidget": "TerminalPage",
@@ -631,7 +631,7 @@
     },
     {
       "id": "activity",
-      "title": "Activity",
+      "title": "Inbox",
       "kind": "screen",
       "file": "lib/ui/screens/activity_screen.dart",
       "widget": "ActivityScreen",

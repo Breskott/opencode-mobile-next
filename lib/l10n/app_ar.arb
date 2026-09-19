@@ -1705,10 +1705,10 @@
   "e7LocaleUiWorkspace": "العمل",
   "e7LocaleUiWorkspaceHint": "المحادثات الأخيرة والمشروع الحالي",
   "e7LocaleUiFiles": "المشروع",
-  "e7LocaleUiFilesHint": "تصفّح شجرة ملفات المشروع",
+  "e7LocaleUiFilesHint": "الملفات والتغييرات والطرفية وأدوات المشروع الأخرى",
   "e7LocaleUiActivity": "الوارد",
   "e7LocaleUiActivityHint": "الأذونات والأسئلة والنماذج",
-  "e7LocaleUiMoreHint": "النماذج ومزوّدو الخدمة والطرفية والإعدادات",
+  "e7LocaleUiMoreHint": "النماذج ومزوّدو الخدمة والإشعارات والإعدادات",
   "e7LocaleUiSettings": "الإعدادات",
   "e7LocaleUiKeyboardShortcuts": "اختصارات لوحة المفاتيح",
   "e7LocaleUiRefreshSessions": "تحديث المحادثات",
@@ -2908,7 +2908,6 @@
   "e7LibrarySearchMcpAliases": "integrations servers تكاملات خوادم أدوات",
   "e7LibrarySearchCommandsAliases": "slash skills references capabilities أوامر مهارات مراجع إمكانات",
   "e7LibrarySearchPluginsAliases": "plugin installed source status إضافات مثبت مصدر حالة",
-  "e7LibrarySearchTerminalAliases": "shell command line طرفية صدفة سطر أوامر",
   "e7LibrarySearchImportAliases": "backup restore transfer JSON conversation session chat جلسة نسخ احتياطي استعادة نقل محادثة",
   "e7LibrarySearchSettingsAliases": "appearance theme language notifications privacy voice background server profile connection ملف شخصي مظهر سمة لغة إشعارات خصوصية صوت خلفية خادم",
   "e7LibrarySearchGuideAliases": "help connect tutorial start مساعدة اتصال دليل بدء",
@@ -4292,5 +4291,8 @@
   "pluginsSectionOnServer": "على الخادم",
   "shellTabWork": "العمل",
   "shellTabInbox": "الوارد",
-  "shellTabProject": "المشروع"
+  "shellTabProject": "المشروع",
+  "projectHubFilesSubtitle": "تصفّح ملفات المشروع ومعاينتها",
+  "projectHubChangesSubtitle": "راجع التغييرات غير المودَعة",
+  "projectHubSearchSubtitle": "اعثر على ملف باسمه"
 }

@@ -16,7 +16,7 @@ import '../widgets/pickers.dart';
 import '../widgets/retained_tab_view.dart';
 import '../widgets/safety_confirms.dart';
 import 'activity_screen.dart';
-import 'files_screen.dart';
+import 'project_hub_screen.dart';
 import 'settings_screen.dart';
 import 'terminal_screen.dart';
 import 'workspace_screen.dart';
@@ -42,11 +42,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   late int _tab;
 
-  /// Bumped by Ctrl+F while the Files destination is showing. Files listens
-  /// and focuses its search field. Desktop-only in practice — nothing
+  /// Bumped by Ctrl+F while the Project destination is showing. The hub opens
+  /// Files and focuses its search field. Desktop-only in practice — nothing
   /// dispatches shortcuts off desktop.
   final _findInFiles = ValueNotifier<int>(0);
-  final _filesBack = FilesBackController();
+  final _projectBack = ProjectHubBackController();
 
   @override
   void initState() {
@@ -102,7 +102,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   static int _safeTab(int requested, ServerCapabilities capabilities) {
     final tab = requested.clamp(_workTab, _settingsTab);
-    return tab == _projectTab && !capabilities.fileBrowsing ? _workTab : tab;
+    return tab == _projectTab && !ProjectHub.isAvailable(capabilities)
+        ? _workTab
+        : tab;
   }
 
   @override
@@ -124,15 +126,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         MediaQuery.viewInsetsOf(context).bottom == 0;
 
     // One tab per noun (UX plan 5.1): Work, Inbox, Project, Settings. The
-    // Inbox carries the product's single pending badge.
+    // Inbox carries the product's single pending badge. Project is absent
+    // only when the server offers none of its tools (Codex, Paseo today).
+    final hasProjectTools = ProjectHub.isAvailable(conn.capabilities);
     final tabs = <Widget>[
       WorkspaceScreen(controller: conn),
       ActivityScreen(controller: conn, embedded: true),
-      if (conn.capabilities.fileBrowsing)
-        FilesScreen(
+      if (hasProjectTools)
+        ProjectHub(
           controller: conn,
           focusSearchSignal: _findInFiles,
-          backController: _filesBack,
+          backController: _projectBack,
         )
       else
         const SizedBox.shrink(),
@@ -159,7 +163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           label: _l10n(context).shellTabInbox,
         ),
       ),
-      if (conn.capabilities.fileBrowsing)
+      if (hasProjectTools)
         (
           id: _projectTab,
           destination: NavigationDestination(
@@ -296,13 +300,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     navigator.pushNamedAndRemoveUntil('/servers', (_) => false);
   }
 
-  /// Files first unwinds its local navigation, then destinations return home.
+  /// Project first unwinds Files and returns to its hub, then destinations
+  /// return home.
   /// Only Work uses the double-back exit guard.
   void _onRootPop(bool didPop, Object? result) {
     if (didPop) return;
-    if (_tab == _projectTab &&
-        ref.read(connProvider).capabilities.fileBrowsing &&
-        _filesBack.handleBack()) {
+    if (_tab == _projectTab && _projectBack.handleBack()) {
       _lastBackAt = null;
       return;
     }

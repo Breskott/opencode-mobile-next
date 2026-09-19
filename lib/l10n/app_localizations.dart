@@ -10336,7 +10336,7 @@ abstract class AppLocalizations {
   /// Locale selection or app shell: FilesHint
   ///
   /// In en, this message translates to:
-  /// **'Browse the project tree'**
+  /// **'Files, changes, terminal and other project tools'**
   String get e7LocaleUiFilesHint;
 
   /// Locale selection or app shell: Activity
@@ -10354,7 +10354,7 @@ abstract class AppLocalizations {
   /// Locale selection or app shell: MoreHint
   ///
   /// In en, this message translates to:
-  /// **'Models, providers, terminal, settings'**
+  /// **'Models, providers, notifications, settings'**
   String get e7LocaleUiMoreHint;
 
   /// Locale selection or app shell: Settings
@@ -17570,12 +17570,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'plugin installed source status'**
   String get e7LibrarySearchPluginsAliases;
-
-  /// Search aliases for the terminal destination; preserve English terms to allow either language.
-  ///
-  /// In en, this message translates to:
-  /// **'shell command line'**
-  String get e7LibrarySearchTerminalAliases;
 
   /// Search aliases for the import destination; preserve English terms to allow either language.
   ///
@@ -25911,6 +25905,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Project'**
   String get shellTabProject;
+
+  /// Project tab: subtitle of the Files row.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse and preview project files'**
+  String get projectHubFilesSubtitle;
+
+  /// Project tab: subtitle of the Changes row, which opens the working-tree review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review uncommitted changes'**
+  String get projectHubChangesSubtitle;
+
+  /// Project tab: subtitle of the Search files row, which opens Files with the search field focused.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a file by name'**
+  String get projectHubSearchSubtitle;
 }
 
 class _AppLocalizationsDelegate

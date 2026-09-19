@@ -4248,7 +4248,7 @@
   "@e7LocaleUiFiles": {
     "description": "Locale selection or app shell: Files"
   },
-  "e7LocaleUiFilesHint": "Browse the project tree",
+  "e7LocaleUiFilesHint": "Files, changes, terminal and other project tools",
   "@e7LocaleUiFilesHint": {
     "description": "Locale selection or app shell: FilesHint"
   },
@@ -4260,7 +4260,7 @@
   "@e7LocaleUiActivityHint": {
     "description": "Locale selection or app shell: ActivityHint"
   },
-  "e7LocaleUiMoreHint": "Models, providers, terminal, settings",
+  "e7LocaleUiMoreHint": "Models, providers, notifications, settings",
   "@e7LocaleUiMoreHint": {
     "description": "Locale selection or app shell: MoreHint"
   },
@@ -10386,10 +10386,6 @@
   "e7LibrarySearchPluginsAliases": "plugin installed source status",
   "@e7LibrarySearchPluginsAliases": {
     "description": "Search aliases for the plugins destination; preserve English terms to allow either language."
-  },
-  "e7LibrarySearchTerminalAliases": "shell command line",
-  "@e7LibrarySearchTerminalAliases": {
-    "description": "Search aliases for the terminal destination; preserve English terms to allow either language."
   },
   "e7LibrarySearchImportAliases": "backup restore transfer JSON conversation session chat",
   "@e7LibrarySearchImportAliases": {
@@ -17347,5 +17343,17 @@
   "shellTabProject": "Project",
   "@shellTabProject": {
     "description": "Bottom navigation label and app bar title of the third tab: tools scoped to the current project."
+  },
+  "projectHubFilesSubtitle": "Browse and preview project files",
+  "@projectHubFilesSubtitle": {
+    "description": "Project tab: subtitle of the Files row."
+  },
+  "projectHubChangesSubtitle": "Review uncommitted changes",
+  "@projectHubChangesSubtitle": {
+    "description": "Project tab: subtitle of the Changes row, which opens the working-tree review."
+  },
+  "projectHubSearchSubtitle": "Find a file by name",
+  "@projectHubSearchSubtitle": {
+    "description": "Project tab: subtitle of the Search files row, which opens Files with the search field focused."
   }
 }

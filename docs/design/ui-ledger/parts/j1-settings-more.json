@@ -390,22 +390,6 @@
           "destructive": false
         },
         {
-          "id": "settings-terminal",
-          "type": "list-tile",
-          "label": "Terminal",
-          "key": "library-terminal",
-          "line": 538,
-          "action": "navigate",
-          "target": "terminal",
-          "targetWidget": "TerminalPage",
-          "effect": "Pushes TerminalPage(controller) via _open. Last row of Agent setup until the Project tab exists (phase 3).",
-          "gates": [
-            "capabilities.terminal",
-            "row hidden when it does not match the search query (_HubRow.matches(_query))"
-          ],
-          "destructive": false
-        },
-        {
           "id": "settings-category-usage",
           "type": "list-tile",
           "label": "Usage and cost",

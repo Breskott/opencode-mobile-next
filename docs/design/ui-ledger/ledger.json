@@ -1,5 +1,5 @@
 {
- "generatedFrom": "090ac110675ebfd2a903b147100d0149a685fcf2",
+ "generatedFrom": "f6e615fc4a68ef2ff9725cdb2096a7c2999ad99d",
  "pages": [
   {
    "id": "system",
@@ -1387,7 +1387,7 @@
   },
   {
    "id": "activity",
-   "title": "Activity",
+   "title": "Inbox",
    "kind": "screen",
    "area": "shell",
    "file": "lib/ui/screens/activity_screen.dart",
@@ -2022,14 +2022,14 @@
   },
   {
    "id": "home-shell",
-   "title": "{server name} · Workspace / Files / Activity / More",
+   "title": "{server name} · Work / Inbox / Project / Settings",
    "kind": "screen",
    "area": "shell",
    "file": "lib/ui/screens/home_screen.dart",
    "widget": "HomeScreen",
    "presentedBy": [],
-   "line": 22,
-   "purpose": "Main product shell for a connected server: app bar with server name/status dot and current tab title, overflow menu, connection banner, and four retained root destinations shown as a bottom glass dock (<760dp) or a NavigationRail (>=760dp).",
+   "line": 25,
+   "purpose": "Main product shell for a connected server: app bar whose server name and status open the server switcher, current tab title, connection banner, and four retained root destinations, one per noun (Work, Inbox, Project, Settings), shown as a bottom glass dock (<760dp) or a NavigationRail (>=760dp).",
    "reachedFrom": [
     {
      "page": "termux-setup",
@@ -2107,11 +2107,11 @@
      "label": "Ctrl/Cmd+1 … 4",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 58,
+     "line": 68,
      "action": "navigate",
      "target": null,
      "targetWidget": null,
-     "effect": "onAppShortcut(SelectDestinationIntent): _selectTab(_safeTab(index, conn.capabilities)).",
+     "effect": "onAppShortcut(SelectDestinationIntent): _selectTab(_safeTab(index, conn.capabilities)); the index is the visible position (1 Work, 2 Inbox, 3 Project, 4 Settings).",
      "gates": [
       "desktopInteractions (AppShortcuts only installed on desktop)",
       "HomeScreen route isCurrent"
@@ -2124,14 +2124,14 @@
      "label": "Ctrl/Cmd+F",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 63,
+     "line": 73,
      "action": "other",
      "target": null,
      "targetWidget": null,
-     "effect": "onAppShortcut(FindInSurfaceIntent): bumps _findInFiles so FilesScreen focuses its search field.",
+     "effect": "onAppShortcut(FindInSurfaceIntent): bumps _findInFiles; ProjectHub opens Files and focuses its search field.",
      "gates": [
       "desktopInteractions",
-      "_tab == 1 && conn.capabilities.fileBrowsing"
+      "_tab == _projectTab && conn.capabilities.fileBrowsing"
      ],
      "destructive": false
     },
@@ -2141,7 +2141,7 @@
      "label": "Ctrl/Cmd+`",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 67,
+     "line": 78,
      "action": "navigate",
      "target": "terminal",
      "targetWidget": "TerminalPage",
@@ -2155,45 +2155,45 @@
     {
      "id": "home-shell-tab-workspace",
      "type": "tab",
-     "label": "Workspace",
+     "label": "Work",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 133,
+     "line": 148,
      "action": "navigate",
      "target": "workspace",
      "targetWidget": "WorkspaceScreen",
-     "effect": "_selectTab(0): shows WorkspaceScreen(controller: conn) in the RetainedTabView. Rendered as NavigationBar destination (<760dp wide, keyboard closed; _ShellNavigation line 415) or NavigationRail destination (>=760dp; line 238, extended at >=1040dp).",
+     "effect": "_selectTab(_workTab): shows WorkspaceScreen(controller: conn) in the RetainedTabView. Rendered as NavigationBar destination (<760dp wide, keyboard closed) or NavigationRail destination (>=760dp, extended at >=1040dp).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "home-shell-tab-activity",
+     "type": "tab",
+     "label": "Inbox",
+     "key": "activity-pending-badge",
+     "file": "lib/ui/screens/home_screen.dart",
+     "line": 156,
+     "action": "navigate",
+     "target": "activity",
+     "targetWidget": "ActivityScreen",
+     "effect": "_selectTab(_inboxTab): shows ActivityScreen(controller: conn, embedded: true). The icon carries Badge key 'activity-pending-badge' with conn.unifiedAttentionCount (permissions, questions, forms, AI Team gates, other servers' pending counts) when > 0; no badge at zero.",
      "gates": [],
      "destructive": false
     },
     {
      "id": "home-shell-tab-files",
      "type": "tab",
-     "label": "Files",
+     "label": "Project",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 143,
+     "line": 168,
      "action": "navigate",
-     "target": "files",
-     "targetWidget": "FilesScreen",
-     "effect": "_selectTab(1): shows FilesScreen(controller, focusSearchSignal: _findInFiles, backController: _filesBack). _safeTab falls back to tab 0 when file browsing is unavailable.",
+     "target": "project-hub",
+     "targetWidget": "ProjectHub",
+     "effect": "_selectTab(_projectTab): shows ProjectHub(controller, focusSearchSignal: _findInFiles, backController: _projectBack). _safeTab falls back to Work when the server offers no project tool.",
      "gates": [
-      "conn.capabilities.fileBrowsing (destination hidden and body replaced by SizedBox.shrink otherwise)"
+      "ProjectHub.isAvailable(conn.capabilities): fileBrowsing || terminal || projectManagement (destination hidden and body replaced by SizedBox.shrink otherwise, e.g. Codex and Paseo)"
      ],
-     "destructive": false
-    },
-    {
-     "id": "home-shell-tab-activity",
-     "type": "tab",
-     "label": "Activity",
-     "key": "activity-pending-badge",
-     "file": "lib/ui/screens/home_screen.dart",
-     "line": 151,
-     "action": "navigate",
-     "target": "activity",
-     "targetWidget": "ActivityScreen",
-     "effect": "_selectTab(2): shows ActivityScreen(controller: conn, embedded: true). Icon carries Badge key 'activity-pending-badge' with conn.unifiedAttentionCount when > 0.",
-     "gates": [],
      "destructive": false
     },
     {
@@ -2202,25 +2202,11 @@
      "label": "Settings",
      "key": null,
      "file": "lib/ui/screens/home_screen.dart",
-     "line": 168,
+     "line": 176,
      "action": "navigate",
      "target": "settings",
      "targetWidget": "SettingsScreen",
-     "effect": "_selectTab(3): shows the Settings hub, SettingsScreen(controller: conn, embedded: true).",
-     "gates": [],
-     "destructive": false
-    },
-    {
-     "id": "home-shell-back-gesture",
-     "type": "gesture",
-     "label": "[system back]",
-     "key": null,
-     "file": "lib/ui/screens/home_screen.dart",
-     "line": 175,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "PopScope(canPop: false) -> _onRootPop: on Files first _filesBack.handleBack(); on any non-Workspace tab _selectTab(0); on Workspace shows snackbar 'Press back again to exit' and a second back within 2s calls SystemNavigator.pop().",
+     "effect": "_selectTab(_settingsTab): shows the Settings hub, SettingsScreen(controller: conn, embedded: true).",
      "gates": [],
      "destructive": false
     },
@@ -2279,6 +2265,20 @@
      "effect": "conn.disconnect() then navigator.pushNamedAndRemoveUntil('/servers', (_) => false). No confirmation.",
      "gates": [],
      "destructive": true
+    },
+    {
+     "id": "home-shell-back-gesture",
+     "type": "gesture",
+     "label": "[system back]",
+     "key": null,
+     "file": "lib/ui/screens/home_screen.dart",
+     "line": 306,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_onRootPop: on Project, ProjectHubBackController.handleBack() first unwinds Files (keyboard, search, folder) and then returns to the hub; any other tab returns to Work; on Work a second Back within 2 s calls SystemNavigator.pop().",
+     "gates": [],
+     "destructive": false
     },
     {
      "id": "home-shell-banner-update-token",
@@ -13440,6 +13440,10 @@
     {
      "page": "command-launcher-sheet",
      "element": "chat-command-health"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-health"
     }
    ],
    "gates": [
@@ -14484,7 +14488,7 @@
   },
   {
    "id": "workspace",
-   "title": "Workspace",
+   "title": "Work",
    "kind": "tab",
    "area": "workspace",
    "file": "lib/ui/screens/workspace_screen.dart",
@@ -15050,22 +15054,6 @@
      "effect": "controller.refreshSessions().",
      "gates": [
       "enabled: !controller.sessionsLoading"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "workspace-section-menu-terminal",
-     "type": "menu-item",
-     "label": "Terminal",
-     "key": "workspace-terminal",
-     "file": "lib/ui/screens/workspace_screen.dart",
-     "line": 1837,
-     "action": "navigate",
-     "target": "terminal",
-     "targetWidget": "TerminalPage",
-     "effect": "onOpenTerminal -> _openTerminal() pushes TerminalPage(controller).",
-     "gates": [
-      "capabilities.terminal"
      ],
      "destructive": false
     },
@@ -15773,6 +15761,10 @@
     {
      "page": "manage-project",
      "element": "manage-project-worktrees"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-worktrees"
     }
    ],
    "gates": [
@@ -16340,11 +16332,11 @@
    "widget": "FilesScreen",
    "presentedBy": [],
    "line": 35,
-   "purpose": "Project file browser with file/symbol search, breadcrumbs, VCS change badges and an inline preview pane on wide layouts.",
+   "purpose": "Project file browser with file/symbol search, breadcrumbs, VCS change badges and an inline preview pane on wide layouts. Hosted inside the Project tab (kept alive behind the hub) or pushed from a conversation.",
    "reachedFrom": [
     {
-     "page": "home-shell",
-     "element": "home-shell-tab-files"
+     "page": "project-hub",
+     "element": "project-hub-files"
     },
     {
      "page": "chat",
@@ -16354,6 +16346,10 @@
     {
      "page": "command-launcher-sheet",
      "element": "chat-command-files"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-search"
     }
    ],
    "gates": [
@@ -17120,6 +17116,154 @@
    ]
   },
   {
+   "id": "project-hub",
+   "title": "Project",
+   "kind": "tab",
+   "area": "files",
+   "file": "lib/ui/screens/project_hub_screen.dart",
+   "widget": "ProjectHub",
+   "presentedBy": [],
+   "line": 36,
+   "purpose": "Root tab 2: the tools that act on the current project, one row each (Files, Changes, Terminal, Project health, Worktrees, Search files) under the project name and folder. Files opens inside the tab and stays alive behind the hub; the other rows push their existing screens.",
+   "reachedFrom": [
+    {
+     "page": "home-shell",
+     "element": "home-shell-tab-files"
+    }
+   ],
+   "gates": [
+    "ProjectHub.isAvailable(conn.capabilities): at least one row is available"
+   ],
+   "elements": [
+    {
+     "id": "project-hub-system-back",
+     "type": "gesture",
+     "label": "[system back]",
+     "key": null,
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 109,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_handleBack(): FilesBackController.handleBack() first (keyboard, search, parent folder); at the Files root it returns to the hub; on the hub it declines so the shell returns to Work.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-files-back",
+     "type": "icon-button",
+     "label": "Back",
+     "key": "project-hub-files-back",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 234,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Hides Files and shows the hub again; Files keeps its folder and search.",
+     "gates": [
+      "Files is showing inside the tab"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-files",
+     "type": "list-tile",
+     "label": "Files",
+     "key": "project-hub-files",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 291,
+     "action": "navigate",
+     "target": "files",
+     "targetWidget": "FilesScreen",
+     "effect": "_openFiles(): builds FilesScreen inside the tab on first use and shows it in place of the hub.",
+     "gates": [
+      "capabilities.fileBrowsing"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-changes",
+     "type": "list-tile",
+     "label": "Changes",
+     "key": "project-hub-changes",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 298,
+     "action": "navigate",
+     "target": "review-workspace",
+     "targetWidget": "ReviewWorkspace",
+     "effect": "_openChanges(): pushWorkingTreeReview(context, controller) pushes ReviewWorkspace on the working-tree scope; a returned review comment is copied to the clipboard (deliverReviewPrompt).",
+     "gates": [
+      "capabilities.fileBrowsing"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-terminal",
+     "type": "list-tile",
+     "label": "Terminal",
+     "key": "project-hub-terminal",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 305,
+     "action": "navigate",
+     "target": "terminal",
+     "targetWidget": "TerminalPage",
+     "effect": "_openTerminal(): Navigator.push(MaterialPageRoute(TerminalPage(controller))).",
+     "gates": [
+      "capabilities.terminal"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-health",
+     "type": "list-tile",
+     "label": "Project health",
+     "key": "project-hub-health",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 312,
+     "action": "navigate",
+     "target": "project-health",
+     "targetWidget": "ProjectHealthScreen",
+     "effect": "_openHealth(): controller.prepareActionRepository() then pushes ProjectHealthScreen; a missing repository shows the product error.",
+     "gates": [
+      "capabilities.projectManagement"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-worktrees",
+     "type": "list-tile",
+     "label": "Worktrees",
+     "key": "project-hub-worktrees",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 320,
+     "action": "navigate",
+     "target": "worktrees",
+     "targetWidget": "WorktreesScreen",
+     "effect": "_openWorktrees(): resolves the catalog project that owns controller.directory (WorkspaceScreen.projectForDirectory over repository.listProjects()) and pushes WorktreesScreen; no matching project shows \"No project folder is open. Choose one from Work.\"",
+     "gates": [
+      "capabilities.projectManagement"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "project-hub-search",
+     "type": "list-tile",
+     "label": "Search files",
+     "key": "project-hub-search",
+     "file": "lib/ui/screens/project_hub_screen.dart",
+     "line": 327,
+     "action": "navigate",
+     "target": "files",
+     "targetWidget": "FilesScreen",
+     "effect": "_searchFiles(): opens Files inside the tab and focuses its search field (same path as Ctrl/Cmd+F).",
+     "gates": [
+      "capabilities.fileBrowsing"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
    "id": "review-workspace",
    "title": "Review changes",
    "kind": "screen",
@@ -17162,6 +17306,10 @@
     {
      "page": "session-menu-sheet",
      "element": "session-menu-sheet-changes"
+    },
+    {
+     "page": "project-hub",
+     "element": "project-hub-changes"
     }
    ],
    "gates": [
@@ -17945,12 +18093,8 @@
      "element": "chat-command-terminal"
     },
     {
-     "page": "workspace",
-     "element": "workspace-section-menu-terminal"
-    },
-    {
-     "page": "settings",
-     "element": "settings-terminal"
+     "page": "project-hub",
+     "element": "project-hub-terminal"
     }
    ],
    "gates": [
@@ -33251,23 +33395,6 @@
      "destructive": false
     },
     {
-     "id": "settings-terminal",
-     "type": "list-tile",
-     "label": "Terminal",
-     "key": "library-terminal",
-     "file": "lib/ui/screens/settings_screen.dart",
-     "line": 538,
-     "action": "navigate",
-     "target": "terminal",
-     "targetWidget": "TerminalPage",
-     "effect": "Pushes TerminalPage(controller) via _open. Last row of Agent setup until the Project tab exists (phase 3).",
-     "gates": [
-      "capabilities.terminal",
-      "row hidden when it does not match the search query (_HubRow.matches(_query))"
-     ],
-     "destructive": false
-    },
-    {
      "id": "settings-category-usage",
      "type": "list-tile",
      "label": "Usage and cost",
@@ -35827,8 +35954,8 @@
    "root-connecting",
    "home-shell",
    "workspace",
-   "files",
    "activity",
+   "project-hub",
    "settings"
   ],
   "edges": [
@@ -35870,7 +35997,7 @@
    {
     "from": "home-shell",
     "element": "home-shell-tab-files",
-    "to": "files"
+    "to": "project-hub"
    },
    {
     "from": "home-shell",
@@ -37199,11 +37326,6 @@
    },
    {
     "from": "workspace",
-    "element": "workspace-section-menu-terminal",
-    "to": "terminal"
-   },
-   {
-    "from": "workspace",
     "element": "workspace-section-menu-background",
     "to": "background-settings"
    },
@@ -37441,6 +37563,36 @@
     "from": "shell-output",
     "element": "shell-output-stop",
     "to": "shell-output-stop-dialog"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-files",
+    "to": "files"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-changes",
+    "to": "review-workspace"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-terminal",
+    "to": "terminal"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-health",
+    "to": "project-health"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-worktrees",
+    "to": "worktrees"
+   },
+   {
+    "from": "project-hub",
+    "element": "project-hub-search",
+    "to": "files"
    },
    {
     "from": "files",
@@ -38436,11 +38588,6 @@
     "from": "settings",
     "element": "settings-import-session",
     "to": "session-import"
-   },
-   {
-    "from": "settings",
-    "element": "settings-terminal",
-    "to": "terminal"
    },
    {
     "from": "settings",
