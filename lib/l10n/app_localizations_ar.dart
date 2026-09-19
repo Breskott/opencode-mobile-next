@@ -16420,4 +16420,42 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get gestureEquivShortcutPromptHistory =>
       'الطلب الأقدم / الأحدث، والمؤشر في بداية مربع الرسالة أو نهايته';
+
+  @override
+  String get emptyTeachInboxMessage =>
+      'لا شيء يحتاج إليك. تظهر هنا طلبات الموافقة والأسئلة من الأعمال الجارية.';
+
+  @override
+  String get emptyTeachWorkTitle => 'لا توجد محادثات بعد';
+
+  @override
+  String get emptyTeachWorkMessage =>
+      'تظهر هنا المحادثات التي تبدؤها في هذا المشروع، وفي مقدمتها ما يحتاج إليك. ابدأ واحدة من «محادثة جديدة».';
+
+  @override
+  String get emptyTeachChangesTitle => 'لا توجد تغييرات بعد';
+
+  @override
+  String get emptyTeachChangesMessage =>
+      'تظهر هنا التعديلات التي يجريها الوكيل لتراجعها.';
+
+  @override
+  String get emptyTeachWorktreesMessage =>
+      'شجرة العمل نسخة منفصلة من هذا المشروع على فرع خاص بها، فلا تختلط الأعمال المتوازية. تظهر هنا أشجار عمل هذا المشروع.';
+
+  @override
+  String get emptyTeachAllowedMessage =>
+      'عندما تختار «السماح دائمًا» في طلب موافقة ضمن هذا المشروع، يظهر هنا لتتمكن من التراجع عنه.';
+
+  @override
+  String get emptyTeachTeamRunsMessage =>
+      'التشغيل مهمة يعمل عليها الفريق حتى تكتمل. ابدأ تشغيلًا ليظهر تقدّمه هنا.';
+
+  @override
+  String get emptyTeachSkillsMessage =>
+      'المهارات تعليمات قابلة لإعادة الاستخدام يتبعها الوكيل. تظهر هنا مهارات هذا المشروع وهذا الخادم.';
+
+  @override
+  String get emptyTeachToolsMessage =>
+      'تظهر هنا الأدوات التي يستطيع الوكيل استدعاءها مع هذا النموذج. لا أدوات لهذا النموذج.';
 }

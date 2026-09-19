@@ -26067,6 +26067,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Earlier / later prompt, with the cursor at the start or end of the message box'**
   String get gestureEquivShortcutPromptHistory;
+
+  /// Inbox: body of the all-clear empty state; says what will appear in the list.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs you. Approvals and questions from running work appear here.'**
+  String get emptyTeachInboxMessage;
+
+  /// Work tab: title of the empty state shown when the project has no conversations at all.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet'**
+  String get emptyTeachWorkTitle;
+
+  /// Work tab: body of the empty state. It names the docked New conversation button instead of repeating it, so the label must match workspaceNewSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations you start in this project are listed here, with the ones that need you first. Start one with New conversation.'**
+  String get emptyTeachWorkMessage;
+
+  /// Project > Changes: title of the empty review.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes yet'**
+  String get emptyTeachChangesTitle;
+
+  /// Project > Changes: body of the empty review.
+  ///
+  /// In en, this message translates to:
+  /// **'Edits the agent makes show up here to review.'**
+  String get emptyTeachChangesMessage;
+
+  /// Worktrees: body of the empty list.
+  ///
+  /// In en, this message translates to:
+  /// **'A worktree is a separate copy of this project on its own branch, so parallel work does not mix. Worktrees of this project appear here.'**
+  String get emptyTeachWorktreesMessage;
+
+  /// Always allowed actions: body of the empty list.
+  ///
+  /// In en, this message translates to:
+  /// **'When you choose Always allow on an approval in this project, it is listed here so you can take it back.'**
+  String get emptyTeachAllowedMessage;
+
+  /// AI Team home, Runs: body of the empty list when this phone can start a run.
+  ///
+  /// In en, this message translates to:
+  /// **'A run is a job the team works through. Start one and its progress shows here.'**
+  String get emptyTeachTeamRunsMessage;
+
+  /// Skills: body of the empty list.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills are reusable instructions the agent can follow. Skills from this project and this server appear here.'**
+  String get emptyTeachSkillsMessage;
+
+  /// Tools: body of the empty list for the chosen model.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools the agent can call with this model appear here. This model has none.'**
+  String get emptyTeachToolsMessage;
 }
 
 class _AppLocalizationsDelegate

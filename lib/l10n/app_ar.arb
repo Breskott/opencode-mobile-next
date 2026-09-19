@@ -4318,5 +4318,15 @@
   "discoverConnectionHelpAliases": "connection help troubleshooting مساعدة الاتصال تعذر الاتصال استكشاف الأخطاء الشبكة",
   "gestureEquivFileRowActions": "إجراءات {name}",
   "gestureEquivShortcutFindMatch": "التطابق التالي / السابق أثناء البحث في المحادثة",
-  "gestureEquivShortcutPromptHistory": "الطلب الأقدم / الأحدث، والمؤشر في بداية مربع الرسالة أو نهايته"
+  "gestureEquivShortcutPromptHistory": "الطلب الأقدم / الأحدث، والمؤشر في بداية مربع الرسالة أو نهايته",
+  "emptyTeachInboxMessage": "لا شيء يحتاج إليك. تظهر هنا طلبات الموافقة والأسئلة من الأعمال الجارية.",
+  "emptyTeachWorkTitle": "لا توجد محادثات بعد",
+  "emptyTeachWorkMessage": "تظهر هنا المحادثات التي تبدؤها في هذا المشروع، وفي مقدمتها ما يحتاج إليك. ابدأ واحدة من «محادثة جديدة».",
+  "emptyTeachChangesTitle": "لا توجد تغييرات بعد",
+  "emptyTeachChangesMessage": "تظهر هنا التعديلات التي يجريها الوكيل لتراجعها.",
+  "emptyTeachWorktreesMessage": "شجرة العمل نسخة منفصلة من هذا المشروع على فرع خاص بها، فلا تختلط الأعمال المتوازية. تظهر هنا أشجار عمل هذا المشروع.",
+  "emptyTeachAllowedMessage": "عندما تختار «السماح دائمًا» في طلب موافقة ضمن هذا المشروع، يظهر هنا لتتمكن من التراجع عنه.",
+  "emptyTeachTeamRunsMessage": "التشغيل مهمة يعمل عليها الفريق حتى تكتمل. ابدأ تشغيلًا ليظهر تقدّمه هنا.",
+  "emptyTeachSkillsMessage": "المهارات تعليمات قابلة لإعادة الاستخدام يتبعها الوكيل. تظهر هنا مهارات هذا المشروع وهذا الخادم.",
+  "emptyTeachToolsMessage": "تظهر هنا الأدوات التي يستطيع الوكيل استدعاءها مع هذا النموذج. لا أدوات لهذا النموذج."
 }

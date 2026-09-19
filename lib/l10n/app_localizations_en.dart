@@ -16146,4 +16146,42 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get gestureEquivShortcutPromptHistory =>
       'Earlier / later prompt, with the cursor at the start or end of the message box';
+
+  @override
+  String get emptyTeachInboxMessage =>
+      'Nothing needs you. Approvals and questions from running work appear here.';
+
+  @override
+  String get emptyTeachWorkTitle => 'No conversations yet';
+
+  @override
+  String get emptyTeachWorkMessage =>
+      'Conversations you start in this project are listed here, with the ones that need you first. Start one with New conversation.';
+
+  @override
+  String get emptyTeachChangesTitle => 'No changes yet';
+
+  @override
+  String get emptyTeachChangesMessage =>
+      'Edits the agent makes show up here to review.';
+
+  @override
+  String get emptyTeachWorktreesMessage =>
+      'A worktree is a separate copy of this project on its own branch, so parallel work does not mix. Worktrees of this project appear here.';
+
+  @override
+  String get emptyTeachAllowedMessage =>
+      'When you choose Always allow on an approval in this project, it is listed here so you can take it back.';
+
+  @override
+  String get emptyTeachTeamRunsMessage =>
+      'A run is a job the team works through. Start one and its progress shows here.';
+
+  @override
+  String get emptyTeachSkillsMessage =>
+      'Skills are reusable instructions the agent can follow. Skills from this project and this server appear here.';
+
+  @override
+  String get emptyTeachToolsMessage =>
+      'Tools the agent can call with this model appear here. This model has none.';
 }
