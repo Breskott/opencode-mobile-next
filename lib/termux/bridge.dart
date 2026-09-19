@@ -167,6 +167,39 @@ class TermuxBridge {
     return TermuxCommandResult.fromMap(raw ?? const {});
   }
 
+  /// Test seam for [managedServerPassword].
+  static Future<String?> Function()? managedServerPasswordOverride;
+
+  /// The password this app generated for the OpenCode server it manages on
+  /// this phone, read back from the file setup wrote (`~/.oc/server.password`,
+  /// mode 600). Null when there is none or Termux cannot be asked.
+  ///
+  /// The app's own secure copy can be lost while the server keeps running (a
+  /// reinstall, cleared app data, an unreadable keystore after a restore).
+  /// The person was never shown this password and may have no terminal to
+  /// read it from, so the app restores its own secret rather than asking for
+  /// it. The value is never logged and never leaves this device.
+  static Future<String?> managedServerPassword() async {
+    final override = managedServerPasswordOverride;
+    if (override != null) return override();
+    if (!supported) return null;
+    try {
+      final result = await run(
+        'f="\$HOME/.oc/server.password"; [ -s "\$f" ] && cat "\$f"',
+        timeout: const Duration(seconds: 10),
+      );
+      final value = result.stdout.trim();
+      if (value.isEmpty ||
+          value.length > 512 ||
+          RegExp(r'[\x00-\x20\x7f]').hasMatch(value)) {
+        return null;
+      }
+      return value;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<void> verifyBridge() async {
     final result = await run("printf 'opencode-bridge-ok'");
     if (result.stdout.trim() != 'opencode-bridge-ok') {
