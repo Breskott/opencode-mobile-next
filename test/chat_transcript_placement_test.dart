@@ -285,4 +285,83 @@ void main() {
       lessThan(tester.getTopLeft(find.text('Preparing the patch')).dy),
     );
   });
+
+  testWidgets('a thought titles its step and explains itself inside it', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      _message('a1', 'assistant', [
+        Part(
+          id: 'r1',
+          type: 'reasoning',
+          text:
+              '**Rebuilding latest source**\n\nThe bundle is stale, so the '
+              'web build has to run before the routes can be checked.',
+        ),
+        tool('t1', 'bash'),
+      ], created: 2),
+    ]);
+
+    // No "Reasoning (tap to expand)" row of its own.
+    expect(find.byKey(const Key('reasoning-toggle')), findsNothing);
+    expect(find.text('Rebuilding latest source'), findsOneWidget);
+    expect(find.byKey(const Key('step-note')), findsNothing);
+
+    // Why, then what, once the step is opened.
+    await tester.tap(find.text('Rebuilding latest source'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('step-note')), findsOneWidget);
+    expect(find.textContaining('The bundle is stale'), findsOneWidget);
+  });
+
+  testWidgets('a failure the agent got past does not open or redden the work', (
+    tester,
+  ) async {
+    Part failed(String id) => Part(
+      id: id,
+      type: 'tool',
+      callID: id,
+      toolName: 'edit',
+      toolState: ToolState.fromJson(const {
+        'status': 'error',
+        'input': {'filePath': '/work/lib/main.dart'},
+        'error': 'patch verification failed',
+      }, toolName: 'edit'),
+    );
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      _message('a1', 'assistant', [
+        failed('t1'),
+        Part(id: 'r1', type: 'reasoning', text: '**Retrying the patch**'),
+        tool('t2', 'edit'),
+        _text('a1-t', 'Patched.'),
+      ], created: 2),
+    ]);
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.byKey(const Key('work-group-steps')), findsNothing);
+    expect(find.text('patch verification failed'), findsNothing);
+  });
+
+  testWidgets('work that ends on a failure opens itself', (tester) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      _message('a1', 'assistant', [
+        tool('t1', 'read'),
+        Part(id: 'r1', type: 'reasoning', text: '**Applying the patch**'),
+        Part(
+          id: 't2',
+          type: 'tool',
+          callID: 't2',
+          toolName: 'edit',
+          toolState: ToolState.fromJson(const {
+            'status': 'error',
+            'input': {'filePath': '/work/lib/main.dart'},
+            'error': 'patch verification failed',
+          }, toolName: 'edit'),
+        ),
+      ], created: 2),
+    ]);
+    expect(find.byKey(const Key('work-group-steps')), findsOneWidget);
+  });
 }
