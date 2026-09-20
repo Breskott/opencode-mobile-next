@@ -478,7 +478,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatAttachmentUnsupported =>
-      'يمكن إرفاق ملفات PNG وJPEG وGIF وWebP وPDF والملفات النصية فقط.';
+      'يمكن إرفاق الصور وملفات PDF والملفات النصية وملفات Excel وWord ‏(‎.xlsx و‎.docx).';
 
   @override
   String get termuxRestartServer => 'إعادة تشغيل الخادم المحلي';
@@ -17118,4 +17118,49 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatStripBackground => 'في الخلفية';
+
+  @override
+  String chatAttachmentOfficeHeader(String name) {
+    return 'محتويات $name، قُرئت على الهاتف: قيم ونص فقط، دون تنسيق أو مخططات أو صيغ.';
+  }
+
+  @override
+  String get chatAttachmentOfficeTruncated =>
+      'الملف أكبر مما يتسع له الطلب، لذا اقتُطع أدناه.';
+
+  @override
+  String chatAttachmentOfficeUnreadable(String name) {
+    return 'تعذّرت قراءة $name. قد يكون محميًا بكلمة مرور أو تالفًا أو بصيغة Excel أو Word القديمة؛ احفظه بصيغة ‎.xlsx أو ‎.docx أو CSV ثم حاول مجددًا.';
+  }
+
+  @override
+  String chatAttachmentOfficeEmpty(String name) {
+    return 'لا يحتوي $name على ما يمكن إرفاقه.';
+  }
+
+  @override
+  String chatAttachmentDocumentAttached(String name) {
+    return 'أُرفق $name كنص.';
+  }
+
+  @override
+  String chatAttachmentSheetAttached(String name, int sheets, int rows) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sheets,
+      locale: localeName,
+      other: '$sheets ورقة',
+      few: '$sheets أوراق',
+      two: 'ورقتان',
+      one: 'ورقة واحدة',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      rows,
+      locale: localeName,
+      other: '$rows صفًا',
+      few: '$rows صفوف',
+      two: 'صفان',
+      one: 'صف واحد',
+    );
+    return 'أُرفق $name كنص · $_temp0، $_temp1';
+  }
 }

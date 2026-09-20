@@ -230,7 +230,7 @@
       }
     }
   },
-  "chatAttachmentUnsupported": "Only PNG, JPEG, GIF, WebP, PDF, and text files can be attached.",
+  "chatAttachmentUnsupported": "Images, PDFs, text files, and Excel or Word files (.xlsx, .docx) can be attached.",
   "termuxRestartServer": "Restart local server",
   "@termuxRestartServer": {
     "description": "Action that restarts the app-managed OpenCode server running in Termux"
@@ -17997,5 +17997,54 @@
   "chatStripBackground": "Background",
   "@chatStripBackground": {
     "description": "Short chip label above the composer: send the running work to the background"
+  },
+  "chatAttachmentOfficeHeader": "Contents of {name}, read on the phone: values and text only, without formatting, charts or formulas.",
+  "@chatAttachmentOfficeHeader": {
+    "description": "First line of the text attached in place of an Office file",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAttachmentOfficeTruncated": "The file was larger than a prompt can carry, so it is cut short below.",
+  "@chatAttachmentOfficeTruncated": {
+    "description": "Line added when a converted Office file was truncated"
+  },
+  "chatAttachmentOfficeUnreadable": "{name} could not be read. It may be password protected, damaged, or in the older Excel or Word format; save it as .xlsx, .docx or CSV and try again.",
+  "@chatAttachmentOfficeUnreadable": {
+    "description": "Error when an Office file cannot be opened",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAttachmentOfficeEmpty": "{name} has nothing in it to attach.",
+  "@chatAttachmentOfficeEmpty": {
+    "description": "Error when a converted Office file is empty",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAttachmentDocumentAttached": "{name} attached as text.",
+  "@chatAttachmentDocumentAttached": {
+    "description": "Composer note after a Word document was converted",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAttachmentSheetAttached": "{name} attached as text · {sheets, plural, =1{1 sheet} other{{sheets} sheets}}, {rows, plural, =1{1 row} other{{rows} rows}}",
+  "@chatAttachmentSheetAttached": {
+    "description": "Composer note after a workbook was converted to CSV text",
+    "placeholders": {
+      "name": {"type": "String"},
+      "sheets": {"type": "int"},
+      "rows": {"type": "int"}
+    }
   }
 }

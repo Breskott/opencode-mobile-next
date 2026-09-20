@@ -929,7 +929,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatAttachmentUnsupported.
   ///
   /// In en, this message translates to:
-  /// **'Only PNG, JPEG, GIF, WebP, PDF, and text files can be attached.'**
+  /// **'Images, PDFs, text files, and Excel or Word files (.xlsx, .docx) can be attached.'**
   String get chatAttachmentUnsupported;
 
   /// Action that restarts the app-managed OpenCode server running in Termux
@@ -27285,6 +27285,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Background'**
   String get chatStripBackground;
+
+  /// First line of the text attached in place of an Office file
+  ///
+  /// In en, this message translates to:
+  /// **'Contents of {name}, read on the phone: values and text only, without formatting, charts or formulas.'**
+  String chatAttachmentOfficeHeader(String name);
+
+  /// Line added when a converted Office file was truncated
+  ///
+  /// In en, this message translates to:
+  /// **'The file was larger than a prompt can carry, so it is cut short below.'**
+  String get chatAttachmentOfficeTruncated;
+
+  /// Error when an Office file cannot be opened
+  ///
+  /// In en, this message translates to:
+  /// **'{name} could not be read. It may be password protected, damaged, or in the older Excel or Word format; save it as .xlsx, .docx or CSV and try again.'**
+  String chatAttachmentOfficeUnreadable(String name);
+
+  /// Error when a converted Office file is empty
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has nothing in it to attach.'**
+  String chatAttachmentOfficeEmpty(String name);
+
+  /// Composer note after a Word document was converted
+  ///
+  /// In en, this message translates to:
+  /// **'{name} attached as text.'**
+  String chatAttachmentDocumentAttached(String name);
+
+  /// Composer note after a workbook was converted to CSV text
+  ///
+  /// In en, this message translates to:
+  /// **'{name} attached as text · {sheets, plural, =1{1 sheet} other{{sheets} sheets}}, {rows, plural, =1{1 row} other{{rows} rows}}'**
+  String chatAttachmentSheetAttached(String name, int sheets, int rows);
 }
 
 class _AppLocalizationsDelegate

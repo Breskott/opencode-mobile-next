@@ -138,7 +138,7 @@
   "libraryDefaultModel": "الافتراضي للمحادثات الجديدة",
   "libraryNoModel": "لم يُحدّد نموذج",
   "librarySearchResults": "{count, plural, =0 {لا توجد أدوات مطابقة لـ «{query}».} one {نتيجة واحدة لـ «{query}».} two {نتيجتان لـ «{query}».} few {{count} نتائج لـ «{query}».} many {{count} نتيجة لـ «{query}».} other {{count} نتيجة لـ «{query}».}}",
-  "chatAttachmentUnsupported": "يمكن إرفاق ملفات PNG وJPEG وGIF وWebP وPDF والملفات النصية فقط.",
+  "chatAttachmentUnsupported": "يمكن إرفاق الصور وملفات PDF والملفات النصية وملفات Excel وWord ‏(‎.xlsx و‎.docx).",
   "termuxRestartServer": "إعادة تشغيل الخادم المحلي",
   "termuxRestartTitle": "هل تريد إعادة تشغيل الخادم المحلي؟",
   "termuxRestartMessage": "سيتعذّر استخدام OpenCode لفترة قصيرة. سيحتفظ التطبيق بمشروعك الحالي ويعيد الاتصال تلقائيًا.",
@@ -4521,5 +4521,11 @@
   "chatStripContextPending": "سياق قيد الانتظار",
   "chatStripAutoApprove": "موافقة تلقائية",
   "chatStripAutoApprovePaused": "الموافقة التلقائية متوقفة",
-  "chatStripBackground": "في الخلفية"
+  "chatStripBackground": "في الخلفية",
+  "chatAttachmentOfficeHeader": "محتويات {name}، قُرئت على الهاتف: قيم ونص فقط، دون تنسيق أو مخططات أو صيغ.",
+  "chatAttachmentOfficeTruncated": "الملف أكبر مما يتسع له الطلب، لذا اقتُطع أدناه.",
+  "chatAttachmentOfficeUnreadable": "تعذّرت قراءة {name}. قد يكون محميًا بكلمة مرور أو تالفًا أو بصيغة Excel أو Word القديمة؛ احفظه بصيغة ‎.xlsx أو ‎.docx أو CSV ثم حاول مجددًا.",
+  "chatAttachmentOfficeEmpty": "لا يحتوي {name} على ما يمكن إرفاقه.",
+  "chatAttachmentDocumentAttached": "أُرفق {name} كنص.",
+  "chatAttachmentSheetAttached": "أُرفق {name} كنص · {sheets, plural, =1{ورقة واحدة} two{ورقتان} few{{sheets} أوراق} other{{sheets} ورقة}}، {rows, plural, =1{صف واحد} two{صفان} few{{rows} صفوف} other{{rows} صفًا}}"
 }
