@@ -27261,6 +27261,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The conversation is still too long for the model, so the next turn will try again.'**
   String get chatUiCompactionFailedHint;
+
+  /// Short chip label above the composer: the server will hand the agent new context at its next step
+  ///
+  /// In en, this message translates to:
+  /// **'Context pending'**
+  String get chatStripContextPending;
+
+  /// Short chip label above the composer while permission requests are approved automatically; may be followed by a count
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-approve'**
+  String get chatStripAutoApprove;
+
+  /// Short chip label above the composer while automatic approval is paused because the app is disconnected
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-approve paused'**
+  String get chatStripAutoApprovePaused;
+
+  /// Short chip label above the composer: send the running work to the background
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get chatStripBackground;
 }
 
 class _AppLocalizationsDelegate

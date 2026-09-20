@@ -491,7 +491,7 @@ void main() {
     conn.busySessions.add('session-1');
     conn.notifyListeners();
     await tester.pump();
-    expect(find.text('Background subagents'), findsOneWidget);
+    expect(find.text('Background'), findsOneWidget);
     expect(repository.capabilityReads, 1);
     expect(
       tester.getSize(find.byKey(const Key('background-running-work'))).height,

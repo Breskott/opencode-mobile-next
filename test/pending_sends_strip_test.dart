@@ -293,14 +293,14 @@ void main() {
     _enqueue(controller, inboxID: 'msg_ctx', type: 'synthetic');
     await _settle(tester);
 
-    expect(find.text('Context update pending'), findsOneWidget);
+    expect(find.text('Context pending'), findsOneWidget);
     // A standing fact, so a chip in the strip above the composer, not a
     // bubble of its own among the things you sent.
     expect(find.byKey(const Key('pending-context-chip')), findsOneWidget);
     expect(find.byKey(const ValueKey('pending-send-msg_ctx')), findsNothing);
     _enqueue(controller, inboxID: 'msg_ctx2', type: 'synthetic');
     await _settle(tester);
-    expect(find.text('Context update pending · 2'), findsOneWidget);
+    expect(find.text('Context pending · 2'), findsOneWidget);
     expect(find.byKey(const ValueKey('inbox-action-cancel')), findsNothing);
     expect(find.byKey(const ValueKey('inbox-action-steer')), findsNothing);
     expect(find.byKey(const ValueKey('inbox-action-queue')), findsNothing);
@@ -308,6 +308,43 @@ void main() {
 
   // The busy chat runs a looping typing indicator, so these use pump() with
   // explicit frames rather than pumpAndSettle (which would never settle).
+  testWidgets('a prompt waiting in the inbox is shown once, not twice', (
+    tester,
+  ) async {
+    final api = _V2ChatApi();
+    final controller = await _controller(api);
+    addTearDown(controller.dispose);
+    await _pumpChat(tester, controller);
+    controller.busySessions.add('session-1');
+    controller.notifyListeners();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'Why vertical offers?',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('chat-send-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    // Sent: its optimistic copy stands in the transcript.
+    expect(find.text('Why vertical offers?'), findsOneWidget);
+
+    // The server holds it for the next step. It is now the waiting bubble,
+    // with its flip and cancel; the transcript does not repeat it.
+    _enqueue(
+      controller,
+      inboxID: 'msg_wait',
+      text: 'Why vertical offers?',
+      delivery: 'steer',
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Why vertical offers?'), findsOneWidget);
+    expect(find.byKey(const ValueKey('pending-send-msg_wait')), findsOneWidget);
+  });
+
   testWidgets('while busy on v2 Stop and Send sit side by side; the toggle '
       'queues', (tester) async {
     final api = _V2ChatApi();

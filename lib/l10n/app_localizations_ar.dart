@@ -17106,4 +17106,16 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get chatUiCompactionFailedHint =>
       'ما زالت المحادثة أطول مما يسمح به النموذج، لذا ستُعاد المحاولة في الدور التالي.';
+
+  @override
+  String get chatStripContextPending => 'سياق قيد الانتظار';
+
+  @override
+  String get chatStripAutoApprove => 'موافقة تلقائية';
+
+  @override
+  String get chatStripAutoApprovePaused => 'الموافقة التلقائية متوقفة';
+
+  @override
+  String get chatStripBackground => 'في الخلفية';
 }

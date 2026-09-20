@@ -421,41 +421,48 @@ class _AutoApprovalIndicator extends StatelessWidget {
     // is what changes, which is what makes a glance worth it.
     // Never silent: once something has been approved, the chip names the
     // latest and counts them; before that it states the mode.
-    final text = connected && last != null
-        ? '${detail!} · ${approved.length}'
-        : detail != null
-        ? '$label · $detail'
-        : label;
+    // Short on the chip; the full wording (what was approved last, where
+    // the setting comes from) is the accessibility label and the sheet.
+    final text = !connected
+        ? strings.chatStripAutoApprovePaused
+        : approved.isEmpty
+        ? strings.chatStripAutoApprove
+        : '${strings.chatStripAutoApprove} · ${approved.length}';
     return Semantics(
       button: true,
       label: [label, ?detail, strings.approvalsUiOpenSettings].join('. '),
       excludeSemantics: true,
-      child: ActionChip(
-        key: const Key('auto-approval-indicator'),
-        onPressed: onOpen,
-        materialTapTargetSize: MaterialTapTargetSize.padded,
-        side: BorderSide.none,
-        backgroundColor: connected
-            ? theme.colorScheme.secondaryContainer
-            : theme.colorScheme.surfaceContainerHigh,
-        avatar: Icon(
-          !connected
-              ? AppIconography.permissions
-              : effective.inherited
-              ? AppIconography.nested
-              : AppIconography.shield,
-          size: 16,
-          color: theme.colorScheme.primary,
-        ),
-        label: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.sizeOf(context).width * .62,
+      child: Tooltip(
+        // Long-press says the rest: what was approved last, or where the
+        // setting comes from.
+        message: [label, ?detail].join(' · '),
+        child: ActionChip(
+          key: const Key('auto-approval-indicator'),
+          onPressed: onOpen,
+          materialTapTargetSize: MaterialTapTargetSize.padded,
+          side: BorderSide.none,
+          backgroundColor: connected
+              ? theme.colorScheme.secondaryContainer
+              : theme.colorScheme.surfaceContainerHigh,
+          avatar: Icon(
+            !connected
+                ? AppIconography.permissions
+                : effective.inherited
+                ? AppIconography.nested
+                : AppIconography.shield,
+            size: 16,
+            color: theme.colorScheme.primary,
           ),
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelMedium,
+          label: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * .62,
+            ),
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium,
+            ),
           ),
         ),
       ),

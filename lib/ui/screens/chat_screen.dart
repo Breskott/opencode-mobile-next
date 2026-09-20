@@ -3231,70 +3231,73 @@ class _ChatScreenState extends State<ChatScreen>
       alignment: AlignmentDirectional.centerStart,
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 0),
-        child: Wrap(
+        // One line, always. Short labels keep all three on a phone's width;
+        // at large text sizes the line scrolls sideways instead of stacking.
+        child: SingleChildScrollView(
           key: const Key('composer-status-strip'),
-          spacing: 8,
-          children: [
-            if (pendingContext > 0)
-              Chip(
-                key: const Key('pending-context-chip'),
-                materialTapTargetSize: MaterialTapTargetSize.padded,
-                side: BorderSide.none,
-                backgroundColor: theme.colorScheme.surfaceContainerHigh,
-                avatar: Icon(
-                  AppIconography.sparkle,
-                  size: 16,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                label: Text(
-                  pendingContext > 1
-                      ? '${strings.chatUiContextUpdatePending} · $pendingContext'
-                      : strings.chatUiContextUpdatePending,
-                  style: theme.textTheme.labelMedium,
-                ),
-              ),
-            if (showApproval)
-              _AutoApprovalIndicator(
-                key: const ValueKey('auto-approval-indicator-slot'),
-                effective: approval,
-                connected: _conn.isConnected,
-                approved: _conn.autoApprovedFor(widget.sessionID),
-                onOpen: () => unawaited(
-                  showSessionApprovalsSheet(
-                    context,
-                    controller: _conn,
-                    sessionID: widget.sessionID,
-                  ),
-                ),
-              ),
-            if (showBackground)
-              Tooltip(
-                message: strings.backgroundWorkShortcut,
-                child: ActionChip(
-                  key: const Key('background-running-work'),
-                  onPressed: _backgrounding ? null : _backgroundRunningWork,
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            spacing: 8,
+            children: [
+              if (pendingContext > 0)
+                Chip(
+                  key: const Key('pending-context-chip'),
                   materialTapTargetSize: MaterialTapTargetSize.padded,
                   side: BorderSide.none,
                   backgroundColor: theme.colorScheme.surfaceContainerHigh,
-                  avatar: _backgrounding
-                      ? const SizedBox.square(
-                          dimension: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(
-                          AppIconography.lowPriority,
-                          size: 16,
-                          color: theme.colorScheme.primary,
-                        ),
+                  avatar: Icon(
+                    AppIconography.sparkle,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   label: Text(
-                    _backgroundSupport == BackgroundWorkSupport.subagents
-                        ? strings.backgroundSubagentsTitle
-                        : strings.workRunInBackground,
+                    pendingContext > 1
+                        ? '${strings.chatStripContextPending} · $pendingContext'
+                        : strings.chatStripContextPending,
                     style: theme.textTheme.labelMedium,
                   ),
                 ),
-              ),
-          ],
+              if (showApproval)
+                _AutoApprovalIndicator(
+                  key: const ValueKey('auto-approval-indicator-slot'),
+                  effective: approval,
+                  connected: _conn.isConnected,
+                  approved: _conn.autoApprovedFor(widget.sessionID),
+                  onOpen: () => unawaited(
+                    showSessionApprovalsSheet(
+                      context,
+                      controller: _conn,
+                      sessionID: widget.sessionID,
+                    ),
+                  ),
+                ),
+              if (showBackground)
+                Tooltip(
+                  message: strings.backgroundWorkShortcut,
+                  child: ActionChip(
+                    key: const Key('background-running-work'),
+                    onPressed: _backgrounding ? null : _backgroundRunningWork,
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
+                    side: BorderSide.none,
+                    backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                    avatar: _backgrounding
+                        ? const SizedBox.square(
+                            dimension: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            AppIconography.lowPriority,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
+                    label: Text(
+                      strings.chatStripBackground,
+                      style: theme.textTheme.labelMedium,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -6600,9 +6603,28 @@ class _ChatScreenState extends State<ChatScreen>
         ? _queuedAfterIndex(_messages)
         : -1;
     final displayParts = _timelineDisplayParts(_messages);
+    // A prompt waiting in the server's inbox (steering, or queued behind the
+    // run) is shown once, as its waiting bubble above the composer, where
+    // it can still be flipped or cancelled. Its optimistic copy in the
+    // transcript would say the same thing a second time, and would make the
+    // running turn look finished.
+    final waitingTexts = !_conn.isIsolated && _conn.capabilities.inbox
+        ? {
+            for (final item in _conn.inboxItemsFor(widget.sessionID))
+              if (item.type == 'user') (item.promptText ?? '').trim(),
+          }
+        : const <String>{};
+    final waitingLocalIDs = {
+      if (waitingTexts.isNotEmpty)
+        for (final message in _messages)
+          if (message.info.id.startsWith('local-') &&
+              waitingTexts.contains(_messageText(message).trim()))
+            message.info.id,
+    };
     final turnActionOwners = _turnActionOwners(
       _messages,
       displayParts,
+      ignore: waitingLocalIDs,
       metaAlways: _conn.transcriptTimestampsVisible,
       running: _conn.busySessions.contains(widget.sessionID),
     );
@@ -6931,6 +6953,10 @@ class _ChatScreenState extends State<ChatScreen>
                                                         1 -
                                                         i;
                                                     final m = _messages[index];
+                                                    if (waitingLocalIDs
+                                                        .contains(m.info.id)) {
+                                                      return const SizedBox.shrink();
+                                                    }
                                                     if (v2VariantPart(m)
                                                         case final tagged?) {
                                                       return V2TranscriptRow(

@@ -484,6 +484,7 @@ Set<int> _turnActionOwners(
   List<List<Part>> display, {
   required bool metaAlways,
   bool running = false,
+  Set<String> ignore = const {},
 }) {
   final owners = <int>{};
   int? lastStep;
@@ -510,6 +511,8 @@ Set<int> _turnActionOwners(
   }
 
   for (var index = 0; index < messages.length; index += 1) {
+    // Not drawn, so neither a prompt that ends a turn nor a step of one.
+    if (ignore.contains(messages[index].info.id)) continue;
     if (_isPrompt(messages[index])) {
       closeTurn();
     } else if (messages[index].info.role == 'assistant') {
@@ -1913,6 +1916,7 @@ class _MessageView extends StatelessWidget {
               key: isUser ? ValueKey('user-prompt-${m.info.id}') : null,
               // Keep prompts readable on wide screens instead of stretching
               // them across a tablet.
+              width: isUser ? double.infinity : null,
               constraints: isUser
                   ? const BoxConstraints(maxWidth: _proseWidthCap)
                   : null,
@@ -1923,10 +1927,27 @@ class _MessageView extends StatelessWidget {
                   ? const EdgeInsetsDirectional.only(start: 8)
                   : EdgeInsets.zero,
               padding: isUser
-                  ? const EdgeInsetsDirectional.fromSTEB(10, 2, 4, 2)
+                  ? const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 8)
                   : const EdgeInsets.symmetric(horizontal: 4),
+              // The rule says whose words these are; the wash behind them,
+              // fading out from the rule, makes that unmistakable at a
+              // glance without boxing the text in or costing any width.
               decoration: isUser
                   ? BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: AlignmentDirectional.centerStart.resolve(
+                          Directionality.of(context),
+                        ),
+                        end: AlignmentDirectional.centerEnd.resolve(
+                          Directionality.of(context),
+                        ),
+                        colors: [
+                          theme.colorScheme.primary.withValues(alpha: .20),
+                          theme.colorScheme.primary.withValues(alpha: .06),
+                          theme.colorScheme.primary.withValues(alpha: 0),
+                        ],
+                        stops: const [0, .55, 1],
+                      ),
                       border: BorderDirectional(
                         start: BorderSide(
                           color: theme.colorScheme.primary,
@@ -2011,24 +2032,11 @@ class _MessageView extends StatelessWidget {
               ),
             if (metaParts.isNotEmpty || (showActions && onLongPress != null))
               Padding(
-                padding: const EdgeInsetsDirectional.only(
-                  top: 1,
-                  start: 6,
-                  end: 6,
-                ),
+                // The first control's disc starts where the prose starts.
+                padding: const EdgeInsetsDirectional.only(top: 1, end: 6),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (metaParts.isNotEmpty)
-                      Flexible(
-                        child: Text(
-                          key: ValueKey('message-meta-${m.info.id}'),
-                          metaParts.join('  ·  '),
-                          style: theme.textTheme.labelSmall!.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
                     if (showActions && onCopy != null)
                       Semantics(
                         button: true,
@@ -2045,10 +2053,20 @@ class _MessageView extends StatelessWidget {
                                 minHeight: 44,
                               ),
                               child: Center(
-                                child: Icon(
-                                  AppIcons.copy,
-                                  size: 17,
-                                  color: theme.colorScheme.onSurfaceVariant,
+                                child: Container(
+                                  width: _MessageActionsDisc.diameter,
+                                  height: _MessageActionsDisc.diameter,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        theme.colorScheme.surfaceContainerHigh,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    AppIcons.copy,
+                                    size: 15,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
                               ),
                             ),
@@ -2082,6 +2100,23 @@ class _MessageView extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (metaParts.isNotEmpty)
+                      Flexible(
+                        child: Padding(
+                          // After the controls; alone, it starts on the
+                          // prose edge like everything else.
+                          padding: EdgeInsetsDirectional.only(
+                            start: showActions ? 4 : 8,
+                          ),
+                          child: Text(
+                            key: ValueKey('message-meta-${m.info.id}'),
+                            metaParts.join('  ·  '),
+                            style: theme.textTheme.labelSmall!.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -2785,7 +2820,9 @@ class _ReasoningState extends State<_Reasoning> {
         );
         return Container(
           key: const Key('assistant-reasoning-block'),
-          margin: const EdgeInsets.only(bottom: 6),
+          // Its rule stands on the same edge as the prose and as the rule
+          // of your own messages.
+          margin: const EdgeInsetsDirectional.only(start: 4, bottom: 6),
           decoration: BoxDecoration(
             border: Border(
               left: BorderSide(
