@@ -3366,7 +3366,7 @@
   "e7VoiceUiLengthFailed": "حجم النموذج المنزّل غير متوقّع. أعد تنزيله.",
   "e7VoiceUiIncomplete": "تنزيل النموذج غير مكتمل. حاول مجددًا.",
   "e7VoiceUiDownloadFailed": "تعذّر تنزيل النموذج الصوتي. حاول مجددًا.",
-  "e7VoiceUiMemory": "يتطلب {model} ذاكرة تطبيق لا تقل عن {required} ميغابايت؛ والمتاح وفقًا لهذا الجهاز {available} ميغابايت.",
+  "e7VoiceUiMemory": "يحتاج {model} إلى هاتف بذاكرة تبلغ نحو {required} ميغابايت؛ ذاكرة هذا الهاتف {available} ميغابايت.",
   "e7VoiceUiStorage": "يتطلب {model} مساحة خالية قدرها {size}، تشمل هامشًا احتياطيًا.",
   "e7ModelUiProviderFallback": "مزوّد خدمة",
   "e7ModelUiProviderPair": "{first} و{last}",

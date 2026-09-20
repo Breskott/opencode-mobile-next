@@ -20327,7 +20327,7 @@ abstract class AppLocalizations {
   /// Voice/model presentation: e7VoiceUiMemory
   ///
   /// In en, this message translates to:
-  /// **'{model} needs at least {required} MB of app memory; this device reports {available} MB.'**
+  /// **'{model} needs a phone with about {required} MB of memory; this one has {available} MB.'**
   String e7VoiceUiMemory(String model, int required, int available);
 
   /// Voice/model presentation: e7VoiceUiStorage
