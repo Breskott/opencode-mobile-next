@@ -296,8 +296,8 @@ void main() {
           id: 'r1',
           type: 'reasoning',
           text:
-              '**Rebuilding latest source**\n\nThe bundle is stale, so the '
-              'web build has to run before the routes can be checked.',
+              // Short, like a real one: a centred line would sit mid-row.
+              '**Rebuilding latest source**\n\nThe bundle is stale.',
         ),
         tool('t1', 'bash'),
       ], created: 2),
@@ -313,6 +313,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('step-note')), findsOneWidget);
     expect(find.textContaining('The bundle is stale'), findsOneWidget);
+    // It reads from the leading edge, under the step's title; not centred.
+    expect(
+      tester.getTopLeft(find.textContaining('The bundle is stale')).dx,
+      lessThan(60),
+    );
   });
 
   testWidgets('a failure the agent got past does not open or redden the work', (
@@ -363,5 +368,30 @@ void main() {
       ], created: 2),
     ]);
     expect(find.byKey(const Key('work-group-steps')), findsOneWidget);
+  });
+
+  testWidgets('long prose thinking stays a thinking block, not a step title', (
+    tester,
+  ) async {
+    const thinking =
+        'Okay, let me look at the router.\n\nThe credit products are sent to '
+        'the wrong specialist, which suggests the intent table is matched '
+        'before the product table. I should read the routing code first and '
+        'then check how the seed profile marks an expired card.';
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      _message('a1', 'assistant', [
+        Part(id: 'r1', type: 'reasoning', text: thinking),
+        tool('t1', 'read'),
+        _text('a1-t', 'Found it.'),
+      ], created: 2),
+    ]);
+    // Thought and tool are two steps of one stretch of work.
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('assistant-reasoning-block')), findsOneWidget);
+    // The tool keeps its own name; the first sentence did not become a title.
+    expect(find.text('Read'), findsOneWidget);
+    expect(find.byKey(const Key('step-note')), findsNothing);
   });
 }

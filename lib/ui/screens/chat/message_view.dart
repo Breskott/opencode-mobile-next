@@ -954,6 +954,15 @@ class _AssistantPartRun {
   final breakAt = text.indexOf('\n');
   final first = (breakAt < 0 ? text : text.substring(0, breakAt)).trim();
   if (first.length > 72) return null;
+  // Models differ. Some open every thought with a title of their own
+  // ("**Rebuilding latest source**"); others think in long prose whose first
+  // line is just its first sentence ("Okay, let me look at the router.").
+  // Only a line the model marked as a heading may title a step when more
+  // follows it; prose stays a thinking block of its own.
+  final markedHeading =
+      first.startsWith('#') ||
+      (first.startsWith('**') && first.endsWith('**') && first.length > 4);
+  if (breakAt >= 0 && !markedHeading) return null;
   final plain = first.replaceAll(RegExp(r'[*_`#]+'), '').trim();
   if (plain.isEmpty) return null;
   final rest = breakAt < 0 ? '' : text.substring(breakAt).trim();
