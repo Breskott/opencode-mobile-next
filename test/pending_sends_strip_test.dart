@@ -405,6 +405,101 @@ void main() {
     );
   });
 
+  group('steering several times in a row', () {
+    Future<(_V2ChatApi, ConnectionController)> busyChat(
+      WidgetTester tester,
+    ) async {
+      final api = _V2ChatApi();
+      final controller = await _controller(api);
+      addTearDown(controller.dispose);
+      await _pumpChat(tester, controller);
+      controller.busySessions.add('session-1');
+      controller.notifyListeners();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      return (api, controller);
+    }
+
+    Future<void> send(WidgetTester tester, String text) async {
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        text,
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('chat-send-button')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets('waiting steers are taken back and sent as one message', (
+      tester,
+    ) async {
+      final (api, controller) = await busyChat(tester);
+      _enqueue(
+        controller,
+        inboxID: 'm1',
+        text: 'Use a carousel',
+        delivery: 'steer',
+      );
+      _enqueue(
+        controller,
+        inboxID: 'm2',
+        text: 'and keep it compact',
+        delivery: 'steer',
+      );
+      // Queued for after the run is a different intent: it is left alone.
+      _enqueue(
+        controller,
+        inboxID: 'm3',
+        text: 'then write tests',
+        delivery: 'queue',
+      );
+      await tester.pump();
+
+      await send(tester, 'with a detail sheet');
+
+      expect(api.inboxCancels.map((c) => c.$2), ['m1', 'm2']);
+      expect(api.prompts.single.delivery, PromptDelivery.steer);
+      expect(
+        api.prompts.single.text,
+        'Use a carousel\n\nand keep it compact\n\nwith a detail sheet',
+      );
+    });
+
+    testWidgets('one the agent already took goes out on its own', (
+      tester,
+    ) async {
+      final (api, controller) = await busyChat(tester);
+      _enqueue(controller, inboxID: 'm1', text: 'Too late', delivery: 'steer');
+      await tester.pump();
+      api.inboxError = ApiException('delivered', statusCode: 409);
+
+      await send(tester, 'next thought');
+
+      expect(api.prompts.single.text, 'next thought');
+    });
+
+    testWidgets('a message for after the run merges nothing', (tester) async {
+      final (api, controller) = await busyChat(tester);
+      _enqueue(controller, inboxID: 'm1', text: 'Steer me', delivery: 'steer');
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        'later please',
+      );
+      await tester.pump();
+      await tester.tap(find.text('Queue'));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('chat-send-button')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(api.inboxCancels, isEmpty);
+      expect(api.prompts.single.text, 'later please');
+      expect(api.prompts.single.delivery, PromptDelivery.queue);
+    });
+  });
+
   testWidgets('while busy on v2 Stop and Send sit side by side; the toggle '
       'queues', (tester) async {
     final api = _V2ChatApi();
