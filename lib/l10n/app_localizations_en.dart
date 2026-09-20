@@ -475,7 +475,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatAttachmentUnsupported =>
-      'Only PNG, JPEG, GIF, WebP, PDF, and text files can be attached.';
+      'Images, PDFs, text files, and Excel or Word files (.xlsx, .docx) can be attached.';
 
   @override
   String get termuxRestartServer => 'Restart local server';
@@ -16864,4 +16864,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatStripBackground => 'Background';
+
+  @override
+  String chatAttachmentOfficeHeader(String name) {
+    return 'Contents of $name, read on the phone: values and text only, without formatting, charts or formulas.';
+  }
+
+  @override
+  String get chatAttachmentOfficeTruncated =>
+      'The file was larger than a prompt can carry, so it is cut short below.';
+
+  @override
+  String chatAttachmentOfficeUnreadable(String name) {
+    return '$name could not be read. It may be password protected, damaged, or in the older Excel or Word format; save it as .xlsx, .docx or CSV and try again.';
+  }
+
+  @override
+  String chatAttachmentOfficeEmpty(String name) {
+    return '$name has nothing in it to attach.';
+  }
+
+  @override
+  String chatAttachmentDocumentAttached(String name) {
+    return '$name attached as text.';
+  }
+
+  @override
+  String chatAttachmentSheetAttached(String name, int sheets, int rows) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sheets,
+      locale: localeName,
+      other: '$sheets sheets',
+      one: '1 sheet',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      rows,
+      locale: localeName,
+      other: '$rows rows',
+      one: '1 row',
+    );
+    return '$name attached as text · $_temp0, $_temp1';
+  }
 }

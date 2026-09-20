@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show compute, listEquals;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -41,6 +41,7 @@ import '../../voice/voice_ui.dart';
 import '../../voice/read_aloud.dart';
 import '../navigation/chat_route.dart';
 import '../../domain/agent_error_text.dart';
+import '../../domain/office_text.dart';
 import '../agent_error_words.dart';
 import '../app_theme.dart';
 import '../desktop/context_menu.dart';
@@ -3501,6 +3502,9 @@ class _ChatScreenState extends State<ChatScreen>
     if (bytes == null) {
       throw ProductException(strings.chatUiEachAttachmentMustBe10MBOr);
     }
+    if (isOfficeDocument(file.name)) {
+      return _officeAttachment(file.name, bytes);
+    }
     final mime = promptAttachmentMime(filename: file.name, bytes: bytes);
     if (mime == null) {
       throw ProductException(unsupportedAttachment);
@@ -3511,6 +3515,53 @@ class _ChatScreenState extends State<ChatScreen>
       url: 'data:$mime;base64,${base64Encode(bytes)}',
     );
     return attachment;
+  }
+
+  /// A workbook or Word document, attached as the text it contains. No model
+  /// takes these files as they are; read on the phone, a sheet is CSV and a
+  /// document is its paragraphs, which an agent can work with.
+  Future<PromptAttachment> _officeAttachment(
+    String filename,
+    Uint8List bytes,
+  ) async {
+    final strings = _chatL10n(context);
+    final OfficeText converted;
+    try {
+      // Off the UI thread: a large sheet is a lot of XML.
+      converted = await compute(
+        (({String name, Uint8List bytes}) input) =>
+            officeDocumentAsText(input.name, input.bytes),
+        (name: filename, bytes: bytes),
+      );
+    } on FormatException {
+      throw ProductException(strings.chatAttachmentOfficeUnreadable(filename));
+    }
+    if (converted.text.isEmpty) {
+      throw ProductException(strings.chatAttachmentOfficeEmpty(filename));
+    }
+    final spreadsheet = !filename.toLowerCase().endsWith('.docx');
+    final text = [
+      strings.chatAttachmentOfficeHeader(filename),
+      if (converted.truncated) strings.chatAttachmentOfficeTruncated,
+      '',
+      converted.text,
+    ].join('\n');
+    if (mounted) {
+      _showComposerNote(
+        spreadsheet
+            ? strings.chatAttachmentSheetAttached(
+                filename,
+                converted.sections,
+                converted.lines,
+              )
+            : strings.chatAttachmentDocumentAttached(filename),
+      );
+    }
+    return PromptAttachment(
+      mime: 'text/plain',
+      filename: '$filename.${spreadsheet ? 'csv' : 'txt'}',
+      url: 'data:text/plain;base64,${base64Encode(utf8.encode(text))}',
+    );
   }
 
   Future<void> _openPromptEditor() async {
