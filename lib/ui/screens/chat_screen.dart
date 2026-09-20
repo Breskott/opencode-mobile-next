@@ -4284,6 +4284,24 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+  /// Whether the failed compaction at [index] is still the state of things:
+  /// it is the newest compaction notice, nothing is running, and this server
+  /// can compact on request.
+  bool _canCompactAgain(int index) {
+    if (_conn.isIsolated || !_supportsSessionCompact) return false;
+    if (_conn.busySessions.contains(widget.sessionID)) return false;
+    final part = v2VariantPart(_messages[index]);
+    if (part?.type != 'v2:compaction' || part?.toolName != 'failed') {
+      return false;
+    }
+    for (var later = index + 1; later < _messages.length; later += 1) {
+      if (v2VariantPart(_messages[later])?.type == 'v2:compaction') {
+        return false;
+      }
+    }
+    return true;
+  }
+
   Future<void> _compact() async {
     if (!_supportsSessionCompact) return;
     final model = _conn.modelForSession(widget.sessionID);
@@ -6896,6 +6914,14 @@ class _ChatScreenState extends State<ChatScreen>
                                                             widget.sessionID,
                                                         knownSessions:
                                                             _conn.sessionsById,
+                                                        onCompactAgain:
+                                                            _canCompactAgain(
+                                                              index,
+                                                            )
+                                                            ? () => unawaited(
+                                                                _compact(),
+                                                              )
+                                                            : null,
                                                         onOpenChild:
                                                             _conn
                                                                 .capabilities

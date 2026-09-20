@@ -617,7 +617,14 @@ class TranscriptNotice extends StatefulWidget {
     this.headerMono,
     this.markdown = false,
     this.error = false,
+    this.actionLabel,
+    this.onAction,
   });
+
+  /// The one thing to do about this notice, on its header line ("Compact
+  /// again" on a failed compaction). Absent when there is nothing to do.
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   final String header;
 
@@ -691,6 +698,15 @@ class _TranscriptNoticeState extends State<TranscriptNotice> {
                         ),
                       ),
                     ),
+                    if (widget.onAction != null && widget.actionLabel != null)
+                      TextButton(
+                        key: const Key('transcript-notice-action'),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: widget.onAction,
+                        child: Text(widget.actionLabel!),
+                      ),
                     if (body.isNotEmpty)
                       Icon(
                         _open
@@ -748,8 +764,12 @@ class V2TranscriptRow extends StatelessWidget {
     this.parentSessionID,
     this.knownSessions = const {},
     this.onOpenChild,
+    this.onCompactAgain,
   });
 
+  /// Retries a failed compaction. Given only for the newest failure while
+  /// the conversation is idle; older ones are history.
+  final VoidCallback? onCompactAgain;
   final Part part;
   final String messageId;
   final String? parentSessionID;
@@ -804,8 +824,15 @@ class V2TranscriptRow extends StatelessWidget {
             key: ValueKey('compaction-failed-$messageId'),
             icon: AppIconography.collapse,
             header: _chatL10n(context).chatUiCompactionFailed,
-            text: part.text,
+            // What it means for the reader, then the server's own reason.
+            text: [
+              _chatL10n(context).chatUiCompactionFailedHint,
+              if (part.text.trim().isNotEmpty)
+                agentErrorWords(part.text, _chatL10n(context)).headline,
+            ].join(' '),
             error: true,
+            actionLabel: _chatL10n(context).chatUiCompactAgain,
+            onAction: onCompactAgain,
           ),
           _ => TranscriptNotice(
             key: ValueKey('compaction-completed-$messageId'),
@@ -839,10 +866,21 @@ class V2TranscriptRow extends StatelessWidget {
           ),
           _ => (
             AppIconography.server,
-            part.filename ?? _chatL10n(context).chatUiServerMessage,
+            part.filename ??
+                _noticeTitle(part.text) ??
+                _chatL10n(context).chatUiServerMessage,
             null,
           ),
         };
+        final titledByText =
+            part.filename == null &&
+            !const {
+              'instructions',
+              'synthetic',
+              'system',
+              'skill',
+            }.contains(kind) &&
+            _noticeTitle(part.text) != null;
         return TranscriptNotice(
           key: ValueKey('transcript-notice-$messageId'),
           icon: icon,
@@ -852,10 +890,26 @@ class V2TranscriptRow extends StatelessWidget {
               ? _chatL10n(context).sessionInstructionsApplied
               : kind == 'skill' && part.filename == null
               ? ''
+              : titledByText
+              ? _noticeRest(part.text)
               : part.text,
         );
     }
   }
+}
+
+/// A notice's own first line, when it is short enough to be a title. "Server
+/// message" says nothing; the message usually says what it is about.
+String? _noticeTitle(String text) {
+  final first = text.trim().split('\n').first.trim();
+  final plain = first.replaceAll(RegExp(r'[*_`#]+'), '').trim();
+  return plain.isEmpty || plain.length > 60 ? null : plain;
+}
+
+String _noticeRest(String text) {
+  final trimmed = text.trim();
+  final breakAt = trimmed.indexOf('\n');
+  return breakAt < 0 ? '' : trimmed.substring(breakAt).trim();
 }
 
 const _contextToolNames = {'read', 'list', 'glob', 'grep'};
