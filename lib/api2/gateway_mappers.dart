@@ -665,11 +665,11 @@ ProvidersResponse mapApi2Providers({
         name: provider.name ?? provider.id,
         modelIDs: [
           for (final model in providerModels)
-            if (model.enabled) model.modelID ?? model.id,
+            if (model.enabled) api2CatalogModelID(model),
         ],
         modelData: {
           for (final model in providerModels)
-            model.modelID ?? model.id: _modelData(model),
+            api2CatalogModelID(model): _modelData(model),
         },
       ),
     );
@@ -683,11 +683,11 @@ ProvidersResponse mapApi2Providers({
         name: entry.key,
         modelIDs: [
           for (final model in entry.value)
-            if (model.enabled) model.modelID ?? model.id,
+            if (model.enabled) api2CatalogModelID(model),
         ],
         modelData: {
           for (final model in entry.value)
-            model.modelID ?? model.id: _modelData(model),
+            api2CatalogModelID(model): _modelData(model),
         },
       ),
     );
@@ -695,7 +695,9 @@ ProvidersResponse mapApi2Providers({
   return ProvidersResponse(
     providers: infos,
     defaultProviderID: defaultModel?.providerID,
-    defaultModelID: defaultModel?.modelID ?? defaultModel?.id,
+    defaultModelID: defaultModel == null
+        ? null
+        : api2CatalogModelID(defaultModel),
   );
 }
 
@@ -728,12 +730,41 @@ String? _modelRefString(Api2ModelRef? ref) =>
 
 // ---------------- Catalog ----------------
 
+/// The id the app selects, sends and compares a model by: the server's own.
+///
+/// It is not the API model id. OpenCode 2 lists a model's modes as models of
+/// their own (`gpt-6-astra-fast` beside `gpt-6-astra`) that share one
+/// `modelID`; keying by that made the two rows one model to the picker (both
+/// ticked, and choosing "fast" sent the plain one). Only the early betas'
+/// composite `provider/model` ids are peeled, which is what `modelID` was
+/// first used for here.
+String api2CatalogModelID(Api2ModelInfo model) {
+  final provider = model.providerID;
+  if (provider != null && model.id.startsWith('$provider/')) {
+    return model.id.substring(provider.length + 1);
+  }
+  return model.id;
+}
+
+/// A mode's name, told apart from its base model when the server gives both
+/// the same one: "GPT-6 Astra · fast".
+String _api2ModelName(Api2ModelInfo model) {
+  final id = api2CatalogModelID(model);
+  final name = model.name ?? id;
+  final base = model.modelID;
+  if (base == null || base == id || !id.startsWith('$base-')) return name;
+  final mode = id.substring(base.length + 1);
+  return name.toLowerCase().contains(mode.toLowerCase())
+      ? name
+      : '$name · $mode';
+}
+
 CatalogModel mapApi2CatalogModel(Api2ModelInfo model) {
   final rawVariants = model.raw['variants'];
   return CatalogModel(
-    id: model.modelID ?? model.id,
+    id: api2CatalogModelID(model),
     providerID: model.providerID ?? '',
-    name: model.name ?? model.modelID ?? model.id,
+    name: _api2ModelName(model),
     family: model.family,
     enabled: model.enabled,
     status: model.status ?? 'unknown',
