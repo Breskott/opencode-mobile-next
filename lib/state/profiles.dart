@@ -515,7 +515,41 @@ String? validatePaseoPassword(String value) {
 enum AppAppearance { system, light, dark }
 
 /// Selectable color identity; palettes live in lib/ui/theme_packs.dart.
-enum ThemePackId { opencode, catppuccin, gruvbox, solarized, dynamic }
+/// Stored by name, so new packs can be added anywhere; `dynamic` stays last
+/// because the theme list shows them in this order.
+enum ThemePackId {
+  opencode,
+  catppuccin,
+  gruvbox,
+  solarized,
+  dracula,
+  nord,
+  tokyoNight,
+  oneDark,
+  monokai,
+  rosePine,
+  everforest,
+  kanagawa,
+  ayu,
+  nightOwl,
+  github,
+  palenight,
+  synthwave,
+  cobalt,
+  midnight,
+  paper,
+  forest,
+  ocean,
+  sunset,
+  sakura,
+  lavender,
+  mint,
+  coffee,
+  slate,
+  amber,
+  highContrast,
+  dynamic,
+}
 
 /// What a profile deletion actually erased, so the UI can say so and tests
 /// can assert it rather than inferring from side effects.

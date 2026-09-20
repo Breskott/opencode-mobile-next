@@ -3213,7 +3213,18 @@ class _ChatScreenState extends State<ChatScreen>
         approval.automatic &&
         _conn.permissionsForSession(widget.sessionID).isEmpty;
     final showBackground = _canBackgroundWork || _backgrounding;
-    if (!showApproval && !showBackground) return const SizedBox.shrink();
+    // Context the server will hand the agent at its next step (a finished
+    // background command, changed instructions). Nothing to do about it, so
+    // it is a label, not a bubble of its own above the composer.
+    final pendingContext = _conn.isIsolated
+        ? 0
+        : _conn
+              .inboxItemsFor(widget.sessionID)
+              .where((item) => item.type != 'user')
+              .length;
+    if (!showApproval && !showBackground && pendingContext == 0) {
+      return const SizedBox.shrink();
+    }
     final theme = Theme.of(context);
     final strings = _chatL10n(context);
     return Align(
@@ -3224,6 +3235,24 @@ class _ChatScreenState extends State<ChatScreen>
           key: const Key('composer-status-strip'),
           spacing: 8,
           children: [
+            if (pendingContext > 0)
+              Chip(
+                key: const Key('pending-context-chip'),
+                materialTapTargetSize: MaterialTapTargetSize.padded,
+                side: BorderSide.none,
+                backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                avatar: Icon(
+                  AppIconography.sparkle,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                label: Text(
+                  pendingContext > 1
+                      ? '${strings.chatUiContextUpdatePending} · $pendingContext'
+                      : strings.chatUiContextUpdatePending,
+                  style: theme.textTheme.labelMedium,
+                ),
+              ),
             if (showApproval)
               _AutoApprovalIndicator(
                 key: const ValueKey('auto-approval-indicator-slot'),
@@ -7242,7 +7271,16 @@ class _ChatScreenState extends State<ChatScreen>
                                     widget.sessionID,
                                   ),
                                   inbox: _conn.capabilities.inbox
-                                      ? _conn.inboxItemsFor(widget.sessionID)
+                                      // What you sent and is waiting. The
+                                      // server's own pending context
+                                      // updates are a standing fact and
+                                      // live in the chip strip.
+                                      ? _conn
+                                            .inboxItemsFor(widget.sessionID)
+                                            .where(
+                                              (item) => item.type == 'user',
+                                            )
+                                            .toList()
                                       : const <Api2InboxItem>[],
                                 )
                                 case final pendingSends
