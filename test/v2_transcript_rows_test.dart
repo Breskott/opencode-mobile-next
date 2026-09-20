@@ -316,8 +316,58 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Compaction failed'), findsOneWidget);
-      expect(find.text('ran out of room'), findsOneWidget);
+      // What it means for the reader first, then the server's reason.
+      expect(
+        find.textContaining('still too long for the model'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('ran out of room'), findsOneWidget);
+      // An old failure is history: nothing to press.
+      expect(find.byKey(const Key('transcript-notice-action')), findsNothing);
     });
+
+    testWidgets('the newest failure can be retried from its own line', (
+      tester,
+    ) async {
+      var retried = 0;
+      await tester.pumpWidget(
+        _host(
+          V2TranscriptRow(
+            part: _tagged(
+              type: 'v2:compaction',
+              kind: 'failed',
+              text: 'Compaction was interrupted',
+            ),
+            messageId: 'msg_11',
+            onCompactAgain: () => retried++,
+          ),
+        ),
+      );
+      expect(find.text('Compact again'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('transcript-notice-action')));
+      expect(retried, 1);
+    });
+  });
+
+  testWidgets('a server message is titled by what it says', (tester) async {
+    await tester.pumpWidget(
+      _host(
+        V2TranscriptRow(
+          part: _tagged(
+            type: 'v2:notice',
+            kind: 'something-new',
+            text: 'Background command finished\nexit 0 after 2m',
+          ),
+          messageId: 'msg_12',
+        ),
+      ),
+    );
+    expect(find.text('Background command finished'), findsOneWidget);
+    expect(find.text('Server message'), findsNothing);
+    // The rest waits behind the tap, not repeated with the title.
+    await tester.tap(find.byKey(const ValueKey('transcript-notice-msg_12')));
+    await tester.pumpAndSettle();
+    expect(find.text('exit 0 after 2m'), findsOneWidget);
   });
 
   group('interleaved tool content', () {

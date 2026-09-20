@@ -17099,4 +17099,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String chatUiRetryingCountdown(String attempt, String time) {
     return 'إعادة المحاولة$attempt خلال $time';
   }
+
+  @override
+  String get chatUiCompactAgain => 'اضغط المحادثة مجددًا';
+
+  @override
+  String get chatUiCompactionFailedHint =>
+      'ما زالت المحادثة أطول مما يسمح به النموذج، لذا ستُعاد المحاولة في الدور التالي.';
 }

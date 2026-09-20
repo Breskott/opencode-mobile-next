@@ -17973,5 +17973,13 @@
         "type": "String"
       }
     }
+  },
+  "chatUiCompactAgain": "Compact again",
+  "@chatUiCompactAgain": {
+    "description": "Button on a failed compaction notice that retries the compaction"
+  },
+  "chatUiCompactionFailedHint": "The conversation is still too long for the model, so the next turn will try again.",
+  "@chatUiCompactionFailedHint": {
+    "description": "What a failed compaction means for the reader, shown before the server's reason"
   }
 }

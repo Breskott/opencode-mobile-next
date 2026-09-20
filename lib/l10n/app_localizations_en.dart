@@ -16845,4 +16845,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String chatUiRetryingCountdown(String attempt, String time) {
     return 'Retrying$attempt in $time';
   }
+
+  @override
+  String get chatUiCompactAgain => 'Compact again';
+
+  @override
+  String get chatUiCompactionFailedHint =>
+      'The conversation is still too long for the model, so the next turn will try again.';
 }

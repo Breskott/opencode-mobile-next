@@ -27249,6 +27249,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retrying{attempt} in {time}'**
   String chatUiRetryingCountdown(String attempt, String time);
+
+  /// Button on a failed compaction notice that retries the compaction
+  ///
+  /// In en, this message translates to:
+  /// **'Compact again'**
+  String get chatUiCompactAgain;
+
+  /// What a failed compaction means for the reader, shown before the server's reason
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation is still too long for the model, so the next turn will try again.'**
+  String get chatUiCompactionFailedHint;
 }
 
 class _AppLocalizationsDelegate

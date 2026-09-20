@@ -450,4 +450,33 @@ void main() {
     await tester.pumpAndSettle();
     expect(copied, ['Part one.\n\nPart two.']);
   });
+
+  testWidgets('only the newest failed compaction offers Compact again, and '
+      'only while idle', (tester) async {
+    MessageWithParts compaction(String id, String kind, int created) =>
+        _message(id, 'user', [
+          Part(id: 'v2-0', type: 'v2:compaction', toolName: kind, text: 'x'),
+        ], created: created);
+    final controller = await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      compaction('c1', 'failed', 2),
+      _message('a1', 'assistant', [_text('a1-t', 'Carrying on.')], created: 3),
+      compaction('c2', 'failed', 4),
+    ]);
+    // One button, on the newest failure.
+    expect(find.text('Compact again'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('compaction-failed-c2')),
+        matching: find.text('Compact again'),
+      ),
+      findsOneWidget,
+    );
+
+    // Not while something is running: it would race the turn.
+    controller.busySessions.add('session-1');
+    controller.notifyListeners();
+    await tester.pump();
+    expect(find.text('Compact again'), findsNothing);
+  });
 }

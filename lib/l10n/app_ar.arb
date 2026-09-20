@@ -4515,5 +4515,7 @@
   "agentErrorServerDiskFullHint": "حرّر بعض المساحة هناك ثم حاول مجددًا.",
   "agentErrorRecovered": "تابع الوكيل عمله بعد ذلك.",
   "chatUiRetryingSoon": "إعادة المحاولة{attempt}…",
-  "chatUiRetryingCountdown": "إعادة المحاولة{attempt} خلال {time}"
+  "chatUiRetryingCountdown": "إعادة المحاولة{attempt} خلال {time}",
+  "chatUiCompactAgain": "اضغط المحادثة مجددًا",
+  "chatUiCompactionFailedHint": "ما زالت المحادثة أطول مما يسمح به النموذج، لذا ستُعاد المحاولة في الدور التالي."
 }
