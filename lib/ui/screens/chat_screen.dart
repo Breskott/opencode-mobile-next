@@ -2435,6 +2435,40 @@ class _ChatScreenState extends State<ChatScreen>
     _focus.requestFocus();
   }
 
+  /// Withdraws this conversation's steering messages that the agent has not
+  /// picked up yet and returns their text, oldest first, so the message being
+  /// sent can carry them. Only plain-text steers are taken: one with files
+  /// stays as it is, as does anything queued for after the run (that was a
+  /// deliberate choice of timing). An item the agent took in the meantime
+  /// (409) is simply not ours to merge any more.
+  Future<List<String>> _takeBackWaitingSteers() async {
+    if (_conn.isIsolated || !_conn.supportsInbox) return const [];
+    if (!_conn.busySessions.contains(widget.sessionID)) return const [];
+    final waiting =
+        _conn
+            .inboxItemsFor(widget.sessionID)
+            .where(
+              (item) =>
+                  item.type == 'user' &&
+                  item.delivery == Api2Delivery.steer &&
+                  (item.promptText ?? '').trim().isNotEmpty &&
+                  (item.payload['files'] is! List ||
+                      (item.payload['files'] as List).isEmpty),
+            )
+            .toList()
+          ..sort((a, b) => (a.timeCreated ?? 0).compareTo(b.timeCreated ?? 0));
+    final texts = <String>[];
+    for (final item in waiting) {
+      try {
+        final text = await _conn.cancelInboxItem(widget.sessionID, item.id);
+        if (text != null && text.trim().isNotEmpty) texts.add(text.trim());
+      } catch (_) {
+        // Delivered already, or the server said no: it goes out on its own.
+      }
+    }
+    return texts;
+  }
+
   /// Flips a pending server send between steer and queue delivery.
   Future<void> _flipInboxDelivery(Api2InboxItem item) async {
     final next = item.delivery == Api2Delivery.steer
@@ -2584,7 +2618,17 @@ class _ChatScreenState extends State<ChatScreen>
       );
       return;
     }
-    final text = _composer.text.trim();
+    // Several steering messages in a row are one thought, typed in pieces.
+    // Left as separate inbox items they reach the agent as separate
+    // interruptions; taken back and sent together they are one.
+    final earlier = delivery == PromptDelivery.steer
+        ? await _takeBackWaitingSteers()
+        : const <String>[];
+    if (!mounted) return;
+    final text = [
+      ...earlier,
+      _composer.text.trim(),
+    ].where((piece) => piece.isNotEmpty).join('\n\n');
     if (text.isEmpty && _attachments.isEmpty) {
       setState(() => _sending = false);
       return;
