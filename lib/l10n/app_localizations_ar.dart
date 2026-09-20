@@ -17027,4 +17027,76 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get approvalsUiServerRulesNoteEverything =>
       'تبقى قواعد الرفض في الخادم سارية، وتتوقف الموافقة التلقائية عند انقطاع اتصال التطبيق.';
+
+  @override
+  String get agentErrorConnectionDropped => 'انقطع الاتصال بالنموذج.';
+
+  @override
+  String get agentErrorConnectionDroppedHint =>
+      'غالبًا ما يكون ذلك مؤقتًا، ويعيد OpenCode المحاولة تلقائيًا. إذا تكرر، فتحقق من الإنترنت على الجهاز الذي يشغّل OpenCode.';
+
+  @override
+  String get agentErrorTimedOut => 'استغرق النموذج وقتًا طويلًا للرد.';
+
+  @override
+  String get agentErrorTimedOutHint =>
+      'يعيد OpenCode المحاولة تلقائيًا. قد يكون طلب أصغر أو نموذج آخر أسرع.';
+
+  @override
+  String get agentErrorProviderUnreachable =>
+      'تعذّر على الخادم الوصول إلى مزوّد النموذج.';
+
+  @override
+  String get agentErrorProviderUnreachableHint =>
+      'تحقق من اتصال الإنترنت على الجهاز الذي يشغّل OpenCode ثم حاول مجددًا.';
+
+  @override
+  String get agentErrorRequestTooLarge =>
+      'كان هذا الطلب أكبر من أن يُرسل إلى النموذج.';
+
+  @override
+  String get agentErrorRequestTooLargeHint =>
+      'أرسل مرفقات أقل أو أصغر، أو اضغط المحادثة، ثم حاول مجددًا.';
+
+  @override
+  String get agentErrorRateLimited => 'يحدّ مزوّد النموذج من سرعة الإرسال.';
+
+  @override
+  String get agentErrorRateLimitedHint =>
+      'تُعاد المحاولة تلقائيًا بعد انتظار قصير.';
+
+  @override
+  String get agentErrorProviderBusy => 'مزوّد النموذج مثقل بالطلبات الآن.';
+
+  @override
+  String get agentErrorProviderBusyHint =>
+      'تُعاد المحاولة تلقائيًا. قد يرد نموذج آخر أسرع.';
+
+  @override
+  String get agentErrorOutOfCredit => 'نفد رصيد حساب المزوّد أو حصته.';
+
+  @override
+  String get agentErrorOutOfCreditHint =>
+      'اشحن الحساب، أو انتقل إلى مزوّد أو نموذج آخر.';
+
+  @override
+  String get agentErrorServerDiskFull =>
+      'نفدت مساحة القرص على الجهاز الذي يشغّل OpenCode.';
+
+  @override
+  String get agentErrorServerDiskFullHint =>
+      'حرّر بعض المساحة هناك ثم حاول مجددًا.';
+
+  @override
+  String get agentErrorRecovered => 'تابع الوكيل عمله بعد ذلك.';
+
+  @override
+  String chatUiRetryingSoon(String attempt) {
+    return 'إعادة المحاولة$attempt…';
+  }
+
+  @override
+  String chatUiRetryingCountdown(String attempt, String time) {
+    return 'إعادة المحاولة$attempt خلال $time';
+  }
 }

@@ -17884,5 +17884,94 @@
   "approvalsUiServerRulesNoteEverything": "The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects.",
   "@approvalsUiServerRulesNoteEverything": {
     "description": "Footer note while Approve everything is on"
+  },
+  "agentErrorConnectionDropped": "The connection to the model dropped.",
+  "@agentErrorConnectionDropped": {
+    "description": "Plain-language error headline: the link between the server and the model provider broke mid-request"
+  },
+  "agentErrorConnectionDroppedHint": "Usually brief, and OpenCode retries by itself. If it keeps happening, check the internet on the computer running OpenCode.",
+  "@agentErrorConnectionDroppedHint": {
+    "description": "What to expect or do after a dropped model connection"
+  },
+  "agentErrorTimedOut": "The model took too long to answer.",
+  "@agentErrorTimedOut": {
+    "description": "Plain-language error headline: provider timeout"
+  },
+  "agentErrorTimedOutHint": "OpenCode retries by itself. A smaller request or another model may be faster.",
+  "@agentErrorTimedOutHint": {
+    "description": "What to expect or do after a provider timeout"
+  },
+  "agentErrorProviderUnreachable": "The server couldn’t reach the model provider.",
+  "@agentErrorProviderUnreachable": {
+    "description": "Plain-language error headline: DNS failure, refused connection or no network on the server"
+  },
+  "agentErrorProviderUnreachableHint": "Check the internet connection on the computer running OpenCode, then try again.",
+  "@agentErrorProviderUnreachableHint": {
+    "description": "What to do when the server cannot reach the provider"
+  },
+  "agentErrorRequestTooLarge": "This request was too large to send to the model.",
+  "@agentErrorRequestTooLarge": {
+    "description": "Plain-language error headline: payload or queue overflow"
+  },
+  "agentErrorRequestTooLargeHint": "Send fewer or smaller attachments, or compact the conversation, then try again.",
+  "@agentErrorRequestTooLargeHint": {
+    "description": "What to do when a request is too large"
+  },
+  "agentErrorRateLimited": "The model provider is limiting how fast you can send.",
+  "@agentErrorRateLimited": {
+    "description": "Plain-language error headline: rate limit"
+  },
+  "agentErrorRateLimitedHint": "It retries by itself after a short wait.",
+  "@agentErrorRateLimitedHint": {
+    "description": "What to expect after a rate limit"
+  },
+  "agentErrorProviderBusy": "The model provider is overloaded right now.",
+  "@agentErrorProviderBusy": {
+    "description": "Plain-language error headline: provider overloaded or unavailable"
+  },
+  "agentErrorProviderBusyHint": "It retries by itself. Another model may answer sooner.",
+  "@agentErrorProviderBusyHint": {
+    "description": "What to expect or do when the provider is overloaded"
+  },
+  "agentErrorOutOfCredit": "The provider account is out of credit or quota.",
+  "@agentErrorOutOfCredit": {
+    "description": "Plain-language error headline: billing or quota exhausted"
+  },
+  "agentErrorOutOfCreditHint": "Top up the account, or switch to another provider or model.",
+  "@agentErrorOutOfCreditHint": {
+    "description": "What to do when the provider account has no credit"
+  },
+  "agentErrorServerDiskFull": "The computer running OpenCode is out of disk space.",
+  "@agentErrorServerDiskFull": {
+    "description": "Plain-language error headline: ENOSPC on the server"
+  },
+  "agentErrorServerDiskFullHint": "Free some space there, then try again.",
+  "@agentErrorServerDiskFullHint": {
+    "description": "What to do when the server disk is full"
+  },
+  "agentErrorRecovered": "The agent carried on after this.",
+  "@agentErrorRecovered": {
+    "description": "Shown under an error inside a turn that continued afterwards"
+  },
+  "chatUiRetryingSoon": "Retrying{attempt}…",
+  "@chatUiRetryingSoon": {
+    "description": "Retry banner title when the cause is named below it; attempt is empty or a leading space and a number",
+    "placeholders": {
+      "attempt": {
+        "type": "String"
+      }
+    }
+  },
+  "chatUiRetryingCountdown": "Retrying{attempt} in {time}",
+  "@chatUiRetryingCountdown": {
+    "description": "Retry banner title with a countdown when the cause is named below it",
+    "placeholders": {
+      "attempt": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
   }
 }

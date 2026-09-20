@@ -16769,4 +16769,80 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get approvalsUiServerRulesNoteEverything =>
       'The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects.';
+
+  @override
+  String get agentErrorConnectionDropped =>
+      'The connection to the model dropped.';
+
+  @override
+  String get agentErrorConnectionDroppedHint =>
+      'Usually brief, and OpenCode retries by itself. If it keeps happening, check the internet on the computer running OpenCode.';
+
+  @override
+  String get agentErrorTimedOut => 'The model took too long to answer.';
+
+  @override
+  String get agentErrorTimedOutHint =>
+      'OpenCode retries by itself. A smaller request or another model may be faster.';
+
+  @override
+  String get agentErrorProviderUnreachable =>
+      'The server couldn’t reach the model provider.';
+
+  @override
+  String get agentErrorProviderUnreachableHint =>
+      'Check the internet connection on the computer running OpenCode, then try again.';
+
+  @override
+  String get agentErrorRequestTooLarge =>
+      'This request was too large to send to the model.';
+
+  @override
+  String get agentErrorRequestTooLargeHint =>
+      'Send fewer or smaller attachments, or compact the conversation, then try again.';
+
+  @override
+  String get agentErrorRateLimited =>
+      'The model provider is limiting how fast you can send.';
+
+  @override
+  String get agentErrorRateLimitedHint =>
+      'It retries by itself after a short wait.';
+
+  @override
+  String get agentErrorProviderBusy =>
+      'The model provider is overloaded right now.';
+
+  @override
+  String get agentErrorProviderBusyHint =>
+      'It retries by itself. Another model may answer sooner.';
+
+  @override
+  String get agentErrorOutOfCredit =>
+      'The provider account is out of credit or quota.';
+
+  @override
+  String get agentErrorOutOfCreditHint =>
+      'Top up the account, or switch to another provider or model.';
+
+  @override
+  String get agentErrorServerDiskFull =>
+      'The computer running OpenCode is out of disk space.';
+
+  @override
+  String get agentErrorServerDiskFullHint =>
+      'Free some space there, then try again.';
+
+  @override
+  String get agentErrorRecovered => 'The agent carried on after this.';
+
+  @override
+  String chatUiRetryingSoon(String attempt) {
+    return 'Retrying$attempt…';
+  }
+
+  @override
+  String chatUiRetryingCountdown(String attempt, String time) {
+    return 'Retrying$attempt in $time';
+  }
 }
