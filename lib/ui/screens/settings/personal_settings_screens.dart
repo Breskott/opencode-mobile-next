@@ -80,23 +80,31 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
               builder: (context, _) {
                 final selected = controller.themePack.value;
                 final brightness = Theme.of(context).brightness;
-                return Column(
-                  children: [
-                    for (final id in ThemePackId.values)
-                      _ThemePackTile(
-                        id: id,
-                        selected: selected == id,
-                        brightness: brightness,
-                        available:
-                            id != ThemePackId.dynamic ||
-                            harvestedDynamicPack.value != null,
-                        onSelect: () => showThemePackPreview(
-                          context,
-                          controller: controller,
-                          pack: id,
+                // Thirty themes as list rows is a very long page. They are a
+                // grid of swatches instead: each card is a miniature of the
+                // theme, so choosing is looking, not reading.
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      for (final id in ThemePackId.values)
+                        _ThemePackTile(
+                          id: id,
+                          selected: selected == id,
+                          brightness: brightness,
+                          available:
+                              id != ThemePackId.dynamic ||
+                              harvestedDynamicPack.value != null,
+                          onSelect: () => showThemePackPreview(
+                            context,
+                            controller: controller,
+                            pack: id,
+                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),
@@ -128,48 +136,133 @@ class _ThemePackTile extends StatelessWidget {
         ? harvestedDynamicPack.value
         : themePack(id);
     final palette = pack?.palette(brightness);
-    final swatches = palette == null
-        ? const <Color>[]
-        : [
-            palette.background,
-            palette.scheme.surfaceContainerHigh,
-            palette.scheme.primary,
-            palette.success,
-          ];
-    return ListTile(
-      key: ValueKey('theme-pack-${id.name}'),
+    final theme = Theme.of(context);
+    final label = themePackLabels[id]!;
+    final description = !available
+        ? _settingsCopy(context).e7AppearanceDynamicUnavailable
+        : _themeDescription(context, id);
+    // Three to a row on a phone, more on a wide window.
+    final width = MediaQuery.sizeOf(context).width;
+    final columns = (width / 130).floor().clamp(2, 6);
+    // A hair under the exact share so rounding never drops a card to the
+    // next row.
+    final cardWidth =
+        (width.clamp(0, 900) - 32 - 10 * (columns - 1)) / columns - .5;
+    return Semantics(
+      button: true,
+      selected: selected,
       enabled: available,
-      leading: SizedBox(
-        width: 56,
-        child: palette == null
-            ? const Icon(AppIconography.sparkle)
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final color in swatches)
-                    Container(
-                      width: 12,
-                      height: 24,
-                      margin: const EdgeInsetsDirectional.only(end: 2),
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(3),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outlineVariant,
+      label: description == null ? label : '$label. $description',
+      excludeSemantics: true,
+      child: Opacity(
+        opacity: available ? 1 : .5,
+        child: InkWell(
+          key: ValueKey('theme-pack-${id.name}'),
+          borderRadius: BorderRadius.circular(14),
+          onTap: available ? onSelect : null,
+          child: Container(
+            width: cardWidth,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outlineVariant,
+                width: selected ? 2 : 1,
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // The miniature: the theme's page, a surface on it, a line
+                // of its text, and its accent and success colours.
+                Container(
+                  height: 56,
+                  color: palette?.background ?? theme.colorScheme.surface,
+                  padding: const EdgeInsets.all(8),
+                  child: palette == null
+                      ? const Center(child: Icon(AppIconography.sparkle))
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: palette.scheme.surfaceContainerHigh,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                alignment: AlignmentDirectional.centerStart,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
+                                child: Container(
+                                  height: 4,
+                                  width: 28,
+                                  decoration: BoxDecoration(
+                                    color: palette.scheme.onSurface,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            for (final color in [
+                              palette.scheme.primary,
+                              palette.scheme.secondary,
+                              palette.success,
+                            ])
+                              Container(
+                                width: 12,
+                                height: 12,
+                                margin: const EdgeInsetsDirectional.only(
+                                  start: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                          ],
+                        ),
+                ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(8, 6, 6, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelLarge,
                         ),
                       ),
+                      if (selected)
+                        Icon(
+                          AppIconography.check,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                    ],
+                  ),
+                ),
+                // Disabled with the truth: a card that cannot be chosen says
+                // why, in words, not only by looking faded.
+                if (!available && description != null)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(8, 0, 8, 8),
+                    child: Text(
+                      description,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                ],
-              ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
-      title: Text(themePackLabels[id]!),
-      subtitle: Text(
-        !available
-            ? _settingsCopy(context).e7AppearanceDynamicUnavailable
-            : _themeDescription(context, id),
-      ),
-      trailing: selected ? const Icon(AppIconography.check) : null,
-      onTap: available ? onSelect : null,
     );
   }
 }
@@ -383,10 +476,12 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   }
 }
 
-String _themeDescription(BuildContext context, ThemePackId id) => switch (id) {
+String? _themeDescription(BuildContext context, ThemePackId id) => switch (id) {
   ThemePackId.opencode => _settingsCopy(context).e7AppearancePackOpencode,
   ThemePackId.catppuccin => _settingsCopy(context).e7AppearancePackCatppuccin,
   ThemePackId.gruvbox => _settingsCopy(context).e7AppearancePackGruvbox,
   ThemePackId.solarized => _settingsCopy(context).e7AppearancePackSolarized,
   ThemePackId.dynamic => _settingsCopy(context).e7AppearancePackDynamic,
+  // A generated theme is its name and its colours.
+  _ => null,
 };

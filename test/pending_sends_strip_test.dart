@@ -294,6 +294,13 @@ void main() {
     await _settle(tester);
 
     expect(find.text('Context update pending'), findsOneWidget);
+    // A standing fact, so a chip in the strip above the composer, not a
+    // bubble of its own among the things you sent.
+    expect(find.byKey(const Key('pending-context-chip')), findsOneWidget);
+    expect(find.byKey(const ValueKey('pending-send-msg_ctx')), findsNothing);
+    _enqueue(controller, inboxID: 'msg_ctx2', type: 'synthetic');
+    await _settle(tester);
+    expect(find.text('Context update pending · 2'), findsOneWidget);
     expect(find.byKey(const ValueKey('inbox-action-cancel')), findsNothing);
     expect(find.byKey(const ValueKey('inbox-action-steer')), findsNothing);
     expect(find.byKey(const ValueKey('inbox-action-queue')), findsNothing);
