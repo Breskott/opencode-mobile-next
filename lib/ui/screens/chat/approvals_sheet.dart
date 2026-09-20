@@ -415,72 +415,47 @@ class _AutoApprovalIndicator extends StatelessWidget {
           ? strings.approvalsUiInheritedFrom
           : null;
     }
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 860),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(12, 2, 12, 2),
-          child: Material(
-            key: const Key('auto-approval-indicator'),
-            color: connected
-                ? theme.colorScheme.secondaryContainer
-                : theme.colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-              onTap: onOpen,
-              child: Semantics(
-                button: true,
-                label: [
-                  label,
-                  ?detail,
-                  strings.approvalsUiOpenSettings,
-                ].join('. '),
-                excludeSemantics: true,
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 8, 6),
-                  child: Row(
-                    children: [
-                      Icon(
-                        !connected
-                            ? AppIconography.permissions
-                            : effective.inherited
-                            ? AppIconography.nested
-                            : AppIconography.shield,
-                        size: 18,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              label,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelLarge,
-                            ),
-                            if (detail != null)
-                              Text(
-                                detail,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.mutedOf(theme),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(AppIconography.settings, size: 20),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+    // A chip, not a bar: it sits in the strip above the composer on every
+    // running turn, so it says its state in a few words and keeps the rest
+    // (what was approved, inheritance, the switches) one tap away. The count
+    // is what changes, which is what makes a glance worth it.
+    // Never silent: once something has been approved, the chip names the
+    // latest and counts them; before that it states the mode.
+    final text = connected && last != null
+        ? '${detail!} · ${approved.length}'
+        : detail != null
+        ? '$label · $detail'
+        : label;
+    return Semantics(
+      button: true,
+      label: [label, ?detail, strings.approvalsUiOpenSettings].join('. '),
+      excludeSemantics: true,
+      child: ActionChip(
+        key: const Key('auto-approval-indicator'),
+        onPressed: onOpen,
+        materialTapTargetSize: MaterialTapTargetSize.padded,
+        side: BorderSide.none,
+        backgroundColor: connected
+            ? theme.colorScheme.secondaryContainer
+            : theme.colorScheme.surfaceContainerHigh,
+        avatar: Icon(
+          !connected
+              ? AppIconography.permissions
+              : effective.inherited
+              ? AppIconography.nested
+              : AppIconography.shield,
+          size: 16,
+          color: theme.colorScheme.primary,
+        ),
+        label: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width * .62,
+          ),
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium,
           ),
         ),
       ),

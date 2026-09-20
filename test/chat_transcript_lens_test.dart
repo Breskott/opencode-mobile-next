@@ -490,8 +490,15 @@ void main() {
       controller.notifyListeners();
       await tester.pump(const Duration(milliseconds: 400));
 
-      await tester.tap(
+      // A turn in progress has no footer yet; the menu is a long-press away
+      // (on the message's margin here, since prose itself is selectable).
+      expect(
         find.byKey(const ValueKey('message-actions-assistant-1')),
+        findsNothing,
+      );
+      await tester.longPressAt(
+        tester.getTopLeft(find.byKey(const ValueKey('message-assistant-1'))) +
+            const Offset(2, 2),
       );
       await tester.pump(const Duration(milliseconds: 400));
 

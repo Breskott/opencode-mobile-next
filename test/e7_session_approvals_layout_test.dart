@@ -198,7 +198,7 @@ void main() {
         expect(api.replies, [('req-1', 'once')]);
         expect(find.byKey(const Key('permission-card-review')), findsNothing);
         expect(
-          find.text('Auto-approved · Run a shell command'),
+          find.textContaining('Auto-approved · Run a shell command'),
           findsOneWidget,
         );
         await _captureScreen(tester, 'indicator-${direction.name}');
@@ -215,7 +215,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text('Auto-approved · Run a shell command'),
+          find.textContaining('Auto-approved · Run a shell command'),
           findsNWidgets(2),
         );
         await _captureScreen(tester, 'sheet-record-${direction.name}');
@@ -248,8 +248,11 @@ void main() {
         await tester.pumpWidget(_app(controller, 'child', direction));
         await tester.pumpAndSettle();
 
-        expect(find.text('Approving automatically'), findsOneWidget);
-        expect(find.text('Inherited from parent conversation'), findsOneWidget);
+        expect(find.textContaining('Approving automatically'), findsOneWidget);
+        expect(
+          find.textContaining('Inherited from parent conversation'),
+          findsOneWidget,
+        );
         await _captureScreen(tester, 'child-indicator-${direction.name}');
 
         await _tapVisible(
@@ -260,7 +263,10 @@ void main() {
           find.byKey(const Key('approvals-inherited-note')),
           findsOneWidget,
         );
-        expect(find.text('Inherited from parent conversation'), findsWidgets);
+        expect(
+          find.textContaining('Inherited from parent conversation'),
+          findsWidgets,
+        );
         expect(find.byKey(const Key('approvals-follow-parent')), findsNothing);
         await _captureScreen(tester, 'child-sheet-${direction.name}');
 
@@ -321,8 +327,8 @@ void main() {
     // The connection banner animates while reconnecting; pump a fixed frame.
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const Key('auto-approval-indicator')), findsOneWidget);
-    expect(find.text('Auto-approval paused'), findsOneWidget);
-    expect(find.text('Not connected'), findsOneWidget);
+    expect(find.textContaining('Auto-approval paused'), findsOneWidget);
+    expect(find.textContaining('Not connected'), findsOneWidget);
     expect(tester.takeException(), isNull);
     // A request arriving now waits for a person: covered by the controller
     // test. (A permission card next to the reconnecting banner at 320dp/2.5x

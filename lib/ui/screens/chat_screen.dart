@@ -3198,6 +3198,79 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+  /// Standing facts about this conversation's run, as one line of labelled
+  /// chips above the composer: that approvals are automatic, and that the
+  /// running work can be sent to the background. They used to be a bar and a
+  /// link of their own, repeated above the composer on every running turn.
+  Widget _composerStatusStrip() {
+    final approval = _conn.isIsolated
+        ? null
+        : _conn.autoApprovalFor(widget.sessionID);
+    // A request waiting for a person has its own card, which also says when
+    // an automatic reply failed; the chip steps aside until it is answered.
+    final showApproval =
+        approval != null &&
+        approval.automatic &&
+        _conn.permissionsForSession(widget.sessionID).isEmpty;
+    final showBackground = _canBackgroundWork || _backgrounding;
+    if (!showApproval && !showBackground) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final strings = _chatL10n(context);
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 0),
+        child: Wrap(
+          key: const Key('composer-status-strip'),
+          spacing: 8,
+          children: [
+            if (showApproval)
+              _AutoApprovalIndicator(
+                key: const ValueKey('auto-approval-indicator-slot'),
+                effective: approval,
+                connected: _conn.isConnected,
+                approved: _conn.autoApprovedFor(widget.sessionID),
+                onOpen: () => unawaited(
+                  showSessionApprovalsSheet(
+                    context,
+                    controller: _conn,
+                    sessionID: widget.sessionID,
+                  ),
+                ),
+              ),
+            if (showBackground)
+              Tooltip(
+                message: strings.backgroundWorkShortcut,
+                child: ActionChip(
+                  key: const Key('background-running-work'),
+                  onPressed: _backgrounding ? null : _backgroundRunningWork,
+                  materialTapTargetSize: MaterialTapTargetSize.padded,
+                  side: BorderSide.none,
+                  backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                  avatar: _backgrounding
+                      ? const SizedBox.square(
+                          dimension: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          AppIconography.lowPriority,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                  label: Text(
+                    _backgroundSupport == BackgroundWorkSupport.subagents
+                        ? strings.backgroundSubagentsTitle
+                        : strings.workRunInBackground,
+                    style: theme.textTheme.labelMedium,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Gallery: as many photos as the draft still has room for, in one visit.
   Future<void> _pickGalleryPhotos() async {
     final picked = await _conn.promptPhotos.pickMany(
@@ -6417,14 +6490,9 @@ class _ChatScreenState extends State<ChatScreen>
   ) {
     final permission = pendingPermissions.firstOrNull;
     final question = _conn.questionForSession(widget.sessionID);
-    // Automatic approval is never silent: while the setting is on, the
-    // attention slot itself says so — even when the app is disconnected and
-    // approvals are paused — and names the last request answered. A request
-    // that needs a person takes the slot instead (its card says when an
-    // automatic reply failed); the strip returns once it is answered.
-    final approval = _conn.isIsolated
-        ? null
-        : _conn.autoApprovalFor(widget.sessionID);
+    // Automatic approval is never silent, but it is a standing fact, not an
+    // event: it lives in the chip strip above the composer
+    // ([_composerStatusStrip]), not in this slot.
     return _chatSizeTransition(
       reduceMotion: reduceMotion,
       duration: const Duration(milliseconds: 220),
@@ -6448,20 +6516,6 @@ class _ChatScreenState extends State<ChatScreen>
                   ? _RetryAttentionCard(
                       key: const ValueKey('retry-banner'),
                       retry: _retryState!,
-                    )
-                  : approval != null && approval.automatic
-                  ? _AutoApprovalIndicator(
-                      key: const ValueKey('auto-approval-indicator-slot'),
-                      effective: approval,
-                      connected: _conn.isConnected,
-                      approved: _conn.autoApprovedFor(widget.sessionID),
-                      onOpen: () => unawaited(
-                        showSessionApprovalsSheet(
-                          context,
-                          controller: _conn,
-                          sessionID: widget.sessionID,
-                        ),
-                      ),
                     )
                   : const SizedBox.shrink(
                       key: ValueKey('permission-card-none'),
@@ -6503,6 +6557,7 @@ class _ChatScreenState extends State<ChatScreen>
       _messages,
       displayParts,
       metaAlways: _conn.transcriptTimestampsVisible,
+      running: _conn.busySessions.contains(widget.sessionID),
     );
     final showAttachmentNote = _attachmentNoteVisible();
     final pendingPermissions = _conn.permissionsForSession(widget.sessionID);
@@ -6940,6 +6995,17 @@ class _ChatScreenState extends State<ChatScreen>
                                                       showActions:
                                                           turnActionOwners
                                                               .contains(index),
+                                                      onCopy:
+                                                          _conn.isIsolated ||
+                                                              _messageCopy(
+                                                                m,
+                                                              ).text.isEmpty
+                                                          ? null
+                                                          : () => unawaited(
+                                                              _copyMessageText(
+                                                                m,
+                                                              ),
+                                                            ),
                                                       onLongPress:
                                                           _conn.isIsolated
                                                           ? null
@@ -7290,50 +7356,7 @@ class _ChatScreenState extends State<ChatScreen>
                                       text: _composerNote!,
                                     ),
                             ),
-                            if (_canBackgroundWork || _backgrounding)
-                              Align(
-                                alignment: AlignmentDirectional.centerStart,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                  child: Tooltip(
-                                    message: _chatL10n(
-                                      context,
-                                    ).backgroundWorkShortcut,
-                                    child: TextButton.icon(
-                                      key: const Key('background-running-work'),
-                                      style: TextButton.styleFrom(
-                                        minimumSize: const Size(48, 48),
-                                      ),
-                                      onPressed: _backgrounding
-                                          ? null
-                                          : _backgroundRunningWork,
-                                      icon: _backgrounding
-                                          ? const SizedBox.square(
-                                              dimension: 18,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                          : const Icon(
-                                              AppIconography.lowPriority,
-                                              size: 20,
-                                            ),
-                                      label: Text(
-                                        _backgroundSupport ==
-                                                BackgroundWorkSupport.subagents
-                                            ? _chatL10n(
-                                                context,
-                                              ).backgroundSubagentsTitle
-                                            : _chatL10n(
-                                                context,
-                                              ).backgroundWorkTitle,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                            _composerStatusStrip(),
                             if (_voiceConversation)
                               _voiceConversationControls(),
                             // First run's one notification question; the card
