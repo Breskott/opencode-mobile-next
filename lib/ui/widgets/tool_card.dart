@@ -912,8 +912,12 @@ class StepNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
+    // Full width, so the text starts at the leading edge whatever the
+    // parent column's alignment is (a tool row's column centres by default).
+    return Container(
       key: const Key('step-note'),
+      width: double.infinity,
+      alignment: AlignmentDirectional.centerStart,
       padding: const EdgeInsetsDirectional.fromSTEB(28, 0, 10, 8),
       child: MarkdownText(
         text,
