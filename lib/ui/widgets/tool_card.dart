@@ -670,38 +670,27 @@ class _ToolCardState extends State<ToolCard> {
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Row(
-                            children: [
-                              ConstrainedBox(
-                                // The agent's name for the step reads in
-                                // full where it can; the tool detail takes
-                                // what is left, with no slack between them.
-                                constraints: BoxConstraints(
-                                  maxWidth: widget.heading == null
-                                      ? double.infinity
-                                      : MediaQuery.sizeOf(context).width * .56,
-                                ),
-                                child: Text(
-                                  widget.heading ?? contract.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall!.copyWith(
-                                    // A call the server never ran greys out
-                                    // rather than striking through: the title
-                                    // stays legible, the state carries the news.
-                                    color: widget.state.executed
-                                        ? theme.colorScheme.onSurface
-                                              .withValues(alpha: .9)
-                                        : AppTheme.mutedOf(theme),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                          child: TitleWithDetail(
+                            title: Text(
+                              widget.heading ?? contract.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall!.copyWith(
+                                // A call the server never ran greys out
+                                // rather than striking through: the title
+                                // stays legible, the state carries the news.
+                                color: widget.state.executed
+                                    ? theme.colorScheme.onSurface.withValues(
+                                        alpha: .9,
+                                      )
+                                    : AppTheme.mutedOf(theme),
+                                fontWeight: FontWeight.w600,
                               ),
-                              if (widget.heading != null ||
-                                  contract.subtitle?.isNotEmpty == true) ...[
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
+                            ),
+                            detail:
+                                widget.heading != null ||
+                                    contract.subtitle?.isNotEmpty == true
+                                ? Text(
                                     widget.heading == null
                                         ? contract.subtitle!
                                         : [
@@ -717,11 +706,8 @@ class _ToolCardState extends State<ToolCard> {
                                           ? AppTheme.monoFamily
                                           : null,
                                     ),
-                                  ),
-                                ),
-                              ] else
-                                const Spacer(),
-                            ],
+                                  )
+                                : null,
                           ),
                         ),
                         if (contract.details.isNotEmpty) ...[
@@ -901,6 +887,45 @@ class _ToolCardState extends State<ToolCard> {
     // Straight rule inside a rounded card: clip so the corners stay round.
     return ClipRRect(borderRadius: BorderRadius.circular(8), child: accent);
   }
+}
+
+/// A row's title and the detail after it, in whatever room the row really
+/// has. The title keeps its natural width up to two thirds of that room and
+/// the detail takes the rest, so neither can run over the other however
+/// deeply the row is nested. (A cap taken from the screen's width let a long
+/// title paint across the detail inside a nested group.)
+class TitleWithDetail extends StatelessWidget {
+  const TitleWithDetail({
+    super.key,
+    required this.title,
+    this.detail,
+    this.gap = 6,
+  });
+
+  final Widget title;
+  final Widget? detail;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final room = constraints.maxWidth;
+      final detail = this.detail;
+      if (detail == null || !room.isFinite) {
+        return Align(alignment: AlignmentDirectional.centerStart, child: title);
+      }
+      return Row(
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: room * .66),
+            child: title,
+          ),
+          SizedBox(width: gap),
+          Expanded(child: detail),
+        ],
+      );
+    },
+  );
 }
 
 /// The agent's reasoning for a step, shown inside the opened step.

@@ -479,4 +479,67 @@ void main() {
     await tester.pump();
     expect(find.text('Compact again'), findsNothing);
   });
+
+  testWidgets('a long step title never runs over its detail, however nested', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(340, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    Part read(String id) => Part(
+      id: id,
+      type: 'tool',
+      callID: id,
+      toolName: 'read',
+      toolState: ToolState.fromJson(const {
+        'status': 'completed',
+        'input': {
+          'filePath': '/work/lib/entry.dart',
+          'offset': 126,
+          'limit': 18,
+        },
+        'output': 'ok',
+      }, toolName: 'read'),
+    );
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      _message('a1', 'assistant', [
+        Part(
+          id: 'r1',
+          type: 'reasoning',
+          text: '**Checking AssistantEntry constructor arguments everywhere**',
+        ),
+        read('t1'),
+        Part(
+          id: 'r2',
+          type: 'reasoning',
+          text: '**Fixing widget constructors**',
+        ),
+        read('t2'),
+        _text('a1-t', 'Done.'),
+      ], created: 2),
+    ]);
+    // Inside the work line, where a row has the least room.
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    final title = find.textContaining('Checking AssistantEntry');
+    expect(title, findsOneWidget);
+    final titleRight = tester.getRect(title).right;
+    // Everything else on that row starts after the title ends.
+    final row = find.ancestor(of: title, matching: find.byType(InkWell)).first;
+    for (final text
+        in find.descendant(of: row, matching: find.byType(Text)).evaluate()) {
+      if (identical(text.widget, tester.widget(title))) continue;
+      final rect = tester.getRect(find.byWidget(text.widget));
+      if (rect.width == 0) continue;
+      expect(
+        rect.left,
+        greaterThanOrEqualTo(titleRight),
+        reason: 'overlaps: ${(text.widget as Text).data}',
+      );
+    }
+  });
 }
