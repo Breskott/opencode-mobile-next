@@ -923,7 +923,12 @@ Part _mergeTextParts(List<Part> parts) {
 }
 
 class _AssistantPartRun {
-  const _AssistantPartRun(this.parts, {this.grouped = false, this.heading});
+  const _AssistantPartRun(
+    this.parts, {
+    this.grouped = false,
+    this.heading,
+    this.note,
+  });
 
   final List<Part> parts;
   final bool grouped;
@@ -932,17 +937,27 @@ class _AssistantPartRun {
   /// ("Patching home shell") right before this run of tool calls. The run
   /// carries it as its title, so a step is one line instead of two.
   final String? heading;
+
+  /// The rest of the thought [heading] opened, shown inside the opened step.
+  final String? note;
 }
 
-/// A thought short enough to title the work that follows it: one line, and
-/// no longer than a heading. Anything more is real reasoning and keeps its
-/// own block.
-String? _stepHeading(Part part) {
+/// Splits a thought into a title for the work that follows it and the rest.
+/// Models open a thought with a short line naming what they are about to do
+/// ("**Rebuilding latest source**"), then explain. That line titles the step;
+/// the explanation waits inside it. A thought with no such opening line keeps
+/// its own block.
+({String heading, String? note})? _stepHeading(Part part) {
   if (part.type != 'reasoning') return null;
   final text = part.text.trim();
-  if (text.isEmpty || text.length > 72 || text.contains('\n')) return null;
-  final plain = text.replaceAll(RegExp(r'[*_`#]+'), '').trim();
-  return plain.isEmpty ? null : plain;
+  if (text.isEmpty) return null;
+  final breakAt = text.indexOf('\n');
+  final first = (breakAt < 0 ? text : text.substring(0, breakAt)).trim();
+  if (first.length > 72) return null;
+  final plain = first.replaceAll(RegExp(r'[*_`#]+'), '').trim();
+  if (plain.isEmpty) return null;
+  final rest = breakAt < 0 ? '' : text.substring(breakAt).trim();
+  return (heading: plain, note: rest.isEmpty ? null : rest);
 }
 
 List<_AssistantPartRun> _groupAssistantParts(List<Part> parts) {
@@ -975,16 +990,17 @@ List<_AssistantPartRun> _groupAssistantParts(List<Part> parts) {
     }
     // A one-line thought right before the call or the run is its title, not
     // a row of its own.
-    String? heading;
+    ({String heading, String? note})? title;
     if (runs.isNotEmpty && !runs.last.grouped) {
-      heading = _stepHeading(runs.last.parts.single);
-      if (heading != null) runs.removeLast();
+      title = _stepHeading(runs.last.parts.single);
+      if (title != null) runs.removeLast();
     }
     runs.add(
       _AssistantPartRun(
         toolParts,
         grouped: toolParts.length > 1,
-        heading: heading,
+        heading: title?.heading,
+        note: title?.note,
       ),
     );
     index = next;
@@ -1055,11 +1071,13 @@ class _ToolCallGroup extends StatefulWidget {
     required this.onDownloadFile,
     this.onOpenSession,
     this.heading,
+    this.note,
   });
 
   /// The agent's own one-line name for this step; replaces the generic
   /// "Explored" / "Tools" title when present.
   final String? heading;
+  final String? note;
   final List<Part> parts;
   final Map<String, bool> expansionStore;
   final ToolOutputFileLoader filePreviewLoader;
@@ -1248,7 +1266,7 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
                               ? theme.colorScheme.error
                               : _notRun
                               ? theme.colorScheme.onSurfaceVariant
-                              : theme.colorScheme.primary,
+                              : AppTheme.successOf(theme),
                         ),
                       const SizedBox(width: 4),
                       AnimatedRotation(
@@ -1279,6 +1297,7 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
               ),
               child: Column(
                 children: [
+                  if (widget.note case final note?) StepNote(note),
                   for (var index = 0; index < widget.parts.length; index++) ...[
                     ToolCard(
                       key: ValueKey(
@@ -1339,13 +1358,17 @@ class _WorkGroupState extends State<_WorkGroup> {
 
   bool? get _userChoice => widget.expansionStore[_storeKey];
 
-  // Same rule as a tool group: only a failure or a produced file is worth
-  // opening unasked. Progress is already named on the closed line.
-  bool get _shouldOpen => _tools.any(
-    (part) =>
-        part.toolState.status == 'error' ||
-        part.toolState.outputFiles.isNotEmpty,
-  );
+  /// Whether the work ended on a failure. Agents fail and retry all the
+  /// time (a patch that did not apply, then one that did); a failure they got
+  /// past is a detail of the steps, not the state of the work.
+  bool get _endedFailed =>
+      _tools.isNotEmpty && _tools.last.toolState.status == 'error';
+
+  // Only an unrecovered failure or a produced file is worth opening unasked.
+  // Progress is already named on the closed line.
+  bool get _shouldOpen =>
+      _endedFailed ||
+      _tools.any((part) => part.toolState.outputFiles.isNotEmpty);
 
   @override
   void initState() {
@@ -1384,7 +1407,7 @@ class _WorkGroupState extends State<_WorkGroup> {
       if (livePart != null) break;
     }
     final running = livePart != null;
-    final failed = _tools.any((part) => part.toolState.status == 'error');
+    final failed = _endedFailed;
     final title = running
         ? liveRun!.heading ??
               runningToolTicker(
@@ -1465,7 +1488,7 @@ class _WorkGroupState extends State<_WorkGroup> {
                         size: 14,
                         color: failed
                             ? theme.colorScheme.error
-                            : theme.colorScheme.primary,
+                            : AppTheme.successOf(theme),
                       ),
                     const SizedBox(width: 4),
                     AnimatedRotation(
@@ -1521,10 +1544,12 @@ class _AssistantMessagePart extends StatelessWidget {
     this.onOpenSession,
     this.searchQuery = '',
     this.heading,
+    this.note,
   });
 
-  /// See [_AssistantPartRun.heading].
+  /// See [_AssistantPartRun.heading] and [_AssistantPartRun.note].
   final String? heading;
+  final String? note;
   final Part part;
   final String searchQuery;
   final bool reasoningExpanded;
@@ -1599,6 +1624,7 @@ class _AssistantMessagePart extends StatelessWidget {
         toolName: part.toolName ?? 'tool',
         state: part.toolState,
         heading: heading,
+        note: note,
         expansionStore: expansionStore,
         expansionKey: 'tool:${part.id ?? part.callID}',
         filePreviewLoader: filePreviewLoader,
@@ -1977,6 +2003,7 @@ class _MessageView extends StatelessWidget {
           ),
           parts: run.parts,
           heading: run.heading,
+          note: run.note,
           expansionStore: expansionStore,
           filePreviewLoader: filePreviewLoader,
           onAttachFile: onAttachFile,
@@ -1986,6 +2013,7 @@ class _MessageView extends StatelessWidget {
       : _AssistantMessagePart(
           part: run.parts.single,
           heading: run.heading,
+          note: run.note,
           searchQuery: searchQuery,
           reasoningExpanded: reasoningExpanded,
           expansionStore: expansionStore,
@@ -2454,6 +2482,16 @@ class _Reasoning extends StatefulWidget {
 class _ReasoningState extends State<_Reasoning> {
   late bool _open;
 
+  static String? _preview(String text) {
+    final line = text.trim().split('\n').first;
+    final plain = line.replaceAll(RegExp(r'[*_`#]+'), '').trim();
+    if (plain.isEmpty) return null;
+    // One line's worth: the row is a label for the thought, not the thought.
+    return plain.length <= 80
+        ? plain
+        : '${plain.substring(0, 80).trimRight()}…';
+  }
+
   // Measurement cache: the painter is retained by the State and re-laid-out
   // only when the text, style, direction, or width actually changes, instead
   // of allocating a fresh TextPainter on every rebuild of a streaming turn.
@@ -2611,7 +2649,6 @@ class _ReasoningState extends State<_Reasoning> {
                               4,
                             ),
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   AppIconography.model,
@@ -2619,19 +2656,25 @@ class _ReasoningState extends State<_Reasoning> {
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
                                 const SizedBox(width: 5),
-                                InfoLabel.glossary(
-                                  Glossary.reasoning,
-                                  key: const Key('reasoning-glossary'),
-                                  iconSize: 13,
-                                  style: theme.textTheme.labelSmall!.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                // Closed, the row is the thought's first
+                                // line. The word "Reasoning" and what it
+                                // means appear once it is opened.
+                                if (_open)
+                                  InfoLabel.glossary(
+                                    Glossary.reasoning,
+                                    key: const Key('reasoning-glossary'),
+                                    iconSize: 13,
+                                    style: theme.textTheme.labelSmall!.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
-                                ),
                                 if (!_open) ...[
-                                  const SizedBox(width: 4),
                                   Flexible(
                                     child: Text(
-                                      _chatL10n(context).chatUiTapToExpand,
+                                      // What it was thinking about, not an
+                                      // instruction to tap.
+                                      _preview(widget.text) ??
+                                          _chatL10n(context).chatUiTapToExpand,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: theme.textTheme.labelSmall!

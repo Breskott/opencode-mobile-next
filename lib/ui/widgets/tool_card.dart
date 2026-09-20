@@ -400,6 +400,10 @@ class ToolCard extends StatefulWidget {
   /// tool's name moves into the detail, so the step is one line, not two.
   final String? heading;
 
+  /// The rest of the thought [heading] was the first line of. Shown first
+  /// when the row is opened: why, then what.
+  final String? note;
+
   /// Optional longer-lived store (e.g. session-scoped) keyed by
   /// [expansionKey], so expansion survives list recycling in a virtualized
   /// transcript instead of resetting when the item State is rebuilt.
@@ -418,6 +422,7 @@ class ToolCard extends StatefulWidget {
     required this.state,
     this.embedded = false,
     this.heading,
+    this.note,
     this.expansionStore,
     this.expansionKey,
     this.filePreviewLoader,
@@ -611,6 +616,7 @@ class _ToolCardState extends State<ToolCard> {
       l10n: strings,
     );
     final hasBody =
+        (widget.note?.isNotEmpty ?? false) ||
         (widget.state.output?.isNotEmpty ?? false) ||
         (widget.state.inputJson?.isNotEmpty ?? false) ||
         widget.state.input.isNotEmpty ||
@@ -805,6 +811,8 @@ class _ToolCardState extends State<ToolCard> {
                 ),
               ),
             ),
+            if (_expanded && (widget.note?.isNotEmpty ?? false))
+              StepNote(widget.note!),
             if (widget.state.pruned) _PrunedNote(embedded: widget.embedded),
             if (_interleavedSegments case final segments?)
               Padding(
@@ -892,6 +900,30 @@ class _ToolCardState extends State<ToolCard> {
     if (widget.embedded) return accent;
     // Straight rule inside a rounded card: clip so the corners stay round.
     return ClipRRect(borderRadius: BorderRadius.circular(8), child: accent);
+  }
+}
+
+/// The agent's reasoning for a step, shown inside the opened step.
+class StepNote extends StatelessWidget {
+  const StepNote(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      key: const Key('step-note'),
+      padding: const EdgeInsetsDirectional.fromSTEB(28, 0, 10, 8),
+      child: MarkdownText(
+        text,
+        baseStyle: theme.textTheme.bodySmall!.copyWith(
+          fontStyle: FontStyle.italic,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        selectable: false,
+      ),
+    );
   }
 }
 
