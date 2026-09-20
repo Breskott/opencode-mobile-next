@@ -27,8 +27,33 @@ class _Picker extends ImagePicker {
   }) async {
     calls++;
     selectedSource = source;
+    lastMaxWidth = maxWidth;
+    lastMaxHeight = maxHeight;
+    lastQuality = imageQuality;
     expect(requestFullMetadata, isFalse);
     return choose?.call();
+  }
+
+  double? lastMaxWidth;
+  double? lastMaxHeight;
+  int? lastQuality;
+  int? lastLimit;
+  Future<List<XFile>> Function()? chooseMany;
+  @override
+  Future<List<XFile>> pickMultiImage({
+    double? maxWidth,
+    double? maxHeight,
+    int? imageQuality,
+    int? limit,
+    bool requestFullMetadata = true,
+  }) async {
+    calls++;
+    lastMaxWidth = maxWidth;
+    lastMaxHeight = maxHeight;
+    lastQuality = imageQuality;
+    lastLimit = limit;
+    expect(requestFullMetadata, isFalse);
+    return await chooseMany?.call() ?? const [];
   }
 
   @override
@@ -80,6 +105,85 @@ void main() {
   tearDown(() async {
     store.dispose();
     await directory.delete(recursive: true);
+  });
+
+  Future<XFile> named(String name) async {
+    final file = File('${directory.path}/$name');
+    await file.writeAsBytes(png);
+    return XFile(file.path, name: name);
+  }
+
+  test('a photo is scaled down by the picker before it is read', () async {
+    final file = await photo();
+    picker.choose = () async => file;
+    await pick();
+    // Full camera frames, re-sent on every step of a turn, overflowed the
+    // server's model connection.
+    expect(picker.lastMaxWidth, PromptPhotoStore.maxEdge);
+    expect(picker.lastMaxHeight, PromptPhotoStore.maxEdge);
+    expect(picker.lastQuality, PromptPhotoStore.quality);
+  });
+
+  test(
+    'the gallery picks several photos at once, up to the room left',
+    () async {
+      final files = [
+        await named('a.png'),
+        await named('b.png'),
+        await named('c.png'),
+      ];
+      picker.chooseMany = () async {
+        // A second picker cannot start while this one is open.
+        expect(store.pending, isNotNull);
+        return files;
+      };
+      final picked = await store.pickMany(
+        profileID: 'a',
+        sessionID: 's',
+        directory: '/project',
+        workspace: 'w',
+        limit: 2,
+      );
+      expect(picker.lastLimit, 2);
+      expect(picker.lastMaxWidth, PromptPhotoStore.maxEdge);
+      // A picker that ignores the limit cannot overfill the draft.
+      expect(picked.map((a) => a.filename), ['a.png', 'b.png']);
+      expect(picked.first.mime, 'image/png');
+      // Nothing is left pending: the caller holds the photos now.
+      expect(store.pending, isNull);
+      expect(store.busy, isFalse);
+    },
+  );
+
+  test(
+    'one slot left uses the single picker, which accepts a limit of one',
+    () async {
+      final file = await named('only.png');
+      picker.choose = () async => file;
+      final picked = await store.pickMany(
+        profileID: 'a',
+        sessionID: 's',
+        directory: null,
+        workspace: null,
+        limit: 1,
+      );
+      expect(picker.selectedSource, ImageSource.gallery);
+      expect(picked.single.filename, 'only.png');
+      expect(store.pending, isNull);
+    },
+  );
+
+  test('cancelling a multi-pick leaves nothing pending', () async {
+    picker.chooseMany = () async => const [];
+    final picked = await store.pickMany(
+      profileID: 'a',
+      sessionID: 's',
+      directory: null,
+      workspace: null,
+      limit: 5,
+    );
+    expect(picked, isEmpty);
+    expect(store.pending, isNull);
   });
 
   test(

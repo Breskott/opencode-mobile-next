@@ -104,6 +104,15 @@ class PromptPhotoStore extends ChangeNotifier {
            );
   static const key = 'oc.pendingPromptPhoto';
   static const maxBytes = 10 * 1024 * 1024;
+
+  /// Photos are scaled down by the platform picker before they are read. A
+  /// phone camera frame is 12 MP and several megabytes; a model looks at
+  /// roughly 2000 px on the long edge at most. A prompt's images are sent
+  /// again on every step of the turn, so five full frames were tens of
+  /// megabytes per step: slow over Tailscale, and enough to overflow the
+  /// server's model connection ("WebSocket inbound queue overflow").
+  static const maxEdge = 2048.0;
+  static const quality = 85;
   final SharedPreferences prefs;
   final ImagePicker _picker;
   final DraftAttachmentVault _vault;
@@ -164,6 +173,9 @@ class PromptPhotoStore extends ChangeNotifier {
       await _serial(() => _save(request));
       final file = await _picker.pickImage(
         source: source,
+        maxWidth: maxEdge,
+        maxHeight: maxEdge,
+        imageQuality: quality,
         requestFullMetadata: false,
       );
       if (file == null) {
@@ -183,6 +195,67 @@ class PromptPhotoStore extends ChangeNotifier {
       });
       rethrow;
     } finally {
+      _busy = false;
+      notifyListeners();
+    }
+  }
+
+  /// Picks several photos from the gallery in one go, at most [limit].
+  ///
+  /// The single-photo path keeps a recovery record because Android may kill
+  /// the app while the camera is open. The same record is committed here, so
+  /// a second picker cannot start and a killed app still recovers the first
+  /// photo through [recoverLostData]; the photos come back directly, and the
+  /// caller saves them with the draft.
+  Future<List<PromptAttachment>> pickMany({
+    required String profileID,
+    required String sessionID,
+    required String? directory,
+    required String? workspace,
+    required int limit,
+  }) async {
+    if (_busy || prefs.containsKey(key)) {
+      throw const PromptPhotoException(PromptPhotoFailure.pending);
+    }
+    if (limit < 1) return const [];
+    _busy = true;
+    final request = PendingPromptPhoto(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      profileID: profileID,
+      sessionID: sessionID,
+      directory: directory,
+      workspace: workspace,
+    );
+    try {
+      await _serial(() => _save(request));
+      // The platform rejects a limit of 1 for a multi-pick.
+      final files = limit == 1
+          ? [
+              ?await _picker.pickImage(
+                source: ImageSource.gallery,
+                maxWidth: maxEdge,
+                maxHeight: maxEdge,
+                imageQuality: quality,
+                requestFullMetadata: false,
+              ),
+            ]
+          : await _picker.pickMultiImage(
+              maxWidth: maxEdge,
+              maxHeight: maxEdge,
+              imageQuality: quality,
+              limit: limit,
+              requestFullMetadata: false,
+            );
+      final attachments = <PromptAttachment>[];
+      // Some pickers ignore the limit; the draft's own cap still holds.
+      for (final file in files.take(limit)) {
+        attachments.add(await readPhoto(file));
+      }
+      return attachments;
+    } finally {
+      try {
+        await _serial(() => _discard(request.id));
+      } catch (_) {}
       _busy = false;
       notifyListeners();
     }

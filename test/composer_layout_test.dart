@@ -104,6 +104,24 @@ class _RecordingPhotoStore extends PromptPhotoStore {
     session = sessionID;
     return null;
   }
+
+  int? limit;
+
+  /// The gallery picks several at once; the draft is saved first either way.
+  @override
+  Future<List<PromptAttachment>> pickMany({
+    required String profileID,
+    required String sessionID,
+    required String? directory,
+    required String? workspace,
+    required int limit,
+  }) async {
+    expect(prefs.getString('oc.sessionDrafts'), contains('Keep before camera'));
+    selected = ImageSource.gallery;
+    session = sessionID;
+    this.limit = limit;
+    return const [];
+  }
 }
 
 Future<ConnectionController> _controller({

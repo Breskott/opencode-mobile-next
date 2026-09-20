@@ -3158,6 +3158,10 @@ class _ChatScreenState extends State<ChatScreen>
     }
     setState(() => _photoBusy = true);
     try {
+      if (source == ImageSource.gallery) {
+        await _pickGalleryPhotos();
+        return;
+      }
       final photo = await _conn.promptPhotos.pick(
         profileID: _draftProfileID,
         sessionID: widget.sessionID,
@@ -3173,6 +3177,48 @@ class _ChatScreenState extends State<ChatScreen>
     } finally {
       if (mounted) setState(() => _photoBusy = false);
     }
+  }
+
+  /// Gallery: as many photos as the draft still has room for, in one visit.
+  Future<void> _pickGalleryPhotos() async {
+    final picked = await _conn.promptPhotos.pickMany(
+      profileID: _draftProfileID,
+      sessionID: widget.sessionID,
+      directory: _draftDirectory,
+      workspace: _draftWorkspace,
+      limit: _maxAttachmentCount - _attachments.length,
+    );
+    if (!mounted || picked.isEmpty) return;
+    if (_draftLocation != _conn.locationRevision ||
+        _conn.profile?.id != _draftProfileID) {
+      _showActionError(_chatL10n(context).photoOtherLocation);
+      return;
+    }
+    var bytes = _attachments.fold<int>(
+      0,
+      (total, a) => total + _attachmentByteLength(a),
+    );
+    final added = <PromptAttachment>[];
+    var full = false;
+    for (final attachment in picked) {
+      if (_attachments.any((a) => a.url == attachment.url) ||
+          added.any((a) => a.url == attachment.url)) {
+        continue;
+      }
+      final size = _attachmentByteLength(attachment);
+      if (_attachments.length + added.length >= _maxAttachmentCount ||
+          bytes + size > _maxAggregateAttachmentBytes) {
+        full = true;
+        break;
+      }
+      bytes += size;
+      added.add(attachment);
+    }
+    if (added.isNotEmpty) {
+      setState(() => _attachments.addAll(added));
+      await _persistDraft();
+    }
+    if (full && mounted) _showActionError(_chatL10n(context).photoDraftFull);
   }
 
   Future<void> _applyPendingPhoto(
@@ -6598,7 +6644,14 @@ class _ChatScreenState extends State<ChatScreen>
             // banners cannot stack three deep over the transcript: a prompt
             // error outranks subagent context, which outranks the share
             // notice (sharing stays visible in Session actions).
-            if (_promptError case final promptError?)
+            //
+            // The banner is for an error with no home in the transcript (a
+            // prompt the server refused, a session-level failure). One that
+            // a reply already carries is shown there, once, with its actions.
+            if (_promptError case final promptError?
+                when !_messages.any(
+                  (message) => message.info.errorText == promptError,
+                ))
               _PromptErrorBanner(
                 message: promptError,
                 onDismiss: () => setState(() => _promptError = null),
