@@ -647,7 +647,8 @@ class _ToolCardState extends State<ToolCard> {
                     // On its own a call shares the prose's left edge; inside
                     // a group it sits in from the group's rule.
                     padding: EdgeInsetsDirectional.fromSTEB(
-                      widget.embedded ? 10 : 4,
+                      // 2 + the running rule's 2 = the prose's inset of 4.
+                      widget.embedded ? 10 : 2,
                       8,
                       widget.embedded ? 8 : 4,
                       8,
@@ -665,8 +666,15 @@ class _ToolCardState extends State<ToolCard> {
                         Expanded(
                           child: Row(
                             children: [
-                              Flexible(
-                                flex: widget.heading == null ? 0 : 3,
+                              ConstrainedBox(
+                                // The agent's name for the step reads in
+                                // full where it can; the tool detail takes
+                                // what is left, with no slack between them.
+                                constraints: BoxConstraints(
+                                  maxWidth: widget.heading == null
+                                      ? double.infinity
+                                      : MediaQuery.sizeOf(context).width * .56,
+                                ),
                                 child: Text(
                                   widget.heading ?? contract.title,
                                   maxLines: 1,
@@ -687,7 +695,6 @@ class _ToolCardState extends State<ToolCard> {
                                   contract.subtitle?.isNotEmpty == true) ...[
                                 const SizedBox(width: 6),
                                 Expanded(
-                                  flex: 2,
                                   child: Text(
                                     widget.heading == null
                                         ? contract.subtitle!

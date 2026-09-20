@@ -156,9 +156,17 @@ void main() {
     expect(find.text('Edit'), findsOneWidget);
     // No "…" placeholder and no orphan actions row for the empty message.
     expect(find.text('…'), findsNothing);
-    expect(find.byKey(const ValueKey('message-actions-a2')), findsNothing);
-    // The real message keeps its actions affordance.
-    expect(find.byKey(const ValueKey('message-actions-a1')), findsOneWidget);
+    // The turn keeps exactly one actions affordance, in its footer: the
+    // bookkeeping tail adds no second one and takes none away.
+    expect(
+      find.byWidgetPredicate((widget) {
+        final key = widget.key;
+        return key is ValueKey<String> &&
+            key.value.startsWith('message-actions-') &&
+            !key.value.startsWith('message-actions-disc-');
+      }),
+      findsOneWidget,
+    );
   });
 
   Part tool(String id, String name) => Part(
@@ -235,6 +243,46 @@ void main() {
     expect(
       tester.getTopLeft(find.text('Hello there')).dx,
       lessThan(tester.getTopLeft(find.text('Hi.')).dx + 16),
+    );
+  });
+
+  testWidgets('what the agent did between two replies folds under one line', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Fix the balance')], created: 1),
+      _message('a1', 'assistant', [
+        _text('a1-t', 'Looking into it.'),
+        tool('t1', 'bash'),
+      ], created: 2),
+      // Later steps of the same stretch of work, stored as separate messages.
+      _message('a2', 'assistant', [
+        Part(id: 'r2', type: 'reasoning', text: '**Checking persistence**'),
+        tool('t2', 'bash'),
+      ], created: 3),
+      _message('a3', 'assistant', [
+        Part(id: 'r3', type: 'reasoning', text: '**Preparing the patch**'),
+        tool('t3', 'read'),
+        tool('t4', 'read'),
+      ], created: 4),
+      _message('a4', 'assistant', [_text('a4-t', 'Fixed.')], created: 5),
+    ]);
+
+    // Said: visible. Done: one line, however many steps it took.
+    expect(find.text('Looking into it.'), findsOneWidget);
+    expect(find.text('Fixed.'), findsOneWidget);
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.text('3 steps'), findsOneWidget);
+    expect(find.text('Checking persistence'), findsNothing);
+
+    // Discoverable: one tap shows every step, in order, by the agent's name.
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
+    expect(find.text('Checking persistence'), findsOneWidget);
+    expect(find.text('Preparing the patch'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Checking persistence')).dy,
+      lessThan(tester.getTopLeft(find.text('Preparing the patch')).dy),
     );
   });
 }
