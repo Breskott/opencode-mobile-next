@@ -190,7 +190,7 @@ void main() {
         // The indicator is on while the setting is on.
         final indicator = find.byKey(const Key('auto-approval-indicator'));
         expect(indicator, findsOneWidget);
-        expect(find.text('Approving automatically'), findsOneWidget);
+        expect(find.text('Auto-approve'), findsOneWidget);
 
         // A request is answered without a card, and the record names it.
         controller.handleEventForTesting(_ask('req-1', 'parent'));
@@ -198,7 +198,7 @@ void main() {
         expect(api.replies, [('req-1', 'once')]);
         expect(find.byKey(const Key('permission-card-review')), findsNothing);
         expect(
-          find.textContaining('Auto-approved · Run a shell command'),
+          find.byTooltip(RegExp('Auto-approved · Run a shell command')),
           findsOneWidget,
         );
         await _captureScreen(tester, 'indicator-${direction.name}');
@@ -214,9 +214,14 @@ void main() {
           find.text('1 request approved automatically on this server'),
           findsOneWidget,
         );
+        // Named on the chip (its tooltip) and listed in the sheet's record.
+        expect(
+          find.byTooltip(RegExp('Auto-approved · Run a shell command')),
+          findsOneWidget,
+        );
         expect(
           find.textContaining('Auto-approved · Run a shell command'),
-          findsNWidgets(2),
+          findsOneWidget,
         );
         await _captureScreen(tester, 'sheet-record-${direction.name}');
         await _tapVisible(tester, find.text('Ask each time'));
@@ -248,9 +253,9 @@ void main() {
         await tester.pumpWidget(_app(controller, 'child', direction));
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('Approving automatically'), findsOneWidget);
+        expect(find.textContaining('Auto-approve'), findsOneWidget);
         expect(
-          find.textContaining('Inherited from parent conversation'),
+          find.byTooltip(RegExp('Inherited from parent conversation')),
           findsOneWidget,
         );
         await _captureScreen(tester, 'child-indicator-${direction.name}');
@@ -264,7 +269,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.textContaining('Inherited from parent conversation'),
+          find.byTooltip(RegExp('Inherited from parent conversation')),
           findsWidgets,
         );
         expect(find.byKey(const Key('approvals-follow-parent')), findsNothing);
@@ -320,15 +325,15 @@ void main() {
     );
     await tester.pumpWidget(_app(controller, 'parent', TextDirection.ltr));
     await tester.pumpAndSettle();
-    expect(find.text('Approving automatically'), findsOneWidget);
+    expect(find.text('Auto-approve'), findsOneWidget);
 
     controller.status = StreamStatus.reconnecting;
     controller.notifyListeners();
     // The connection banner animates while reconnecting; pump a fixed frame.
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const Key('auto-approval-indicator')), findsOneWidget);
-    expect(find.textContaining('Auto-approval paused'), findsOneWidget);
-    expect(find.textContaining('Not connected'), findsOneWidget);
+    expect(find.text('Auto-approve paused'), findsOneWidget);
+    expect(find.byTooltip(RegExp('Not connected')), findsOneWidget);
     expect(tester.takeException(), isNull);
     // A request arriving now waits for a person: covered by the controller
     // test. (A permission card next to the reconnecting banner at 320dp/2.5x
@@ -372,7 +377,7 @@ void main() {
     expect(api.replies, [('req-1', 'reject')]);
     expect(find.byKey(const Key('permission-card-review')), findsNothing);
     expect(find.byKey(const Key('auto-approval-indicator')), findsOneWidget);
-    expect(find.text('Approving automatically'), findsOneWidget);
+    expect(find.text('Auto-approve'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

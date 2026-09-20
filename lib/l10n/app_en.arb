@@ -17981,5 +17981,21 @@
   "chatUiCompactionFailedHint": "The conversation is still too long for the model, so the next turn will try again.",
   "@chatUiCompactionFailedHint": {
     "description": "What a failed compaction means for the reader, shown before the server's reason"
+  },
+  "chatStripContextPending": "Context pending",
+  "@chatStripContextPending": {
+    "description": "Short chip label above the composer: the server will hand the agent new context at its next step"
+  },
+  "chatStripAutoApprove": "Auto-approve",
+  "@chatStripAutoApprove": {
+    "description": "Short chip label above the composer while permission requests are approved automatically; may be followed by a count"
+  },
+  "chatStripAutoApprovePaused": "Auto-approve paused",
+  "@chatStripAutoApprovePaused": {
+    "description": "Short chip label above the composer while automatic approval is paused because the app is disconnected"
+  },
+  "chatStripBackground": "Background",
+  "@chatStripBackground": {
+    "description": "Short chip label above the composer: send the running work to the background"
   }
 }

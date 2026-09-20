@@ -16852,4 +16852,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatUiCompactionFailedHint =>
       'The conversation is still too long for the model, so the next turn will try again.';
+
+  @override
+  String get chatStripContextPending => 'Context pending';
+
+  @override
+  String get chatStripAutoApprove => 'Auto-approve';
+
+  @override
+  String get chatStripAutoApprovePaused => 'Auto-approve paused';
+
+  @override
+  String get chatStripBackground => 'Background';
 }
