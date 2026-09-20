@@ -1,5 +1,6 @@
 import 'support/complete_message_history.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
@@ -393,5 +394,60 @@ void main() {
     // The tool keeps its own name; the first sentence did not become a title.
     expect(find.text('Read'), findsOneWidget);
     expect(find.byKey(const Key('step-note')), findsNothing);
+  });
+
+  testWidgets('a running turn has no footer; it arrives when the turn ends', (
+    tester,
+  ) async {
+    final controller = await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'First')], created: 1),
+      _message('a1', 'assistant', [
+        _text('a1-t', 'Done with that.'),
+      ], created: 2),
+      _message('u2', 'user', [_text('u2-t', 'Second')], created: 3),
+      _message('a2', 'assistant', [_text('a2-t', 'Working on it')], created: 4),
+    ], busy: true);
+
+    // The finished turn keeps its one line; the running one has none yet.
+    expect(find.byKey(const ValueKey('message-actions-a1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-actions-a2')), findsNothing);
+
+    controller.busySessions.remove('session-1');
+    controller.notifyListeners();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('message-actions-a2')), findsOneWidget);
+  });
+
+  testWidgets('the turn footer copies the reply in one tap', (tester) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add((call.arguments as Map)['text'] as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Hi')], created: 1),
+      _message('a1', 'assistant', [_text('a1-t', 'Part one.')], created: 2),
+      _message('a2', 'assistant', [
+        tool('t1', 'read'),
+        _text('a2-t', 'Part two.'),
+      ], created: 3),
+    ]);
+    final copy = find.byKey(const ValueKey('message-copy-a2'));
+    expect(copy, findsOneWidget);
+    expect(tester.getSize(copy).height, greaterThanOrEqualTo(44));
+    await tester.tap(copy);
+    await tester.pumpAndSettle();
+    expect(copied, ['Part one.\n\nPart two.']);
   });
 }

@@ -483,6 +483,7 @@ Set<int> _turnActionOwners(
   List<MessageWithParts> messages,
   List<List<Part>> display, {
   required bool metaAlways,
+  bool running = false,
 }) {
   final owners = <int>{};
   int? lastStep;
@@ -491,9 +492,12 @@ Set<int> _turnActionOwners(
       display[index].any((part) => part.isRenderable) ||
       messages[index].info.errorText != null ||
       messages[index].info.finish == 'length';
-  void closeTurn() {
+  void closeTurn({bool last = false}) {
     final end = lastStep;
-    if (end != null) {
+    // The turn in progress has no footer yet: its control would sit under
+    // whatever step happens to be newest and jump down with every new one.
+    // It arrives when the turn ends; long-press works meanwhile.
+    if (end != null && !(last && running)) {
       final endDraws =
           hasBody(end) ||
           metaAlways ||
@@ -513,7 +517,7 @@ Set<int> _turnActionOwners(
       if (hasBody(index)) lastWithBody = index;
     }
   }
-  closeTurn();
+  closeTurn(last: true);
   return owners;
 }
 
@@ -994,6 +998,12 @@ List<_AssistantPartRun> _groupAssistantParts(List<Part> parts) {
   var index = 0;
   while (index < parts.length) {
     final current = parts[index];
+    // A thought that is only markup ("**", a lone "#") draws an empty rule.
+    if (current.type == 'reasoning' &&
+        current.text.replaceAll(RegExp(r'[\s*_`#>-]+'), '').isEmpty) {
+      index += 1;
+      continue;
+    }
     if (!_isToolPart(current)) {
       if (current.type != 'text' && current.type != 'reasoning') {
         runs.add(_AssistantPartRun([current]));
@@ -1752,7 +1762,12 @@ class _MessageView extends StatelessWidget {
     this.queued = false,
     this.showActions = true,
     this.errorRecovered = false,
+    this.onCopy,
   });
+
+  /// Copies the turn's reply. The footer is one line per turn; the action
+  /// people reach for most sits on it directly, next to the menu.
+  final VoidCallback? onCopy;
 
   /// See [_AssistantErrorRow.recovered].
   final bool errorRecovered;
@@ -1957,6 +1972,32 @@ class _MessageView extends StatelessWidget {
                           metaParts.join('  ·  '),
                           style: theme.textTheme.labelSmall!.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    if (showActions && onCopy != null)
+                      Semantics(
+                        button: true,
+                        label: _chatL10n(context).chatUiCopyMessageText,
+                        child: Tooltip(
+                          message: _chatL10n(context).chatUiCopyMessageText,
+                          child: InkWell(
+                            key: ValueKey('message-copy-${m.info.id}'),
+                            customBorder: const StadiumBorder(),
+                            onTap: onCopy,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minWidth: 44,
+                                minHeight: 44,
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  AppIcons.copy,
+                                  size: 17,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
