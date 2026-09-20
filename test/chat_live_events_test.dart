@@ -4424,6 +4424,31 @@ void main() {
     );
   });
 
+  testWidgets('an error a reply carries is not repeated in a banner', (
+    tester,
+  ) async {
+    final api = _FakeOpenCodeApi();
+    final controller = await _pumpChat(tester, api);
+    controller.handleEventForTesting(
+      _event('message.updated', {
+        'info': {
+          'id': 'assistant-1',
+          'sessionID': 'session-1',
+          'role': 'assistant',
+          'time': {'created': 1, 'completed': 2},
+          'error': {
+            'name': 'ProviderError',
+            'data': {'message': 'WebSocket inbound queue overflow'},
+          },
+        },
+      }),
+    );
+    await _pumpEvent(tester);
+
+    expect(find.text('WebSocket inbound queue overflow'), findsOneWidget);
+    expect(find.byKey(const ValueKey('prompt-error-banner')), findsNothing);
+  });
+
   testWidgets('a model-not-found session error shows one line and Choose model', (
     tester,
   ) async {
