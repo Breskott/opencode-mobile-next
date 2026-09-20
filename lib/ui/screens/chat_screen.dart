@@ -2201,13 +2201,16 @@ class _ChatScreenState extends State<ChatScreen>
     for (var i = 0; i < files.length; i++) {
       final part = files[i];
       final attachment = pending.attachments[i];
-      if ((part.filename ?? '') != attachment.filename) return false;
-      if (part.mime?.isNotEmpty == true && part.mime != attachment.mime) {
-        return false;
-      }
-      if (part.url?.isNotEmpty == true && part.url != attachment.url) {
-        return false;
-      }
+      // The name is what identifies an attachment across the round trip. A
+      // server that stores none cannot contradict the one that was sent.
+      final name = part.filename ?? '';
+      if (name.isNotEmpty && name != attachment.filename) return false;
+      // The URL and the type are deliberately not compared. The app sends a
+      // `data:` URI (or a path); a server keeps the file itself and answers
+      // with its own location, and may name the type differently
+      // (`image/jpg`). Requiring them to match left the optimistic bubble
+      // unreconciled, so the same prompt appeared again after every turn
+      // whenever photos were attached.
     }
     return true;
   }
@@ -3912,16 +3915,11 @@ class _ChatScreenState extends State<ChatScreen>
         text: _messageText(message),
       );
     }
-    var start = index;
-    var end = index;
-    while (start > 0 && _messages[start - 1].info.role == 'assistant') {
-      start--;
-    }
-    while (end + 1 < _messages.length &&
-        _messages[end + 1].info.role == 'assistant') {
-      end++;
-    }
-    final reply = _messages.getRange(start, end + 1);
+    // The reply is the whole turn; a notice in the middle of it (context
+    // added, project moved) is not where it ends.
+    final reply = _turnSteps(_messages, index);
+    final start = _messages.indexOf(reply.first);
+    final end = _messages.indexOf(reply.last);
     final unfinished =
         _conn.busySessions.contains(widget.sessionID) &&
         reply.any((item) => item.info.time?.isDone != true);
@@ -6436,6 +6434,11 @@ class _ChatScreenState extends State<ChatScreen>
         ? _queuedAfterIndex(_messages)
         : -1;
     final displayParts = _timelineDisplayParts(_messages);
+    final turnActionOwners = _turnActionOwners(
+      _messages,
+      displayParts,
+      metaAlways: _conn.transcriptTimestampsVisible,
+    );
     final showAttachmentNote = _attachmentNoteVisible();
     final pendingPermissions = _conn.permissionsForSession(widget.sessionID);
 
@@ -6847,6 +6850,15 @@ class _ChatScreenState extends State<ChatScreen>
                                                               _findCursor + 1,
                                                               _findHits.length,
                                                             ),
+                                                      // One "more" control
+                                                      // per turn: under the
+                                                      // message that ends a
+                                                      // reply, never under
+                                                      // each step of it or
+                                                      // under the prompt.
+                                                      showActions:
+                                                          turnActionOwners
+                                                              .contains(index),
                                                       onLongPress:
                                                           _conn.isIsolated
                                                           ? null

@@ -156,8 +156,133 @@ void main() {
     expect(find.text('Edit'), findsOneWidget);
     // No "…" placeholder and no orphan actions row for the empty message.
     expect(find.text('…'), findsNothing);
-    expect(find.byKey(const ValueKey('message-actions-a2')), findsNothing);
-    // The real message keeps its actions affordance.
-    expect(find.byKey(const ValueKey('message-actions-a1')), findsOneWidget);
+    // The turn keeps exactly one actions affordance, in its footer: the
+    // bookkeeping tail adds no second one and takes none away.
+    expect(
+      find.byWidgetPredicate((widget) {
+        final key = widget.key;
+        return key is ValueKey<String> &&
+            key.value.startsWith('message-actions-') &&
+            !key.value.startsWith('message-actions-disc-');
+      }),
+      findsOneWidget,
+    );
+  });
+
+  Part tool(String id, String name) => Part(
+    id: id,
+    type: 'tool',
+    callID: id,
+    toolName: name,
+    toolState: ToolState.fromJson(const {
+      'status': 'completed',
+      'input': {'filePath': '/work/lib/main.dart'},
+      'output': 'ok',
+    }, toolName: name),
+  );
+
+  testWidgets('a turn has one control, and a notice does not end the turn', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _message('u1', 'user', [
+        _text('u1-t', 'Tidy the home screen'),
+      ], created: 1),
+      _message('a1', 'assistant', [
+        _text('a1-t', 'Looking first.'),
+      ], created: 2),
+      // Filed under the user role by the server, but nobody typed it.
+      _message('n1', 'user', [
+        Part(id: 'v2-0', type: 'v2:notice', toolName: 'synthetic', text: 'x'),
+      ], created: 3),
+      _message('a2', 'assistant', [_text('a2-t', 'Done.')], created: 4),
+      _message('u2', 'user', [_text('u2-t', 'Thanks')], created: 5),
+      _message('a3', 'assistant', [_text('a3-t', 'Welcome.')], created: 6),
+    ]);
+
+    // No control under a step, under the prompt, or before the notice.
+    expect(find.byKey(const ValueKey('message-actions-u1')), findsNothing);
+    expect(find.byKey(const ValueKey('message-actions-a1')), findsNothing);
+    // One per turn, under the step that ends it.
+    expect(find.byKey(const ValueKey('message-actions-a2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-actions-a3')), findsOneWidget);
+  });
+
+  testWidgets('a one-line thought titles the tool run that follows it', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Patch it')], created: 1),
+      _message('a1', 'assistant', [
+        Part(id: 'a1-r', type: 'reasoning', text: '**Patching home shell**'),
+        tool('a1-t1', 'read'),
+        tool('a1-t2', 'edit'),
+      ], created: 2),
+    ]);
+
+    // One line for the step: the agent's own name for it, then what it did.
+    expect(find.text('Patching home shell'), findsOneWidget);
+    expect(find.byKey(const Key('assistant-reasoning-block')), findsNothing);
+    expect(find.byKey(const Key('tool-call-group')), findsOneWidget);
+    expect(find.text('Tools'), findsNothing);
+  });
+
+  testWidgets('a prompt is a ruled line, not a bubble', (tester) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Hello there')], created: 1),
+      _message('a1', 'assistant', [_text('a1-t', 'Hi.')], created: 2),
+    ]);
+    final prompt = tester.widget<Container>(
+      find.byKey(const ValueKey('user-prompt-u1')),
+    );
+    final decoration = prompt.decoration! as BoxDecoration;
+    expect(decoration.color, isNull);
+    expect(decoration.borderRadius, isNull);
+    expect((decoration.border! as BorderDirectional).start.width, 3);
+    // Prompt and reply share a left edge.
+    expect(
+      tester.getTopLeft(find.text('Hello there')).dx,
+      lessThan(tester.getTopLeft(find.text('Hi.')).dx + 16),
+    );
+  });
+
+  testWidgets('what the agent did between two replies folds under one line', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Fix the balance')], created: 1),
+      _message('a1', 'assistant', [
+        _text('a1-t', 'Looking into it.'),
+        tool('t1', 'bash'),
+      ], created: 2),
+      // Later steps of the same stretch of work, stored as separate messages.
+      _message('a2', 'assistant', [
+        Part(id: 'r2', type: 'reasoning', text: '**Checking persistence**'),
+        tool('t2', 'bash'),
+      ], created: 3),
+      _message('a3', 'assistant', [
+        Part(id: 'r3', type: 'reasoning', text: '**Preparing the patch**'),
+        tool('t3', 'read'),
+        tool('t4', 'read'),
+      ], created: 4),
+      _message('a4', 'assistant', [_text('a4-t', 'Fixed.')], created: 5),
+    ]);
+
+    // Said: visible. Done: one line, however many steps it took.
+    expect(find.text('Looking into it.'), findsOneWidget);
+    expect(find.text('Fixed.'), findsOneWidget);
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.text('3 steps'), findsOneWidget);
+    expect(find.text('Checking persistence'), findsNothing);
+
+    // Discoverable: one tap shows every step, in order, by the agent's name.
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
+    expect(find.text('Checking persistence'), findsOneWidget);
+    expect(find.text('Preparing the patch'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Checking persistence')).dy,
+      lessThan(tester.getTopLeft(find.text('Preparing the patch')).dy),
+    );
   });
 }

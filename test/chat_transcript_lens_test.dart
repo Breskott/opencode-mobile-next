@@ -322,7 +322,7 @@ void main() {
     expect(find.byKey(const ValueKey('message-action-delete')), findsOneWidget);
   });
 
-  testWidgets('the meta-row affordance opens the same actions menu', (
+  testWidgets('a prompt carries no control row; long-press opens its menu', (
     tester,
   ) async {
     final api = _TranscriptApi()
@@ -339,9 +339,10 @@ void main() {
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
 
-    final affordance = find.byKey(const ValueKey('message-actions-user-1'));
-    expect(affordance, findsOneWidget);
-    await tester.tap(affordance);
+    // The "more" control appears once per turn, under the reply. A prompt
+    // does not repeat it.
+    expect(find.byKey(const ValueKey('message-actions-user-1')), findsNothing);
+    await tester.longPress(find.text('Fix the login bug'));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('message-action-copy')), findsOneWidget);
@@ -392,7 +393,12 @@ void main() {
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('message-actions-assistant-1')));
+    // One control per turn, under the step that ends it.
+    expect(
+      find.byKey(const ValueKey('message-actions-assistant-1')),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('message-actions-assistant-2')));
     await tester.pumpAndSettle();
     expect(find.text('Copy complete reply'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('message-action-copy')));

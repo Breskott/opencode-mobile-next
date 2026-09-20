@@ -1173,7 +1173,9 @@ void main() {
         ..pageHandler = (cursor) async => cursor == null
             ? ServerPage(
                 items: [
-                  for (var i = 0; i < 20; i++) historyMessage('recent-$i'),
+                  // Enough one-line rows that reaching the oldest leaves the
+                  // reader well over the 480px "away from latest" mark.
+                  for (var i = 0; i < 40; i++) historyMessage('recent-$i'),
                 ],
                 nextCursor: 'older',
               )
@@ -2582,11 +2584,14 @@ void main() {
     await _pumpEvent(tester);
 
     expect(find.text('Hello'), findsOneWidget);
-    expect(find.byKey(const Key('reasoning-inline')), findsOneWidget);
+    // A one-line thought right before a tool call is that call's title: the
+    // step is one row, not a heading row and a tool row.
+    expect(find.byKey(const Key('reasoning-inline')), findsNothing);
     expect(find.byKey(const Key('reasoning-toggle')), findsNothing);
     expect(find.text('why this works'), findsOneWidget);
     expect(find.text('**why this works**'), findsNothing);
-    await tester.tap(find.text('search'));
+    expect(find.textContaining('search'), findsOneWidget);
+    await tester.tap(find.text('why this works'));
     await _pumpEvent(tester);
     expect(find.textContaining('"query": "chat"'), findsOneWidget);
     semantics.dispose();
@@ -4161,6 +4166,87 @@ void main() {
     expect(find.text('stale fresh'), findsOneWidget);
     expect(find.text('stale'), findsNothing);
   });
+
+  testWidgets(
+    'a prompt with photos is not shown twice when the server re-homes them',
+    (tester) async {
+      final prompt = Completer<void>();
+      final api = _FakeOpenCodeApi()..promptCompleter = prompt;
+      final controller = await _controller(api);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [connProvider.overrideWithValue(controller)],
+          child: const MaterialApp(
+            home: ChatScreen(
+              sessionID: 'session-1',
+              initialAttachments: [
+                PromptAttachment(
+                  mime: 'image/jpeg',
+                  filename: '1000101752.jpg',
+                  url: 'data:image/jpeg;base64,/9j/4AAQ',
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        'match this UI',
+      );
+      await tester.pump();
+      await tester.tap(find.byTooltip('Send'));
+      await tester.pump();
+      expect(find.text('match this UI'), findsOneWidget);
+
+      // The server's copy: same text and file name, but the file now lives at
+      // the server's own location and the type is spelled differently.
+      for (final part in [
+        _partJson(
+          id: 'part-1',
+          messageID: 'user-1',
+          type: 'text',
+          text: 'match this UI',
+        ),
+        {
+          ..._partJson(
+            id: 'file-0',
+            messageID: 'user-1',
+            type: 'file',
+            text: '',
+          ),
+          'filename': '1000101752.jpg',
+          'mime': 'image/jpg',
+          'url': 'file:///srv/opencode/attachments/ab12/1000101752.jpg',
+        },
+      ]) {
+        controller.handleEventForTesting(
+          _event('message.part.updated', {
+            'sessionID': 'session-1',
+            'part': part,
+          }),
+        );
+      }
+      controller.handleEventForTesting(
+        _event('message.updated', {
+          'info': {
+            'id': 'user-1',
+            'sessionID': 'session-1',
+            'role': 'user',
+            'time': {'created': DateTime.now().millisecondsSinceEpoch},
+          },
+        }),
+      );
+      await tester.pump();
+      prompt.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('match this UI'), findsOneWidget);
+      expect(find.text('1000101752.jpg'), findsOneWidget);
+    },
+  );
 
   testWidgets('canonical user event replaces the optimistic bubble', (
     tester,
