@@ -12742,7 +12742,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String e7VoiceUiMemory(String model, int required, int available) {
-    return 'يتطلب $model ذاكرة تطبيق لا تقل عن $required ميغابايت؛ والمتاح وفقًا لهذا الجهاز $available ميغابايت.';
+    return 'يحتاج $model إلى هاتف بذاكرة تبلغ نحو $required ميغابايت؛ ذاكرة هذا الهاتف $available ميغابايت.';
   }
 
   @override

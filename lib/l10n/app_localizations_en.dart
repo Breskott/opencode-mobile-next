@@ -12541,7 +12541,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String e7VoiceUiMemory(String model, int required, int available) {
-    return '$model needs at least $required MB of app memory; this device reports $available MB.';
+    return '$model needs a phone with about $required MB of memory; this one has $available MB.';
   }
 
   @override

@@ -597,9 +597,15 @@ class MainActivity : FlutterActivity() {
     private fun voiceDeviceInfo(): Map<String, Any> {
         val storage = StatFs(filesDir.absolutePath)
         val activityManager = getSystemService(ActivityManager::class.java)
+        // The speech models run in native memory (ONNX Runtime), which the
+        // per-app Java heap limit (`memoryClass`, 256-512 MB even on a 16 GB
+        // phone) says nothing about. The device's physical memory does.
+        val memory = ActivityManager.MemoryInfo().also(activityManager::getMemoryInfo)
         return mapOf(
             "availableStorageBytes" to storage.availableBytes,
             "memoryClassMb" to activityManager.memoryClass,
+            "totalMemoryMb" to (memory.totalMem / (1024L * 1024L)),
+            "lowRamDevice" to activityManager.isLowRamDevice,
             "supportedAbis" to Build.SUPPORTED_ABIS.toList(),
             "hasMicrophone" to packageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE)
         )

@@ -43,6 +43,9 @@ class VoiceModelPack {
   final String repository;
   final String revision;
   final List<VoiceModelFile> files;
+
+  /// Physical device memory this pack needs, in MB. Set below the marketed
+  /// size because a "4 GB" phone reports about 3.6 GB to apps.
   final int minimumMemoryMb;
 
   int get downloadBytes => files.fold(0, (total, file) => total + file.length);
@@ -64,7 +67,7 @@ const voiceModelPacks = <VoiceModelPack>[
     description: 'Recommended quality, storage, and speed tradeoff.',
     repository: 'csukuangfj/sherpa-onnx-whisper-base',
     revision: 'bb53ee204431c90d314c1cc08d28d23e5b7927cc',
-    minimumMemoryMb: 256,
+    minimumMemoryMb: 1536,
     files: [
       VoiceModelFile(
         name: 'base-encoder.int8.onnx',
@@ -92,7 +95,7 @@ const voiceModelPacks = <VoiceModelPack>[
     description: 'Optional best quality; requires substantially more memory.',
     repository: 'csukuangfj/sherpa-onnx-whisper-small',
     revision: '8f3c18b358db4d1f2fc1eae49d75cd20989e4309',
-    minimumMemoryMb: 512,
+    minimumMemoryMb: 3400,
     files: [
       VoiceModelFile(
         name: 'small-encoder.int8.onnx',
@@ -120,7 +123,7 @@ const voiceModelPacks = <VoiceModelPack>[
     description: 'Fastest and smallest; reduced accuracy in difficult audio.',
     repository: 'csukuangfj/sherpa-onnx-whisper-tiny',
     revision: '65176e2deb88badc814a94058666cadccc29b61c',
-    minimumMemoryMb: 192,
+    minimumMemoryMb: 1024,
     files: [
       VoiceModelFile(
         name: 'tiny-encoder.int8.onnx',

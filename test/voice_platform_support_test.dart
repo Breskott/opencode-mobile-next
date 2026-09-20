@@ -55,6 +55,8 @@ void main() {
         return <String, dynamic>{
           'availableStorageBytes': 8000000000,
           'memoryClassMb': 256,
+          'totalMemoryMb': 11400,
+          'lowRamDevice': false,
           'supportedAbis': <String>['arm64-v8a'],
           'hasMicrophone': true,
         };
@@ -63,6 +65,8 @@ void main() {
       expect(info.captureSupported, isTrue);
       expect(info.hasMicrophone, isTrue);
       expect(info.memoryClassMb, 256);
+      expect(info.totalMemoryMb, 11400);
+      expect(info.lowRamDevice, isFalse);
       expect(info.supportedAbis, ['arm64-v8a']);
     });
 

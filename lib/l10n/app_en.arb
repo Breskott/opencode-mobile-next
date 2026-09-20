@@ -12597,7 +12597,7 @@
   "@e7VoiceUiDownloadFailed": {
     "description": "Voice/model presentation: e7VoiceUiDownloadFailed"
   },
-  "e7VoiceUiMemory": "{model} needs at least {required} MB of app memory; this device reports {available} MB.",
+  "e7VoiceUiMemory": "{model} needs a phone with about {required} MB of memory; this one has {available} MB.",
   "@e7VoiceUiMemory": {
     "description": "Voice/model presentation: e7VoiceUiMemory",
     "placeholders": {

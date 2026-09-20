@@ -360,9 +360,11 @@ void main() {
     () async {
       final manager = await readyVoiceModelManager();
       addTearDown(manager.dispose);
+      // A 2 GB phone: Balanced runs, High accuracy does not.
       manager.deviceInfo = const VoiceDeviceInfo(
         availableStorageBytes: 1024 * 1024 * 1024,
         memoryClassMb: 256,
+        totalMemoryMb: 1900,
         supportedAbis: ['arm64-v8a'],
         hasMicrophone: true,
       );
@@ -370,7 +372,30 @@ void main() {
       expect(manager.supportFor(voiceModelPack('base')).supported, isTrue);
       final high = manager.supportFor(voiceModelPack('small'));
       expect(high.supported, isFalse);
-      expect(high.reason, contains('512 MB'));
+      expect(high.reason, contains('3400 MB'));
+      expect(high.reason, contains('1900 MB'));
+
+      // A modern 12 GB phone still reports a 256 MB Java heap class. That
+      // number is not where the model lives and must not dim the option
+      // (reported by the owner on 2026-09-20).
+      manager.deviceInfo = const VoiceDeviceInfo(
+        availableStorageBytes: 8 * 1024 * 1024 * 1024,
+        memoryClassMb: 256,
+        totalMemoryMb: 11400,
+        supportedAbis: ['arm64-v8a'],
+        hasMicrophone: true,
+      );
+      expect(manager.supportFor(voiceModelPack('small')).supported, isTrue);
+
+      // An older app build on the Android side reports no total: nothing is
+      // known, so nothing is blocked.
+      manager.deviceInfo = const VoiceDeviceInfo(
+        availableStorageBytes: 8 * 1024 * 1024 * 1024,
+        memoryClassMb: 256,
+        supportedAbis: ['arm64-v8a'],
+        hasMicrophone: true,
+      );
+      expect(manager.supportFor(voiceModelPack('small')).supported, isTrue);
 
       manager.deviceInfo = const VoiceDeviceInfo(
         availableStorageBytes: 10,

@@ -46,7 +46,7 @@ String? voiceSupportReason(
   VoicePackUnsupported.memory => strings.e7VoiceUiMemory(
     voicePackLabel(pack, strings),
     pack.minimumMemoryMb,
-    manager.deviceInfo.memoryClassMb!,
+    manager.deviceInfo.totalMemoryMb!,
   ),
   VoicePackUnsupported.storage => strings.e7VoiceUiStorage(
     voicePackLabel(pack, strings),
