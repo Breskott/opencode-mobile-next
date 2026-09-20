@@ -16,6 +16,7 @@ import '../navigation/chat_route.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/nudge_card.dart';
+import '../widgets/other_projects_panel.dart';
 import '../widgets/product_states.dart';
 import '../widgets/relative_time.dart';
 import '../widgets/session_title.dart';
@@ -562,6 +563,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // The other projects in play: one tap to switch,
+                            // and what is going on in them.
+                            OtherProjectsPanel(controller: widget.controller),
                             if (widget.controller.locationNotice != null)
                               ListTile(
                                 key: const ValueKey('location-recovery-notice'),

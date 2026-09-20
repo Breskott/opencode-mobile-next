@@ -670,6 +670,13 @@ class ProfileStore {
   static const _sessionModelsCap = 200;
   static const _modelLibraryKey = 'oc.modelLibrary.';
   static const _locationKey = 'oc.location.'; // + profileId -> JSON
+  // + profileId -> JSON list, most recent first. Ends in the profile id, so
+  // the profile deletion sweep removes it.
+  static const _recentLocationsKey = 'oc.recentLocations.';
+
+  /// How many projects a server remembers. Enough to move between the ones
+  /// in play this week; not a history.
+  static const maxRecentLocations = 8;
   static const _transcriptReasoningKey = 'oc.transcript.reasoningExpanded';
   static const _transcriptTimestampsKey = 'oc.transcript.timestampsVisible';
   static const _appearanceKey = 'oc.appearance';
@@ -980,7 +987,73 @@ class ProfileStore {
     )) {
       throw StateError('Could not save the selected server location');
     }
+    await _rememberLocation(
+      profileId,
+      ProfileLocation(
+        directory: normalizedDirectory,
+        workspace: normalizedWorkspace,
+      ),
+    );
   }
+
+  /// The projects used on this server, most recent first. The selected one
+  /// is among them. The app had no memory of projects before this: going
+  /// back to yesterday's meant finding it in the server's list again.
+  List<ProfileLocation> recentLocations(String profileId) {
+    final raw = prefs.getString('$_recentLocationsKey$profileId');
+    if (raw == null) return const [];
+    try {
+      final value = jsonDecode(raw);
+      if (value is! List) return const [];
+      return [
+        for (final item in value)
+          if (item is Map && item['directory'] is String)
+            ProfileLocation(
+              directory: item['directory'] as String,
+              workspace: item['workspace'] is String
+                  ? item['workspace'] as String
+                  : null,
+            ),
+      ];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> _writeRecentLocations(
+    String profileId,
+    List<ProfileLocation> locations,
+  ) async {
+    // Convenience data: a refused write must not fail the project switch.
+    try {
+      await prefs.setString(
+        '$_recentLocationsKey$profileId',
+        jsonEncode([
+          for (final location in locations.take(maxRecentLocations))
+            {'directory': location.directory, 'workspace': location.workspace},
+        ]),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _rememberLocation(
+    String profileId,
+    ProfileLocation location,
+  ) async {
+    if (location.directory == null) return;
+    await _writeRecentLocations(profileId, [
+      location,
+      for (final other in recentLocations(profileId))
+        if (other.directory != location.directory) other,
+    ]);
+  }
+
+  /// Drops a project from the recent list (it is not deleted anywhere).
+  Future<void> forgetRecentLocation(String profileId, String directory) =>
+      _writeRecentLocations(profileId, [
+        for (final other in recentLocations(profileId))
+          if (other.directory != directory) other,
+      ]);
 
   Future<void> clearLocation(String profileId) async {
     if (!await prefs.remove('$_locationKey$profileId')) {

@@ -27321,6 +27321,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} attached as text · {sheets, plural, =1{1 sheet} other{{sheets} sheets}}, {rows, plural, =1{1 row} other{{rows} rows}}'**
   String chatAttachmentSheetAttached(String name, int sheets, int rows);
+
+  /// Work tab section listing conversations in projects other than the current one
+  ///
+  /// In en, this message translates to:
+  /// **'In other projects'**
+  String get otherProjectsTitle;
+
+  /// Menu item on a recent-project chip; the project itself is not deleted
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from recent projects'**
+  String get otherProjectsForget;
+
+  /// Title shown for a conversation in another project that has no title yet
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled conversation'**
+  String get otherProjectsUntitled;
 }
 
 class _AppLocalizationsDelegate

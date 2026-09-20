@@ -16905,4 +16905,13 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$name attached as text · $_temp0, $_temp1';
   }
+
+  @override
+  String get otherProjectsTitle => 'In other projects';
+
+  @override
+  String get otherProjectsForget => 'Remove from recent projects';
+
+  @override
+  String get otherProjectsUntitled => 'Untitled conversation';
 }
