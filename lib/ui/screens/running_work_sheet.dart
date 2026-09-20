@@ -10,7 +10,7 @@ import '../../state/connection.dart';
 import '../../state/shell_output.dart';
 import '../widgets/product_states.dart';
 import '../widgets/running_agents_strip.dart';
-import '../app_iconography.dart';
+import '../app_theme.dart';
 
 AppLocalizations _strings(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -33,6 +33,59 @@ String _status(AppLocalizations l10n, ManagedShell shell) =>
       ManagedShellStatus.killed => l10n.workStopped,
       ManagedShellStatus.unknown => l10n.workUnknown,
     };
+
+/// How a command ended, as the reader cares about it. A shell reports only a
+/// status and an exit code; 143 and 130 are "someone stopped it" (SIGTERM,
+/// Ctrl-C), not a failure of the command.
+enum _Outcome { running, done, failed, stopped, unknown }
+
+_Outcome _outcome(ManagedShell shell) => switch (shell.status) {
+  ManagedShellStatus.running => _Outcome.running,
+  ManagedShellStatus.killed => _Outcome.stopped,
+  ManagedShellStatus.timeout => _Outcome.failed,
+  ManagedShellStatus.unknown => _Outcome.unknown,
+  ManagedShellStatus.exited => switch (shell.exitCode) {
+    null || 0 => _Outcome.done,
+    143 || 130 || 137 => _Outcome.stopped,
+    _ => _Outcome.failed,
+  },
+};
+
+String _outcomeLabel(AppLocalizations l10n, ManagedShell shell) =>
+    switch (_outcome(shell)) {
+      _Outcome.stopped => l10n.workStopped,
+      _Outcome.done => l10n.workFinished,
+      _ => _status(l10n, shell),
+    };
+
+/// A command as a person would say it: the programs it runs, not where they
+/// live or what environment they were given. `FOO=1 /tmp/x/bin/flutter test
+/// && ./build.sh` reads "flutter test && build.sh". The full text is on the
+/// command's own screen.
+@visibleForTesting
+String shortCommand(String command) {
+  final parts = command.trim().split(RegExp(r'\s+(&&|\|\||;|\|)\s+'));
+  final joins = RegExp(
+    r'\s+(&&|\|\||;|\|)\s+',
+  ).allMatches(command.trim()).map((m) => m[1]!).toList();
+  final out = StringBuffer();
+  for (var i = 0; i < parts.length; i++) {
+    final words = parts[i].split(RegExp(r'\s+'))
+      ..removeWhere((word) => word.isEmpty);
+    while (words.length > 1 &&
+        RegExp(r'^[A-Za-z_][A-Za-z0-9_]*=').hasMatch(words.first)) {
+      words.removeAt(0);
+    }
+    if (words.isNotEmpty && words.first.contains('/')) {
+      final name = words.first.split('/').last;
+      if (name.isNotEmpty) words[0] = name;
+    }
+    if (i > 0) out.write(' ${joins[i - 1]} ');
+    out.write(words.join(' '));
+  }
+  final result = out.toString().trim();
+  return result.isEmpty ? command : result;
+}
 
 String _elapsed(ManagedShell shell) {
   final seconds = (shell.completedAt ?? DateTime.now())
@@ -246,6 +299,80 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
     super.dispose();
   }
 
+  List<Widget> _section(BuildContext context, String title, List<Widget> rows) {
+    if (rows.isEmpty) return const [];
+    final theme = Theme.of(context);
+    return [
+      Padding(
+        padding: const EdgeInsets.only(top: 12, bottom: 2),
+        child: Row(
+          children: [
+            Text(title, style: theme.textTheme.titleSmall),
+            const SizedBox(width: 8),
+            Text(
+              '${rows.length}',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+      ...rows,
+    ];
+  }
+
+  Widget _agentRow(RunningAgentEntry entry, bool busy, {bool unknown = false}) {
+    final l10n = _strings(context);
+    return _WorkRow(
+      key: ValueKey('work-agent-${entry.session.id}'),
+      icon: AppIconography.branch,
+      title: entry.label,
+      status: unknown
+          ? l10n.workUnknown
+          : busy
+          ? l10n.workRunning
+          : l10n.workIdle,
+      outcome: unknown
+          ? _Outcome.unknown
+          : busy
+          ? _Outcome.running
+          : _Outcome.stopped,
+      mono: false,
+      onTap: () => Navigator.pop(context, entry.session.id),
+    );
+  }
+
+  Widget _shellRow(ManagedShell shell, bool disconnected) {
+    final l10n = _strings(context);
+    final conn = widget.controller;
+    return _WorkRow(
+      key: ValueKey('work-shell-${shell.id}'),
+      icon: AppIconography.terminal,
+      title: shortCommand(shell.command),
+      status: l10n.workStatusElapsed(
+        _outcomeLabel(l10n, shell),
+        _elapsed(shell),
+      ),
+      outcome: _outcome(shell),
+      mono: true,
+      onTap: disconnected
+          ? null
+          : () async {
+              if (!_scopeMatches || conn.status != StreamStatus.connected) {
+                return;
+              }
+              await Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      ShellOutputScreen(controller: conn, shell: shell),
+                ),
+              );
+              if (mounted && _visible) await _refresh();
+            },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = _strings(context);
@@ -258,8 +385,6 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
       includeIdle: true,
     ).where((entry) => !entry.current).toList();
     final disconnected = conn.status != StreamStatus.connected;
-    final support =
-        widget.readBackgroundSupport?.call() ?? widget.backgroundSupport;
     final canBackground =
         widget.canBackground?.call() ??
         (widget.onBackground != null && _promotion == null);
@@ -294,15 +419,8 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
                 ),
               ],
             ),
-            Text(l10n.workDescription, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 12),
-            if (support != BackgroundWorkSupport.unavailable) ...[
-              Text(
-                l10n.workBackgroundAutomatic,
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 12),
-            ],
+            // No preamble: the title and the list say what this is. The one
+            // action appears when it can be taken.
             if (widget.onBackground != null &&
                 (canBackground || _promoting || _promotion != null))
               FilledButton.icon(
@@ -330,13 +448,6 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
                       ? l10n.workBackgroundPending
                       : l10n.workRunInBackground,
                 ),
-              )
-            else
-              Text(
-                support == BackgroundWorkSupport.unavailable
-                    ? l10n.workBackgroundUnavailable
-                    : l10n.workBackgroundEligible,
-                style: theme.textTheme.bodySmall,
               ),
             if (_promotion != null) ...[
               const SizedBox(height: 8),
@@ -346,7 +457,7 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
                 BackgroundWorkResult.requested => l10n.workBackgroundRequested,
               }),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             if (!_scopeMatches)
               Text(l10n.workContextChanged)
             else ...[
@@ -382,70 +493,132 @@ class _RunningWorkSheetState extends State<RunningWorkSheet>
                     ],
                   ),
                 ),
-              if (agents.isNotEmpty) ...[
-                Text(l10n.workAgents, style: theme.textTheme.titleSmall),
+              // What is going on now, then what is over. Within each, agents
+              // before commands. State is carried by icon and colour, so a
+              // glance tells running from done from failed.
+              ..._section(context, l10n.workRunning, [
                 for (final entry in agents)
-                  ListTile(
-                    key: ValueKey('work-agent-${entry.session.id}'),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                    leading: const Icon(AppIconography.branch),
-                    title: Text(
-                      entry.label,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      disconnected
-                          ? l10n.workUnknown
-                          : entry.busy
-                          ? l10n.workRunning
-                          : l10n.workIdle,
-                    ),
-                    trailing: const Icon(AppIconography.chevronRight),
-                    onTap: () => Navigator.pop(context, entry.session.id),
-                  ),
-              ],
-              if (_shells.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(l10n.workCommands, style: theme.textTheme.titleSmall),
+                  if (entry.busy && !disconnected) _agentRow(entry, true),
                 for (final shell in _shells)
-                  ListTile(
-                    key: ValueKey('work-shell-${shell.id}'),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                    leading: const Icon(AppIconography.terminal),
-                    title: Text(
-                      shell.command,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      l10n.workStatusElapsed(
-                        _status(l10n, shell),
-                        _elapsed(shell),
-                      ),
-                    ),
-                    trailing: const Icon(AppIconography.chevronRight),
-                    onTap: disconnected
-                        ? null
-                        : () async {
-                            if (!_scopeMatches ||
-                                conn.status != StreamStatus.connected) {
-                              return;
-                            }
-                            await Navigator.of(context).push<void>(
-                              MaterialPageRoute<void>(
-                                builder: (_) => ShellOutputScreen(
-                                  controller: conn,
-                                  shell: shell,
-                                ),
-                              ),
-                            );
-                            if (mounted && _visible) await _refresh();
-                          },
-                  ),
-              ],
+                  if (_outcome(shell) == _Outcome.running)
+                    _shellRow(shell, disconnected),
+              ]),
+              ..._section(context, l10n.workFinished, [
+                for (final entry in agents)
+                  if (!entry.busy || disconnected)
+                    _agentRow(entry, false, unknown: disconnected),
+                for (final shell in _shells)
+                  if (_outcome(shell) != _Outcome.running)
+                    _shellRow(shell, disconnected),
+              ]),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One line of the Tasks list. The leading icon says what it is (agent or
+/// command), its colour and the trailing mark say how it stands.
+class _WorkRow extends StatelessWidget {
+  const _WorkRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.status,
+    required this.outcome,
+    required this.mono,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String status;
+  final _Outcome outcome;
+  final bool mono;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final live = outcome == _Outcome.running;
+    final tone = switch (outcome) {
+      _Outcome.running => scheme.primary,
+      _Outcome.failed => scheme.error,
+      _Outcome.done => AppTheme.successOf(theme),
+      _Outcome.stopped || _Outcome.unknown => scheme.onSurfaceVariant,
+    };
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 56),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: tone),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      // Live work gets room to be recognised; finished work
+                      // is a line.
+                      maxLines: live ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontFamily: mono ? AppTheme.monoFamily : null,
+                        fontSize: mono ? 13 : null,
+                        color: live
+                            ? scheme.onSurface
+                            : scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      status,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: outcome == _Outcome.failed
+                            ? scheme.error
+                            : scheme.onSurfaceVariant,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              // A steady dot, not a spinner: a list of spinners is noise, and
+              // the elapsed time already shows that it is alive.
+              if (live)
+                Container(
+                  key: const Key('work-row-live'),
+                  width: 10,
+                  height: 10,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    color: scheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                )
+              else
+                Icon(
+                  switch (outcome) {
+                    _Outcome.running => AppIconography.waitingStart,
+                    _Outcome.done => AppIconography.checkCircle,
+                    _Outcome.failed => AppIconography.error,
+                    _Outcome.stopped => AppIconography.blocked,
+                    _Outcome.unknown => AppIconography.chevronRight,
+                  },
+                  size: 16,
+                  color: tone,
+                ),
+            ],
+          ),
         ),
       ),
     );
