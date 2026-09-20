@@ -4445,8 +4445,89 @@ void main() {
     );
     await _pumpEvent(tester);
 
-    expect(find.text('WebSocket inbound queue overflow'), findsOneWidget);
+    expect(
+      find.text('This request was too large to send to the model.'),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('prompt-error-banner')), findsNothing);
+  });
+
+  testWidgets('a dropped connection is said in plain words, once, and the '
+      'banner leaves when the turn moves on', (tester) async {
+    const raw =
+        'ECONNRESET: The socket connection was closed unexpectedly. For more '
+        'information, pass `verbose: true` in the second argument to fetch()';
+    final api = _FakeOpenCodeApi();
+    final controller = await _pumpChat(tester, api);
+    controller.handleEventForTesting(
+      _event('session.error', {
+        'sessionID': 'session-1',
+        'error': {
+          'name': 'UnknownError',
+          'data': {'message': raw},
+        },
+      }),
+    );
+    await _pumpEvent(tester);
+    expect(find.byKey(const ValueKey('prompt-error-banner')), findsOneWidget);
+    expect(find.text('The connection to the model dropped.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('prompt-error-hint')), findsOneWidget);
+    expect(find.textContaining('ECONNRESET'), findsNothing);
+    expect(find.textContaining('fetch()'), findsNothing);
+    // The server's exact words are one tap away.
+    await tester.tap(find.byKey(const ValueKey('prompt-error-details')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('ECONNRESET'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+
+    // The reply carries the same problem (worded slightly differently by the
+    // server): one place says it, not two.
+    controller.handleEventForTesting(
+      _event('message.updated', {
+        'info': {
+          'id': 'assistant-1',
+          'sessionID': 'session-1',
+          'role': 'assistant',
+          'time': {'created': 1, 'completed': 2},
+          'error': {
+            'name': 'UnknownError',
+            'data': {
+              'message': 'The socket connection was closed unexpectedly.',
+            },
+          },
+        },
+      }),
+    );
+    await _pumpEvent(tester);
+    expect(find.text('The connection to the model dropped.'), findsOneWidget);
+
+    // The agent carries on: the error becomes a quiet line of the turn and
+    // no banner claims something is still wrong.
+    controller.handleEventForTesting(
+      _event('message.updated', {
+        'info': {
+          'id': 'assistant-2',
+          'sessionID': 'session-1',
+          'role': 'assistant',
+          'time': {'created': 3},
+        },
+      }),
+    );
+    controller.handleEventForTesting(
+      _event('message.part.updated', {
+        'sessionID': 'session-1',
+        'part': _partJson(
+          id: 'p2',
+          messageID: 'assistant-2',
+          type: 'text',
+          text: 'Retrying the build.',
+        ),
+      }),
+    );
+    await _pumpEvent(tester);
+    expect(find.byKey(const ValueKey('prompt-error-banner')), findsNothing);
+    expect(find.text('The agent carried on after this.'), findsOneWidget);
   });
 
   testWidgets('a model-not-found session error shows one line and Choose model', (

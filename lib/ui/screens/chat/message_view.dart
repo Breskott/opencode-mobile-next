@@ -17,8 +17,11 @@ class _PromptErrorBanner extends StatelessWidget {
     final scheme = theme.colorScheme;
     // Servers may attach a stack trace; the user reads one line and can open
     // the rest. A "model not found" answer gets the button that fixes it.
-    final headline = errorHeadline(message);
-    final hasDetails = errorHasDetails(message);
+    final words = agentErrorWords(message, _chatL10n(context));
+    final headline = words.headline;
+    // The server's exact words stay one tap away whenever the sentence shown
+    // is not theirs.
+    final hasDetails = words.humanized || errorHasDetails(message);
     final kind = MessageErrorKind.refineFromText(
       MessageErrorKind.unknown,
       message,
@@ -33,7 +36,6 @@ class _PromptErrorBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: scheme.errorContainer,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: scheme.error.withValues(alpha: .35)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,13 +51,31 @@ class _PromptErrorBanner extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    headline,
-                    key: const ValueKey('prompt-error-headline'),
-                    style: TextStyle(
-                      color: scheme.onErrorContainer,
-                      height: 1.35,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        headline,
+                        key: const ValueKey('prompt-error-headline'),
+                        style: TextStyle(
+                          color: scheme.onErrorContainer,
+                          height: 1.35,
+                        ),
+                      ),
+                      if (words.hint case final hint?)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            hint,
+                            key: const ValueKey('prompt-error-hint'),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: scheme.onErrorContainer.withValues(
+                                alpha: .8,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 IconButton(
@@ -1731,7 +1751,11 @@ class _MessageView extends StatelessWidget {
     this.onOpenSession,
     this.queued = false,
     this.showActions = true,
+    this.errorRecovered = false,
   });
+
+  /// See [_AssistantErrorRow.recovered].
+  final bool errorRecovered;
 
   /// Whether the "more" control is drawn under this message. A reply is
   /// usually several messages; only the one that ends it carries the control,
@@ -1892,6 +1916,30 @@ class _MessageView extends StatelessWidget {
                   ],
                 ),
               ),
+            if (m.info.errorText != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: _AssistantErrorRow(
+                  info: m.info,
+                  recovered: errorRecovered,
+                  onCompact: onCompact,
+                  onOpenProviders: onOpenProviders,
+                  onContinue: onContinue,
+                  onChooseModel: onChooseModel,
+                ),
+              ),
+            if (m.info.finish == 'length' &&
+                m.info.errorKind != MessageErrorKind.outputLength)
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(
+                  _chatL10n(context).chatUiAnswerWasCutOffByTheLength,
+                  key: const Key('message-length-footer'),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.mutedOf(theme),
+                  ),
+                ),
+              ),
             if (metaParts.isNotEmpty || (showActions && onLongPress != null))
               Padding(
                 padding: const EdgeInsetsDirectional.only(
@@ -1944,29 +1992,6 @@ class _MessageView extends StatelessWidget {
                         ),
                       ),
                   ],
-                ),
-              ),
-            if (m.info.errorText != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: _AssistantErrorRow(
-                  info: m.info,
-                  onCompact: onCompact,
-                  onOpenProviders: onOpenProviders,
-                  onContinue: onContinue,
-                  onChooseModel: onChooseModel,
-                ),
-              ),
-            if (m.info.finish == 'length' &&
-                m.info.errorKind != MessageErrorKind.outputLength)
-              Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Text(
-                  _chatL10n(context).chatUiAnswerWasCutOffByTheLength,
-                  key: const Key('message-length-footer'),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.mutedOf(theme),
-                  ),
                 ),
               ),
           ],
@@ -2079,6 +2104,7 @@ class _MessageActionsDisc extends StatelessWidget {
 class _AssistantErrorRow extends StatelessWidget {
   const _AssistantErrorRow({
     required this.info,
+    this.recovered = false,
     this.onCompact,
     this.onOpenProviders,
     this.onContinue,
@@ -2086,6 +2112,10 @@ class _AssistantErrorRow extends StatelessWidget {
   });
 
   final MessageInfo info;
+
+  /// True when the turn went on after this error (the server retried, or the
+  /// agent took another step). It is then a line in the story, not an alarm.
+  final bool recovered;
   final VoidCallback? onCompact;
   final VoidCallback? onOpenProviders;
   final VoidCallback? onContinue;
@@ -2095,8 +2125,9 @@ class _AssistantErrorRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final raw = info.errorText ?? '';
-    final text = errorHeadline(raw);
-    final details = errorHasDetails(raw) ? raw : null;
+    final words = agentErrorWords(raw, _chatL10n(context));
+    final text = words.headline;
+    final details = words.humanized || errorHasDetails(raw) ? raw : null;
     final kind = MessageErrorKind.refineFromText(
       info.errorKind ?? MessageErrorKind.unknown,
       raw,
@@ -2162,6 +2193,8 @@ class _AssistantErrorRow extends StatelessWidget {
           key: const Key('error-card-generic'),
           icon: AppIconography.error,
           text: text,
+          hint: recovered ? _chatL10n(context).agentErrorRecovered : words.hint,
+          recovered: recovered,
           details: details,
           actionKey: const Key('error-action-none'),
           actionLabel: '',
@@ -2180,10 +2213,18 @@ class _ErrorActionCard extends StatelessWidget {
     required this.actionLabel,
     required this.onAction,
     this.details,
+    this.hint,
+    this.recovered = false,
   });
 
   final IconData icon;
   final String text;
+
+  /// What happens next, or what to do; under the headline.
+  final String? hint;
+
+  /// A past problem the turn got over: drawn as a quiet line, no card.
+  final bool recovered;
   final Key actionKey;
   final String actionLabel;
   final VoidCallback? onAction;
@@ -2218,12 +2259,21 @@ class _ErrorActionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 6),
-      decoration: BoxDecoration(
-        color: scheme.errorContainer.withValues(alpha: .35),
-        borderRadius: BorderRadius.circular(AppTheme.radiusControl),
-        border: Border.all(color: scheme.error.withValues(alpha: .35)),
-      ),
+      // Same language as the rest of the transcript: no card. A problem that
+      // needs you is marked by a rule in the error colour on the leading
+      // edge (as your own prompts are by the accent); one the turn got over
+      // is a quiet line.
+      margin: EdgeInsetsDirectional.only(start: recovered ? 0 : 4),
+      padding: recovered
+          ? const EdgeInsetsDirectional.fromSTEB(4, 4, 4, 0)
+          : const EdgeInsetsDirectional.fromSTEB(10, 2, 4, 0),
+      decoration: recovered
+          ? null
+          : BoxDecoration(
+              border: BorderDirectional(
+                start: BorderSide(color: scheme.error, width: 3),
+              ),
+            ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -2233,20 +2283,54 @@ class _ErrorActionCard extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 1),
-                child: Icon(icon, size: 16, color: scheme.error),
+                child: Icon(
+                  icon,
+                  size: 16,
+                  color: recovered ? scheme.onSurfaceVariant : scheme.error,
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  text,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurface,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      text,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: recovered
+                            ? scheme.onSurfaceVariant
+                            : scheme.onSurface,
+                      ),
+                    ),
+                    if (hint case final hint?)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          hint,
+                          key: const Key('error-hint'),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
+              if (onAction == null && details != null)
+                TextButton(
+                  key: const Key('error-action-details'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: recovered ? scheme.onSurfaceVariant : null,
+                  ),
+                  onPressed: () => _showDetails(context),
+                  child: Text(_chatL10n(context).chatUiDetails),
+                ),
             ],
           ),
-          if (onAction != null || details != null)
+          // With an action to take, both buttons get a row. Details alone
+          // sits at the end of the sentence's line instead of costing one.
+          if (onAction != null)
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [

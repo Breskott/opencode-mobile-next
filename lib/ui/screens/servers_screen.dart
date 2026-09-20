@@ -2213,9 +2213,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
             ServerBackend.openCode => _connectionL10n(
               context,
             ).firstRunAgentOpenCode,
-            ServerBackend.paseo => _connectionL10n(
-              context,
-            ).firstRunPaseoTitle,
+            ServerBackend.paseo => _connectionL10n(context).firstRunPaseoTitle,
             ServerBackend.codex => _connectionL10n(context).firstRunAgentCodex,
           }
         : widget.existing == null

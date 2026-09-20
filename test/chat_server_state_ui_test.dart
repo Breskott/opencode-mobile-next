@@ -138,6 +138,41 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('retry banner', () {
+    test('a retry is only called a rate limit when it is one', () {
+      final now = DateTime(2026, 9, 2, 12);
+      // The server retries for many reasons; your screenshot's was a dropped
+      // socket under a "Rate limited" title.
+      expect(
+        retryBannerHeadline(
+          SessionRetryState(
+            attempt: 2,
+            next: now.add(const Duration(seconds: 42)),
+            message: 'ECONNRESET: The socket connection was closed',
+          ),
+          now: now,
+        ),
+        'Retrying 2 in 0:42',
+      );
+      expect(
+        retryBannerHeadline(
+          SessionRetryState(attempt: 1, message: 'Overloaded'),
+          now: now,
+        ),
+        'Retrying 1…',
+      );
+      expect(
+        retryBannerHeadline(
+          SessionRetryState(
+            attempt: 3,
+            next: now.add(const Duration(seconds: 5)),
+            message: '429 Too Many Requests',
+          ),
+          now: now,
+        ),
+        'Rate limited. Retrying 3 in 0:05',
+      );
+    });
+
     test('headline names the attempt and counts down to next', () {
       final now = DateTime(2026, 9, 2, 12);
       expect(
@@ -198,7 +233,9 @@ void main() {
         find.textContaining(RegExp(r'Rate limited\. Retrying 2 in 0:4[12]')),
         findsOneWidget,
       );
-      expect(find.text('Rate limit exceeded, backing off'), findsOneWidget);
+      // The title already says it is a rate limit; the server's sentence
+      // saying so again is not repeated under it.
+      expect(find.text('Rate limit exceeded, backing off'), findsNothing);
 
       // The one-second ticker keeps rebuilding the banner (the countdown text
       // itself reads the wall clock, which the test clock does not move).

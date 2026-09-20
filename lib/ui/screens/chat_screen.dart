@@ -40,6 +40,8 @@ import '../../voice/controller.dart';
 import '../../voice/voice_ui.dart';
 import '../../voice/read_aloud.dart';
 import '../navigation/chat_route.dart';
+import '../../domain/agent_error_text.dart';
+import '../agent_error_words.dart';
 import '../app_theme.dart';
 import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
@@ -1452,6 +1454,13 @@ class _ChatScreenState extends State<ChatScreen>
             if (msg.role == 'assistant' && msg.errorText != null) {
               _promptError = msg.errorText;
               _recoverFromPromptError(msg.errorText);
+            } else if (msg.role == 'assistant' &&
+                _promptError != null &&
+                !_messages.any((known) => known.info.id == msg.id)) {
+              // A new step after the error: the turn moved on (the server
+              // retried, or the agent carried on). A banner still saying
+              // something is wrong would now be false.
+              _promptError = null;
             }
             _messageVersions[msg.id] = ++_eventVersion;
             if (!_reconcilePendingMessage(
@@ -1812,6 +1821,16 @@ class _ChatScreenState extends State<ChatScreen>
       _historyRefreshPending = false;
       unawaited(_load());
     });
+  }
+
+  /// Whether two error texts are the same problem: the same words, or the
+  /// same recognised cause (a banner from a session event and the reply's
+  /// own error often differ by a prefix or a trailing sentence).
+  static bool _sameError(String? a, String b) {
+    if (a == null) return false;
+    if (a.trim() == b.trim()) return true;
+    final cause = classifyAgentError(a);
+    return cause != null && cause == classifyAgentError(b);
   }
 
   bool _currentHistory(int generation, _HistoryScope scope) =>
@@ -6650,7 +6669,7 @@ class _ChatScreenState extends State<ChatScreen>
             // a reply already carries is shown there, once, with its actions.
             if (_promptError case final promptError?
                 when !_messages.any(
-                  (message) => message.info.errorText == promptError,
+                  (message) => _sameError(message.info.errorText, promptError),
                 ))
               _PromptErrorBanner(
                 message: promptError,
@@ -6909,6 +6928,15 @@ class _ChatScreenState extends State<ChatScreen>
                                                       // reply, never under
                                                       // each step of it or
                                                       // under the prompt.
+                                                      // An error with more of the
+                                                      // turn after it was got over.
+                                                      errorRecovered:
+                                                          m.info.errorText !=
+                                                              null &&
+                                                          !_endsTurn(
+                                                            _messages,
+                                                            index,
+                                                          ),
                                                       showActions:
                                                           turnActionOwners
                                                               .contains(index),

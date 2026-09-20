@@ -27135,6 +27135,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects.'**
   String get approvalsUiServerRulesNoteEverything;
+
+  /// Plain-language error headline: the link between the server and the model provider broke mid-request
+  ///
+  /// In en, this message translates to:
+  /// **'The connection to the model dropped.'**
+  String get agentErrorConnectionDropped;
+
+  /// What to expect or do after a dropped model connection
+  ///
+  /// In en, this message translates to:
+  /// **'Usually brief, and OpenCode retries by itself. If it keeps happening, check the internet on the computer running OpenCode.'**
+  String get agentErrorConnectionDroppedHint;
+
+  /// Plain-language error headline: provider timeout
+  ///
+  /// In en, this message translates to:
+  /// **'The model took too long to answer.'**
+  String get agentErrorTimedOut;
+
+  /// What to expect or do after a provider timeout
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode retries by itself. A smaller request or another model may be faster.'**
+  String get agentErrorTimedOutHint;
+
+  /// Plain-language error headline: DNS failure, refused connection or no network on the server
+  ///
+  /// In en, this message translates to:
+  /// **'The server couldn’t reach the model provider.'**
+  String get agentErrorProviderUnreachable;
+
+  /// What to do when the server cannot reach the provider
+  ///
+  /// In en, this message translates to:
+  /// **'Check the internet connection on the computer running OpenCode, then try again.'**
+  String get agentErrorProviderUnreachableHint;
+
+  /// Plain-language error headline: payload or queue overflow
+  ///
+  /// In en, this message translates to:
+  /// **'This request was too large to send to the model.'**
+  String get agentErrorRequestTooLarge;
+
+  /// What to do when a request is too large
+  ///
+  /// In en, this message translates to:
+  /// **'Send fewer or smaller attachments, or compact the conversation, then try again.'**
+  String get agentErrorRequestTooLargeHint;
+
+  /// Plain-language error headline: rate limit
+  ///
+  /// In en, this message translates to:
+  /// **'The model provider is limiting how fast you can send.'**
+  String get agentErrorRateLimited;
+
+  /// What to expect after a rate limit
+  ///
+  /// In en, this message translates to:
+  /// **'It retries by itself after a short wait.'**
+  String get agentErrorRateLimitedHint;
+
+  /// Plain-language error headline: provider overloaded or unavailable
+  ///
+  /// In en, this message translates to:
+  /// **'The model provider is overloaded right now.'**
+  String get agentErrorProviderBusy;
+
+  /// What to expect or do when the provider is overloaded
+  ///
+  /// In en, this message translates to:
+  /// **'It retries by itself. Another model may answer sooner.'**
+  String get agentErrorProviderBusyHint;
+
+  /// Plain-language error headline: billing or quota exhausted
+  ///
+  /// In en, this message translates to:
+  /// **'The provider account is out of credit or quota.'**
+  String get agentErrorOutOfCredit;
+
+  /// What to do when the provider account has no credit
+  ///
+  /// In en, this message translates to:
+  /// **'Top up the account, or switch to another provider or model.'**
+  String get agentErrorOutOfCreditHint;
+
+  /// Plain-language error headline: ENOSPC on the server
+  ///
+  /// In en, this message translates to:
+  /// **'The computer running OpenCode is out of disk space.'**
+  String get agentErrorServerDiskFull;
+
+  /// What to do when the server disk is full
+  ///
+  /// In en, this message translates to:
+  /// **'Free some space there, then try again.'**
+  String get agentErrorServerDiskFullHint;
+
+  /// Shown under an error inside a turn that continued afterwards
+  ///
+  /// In en, this message translates to:
+  /// **'The agent carried on after this.'**
+  String get agentErrorRecovered;
+
+  /// Retry banner title when the cause is named below it; attempt is empty or a leading space and a number
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying{attempt}…'**
+  String chatUiRetryingSoon(String attempt);
+
+  /// Retry banner title with a countdown when the cause is named below it
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying{attempt} in {time}'**
+  String chatUiRetryingCountdown(String attempt, String time);
 }
 
 class _AppLocalizationsDelegate
