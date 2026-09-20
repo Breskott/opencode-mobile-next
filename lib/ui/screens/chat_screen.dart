@@ -6608,18 +6608,35 @@ class _ChatScreenState extends State<ChatScreen>
     // it can still be flipped or cancelled. Its optimistic copy in the
     // transcript would say the same thing a second time, and would make the
     // running turn look finished.
-    final waitingTexts = !_conn.isIsolated && _conn.capabilities.inbox
-        ? {
+    final waiting = !_conn.isIsolated && _conn.capabilities.inbox
+        ? [
             for (final item in _conn.inboxItemsFor(widget.sessionID))
-              if (item.type == 'user') (item.promptText ?? '').trim(),
-          }
-        : const <String>{};
-    final waitingLocalIDs = {
-      if (waitingTexts.isNotEmpty)
-        for (final message in _messages)
-          if (message.info.id.startsWith('local-') &&
-              waitingTexts.contains(_messageText(message).trim()))
-            message.info.id,
+              if (item.type == 'user') item,
+          ]
+        : const <Api2InboxItem>[];
+    final waitingIDs = {for (final item in waiting) item.id};
+    final waitingTexts = {
+      for (final item in waiting) (item.promptText ?? '').trim(),
+    };
+    // Where the agent's latest words end. A waiting prompt is always after
+    // them; an older prompt with the same words is history and stays.
+    final lastAssistant = _messages.lastIndexWhere(
+      (message) => message.info.role == 'assistant',
+    );
+    final waitingLocalIDs = <String>{
+      if (waiting.isNotEmpty)
+        for (var i = 0; i < _messages.length; i++)
+          if (_messages[i].info.role == 'user' &&
+              v2VariantPart(_messages[i]) == null &&
+              // The server admits a prompt under the id it will keep, and
+              // the optimistic copy is swapped for that message at once, so
+              // the copy in the transcript usually carries the item's id.
+              (waitingIDs.contains(_messages[i].info.id) ||
+                  (i > lastAssistant &&
+                      waitingTexts.contains(
+                        _messageText(_messages[i]).trim(),
+                      ))))
+            _messages[i].info.id,
     };
     final turnActionOwners = _turnActionOwners(
       _messages,

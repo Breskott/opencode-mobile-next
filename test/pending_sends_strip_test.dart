@@ -345,6 +345,66 @@ void main() {
     expect(find.byKey(const ValueKey('pending-send-msg_wait')), findsOneWidget);
   });
 
+  testWidgets('the server\'s own copy of a waiting prompt is not repeated '
+      'either', (tester) async {
+    final api = _V2ChatApi();
+    final controller = await _controller(api);
+    addTearDown(controller.dispose);
+    await _pumpChat(tester, controller);
+    controller.busySessions.add('session-1');
+    controller.notifyListeners();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'Sections are near the background colours',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('chat-send-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // What a live server does: it admits the prompt under the id it will
+    // keep, and the app swaps its optimistic copy for that message.
+    void event(String type, Map<String, dynamic> properties) =>
+        controller.handleEventForTesting(
+          EventEnvelope(type: type, properties: properties),
+        );
+    event('message.updated', {
+      'info': {
+        'id': 'msg_wait',
+        'sessionID': 'session-1',
+        'role': 'user',
+        'time': {'created': DateTime.now().millisecondsSinceEpoch},
+      },
+    });
+    event('message.part.updated', {
+      'sessionID': 'session-1',
+      'part': {
+        'id': 'p1',
+        'sessionID': 'session-1',
+        'messageID': 'msg_wait',
+        'type': 'text',
+        'text': 'Sections are near the background colours',
+      },
+    });
+    _enqueue(
+      controller,
+      inboxID: 'msg_wait',
+      text: 'Sections are near the background colours',
+      delivery: 'steer',
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byKey(const ValueKey('pending-send-msg_wait')), findsOneWidget);
+    expect(
+      find.text('Sections are near the background colours'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('while busy on v2 Stop and Send sit side by side; the toggle '
       'queues', (tester) async {
     final api = _V2ChatApi();
