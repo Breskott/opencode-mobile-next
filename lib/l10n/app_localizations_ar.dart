@@ -17163,4 +17163,13 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return 'أُرفق $name كنص · $_temp0، $_temp1';
   }
+
+  @override
+  String get otherProjectsTitle => 'في مشاريع أخرى';
+
+  @override
+  String get otherProjectsForget => 'إزالة من المشاريع الأخيرة';
+
+  @override
+  String get otherProjectsUntitled => 'محادثة بلا عنوان';
 }

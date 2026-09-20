@@ -4527,5 +4527,8 @@
   "chatAttachmentOfficeUnreadable": "تعذّرت قراءة {name}. قد يكون محميًا بكلمة مرور أو تالفًا أو بصيغة Excel أو Word القديمة؛ احفظه بصيغة ‎.xlsx أو ‎.docx أو CSV ثم حاول مجددًا.",
   "chatAttachmentOfficeEmpty": "لا يحتوي {name} على ما يمكن إرفاقه.",
   "chatAttachmentDocumentAttached": "أُرفق {name} كنص.",
-  "chatAttachmentSheetAttached": "أُرفق {name} كنص · {sheets, plural, =1{ورقة واحدة} two{ورقتان} few{{sheets} أوراق} other{{sheets} ورقة}}، {rows, plural, =1{صف واحد} two{صفان} few{{rows} صفوف} other{{rows} صفًا}}"
+  "chatAttachmentSheetAttached": "أُرفق {name} كنص · {sheets, plural, =1{ورقة واحدة} two{ورقتان} few{{sheets} أوراق} other{{sheets} ورقة}}، {rows, plural, =1{صف واحد} two{صفان} few{{rows} صفوف} other{{rows} صفًا}}",
+  "otherProjectsTitle": "في مشاريع أخرى",
+  "otherProjectsForget": "إزالة من المشاريع الأخيرة",
+  "otherProjectsUntitled": "محادثة بلا عنوان"
 }

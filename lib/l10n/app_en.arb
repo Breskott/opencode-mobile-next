@@ -18046,5 +18046,17 @@
       "sheets": {"type": "int"},
       "rows": {"type": "int"}
     }
+  },
+  "otherProjectsTitle": "In other projects",
+  "@otherProjectsTitle": {
+    "description": "Work tab section listing conversations in projects other than the current one"
+  },
+  "otherProjectsForget": "Remove from recent projects",
+  "@otherProjectsForget": {
+    "description": "Menu item on a recent-project chip; the project itself is not deleted"
+  },
+  "otherProjectsUntitled": "Untitled conversation",
+  "@otherProjectsUntitled": {
+    "description": "Title shown for a conversation in another project that has no title yet"
   }
 }

@@ -7578,6 +7578,64 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
+  /// Projects used on this server, most recent first, the current one
+  /// included.
+  List<ProfileLocation> get recentLocations {
+    final id = profile?.id;
+    return id == null ? const [] : store.recentLocations(id);
+  }
+
+  Future<void> forgetRecentLocation(String directory) async {
+    final id = profile?.id;
+    if (id == null) return;
+    await store.forgetRecentLocation(id, directory);
+    if (!_disposed) notifyListeners();
+  }
+
+  /// Conversations in this server's *other* projects: running ones first,
+  /// then the most recently touched. Empty when the server cannot list
+  /// across projects. Whether a conversation elsewhere is running is only
+  /// known where the server reports activity server-wide (OpenCode 2); on
+  /// other servers they are listed by recency alone.
+  Future<List<ElsewhereConversation>> conversationsElsewhere({
+    int limit = 6,
+  }) async {
+    final currentRepository = repository;
+    final currentApi = api;
+    if (currentRepository == null ||
+        currentApi == null ||
+        !capabilities.globalSessionSearch) {
+      return const [];
+    }
+    final generation = _generation;
+    final here = directory;
+    final page = await currentRepository.listGlobalSessions(limit: 40);
+    Map<String, String> statuses = const {};
+    try {
+      statuses = await currentApi.sessionStatuses();
+    } catch (_) {}
+    if (_disposed || generation != _generation) return const [];
+    final elsewhere = [
+      for (final result in page.items)
+        if ((result.session.directory ?? result.projectDirectory)
+            case final String where
+            when where != here && result.session.parentID == null)
+          ElsewhereConversation(
+            session: result.session,
+            directory: where,
+            projectName: result.projectName,
+            running: statuses[result.session.id] == 'busy',
+          ),
+    ];
+    elsewhere.sort((a, b) {
+      if (a.running != b.running) return a.running ? -1 : 1;
+      return (b.session.time?.updated ?? 0).compareTo(
+        a.session.time?.updated ?? 0,
+      );
+    });
+    return elsewhere.take(limit).toList();
+  }
+
   Future<void> selectLocation({String? directory, String? workspace}) =>
       _selectLocation(directory: directory, workspace: workspace);
 
@@ -8742,5 +8800,29 @@ class ConnectionController extends ChangeNotifier {
     themePack.dispose();
     unawaited(_eventBus.close());
     super.dispose();
+  }
+}
+
+/// A conversation in a project other than the selected one, as the Work tab
+/// lists it.
+class ElsewhereConversation {
+  const ElsewhereConversation({
+    required this.session,
+    required this.directory,
+    required this.running,
+    this.projectName,
+  });
+
+  final Session session;
+  final String directory;
+  final String? projectName;
+  final bool running;
+
+  /// The project's name as the server gives it, else its folder's name.
+  String get project {
+    final name = projectName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    final parts = directory.split('/').where((part) => part.isNotEmpty);
+    return parts.isEmpty ? directory : parts.last;
   }
 }
