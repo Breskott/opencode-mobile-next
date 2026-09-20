@@ -44,6 +44,7 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
   void initState() {
     super.initState();
     _conn.addListener(_changed);
+    _conn.elsewhereAttention.addListener(_changed);
     // What is running elsewhere changes without any event reaching this
     // project's stream, so it is looked up again while the tab is open.
     _timer = Timer.periodic(const Duration(seconds: 20), (_) => _load());
@@ -53,6 +54,7 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
   @override
   void dispose() {
     _timer?.cancel();
+    _conn.elsewhereAttention.removeListener(_changed);
     _conn.removeListener(_changed);
     super.dispose();
   }
@@ -150,11 +152,29 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
       for (final location in _conn.recentLocations)
         if (location.directory != null && location.directory != here) location,
     ];
+    for (final project in _conn.elsewhereAttention.activity(except: here)) {
+      if (!recents.any((r) => r.directory == project.directory)) {
+        recents.add(ProfileLocation(directory: project.directory));
+      }
+    }
     if (recents.isEmpty && _elsewhere.isEmpty) return const SizedBox.shrink();
+    // Live, from the server-wide event channel; the listed conversations'
+    // own "running" flag is as of the last look.
+    final live = {
+      for (final project in _conn.elsewhereAttention.activity(except: here))
+        project.directory: project,
+    };
+    final waitingIDs = {for (final p in live.values) ...p.waiting};
+    final runningIDs = {for (final p in live.values) ...p.running};
     final runningIn = <String, int>{};
     for (final item in _elsewhere) {
-      if (item.running) {
+      if (item.running || runningIDs.contains(item.session.id)) {
         runningIn[item.directory] = (runningIn[item.directory] ?? 0) + 1;
+      }
+    }
+    for (final project in live.values) {
+      if (project.running.length > (runningIn[project.directory] ?? 0)) {
+        runningIn[project.directory] = project.running.length;
       }
     }
     return Column(
@@ -174,12 +194,14 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
                     key: ValueKey('recent-project-${location.directory}'),
                     name: _name(location.directory!),
                     running: runningIn[location.directory] ?? 0,
+                    waiting: live[location.directory]?.waiting.length ?? 0,
                     busy: _switching == location.directory,
                     tooltip: location.directory!,
                     onTap: () => _switchTo(location),
                     onForget: () =>
                         _conn.forgetRecentLocation(location.directory!),
                     forgetLabel: strings.otherProjectsForget,
+                    needsYouLabel: strings.otherProjectsNeedsYou,
                   ),
               ],
             ),
@@ -207,7 +229,10 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
                         height: 8,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: item.running
+                          color: waitingIDs.contains(item.session.id)
+                              ? theme.colorScheme.error
+                              : item.running ||
+                                    runningIDs.contains(item.session.id)
                               ? theme.colorScheme.primary
                               : theme.colorScheme.outlineVariant,
                         ),
@@ -227,13 +252,19 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              item.running
+                              waitingIDs.contains(item.session.id)
+                                  ? '${item.project} · ${strings.otherProjectsNeedsYou}'
+                                  : item.running ||
+                                        runningIDs.contains(item.session.id)
                                   ? '${item.project} · ${strings.workRunning}'
                                   : item.project,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.labelMedium?.copyWith(
-                                color: item.running
+                                color: waitingIDs.contains(item.session.id)
+                                    ? theme.colorScheme.error
+                                    : item.running ||
+                                          runningIDs.contains(item.session.id)
                                     ? theme.colorScheme.primary
                                     : theme.colorScheme.onSurfaceVariant,
                               ),
@@ -268,15 +299,22 @@ class _ProjectChip extends StatelessWidget {
     super.key,
     required this.name,
     required this.running,
+    required this.waiting,
     required this.busy,
     required this.tooltip,
     required this.onTap,
     required this.onForget,
     required this.forgetLabel,
+    required this.needsYouLabel,
   });
+
+  final String needsYouLabel;
 
   final String name;
   final int running;
+
+  /// Conversations there stopped on a permission or a question.
+  final int waiting;
   final bool busy;
   final String tooltip;
   final VoidCallback onTap;
@@ -313,13 +351,22 @@ class _ProjectChip extends StatelessWidget {
               : Icon(
                   AppIconography.files,
                   size: 16,
-                  color: running > 0
+                  color: waiting > 0
+                      ? theme.colorScheme.error
+                      : running > 0
                       ? theme.colorScheme.primary
                       : theme.colorScheme.onSurfaceVariant,
                 ),
+          // Needs you outranks running: it is the one that is stuck.
           label: Text(
-            running > 0 ? '$name · $running' : name,
-            style: theme.textTheme.labelMedium,
+            waiting > 0
+                ? '$name · $needsYouLabel'
+                : running > 0
+                ? '$name · $running'
+                : name,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: waiting > 0 ? theme.colorScheme.error : null,
+            ),
           ),
         ),
       ),

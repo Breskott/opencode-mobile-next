@@ -17172,4 +17172,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get otherProjectsUntitled => 'محادثة بلا عنوان';
+
+  @override
+  String get otherProjectsNeedsYou => 'بانتظارك';
 }

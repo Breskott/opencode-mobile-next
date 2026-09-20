@@ -27339,6 +27339,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Untitled conversation'**
   String get otherProjectsUntitled;
+
+  /// Marks a project or a conversation in another project that is stopped on a permission or a question
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get otherProjectsNeedsYou;
 }
 
 class _AppLocalizationsDelegate

@@ -16914,4 +16914,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get otherProjectsUntitled => 'Untitled conversation';
+
+  @override
+  String get otherProjectsNeedsYou => 'Needs you';
 }

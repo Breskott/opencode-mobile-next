@@ -43,6 +43,7 @@ import 'model_library.dart';
 import 'offline_queue.dart';
 import 'orchestration.dart';
 import 'orchestration_store.dart';
+import 'elsewhere_attention.dart';
 import 'profiles.dart';
 import 'pending_auth.dart';
 import 'session_drafts.dart';
@@ -553,6 +554,9 @@ class ConnectionController extends ChangeNotifier {
         questions.length +
         forms.length +
         (orchestration?.attentionCount ?? 0) +
+        // This server's other projects: the Inbox badge counts what needs
+        // you wherever it is.
+        waitingElsewhereCount +
         store.profiles
             .where((p) => p.id != selected && isProfileReadable(p.id))
             .fold<int>(
@@ -2399,8 +2403,16 @@ class ConnectionController extends ChangeNotifier {
 
   void _startGlobalEvents(int generation, ServerGateway currentApi) {
     late final LiveEventChannel stream;
+    // What this server's other projects are doing is only knowable from
+    // here; a different server's tally would be wrong.
+    final profileID = profile?.id;
+    if (_elsewhereProfileID != profileID) {
+      _elsewhereProfileID = profileID;
+      elsewhereAttention.clear();
+    }
     void handleEvent(EventEnvelope event) {
       if (!_isCurrentGlobalStream(generation, currentApi, stream)) return;
+      elsewhereAttention.handle(event);
       if (event.type == 'installation.update-available' ||
           event.type == 'installation.updated' ||
           event.type == 'worktree.ready' ||
@@ -7577,6 +7589,22 @@ class ConnectionController extends ChangeNotifier {
       pair.gateway.close();
     }
   }
+
+  /// Running and waiting conversations in this server's other projects,
+  /// from its server-wide event channel.
+  late final elsewhereAttention = ElsewhereAttention()
+    ..addListener(_elsewhereChanged);
+
+  // The Inbox badge and the Work tab read the tally through this controller.
+  void _elsewhereChanged() {
+    if (!_disposed) notifyListeners();
+  }
+
+  String? _elsewhereProfileID;
+
+  /// Conversations in other projects that are stopped on you.
+  int get waitingElsewhereCount =>
+      elsewhereAttention.waitingCount(except: directory);
 
   /// Projects used on this server, most recent first, the current one
   /// included.

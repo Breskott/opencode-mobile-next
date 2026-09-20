@@ -18058,5 +18058,9 @@
   "otherProjectsUntitled": "Untitled conversation",
   "@otherProjectsUntitled": {
     "description": "Title shown for a conversation in another project that has no title yet"
+  },
+  "otherProjectsNeedsYou": "Needs you",
+  "@otherProjectsNeedsYou": {
+    "description": "Marks a project or a conversation in another project that is stopped on a permission or a question"
   }
 }
