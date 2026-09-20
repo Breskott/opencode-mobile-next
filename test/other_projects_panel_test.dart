@@ -155,6 +155,56 @@ void main() {
     expect(find.text('route /chat/s1'), findsOneWidget);
   });
 
+  testWidgets('a project where an agent is stopped on you says so, live', (
+    tester,
+  ) async {
+    final controller = await _pump(
+      tester,
+      recents: const [
+        ProfileLocation(directory: '/work/app'),
+        ProfileLocation(directory: '/work/FinanceHub3'),
+      ],
+      elsewhere: [_conversation('s1', 'Fix offers', '/work/FinanceHub3')],
+    );
+    expect(find.textContaining('Needs you'), findsNothing);
+    expect(controller.waitingElsewhereCount, 0);
+
+    // From the server-wide event channel, while looking at another project.
+    controller.elsewhereAttention.handle(
+      EventEnvelope(
+        type: 'permission.v2.asked',
+        directory: '/work/FinanceHub3',
+        properties: const {'id': 'req1', 'sessionID': 's1'},
+      ),
+    );
+    await tester.pump();
+    expect(find.text('FinanceHub3 · Needs you'), findsNWidgets(2));
+    expect(controller.waitingElsewhereCount, 1);
+    // The Inbox badge counts it.
+    expect(controller.unifiedAttentionCount, 1);
+
+    // A project not on the strip yet earns a chip the moment it needs you.
+    controller.elsewhereAttention.handle(
+      EventEnvelope(
+        type: 'question.asked',
+        directory: '/work/site',
+        properties: const {'id': 'q1', 'sessionID': 's7'},
+      ),
+    );
+    await tester.pump();
+    expect(find.text('site · Needs you'), findsOneWidget);
+
+    controller.elsewhereAttention.handle(
+      EventEnvelope(
+        type: 'permission.v2.replied',
+        directory: '/work/FinanceHub3',
+        properties: const {'requestID': 'req1'},
+      ),
+    );
+    await tester.pump();
+    expect(find.text('FinanceHub3 · Needs you'), findsNothing);
+  });
+
   testWidgets('a project can be taken off the strip', (tester) async {
     final controller = await _pump(
       tester,

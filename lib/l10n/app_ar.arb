@@ -4530,5 +4530,6 @@
   "chatAttachmentSheetAttached": "أُرفق {name} كنص · {sheets, plural, =1{ورقة واحدة} two{ورقتان} few{{sheets} أوراق} other{{sheets} ورقة}}، {rows, plural, =1{صف واحد} two{صفان} few{{rows} صفوف} other{{rows} صفًا}}",
   "otherProjectsTitle": "في مشاريع أخرى",
   "otherProjectsForget": "إزالة من المشاريع الأخيرة",
-  "otherProjectsUntitled": "محادثة بلا عنوان"
+  "otherProjectsUntitled": "محادثة بلا عنوان",
+  "otherProjectsNeedsYou": "بانتظارك"
 }
