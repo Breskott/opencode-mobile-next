@@ -17002,4 +17002,29 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get firstRunPaseoTitle => 'الوكلاء عبر Paseo';
+
+  @override
+  String get approvalsUiEverythingTitle => 'الموافقة على كل شيء في هذا الخادم';
+
+  @override
+  String get approvalsUiEverythingDetail =>
+      'خطِر. تتم الموافقة تلقائيًا على كل محادثة في هذا الخادم، بما فيها المحادثات الجديدة والوكلاء الفرعيون، ما دام التطبيق متصلًا. المحادثة المضبوطة على «اسأل كل مرة» تبقى تسأل.';
+
+  @override
+  String get approvalsUiEverythingConfirmTitle => 'الموافقة على كل شيء؟';
+
+  @override
+  String get approvalsUiEverythingConfirmBody =>
+      'سينفّذ الوكلاء في هذا الخادم الأوامر ويغيّرون الملفات دون سؤالك، في كل محادثة. فعّل هذا فقط لخادم ومشاريع تتحمّل تعطّلها.';
+
+  @override
+  String get approvalsUiEverythingConfirmAction => 'الموافقة على كل شيء';
+
+  @override
+  String get approvalsUiEverythingActive =>
+      'تتبع إعداد «الموافقة على كل شيء في هذا الخادم»';
+
+  @override
+  String get approvalsUiServerRulesNoteEverything =>
+      'تبقى قواعد الرفض في الخادم سارية، وتتوقف الموافقة التلقائية عند انقطاع اتصال التطبيق.';
 }

@@ -3219,6 +3219,19 @@ class ConnectionController extends ChangeNotifier {
         (id) => sessionsById[id]?.parentID,
       );
 
+  /// Whether this server runs in "approve everything" mode on this phone.
+  bool get approvesEverything =>
+      sessionAutoApproval.approvesEverything(_autoApprovalProfile);
+
+  /// Saves the server-wide choice. Throws when storage refuses.
+  Future<void> setApprovesEverything(bool value) async {
+    await sessionAutoApproval.setApprovesEverything(
+      _autoApprovalProfile,
+      value,
+    );
+    if (!_disposed) notifyListeners();
+  }
+
   /// Stores the session's own approval setting, or clears it (null) so the
   /// session follows its parent again. Throws when storage refuses.
   Future<void> setSessionAutoApproval(

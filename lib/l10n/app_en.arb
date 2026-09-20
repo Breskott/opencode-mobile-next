@@ -17856,5 +17856,33 @@
     "description": "On this phone setup, runtime choice: what picking Claude Code does."
   },
   "firstRunAgentsSideBySide": "They run side by side on the same computer. Start with one, and add the others any time from the server name at the top.",
-  "firstRunPaseoTitle": "Agents through Paseo"
+  "firstRunPaseoTitle": "Agents through Paseo",
+  "approvalsUiEverythingTitle": "Approve everything on this server",
+  "@approvalsUiEverythingTitle": {
+    "description": "Switch in the approvals sheet that turns on automatic approval for every conversation on the server"
+  },
+  "approvalsUiEverythingDetail": "Dangerous. Every conversation on this server, new ones and subagents included, is approved automatically while this app is connected. A conversation set to “Ask each time” still asks.",
+  "@approvalsUiEverythingDetail": {
+    "description": "Explanation under the Approve everything switch"
+  },
+  "approvalsUiEverythingConfirmTitle": "Approve everything?",
+  "@approvalsUiEverythingConfirmTitle": {
+    "description": "Title of the confirmation before turning on Approve everything"
+  },
+  "approvalsUiEverythingConfirmBody": "Agents on this server will run commands and change files without asking you, in every conversation. Turn this on only for a server and projects you can afford to break.",
+  "@approvalsUiEverythingConfirmBody": {
+    "description": "Body of the confirmation before turning on Approve everything"
+  },
+  "approvalsUiEverythingConfirmAction": "Approve everything",
+  "@approvalsUiEverythingConfirmAction": {
+    "description": "Confirm button that turns on Approve everything"
+  },
+  "approvalsUiEverythingActive": "Following “Approve everything on this server”",
+  "@approvalsUiEverythingActive": {
+    "description": "Note shown when a conversation approves automatically because of the server-wide switch"
+  },
+  "approvalsUiServerRulesNoteEverything": "The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects.",
+  "@approvalsUiServerRulesNoteEverything": {
+    "description": "Footer note while Approve everything is on"
+  }
 }

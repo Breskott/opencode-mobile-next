@@ -369,4 +369,55 @@ void main() {
     expect(find.text('Approving automatically'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('approve everything is confirmed, saved, and can be declined', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final (controller, _) = await _boot();
+    await tester.pumpWidget(_app(controller, 'parent', TextDirection.ltr));
+    await tester.pumpAndSettle();
+    await _openApprovals(tester);
+
+    // At 2.5x text the tile is taller than the sheet's viewport, so its
+    // centre can be off screen; its title line is not.
+    Future<void> tapEverything() async {
+      final tile = find.byKey(const Key('approvals-everything-switch'));
+      await tester.ensureVisible(tile);
+      await tester.pumpAndSettle();
+      await tester.tapAt(tester.getTopLeft(tile) + const Offset(30, 24));
+      await tester.pumpAndSettle();
+    }
+
+    // Declining the confirmation changes nothing.
+    await tapEverything();
+    expect(
+      find.byKey(const Key('approvals-everything-confirm')),
+      findsOneWidget,
+    );
+    await _tapVisible(tester, find.text('Cancel'));
+    expect(controller.approvesEverything, isFalse);
+
+    // Confirming turns it on for conversations that never had a setting.
+    await tapEverything();
+    await _tapVisible(
+      tester,
+      find.byKey(const Key('approvals-everything-confirm-action')),
+    );
+    expect(controller.approvesEverything, isTrue);
+    expect(controller.autoApprovalFor('parent').automatic, isTrue);
+    expect(controller.autoApprovalFor('never-seen').automatic, isTrue);
+    expect(
+      find.byKey(const Key('approvals-everything-active')),
+      findsOneWidget,
+    );
+
+    // Turning it off needs no confirmation.
+    await tapEverything();
+    expect(controller.approvesEverything, isFalse);
+    expect(controller.autoApprovalFor('never-seen').automatic, isFalse);
+  });
 }

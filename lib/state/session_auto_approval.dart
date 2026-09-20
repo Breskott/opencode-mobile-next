@@ -65,6 +65,7 @@ class EffectiveAutoApproval {
     required this.setting,
     required this.explicit,
     this.inheritedFrom,
+    this.serverWide = false,
   });
 
   static const askByDefault = EffectiveAutoApproval(
@@ -80,6 +81,10 @@ class EffectiveAutoApproval {
   /// The ancestor session whose setting applies, when [explicit] is false and
   /// an ancestor with "subagents inherit" reached this session.
   final String? inheritedFrom;
+
+  /// True when neither the session nor an ancestor decided and the server's
+  /// "approve everything" setting did.
+  final bool serverWide;
 
   bool get automatic => setting.automatic;
   bool get inherited => inheritedFrom != null;
@@ -120,6 +125,40 @@ class SessionAutoApprovalStore {
 
   static String keyFor(String profileId) => 'oc.autoApprove.$profileId';
 
+  /// The entry that holds the server-wide "approve everything" choice. It
+  /// lives in the same map as the sessions so the profile sweep, [drain] and
+  /// the write queue cover it; no session ID can be `*`.
+  static const serverWideKey = '*';
+
+  static const _everything = EffectiveAutoApproval(
+    setting: SessionAutoApproval(
+      mode: AutoApprovalMode.autoOnce,
+      inheritToChildren: true,
+    ),
+    explicit: false,
+    serverWide: true,
+  );
+
+  /// Whether every conversation on this server is approved automatically
+  /// unless it (or an ancestor that passes its choice down) says otherwise.
+  bool approvesEverything(String profile) =>
+      profile.isNotEmpty && (_load(profile)[serverWideKey]?.automatic ?? false);
+
+  Future<void> setApprovesEverything(String profile, bool value) => set(
+    profile,
+    serverWideKey,
+    value
+        ? const SessionAutoApproval(
+            mode: AutoApprovalMode.autoOnce,
+            inheritToChildren: true,
+          )
+        : null,
+  );
+
+  EffectiveAutoApproval _fallback(String profile) => approvesEverything(profile)
+      ? _everything
+      : EffectiveAutoApproval.askByDefault;
+
   Map<String, SessionAutoApproval> _load(String profile) =>
       _cache.putIfAbsent(profile, () {
         try {
@@ -144,11 +183,18 @@ class SessionAutoApprovalStore {
 
   /// Every session with an explicit setting, keyed by session ID.
   Map<String, SessionAutoApproval> settingsFor(String profile) =>
-      profile.isEmpty ? const {} : Map.unmodifiable(_load(profile));
+      profile.isEmpty
+      ? const {}
+      : Map.unmodifiable({
+          for (final entry in _load(profile).entries)
+            if (entry.key != serverWideKey) entry.key: entry.value,
+        });
 
   /// Resolves the setting for [sessionID]: its own when it has one, else the
   /// nearest ancestor (via [parentOf]) whose setting inherits to children,
-  /// else ask. Cycles and unknown parents end the walk.
+  /// else the server-wide choice, else ask. A conversation explicitly set to
+  /// ask keeps asking under "approve everything". Cycles and unknown parents
+  /// end the walk.
   EffectiveAutoApproval effectiveFor(
     String profile,
     String sessionID,
@@ -175,11 +221,11 @@ class SessionAutoApprovalStore {
             inheritedFrom: parent,
           );
         }
-        return EffectiveAutoApproval.askByDefault;
+        return _fallback(profile);
       }
       parent = parentOf(parent);
     }
-    return EffectiveAutoApproval.askByDefault;
+    return _fallback(profile);
   }
 
   /// Stores [setting] for the session, or removes the session's own entry

@@ -16744,4 +16744,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get firstRunPaseoTitle => 'Agents through Paseo';
+
+  @override
+  String get approvalsUiEverythingTitle => 'Approve everything on this server';
+
+  @override
+  String get approvalsUiEverythingDetail =>
+      'Dangerous. Every conversation on this server, new ones and subagents included, is approved automatically while this app is connected. A conversation set to “Ask each time” still asks.';
+
+  @override
+  String get approvalsUiEverythingConfirmTitle => 'Approve everything?';
+
+  @override
+  String get approvalsUiEverythingConfirmBody =>
+      'Agents on this server will run commands and change files without asking you, in every conversation. Turn this on only for a server and projects you can afford to break.';
+
+  @override
+  String get approvalsUiEverythingConfirmAction => 'Approve everything';
+
+  @override
+  String get approvalsUiEverythingActive =>
+      'Following “Approve everything on this server”';
+
+  @override
+  String get approvalsUiServerRulesNoteEverything =>
+      'The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects.';
 }
