@@ -27093,6 +27093,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Agents through Paseo'**
   String get firstRunPaseoTitle;
+
+  /// Switch in the approvals sheet that turns on automatic approval for every conversation on the server
+  ///
+  /// In en, this message translates to:
+  /// **'Approve everything on this server'**
+  String get approvalsUiEverythingTitle;
+
+  /// Explanation under the Approve everything switch
+  ///
+  /// In en, this message translates to:
+  /// **'Dangerous. Every conversation on this server, new ones and subagents included, is approved automatically while this app is connected. A conversation set to “Ask each time” still asks.'**
+  String get approvalsUiEverythingDetail;
+
+  /// Title of the confirmation before turning on Approve everything
+  ///
+  /// In en, this message translates to:
+  /// **'Approve everything?'**
+  String get approvalsUiEverythingConfirmTitle;
+
+  /// Body of the confirmation before turning on Approve everything
+  ///
+  /// In en, this message translates to:
+  /// **'Agents on this server will run commands and change files without asking you, in every conversation. Turn this on only for a server and projects you can afford to break.'**
+  String get approvalsUiEverythingConfirmBody;
+
+  /// Confirm button that turns on Approve everything
+  ///
+  /// In en, this message translates to:
+  /// **'Approve everything'**
+  String get approvalsUiEverythingConfirmAction;
+
+  /// Note shown when a conversation approves automatically because of the server-wide switch
+  ///
+  /// In en, this message translates to:
+  /// **'Following “Approve everything on this server”'**
+  String get approvalsUiEverythingActive;
+
+  /// Footer note while Approve everything is on
+  ///
+  /// In en, this message translates to:
+  /// **'The server’s own deny rules still apply, and automatic approval stops whenever this app disconnects.'**
+  String get approvalsUiServerRulesNoteEverything;
 }
 
 class _AppLocalizationsDelegate
