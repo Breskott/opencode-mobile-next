@@ -520,6 +520,61 @@ void main() {
   });
 
   group('providers & catalog', () {
+    test('a model and its modes are separate models, told apart by name', () {
+      // OpenCode 2 lists a mode ("fast") as a model of its own that shares
+      // the API model id with its base model and, often, its name.
+      Api2ModelInfo model(String id) => Api2ModelInfo.fromJson({
+        'id': id,
+        'modelID': 'gpt-6-astra',
+        'providerID': 'openai',
+        'name': 'GPT-6 Astra',
+        'enabled': true,
+        'limit': {'context': 400000, 'output': 128000},
+      })!;
+      final base = mapApi2CatalogModel(model('gpt-6-astra'));
+      final fast = mapApi2CatalogModel(model('gpt-6-astra-fast'));
+      // The picker ticks, and the gateway sends, by this id.
+      expect(base.id, 'gpt-6-astra');
+      expect(fast.id, 'gpt-6-astra-fast');
+      expect(base.name, 'GPT-6 Astra');
+      expect(fast.name, 'GPT-6 Astra · fast');
+
+      final response = mapApi2Providers(
+        providers: [
+          Api2ProviderInfo.fromJson({'id': 'openai', 'name': 'OpenAI'})!,
+        ],
+        models: [model('gpt-6-astra'), model('gpt-6-astra-fast')],
+        defaultModel: model('gpt-6-astra-fast'),
+      );
+      final openai = response.providers.single;
+      expect(openai.modelIDs, ['gpt-6-astra', 'gpt-6-astra-fast']);
+      expect(response.defaultModelID, 'gpt-6-astra-fast');
+
+      // A server-named mode is not renamed twice, and the early betas'
+      // composite ids are still peeled.
+      expect(
+        mapApi2CatalogModel(
+          Api2ModelInfo.fromJson({
+            'id': 'gpt-6-astra-fast',
+            'modelID': 'gpt-6-astra',
+            'providerID': 'openai',
+            'name': 'GPT-6 Astra (Fast)',
+          })!,
+        ).name,
+        'GPT-6 Astra (Fast)',
+      );
+      expect(
+        mapApi2CatalogModel(
+          Api2ModelInfo.fromJson({
+            'id': 'zai/glm-5.3-flash',
+            'providerID': 'zai',
+            'name': 'GLM',
+          })!,
+        ).id,
+        'glm-5.3-flash',
+      );
+    });
+
     test('builds the v1 ProvidersResponse from the captured catalogs', () {
       final providers = [
         for (final item in (fixture('providers.json')['data'] as List))
