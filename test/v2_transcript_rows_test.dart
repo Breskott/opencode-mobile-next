@@ -155,7 +155,7 @@ void main() {
   });
 
   group('TranscriptNotice variants', () {
-    testWidgets('system notice collapses to two lines and expands on tap', (
+    testWidgets('system notice is its header until tapped, then shows all', (
       tester,
     ) async {
       final longBody = List.generate(
@@ -176,8 +176,9 @@ void main() {
       );
       expect(find.byIcon(AppIconography.settingsAdvanced), findsOneWidget);
       expect(find.textContaining('System update'), findsOneWidget);
-      final collapsed = tester.widget<Text>(find.text(longBody));
-      expect(collapsed.maxLines, 2);
+      // A routine notice costs one line of transcript; the detail is a tap
+      // away instead of two lines under every "Context added".
+      expect(find.text(longBody), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('transcript-notice-msg_4')));
       await tester.pumpAndSettle();

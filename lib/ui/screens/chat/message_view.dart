@@ -423,6 +423,97 @@ Part? v2VariantPart(MessageWithParts message) {
   return null;
 }
 
+// The transcript's vocabulary. The server stores a conversation as a flat
+// list of messages, and that list is not how a person reads it:
+//
+//  * A **prompt** is what you sent: your words and attachments.
+//  * A **turn** is one prompt and everything the agent did about it, until it
+//    stopped and handed back to you. It is the unit a reader thinks in, and
+//    the unit that gets one footer (model, usage, the "more" control).
+//  * A **step** is one model call inside a turn, which the server stores as
+//    one assistant message: a thought, perhaps a sentence, some tool calls.
+//    A long turn is dozens of them. The boundary between two steps is
+//    plumbing and is never drawn.
+//  * A **notice** is something that happened during a turn and that nobody
+//    typed: the project moved, instructions changed, context was added. The
+//    server files it under the `user` role; it does not end the turn.
+//  * The **reply** is the prose of a whole turn, which is what "copy" copies.
+
+/// Whether [message] is something a person wrote, as opposed to a notice the
+/// server filed under the same role.
+bool _isPrompt(MessageWithParts message) =>
+    message.info.role == 'user' && v2VariantPart(message) == null;
+
+/// Whether the assistant message at [index] is the last step of its turn:
+/// nothing but notices stands between it and the next prompt, or the end.
+bool _endsTurn(List<MessageWithParts> messages, int index) {
+  if (messages[index].info.role != 'assistant') return false;
+  for (var next = index + 1; next < messages.length; next += 1) {
+    if (_isPrompt(messages[next])) return true;
+    if (messages[next].info.role == 'assistant') return false;
+  }
+  return true;
+}
+
+/// For each turn, the one message that carries its "more" control: the step
+/// that ends the turn when that step draws anything, otherwise the last step
+/// that does. A turn often ends on pure bookkeeping (a `step-finish`), and
+/// the control must not vanish with it.
+Set<int> _turnActionOwners(
+  List<MessageWithParts> messages,
+  List<List<Part>> display, {
+  required bool metaAlways,
+}) {
+  final owners = <int>{};
+  int? lastStep;
+  int? lastWithBody;
+  bool hasBody(int index) =>
+      display[index].any((part) => part.isRenderable) ||
+      messages[index].info.errorText != null ||
+      messages[index].info.finish == 'length';
+  void closeTurn() {
+    final end = lastStep;
+    if (end != null) {
+      final endDraws =
+          hasBody(end) ||
+          metaAlways ||
+          _messageMeta(messages, end).modelLabel != null;
+      final owner = endDraws ? end : lastWithBody;
+      if (owner != null) owners.add(owner);
+    }
+    lastStep = null;
+    lastWithBody = null;
+  }
+
+  for (var index = 0; index < messages.length; index += 1) {
+    if (_isPrompt(messages[index])) {
+      closeTurn();
+    } else if (messages[index].info.role == 'assistant') {
+      lastStep = index;
+      if (hasBody(index)) lastWithBody = index;
+    }
+  }
+  closeTurn();
+  return owners;
+}
+
+/// The assistant messages of the turn that holds [index], oldest first.
+/// Notices inside the turn are skipped, not treated as its edge.
+List<MessageWithParts> _turnSteps(List<MessageWithParts> messages, int index) {
+  var start = index;
+  while (start > 0 && !_isPrompt(messages[start - 1])) {
+    start -= 1;
+  }
+  var end = index;
+  while (end + 1 < messages.length && !_isPrompt(messages[end + 1])) {
+    end += 1;
+  }
+  return [
+    for (var i = start; i <= end; i += 1)
+      if (messages[i].info.role == 'assistant') messages[i],
+  ];
+}
+
 /// A quiet divider-row for session-state changes (`model-switched`,
 /// `agent-switched`, `location-switched`) and the compaction-running pill:
 /// hairline — center pill — hairline, deliberately quieter than any bubble.
@@ -544,15 +635,9 @@ class _TranscriptNoticeState extends State<TranscriptNotice> {
           onTap: body.isEmpty ? null : () => setState(() => _open = !_open),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: widget.error
-                    ? theme.colorScheme.error.withValues(alpha: .5)
-                    : theme.colorScheme.outlineVariant.withValues(alpha: .5),
-              ),
-            ),
+            // A notice is a line in the transcript, not a card: no frame, and
+            // it shares the prose's left edge.
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -592,7 +677,9 @@ class _TranscriptNoticeState extends State<TranscriptNotice> {
                       ),
                   ],
                 ),
-                if (body.isNotEmpty)
+                // Closed, a routine notice is its header alone; the detail is one
+                // tap away. An error keeps its first lines in view.
+                if (body.isNotEmpty && (_open || widget.error))
                   _chatSizeTransition(
                     reduceMotion: reduceMotion,
                     duration: const Duration(milliseconds: 200),
@@ -831,10 +918,26 @@ Part _mergeTextParts(List<Part> parts) {
 }
 
 class _AssistantPartRun {
-  const _AssistantPartRun(this.parts, {this.grouped = false});
+  const _AssistantPartRun(this.parts, {this.grouped = false, this.heading});
 
   final List<Part> parts;
   final bool grouped;
+
+  /// What the agent said it was about to do, when it said so in a line
+  /// ("Patching home shell") right before this run of tool calls. The run
+  /// carries it as its title, so a step is one line instead of two.
+  final String? heading;
+}
+
+/// A thought short enough to title the work that follows it: one line, and
+/// no longer than a heading. Anything more is real reasoning and keeps its
+/// own block.
+String? _stepHeading(Part part) {
+  if (part.type != 'reasoning') return null;
+  final text = part.text.trim();
+  if (text.isEmpty || text.length > 72 || text.contains('\n')) return null;
+  final plain = text.replaceAll(RegExp(r'[*_`#]+'), '').trim();
+  return plain.isEmpty ? null : plain;
 }
 
 List<_AssistantPartRun> _groupAssistantParts(List<Part> parts) {
@@ -865,11 +968,20 @@ List<_AssistantPartRun> _groupAssistantParts(List<Part> parts) {
       toolParts.add(parts[next]);
       next += 1;
     }
-    if (toolParts.length == 1) {
-      runs.add(_AssistantPartRun(toolParts));
-    } else {
-      runs.add(_AssistantPartRun(toolParts, grouped: true));
+    // A one-line thought right before the call or the run is its title, not
+    // a row of its own.
+    String? heading;
+    if (runs.isNotEmpty && !runs.last.grouped) {
+      heading = _stepHeading(runs.last.parts.single);
+      if (heading != null) runs.removeLast();
     }
+    runs.add(
+      _AssistantPartRun(
+        toolParts,
+        grouped: toolParts.length > 1,
+        heading: heading,
+      ),
+    );
     index = next;
   }
   return runs;
@@ -937,8 +1049,12 @@ class _ToolCallGroup extends StatefulWidget {
     required this.onAttachFile,
     required this.onDownloadFile,
     this.onOpenSession,
+    this.heading,
   });
 
+  /// The agent's own one-line name for this step; replaces the generic
+  /// "Explored" / "Tools" title when present.
+  final String? heading;
   final List<Part> parts;
   final Map<String, bool> expansionStore;
   final ToolOutputFileLoader filePreviewLoader;
@@ -1034,13 +1150,14 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
     final allContext = widget.parts.every(
       (part) => _contextToolNames.contains(part.toolName?.trim().toLowerCase()),
     );
-    final title = allContext && !_notRun
+    final kind = allContext && !_notRun
         ? (_running
               ? _chatL10n(context).chatUiExploring
               : _chatL10n(context).chatUiExplored)
         : (_running
               ? _chatL10n(context).chatUiRunningTools
               : _chatL10n(context).chatUiTools);
+    final title = widget.heading ?? kind;
     final status = _failed
         ? _chatL10n(context).chatUiBackgroundError
         : _running
@@ -1050,12 +1167,8 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
         : _chatL10n(context).chatUiCompleted;
     return Container(
       key: const Key('tool-call-group'),
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .28),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.hairline(theme)),
-      ),
+      // No frame: a run of tool calls is a line of the reply. Its steps,
+      // when opened, hang off a single rule on the leading edge.
       child: Column(
         children: [
           Semantics(
@@ -1071,7 +1184,7 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 48),
                 child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 8),
+                  padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 4, 6),
                   child: Row(
                     children: [
                       Icon(
@@ -1145,33 +1258,35 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
             ),
           ),
           if (_expanded)
-            Column(
-              children: [
-                Divider(height: 1, color: AppTheme.hairline(theme)),
-                for (var index = 0; index < widget.parts.length; index++) ...[
-                  if (index > 0)
-                    Divider(
-                      height: 1,
-                      indent: 34,
-                      color: AppTheme.hairline(theme),
+            Container(
+              key: const Key('tool-call-group-steps'),
+              margin: const EdgeInsetsDirectional.only(start: 11),
+              decoration: BoxDecoration(
+                border: BorderDirectional(
+                  start: BorderSide(color: AppTheme.hairline(theme)),
+                ),
+              ),
+              child: Column(
+                children: [
+                  for (var index = 0; index < widget.parts.length; index++) ...[
+                    ToolCard(
+                      key: ValueKey(
+                        widget.parts[index].id ?? widget.parts[index].callID,
+                      ),
+                      toolName: widget.parts[index].toolName!,
+                      state: widget.parts[index].toolState,
+                      embedded: true,
+                      expansionStore: widget.expansionStore,
+                      expansionKey:
+                          'tool:${widget.parts[index].id ?? widget.parts[index].callID}',
+                      filePreviewLoader: widget.filePreviewLoader,
+                      onAttachFile: widget.onAttachFile,
+                      onDownloadFile: widget.onDownloadFile,
+                      onOpenSession: widget.onOpenSession,
                     ),
-                  ToolCard(
-                    key: ValueKey(
-                      widget.parts[index].id ?? widget.parts[index].callID,
-                    ),
-                    toolName: widget.parts[index].toolName!,
-                    state: widget.parts[index].toolState,
-                    embedded: true,
-                    expansionStore: widget.expansionStore,
-                    expansionKey:
-                        'tool:${widget.parts[index].id ?? widget.parts[index].callID}',
-                    filePreviewLoader: widget.filePreviewLoader,
-                    onAttachFile: widget.onAttachFile,
-                    onDownloadFile: widget.onDownloadFile,
-                    onOpenSession: widget.onOpenSession,
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
         ],
       ),
@@ -1194,8 +1309,11 @@ class _AssistantMessagePart extends StatelessWidget {
     this.streaming = false,
     this.onOpenSession,
     this.searchQuery = '',
+    this.heading,
   });
 
+  /// See [_AssistantPartRun.heading].
+  final String? heading;
   final Part part;
   final String searchQuery;
   final bool reasoningExpanded;
@@ -1269,6 +1387,7 @@ class _AssistantMessagePart extends StatelessWidget {
             : ValueKey(part.id ?? part.callID),
         toolName: part.toolName ?? 'tool',
         state: part.toolState,
+        heading: heading,
         expansionStore: expansionStore,
         expansionKey: 'tool:${part.id ?? part.callID}',
         filePreviewLoader: filePreviewLoader,
@@ -1365,7 +1484,14 @@ class _MessageView extends StatelessWidget {
     this.onChooseModel,
     this.onOpenSession,
     this.queued = false,
+    this.showActions = true,
   });
+
+  /// Whether the "more" control is drawn under this message. A reply is
+  /// usually several messages; only the one that ends it carries the control,
+  /// so it appears once per turn. Long-press and right-click stay on every
+  /// message.
+  final bool showActions;
 
   /// True for a user prompt the server has accepted but not started: it
   /// runs after the current turn (OpenCode 1 queues mid-turn sends).
@@ -1407,15 +1533,14 @@ class _MessageView extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final bubbleWidthCap = MediaQuery.of(context).size.width * .88;
-
     final body = GestureDetector(
       onLongPress: onLongPress,
       behavior: HitTestBehavior.translucent,
-      // The long-press menu is a pointer shortcut for actions that remain
-      // reachable elsewhere (text selection, timeline fork). Excluding it
-      // keeps each message part as its own semantics node.
-      excludeFromSemantics: true,
+      // Where the "more" control is drawn, the long-press is only a shortcut
+      // to it, and excluding it keeps each message part as its own semantics
+      // node. Where it is not, the long-press is the way in, so assistive
+      // technology must see it.
+      excludeFromSemantics: showActions,
       child: AnimatedContainer(
         // The key must not encode the highlight flag: a highlight-driven
         // remount would kill this fade and reset per-part expansion state.
@@ -1424,8 +1549,8 @@ class _MessageView extends StatelessWidget {
             ? Duration.zero
             : const Duration(milliseconds: 180),
         padding: isUser
-            ? const EdgeInsetsDirectional.fromSTEB(6, 4, 6, 10)
-            : const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 4),
+            ? const EdgeInsetsDirectional.fromSTEB(6, 10, 6, 6)
+            : const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 2),
         decoration: BoxDecoration(
           color: highlighted
               ? theme.colorScheme.primaryContainer.withValues(alpha: .24)
@@ -1433,9 +1558,7 @@ class _MessageView extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
-          crossAxisAlignment: isUser
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (searchMatch case final match?)
               Builder(
@@ -1448,24 +1571,28 @@ class _MessageView extends StatelessWidget {
                 },
               ),
             Container(
-              constraints: BoxConstraints(
-                // Keep prompts readable on wide screens instead of stretching a
-                // bubble across a tablet.
-                maxWidth: isUser && bubbleWidthCap > 640 ? 640 : bubbleWidthCap,
-              ),
+              key: isUser ? ValueKey('user-prompt-${m.info.id}') : null,
+              // Keep prompts readable on wide screens instead of stretching
+              // them across a tablet.
+              constraints: isUser
+                  ? const BoxConstraints(maxWidth: _proseWidthCap)
+                  : null,
+              // Your words and the agent's share one column and one left
+              // edge. A rule in the accent colour on the leading side is what
+              // says "you wrote this": no bubble, no fill, no lost width.
+              margin: isUser
+                  ? const EdgeInsetsDirectional.only(start: 4)
+                  : EdgeInsets.zero,
               padding: isUser
-                  ? const EdgeInsets.symmetric(horizontal: 10, vertical: 10)
+                  ? const EdgeInsetsDirectional.fromSTEB(10, 2, 4, 2)
                   : const EdgeInsets.symmetric(horizontal: 4),
               decoration: isUser
                   ? BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(
-                        alpha: .55,
-                      ),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                        bottomLeft: Radius.circular(16),
-                        bottomRight: Radius.circular(5),
+                      border: BorderDirectional(
+                        start: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 3,
+                        ),
                       ),
                     )
                   : null,
@@ -1484,6 +1611,7 @@ class _MessageView extends StatelessWidget {
                                 'tools:${run.parts.first.id ?? run.parts.first.callID}',
                               ),
                               parts: run.parts,
+                              heading: run.heading,
                               expansionStore: expansionStore,
                               filePreviewLoader: filePreviewLoader,
                               onAttachFile: onAttachFile,
@@ -1493,6 +1621,7 @@ class _MessageView extends StatelessWidget {
                           else
                             _AssistantMessagePart(
                               part: run.parts.single,
+                              heading: run.heading,
                               searchQuery: searchQuery,
                               reasoningExpanded: reasoningExpanded,
                               expansionStore: expansionStore,
@@ -1529,7 +1658,7 @@ class _MessageView extends StatelessWidget {
                   ],
                 ),
               ),
-            if (metaParts.isNotEmpty || onLongPress != null)
+            if (metaParts.isNotEmpty || (showActions && onLongPress != null))
               Padding(
                 padding: const EdgeInsetsDirectional.only(
                   top: 1,
@@ -1549,7 +1678,7 @@ class _MessageView extends StatelessWidget {
                           ),
                         ),
                       ),
-                    if (onLongPress != null)
+                    if (showActions && onLongPress != null)
                       Semantics(
                         button: true,
                         label: _chatL10n(context).chatUiMessageActions,
@@ -1887,20 +2016,15 @@ _MessageMeta _messageMeta(List<MessageWithParts> messages, int index) {
   }
   final modelChanged = currentModel != null && currentModel != previousModel;
 
-  final endsAssistantRun =
-      index == messages.length - 1 ||
-      messages[index + 1].info.role != 'assistant';
-  if (!endsAssistantRun) {
+  if (!_endsTurn(messages, index)) {
     return _MessageMeta(modelLabel: modelChanged ? currentModel : null);
   }
 
   var turnTokens = 0;
   var turnCost = 0.0;
-  for (var runIndex = index; runIndex >= 0; runIndex -= 1) {
-    final info = messages[runIndex].info;
-    if (info.role != 'assistant') break;
-    turnTokens += info.tokens.total;
-    turnCost += info.cost;
+  for (final step in _turnSteps(messages, index)) {
+    turnTokens += step.info.tokens.total;
+    turnCost += step.info.cost;
   }
   return _MessageMeta(
     modelLabel: modelChanged ? currentModel : null,

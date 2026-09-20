@@ -3915,16 +3915,11 @@ class _ChatScreenState extends State<ChatScreen>
         text: _messageText(message),
       );
     }
-    var start = index;
-    var end = index;
-    while (start > 0 && _messages[start - 1].info.role == 'assistant') {
-      start--;
-    }
-    while (end + 1 < _messages.length &&
-        _messages[end + 1].info.role == 'assistant') {
-      end++;
-    }
-    final reply = _messages.getRange(start, end + 1);
+    // The reply is the whole turn; a notice in the middle of it (context
+    // added, project moved) is not where it ends.
+    final reply = _turnSteps(_messages, index);
+    final start = _messages.indexOf(reply.first);
+    final end = _messages.indexOf(reply.last);
     final unfinished =
         _conn.busySessions.contains(widget.sessionID) &&
         reply.any((item) => item.info.time?.isDone != true);
@@ -6439,6 +6434,11 @@ class _ChatScreenState extends State<ChatScreen>
         ? _queuedAfterIndex(_messages)
         : -1;
     final displayParts = _timelineDisplayParts(_messages);
+    final turnActionOwners = _turnActionOwners(
+      _messages,
+      displayParts,
+      metaAlways: _conn.transcriptTimestampsVisible,
+    );
     final showAttachmentNote = _attachmentNoteVisible();
     final pendingPermissions = _conn.permissionsForSession(widget.sessionID);
 
@@ -6850,6 +6850,15 @@ class _ChatScreenState extends State<ChatScreen>
                                                               _findCursor + 1,
                                                               _findHits.length,
                                                             ),
+                                                      // One "more" control
+                                                      // per turn: under the
+                                                      // message that ends a
+                                                      // reply, never under
+                                                      // each step of it or
+                                                      // under the prompt.
+                                                      showActions:
+                                                          turnActionOwners
+                                                              .contains(index),
                                                       onLongPress:
                                                           _conn.isIsolated
                                                           ? null

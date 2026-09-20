@@ -395,6 +395,11 @@ class ToolCard extends StatefulWidget {
   final ToolState state;
   final bool embedded;
 
+  /// The agent's own one-line name for this step ("Setting up persistence
+  /// check"), said right before the call. It becomes the row's title and the
+  /// tool's name moves into the detail, so the step is one line, not two.
+  final String? heading;
+
   /// Optional longer-lived store (e.g. session-scoped) keyed by
   /// [expansionKey], so expansion survives list recycling in a virtualized
   /// transcript instead of resetting when the item State is rebuilt.
@@ -412,6 +417,7 @@ class ToolCard extends StatefulWidget {
     required this.toolName,
     required this.state,
     this.embedded = false,
+    this.heading,
     this.expansionStore,
     this.expansionKey,
     this.filePreviewLoader,
@@ -614,18 +620,8 @@ class _ToolCardState extends State<ToolCard> {
 
     return Container(
       key: widget.embedded ? const Key('embedded-tool-row') : null,
-      margin: widget.embedded
-          ? EdgeInsets.zero
-          : const EdgeInsets.symmetric(vertical: 3),
-      decoration: widget.embedded
-          ? null
-          : BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(
-                alpha: .35,
-              ),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.hairline(theme)),
-            ),
+      // A tool call is a line of the reply, in a group or on its own: no
+      // frame and no fill. What it printed, once opened, is the only block.
       child: _runningAccent(
         theme,
         reduceMotion,
@@ -635,7 +631,7 @@ class _ToolCardState extends State<ToolCard> {
               button: hasBody,
               expanded: hasBody ? _expanded : null,
               label:
-                  '${contract.title}, ${!widget.state.executed
+                  '${widget.heading == null ? '' : '${widget.heading}, '}${contract.title}, ${!widget.state.executed
                       ? strings.chatUiNotRun
                       : _backgroundLaunch
                       ? strings.workStartedInBackground
@@ -648,7 +644,14 @@ class _ToolCardState extends State<ToolCard> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 48),
                   child: Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 8),
+                    // On its own a call shares the prose's left edge; inside
+                    // a group it sits in from the group's rule.
+                    padding: EdgeInsetsDirectional.fromSTEB(
+                      widget.embedded ? 10 : 4,
+                      8,
+                      widget.embedded ? 8 : 4,
+                      8,
+                    ),
                     child: Row(
                       children: [
                         Icon(
@@ -662,27 +665,36 @@ class _ToolCardState extends State<ToolCard> {
                         Expanded(
                           child: Row(
                             children: [
-                              Text(
-                                contract.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall!.copyWith(
-                                  // A call the server never ran greys out
-                                  // rather than striking through: the title
-                                  // stays legible, the state carries the news.
-                                  color: widget.state.executed
-                                      ? theme.colorScheme.onSurface.withValues(
-                                          alpha: .9,
-                                        )
-                                      : AppTheme.mutedOf(theme),
-                                  fontWeight: FontWeight.w600,
+                              Flexible(
+                                flex: widget.heading == null ? 0 : 3,
+                                child: Text(
+                                  widget.heading ?? contract.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall!.copyWith(
+                                    // A call the server never ran greys out
+                                    // rather than striking through: the title
+                                    // stays legible, the state carries the news.
+                                    color: widget.state.executed
+                                        ? theme.colorScheme.onSurface
+                                              .withValues(alpha: .9)
+                                        : AppTheme.mutedOf(theme),
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                              if (contract.subtitle?.isNotEmpty == true) ...[
+                              if (widget.heading != null ||
+                                  contract.subtitle?.isNotEmpty == true) ...[
                                 const SizedBox(width: 6),
                                 Expanded(
+                                  flex: 2,
                                   child: Text(
-                                    contract.subtitle!,
+                                    widget.heading == null
+                                        ? contract.subtitle!
+                                        : [
+                                            contract.title,
+                                            ?contract.subtitle,
+                                          ].join(' '),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.labelSmall?.copyWith(

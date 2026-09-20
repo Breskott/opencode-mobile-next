@@ -1173,7 +1173,9 @@ void main() {
         ..pageHandler = (cursor) async => cursor == null
             ? ServerPage(
                 items: [
-                  for (var i = 0; i < 20; i++) historyMessage('recent-$i'),
+                  // Enough one-line rows that reaching the oldest leaves the
+                  // reader well over the 480px "away from latest" mark.
+                  for (var i = 0; i < 40; i++) historyMessage('recent-$i'),
                 ],
                 nextCursor: 'older',
               )
@@ -2582,11 +2584,14 @@ void main() {
     await _pumpEvent(tester);
 
     expect(find.text('Hello'), findsOneWidget);
-    expect(find.byKey(const Key('reasoning-inline')), findsOneWidget);
+    // A one-line thought right before a tool call is that call's title: the
+    // step is one row, not a heading row and a tool row.
+    expect(find.byKey(const Key('reasoning-inline')), findsNothing);
     expect(find.byKey(const Key('reasoning-toggle')), findsNothing);
     expect(find.text('why this works'), findsOneWidget);
     expect(find.text('**why this works**'), findsNothing);
-    await tester.tap(find.text('search'));
+    expect(find.textContaining('search'), findsOneWidget);
+    await tester.tap(find.text('why this works'));
     await _pumpEvent(tester);
     expect(find.textContaining('"query": "chat"'), findsOneWidget);
     semantics.dispose();
