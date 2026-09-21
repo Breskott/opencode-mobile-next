@@ -202,7 +202,7 @@ void main() {
   group('endpoint policy', () {
     test('cleartext is limited to this device and Tailscale', () {
       expect(paseoEndpoint('ws://127.0.0.1:6767').path, '/ws');
-      expect(paseoEndpoint('ws://100.126.15.6:6767').host, '100.126.15.6');
+      expect(paseoEndpoint('ws://100.64.0.10:6767').host, '100.64.0.10');
       expect(paseoEndpoint('ws://pc.tail1234.ts.net:6767').scheme, 'ws');
       expect(paseoEndpoint('wss://paseo.example').path, '/ws');
       for (final bad in [
@@ -227,9 +227,9 @@ void main() {
     });
 
     test('profile validators agree and an empty password is allowed', () {
-      expect(validatePaseoServerUrl('ws://100.126.15.6:6767'), isNull);
+      expect(validatePaseoServerUrl('ws://100.64.0.10:6767'), isNull);
       expect(validatePaseoServerUrl('ws://192.168.1.10:6767'), isNotNull);
-      expect(normalizePaseoServerUrl('100.126.15.6:6767'), startsWith('ws://'));
+      expect(normalizePaseoServerUrl('100.64.0.10:6767'), startsWith('ws://'));
       expect(normalizePaseoServerUrl('paseo.example'), startsWith('wss://'));
       expect(validatePaseoPassword(''), isNull);
       expect(validatePaseoPassword('s3cret'), isNull);
@@ -241,7 +241,7 @@ void main() {
       final profile = ServerProfile(
         id: 'p1',
         name: 'PC',
-        baseUrl: 'ws://100.126.15.6:6767',
+        baseUrl: 'ws://100.64.0.10:6767',
         backend: ServerBackend.paseo,
         codexDirectory: _dir,
         codexToken: 's3cret',
