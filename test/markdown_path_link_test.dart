@@ -147,7 +147,7 @@ void main() {
     expect(validated, isEmpty);
   });
 
-  testWidgets('without a scope, path-like spans render as plain chips', (
+  testWidgets('without a scope, path-like spans render as plain code', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -156,7 +156,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('lib/a/b.dart'), findsOneWidget);
+    // Inline code is part of the sentence now, not a boxed widget.
+    expect(
+      find.textContaining('lib/a/b.dart', findRichText: true),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('path-link-lib/a/b.dart')), findsNothing);
   });
 }

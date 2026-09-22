@@ -150,7 +150,12 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
     final here = _conn.directory;
     final recents = [
       for (final location in _conn.recentLocations)
-        if (location.directory != null && location.directory != here) location,
+        if (location.directory != null &&
+            location.directory != here &&
+            // The phone server's folder of projects is not a project.
+            location.directory!.replaceAll(RegExp(r'/+$'), '') !=
+                '/root/projects')
+          location,
     ];
     for (final project in _conn.elsewhereAttention.activity(except: here)) {
       if (!recents.any((r) => r.directory == project.directory)) {

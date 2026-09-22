@@ -17563,7 +17563,7 @@
   "@firstRunCommandsCodexUsb": {
     "description": "Connect screen, Codex: caption above the adb reverse command."
   },
-  "firstRunNotifyTitle": "Get told when it's done?",
+  "firstRunNotifyTitle": "Notify you when a reply is ready?",
   "@firstRunNotifyTitle": {
     "description": "Conversation, first run: title of the one card shown above the composer after the first reply completes."
   },

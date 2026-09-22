@@ -113,87 +113,79 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
     if (widget.compact) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final copy = lookupAppLocalizations(Localizations.localeOf(context));
+    // One line, not a card: it sits above the composer, where every row is
+    // taken from the transcript. The explanation is Android's own prompt.
     return Center(
       child: ConstrainedBox(
-        // At large text the sentence is tall. It scrolls inside the card so
-        // the transcript and the composer always keep most of the screen.
-        constraints: BoxConstraints(
-          maxWidth: 860,
-          maxHeight: MediaQuery.sizeOf(context).height * .42,
-        ),
+        constraints: const BoxConstraints(maxWidth: 860),
         child: Semantics(
           container: true,
-          child: Card.filled(
+          label: copy.firstRunNotifyBody,
+          child: Padding(
             key: const ValueKey('first-reply-notify-card'),
-            margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-            child: Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 8, 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Icon(
-                              AppIconography.activity,
-                              size: 20,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  copy.firstRunNotifyTitle,
-                                  style: theme.textTheme.titleSmall,
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  copy.firstRunNotifyBody,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    height: 1.35,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 2),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final scale = MediaQuery.textScalerOf(context).scale(1);
+                final oneLine = constraints.maxWidth / scale >= 380;
+                final question = Row(
+                  children: [
+                    Icon(
+                      AppIconography.inbox,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        copy.firstRunNotifyTitle,
+                        // The full explanation is the semantics label and
+                        // Android's own prompt; two lines is enough here.
+                        maxLines: oneLine ? 1 : 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
                       ),
                     ),
+                  ],
+                );
+                final buttons = [
+                  TextButton(
+                    key: const ValueKey('first-reply-notify-decline'),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                      foregroundColor: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    onPressed: _working ? null : _decline,
+                    child: Text(copy.firstRunNotifyDecline),
                   ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    alignment: WrapAlignment.end,
-                    spacing: 4,
+                  TextButton(
+                    key: const ValueKey('first-reply-notify-accept'),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                    ),
+                    onPressed: _working ? null : _accept,
+                    child: Text(copy.firstRunNotifyAccept),
+                  ),
+                ];
+                // One line where it fits; at large text the answers move
+                // under the question instead of squeezing it.
+                if (oneLine) {
+                  return Row(
                     children: [
-                      TextButton(
-                        key: const ValueKey('first-reply-notify-decline'),
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(48, 48),
-                        ),
-                        onPressed: _working ? null : _decline,
-                        child: Text(copy.firstRunNotifyDecline),
-                      ),
-                      FilledButton.tonal(
-                        key: const ValueKey('first-reply-notify-accept'),
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(48, 48),
-                        ),
-                        onPressed: _working ? null : _accept,
-                        child: Text(copy.firstRunNotifyAccept),
-                      ),
+                      Expanded(child: question),
+                      ...buttons,
                     ],
-                  ),
-                ],
-              ),
+                  );
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    question,
+                    Wrap(alignment: WrapAlignment.end, children: buttons),
+                  ],
+                );
+              },
             ),
           ),
         ),

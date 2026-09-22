@@ -314,9 +314,14 @@ class Api2Gateway
       order: 'desc',
       cursor: cursor,
     );
+    // OpenCode 2 returns a cursor even on the last page; a short page is
+    // the end. Otherwise every new conversation offered "Load older
+    // messages" for nothing.
+    final more =
+        page.nextCursor?.isNotEmpty == true && page.data.length >= limit;
     return ServerPage(
       items: mapApi2Messages(id, page.data.reversed.toList()),
-      nextCursor: page.nextCursor?.isNotEmpty == true ? page.nextCursor : null,
+      nextCursor: more ? page.nextCursor : null,
     );
   });
 

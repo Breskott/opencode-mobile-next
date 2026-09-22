@@ -224,7 +224,7 @@ void main() {
       expect(find.textContaining('My Skill'), findsOneWidget);
     });
 
-    testWidgets('unknown variants degrade to a generic server notice', (
+    testWidgets('an unknown type with nothing but its name is not drawn', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -240,7 +240,28 @@ void main() {
           ),
         ),
       );
-      expect(find.textContaining('Server message'), findsOneWidget);
+      // Only a type name ("idle", "brand-new-variant"): nothing to read.
+      expect(find.textContaining('Server message'), findsNothing);
+      expect(find.text('brand-new-variant'), findsNothing);
+    });
+
+    testWidgets('an unknown message with real text is still shown', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host(
+          V2TranscriptRow(
+            part: _tagged(
+              type: 'v2:notice',
+              kind: 'unknown',
+              text: 'The server restarted while this ran.',
+              header: 'Server message',
+            ),
+            messageId: 'msg_8',
+          ),
+        ),
+      );
+      expect(find.text('Server message'), findsOneWidget);
     });
   });
 
