@@ -446,6 +446,21 @@ Future<void> _scrollToTop(WidgetTester tester) async {
   await tester.pump();
 }
 
+/// Unfolds "Other OpenCode versions" when it is there.
+Future<void> openOtherVersions(WidgetTester tester) async {
+  final tile = find.byKey(const Key('other-runtime-versions'));
+  if (tile.evaluate().isEmpty) return;
+  if (find.text('Try OpenCode 2').evaluate().isNotEmpty ||
+      find.text('Return to OpenCode 1').evaluate().isNotEmpty) {
+    return;
+  }
+  await tester.ensureVisible(tile);
+  await tester.tap(tile);
+  for (var i = 0; i < 6; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const channel = MethodChannel('oc/termux');
@@ -712,6 +727,8 @@ void main() {
         final l10n = AppLocalizations.of(
           tester.element(find.byType(TermuxSetupScreen)),
         );
+        // Folded under "Other OpenCode versions": one tap away.
+        await openOtherVersions(tester);
         expect(
           find.text(l10n.setupSwitchUse(l10n.setupRuntimeTwo)).hitTestable(),
           findsOneWidget,
@@ -736,7 +753,18 @@ void main() {
         );
         expect(fixture.store.selectedID, beta.id);
         expect(beta.serverVersion, TermuxRuntime.openCode2.pinnedVersion);
+        // Unfolding the versions scrolled the heading out of view.
+        await tester.drag(
+          find.byKey(const ValueKey('termux-installed-runtime')),
+          const Offset(0, 3000),
+        );
+        await tester.pumpAndSettle();
         expect(find.text(l10n.setupRuntimeTwo), findsOneWidget);
+        await openOtherVersions(tester);
+        await tester.ensureVisible(
+          find.text(l10n.setupSwitchReturn(l10n.setupRuntimeOne)),
+        );
+        await tester.pumpAndSettle();
         expect(
           find.text(l10n.setupSwitchReturn(l10n.setupRuntimeOne)).hitTestable(),
           findsOneWidget,
@@ -774,6 +802,7 @@ void main() {
           'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\nruntime=opencode1\n';
       fixture.switchFails = true;
       await fixture.mount(tester);
+      await openOtherVersions(tester);
       await tester.tap(find.text('Try OpenCode 2'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Switch version'));
@@ -797,6 +826,7 @@ void main() {
     fixture.statusOutput =
         'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\nruntime=opencode1\n';
     await fixture.mount(tester);
+    await openOtherVersions(tester);
     await tester.tap(find.text('Try OpenCode 2'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Switch version'));
@@ -819,6 +849,7 @@ void main() {
     fixture.inventoryOutput =
         'ubuntu=installed\nversion=0.0.0-beta-18600\nruntime=opencode2\n';
     await fixture.mount(tester);
+    await openOtherVersions(tester);
     expect(find.text('Return to OpenCode 1'), findsNothing);
     expect(find.textContaining('keeps its existing data'), findsOneWidget);
     expect(fixture.switchCalls, 0);
@@ -848,13 +879,17 @@ void main() {
           'phase=ready\nport=4096\nrunner=proot\nversion=1.18.29\nruntime=opencode1\n';
       await fixture.mount(tester);
       expect(fixture.connection.api, same(remoteApi));
+      await openOtherVersions(tester);
       await tester.tap(find.text('Try OpenCode 2'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Switch version'));
       await tester.pumpAndSettle();
       expect(fixture.store.selectedID, remote.id);
       expect(fixture.connection.api, same(remoteApi));
-      expect(find.text('Connect to OpenCode 2'), findsOneWidget);
+      expect(
+        find.text('Connect to OpenCode 2', skipOffstage: false),
+        findsOneWidget,
+      );
     },
   );
 
@@ -1130,6 +1165,7 @@ void main() {
       fixture.pendingLaunch = Completer<Map<String, Object>>();
       fixture.switchPhase = 'installing_opencode';
       await fixture.mount(tester, now: () => now);
+      await openOtherVersions(tester);
       await tester.tap(find.text('Try OpenCode 2'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Switch version'));
@@ -1537,10 +1573,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(fixture.launchCalls, 1);
-      expect(
-        fixture.launchedScript,
-        contains("setup '4096' '2.0.10'"),
-      );
+      expect(fixture.launchedScript, contains("setup '4096' '2.0.10'"));
       final saved = fixture.store.savedProfiles.single;
       expect(saved.flavor, ServerFlavor.v2);
       expect(saved.username, 'opencode');
@@ -1605,10 +1638,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(fixture.launchCalls, 1);
-      expect(
-        fixture.launchedScript,
-        contains("setup '4096' '2.0.10'"),
-      );
+      expect(fixture.launchedScript, contains("setup '4096' '2.0.10'"));
       expect(fixture.store.savedProfiles.single.flavor, ServerFlavor.v2);
       await tester.pumpWidget(const SizedBox.shrink());
     },
@@ -1655,9 +1685,7 @@ void main() {
       await tester.tap(find.text('Reinstall & start').hitTestable());
       await tester.pumpAndSettle();
       expect(
-        find.textContaining(
-          'Replace OpenCode 2.0.10 with 2.0.10',
-        ),
+        find.textContaining('Replace OpenCode 2.0.10 with 2.0.10'),
         findsOneWidget,
       );
       expect(fixture.launchCalls, 1);

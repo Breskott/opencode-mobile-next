@@ -16960,4 +16960,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatUiTipLongPressForActions =>
       'long-press a message for its actions';
+
+  @override
+  String get phoneServerStoppedTitle => 'The server on this phone is stopped';
+
+  @override
+  String get phoneServerStoppedBody =>
+      'It stops when the phone restarts or Android closes Termux to save battery. Your conversations are kept; start it again to continue.';
+
+  @override
+  String get phoneServerStartAndConnect => 'Start and connect';
+
+  @override
+  String get setupOtherVersions => 'Other OpenCode versions';
+
+  @override
+  String get settingsHubThisApp => 'This app';
 }

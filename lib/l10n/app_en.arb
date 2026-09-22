@@ -18111,5 +18111,22 @@
   "@setupStoppedByRestart": {
     "description": "Phone server status after the phone restarted; the server is simply stopped"
   },
-  "chatUiTipLongPressForActions": "long-press a message for its actions"
+  "chatUiTipLongPressForActions": "long-press a message for its actions",
+  "phoneServerStoppedTitle": "The server on this phone is stopped",
+  "@phoneServerStoppedTitle": {
+    "description": "Title when the app-managed phone server is not running"
+  },
+  "phoneServerStoppedBody": "It stops when the phone restarts or Android closes Termux to save battery. Your conversations are kept; start it again to continue.",
+  "@phoneServerStoppedBody": {
+    "description": "Explanation when the app-managed phone server is not running"
+  },
+  "phoneServerStartAndConnect": "Start and connect",
+  "@phoneServerStartAndConnect": {
+    "description": "Button that starts the phone server and connects to it"
+  },
+  "setupOtherVersions": "Other OpenCode versions",
+  "@setupOtherVersions": {
+    "description": "Folded section on the On this phone screen for switching between OpenCode 1 and 2"
+  },
+  "settingsHubThisApp": "This app"
 }

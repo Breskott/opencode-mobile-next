@@ -22,6 +22,8 @@ import 'platform/share_intent.dart';
 import 'domain/session_handoff.dart';
 import 'domain/team_link.dart';
 import 'state/connection.dart';
+import 'state/local_server_controls.dart';
+import 'termux/bridge.dart';
 import 'state/profiles.dart';
 import 'update/desktop_release_check.dart';
 import 'update/shorebird_update_notice.dart';
@@ -1386,6 +1388,36 @@ class _RootState extends ConsumerState<_Root> {
     setState(() {});
   }
 
+  bool _startingPhoneServer = false;
+
+  Future<void> _startPhoneServer() async {
+    if (_startingPhoneServer) return;
+    setState(() => _startingPhoneServer = true);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final strings = lookupAppLocalizations(Localizations.localeOf(context));
+    try {
+      await LocalServerControls(
+        store: _controller.store,
+        connection: _controller,
+      ).restart();
+    } on LocalServerControlFailure catch (failure) {
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(
+            failure.message.isEmpty
+                ? strings.phoneServerStartFailed
+                : failure.message,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _startingPhoneServer = false);
+    }
+    if (!mounted) return;
+    _started = false;
+    _connectSaved();
+  }
+
   void _connectSaved() {
     if (_started) return;
     final conn = _controller;
@@ -1445,6 +1477,15 @@ class _RootState extends ConsumerState<_Root> {
               !conn.usesConnectionToken && platformCapabilities.supportsTermux
               ? () => navigator.pushNamed('/termux-setup')
               : null,
+          // The app's own phone server: when nothing answers, it is stopped
+          // (a phone restart, Android closing Termux), and one tap starts it.
+          onStartPhoneServer:
+              !conn.usesConnectionToken &&
+                  platformCapabilities.supportsTermux &&
+                  TermuxBridge.managesServerUrl(conn.profile!.baseUrl)
+              ? _startPhoneServer
+              : null,
+          startingPhoneServer: _startingPhoneServer,
           onRetry: () {
             _started = false;
             _connectSaved();

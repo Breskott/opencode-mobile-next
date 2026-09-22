@@ -4544,5 +4544,10 @@
   "modelEffortExtraHigh": "مرتفع جدًا",
   "modelEffortMax": "أقصى",
   "setupStoppedByRestart": "أُعيد تشغيل الهاتف فتوقف الخادم المحلي. شغّله مجددًا عند الحاجة.",
-  "chatUiTipLongPressForActions": "اضغط مطولًا على رسالة لإجراءاتها"
+  "chatUiTipLongPressForActions": "اضغط مطولًا على رسالة لإجراءاتها",
+  "phoneServerStoppedTitle": "الخادم على هذا الهاتف متوقف",
+  "phoneServerStoppedBody": "يتوقف عند إعادة تشغيل الهاتف أو عندما يغلق Android تطبيق Termux لتوفير البطارية. محادثاتك محفوظة؛ شغّله مجددًا للمتابعة.",
+  "phoneServerStartAndConnect": "تشغيل واتصال",
+  "setupOtherVersions": "إصدارات OpenCode الأخرى",
+  "settingsHubThisApp": "هذا التطبيق"
 }

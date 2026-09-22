@@ -418,7 +418,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       id: 'settings-voice',
       kind: SearchEntryKind.hubRow,
       group: SettingsGroup.conversation,
-      icon: AppIconography.policy,
+      icon: AppIconography.mic,
       title: l10n.settingsHubVoice,
       keywords: l10n.settingsHubSearchVoiceAliases,
       // The speech models can neither download nor run off Android.
@@ -633,7 +633,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       id: 'app-diagnostics-entry',
       kind: SearchEntryKind.hubRow,
       group: SettingsGroup.help,
-      icon: AppIconography.privacy,
+      icon: AppIconography.activity,
       title: l10n.e7SettingsUi88,
       keywords: l10n.settingsHubSearchDiagnosticsAliases,
       pages: const ['app-diagnostics'],

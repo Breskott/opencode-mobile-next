@@ -411,7 +411,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final count = controller.diagnostics.count;
               return _CategoryRow(
                 rowKey: 'app-diagnostics-entry',
-                icon: AppIconography.privacy,
+                icon: AppIconography.activity,
                 title: copy.e7SettingsUi88,
                 subtitle: count == 0
                     ? copy.e7SettingsUi89

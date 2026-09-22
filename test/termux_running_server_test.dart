@@ -762,7 +762,7 @@ void main() {
     });
 
     testWidgets(
-      'the connected server stays on the card with Open and Disconnect',
+      'the connected server stays on the card with Disconnect, and no Open',
       (tester) async {
         final opened = <ServerProfile>[];
         var disconnects = 0;
@@ -780,10 +780,10 @@ void main() {
           find.text('Connected to the server on this phone'),
           findsOneWidget,
         );
-        expect(find.text('Open'), findsOneWidget);
-        await tester.tap(key('connect'));
-        await tester.pumpAndSettle();
-        expect(opened, [local]);
+        // Already connected: no button leading to where the person is.
+        expect(find.text('Open'), findsNothing);
+        expect(key('connect'), findsNothing);
+        expect(opened, isEmpty);
 
         await tester.tap(key('menu'));
         await tester.pumpAndSettle();

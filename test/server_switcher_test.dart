@@ -519,27 +519,16 @@ void main() {
       expect(find.byType(ServersScreen), findsOneWidget);
     });
 
-    testWidgets('connected through it: Open returns to the shell as it is', (
-      tester,
-    ) async {
+    testWidgets('connected through it: the card offers no Open, and the '
+        'connection is left as it is', (tester) async {
       fakeRunningPhoneServer();
       final connection = await pumpShell(tester, profiles: [phone, work]);
       await openSwitcher(tester);
+      // The row above already says it is the connected one.
       expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('termux-running-server-connect')),
-          matching: find.text('Open'),
-        ),
-        findsOneWidget,
-      );
-      await tester.tap(
         find.byKey(const ValueKey('termux-running-server-connect')),
+        findsNothing,
       );
-      await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('server-switcher-sheet')), findsNothing);
-      expect(find.byType(HomeScreen), findsOneWidget);
-      expect(find.byType(ServersScreen), findsNothing);
-      // No reconnect: that would drop the live connection it already has.
       expect(connection.attempted, isEmpty);
       expect(connection.disconnects, 0);
     });

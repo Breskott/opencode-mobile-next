@@ -144,4 +144,28 @@ void main() {
     const raw = 'Health check failed: SocketException: weird';
     expect(d(raw).rawError, raw);
   });
+
+  test('the app-managed phone server that does not answer is stopped, and '
+      'starting it is the fix', () {
+    final failure = ConnectionFailure.diagnose(
+      error: 'Connection refused',
+      baseUrl: 'http://127.0.0.1:4096',
+      supportsTermux: true,
+      managedPhoneServer: true,
+    );
+    expect(failure.primary, ConnectionFailureAction.startPhoneServer);
+    expect(failure.title, 'The server on this phone is stopped');
+    // No advice about tunnels and SSH for a server the app runs itself.
+    expect(failure.checks.join(' '), isNot(contains('adb')));
+
+    // Any other loopback server keeps the general advice.
+    expect(
+      ConnectionFailure.diagnose(
+        error: 'Connection refused',
+        baseUrl: 'http://127.0.0.1:4096',
+        supportsTermux: true,
+      ).primary,
+      ConnectionFailureAction.retry,
+    );
+  });
 }

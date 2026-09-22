@@ -13,6 +13,9 @@ import '../../l10n/app_localizations_en.dart';
 enum ConnectionFailureAction {
   retry,
   openTermuxSetup,
+
+  /// Start the app's own server on this phone, then connect.
+  startPhoneServer,
   updatePassword,
   updateToken,
   changeServer,
@@ -56,6 +59,11 @@ class ConnectionFailure {
     required bool supportsTermux,
     bool usesConnectionToken = false,
     bool requiresTokenReentry = false,
+
+    /// The address is the server this app installed and manages on the
+    /// phone. When nothing answers there, it is stopped (the phone
+    /// restarted, or Android closed Termux), and starting it is the fix.
+    bool managedPhoneServer = false,
     int attempts = 1,
     AppLocalizations? l10n,
   }) {
@@ -149,6 +157,18 @@ class ConnectionFailure {
           ?retried,
         ],
         primary: ConnectionFailureAction.changeServer,
+        rawError: error,
+      );
+    }
+    if (managedPhoneServer &&
+        !usesConnectionToken &&
+        loopback &&
+        (nothingAnswered || timedOut || !serverError && !unhealthy)) {
+      return ConnectionFailure(
+        title: l10n.phoneServerStoppedTitle,
+        explanation: l10n.phoneServerStoppedBody,
+        checks: [?retried],
+        primary: ConnectionFailureAction.startPhoneServer,
         rawError: error,
       );
     }

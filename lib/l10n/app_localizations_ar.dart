@@ -17217,4 +17217,20 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiTipLongPressForActions => 'اضغط مطولًا على رسالة لإجراءاتها';
+
+  @override
+  String get phoneServerStoppedTitle => 'الخادم على هذا الهاتف متوقف';
+
+  @override
+  String get phoneServerStoppedBody =>
+      'يتوقف عند إعادة تشغيل الهاتف أو عندما يغلق Android تطبيق Termux لتوفير البطارية. محادثاتك محفوظة؛ شغّله مجددًا للمتابعة.';
+
+  @override
+  String get phoneServerStartAndConnect => 'تشغيل واتصال';
+
+  @override
+  String get setupOtherVersions => 'إصدارات OpenCode الأخرى';
+
+  @override
+  String get settingsHubThisApp => 'هذا التطبيق';
 }

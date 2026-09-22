@@ -27423,6 +27423,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'long-press a message for its actions'**
   String get chatUiTipLongPressForActions;
+
+  /// Title when the app-managed phone server is not running
+  ///
+  /// In en, this message translates to:
+  /// **'The server on this phone is stopped'**
+  String get phoneServerStoppedTitle;
+
+  /// Explanation when the app-managed phone server is not running
+  ///
+  /// In en, this message translates to:
+  /// **'It stops when the phone restarts or Android closes Termux to save battery. Your conversations are kept; start it again to continue.'**
+  String get phoneServerStoppedBody;
+
+  /// Button that starts the phone server and connects to it
+  ///
+  /// In en, this message translates to:
+  /// **'Start and connect'**
+  String get phoneServerStartAndConnect;
+
+  /// Folded section on the On this phone screen for switching between OpenCode 1 and 2
+  ///
+  /// In en, this message translates to:
+  /// **'Other OpenCode versions'**
+  String get setupOtherVersions;
+
+  /// No description provided for @settingsHubThisApp.
+  ///
+  /// In en, this message translates to:
+  /// **'This app'**
+  String get settingsHubThisApp;
 }
 
 class _AppLocalizationsDelegate
