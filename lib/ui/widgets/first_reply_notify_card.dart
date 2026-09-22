@@ -141,7 +141,7 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
                         copy.firstRunNotifyTitle,
                         // The full explanation is the semantics label and
                         // Android's own prompt; two lines is enough here.
-                        maxLines: oneLine ? 1 : 2,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium,
                       ),

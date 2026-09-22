@@ -16518,7 +16518,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'A phone on a USB cable reaches it with:';
 
   @override
-  String get firstRunNotifyTitle => 'Get told when it\'s done?';
+  String get firstRunNotifyTitle => 'Notify you when a reply is ready?';
 
   @override
   String get firstRunNotifyBody =>

@@ -26713,7 +26713,7 @@ abstract class AppLocalizations {
   /// Conversation, first run: title of the one card shown above the composer after the first reply completes.
   ///
   /// In en, this message translates to:
-  /// **'Get told when it\'s done?'**
+  /// **'Notify you when a reply is ready?'**
   String get firstRunNotifyTitle;
 
   /// Conversation, first run: what accepting the notification card turns on, including its visible cost.

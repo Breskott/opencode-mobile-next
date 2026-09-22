@@ -16775,7 +16775,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get firstRunCommandsCodexUsb => 'يصل إليه هاتف موصول بكابل USB عبر:';
 
   @override
-  String get firstRunNotifyTitle => 'هل تريد إشعارًا عند الانتهاء؟';
+  String get firstRunNotifyTitle => 'هل نُعلمك عندما يجهز الرد؟';
 
   @override
   String get firstRunNotifyBody =>
