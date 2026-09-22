@@ -293,10 +293,7 @@ void main() {
       c.publish();
       await frames(tester);
       expect(find.textContaining('Loaded sessions only.'), findsNothing);
-      expect(
-        find.textContaining('Showing loaded conversations.'),
-        findsOneWidget,
-      );
+      // The load-more button alone says there is more.
       expect(find.text('Load more conversations'), findsOneWidget);
     },
   );
@@ -400,10 +397,7 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(
-      find.textContaining('Showing loaded conversations.'),
-      findsOneWidget,
-    );
+    expect(find.text('Load more conversations'), findsOneWidget);
     expect(c.returnBriefAcknowledgement.runs, isEmpty);
     expect(c.permissions, hasLength(1));
   });

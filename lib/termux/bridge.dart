@@ -1790,6 +1790,9 @@ start_server() {
     fail_setup 'Managed server did not start in an isolated process group' "$CURRENT_PORT"
   fi
   printf '%s %s\n' "$server_pid" "$server_start" > "$SERVER_PID"
+  # Which boot this server belongs to: after the phone restarts, a missing
+  # server is expected, not a crash.
+  cat /proc/sys/kernel/random/boot_id > "$SERVER_PID.boot" 2>/dev/null || true
 
   for _ in {1..30}; do
     if ! kill -0 "$server_pid" 2>/dev/null; then
@@ -2108,8 +2111,15 @@ status() {
     if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null ||
        { [ -n "$saved_start" ] && [ "$saved_start" != "$current_start" ]; } ||
        ! server_process "$pid" "$(read_state_value port)"; then
-      write_state failed 'The local OpenCode server stopped unexpectedly' "$(read_state_value port)" proot '' '' '' crash
-      rm -f "$SERVER_PID" "$SERVER_LOG_ACTIVE"
+      local saved_boot current_boot
+      saved_boot=$(cat "$SERVER_PID.boot" 2>/dev/null || true)
+      current_boot=$(cat /proc/sys/kernel/random/boot_id 2>/dev/null || true)
+      if [ -n "$saved_boot" ] && [ -n "$current_boot" ] && [ "$saved_boot" != "$current_boot" ]; then
+        write_state stopped 'The phone restarted, so the local server stopped' "$(read_state_value port)"
+      else
+        write_state failed 'The local OpenCode server stopped unexpectedly' "$(read_state_value port)" proot '' '' '' crash
+      fi
+      rm -f "$SERVER_PID" "$SERVER_PID.boot" "$SERVER_LOG_ACTIVE"
       termux-wake-unlock >/dev/null 2>&1 || true
     elif [ -z "$saved_start" ] && [ -n "$current_start" ]; then
       printf '%s %s\n' "$pid" "$current_start" > "$SERVER_PID"
@@ -4021,7 +4031,9 @@ esac
   /// https://nodejs.org/dist/v24.21.0/SHASUMS256.txt (read 2026-09-19).
   /// x64 exists so the x86_64 emulator can run the same flow as a phone.
   ///
-  /// Paseo is pinned exactly: lib/paseo/ was verified against daemon 0.8.0.
+  /// Paseo is pinned exactly: lib/paseo/ was verified against daemon 0.8.0
+  /// and, with a real Claude Opus 5.5 turn, 0.9.1 (the first release whose
+  /// Claude model list includes Opus 5.5; 2026-09-23).
   /// Claude Code is not pinned; the installed version is recorded in the
   /// script's state and shown in the app.
   static const localAgentsPins = <String, String>{
@@ -4031,7 +4043,7 @@ esac
         '724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5',
     'node_sha256_x64':
         '6e1db87ef58b8819e5d5402eff1536491b18edd8eb7bee5ef7897876e88dc5ff',
-    'paseo_version': '0.8.0',
+    'paseo_version': '0.9.1',
   };
 
   /// The verbs `claude.sh` runs detached from the bridge shell (their

@@ -8548,7 +8548,7 @@ abstract class AppLocalizations {
   /// No description provided for @activitySelectedLocationsOnly.
   ///
   /// In en, this message translates to:
-  /// **'Last selected projects only'**
+  /// **'Watched in each server\'s current project'**
   String get activitySelectedLocationsOnly;
 
   /// No description provided for @activityBackgroundUpdates.
@@ -14800,7 +14800,7 @@ abstract class AppLocalizations {
   /// Chat journey: Tip: type / for commands · tap
   ///
   /// In en, this message translates to:
-  /// **'Tip: type / for commands · tap '**
+  /// **'Tip: type / for commands · '**
   String get chatUiTipTypeForCommandsTap;
 
   /// Chat journey: Title
@@ -27345,6 +27345,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needs you'**
   String get otherProjectsNeedsYou;
+
+  /// Menu item: reinstall Paseo and Claude Code at their current versions, keeping sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'Update Claude Code'**
+  String get localAgentUpdate;
+
+  /// Shown when the installed Paseo daemon is older than the app's pinned version
+  ///
+  /// In en, this message translates to:
+  /// **'An update adds the newest Claude models, such as Opus 5.5.'**
+  String get localAgentUpdateAvailable;
+
+  /// Button that updates Claude Code and Paseo on the phone
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get localAgentUpdateNow;
+
+  /// Small label after a model's name in the model picker when it was released in the last 30 days
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get modelNewBadge;
+
+  /// Reasoning effort level shown on the model picker and composer
+  ///
+  /// In en, this message translates to:
+  /// **'No thinking'**
+  String get modelEffortNone;
+
+  /// Reasoning effort level shown on the model picker and composer
+  ///
+  /// In en, this message translates to:
+  /// **'Minimal'**
+  String get modelEffortMinimal;
+
+  /// Reasoning effort level shown on the model picker and composer
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get modelEffortLow;
+
+  /// Reasoning effort level shown on the model picker and composer
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get modelEffortMedium;
+
+  /// Reasoning effort level shown on the model picker and composer
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get modelEffortHigh;
+
+  /// Reasoning effort level shown on the model picker and composer
+  ///
+  /// In en, this message translates to:
+  /// **'Extra high'**
+  String get modelEffortExtraHigh;
+
+  /// Reasoning effort level shown on the model picker and composer
+  ///
+  /// In en, this message translates to:
+  /// **'Max'**
+  String get modelEffortMax;
+
+  /// Phone server status after the phone restarted; the server is simply stopped
+  ///
+  /// In en, this message translates to:
+  /// **'The phone restarted, so the local server stopped. Start it again when you need it.'**
+  String get setupStoppedByRestart;
+
+  /// No description provided for @chatUiTipLongPressForActions.
+  ///
+  /// In en, this message translates to:
+  /// **'long-press a message for its actions'**
+  String get chatUiTipLongPressForActions;
 }
 
 class _AppLocalizationsDelegate

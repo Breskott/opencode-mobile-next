@@ -240,6 +240,8 @@ String setupUiMessage(AppLocalizations l10n, String message) {
         l10n.e7SetupServerStarting,
     'The local OpenCode server stopped unexpectedly':
         l10n.e7SetupUnexpectedStop,
+    'The phone restarted, so the local server stopped':
+        l10n.setupStoppedByRestart,
     'Could not check available storage before setup':
         l10n.e7SetupCheckStorageFailed,
     'The server started but authentication failed.': l10n.e7SetupAuthFailed,

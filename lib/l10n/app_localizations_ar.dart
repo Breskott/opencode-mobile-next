@@ -5146,7 +5146,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get activitySavedServers => 'الخوادم المحفوظة';
 
   @override
-  String get activitySelectedLocationsOnly => 'آخر المشاريع المحددة فقط';
+  String get activitySelectedLocationsOnly =>
+      'تتم متابعة المشروع الحالي لكل خادم';
 
   @override
   String get activityBackgroundUpdates => 'تحديثات الخلفية';
@@ -9063,7 +9064,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiTimestampsUsage => 'الطوابع الزمنية والاستخدام';
 
   @override
-  String get chatUiTipTypeForCommandsTap => 'تلميح: اكتب / للأوامر · اضغط ';
+  String get chatUiTipTypeForCommandsTap => 'تلميح: اكتب / للأوامر · ';
 
   @override
   String get chatUiTitle => 'العنوان';
@@ -17175,4 +17176,45 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get otherProjectsNeedsYou => 'بانتظارك';
+
+  @override
+  String get localAgentUpdate => 'تحديث Claude Code';
+
+  @override
+  String get localAgentUpdateAvailable =>
+      'يضيف التحديث أحدث نماذج Claude، مثل Opus 5.5.';
+
+  @override
+  String get localAgentUpdateNow => 'تحديث';
+
+  @override
+  String get modelNewBadge => 'جديد';
+
+  @override
+  String get modelEffortNone => 'بلا تفكير';
+
+  @override
+  String get modelEffortMinimal => 'أدنى';
+
+  @override
+  String get modelEffortLow => 'منخفض';
+
+  @override
+  String get modelEffortMedium => 'متوسط';
+
+  @override
+  String get modelEffortHigh => 'مرتفع';
+
+  @override
+  String get modelEffortExtraHigh => 'مرتفع جدًا';
+
+  @override
+  String get modelEffortMax => 'أقصى';
+
+  @override
+  String get setupStoppedByRestart =>
+      'أُعيد تشغيل الهاتف فتوقف الخادم المحلي. شغّله مجددًا عند الحاجة.';
+
+  @override
+  String get chatUiTipLongPressForActions => 'اضغط مطولًا على رسالة لإجراءاتها';
 }

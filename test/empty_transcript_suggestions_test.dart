@@ -32,4 +32,13 @@ void main() {
       ]);
     }
   });
+
+  test('the phone server folder of projects is not offered as a project', () {
+    final suggestions = emptyTranscriptSuggestions(directory: '/root/projects');
+    expect(suggestions.any((s) => s.contains('projects project')), isFalse);
+    expect(
+      emptyTranscriptSuggestions(directory: '/root/projects/FinanceHub3').first,
+      'Explain the FinanceHub3 project',
+    );
+  });
 }

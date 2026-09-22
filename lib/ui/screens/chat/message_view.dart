@@ -166,6 +166,14 @@ List<String> emptyTranscriptSuggestions({
       .where((part) => part.isNotEmpty)
       .toList();
   final name = parts.isEmpty ? trimmed : parts.last;
+  // The phone server's folder of projects is not a project; "Explain the
+  // projects project" asked about nothing.
+  if (trimmed.replaceAll('\\', '/').endsWith('/root/projects')) {
+    return [
+      strings.chatUiListWhatSInThisDirectory,
+      strings.chatUiFindAndFixABug,
+    ];
+  }
   return [
     strings.chatUiExplainProject(name),
     strings.chatUiWhatChangedRecently,
@@ -289,18 +297,10 @@ class _EmptyTranscript extends StatelessWidget {
                                 context,
                               ).chatUiTipTypeForCommandsTap,
                             ),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.middle,
-                              child: Icon(
-                                AppIconography.more,
-                                size: 14,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
                             TextSpan(
                               text: _chatL10n(
                                 context,
-                              ).chatUiUnderAMessageForActions,
+                              ).chatUiTipLongPressForActions,
                             ),
                           ],
                         ),
