@@ -5103,7 +5103,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activitySavedServers => 'Saved servers';
 
   @override
-  String get activitySelectedLocationsOnly => 'Last selected projects only';
+  String get activitySelectedLocationsOnly =>
+      'Watched in each server\'s current project';
 
   @override
   String get activityBackgroundUpdates => 'Background updates';
@@ -8957,7 +8958,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiTimestampsUsage => 'Timestamps & usage';
 
   @override
-  String get chatUiTipTypeForCommandsTap => 'Tip: type / for commands · tap ';
+  String get chatUiTipTypeForCommandsTap => 'Tip: type / for commands · ';
 
   @override
   String get chatUiTitle => 'Title';
@@ -16951,4 +16952,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelEffortMax => 'Max';
+
+  @override
+  String get setupStoppedByRestart =>
+      'The phone restarted, so the local server stopped. Start it again when you need it.';
+
+  @override
+  String get chatUiTipLongPressForActions =>
+      'long-press a message for its actions';
 }

@@ -1790,6 +1790,9 @@ start_server() {
     fail_setup 'Managed server did not start in an isolated process group' "$CURRENT_PORT"
   fi
   printf '%s %s\n' "$server_pid" "$server_start" > "$SERVER_PID"
+  # Which boot this server belongs to: after the phone restarts, a missing
+  # server is expected, not a crash.
+  cat /proc/sys/kernel/random/boot_id > "$SERVER_PID.boot" 2>/dev/null || true
 
   for _ in {1..30}; do
     if ! kill -0 "$server_pid" 2>/dev/null; then
@@ -2108,8 +2111,15 @@ status() {
     if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null ||
        { [ -n "$saved_start" ] && [ "$saved_start" != "$current_start" ]; } ||
        ! server_process "$pid" "$(read_state_value port)"; then
-      write_state failed 'The local OpenCode server stopped unexpectedly' "$(read_state_value port)" proot '' '' '' crash
-      rm -f "$SERVER_PID" "$SERVER_LOG_ACTIVE"
+      local saved_boot current_boot
+      saved_boot=$(cat "$SERVER_PID.boot" 2>/dev/null || true)
+      current_boot=$(cat /proc/sys/kernel/random/boot_id 2>/dev/null || true)
+      if [ -n "$saved_boot" ] && [ -n "$current_boot" ] && [ "$saved_boot" != "$current_boot" ]; then
+        write_state stopped 'The phone restarted, so the local server stopped' "$(read_state_value port)"
+      else
+        write_state failed 'The local OpenCode server stopped unexpectedly' "$(read_state_value port)" proot '' '' '' crash
+      fi
+      rm -f "$SERVER_PID" "$SERVER_PID.boot" "$SERVER_LOG_ACTIVE"
       termux-wake-unlock >/dev/null 2>&1 || true
     elif [ -z "$saved_start" ] && [ -n "$current_start" ]; then
       printf '%s %s\n' "$pid" "$current_start" > "$SERVER_PID"

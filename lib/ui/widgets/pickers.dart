@@ -992,8 +992,9 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
     );
   }
 
+  // 1,048,576 reads "1M", not "1.0M"; 1,050,000 too.
   static String _compactNumber(int value) => value >= 1000000
-      ? '${(value / 1000000).toStringAsFixed(value % 1000000 == 0 ? 0 : 1)}M'
+      ? '${(value / 1000000).toStringAsFixed(1).replaceFirst(RegExp(r'\.0$'), '')}M'
       : value >= 1000
       ? '${(value / 1000).round()}K'
       : '$value';

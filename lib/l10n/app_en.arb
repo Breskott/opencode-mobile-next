@@ -2932,7 +2932,7 @@
   "activityUnknownStatusDetail": "No requests loaded. Some server activity is still unknown.",
   "activityCheckAgain": "Try again",
   "activitySavedServers": "Saved servers",
-  "activitySelectedLocationsOnly": "Last selected projects only",
+  "activitySelectedLocationsOnly": "Watched in each server's current project",
   "activityBackgroundUpdates": "Background updates",
   "activityBackgroundOffDetail": "Off · choose when to stay connected",
   "activityPendingCount": "{count} pending",
@@ -7800,7 +7800,7 @@
   "@chatUiTimestampsUsage": {
     "description": "Chat journey: Timestamps & usage"
   },
-  "chatUiTipTypeForCommandsTap": "Tip: type / for commands · tap ",
+  "chatUiTipTypeForCommandsTap": "Tip: type / for commands · ",
   "@chatUiTipTypeForCommandsTap": {
     "description": "Chat journey: Tip: type / for commands · tap "
   },
@@ -18106,5 +18106,10 @@
   "modelEffortMax": "Max",
   "@modelEffortMax": {
     "description": "Reasoning effort level shown on the model picker and composer"
-  }
+  },
+  "setupStoppedByRestart": "The phone restarted, so the local server stopped. Start it again when you need it.",
+  "@setupStoppedByRestart": {
+    "description": "Phone server status after the phone restarted; the server is simply stopped"
+  },
+  "chatUiTipLongPressForActions": "long-press a message for its actions"
 }

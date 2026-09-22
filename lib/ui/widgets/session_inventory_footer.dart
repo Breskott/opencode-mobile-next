@@ -26,20 +26,21 @@ class SessionInventoryFooter extends StatelessWidget {
         return const SizedBox.shrink();
       }
       return Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              error ??
-                  (loading
-                      ? l10n.e7WorkspaceLoadingSessions
-                      : l10n.sessionsLoadedOnly),
-              style: error == null
-                  ? null
-                  : TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-            const SizedBox(height: 6),
+            // The button says what it does; a sentence repeating it under
+            // a short list was noise. Only an error or loading is worth words.
+            if (error != null || loading) ...[
+              Text(
+                error ?? l10n.e7WorkspaceLoadingSessions,
+                style: error == null
+                    ? null
+                    : TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+              const SizedBox(height: 6),
+            ],
             if (loading) const LinearProgressIndicator(minHeight: 2),
             if ((controller.sessionsError != null || pinError) && canContinue)
               TextButton(

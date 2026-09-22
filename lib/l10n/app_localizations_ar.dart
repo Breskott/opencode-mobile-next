@@ -5146,7 +5146,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get activitySavedServers => 'الخوادم المحفوظة';
 
   @override
-  String get activitySelectedLocationsOnly => 'آخر المشاريع المحددة فقط';
+  String get activitySelectedLocationsOnly =>
+      'تتم متابعة المشروع الحالي لكل خادم';
 
   @override
   String get activityBackgroundUpdates => 'تحديثات الخلفية';
@@ -9063,7 +9064,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiTimestampsUsage => 'الطوابع الزمنية والاستخدام';
 
   @override
-  String get chatUiTipTypeForCommandsTap => 'تلميح: اكتب / للأوامر · اضغط ';
+  String get chatUiTipTypeForCommandsTap => 'تلميح: اكتب / للأوامر · ';
 
   @override
   String get chatUiTitle => 'العنوان';
@@ -17209,4 +17210,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get modelEffortMax => 'أقصى';
+
+  @override
+  String get setupStoppedByRestart =>
+      'أُعيد تشغيل الهاتف فتوقف الخادم المحلي. شغّله مجددًا عند الحاجة.';
+
+  @override
+  String get chatUiTipLongPressForActions => 'اضغط مطولًا على رسالة لإجراءاتها';
 }

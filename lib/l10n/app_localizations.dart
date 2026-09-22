@@ -8548,7 +8548,7 @@ abstract class AppLocalizations {
   /// No description provided for @activitySelectedLocationsOnly.
   ///
   /// In en, this message translates to:
-  /// **'Last selected projects only'**
+  /// **'Watched in each server\'s current project'**
   String get activitySelectedLocationsOnly;
 
   /// No description provided for @activityBackgroundUpdates.
@@ -14800,7 +14800,7 @@ abstract class AppLocalizations {
   /// Chat journey: Tip: type / for commands · tap
   ///
   /// In en, this message translates to:
-  /// **'Tip: type / for commands · tap '**
+  /// **'Tip: type / for commands · '**
   String get chatUiTipTypeForCommandsTap;
 
   /// Chat journey: Title
@@ -27411,6 +27411,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Max'**
   String get modelEffortMax;
+
+  /// Phone server status after the phone restarted; the server is simply stopped
+  ///
+  /// In en, this message translates to:
+  /// **'The phone restarted, so the local server stopped. Start it again when you need it.'**
+  String get setupStoppedByRestart;
+
+  /// No description provided for @chatUiTipLongPressForActions.
+  ///
+  /// In en, this message translates to:
+  /// **'long-press a message for its actions'**
+  String get chatUiTipLongPressForActions;
 }
 
 class _AppLocalizationsDelegate
