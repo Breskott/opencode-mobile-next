@@ -27471,6 +27471,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 working} other{{count} working}}'**
   String otherServerWorking(int count);
+
+  /// Composer placeholder naming the agent the server runs, e.g. Claude Code
+  ///
+  /// In en, this message translates to:
+  /// **'Ask {agent}…'**
+  String chatUiAskAgent(String agent);
 }
 
 class _AppLocalizationsDelegate

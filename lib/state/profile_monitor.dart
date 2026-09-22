@@ -758,24 +758,35 @@ class ProfileMonitor extends ChangeNotifier {
     notifyListeners();
     MonitorGatewayPair? pair;
     try {
-      if (profile.requiresPasswordReentry ||
-          validateServerProfileUrl(
-                profile.baseUrl,
-                username: profile.username,
-                password: profile.password,
-              ) !=
-              null) {
-        throw StateError('Unavailable');
-      }
+      // Each kind of server is checked by its own address rules: a Paseo
+      // daemon is a ws:// socket, which the OpenCode check refuses.
+      final unusable = profile.backend == ServerBackend.paseo
+          ? profile.requiresCodexTokenReentry ||
+                validatePaseoServerUrl(profile.baseUrl) != null
+          : profile.requiresPasswordReentry ||
+                validateServerProfileUrl(
+                      profile.baseUrl,
+                      username: profile.username,
+                      password: profile.password,
+                    ) !=
+                    null;
+      if (unusable) throw StateError('Unavailable');
       pair = createGateway(profile);
       _activeGateway = pair.gateway;
       _activeProfileID = id;
+      // A Paseo server is bound to its project folder; with no project
+      // chosen here yet, that folder is the one to read.
+      final directory =
+          location?.directory ??
+          (profile.backend == ServerBackend.paseo
+              ? profile.codexDirectory
+              : null);
       pair.gateway.setLocation(
-        directory: location?.directory,
+        directory: directory,
         workspace: location?.workspace,
       );
       pair.operations.setLocation(
-        directory: location?.directory,
+        directory: directory,
         workspace: location?.workspace,
       );
       final gateway = pair.gateway;

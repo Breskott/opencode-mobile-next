@@ -28,6 +28,7 @@ import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/offline_queue.dart';
 import '../../state/connection.dart';
+import '../../state/profiles.dart' show ServerBackend;
 import '../../state/conversation_nudges.dart';
 import '../../state/nudges.dart';
 import '../../state/review_handoff.dart';
@@ -7652,6 +7653,13 @@ class _ChatScreenState extends State<ChatScreen>
                                 ),
                                 child: _composerDropTarget(
                                   child: _ChatComposer(
+                                    // The prompt goes to the agent this
+                                    // server runs, and says so.
+                                    agentName: switch (_conn.profile?.backend) {
+                                      ServerBackend.paseo => 'Claude Code',
+                                      ServerBackend.codex => 'Codex',
+                                      _ => null,
+                                    },
                                     isolated: _conn.isIsolated,
                                     compact: compactComposer,
                                     // The multiline field scrolls within its

@@ -4552,5 +4552,6 @@
   "settingsHubThisApp": "هذا التطبيق",
   "otherServersTitle": "على خوادمك الأخرى",
   "otherServerNeedsYou": "بانتظارك",
-  "otherServerWorking": "{count, plural, =1{محادثة قيد العمل} other{{count} قيد العمل}}"
+  "otherServerWorking": "{count, plural, =1{محادثة قيد العمل} other{{count} قيد العمل}}",
+  "chatUiAskAgent": "اسأل {agent}…"
 }

@@ -18145,5 +18145,14 @@
         "type": "int"
       }
     }
+  },
+  "chatUiAskAgent": "Ask {agent}…",
+  "@chatUiAskAgent": {
+    "description": "Composer placeholder naming the agent the server runs, e.g. Claude Code",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
   }
 }

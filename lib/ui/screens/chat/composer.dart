@@ -20,6 +20,7 @@ enum _PromptTool {
 
 class _ChatComposer extends StatelessWidget {
   const _ChatComposer({
+    this.agentName,
     required this.compact,
     this.isolated = false,
     this.maxInputHeight = double.infinity,
@@ -80,6 +81,9 @@ class _ChatComposer extends StatelessWidget {
     this.contextUsage,
     this.modelSwitch,
   });
+
+  /// Who the prompt goes to ("Claude Code"); null means OpenCode.
+  final String? agentName;
 
   final bool compact;
   final bool isolated;
@@ -465,6 +469,7 @@ class _ChatComposer extends StatelessWidget {
             maxHeight: singleLineViewport ?? maxInputHeight,
           ),
           child: _ComposerField(
+            agentName: agentName,
             isolated: isolated,
             promptAttachmentsSupported: promptAttachmentsSupported,
             controller: controller,
@@ -675,6 +680,7 @@ class _ChatComposer extends StatelessWidget {
 
 class _ComposerField extends StatelessWidget {
   const _ComposerField({
+    this.agentName,
     required this.controller,
     required this.focusNode,
     required this.onContentInserted,
@@ -687,6 +693,8 @@ class _ComposerField extends StatelessWidget {
     this.isolated = false,
     this.promptAttachmentsSupported = true,
   });
+
+  final String? agentName;
 
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -723,7 +731,9 @@ class _ComposerField extends StatelessWidget {
           : ContentInsertionConfiguration(onContentInserted: onContentInserted),
       textCapitalization: TextCapitalization.sentences,
       decoration: InputDecoration(
-        hintText: _chatL10n(context).chatUiAskOpenCode,
+        hintText: agentName == null
+            ? _chatL10n(context).chatUiAskOpenCode
+            : _chatL10n(context).chatUiAskAgent(agentName!),
         hintMaxLines: expands ? 1 : null,
         filled: false,
         border: InputBorder.none,

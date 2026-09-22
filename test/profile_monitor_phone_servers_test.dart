@@ -45,12 +45,14 @@ void main() {
     final store = await monitorStore(count: 1);
     await store.upsert(
       ServerProfile(
-        id: 'claude',
-        name: 'Claude Code (this phone)',
-        baseUrl: 'http://127.0.0.1:6767',
-        username: '',
-        password: '',
-      )..backend = ServerBackend.paseo,
+          id: 'claude',
+          name: 'Claude Code (this phone)',
+          baseUrl: 'ws://127.0.0.1:6767',
+          username: '',
+          password: '',
+        )
+        ..backend = ServerBackend.paseo
+        ..codexDirectory = '/home/oc/work',
     );
     return store;
   }

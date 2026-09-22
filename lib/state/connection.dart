@@ -1835,7 +1835,15 @@ class ConnectionController extends ChangeNotifier {
   /// `opencode serve` generations) before giving up; the corrected retry runs
   /// with it false so detection can never loop.
   Future<void> connect(ServerProfile profile, {bool redetectOnFailure = true}) {
-    return _connectProfile(profile, redetectOnFailure: redetectOnFailure);
+    return _connectProfile(
+      profile,
+      redetectOnFailure: redetectOnFailure,
+    ).whenComplete(() {
+      // A server saved since the monitor last looked (a second agent on
+      // this phone) is watched from now, and the one just left is read
+      // fresh instead of on the next tick.
+      if (!isIsolated && !_disposed) profileMonitor.start();
+    });
   }
 
   Future<void> _connectProfile(
