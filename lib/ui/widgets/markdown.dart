@@ -572,10 +572,14 @@ class _Heading extends StatelessWidget {
       ),
       _ => textTheme.titleSmall,
     };
-    return Text.rich(
-      TranscriptHighlight.decorate(context, TextSpan(text: text)),
+    // A heading is prose too: a link, `code` or emphasis in it is drawn,
+    // not shown as markup.
+    return DefaultTextStyle.merge(
       style: (style ?? textTheme.titleMedium!).copyWith(
         fontWeight: FontWeight.w700,
+      ),
+      child: Builder(
+        builder: (context) => Text.rich(_InlineParser(text).parse(context)),
       ),
     );
   }
@@ -737,9 +741,19 @@ class _InlineParser {
     source: src,
   );
 
-  List<InlineSpan> _spans(BuildContext context) {
+  List<InlineSpan> _spans(BuildContext context) =>
+      _spansOf(context, src, DefaultTextStyle.of(context).style);
+
+  /// Emphasis wraps other markup (`**[Download](url)**`), so its contents
+  /// are parsed in turn, in the emphasised style.
+  List<InlineSpan> _emphasis(
+    BuildContext context,
+    String text,
+    TextStyle style,
+  ) => [TextSpan(style: style, children: _spansOf(context, text, style))];
+
+  List<InlineSpan> _spansOf(BuildContext context, String src, TextStyle base) {
     final spans = <InlineSpan>[];
-    final base = DefaultTextStyle.of(context).style;
     final theme = Theme.of(context);
     var pos = 0;
     for (final m in _pattern.allMatches(src)) {
@@ -777,31 +791,38 @@ class _InlineParser {
           spans.add(_codeSpan(code, base: base, context: context));
         }
       } else if (m.group(5) != null) {
-        spans.add(
-          TextSpan(
-            text: m.group(5),
-            style: base.copyWith(decoration: TextDecoration.lineThrough),
+        spans.addAll(
+          _emphasis(
+            context,
+            m.group(5)!,
+            base.copyWith(decoration: TextDecoration.lineThrough),
           ),
         );
       } else if (m.group(1) != null || m.group(4) != null) {
-        spans.add(
-          TextSpan(
-            text: m.group(1) ?? m.group(4),
-            style: base.copyWith(fontWeight: FontWeight.w700),
+        spans.addAll(
+          _emphasis(
+            context,
+            (m.group(1) ?? m.group(4))!,
+            base.copyWith(
+              fontWeight: FontWeight.w700,
+              fontStyle: m.group(1) != null ? FontStyle.italic : null,
+            ),
           ),
         );
       } else if (m.group(2) != null) {
-        spans.add(
-          TextSpan(
-            text: m.group(2),
-            style: base.copyWith(fontWeight: FontWeight.w700),
+        spans.addAll(
+          _emphasis(
+            context,
+            m.group(2)!,
+            base.copyWith(fontWeight: FontWeight.w700),
           ),
         );
       } else if (m.group(3) != null) {
-        spans.add(
-          TextSpan(
-            text: m.group(3),
-            style: base.copyWith(fontStyle: FontStyle.italic),
+        spans.addAll(
+          _emphasis(
+            context,
+            m.group(3)!,
+            base.copyWith(fontStyle: FontStyle.italic),
           ),
         );
       } else {

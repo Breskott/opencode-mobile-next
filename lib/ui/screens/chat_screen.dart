@@ -7096,6 +7096,9 @@ class _ChatScreenState extends State<ChatScreen>
                                                         .contains(m.info.id)) {
                                                       return const SizedBox.shrink();
                                                     }
+                                                    if (_isFoldedNotice(m)) {
+                                                      return const SizedBox.shrink();
+                                                    }
                                                     if (v2VariantPart(m)
                                                         case final tagged?) {
                                                       return V2TranscriptRow(

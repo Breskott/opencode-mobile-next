@@ -492,4 +492,21 @@ void main() {
       expect(scroll.offset, before);
     },
   );
+
+  testWidgets('links and code inside headings and bold are drawn, not shown', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      const MarkdownText(
+        '# [Download APK](http://localhost:4052/a.apk)\n\n'
+        '**[Open app](http://localhost:4051)** and `run`',
+      ),
+    );
+    Finder has(String text) => find.textContaining(text, findRichText: true);
+    expect(has('Download APK'), findsWidgets);
+    expect(has('Open app'), findsWidgets);
+    expect(has(']('), findsNothing);
+    expect(has('**'), findsNothing);
+  });
 }

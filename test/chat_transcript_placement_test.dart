@@ -294,6 +294,35 @@ void main() {
     },
   );
 
+  testWidgets('a notice filed mid-turn folds into the work, not between it', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Ship it')], created: 1),
+      _message('a1', 'assistant', [tool('t1', 'bash')], created: 2),
+      _message('n1', 'user', [
+        Part(
+          id: 'n1-p',
+          messageID: 'n1',
+          type: 'v2:notice',
+          toolName: 'synthetic',
+          filename: 'python3 release_discovery.py',
+          text: 'done',
+        ),
+      ], created: 3),
+      _message('a2', 'assistant', [tool('t2', 'read')], created: 4),
+      _message('a3', 'assistant', [_text('a3-t', 'Published.')], created: 5),
+    ]);
+
+    // One line for the whole turn's work, the notice inside it.
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.text('python3 release_discovery.py'), findsNothing);
+    expect(find.text('Published.'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
+    expect(find.text('python3 release_discovery.py'), findsOneWidget);
+  });
+
   testWidgets('a thought titles its step and explains itself inside it', (
     tester,
   ) async {

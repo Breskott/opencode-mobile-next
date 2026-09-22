@@ -953,42 +953,68 @@ IconData _workIcon(Iterable<Part> parts) {
 
 bool _isToolPart(Part part) => part.type == 'tool';
 
-/// Text the agent said on its way through a finished turn ("Now let me test
-/// each command:"). Once the turn is over it is part of the work, folded
-/// with it, and only the turn's last words stand as the answer.
-final _interimText = Expando<bool>('interim text');
+/// What a finished turn did on its way to the answer: the text the agent
+/// said between steps ("Now let me test each command:") and the notices the
+/// server filed mid-turn (a background command finishing). Once the turn is
+/// over they belong with the work, folded under its line; only the turn's
+/// last words stand as the answer.
+final _foldedIntoWork = Expando<bool>('folded into work');
 
-bool _isInterimText(Part part) => _interimText[part] ?? false;
+bool _isFoldedIntoWork(Object item) => _foldedIntoWork[item] ?? false;
 
-/// Marks the text of each finished turn that came before its last piece of
-/// work. The turn still running ([liveTail]) keeps everything in view: what
-/// the agent says while it works is how the reader follows along.
-void _markInterimText(
-  List<MessageWithParts> messages, {
-  bool liveTail = false,
-}) {
+/// A notice [_isFoldedIntoWork] took into the work line. It draws nothing of
+/// its own in the transcript.
+bool _isFoldedNotice(MessageWithParts message) => _isFoldedIntoWork(message);
+
+bool _foldableNotice(MessageWithParts message) {
+  final part = v2VariantPart(message);
+  return part != null &&
+      part.type == 'v2:notice' &&
+      BackgroundAgentResult.fromPart(part) == null;
+}
+
+/// Marks, for each finished turn, what folds into its work. The turn still
+/// running ([liveTail]) keeps everything in view: what the agent says while it
+/// works is how the reader follows along. Every mark is written each time,
+/// so a turn that is continued is unfolded again.
+void _markFoldedWork(List<MessageWithParts> messages, {bool liveTail = false}) {
   var start = 0;
   void closeTurn(int end, {required bool live}) {
+    // The turn in reading order: each entry is a part, or a notice message.
+    final entries = <Object>[];
+    var seenAssistant = false;
+    for (var i = start; i < end; i += 1) {
+      final message = messages[i];
+      _foldedIntoWork[message] = false;
+      if (message.info.role == 'assistant') {
+        seenAssistant = true;
+        for (final part in message.parts.where((part) => part.isRenderable)) {
+          _foldedIntoWork[part] = false;
+          entries.add(part);
+        }
+      } else if (seenAssistant && _foldableNotice(message)) {
+        entries.add(message);
+      }
+    }
     if (live) return;
-    final parts = [
-      for (var i = start; i < end; i += 1)
-        if (messages[i].info.role == 'assistant')
-          ...messages[i].parts.where((part) => part.isRenderable),
-    ];
-    final lastWork = parts.lastIndexWhere(
-      (part) => part.type == 'tool' || part.type == 'reasoning',
-    );
+    bool isWork(Object entry) =>
+        entry is Part && (entry.type == 'tool' || entry.type == 'reasoning');
+    bool isText(Object entry) => entry is Part && entry.type == 'text';
+    final lastWork = entries.lastIndexWhere(isWork);
+    if (lastWork < 0) return;
     // Text before the last work is on the way; but a turn that ended on a
     // tool call still said something last, and that stays the answer.
     var cutoff = lastWork;
-    if (!parts.skip(lastWork + 1).any((part) => part.type == 'text')) {
-      cutoff = parts.lastIndexWhere((part) => part.type == 'text');
-      while (cutoff > 0 && parts[cutoff - 1].type == 'text') {
+    if (!entries.skip(lastWork + 1).any(isText)) {
+      cutoff = entries.lastIndexWhere(isText);
+      while (cutoff > 0 && isText(entries[cutoff - 1])) {
         cutoff -= 1;
       }
     }
     for (var i = 0; i < cutoff; i += 1) {
-      if (parts[i].type == 'text') _interimText[parts[i]] = true;
+      if (isText(entries[i]) || entries[i] is MessageWithParts) {
+        _foldedIntoWork[entries[i]] = true;
+      }
     }
   }
 
@@ -1004,11 +1030,12 @@ List<List<Part>> _timelineDisplayParts(
   List<MessageWithParts> messages, {
   bool liveTail = false,
 }) {
-  _markInterimText(messages, liveTail: liveTail);
+  _markFoldedWork(messages, liveTail: liveTail);
   final display = List.generate(messages.length, (_) => <Part>[]);
   final pendingParts = <Part>[];
   String? pendingType;
   int? pendingOwner;
+  int? lastAssistant;
 
   void flushPending() {
     if (pendingOwner case final owner?) {
@@ -1025,7 +1052,10 @@ List<List<Part>> _timelineDisplayParts(
 
   void appendPart(int owner, Part part) {
     final mergeable =
-        part.type == 'tool' || part.type == 'text' || part.type == 'reasoning';
+        part.type == 'tool' ||
+        part.type == 'text' ||
+        part.type == 'reasoning' ||
+        _isFoldedIntoWork(part);
     if (!mergeable) {
       flushPending();
       display[owner].add(part);
@@ -1035,7 +1065,9 @@ List<List<Part>> _timelineDisplayParts(
     // (thoughts and tool calls). A stretch of work runs across as many steps
     // as it takes and belongs to the step that began it, so it can be drawn
     // as one thing.
-    final kind = part.type == 'text' && !_isInterimText(part) ? 'text' : 'work';
+    final kind = part.type == 'text' && !_isFoldedIntoWork(part)
+        ? 'text'
+        : 'work';
     if (pendingType != null && pendingType != kind) flushPending();
     pendingType ??= kind;
     pendingOwner ??= owner;
@@ -1045,11 +1077,22 @@ List<List<Part>> _timelineDisplayParts(
   for (var index = 0; index < messages.length; index += 1) {
     final message = messages[index];
     final parts = message.parts.where((part) => part.isRenderable);
+    if (_isFoldedNotice(message)) {
+      // Drawn inside the work line of the step that began the stretch.
+      for (final part in message.parts.where(
+        (part) => part.type == 'v2:notice',
+      )) {
+        _foldedIntoWork[part] = true;
+        appendPart(pendingOwner ?? lastAssistant!, part);
+      }
+      continue;
+    }
     if (message.info.role != 'assistant') {
       flushPending();
       display[index].addAll(parts);
       continue;
     }
+    lastAssistant = index;
 
     if (message.info.errorText != null && parts.isEmpty) flushPending();
     for (final part in parts) {
@@ -1059,7 +1102,8 @@ List<List<Part>> _timelineDisplayParts(
 
     final nextIsAssistant =
         index + 1 < messages.length &&
-        messages[index + 1].info.role == 'assistant';
+        (messages[index + 1].info.role == 'assistant' ||
+            _isFoldedNotice(messages[index + 1]));
     if (!nextIsAssistant) flushPending();
   }
   flushPending();
@@ -1080,12 +1124,14 @@ Part _mergeTextParts(List<Part> parts) {
     }
     buffer.write(part.text);
   }
-  return Part(
+  final merged = Part(
     id: first.id,
     messageID: first.messageID,
     type: first.type,
     text: buffer.toString(),
   );
+  if (parts.any(_isFoldedIntoWork)) _foldedIntoWork[merged] = true;
+  return merged;
 }
 
 class _AssistantPartRun {
@@ -1435,7 +1481,9 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
                             color: theme.colorScheme.primary,
                           ),
                         )
-                      else
+                      // Finished is the normal state; only the others are
+                      // marked.
+                      else if (_failed || _running || _notRun)
                         Icon(
                           _failed
                               ? AppIconography.error
@@ -1936,7 +1984,9 @@ class _MessageView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isUser = m.info.role == 'user';
-    final visibleParts = parts.where((p) => p.isRenderable).toList();
+    final visibleParts = parts
+        .where((p) => p.isRenderable || _isFoldedIntoWork(p))
+        .toList();
     final assistantRuns = isUser
         ? const <_AssistantPartRun>[]
         : _groupAssistantParts(visibleParts);
@@ -2239,7 +2289,7 @@ class _MessageView extends StatelessWidget {
       final type = run.parts.first.type;
       if (type == 'tool' ||
           type == 'reasoning' ||
-          _isInterimText(run.parts.first)) {
+          _isFoldedIntoWork(run.parts.first)) {
         work.add(run);
         continue;
       }
@@ -2255,7 +2305,12 @@ class _MessageView extends StatelessWidget {
     _AssistantPartRun run,
     List<_AssistantPartRun> all,
     bool streaming,
-  ) => run.grouped
+  ) => run.parts.first.type == 'v2:notice'
+      ? V2TranscriptRow(
+          part: run.parts.first,
+          messageId: run.parts.first.messageID ?? run.parts.first.id ?? '',
+        )
+      : run.grouped
       ? _ToolCallGroup(
           key: ValueKey(
             'tools:${run.parts.first.id ?? run.parts.first.callID}',
