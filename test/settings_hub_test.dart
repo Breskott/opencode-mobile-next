@@ -114,7 +114,7 @@ void main() {
   });
   tearDown(() => debugPlatformCapabilities = null);
 
-  testWidgets('the eight groups appear in the plan order, each keyed', (
+  testWidgets('the five groups appear in order, each keyed', (
     tester,
   ) async {
     final controller = await _controller();
@@ -125,11 +125,8 @@ void main() {
     const slugs = [
       'connection',
       'conversation-defaults',
-      'notifications',
-      'appearance',
       'agent-setup',
-      'usage',
-      'privacy',
+      'this-app',
       'help',
     ];
     expect(SettingsGroup.values.map((group) => group.slug), slugs);
@@ -489,8 +486,6 @@ void main() {
       await tester.pumpWidget(_app(bare));
       await tester.pumpAndSettle();
       expect(_row('settings-category-usage'), findsNothing);
-      expect(_row('settings-group-usage'), findsNothing);
-      expect(find.text(_en.settingsHubGroupUsage), findsNothing);
       expect(_row('settings-group-help'), findsOneWidget);
     });
   });

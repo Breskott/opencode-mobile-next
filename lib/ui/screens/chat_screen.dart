@@ -2656,7 +2656,14 @@ class _ChatScreenState extends State<ChatScreen>
       createdAt: createdAt,
     );
     _composer.clear();
-    _focus.requestFocus();
+    // On a phone the keyboard would keep three quarters of the screen from
+    // the reply the person just asked for; tapping the field brings it back.
+    // A desktop keeps focus for the next line.
+    if (desktopInteractions) {
+      _focus.requestFocus();
+    } else {
+      _focus.unfocus();
+    }
 
     // Optimistic user bubble.
     setState(() {
@@ -6591,6 +6598,26 @@ class _ChatScreenState extends State<ChatScreen>
 
   /// The model as the catalog names it, falling back to the presented
   /// provider/model pair; never a raw wire ID.
+  /// The turn footer's model ("opencode/mimo-v2.6-flash-free", or two
+  /// joined by an arrow) by the names the catalog gives them, as the
+  /// composer shows them.
+  String? _catalogModelNames(String? label) {
+    if (label == null) return null;
+    final models = _conn.catalog?.models ?? const <CatalogModel>[];
+    return label
+        .split(' → ')
+        .map((part) {
+          for (final model in models) {
+            if (presentedModelLabel(model.providerID, model.id) == part &&
+                model.name.trim().isNotEmpty) {
+              return model.name.trim();
+            }
+          }
+          return part;
+        })
+        .join(' → ');
+  }
+
   String? get _presentedModelLabel {
     final model = _conn.modelForSession(widget.sessionID);
     if (model == null) return null;
@@ -7102,10 +7129,17 @@ class _ChatScreenState extends State<ChatScreen>
                                                             : null,
                                                       );
                                                     }
-                                                    final meta = _messageMeta(
-                                                      _messages,
-                                                      index,
-                                                    );
+                                                    final rawMeta =
+                                                        _messageMeta(
+                                                          _messages,
+                                                          index,
+                                                        );
+                                                    final meta = rawMeta
+                                                        .withModelLabel(
+                                                          _catalogModelNames(
+                                                            rawMeta.modelLabel,
+                                                          ),
+                                                        );
                                                     final parts =
                                                         displayParts[index];
                                                     if (parts.isEmpty &&
@@ -7258,8 +7292,8 @@ class _ChatScreenState extends State<ChatScreen>
                                               ),
                                               if (_awayFromLatest)
                                                 Positioned(
-                                                  right: 14,
-                                                  bottom: 10,
+                                                  right: 6,
+                                                  bottom: 8,
                                                   child: _JumpToLatestButton(
                                                     onTap: _jumpToLatest,
                                                   ),

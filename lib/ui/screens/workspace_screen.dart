@@ -317,6 +317,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     if (error != null) _showError(error);
   }
 
+  static bool _isPhoneProjectsRoot(String path) =>
+      path.replaceAll(RegExp(r'/+$'), '') == '/root/projects';
+
   static String _basename(String path) {
     final parts = path.split('/').where((part) => part.isNotEmpty).toList();
     return parts.isEmpty ? path : parts.last;
@@ -497,12 +500,20 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         if (_hasProjectDetails)
           _ProjectHeader(
             key: const ValueKey('current-project-entry'),
+            // The phone server's folder of projects is where it starts, not
+            // a project: say a project is still to be chosen.
             name:
-                _selectedProject?.name ??
-                (_selectedDirectory == null
-                    ? _l10n(context).e7WorkspaceChooseProject
-                    : _basename(_selectedDirectory!)),
-            onTap: _openContextSheet,
+                _selectedDirectory == null ||
+                    _isPhoneProjectsRoot(_selectedDirectory!)
+                ? _l10n(context).e7WorkspaceChooseProject
+                : _selectedProject?.name ?? _basename(_selectedDirectory!),
+            // With no project yet there is nothing to describe or manage:
+            // go straight to the list, where creating one comes first.
+            onTap:
+                _selectedDirectory == null ||
+                    _isPhoneProjectsRoot(_selectedDirectory!)
+                ? _openProjects
+                : _openContextSheet,
           ),
         // Still context, not management: the conversation is running
         // somewhere other than the project root.

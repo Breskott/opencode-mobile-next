@@ -24,6 +24,8 @@ class SavedServerConnectionCard extends StatefulWidget {
     this.onOpenTermuxSetup,
     this.onUpdatePassword,
     this.onUpdateToken,
+    this.onStartPhoneServer,
+    this.startingPhoneServer = false,
   });
 
   final String profileName;
@@ -42,6 +44,12 @@ class SavedServerConnectionCard extends StatefulWidget {
   final VoidCallback? onOpenTermuxSetup;
   final VoidCallback? onUpdatePassword;
   final VoidCallback? onUpdateToken;
+
+  /// Starts the app-managed phone server; given only for that server.
+  final VoidCallback? onStartPhoneServer;
+
+  /// True while the phone server is being started.
+  final bool startingPhoneServer;
 
   @override
   State<SavedServerConnectionCard> createState() =>
@@ -65,6 +73,7 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
             usesConnectionToken: widget.usesConnectionToken,
             requiresTokenReentry: widget.requiresTokenReentry,
             attempts: widget.attempts,
+            managedPhoneServer: widget.onStartPhoneServer != null,
           )
         : null;
     final failed = failure != null;
@@ -154,7 +163,8 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
                       ),
                     ] else ...[
                       const SizedBox(height: 18),
-                      _Checks(checks: failure.checks),
+                      if (failure.checks.isNotEmpty)
+                        _Checks(checks: failure.checks),
                       const SizedBox(height: 6),
                       _DetailsExpander(
                         open: _detailsOpen,
@@ -177,6 +187,8 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
                             : null,
                         onUpdatePassword: widget.onUpdatePassword,
                         onUpdateToken: widget.onUpdateToken,
+                        onStartPhoneServer: widget.onStartPhoneServer,
+                        startingPhoneServer: widget.startingPhoneServer,
                       ),
                     ],
                   ],
@@ -346,7 +358,11 @@ class _Actions extends StatelessWidget {
     required this.onOpenTermuxSetup,
     required this.onUpdatePassword,
     required this.onUpdateToken,
+    this.onStartPhoneServer,
+    this.startingPhoneServer = false,
   });
+  final VoidCallback? onStartPhoneServer;
+  final bool startingPhoneServer;
   final ConnectionFailure failure;
   final VoidCallback onChangeServer;
   final VoidCallback onRetry;
@@ -376,6 +392,27 @@ class _Actions extends StatelessWidget {
       ),
     );
     final Widget primary = switch (failure.primary) {
+      ConnectionFailureAction.startPhoneServer
+          when onStartPhoneServer != null =>
+        FilledButton.icon(
+          key: const ValueKey('saved-server-start-phone'),
+          onPressed: startingPhoneServer ? null : onStartPhoneServer,
+          icon: startingPhoneServer
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(AppIconography.play, size: 19),
+          label: Text(
+            startingPhoneServer
+                ? lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).phoneServerStarting
+                : lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).phoneServerStartAndConnect,
+          ),
+        ),
       ConnectionFailureAction.openTermuxSetup when onOpenTermuxSetup != null =>
         FilledButton.icon(
           key: const ValueKey('saved-server-open-termux'),
@@ -430,8 +467,13 @@ class _Actions extends StatelessWidget {
         ),
       ),
     };
+    final startsServer =
+        failure.primary == ConnectionFailureAction.startPhoneServer &&
+        onStartPhoneServer != null;
     final primaryIsRetry =
         failure.primary == ConnectionFailureAction.retry ||
+        (failure.primary == ConnectionFailureAction.startPhoneServer &&
+            onStartPhoneServer == null) ||
         (failure.primary == ConnectionFailureAction.openTermuxSetup &&
             onOpenTermuxSetup == null) ||
         (failure.primary == ConnectionFailureAction.updatePassword &&
@@ -442,7 +484,7 @@ class _Actions extends StatelessWidget {
         failure.primary == ConnectionFailureAction.changeServer;
     final stacked = AppTheme.stackedActions(context);
     final buttons = <Widget>[
-      if (primaryIsRetry && onOpenTermuxSetup != null)
+      if ((primaryIsRetry || startsServer) && onOpenTermuxSetup != null)
         TextButton(
           key: const ValueKey('saved-server-open-termux'),
           onPressed: onOpenTermuxSetup,

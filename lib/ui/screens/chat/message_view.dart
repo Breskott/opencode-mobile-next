@@ -360,11 +360,12 @@ class _JumpToLatestButton extends StatelessWidget {
           message: _chatL10n(context).chatUiJumpToLatest,
           // 48dp target: this pill floats over a scrolling list, where
           // undersized targets cause accidental transcript scrolls.
+          // Smaller than a FAB: it sits over the ends of text lines.
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(15),
             child: Icon(
               AppIconography.down,
-              size: 20,
+              size: 18,
               color: theme.colorScheme.primary,
             ),
           ),
@@ -846,6 +847,13 @@ class V2TranscriptRow extends StatelessWidget {
           ),
         };
       default:
+        // A message type this app does not know carries nothing but its
+        // name ("idle"): a row saying "Server message · idle" told the
+        // reader nothing and repeated after every turn.
+        if (kind == 'unknown' &&
+            RegExp(r'^[a-z][a-z0-9._-]*$').hasMatch(part.text.trim())) {
+          return const SizedBox.shrink();
+        }
         final (icon, header, mono) = switch (kind) {
           'instructions' => (
             AppIconography.note,
@@ -1276,7 +1284,31 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
         : (_running
               ? _chatL10n(context).chatUiRunningTools
               : _chatL10n(context).chatUiTools);
-    final title = widget.heading ?? kind;
+    // Without the agent's own name for the step, what was done is the
+    // title ("Ran 4 commands"), not the word "Tools" beside it.
+    final bareTitle =
+        widget.heading == null && runningPart == null && summary.isNotEmpty;
+    final title = widget.heading ?? (bareTitle ? summary : kind);
+    final detailText = bareTitle ? '' : summary;
+    final names = {
+      for (final part in widget.parts) part.toolName?.trim().toLowerCase(),
+    };
+    // The icon says what kind of work it was.
+    final icon = allContext
+        ? AppIconography.search
+        : names.any(
+            (name) => const {
+              'edit',
+              'write',
+              'patch',
+              'apply_patch',
+              'multiedit',
+            }.contains(name),
+          )
+        ? AppIconography.edit
+        : names.any((name) => name == 'bash' || name == 'shell')
+        ? AppIconography.terminal
+        : AppIconography.tools;
     final status = _failed
         ? _chatL10n(context).chatUiBackgroundError
         : _running
@@ -1307,7 +1339,7 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
                   child: Row(
                     children: [
                       Icon(
-                        AppIconography.search,
+                        icon,
                         size: 16,
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -1323,14 +1355,16 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          detail: Text(
-                            summary,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
+                          detail: detailText.isEmpty
+                              ? null
+                              : Text(
+                                  detailText,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -1505,10 +1539,13 @@ class _WorkGroupState extends State<_WorkGroup> {
                 livePart.toolState,
                 l10n: strings,
               )
-        : strings.usageModelSteps('${widget.runs.length}');
-    final summary = running
-        ? strings.usageModelSteps('${widget.runs.length}')
-        : _toolRunSentence(_tools.toList(), strings);
+        : null;
+    final sentence = _toolRunSentence(_tools.toList(), strings);
+    final steps = strings.usageModelSteps('${widget.runs.length}');
+    // Done: what was done is the title ("Edited 1 file, ran 4 commands"),
+    // the step count is detail. "2 steps" alone said nothing.
+    final titleText = title ?? (sentence.isEmpty ? steps : sentence);
+    final summary = steps;
     return Column(
       key: const Key('work-group'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1516,7 +1553,7 @@ class _WorkGroupState extends State<_WorkGroup> {
         Semantics(
           button: true,
           expanded: _expanded,
-          label: '$title, $summary',
+          label: '$titleText, $summary',
           child: InkWell(
             key: const Key('work-group-header'),
             onTap: () => setState(() {
@@ -1539,7 +1576,7 @@ class _WorkGroupState extends State<_WorkGroup> {
                       child: TitleWithDetail(
                         gap: 8,
                         title: Text(
-                          title,
+                          titleText,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -2477,6 +2514,12 @@ class _ErrorActionCard extends StatelessWidget {
 
 class _MessageMeta {
   const _MessageMeta({this.modelLabel, this.turnTokens, this.turnCost});
+
+  _MessageMeta withModelLabel(String? label) => _MessageMeta(
+    modelLabel: label,
+    turnTokens: turnTokens,
+    turnCost: turnCost,
+  );
 
   final String? modelLabel;
   final int? turnTokens;

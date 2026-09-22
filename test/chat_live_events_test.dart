@@ -2327,7 +2327,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('tool-call-group')), findsNWidgets(2));
-    expect(find.text('Tools'), findsNWidgets(2));
+    // What was done is the title; no generic "Tools" beside it.
+    expect(find.text('Tools'), findsNothing);
     expect(
       find.text('Read 1 file, searched once, ran 1 command'),
       findsOneWidget,

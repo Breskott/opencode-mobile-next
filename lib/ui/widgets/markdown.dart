@@ -448,8 +448,12 @@ class _MarkdownTable extends StatelessWidget {
             : MediaQuery.sizeOf(context).width;
         // Keep individual cells readable; wide tables scroll as one surface.
         // The rows grow with wrapped content rather than clipping at 40px.
-        final cellWidth = ((available - 40) / headers.length).clamp(
-          156.0,
+        // A three-column table fits a phone and wraps inside its cells;
+        // only wider tables scroll. (At 156 a three-column summary was cut
+        // off on the right with nothing saying it scrolled.)
+        final gutters = 24 + 16.0 * (headers.length - 1);
+        final cellWidth = ((available - gutters) / headers.length).clamp(
+          88.0,
           280.0,
         );
         return DecoratedBox(
@@ -770,7 +774,7 @@ class _InlineParser {
             ),
           );
         } else {
-          spans.add(_CodeSpan(code, base: base, context: context));
+          spans.add(_codeSpan(code, base: base, context: context));
         }
       } else if (m.group(5) != null) {
         spans.add(
@@ -992,38 +996,28 @@ class _PathCodeChipState extends State<_PathCodeChip> {
   }
 }
 
-class _CodeSpan extends WidgetSpan {
-  _CodeSpan(
-    String code, {
-    required TextStyle base,
-    required BuildContext context,
-  }) : super(
-         alignment: PlaceholderAlignment.middle,
-         child: Container(
-           margin: const EdgeInsets.symmetric(horizontal: 1),
-           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
-           decoration: BoxDecoration(
-             color: Theme.of(
-               context,
-             ).colorScheme.surfaceContainerHighest.withValues(alpha: .6),
-             borderRadius: BorderRadius.circular(4),
-             border: Border.all(
-               color: AppTheme.hairline(Theme.of(context)),
-               width: .5,
-             ),
-           ),
-           child: Text.rich(
-             TranscriptHighlight.decorate(context, TextSpan(text: code)),
-             // WidgetSpan applies the paragraph's accessibility scale once.
-             textScaler: TextScaler.noScaling,
-             style: base.copyWith(
-               fontFamily: AppTheme.monoFamily,
-               fontSize: base.fontSize ?? 14,
-               color: Theme.of(context).colorScheme.tertiary,
-             ),
-           ),
-         ),
-       );
+/// Inline code as text, not a boxed widget: it wraps with the sentence
+/// (`[ ]` no longer breaks off onto its own line), selects with it, and a
+/// line with several names reads as prose instead of a row of buttons. A
+/// light tint and the mono face mark it.
+InlineSpan _codeSpan(
+  String code, {
+  required TextStyle base,
+  required BuildContext context,
+}) {
+  final scheme = Theme.of(context).colorScheme;
+  return TranscriptHighlight.decorate(
+    context,
+    TextSpan(
+      text: code,
+      style: base.copyWith(
+        fontFamily: AppTheme.monoFamily,
+        fontSize: (base.fontSize ?? 14) * .92,
+        color: scheme.tertiary,
+        backgroundColor: scheme.surfaceContainerHighest.withValues(alpha: .7),
+      ),
+    ),
+  );
 }
 
 /// Selectable local code with independent display wrapping and exact copying.

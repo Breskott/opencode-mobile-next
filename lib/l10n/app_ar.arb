@@ -4426,7 +4426,7 @@
   "firstRunCommandsPaseoNetwork": "للوصول إليه من هذا الهاتف عبر شبكتك الخاصة، استمع على ذلك العنوان وعيّن كلمة مرور:",
   "firstRunCommandsCodexToken": "أنشئ رمز الاتصال قبل تشغيله:",
   "firstRunCommandsCodexUsb": "يصل إليه هاتف موصول بكابل USB عبر:",
-  "firstRunNotifyTitle": "هل تريد إشعارًا عند الانتهاء؟",
+  "firstRunNotifyTitle": "هل نُعلمك عندما يجهز الرد؟",
   "firstRunNotifyBody": "غادر التطبيق بينما يعمل الوكيل. يصلك إشعار عندما ينتهي أو يحتاج إليك. يعرض Android إشعارًا صغيرًا دائمًا ما دام الاتصال قائمًا.",
   "firstRunNotifyAccept": "أشعِرني",
   "firstRunNotifyDecline": "ليس الآن",
@@ -4544,5 +4544,10 @@
   "modelEffortExtraHigh": "مرتفع جدًا",
   "modelEffortMax": "أقصى",
   "setupStoppedByRestart": "أُعيد تشغيل الهاتف فتوقف الخادم المحلي. شغّله مجددًا عند الحاجة.",
-  "chatUiTipLongPressForActions": "اضغط مطولًا على رسالة لإجراءاتها"
+  "chatUiTipLongPressForActions": "اضغط مطولًا على رسالة لإجراءاتها",
+  "phoneServerStoppedTitle": "الخادم على هذا الهاتف متوقف",
+  "phoneServerStoppedBody": "يتوقف عند إعادة تشغيل الهاتف أو عندما يغلق Android تطبيق Termux لتوفير البطارية. محادثاتك محفوظة؛ شغّله مجددًا للمتابعة.",
+  "phoneServerStartAndConnect": "تشغيل واتصال",
+  "setupOtherVersions": "إصدارات OpenCode الأخرى",
+  "settingsHubThisApp": "هذا التطبيق"
 }

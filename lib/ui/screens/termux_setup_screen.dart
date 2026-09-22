@@ -2205,13 +2205,8 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
             key: const ValueKey('termux-installed-runtime'),
             padding: const EdgeInsets.all(20),
             children: [
-              Text(
-                l10n.setupSwitchLocalRuntime,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                ),
-              ),
-              const SizedBox(height: 4),
+              // The app bar already says "On this phone"; no eyebrow above
+              // the server's name repeating it.
               Text(
                 _runtimeName(_runtime),
                 style: theme.textTheme.headlineSmall,
@@ -2275,7 +2270,20 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                 ),
               ],
               if (!pending) const SizedBox(height: 12),
-              _runtimeSwitchChoices(showHeading: false),
+              // Switching between OpenCode 1 and 2 is rare and not why most
+              // people open this page: it stays one tap away, folded, unless a
+              // switch is half done and needs finishing.
+              if (pending)
+                _runtimeSwitchChoices(showHeading: false)
+              else
+                ExpansionTile(
+                  key: const Key('other-runtime-versions'),
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: const EdgeInsets.only(bottom: 8),
+                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                  title: Text(l10n.setupOtherVersions),
+                  children: [_runtimeSwitchChoices(showHeading: false)],
+                ),
               if (_error != null) ...[
                 const SizedBox(height: 16),
                 Text(

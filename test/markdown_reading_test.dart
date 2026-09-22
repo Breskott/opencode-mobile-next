@@ -316,36 +316,35 @@ void main() {
     },
   );
 
-  testWidgets(
-    'inline code and validated path chips grow once at large text scale',
-    (tester) async {
-      Widget content() => MarkdownFileLinks(
-        validate: (_) async => true,
-        open: (_) {},
-        child: const MarkdownText('Read `count` and `lib/a.dart`.'),
+  testWidgets('validated path chips grow once at large text scale', (
+    tester,
+  ) async {
+    Widget content() => MarkdownFileLinks(
+      validate: (_) async => true,
+      open: (_) {},
+      child: const MarkdownText('Read `count` and `lib/a.dart`.'),
+    );
+    double paintedWidth(String value) {
+      final box = tester.renderObject<RenderBox>(
+        find.byWidgetPredicate(
+          (w) => w is Text && w.textSpan?.toPlainText() == value,
+        ),
       );
-      double paintedWidth(String value) {
-        final box = tester.renderObject<RenderBox>(
-          find.byWidgetPredicate(
-            (w) => w is Text && w.textSpan?.toPlainText() == value,
-          ),
-        );
-        return (box.localToGlobal(Offset(box.size.width, 0)) -
-                box.localToGlobal(Offset.zero))
-            .dx;
-      }
+      return (box.localToGlobal(Offset(box.size.width, 0)) -
+              box.localToGlobal(Offset.zero))
+          .dx;
+    }
 
-      await _pump(tester, content());
-      await tester.pumpAndSettle();
-      final codeWidth = paintedWidth('count');
-      final pathWidth = paintedWidth('lib/a.dart\uFFFC');
-      await _pump(tester, content(), scale: 2);
-      await tester.pumpAndSettle();
-      expect(paintedWidth('count'), closeTo(codeWidth * 2, 0.1));
-      expect(paintedWidth('lib/a.dart\uFFFC'), closeTo(pathWidth * 2, 0.1));
-      expect(tester.takeException(), isNull);
-    },
-  );
+    await _pump(tester, content());
+    await tester.pumpAndSettle();
+    // Plain inline code is part of the paragraph and scales with it; the
+    // validated path stays a chip and must scale exactly once.
+    final pathWidth = paintedWidth('lib/a.dart\uFFFC');
+    await _pump(tester, content(), scale: 2);
+    await tester.pumpAndSettle();
+    expect(paintedWidth('lib/a.dart\uFFFC'), closeTo(pathWidth * 2, 0.1));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'table escaped pipes retain literal cells and mismatched delimiters are prose',

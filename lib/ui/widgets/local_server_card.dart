@@ -190,13 +190,16 @@ class LocalServerCard extends StatelessWidget {
                       label: Text(startLabel),
                     )
                   else ...[
-                    FilledButton.icon(
-                      key: _key('connect'),
-                      style: FilledButton.styleFrom(minimumSize: touch),
-                      onPressed: locked ? null : onConnect,
-                      icon: const Icon(AppIconography.forward),
-                      label: Text(connected ? openLabel : connectLabel),
-                    ),
+                    // Connected already: "Open" would lead to where the
+                    // person is. Restart and Stop are what is left to do.
+                    if (!connected)
+                      FilledButton.icon(
+                        key: _key('connect'),
+                        style: FilledButton.styleFrom(minimumSize: touch),
+                        onPressed: locked ? null : onConnect,
+                        icon: const Icon(AppIconography.forward),
+                        label: Text(connectLabel),
+                      ),
                     if (onRestart != null)
                       OutlinedButton.icon(
                         key: _key('restart'),
