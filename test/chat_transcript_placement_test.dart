@@ -247,45 +247,52 @@ void main() {
     );
   });
 
-  testWidgets('what the agent did between two replies folds under one line', (
-    tester,
-  ) async {
-    await _pump(tester, [
-      _message('u1', 'user', [_text('u1-t', 'Fix the balance')], created: 1),
-      _message('a1', 'assistant', [
-        _text('a1-t', 'Looking into it.'),
-        tool('t1', 'bash'),
-      ], created: 2),
-      // Later steps of the same stretch of work, stored as separate messages.
-      _message('a2', 'assistant', [
-        Part(id: 'r2', type: 'reasoning', text: '**Checking persistence**'),
-        tool('t2', 'bash'),
-      ], created: 3),
-      _message('a3', 'assistant', [
-        Part(id: 'r3', type: 'reasoning', text: '**Preparing the patch**'),
-        tool('t3', 'read'),
-        tool('t4', 'read'),
-      ], created: 4),
-      _message('a4', 'assistant', [_text('a4-t', 'Fixed.')], created: 5),
-    ]);
+  testWidgets(
+    'a finished turn folds its work and passing words under one line',
+    (tester) async {
+      await _pump(tester, [
+        _message('u1', 'user', [_text('u1-t', 'Fix the balance')], created: 1),
+        _message('a1', 'assistant', [
+          _text('a1-t', 'Looking into it.'),
+          tool('t1', 'bash'),
+        ], created: 2),
+        // Later steps of the same stretch of work, stored as separate messages.
+        _message('a2', 'assistant', [
+          Part(id: 'r2', type: 'reasoning', text: '**Checking persistence**'),
+          tool('t2', 'bash'),
+        ], created: 3),
+        _message('a3', 'assistant', [
+          Part(id: 'r3', type: 'reasoning', text: '**Preparing the patch**'),
+          tool('t3', 'read'),
+          tool('t4', 'read'),
+        ], created: 4),
+        _message('a4', 'assistant', [_text('a4-t', 'Fixed.')], created: 5),
+      ]);
 
-    // Said: visible. Done: one line, however many steps it took.
-    expect(find.text('Looking into it.'), findsOneWidget);
-    expect(find.text('Fixed.'), findsOneWidget);
-    expect(find.byKey(const Key('work-group')), findsOneWidget);
-    expect(find.text('3 steps'), findsOneWidget);
-    expect(find.text('Checking persistence'), findsNothing);
+      // A finished turn is the prompt, one line of work and the answer. What
+      // the agent said on the way ("Looking into it.") is folded with the work.
+      expect(find.text('Looking into it.'), findsNothing);
+      expect(find.text('Fixed.'), findsOneWidget);
+      expect(find.byKey(const Key('work-group')), findsOneWidget);
+      expect(find.text('3 steps'), findsNothing);
+      expect(find.text('Checking persistence'), findsNothing);
 
-    // Discoverable: one tap shows every step, in order, by the agent's name.
-    await tester.tap(find.byKey(const Key('work-group-header')));
-    await tester.pumpAndSettle();
-    expect(find.text('Checking persistence'), findsOneWidget);
-    expect(find.text('Preparing the patch'), findsOneWidget);
-    expect(
-      tester.getTopLeft(find.text('Checking persistence')).dy,
-      lessThan(tester.getTopLeft(find.text('Preparing the patch')).dy),
-    );
-  });
+      // Discoverable: one tap shows every step, in order, by the agent's name.
+      await tester.tap(find.byKey(const Key('work-group-header')));
+      await tester.pumpAndSettle();
+      expect(find.text('Looking into it.'), findsOneWidget);
+      expect(find.text('Checking persistence'), findsOneWidget);
+      expect(find.text('Preparing the patch'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Looking into it.')).dy,
+        lessThan(tester.getTopLeft(find.text('Checking persistence')).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text('Checking persistence')).dy,
+        lessThan(tester.getTopLeft(find.text('Preparing the patch')).dy),
+      );
+    },
+  );
 
   testWidgets('a thought titles its step and explains itself inside it', (
     tester,

@@ -2749,6 +2749,15 @@ void main() {
             text: 'First answer.',
           ),
         ], created: created),
+        // Two turns: within one, a finished turn folds its earlier thoughts.
+        _message('user-two', 'user', [
+          Part(
+            id: 'user-two-text',
+            messageID: 'user-two',
+            type: 'text',
+            text: 'And again',
+          ),
+        ], created: created),
         _message('assistant-two', 'assistant', [
           Part(
             id: 'reasoning-two',

@@ -925,9 +925,86 @@ String _noticeRest(String text) {
 
 const _contextToolNames = {'read', 'list', 'glob', 'grep'};
 
+/// Says what kind of work a set of tool calls was: looking, editing,
+/// running commands, or a mix.
+IconData _workIcon(Iterable<Part> parts) {
+  final names = {
+    for (final part in parts)
+      if (part.type == 'tool') part.toolName?.trim().toLowerCase(),
+  };
+  if (names.isEmpty) return AppIconography.timeline;
+  if (names.every(_contextToolNames.contains)) return AppIconography.search;
+  if (names.any(
+    (name) => const {
+      'edit',
+      'write',
+      'patch',
+      'apply_patch',
+      'multiedit',
+    }.contains(name),
+  )) {
+    return AppIconography.edit;
+  }
+  if (names.any((name) => name == 'bash' || name == 'shell')) {
+    return AppIconography.terminal;
+  }
+  return AppIconography.tools;
+}
+
 bool _isToolPart(Part part) => part.type == 'tool';
 
-List<List<Part>> _timelineDisplayParts(List<MessageWithParts> messages) {
+/// Text the agent said on its way through a finished turn ("Now let me test
+/// each command:"). Once the turn is over it is part of the work, folded
+/// with it, and only the turn's last words stand as the answer.
+final _interimText = Expando<bool>('interim text');
+
+bool _isInterimText(Part part) => _interimText[part] ?? false;
+
+/// Marks the text of each finished turn that came before its last piece of
+/// work. The turn still running ([liveTail]) keeps everything in view: what
+/// the agent says while it works is how the reader follows along.
+void _markInterimText(
+  List<MessageWithParts> messages, {
+  bool liveTail = false,
+}) {
+  var start = 0;
+  void closeTurn(int end, {required bool live}) {
+    if (live) return;
+    final parts = [
+      for (var i = start; i < end; i += 1)
+        if (messages[i].info.role == 'assistant')
+          ...messages[i].parts.where((part) => part.isRenderable),
+    ];
+    final lastWork = parts.lastIndexWhere(
+      (part) => part.type == 'tool' || part.type == 'reasoning',
+    );
+    // Text before the last work is on the way; but a turn that ended on a
+    // tool call still said something last, and that stays the answer.
+    var cutoff = lastWork;
+    if (!parts.skip(lastWork + 1).any((part) => part.type == 'text')) {
+      cutoff = parts.lastIndexWhere((part) => part.type == 'text');
+      while (cutoff > 0 && parts[cutoff - 1].type == 'text') {
+        cutoff -= 1;
+      }
+    }
+    for (var i = 0; i < cutoff; i += 1) {
+      if (parts[i].type == 'text') _interimText[parts[i]] = true;
+    }
+  }
+
+  for (var index = 0; index < messages.length; index += 1) {
+    if (!_isPrompt(messages[index])) continue;
+    closeTurn(index, live: false);
+    start = index + 1;
+  }
+  closeTurn(messages.length, live: liveTail);
+}
+
+List<List<Part>> _timelineDisplayParts(
+  List<MessageWithParts> messages, {
+  bool liveTail = false,
+}) {
+  _markInterimText(messages, liveTail: liveTail);
   final display = List.generate(messages.length, (_) => <Part>[]);
   final pendingParts = <Part>[];
   String? pendingType;
@@ -958,7 +1035,7 @@ List<List<Part>> _timelineDisplayParts(List<MessageWithParts> messages) {
     // (thoughts and tool calls). A stretch of work runs across as many steps
     // as it takes and belongs to the step that began it, so it can be drawn
     // as one thing.
-    final kind = part.type == 'text' ? 'text' : 'work';
+    final kind = part.type == 'text' && !_isInterimText(part) ? 'text' : 'work';
     if (pendingType != null && pendingType != kind) flushPending();
     pendingType ??= kind;
     pendingOwner ??= owner;
@@ -1290,25 +1367,7 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
         widget.heading == null && runningPart == null && summary.isNotEmpty;
     final title = widget.heading ?? (bareTitle ? summary : kind);
     final detailText = bareTitle ? '' : summary;
-    final names = {
-      for (final part in widget.parts) part.toolName?.trim().toLowerCase(),
-    };
-    // The icon says what kind of work it was.
-    final icon = allContext
-        ? AppIconography.search
-        : names.any(
-            (name) => const {
-              'edit',
-              'write',
-              'patch',
-              'apply_patch',
-              'multiedit',
-            }.contains(name),
-          )
-        ? AppIconography.edit
-        : names.any((name) => name == 'bash' || name == 'shell')
-        ? AppIconography.terminal
-        : AppIconography.tools;
+    final icon = _workIcon(widget.parts);
     final status = _failed
         ? _chatL10n(context).chatUiBackgroundError
         : _running
@@ -1545,7 +1604,9 @@ class _WorkGroupState extends State<_WorkGroup> {
     // Done: what was done is the title ("Edited 1 file, ran 4 commands"),
     // the step count is detail. "2 steps" alone said nothing.
     final titleText = title ?? (sentence.isEmpty ? steps : sentence);
-    final summary = steps;
+    // "2 steps" beside "Edited 1 file" said nothing; the count is kept only
+    // when there is no sentence and it is the title.
+    final summary = title == null && sentence.isNotEmpty ? null : steps;
     return Column(
       key: const Key('work-group'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1553,7 +1614,7 @@ class _WorkGroupState extends State<_WorkGroup> {
         Semantics(
           button: true,
           expanded: _expanded,
-          label: '$titleText, $summary',
+          label: summary == null ? titleText : '$titleText, $summary',
           child: InkWell(
             key: const Key('work-group-header'),
             onTap: () => setState(() {
@@ -1567,7 +1628,7 @@ class _WorkGroupState extends State<_WorkGroup> {
                 child: Row(
                   children: [
                     Icon(
-                      AppIconography.timeline,
+                      running ? AppIconography.timeline : _workIcon(_tools),
                       size: 16,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -1583,14 +1644,16 @@ class _WorkGroupState extends State<_WorkGroup> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        detail: Text(
-                          summary,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+                        detail: summary == null
+                            ? null
+                            : Text(
+                                summary,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -1602,7 +1665,9 @@ class _WorkGroupState extends State<_WorkGroup> {
                           color: theme.colorScheme.primary,
                         ),
                       )
-                    else
+                    // Finished is the normal state and needs no mark;
+                    // only running and failed are worth a glance.
+                    else if (running || failed)
                       Icon(
                         failed
                             ? AppIconography.error
@@ -2172,7 +2237,9 @@ class _MessageView extends StatelessWidget {
     var work = <_AssistantPartRun>[];
     for (final run in runs) {
       final type = run.parts.first.type;
-      if (type == 'tool' || type == 'reasoning') {
+      if (type == 'tool' ||
+          type == 'reasoning' ||
+          _isInterimText(run.parts.first)) {
         work.add(run);
         continue;
       }

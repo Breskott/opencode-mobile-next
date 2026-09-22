@@ -6724,7 +6724,7 @@ class _ChatScreenState extends State<ChatScreen>
     final queuedAfterIndex = busy && !_conn.supportsInbox
         ? _queuedAfterIndex(_messages)
         : -1;
-    final displayParts = _timelineDisplayParts(_messages);
+    final displayParts = _timelineDisplayParts(_messages, liveTail: busy);
     // A prompt waiting in the server's inbox (steering, or queued behind the
     // run) is shown once, as its waiting bubble above the composer, where
     // it can still be flipped or cancelled. Its optimistic copy in the
