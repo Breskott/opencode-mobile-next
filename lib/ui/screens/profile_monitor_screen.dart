@@ -41,8 +41,17 @@ Future<void> openMonitoredRequest(
     );
     if (accepted != true || !context.mounted) return;
   }
+  // Switching servers rebuilds the list this was opened from, and the row
+  // that was tapped goes with it. The navigator stays: what follows the
+  // switch is shown through it.
+  final navigator = Navigator.of(context);
+  // Below the navigator (so sheets and routes find it), unlike its own.
+  BuildContext here() => context.mounted
+      ? context
+      : navigator.overlay?.context ?? navigator.context;
   try {
-    if (!await controller.prepareMonitoredRequest(route) || !context.mounted) {
+    if (!await controller.prepareMonitoredRequest(route) ||
+        !navigator.mounted) {
       throw StateError('Changed');
     }
     switch (route.kind) {
@@ -52,7 +61,7 @@ Future<void> openMonitoredRequest(
           throw StateError('Changed');
         }
         await showPermissionSheet(
-          context,
+          here(),
           permission: request,
           controller: controller,
         );
@@ -61,17 +70,17 @@ Future<void> openMonitoredRequest(
         if (request == null || request.sessionID != route.sessionID) {
           throw StateError('Changed');
         }
-        await showQuestionSheet(context, controller, request);
+        await showQuestionSheet(here(), controller, request);
       case MonitoredRequestKind.form:
         final request = controller.forms[route.requestID];
         if (request == null || request.sessionID != route.sessionID) {
           throw StateError('Changed');
         }
-        await presentConnectionForm(context, controller, request);
+        await presentConnectionForm(here(), controller, request);
       case MonitoredRequestKind.checkIn:
         // The reminder's answer is the conversation itself, on the existing
         // chat route; nothing is sent or resolved on the user's behalf.
-        await Navigator.of(context).push(
+        await navigator.push(
           MaterialPageRoute<void>(
             builder: (_) => ChatScreen(sessionID: route.sessionID),
           ),
@@ -79,9 +88,22 @@ Future<void> openMonitoredRequest(
     }
     await controller.profileMonitor.refresh();
   } catch (_) {
-    if (context.mounted) {
+    // Already on that server, but its request is not loaded here yet (an
+    // agent daemon lists its waiting requests a moment after connecting):
+    // the conversation shows the same request, so that is where to go.
+    if (navigator.mounted &&
+        controller.profile?.id == route.profileID &&
+        route.sessionID != 'global') {
+      await navigator.push(
+        MaterialPageRoute<void>(
+          builder: (_) => ChatScreen(sessionID: route.sessionID),
+        ),
+      );
+      return;
+    }
+    if (navigator.mounted) {
       ScaffoldMessenger.of(
-        context,
+        here(),
       ).showSnackBar(SnackBar(content: Text(l10n.monitorOpenFailed)));
     }
   }

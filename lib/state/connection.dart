@@ -420,7 +420,9 @@ class ConnectionController extends ChangeNotifier {
         targetProfile.baseUrl != target.serverUrl ||
         target.sourceIdentity !=
             ProfileMonitor.routeSourceIdentity(targetProfile) ||
-        targetProfile.requiresPasswordReentry ||
+        (targetProfile.backend == ServerBackend.paseo
+            ? targetProfile.requiresCodexTokenReentry
+            : targetProfile.requiresPasswordReentry) ||
         !profileMonitor.supportsProfile(targetProfile)) {
       return false;
     }
@@ -441,6 +443,13 @@ class ConnectionController extends ChangeNotifier {
         directory: target.directory,
         workspace: target.workspace,
       );
+      // A Paseo daemon knows its waiting requests once it has listed its
+      // conversations, as the monitor that found this one did.
+      if (targetProfile.backend == ServerBackend.paseo) {
+        await pair.gateway
+            .sessionPage(limit: 100)
+            .timeout(const Duration(seconds: 8));
+      }
       final found = switch (target.kind) {
         MonitoredRequestKind.permission =>
           (await ProfileMonitor.readPermissions(
