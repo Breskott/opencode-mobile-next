@@ -17175,4 +17175,38 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get otherProjectsNeedsYou => 'بانتظارك';
+
+  @override
+  String get localAgentUpdate => 'تحديث Claude Code';
+
+  @override
+  String get localAgentUpdateAvailable =>
+      'يضيف التحديث أحدث نماذج Claude، مثل Opus 5.5.';
+
+  @override
+  String get localAgentUpdateNow => 'تحديث';
+
+  @override
+  String get modelNewBadge => 'جديد';
+
+  @override
+  String get modelEffortNone => 'بلا تفكير';
+
+  @override
+  String get modelEffortMinimal => 'أدنى';
+
+  @override
+  String get modelEffortLow => 'منخفض';
+
+  @override
+  String get modelEffortMedium => 'متوسط';
+
+  @override
+  String get modelEffortHigh => 'مرتفع';
+
+  @override
+  String get modelEffortExtraHigh => 'مرتفع جدًا';
+
+  @override
+  String get modelEffortMax => 'أقصى';
 }

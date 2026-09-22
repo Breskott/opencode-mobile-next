@@ -447,6 +447,33 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
     }
   }
 
+  /// Whether the installed Paseo is older than the one this build pins.
+  /// Paseo carries the list of Claude models the daemon offers, so a new
+  /// model (Opus 5.5 needs 0.9.1) arrives with an update.
+  bool get _updateAvailable {
+    final installed = _status.paseoVersion;
+    final pinned = TermuxBridge.localAgentsPins['paseo_version'];
+    return _status.installed &&
+        installed.isNotEmpty &&
+        pinned != null &&
+        installed != pinned;
+  }
+
+  /// Installs the pinned Paseo and the newest Claude Code over the existing
+  /// install, then starts it again. Sign-in and projects are kept.
+  Future<void> _update() async {
+    if (_status.phase == LocalAgentPhase.ready) {
+      final stopped = await _verb(
+        LocalAgentPhase.stopping,
+        'stop',
+        _runtime.stop,
+      );
+      if (stopped == null || !mounted) return;
+      _apply(stopped);
+    }
+    await _install();
+  }
+
   Future<void> _start() async {
     final status = await _verb(
       LocalAgentPhase.starting,
@@ -634,6 +661,11 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
                 key: const ValueKey('local-agent-refresh'),
                 value: () => unawaited(_refresh()),
                 child: Text(l10n.workRefresh),
+              ),
+              PopupMenuItem(
+                key: const ValueKey('local-agent-update'),
+                value: () => unawaited(_update()),
+                child: Text(l10n.localAgentUpdate),
               ),
               PopupMenuItem(
                 key: const ValueKey('local-agent-remove'),
@@ -873,17 +905,49 @@ class _LocalAgentOnboardingBlockState extends State<LocalAgentOnboardingBlock>
     final l10n = _copy(context);
     final status = _status;
     if (status.claudeVersion.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 4),
-      child: Text(
-        l10n.localAgentVersions(
-          status.claudeVersion,
-          status.paseoVersion,
-          status.nodeVersion,
-        ),
-        key: const ValueKey('local-agent-versions'),
-        textDirection: TextDirection.ltr,
-        style: _muted(Theme.of(context)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.localAgentVersions(
+              status.claudeVersion,
+              status.paseoVersion,
+              status.nodeVersion,
+            ),
+            key: const ValueKey('local-agent-versions'),
+            textDirection: TextDirection.ltr,
+            style: _muted(theme),
+          ),
+          if (_updateAvailable)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    AppIconography.sparkle,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.localAgentUpdateAvailable,
+                      key: const ValueKey('local-agent-update-available'),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                  TextButton(
+                    key: const ValueKey('local-agent-update-now'),
+                    onPressed: _busy ? null : () => unawaited(_update()),
+                    child: Text(l10n.localAgentUpdateNow),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

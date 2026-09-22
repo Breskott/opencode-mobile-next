@@ -639,6 +639,59 @@ void main() {
       await finish(tester);
     });
 
+    testWidgets('an older Paseo offers the update that brings new models; '
+        'updating stops, reinstalls and starts again', (tester) async {
+      init();
+      // Installed with 0.8.0, which does not list Claude Opus 5.5.
+      final runtime = _FakeRuntime(_ready())
+        ..results['stop'] = _status(
+          LocalAgentPhase.installed,
+          installed: true,
+          signedIn: LocalAgentSignIn.yes,
+        )
+        ..results['install'] = _status(
+          LocalAgentPhase.installed,
+          installed: true,
+          signedIn: LocalAgentSignIn.yes,
+        )
+        ..results['start'] = _ready();
+      await tester.pumpWidget(app(block(runtime)));
+      await settle(tester);
+      expect(
+        find.byKey(const ValueKey('local-agent-update-available')),
+        findsOneWidget,
+      );
+      await tapKey(tester, 'local-agent-update-now');
+      await settle(tester);
+      expect(runtime.calls, ['stop', 'install', 'start']);
+      await finish(tester);
+    });
+
+    testWidgets('the pinned Paseo offers no update', (tester) async {
+      init();
+      final current = TermuxBridge.localAgentsPins['paseo_version']!;
+      final runtime = _FakeRuntime(
+        LocalAgentStatus(
+          phase: LocalAgentPhase.ready,
+          installed: true,
+          signedIn: LocalAgentSignIn.yes,
+          nodeVersion: 'v24.21.0',
+          paseoVersion: current,
+          claudeVersion: '2.1.280',
+        ),
+      );
+      await tester.pumpWidget(app(block(runtime)));
+      await settle(tester);
+      expect(
+        find.byKey(const ValueKey('local-agent-update-available')),
+        findsNothing,
+      );
+      // Still reachable from the menu: Claude Code itself is not pinned.
+      await tapKey(tester, 'local-agent-menu');
+      expect(find.byKey(const ValueKey('local-agent-update')), findsOneWidget);
+      await finish(tester);
+    });
+
     testWidgets('remove asks first and says what stays', (tester) async {
       init();
       final runtime = _FakeRuntime(

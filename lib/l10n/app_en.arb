@@ -18062,5 +18062,49 @@
   "otherProjectsNeedsYou": "Needs you",
   "@otherProjectsNeedsYou": {
     "description": "Marks a project or a conversation in another project that is stopped on a permission or a question"
+  },
+  "localAgentUpdate": "Update Claude Code",
+  "@localAgentUpdate": {
+    "description": "Menu item: reinstall Paseo and Claude Code at their current versions, keeping sign-in"
+  },
+  "localAgentUpdateAvailable": "An update adds the newest Claude models, such as Opus 5.5.",
+  "@localAgentUpdateAvailable": {
+    "description": "Shown when the installed Paseo daemon is older than the app's pinned version"
+  },
+  "localAgentUpdateNow": "Update",
+  "@localAgentUpdateNow": {
+    "description": "Button that updates Claude Code and Paseo on the phone"
+  },
+  "modelNewBadge": "New",
+  "@modelNewBadge": {
+    "description": "Small label after a model's name in the model picker when it was released in the last 30 days"
+  },
+  "modelEffortNone": "No thinking",
+  "@modelEffortNone": {
+    "description": "Reasoning effort level shown on the model picker and composer"
+  },
+  "modelEffortMinimal": "Minimal",
+  "@modelEffortMinimal": {
+    "description": "Reasoning effort level shown on the model picker and composer"
+  },
+  "modelEffortLow": "Low",
+  "@modelEffortLow": {
+    "description": "Reasoning effort level shown on the model picker and composer"
+  },
+  "modelEffortMedium": "Medium",
+  "@modelEffortMedium": {
+    "description": "Reasoning effort level shown on the model picker and composer"
+  },
+  "modelEffortHigh": "High",
+  "@modelEffortHigh": {
+    "description": "Reasoning effort level shown on the model picker and composer"
+  },
+  "modelEffortExtraHigh": "Extra high",
+  "@modelEffortExtraHigh": {
+    "description": "Reasoning effort level shown on the model picker and composer"
+  },
+  "modelEffortMax": "Max",
+  "@modelEffortMax": {
+    "description": "Reasoning effort level shown on the model picker and composer"
   }
 }

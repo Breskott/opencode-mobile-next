@@ -16917,4 +16917,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get otherProjectsNeedsYou => 'Needs you';
+
+  @override
+  String get localAgentUpdate => 'Update Claude Code';
+
+  @override
+  String get localAgentUpdateAvailable =>
+      'An update adds the newest Claude models, such as Opus 5.5.';
+
+  @override
+  String get localAgentUpdateNow => 'Update';
+
+  @override
+  String get modelNewBadge => 'New';
+
+  @override
+  String get modelEffortNone => 'No thinking';
+
+  @override
+  String get modelEffortMinimal => 'Minimal';
+
+  @override
+  String get modelEffortLow => 'Low';
+
+  @override
+  String get modelEffortMedium => 'Medium';
+
+  @override
+  String get modelEffortHigh => 'High';
+
+  @override
+  String get modelEffortExtraHigh => 'Extra high';
+
+  @override
+  String get modelEffortMax => 'Max';
 }

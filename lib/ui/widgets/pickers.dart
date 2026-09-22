@@ -31,6 +31,30 @@ enum ModelPickerApplyScope { classic, session, newSessions }
 /// Opens the model/agent sheet. With [sessionID] and
 /// [ModelPickerApplyScope.session] the choice applies to that session only;
 /// otherwise it becomes the profile default.
+/// A reasoning-effort variant as a person reads it: "Extra high" for
+/// `xhigh`, "No thinking" for `none`. Unknown ids are shown as they are.
+String presentedEffort(String id, AppLocalizations strings) =>
+    switch (id.trim().toLowerCase()) {
+      'none' => strings.modelEffortNone,
+      'minimal' => strings.modelEffortMinimal,
+      'low' => strings.modelEffortLow,
+      'medium' => strings.modelEffortMedium,
+      'high' => strings.modelEffortHigh,
+      'xhigh' => strings.modelEffortExtraHigh,
+      'max' => strings.modelEffortMax,
+      _ => id,
+    };
+
+/// Whether [model] was released in the last 30 days (by the server's
+/// catalog date). [now] is for tests.
+@visibleForTesting
+bool isNewModel(CatalogModel model, {DateTime? now}) {
+  final released = model.released;
+  if (released == null) return false;
+  final age = (now ?? DateTime.now()).difference(released);
+  return !age.isNegative && age.inDays < 30;
+}
+
 Future<void> showModelPicker(
   BuildContext context, {
   ModelPickerApplyScope applyScope = ModelPickerApplyScope.classic,
@@ -465,9 +489,12 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
                 providerName.toLowerCase().contains(normalized)) &&
             switch (_intent) {
               _ModelIntent.all || _ModelIntent.context => true,
-              _ModelIntent.fast => model.variants.any(
-                (v) => !v.disabled && v.isFast,
-              ),
+              // OpenCode 2 lists a fast mode as a model of its own
+              // ("Claude Opus 5.5 Fast", `gpt-6-sol-fast`), not as a
+              // variant.
+              _ModelIntent.fast =>
+                model.id.toLowerCase().endsWith('-fast') ||
+                    model.variants.any((v) => !v.disabled && v.isFast),
               _ModelIntent.reasoning => model.reasoning,
             };
       },
@@ -890,8 +917,26 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          model.name,
+                        Text.rich(
+                          TextSpan(
+                            text: model.name,
+                            children: [
+                              // A model out in the last month is marked, so
+                              // a new release (Opus 5.5, GPT-6 Sol) is found
+                              // without knowing its name.
+                              if (isNewModel(model))
+                                TextSpan(
+                                  text: '  ${_strings.modelNewBadge}',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: scheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          key: ValueKey(
+                            'model-name-${model.providerID}-${model.id}',
+                          ),
                           style: theme.textTheme.titleSmall?.copyWith(
                             color: model.enabled
                                 ? scheme.onSurface
@@ -1272,9 +1317,13 @@ class _ModelCatalogViewState extends State<ModelCatalogView> {
   String _variantLabel(CatalogVariant variant) {
     final effort = variant.reasoningEffort;
     if (effort == null || variant.id.toLowerCase() == effort.toLowerCase()) {
-      return variant.id;
+      return presentedEffort(variant.id, _strings);
     }
-    return _strings.e7ModelUiEffort(variant.id, effort);
+    // Inside a phrase ("fast · low effort") the level stays lower case.
+    return _strings.e7ModelUiEffort(
+      presentedEffort(variant.id, _strings),
+      presentedEffort(effort, _strings).toLowerCase(),
+    );
   }
 
   String _number(int value) =>

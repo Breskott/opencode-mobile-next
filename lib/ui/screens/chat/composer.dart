@@ -623,7 +623,9 @@ class _ChatComposer extends StatelessWidget {
       );
     }
     final variant = selectedVariant.trim();
-    if (variant.isNotEmpty && !_isDefaultVariant(variant)) parts.add(variant);
+    if (variant.isNotEmpty && !_isDefaultVariant(variant)) {
+      parts.add(presentedEffort(variant, _chatL10n(context)));
+    }
     return parts.isEmpty
         ? selectionFallback ?? _chatL10n(context).chatUiChooseModel
         : parts.join(' · ');

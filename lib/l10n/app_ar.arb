@@ -4531,5 +4531,16 @@
   "otherProjectsTitle": "في مشاريع أخرى",
   "otherProjectsForget": "إزالة من المشاريع الأخيرة",
   "otherProjectsUntitled": "محادثة بلا عنوان",
-  "otherProjectsNeedsYou": "بانتظارك"
+  "otherProjectsNeedsYou": "بانتظارك",
+  "localAgentUpdate": "تحديث Claude Code",
+  "localAgentUpdateAvailable": "يضيف التحديث أحدث نماذج Claude، مثل Opus 5.5.",
+  "localAgentUpdateNow": "تحديث",
+  "modelNewBadge": "جديد",
+  "modelEffortNone": "بلا تفكير",
+  "modelEffortMinimal": "أدنى",
+  "modelEffortLow": "منخفض",
+  "modelEffortMedium": "متوسط",
+  "modelEffortHigh": "مرتفع",
+  "modelEffortExtraHigh": "مرتفع جدًا",
+  "modelEffortMax": "أقصى"
 }
