@@ -4549,5 +4549,8 @@
   "phoneServerStoppedBody": "يتوقف عند إعادة تشغيل الهاتف أو عندما يغلق Android تطبيق Termux لتوفير البطارية. محادثاتك محفوظة؛ شغّله مجددًا للمتابعة.",
   "phoneServerStartAndConnect": "تشغيل واتصال",
   "setupOtherVersions": "إصدارات OpenCode الأخرى",
-  "settingsHubThisApp": "هذا التطبيق"
+  "settingsHubThisApp": "هذا التطبيق",
+  "otherServersTitle": "على خوادمك الأخرى",
+  "otherServerNeedsYou": "بانتظارك",
+  "otherServerWorking": "{count, plural, =1{محادثة قيد العمل} other{{count} قيد العمل}}"
 }

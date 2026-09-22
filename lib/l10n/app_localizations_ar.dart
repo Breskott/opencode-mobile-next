@@ -17233,4 +17233,21 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsHubThisApp => 'هذا التطبيق';
+
+  @override
+  String get otherServersTitle => 'على خوادمك الأخرى';
+
+  @override
+  String get otherServerNeedsYou => 'بانتظارك';
+
+  @override
+  String otherServerWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count قيد العمل',
+      one: 'محادثة قيد العمل',
+    );
+    return '$_temp0';
+  }
 }

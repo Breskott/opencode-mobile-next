@@ -16,6 +16,7 @@ import '../navigation/chat_route.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/nudge_card.dart';
+import '../widgets/other_servers_panel.dart';
 import '../widgets/other_projects_panel.dart';
 import '../widgets/product_states.dart';
 import '../widgets/relative_time.dart';
@@ -576,6 +577,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                           children: [
                             // The other projects in play: one tap to switch,
                             // and what is going on in them.
+                            // The other agent on this phone (or any watched
+                            // server) that is working or waiting on you.
+                            OtherServersPanel(controller: widget.controller),
                             OtherProjectsPanel(controller: widget.controller),
                             if (widget.controller.locationNotice != null)
                               ListTile(

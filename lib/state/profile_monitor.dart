@@ -116,7 +116,26 @@ class ProfileMonitor extends ChangeNotifier {
   /// Background attention needs a pollable pending-request surface. Codex
   /// sessions do not expose one, so an enabled legacy rule remains stored but
   /// is retired before any transport factory or credential path is touched.
-  bool supportsProfile(ServerProfile profile) => !profile.usesAgentSocket;
+  /// OpenCode answers plain reads; a Paseo daemon (Claude Code) answers them
+  /// over its socket, opened for the read and closed after. Codex keeps its
+  /// requests inside a live app-server session, so it is not read from here.
+  bool supportsProfile(ServerProfile profile) =>
+      profile.backend != ServerBackend.codex;
+
+  /// A server on this phone (the managed OpenCode server, the Claude Code
+  /// daemon). Reading it costs no network, and a person running two agents
+  /// here expects to hear from the one they are not looking at, so with two
+  /// of them each is watched unless they turned that off.
+  static bool isOnThisPhone(ServerProfile profile) {
+    final host = Uri.tryParse(profile.baseUrl)?.host.toLowerCase();
+    return host == '127.0.0.1' ||
+        host == 'localhost' ||
+        host == '::1' ||
+        host == '[::1]';
+  }
+
+  ServerProfile? _profile(String id) =>
+      store.profiles.where((p) => p.id == id).firstOrNull;
 
   int _beginPoll(String id) {
     final generation = (_pollGenerations[id] ?? 0) + 1;
@@ -342,7 +361,13 @@ class ProfileMonitor extends ChangeNotifier {
   /// still answers, so nothing changes for an install that has not migrated.
   ProfileNotifyRules rulesFor(String id) {
     final own = _storedRules(id);
-    return _notifications.shared?.applyTo(own) ?? own;
+    final rules = _notifications.shared?.applyTo(own) ?? own;
+    // Wi-Fi only is about data on the way to a server; this phone's own
+    // servers are reached without any network.
+    final profile = _profile(id);
+    return profile != null && isOnThisPhone(profile) && rules.wifiOnly
+        ? rules.copyWith(wifiOnly: false)
+        : rules;
   }
 
   late final _notifications = NotificationPreferences(store.prefs);
@@ -356,7 +381,14 @@ class ProfileMonitor extends ChangeNotifier {
         );
       }
     } catch (_) {}
-    return const ProfileNotifyRules();
+    // Two agents on this phone (OpenCode and Claude Code): each is watched
+    // while you look at the other. One alone has nothing to be watched from.
+    final profile = _profile(id);
+    return profile != null &&
+            isOnThisPhone(profile) &&
+            store.profiles.where(isOnThisPhone).length > 1
+        ? const ProfileNotifyRules(enabled: true)
+        : const ProfileNotifyRules();
   }
 
   /// The shared rules were edited. Quiet hours are read at delivery time and
@@ -747,13 +779,15 @@ class ProfileMonitor extends ChangeNotifier {
         workspace: location?.workspace,
       );
       final gateway = pair.gateway;
+      // The list first: a Paseo daemon reports each conversation's waiting
+      // requests and status with it, and has nothing to say before.
+      final page = await gateway.sessionPage(limit: 100).timeout(timeout);
       final permissions = await readPermissions(gateway, timeout);
       final questions = await readQuestions(gateway, pair.operations, timeout);
       final forms = gateway.capabilities.forms
           ? await gateway.pendingForms().timeout(timeout)
           : const <Api2FormInfo>[];
       final statuses = await gateway.sessionStatuses().timeout(timeout);
-      final page = await gateway.sessionPage(limit: 100).timeout(timeout);
       if (!current()) return;
       final sessions = {for (final s in page.items) s.id: s};
       MonitoredRequest row(

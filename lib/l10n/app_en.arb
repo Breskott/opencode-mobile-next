@@ -18128,5 +18128,22 @@
   "@setupOtherVersions": {
     "description": "Folded section on the On this phone screen for switching between OpenCode 1 and 2"
   },
-  "settingsHubThisApp": "This app"
+  "settingsHubThisApp": "This app",
+  "otherServersTitle": "On your other servers",
+  "@otherServersTitle": {
+    "description": "Work tab section naming other saved servers (e.g. Claude Code on this phone) that are working or waiting for the person"
+  },
+  "otherServerNeedsYou": "Needs you",
+  "@otherServerNeedsYou": {
+    "description": "Status of another server that has an approval or question waiting"
+  },
+  "otherServerWorking": "{count, plural, =1{1 working} other{{count} working}}",
+  "@otherServerWorking": {
+    "description": "How many conversations are running on another server",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -16976,4 +16976,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsHubThisApp => 'This app';
+
+  @override
+  String get otherServersTitle => 'On your other servers';
+
+  @override
+  String get otherServerNeedsYou => 'Needs you';
+
+  @override
+  String otherServerWorking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count working',
+      one: '1 working',
+    );
+    return '$_temp0';
+  }
 }

@@ -6816,7 +6816,22 @@ class _ChatScreenState extends State<ChatScreen>
     final titleScaler = MediaQuery.textScalerOf(
       context,
     ).clamp(maxScaleFactor: _titleTextScaleCeiling);
-    final titleBlock = titleScaler.scale(titleLineHeight) * titleLines + 4;
+    // Which server (and so which agent) this conversation is with, when
+    // there is more than one to be with: OpenCode and Claude Code can both be
+    // running on this phone, and their conversations look alike.
+    final serverName = _conn.isIsolated || _conn.store.profiles.length < 2
+        ? null
+        : _conn.profile?.name;
+    final serverStyle = theme.textTheme.labelSmall?.copyWith(
+      color: AppTheme.mutedOf(theme),
+    );
+    final serverLine = serverName == null
+        ? 0.0
+        : titleScaler.scale(
+            (serverStyle?.fontSize ?? 11) * (serverStyle?.height ?? 1.4),
+          );
+    final titleBlock =
+        titleScaler.scale(titleLineHeight) * titleLines + serverLine + 4;
     final toolbarHeight = math.max(
       theme.appBarTheme.toolbarHeight ?? kToolbarHeight,
       titleBlock,
@@ -6836,15 +6851,29 @@ class _ChatScreenState extends State<ChatScreen>
                     session,
                     fallback: _chatL10n(context).commandDestination,
                   ),
-                  child: Text(
-                    presentedSessionTitle(
-                      session,
-                      fallback: _chatL10n(context).commandDestination,
-                    ),
-                    key: const Key('chat-title'),
-                    style: titleStyle,
-                    maxLines: titleLines,
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        presentedSessionTitle(
+                          session,
+                          fallback: _chatL10n(context).commandDestination,
+                        ),
+                        key: const Key('chat-title'),
+                        style: titleStyle,
+                        maxLines: titleLines,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (serverName != null)
+                        Text(
+                          serverName,
+                          key: const Key('chat-server-name'),
+                          style: serverStyle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
                   ),
                 ),
                 actions: [

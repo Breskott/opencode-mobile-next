@@ -27453,6 +27453,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This app'**
   String get settingsHubThisApp;
+
+  /// Work tab section naming other saved servers (e.g. Claude Code on this phone) that are working or waiting for the person
+  ///
+  /// In en, this message translates to:
+  /// **'On your other servers'**
+  String get otherServersTitle;
+
+  /// Status of another server that has an approval or question waiting
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get otherServerNeedsYou;
+
+  /// How many conversations are running on another server
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 working} other{{count} working}}'**
+  String otherServerWorking(int count);
 }
 
 class _AppLocalizationsDelegate
