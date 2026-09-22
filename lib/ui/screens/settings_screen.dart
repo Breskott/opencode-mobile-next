@@ -41,11 +41,12 @@ AppLocalizations _settingsCopy(BuildContext context) =>
 enum SettingsGroup {
   connection('connection'),
   conversation('conversation-defaults'),
-  notifications('notifications'),
-  appearance('appearance'),
   agentSetup('agent-setup'),
-  usage('usage'),
-  privacy('privacy'),
+
+  /// Notifications, appearance, usage and privacy: one row each. As groups
+  /// of their own every header repeated its only row ("Appearance ›
+  /// Appearance"); together they are the settings of this app.
+  thisApp('this-app'),
   help('help');
 
   const SettingsGroup(this.slug);
@@ -54,7 +55,7 @@ enum SettingsGroup {
   final String slug;
 }
 
-/// The one Settings hub: a search field, then eight groups of rows. It is the
+/// The one Settings hub: a search field, then five groups of rows. It is the
 /// fourth tab of the shell ([embedded]) and the screen every other entry
 /// point pushes, so a setting has exactly one home. Rows the connected server
 /// cannot serve are absent, and a group with no rows is absent.
@@ -273,11 +274,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final titles = {
       SettingsGroup.connection: copy.settingsHubGroupConnection,
       SettingsGroup.conversation: copy.settingsHubGroupConversation,
-      SettingsGroup.notifications: copy.settingsHubGroupNotifications,
-      SettingsGroup.appearance: copy.e7AppearanceTitle,
+      SettingsGroup.thisApp: copy.settingsHubThisApp,
       SettingsGroup.agentSetup: copy.settingsHubGroupAgentSetup,
-      SettingsGroup.usage: copy.settingsHubGroupUsage,
-      SettingsGroup.privacy: copy.settingsHubGroupPrivacy,
       SettingsGroup.help: copy.settingsHubGroupHelp,
     };
     final rows = <SettingsGroup, List<_HubRow?>>{
@@ -330,25 +328,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         row('settings-voice', subtitle: copy.settingsHubVoiceSubtitle),
       ],
-      SettingsGroup.notifications: [
-        // One screen for everything that notifies. It stays off Android
-        // too: saved-server monitoring and check-ins work in the open app
-        // there, and the screen drops the rows that device cannot do. The
-        // key predates the merge and is kept for tests and deep links.
-        row(
-          'settings-category-background',
-          subtitle: platformCapabilities.supportsBackgroundService
-              ? copy.notifyHubBackgroundSummary(_backgroundSummary(controller))
-              : null,
-        ),
-      ],
-      SettingsGroup.appearance: [
-        row(
-          'settings-category-appearance',
-          subtitle:
-              '${appearanceLabel(controller.appearance.value, context)} · ${themePackLabels[controller.themePack.value]}',
-        ),
-      ],
       SettingsGroup.agentSetup: [
         row(
           'settings-models',
@@ -365,7 +344,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         row('library-import-session'),
       ],
-      SettingsGroup.usage: [
+      SettingsGroup.thisApp: [
+        // One screen for everything that notifies. It stays off Android
+        // too: saved-server monitoring and check-ins work in the open app
+        // there, and the screen drops the rows that device cannot do. The
+        // key predates the merge and is kept for tests and deep links.
+        row(
+          'settings-category-background',
+          subtitle: platformCapabilities.supportsBackgroundService
+              ? copy.notifyHubBackgroundSummary(_backgroundSummary(controller))
+              : null,
+        ),
+
+        row(
+          'settings-category-appearance',
+          subtitle:
+              '${appearanceLabel(controller.appearance.value, context)} · ${themePackLabels[controller.themePack.value]}',
+        ),
+
         // The subtitle names the sections this connection really has.
         row(
           'settings-category-usage',
@@ -377,8 +373,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
           ].join(' · '),
         ),
+        row('settings-category-privacy'),
       ],
-      SettingsGroup.privacy: [row('settings-category-privacy')],
       SettingsGroup.help: [
         row('settings-setup-guide', subtitle: copy.e7SettingsUi91),
         // The explanation for every row the connected server hides.

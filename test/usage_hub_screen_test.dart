@@ -247,11 +247,9 @@ void main() {
       final row = _key('settings-category-usage');
       expect(row, findsOneWidget);
       expect(_key('settings-category-quota'), findsNothing);
+      // One Usage row, inside "This app".
       expect(
-        find.descendant(
-          of: _key('settings-group-usage'),
-          matching: find.byType(ListTile),
-        ),
+        find.descendant(of: _key('settings-group-this-app'), matching: row),
         findsOneWidget,
       );
       expect(
@@ -279,8 +277,6 @@ void main() {
       await tester.pumpWidget(_app(SettingsScreen(controller: h.connection)));
       await tester.pumpAndSettle();
       expect(_key('settings-category-usage'), findsNothing);
-      expect(_key('settings-group-usage'), findsNothing);
-      expect(find.text(_en.settingsHubGroupUsage), findsNothing);
       await _finish(tester, h.connection);
     },
   );

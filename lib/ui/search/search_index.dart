@@ -428,7 +428,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-category-background',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.notifications,
+      group: SettingsGroup.thisApp,
       icon: AppIconography.notificationImportant,
       title: notifications,
       keywords: l10n.settingsHubSearchNotificationsAliases,
@@ -440,7 +440,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-category-appearance',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.appearance,
+      group: SettingsGroup.thisApp,
       icon: AppIconography.appearance,
       title: appearance,
       keywords: l10n.settingsHubSearchAppearanceAliases,
@@ -544,7 +544,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-category-usage',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.usage,
+      group: SettingsGroup.thisApp,
       icon: AppIconography.usage,
       title: usage,
       keywords: l10n.settingsHubSearchUsageAliases,
@@ -556,7 +556,7 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
     SearchEntry(
       id: 'settings-category-privacy',
       kind: SearchEntryKind.hubRow,
-      group: SettingsGroup.privacy,
+      group: SettingsGroup.thisApp,
       icon: AppIconography.privacy,
       title: l10n.settingsHubPrivacyRow,
       // Older drafts are listed from the conversation that owns them; the
