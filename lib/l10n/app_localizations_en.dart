@@ -8257,10 +8257,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiDeleteThisMessage => 'Delete this message?';
 
   @override
-  String get chatUiDescribeAChangeAskAboutThisProject =>
-      'Describe a change, ask about this project, or paste an error.';
-
-  @override
   String get chatUiDetails => 'Details';
 
   @override
@@ -8316,9 +8312,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiExpandedUnderEachAnswer => 'Expanded under each answer';
 
   @override
-  String get chatUiExplainThisProject => 'Explain this project';
-
-  @override
   String get chatUiExplored => 'Explored';
 
   @override
@@ -8352,9 +8345,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiFindASubagent => 'Find a subagent';
-
-  @override
-  String get chatUiFindAndFixABug => 'Find and fix a bug';
 
   @override
   String get chatUiFindFiles => 'Find files';
@@ -8440,9 +8430,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiList => 'List';
-
-  @override
-  String get chatUiListWhatSInThisDirectory => 'List what\'s in this directory';
 
   @override
   String get chatUiLoadingSubagents => 'Loading subagents…';
@@ -8863,9 +8850,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Start a new conversation with this prompt in the composer';
 
   @override
-  String get chatUiStartCoding => 'Start coding';
-
-  @override
   String get chatUiSteer => 'Steer';
 
   @override
@@ -8959,9 +8943,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUiTimestampsUsage => 'Timestamps & usage';
 
   @override
-  String get chatUiTipTypeForCommandsTap => 'Tip: type / for commands · ';
-
-  @override
   String get chatUiTitle => 'Title';
 
   @override
@@ -9026,9 +9007,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatUiWebSearch => 'Web search';
-
-  @override
-  String get chatUiWhatChangedRecently => 'What changed recently?';
 
   @override
   String get chatUiWhenTheAssistantPlansWorkAsA =>
@@ -9257,11 +9235,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String chatUiContextPercentUsed(Object percent) {
     return 'Context window $percent percent used';
-  }
-
-  @override
-  String chatUiExplainProject(Object name) {
-    return 'Explain the $name project';
   }
 
   @override
@@ -16998,10 +16971,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'The phone restarted, so the local server stopped. Start it again when you need it.';
 
   @override
-  String get chatUiTipLongPressForActions =>
-      'long-press a message for its actions';
-
-  @override
   String get phoneServerStoppedTitle => 'The server on this phone is stopped';
 
   @override
@@ -17807,4 +17776,72 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneSetupStartChecking => 'Checking what\'s installed…';
+
+  @override
+  String get chatStartBuildWebPage => 'Build a small web page';
+
+  @override
+  String get chatStartPythonScript => 'Write a Python script that…';
+
+  @override
+  String get chatStartNodeProject => 'Start a Node.js project';
+
+  @override
+  String get chatStartReadme => 'Set up a README';
+
+  @override
+  String get chatStartExplainProject => 'Explain this project';
+
+  @override
+  String get chatStartWhatChanged => 'What changed recently?';
+
+  @override
+  String get chatStartFindBug => 'Find and fix a bug';
+
+  @override
+  String get chatStartAddTests => 'Add tests';
+
+  @override
+  String get chatStartListFolder => 'List what\'s in this folder';
+
+  @override
+  String get chatStartEmptyFolder => 'Empty folder';
+
+  @override
+  String chatStartItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatStartGit => 'Git';
+
+  @override
+  String chatStartChangeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count changes',
+      one: '1 change',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatStartLooking => 'Looking at the folder…';
+
+  @override
+  String get chatStartServerFolder => 'Server folder';
+
+  @override
+  String get chatStartTip =>
+      'Type / for commands · long-press a message for its actions';
+
+  @override
+  String get chatStartSuggestionsLabel => 'Ways to start';
 }

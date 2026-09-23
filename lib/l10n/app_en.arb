@@ -6956,10 +6956,6 @@
   "@chatUiDeleteThisMessage": {
     "description": "Chat journey: Delete this message?"
   },
-  "chatUiDescribeAChangeAskAboutThisProject": "Describe a change, ask about this project, or paste an error.",
-  "@chatUiDescribeAChangeAskAboutThisProject": {
-    "description": "Chat journey: Describe a change, ask about this project, or paste an error."
-  },
   "chatUiDetails": "Details",
   "@chatUiDetails": {
     "description": "Chat journey: Details"
@@ -7028,10 +7024,6 @@
   "@chatUiExpandedUnderEachAnswer": {
     "description": "Chat journey: Expanded under each answer"
   },
-  "chatUiExplainThisProject": "Explain this project",
-  "@chatUiExplainThisProject": {
-    "description": "Chat journey: Explain this project"
-  },
   "chatUiExplored": "Explored",
   "@chatUiExplored": {
     "description": "Chat journey: Explored"
@@ -7075,10 +7067,6 @@
   "chatUiFindASubagent": "Find a subagent",
   "@chatUiFindASubagent": {
     "description": "Chat journey: Find a subagent"
-  },
-  "chatUiFindAndFixABug": "Find and fix a bug",
-  "@chatUiFindAndFixABug": {
-    "description": "Chat journey: Find and fix a bug"
   },
   "chatUiFindFiles": "Find files",
   "@chatUiFindFiles": {
@@ -7179,10 +7167,6 @@
   "chatUiList": "List",
   "@chatUiList": {
     "description": "Chat journey: List"
-  },
-  "chatUiListWhatSInThisDirectory": "List what's in this directory",
-  "@chatUiListWhatSInThisDirectory": {
-    "description": "Chat journey: List what's in this directory"
   },
   "chatUiLoadingSubagents": "Loading subagents…",
   "@chatUiLoadingSubagents": {
@@ -7692,10 +7676,6 @@
   "@chatUiStartANewSessionWithThisPrompt": {
     "description": "Chat journey: Start a new session with this prompt in the composer"
   },
-  "chatUiStartCoding": "Start coding",
-  "@chatUiStartCoding": {
-    "description": "Chat journey: Start coding"
-  },
   "chatUiSteer": "Steer",
   "@chatUiSteer": {
     "description": "Chat journey: Steer"
@@ -7800,10 +7780,6 @@
   "@chatUiTimestampsUsage": {
     "description": "Chat journey: Timestamps & usage"
   },
-  "chatUiTipTypeForCommandsTap": "Tip: type / for commands · ",
-  "@chatUiTipTypeForCommandsTap": {
-    "description": "Chat journey: Tip: type / for commands · tap "
-  },
   "chatUiTitle": "Title",
   "@chatUiTitle": {
     "description": "Chat journey: Title"
@@ -7883,10 +7859,6 @@
   "chatUiWebSearch": "Web search",
   "@chatUiWebSearch": {
     "description": "Chat journey: Web search"
-  },
-  "chatUiWhatChangedRecently": "What changed recently?",
-  "@chatUiWhatChangedRecently": {
-    "description": "Chat journey: What changed recently?"
   },
   "chatUiWhenTheAssistantPlansWorkAsA": "When the assistant plans work as a todo list, the items appear here.",
   "@chatUiWhenTheAssistantPlansWorkAsA": {
@@ -8207,15 +8179,6 @@
     "description": "Chat journey: Context window {percent} percent used",
     "placeholders": {
       "percent": {
-        "type": "Object"
-      }
-    }
-  },
-  "chatUiExplainProject": "Explain the {name} project",
-  "@chatUiExplainProject": {
-    "description": "Chat journey: Explain the {name} project",
-    "placeholders": {
-      "name": {
         "type": "Object"
       }
     }
@@ -18184,7 +18147,6 @@
   "@setupStoppedByRestart": {
     "description": "Phone server status after the phone restarted; the server is simply stopped"
   },
-  "chatUiTipLongPressForActions": "long-press a message for its actions",
   "phoneServerStoppedTitle": "The server on this phone is stopped",
   "@phoneServerStoppedTitle": {
     "description": "Title when the app-managed phone server is not running"
@@ -19323,5 +19285,83 @@
   "phoneSetupStartChecking": "Checking what's installed…",
   "@phoneSetupStartChecking": {
     "description": "While the add-mode sheet reads which tools are installed"
+  },
+  "chatStartBuildWebPage": "Build a small web page",
+  "@chatStartBuildWebPage": {
+    "description": "Starter chip for an empty project folder; fills the composer"
+  },
+  "chatStartPythonScript": "Write a Python script that…",
+  "@chatStartPythonScript": {
+    "description": "Starter chip for an empty project; the ellipsis marks an unfinished sentence the person completes (the composer gets it without the ellipsis)"
+  },
+  "chatStartNodeProject": "Start a Node.js project",
+  "@chatStartNodeProject": {
+    "description": "Starter chip for an empty project folder"
+  },
+  "chatStartReadme": "Set up a README",
+  "@chatStartReadme": {
+    "description": "Starter chip for an empty project folder"
+  },
+  "chatStartExplainProject": "Explain this project",
+  "@chatStartExplainProject": {
+    "description": "Starter chip for a project folder that has files"
+  },
+  "chatStartWhatChanged": "What changed recently?",
+  "@chatStartWhatChanged": {
+    "description": "Starter chip shown only when the project's Git repository has commits"
+  },
+  "chatStartFindBug": "Find and fix a bug",
+  "@chatStartFindBug": {
+    "description": "Starter chip for a project folder that has files"
+  },
+  "chatStartAddTests": "Add tests",
+  "@chatStartAddTests": {
+    "description": "Starter chip for a project folder that has files"
+  },
+  "chatStartListFolder": "List what's in this folder",
+  "@chatStartListFolder": {
+    "description": "Starter chip when no project folder is selected (the server's own folder)"
+  },
+  "chatStartEmptyFolder": "Empty folder",
+  "@chatStartEmptyFolder": {
+    "description": "Fact under the project name in a new conversation: the folder has no files"
+  },
+  "chatStartItemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@chatStartItemCount": {
+    "description": "Fact under the project name: how many files and folders sit at the top of the project folder",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatStartGit": "Git",
+  "@chatStartGit": {
+    "description": "Fact under the project name: the folder is a Git repository"
+  },
+  "chatStartChangeCount": "{count, plural, =1{1 change} other{{count} changes}}",
+  "@chatStartChangeCount": {
+    "description": "Fact under the project name: uncommitted Git changes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatStartLooking": "Looking at the folder…",
+  "@chatStartLooking": {
+    "description": "Fact line while the app reads the project folder and its Git status"
+  },
+  "chatStartServerFolder": "Server folder",
+  "@chatStartServerFolder": {
+    "description": "Header of a new conversation when no project folder is selected"
+  },
+  "chatStartTip": "Type / for commands · long-press a message for its actions",
+  "@chatStartTip": {
+    "description": "Tip under the header of a new conversation, shown only while the keyboard is down"
+  },
+  "chatStartSuggestionsLabel": "Ways to start",
+  "@chatStartSuggestionsLabel": {
+    "description": "Screen reader label for the row of starter chips above the composer"
   }
 }

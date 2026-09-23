@@ -8360,10 +8360,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiDeleteThisMessage => 'هل تريد حذف هذه الرسالة؟';
 
   @override
-  String get chatUiDescribeAChangeAskAboutThisProject =>
-      'صِف تغييرًا، أو اسأل عن هذا المشروع، أو الصق رسالة خطأ.';
-
-  @override
   String get chatUiDetails => 'التفاصيل';
 
   @override
@@ -8420,9 +8416,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiExpandedUnderEachAnswer => 'موسّع أسفل كل رد';
 
   @override
-  String get chatUiExplainThisProject => 'اشرح هذا المشروع';
-
-  @override
   String get chatUiExplored => 'اكتمل الاستكشاف';
 
   @override
@@ -8456,9 +8449,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiFindASubagent => 'البحث عن وكيل فرعي';
-
-  @override
-  String get chatUiFindAndFixABug => 'اعثر على خطأ وأصلحه';
 
   @override
   String get chatUiFindFiles => 'البحث عن ملفات';
@@ -8544,9 +8534,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiList => 'عرض قائمة';
-
-  @override
-  String get chatUiListWhatSInThisDirectory => 'اعرض محتويات هذا المجلد';
 
   @override
   String get chatUiLoadingSubagents => 'جارٍ تحميل الوكلاء الفرعيين…';
@@ -8969,9 +8956,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'بدء محادثة جديدة بهذا الطلب في محرّر الرسالة';
 
   @override
-  String get chatUiStartCoding => 'بدء البرمجة';
-
-  @override
   String get chatUiSteer => 'توجيه';
 
   @override
@@ -9065,9 +9049,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get chatUiTimestampsUsage => 'الطوابع الزمنية والاستخدام';
 
   @override
-  String get chatUiTipTypeForCommandsTap => 'تلميح: اكتب / للأوامر · ';
-
-  @override
   String get chatUiTitle => 'العنوان';
 
   @override
@@ -9131,9 +9112,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatUiWebSearch => 'البحث في الويب';
-
-  @override
-  String get chatUiWhatChangedRecently => 'ما الذي تغيّر مؤخرًا؟';
 
   @override
   String get chatUiWhenTheAssistantPlansWorkAsA =>
@@ -9388,11 +9366,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String chatUiContextPercentUsed(Object percent) {
     return 'استُخدم $percent بالمئة من نافذة السياق';
-  }
-
-  @override
-  String chatUiExplainProject(Object name) {
-    return 'اشرح مشروع $name';
   }
 
   @override
@@ -17256,9 +17229,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'أُعيد تشغيل الهاتف فتوقف الخادم المحلي. شغّله مجددًا عند الحاجة.';
 
   @override
-  String get chatUiTipLongPressForActions => 'اضغط مطولًا على رسالة لإجراءاتها';
-
-  @override
   String get phoneServerStoppedTitle => 'الخادم على هذا الهاتف متوقف';
 
   @override
@@ -18063,4 +18033,78 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get phoneSetupStartChecking => 'جارٍ التحقق مما هو مثبّت…';
+
+  @override
+  String get chatStartBuildWebPage => 'أنشئ صفحة ويب صغيرة';
+
+  @override
+  String get chatStartPythonScript => 'اكتب سكربت بايثون…';
+
+  @override
+  String get chatStartNodeProject => 'ابدأ مشروع Node.js';
+
+  @override
+  String get chatStartReadme => 'أنشئ ملف README';
+
+  @override
+  String get chatStartExplainProject => 'اشرح هذا المشروع';
+
+  @override
+  String get chatStartWhatChanged => 'ما الذي تغيّر مؤخرًا؟';
+
+  @override
+  String get chatStartFindBug => 'اعثر على خطأ وأصلحه';
+
+  @override
+  String get chatStartAddTests => 'أضف اختبارات';
+
+  @override
+  String get chatStartListFolder => 'اعرض محتويات هذا المجلد';
+
+  @override
+  String get chatStartEmptyFolder => 'مجلد فارغ';
+
+  @override
+  String chatStartItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عنصر',
+      many: '$count عنصرًا',
+      few: '$count عناصر',
+      two: 'عنصران',
+      one: 'عنصر واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatStartGit => 'Git';
+
+  @override
+  String chatStartChangeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تغيير',
+      many: '$count تغييرًا',
+      few: '$count تغييرات',
+      two: 'تغييران',
+      one: 'تغيير واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatStartLooking => 'جارٍ فحص المجلد…';
+
+  @override
+  String get chatStartServerFolder => 'مجلد الخادم';
+
+  @override
+  String get chatStartTip =>
+      'اكتب / للأوامر · اضغط مطولًا على رسالة لإجراءاتها';
+
+  @override
+  String get chatStartSuggestionsLabel => 'طرق للبدء';
 }

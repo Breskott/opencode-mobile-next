@@ -13531,12 +13531,6 @@ abstract class AppLocalizations {
   /// **'Delete this message?'**
   String get chatUiDeleteThisMessage;
 
-  /// Chat journey: Describe a change, ask about this project, or paste an error.
-  ///
-  /// In en, this message translates to:
-  /// **'Describe a change, ask about this project, or paste an error.'**
-  String get chatUiDescribeAChangeAskAboutThisProject;
-
   /// Chat journey: Details
   ///
   /// In en, this message translates to:
@@ -13639,12 +13633,6 @@ abstract class AppLocalizations {
   /// **'Expanded under each answer'**
   String get chatUiExpandedUnderEachAnswer;
 
-  /// Chat journey: Explain this project
-  ///
-  /// In en, this message translates to:
-  /// **'Explain this project'**
-  String get chatUiExplainThisProject;
-
   /// Chat journey: Explored
   ///
   /// In en, this message translates to:
@@ -13710,12 +13698,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Find a subagent'**
   String get chatUiFindASubagent;
-
-  /// Chat journey: Find and fix a bug
-  ///
-  /// In en, this message translates to:
-  /// **'Find and fix a bug'**
-  String get chatUiFindAndFixABug;
 
   /// Chat journey: Find files
   ///
@@ -13866,12 +13848,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'List'**
   String get chatUiList;
-
-  /// Chat journey: List what's in this directory
-  ///
-  /// In en, this message translates to:
-  /// **'List what\'s in this directory'**
-  String get chatUiListWhatSInThisDirectory;
 
   /// Chat journey: Loading subagents…
   ///
@@ -14635,12 +14611,6 @@ abstract class AppLocalizations {
   /// **'Start a new conversation with this prompt in the composer'**
   String get chatUiStartANewSessionWithThisPrompt;
 
-  /// Chat journey: Start coding
-  ///
-  /// In en, this message translates to:
-  /// **'Start coding'**
-  String get chatUiStartCoding;
-
   /// Chat journey: Steer
   ///
   /// In en, this message translates to:
@@ -14797,12 +14767,6 @@ abstract class AppLocalizations {
   /// **'Timestamps & usage'**
   String get chatUiTimestampsUsage;
 
-  /// Chat journey: Tip: type / for commands · tap
-  ///
-  /// In en, this message translates to:
-  /// **'Tip: type / for commands · '**
-  String get chatUiTipTypeForCommandsTap;
-
   /// Chat journey: Title
   ///
   /// In en, this message translates to:
@@ -14922,12 +14886,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Web search'**
   String get chatUiWebSearch;
-
-  /// Chat journey: What changed recently?
-  ///
-  /// In en, this message translates to:
-  /// **'What changed recently?'**
-  String get chatUiWhatChangedRecently;
 
   /// Chat journey: When the assistant plans work as a todo list, the items appear here.
   ///
@@ -15174,12 +15132,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Context window {percent} percent used'**
   String chatUiContextPercentUsed(Object percent);
-
-  /// Chat journey: Explain the {name} project
-  ///
-  /// In en, this message translates to:
-  /// **'Explain the {name} project'**
-  String chatUiExplainProject(Object name);
 
   /// Chat journey: {count, plural, one{1 earlier message} other{{count} earlier messages}}
   ///
@@ -27466,12 +27418,6 @@ abstract class AppLocalizations {
   /// **'The phone restarted, so the local server stopped. Start it again when you need it.'**
   String get setupStoppedByRestart;
 
-  /// No description provided for @chatUiTipLongPressForActions.
-  ///
-  /// In en, this message translates to:
-  /// **'long-press a message for its actions'**
-  String get chatUiTipLongPressForActions;
-
   /// Title when the app-managed phone server is not running
   ///
   /// In en, this message translates to:
@@ -28773,6 +28719,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checking what\'s installed…'**
   String get phoneSetupStartChecking;
+
+  /// Starter chip for an empty project folder; fills the composer
+  ///
+  /// In en, this message translates to:
+  /// **'Build a small web page'**
+  String get chatStartBuildWebPage;
+
+  /// Starter chip for an empty project; the ellipsis marks an unfinished sentence the person completes (the composer gets it without the ellipsis)
+  ///
+  /// In en, this message translates to:
+  /// **'Write a Python script that…'**
+  String get chatStartPythonScript;
+
+  /// Starter chip for an empty project folder
+  ///
+  /// In en, this message translates to:
+  /// **'Start a Node.js project'**
+  String get chatStartNodeProject;
+
+  /// Starter chip for an empty project folder
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a README'**
+  String get chatStartReadme;
+
+  /// Starter chip for a project folder that has files
+  ///
+  /// In en, this message translates to:
+  /// **'Explain this project'**
+  String get chatStartExplainProject;
+
+  /// Starter chip shown only when the project's Git repository has commits
+  ///
+  /// In en, this message translates to:
+  /// **'What changed recently?'**
+  String get chatStartWhatChanged;
+
+  /// Starter chip for a project folder that has files
+  ///
+  /// In en, this message translates to:
+  /// **'Find and fix a bug'**
+  String get chatStartFindBug;
+
+  /// Starter chip for a project folder that has files
+  ///
+  /// In en, this message translates to:
+  /// **'Add tests'**
+  String get chatStartAddTests;
+
+  /// Starter chip when no project folder is selected (the server's own folder)
+  ///
+  /// In en, this message translates to:
+  /// **'List what\'s in this folder'**
+  String get chatStartListFolder;
+
+  /// Fact under the project name in a new conversation: the folder has no files
+  ///
+  /// In en, this message translates to:
+  /// **'Empty folder'**
+  String get chatStartEmptyFolder;
+
+  /// Fact under the project name: how many files and folders sit at the top of the project folder
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String chatStartItemCount(int count);
+
+  /// Fact under the project name: the folder is a Git repository
+  ///
+  /// In en, this message translates to:
+  /// **'Git'**
+  String get chatStartGit;
+
+  /// Fact under the project name: uncommitted Git changes
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 change} other{{count} changes}}'**
+  String chatStartChangeCount(int count);
+
+  /// Fact line while the app reads the project folder and its Git status
+  ///
+  /// In en, this message translates to:
+  /// **'Looking at the folder…'**
+  String get chatStartLooking;
+
+  /// Header of a new conversation when no project folder is selected
+  ///
+  /// In en, this message translates to:
+  /// **'Server folder'**
+  String get chatStartServerFolder;
+
+  /// Tip under the header of a new conversation, shown only while the keyboard is down
+  ///
+  /// In en, this message translates to:
+  /// **'Type / for commands · long-press a message for its actions'**
+  String get chatStartTip;
+
+  /// Screen reader label for the row of starter chips above the composer
+  ///
+  /// In en, this message translates to:
+  /// **'Ways to start'**
+  String get chatStartSuggestionsLabel;
 }
 
 class _AppLocalizationsDelegate
