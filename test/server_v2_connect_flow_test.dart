@@ -152,6 +152,16 @@ void main() {
       await tester.pump();
       // Avoid settling while the pending probe animates. The fields are
       // mounted in the same editor list and can be scrolled directly.
+      if (fieldKey == 'server-username-field') {
+        // Opening "More options" animates; settling would wait on the
+        // pending probe's spinner, so pump the expansion through instead.
+        final tile = find.byKey(const ValueKey('server-editor-more-options'));
+        await tester.ensureVisible(tile);
+        await tester.tap(
+          find.descendant(of: tile, matching: find.byType(ListTile)).first,
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+      }
       final field = find.byKey(ValueKey(fieldKey));
       await tester.ensureVisible(field);
       await tester.pump();
@@ -202,7 +212,9 @@ void main() {
 
     expect(probedPassword, isEmpty);
     expect(find.byKey(const ValueKey('server-probe-verdict')), findsOneWidget);
-    expect(find.text('This is an OpenCode 2 server.'), findsOneWidget);
+    // A missing password answers 401 on OpenCode 1 and 2 alike, so the
+    // verdict asks for the password without guessing which one it is.
+    expect(find.text('This is an OpenCode 2 server.'), findsNothing);
     expect(
       find.text('This server requires its serve password.'),
       findsOneWidget,

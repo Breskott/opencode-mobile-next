@@ -10892,7 +10892,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupHttpsHint =>
-      'Use HTTPS for remote machines. HTTP is limited to localhost or 127.0.0.1.';
+      'https:// for other computers; http:// only on this device.';
 
   @override
   String get e7SetupObservedVersionSaveFailed =>
@@ -10986,7 +10986,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupPasswordStartupHint =>
-      'Printed by opencode2 serve at startup (\"server password …\"). Optional for servers without one.';
+      'Shown when the server starts. Leave empty if it has none.';
 
   @override
   String get e7SetupInstallTermuxDetail =>
@@ -17226,4 +17226,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String builtinServerStatusFailed(String reason) {
     return 'Could not read the built-in Linux status: $reason';
   }
+
+  @override
+  String get serverEditorMoreOptions => 'More options';
 }

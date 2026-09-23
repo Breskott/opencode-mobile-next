@@ -171,9 +171,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('OpenCode 2'), findsOneWidget);
       expect(find.text('OpenCode 1 or 2'), findsOneWidget);
+      // The check after the address says which one it found; no line
+      // promising it up front.
       expect(
         find.byKey(const ValueKey('opencode-autodetect-help')),
-        findsOneWidget,
+        findsNothing,
       );
       final url = find.byKey(const ValueKey('server-url-field'));
       await _reveal(tester, url);

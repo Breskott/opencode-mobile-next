@@ -17592,7 +17592,7 @@ abstract class AppLocalizations {
   /// Setup journey: https hint.
   ///
   /// In en, this message translates to:
-  /// **'Use HTTPS for remote machines. HTTP is limited to localhost or 127.0.0.1.'**
+  /// **'https:// for other computers; http:// only on this device.'**
   String get e7SetupHttpsHint;
 
   /// Setup journey: observed version save failed.
@@ -17766,7 +17766,7 @@ abstract class AppLocalizations {
   /// Setup journey: password startup hint.
   ///
   /// In en, this message translates to:
-  /// **'Printed by opencode2 serve at startup (\"server password …\"). Optional for servers without one.'**
+  /// **'Shown when the server starts. Leave empty if it has none.'**
   String get e7SetupPasswordStartupHint;
 
   /// Setup journey: install termux detail.
@@ -27813,6 +27813,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not read the built-in Linux status: {reason}'**
   String builtinServerStatusFailed(String reason);
+
+  /// Collapsed section on the add-server form holding the display name, username and AI Team host
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get serverEditorMoreOptions;
 }
 
 class _AppLocalizationsDelegate

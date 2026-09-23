@@ -10,6 +10,7 @@ import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 class _RecordingProfileStore extends ProfileStore {
   _RecordingProfileStore({required super.prefs});
@@ -302,7 +303,10 @@ void main() {
     // Titled with the agent chosen at "Which agent?".
     expect(find.widgetWithText(AppBar, 'OpenCode'), findsOneWidget);
     expect(find.text('Save & connect'), findsOneWidget);
-    expect(find.text('AUTHENTICATION'), findsOneWidget);
+    // Address and password only; the rest waits under More options.
+    expect(find.text('AUTHENTICATION'), findsNothing);
+    expect(find.text('More options'), findsOneWidget);
+    expect(find.byKey(const ValueKey('server-username-field')), findsNothing);
 
     final url = tester.widget<TextField>(
       find.byKey(const ValueKey('server-url-field')),
@@ -323,6 +327,7 @@ void main() {
         find.byKey(const ValueKey('server-url-field')),
         'HTTPS://server.example:4096/',
       );
+      await openServerMoreOptions(tester);
       await tester.enterText(
         find.byKey(const ValueKey('server-username-field')),
         'opencode',
@@ -485,6 +490,8 @@ void main() {
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
 
+    await openServerMoreOptions(tester);
+
     await tester.enterText(
       find.byKey(const ValueKey('server-name-field')),
       'Renamed box',
@@ -504,6 +511,8 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await _openEditor(tester);
+
+    await openServerMoreOptions(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-name-field')),

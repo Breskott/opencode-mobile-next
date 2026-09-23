@@ -1266,6 +1266,13 @@ class _ProfileEditorScreen extends StatefulWidget {
 }
 
 class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
+  /// "More options" starts open only when something in it was already set:
+  /// a username other than the default, or an AI Team host.
+  late bool _moreOptionsOpen =
+      (widget.existing?.username.isNotEmpty == true &&
+          widget.existing?.username != 'opencode') ||
+      widget.existing?.orchestration != null;
+
   late ServerBackend _backend =
       widget.existing?.backend ??
       widget.presetBackend ??
@@ -2388,16 +2395,8 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     ),
                     const SizedBox(height: 8),
                   ],
-                  if (!_isCodex) ...[
-                    Text(
-                      _connectionL10n(context).oc2DiscoveryAutodetect,
-                      key: const ValueKey('opencode-autodetect-help'),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
+                  // No "detects OpenCode 1 or 2" line: the check after the
+                  // address says which one it found, when it matters.
                   // A save or connect that failed is shown first, where it is
                   // seen without scrolling, in the same verdict style as Test
                   // connection.
@@ -2490,8 +2489,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       autofocus: false,
                       keyboardType: TextInputType.url,
                       textInputAction: TextInputAction.next,
-                      onSubmitted: (_) => _nameFocus.requestFocus(),
+                      // Straight to the password: the name and username
+                      // are under More options and rarely needed.
+                      onSubmitted: (_) => _passFocus.requestFocus(),
                       onChanged: _urlChanged,
+                      scrollPadding: const EdgeInsets.only(bottom: 160),
                       decoration: InputDecoration(
                         labelText: lookupAppLocalizations(
                           Localizations.localeOf(context),
@@ -2508,52 +2510,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       ),
                     ),
                     ?_notSameNetworkLink(),
-                    const SizedBox(height: 20),
-                    TextField(
-                      enabled: !_submitting,
-                      key: const ValueKey('server-name-field'),
-                      controller: _name,
-                      focusNode: _nameFocus,
-                      textInputAction: TextInputAction.next,
-                      onSubmitted: (_) => _userFocus.requestFocus(),
-                      onChanged: (_) => _fieldChanged(),
-                      decoration: InputDecoration(
-                        labelText: _connectionL10n(
-                          context,
-                        ).connectionDisplayName,
-                        hintText: _connectionL10n(
-                          context,
-                        ).connectionDisplayNameHint,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupAuthentication,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      enabled: !_submitting,
-                      key: const ValueKey('server-username-field'),
-                      textDirection: TextDirection.ltr,
-                      controller: _user,
-                      focusNode: _userFocus,
-                      textInputAction: TextInputAction.next,
-                      onSubmitted: (_) => _passFocus.requestFocus(),
-                      onChanged: (_) => _fieldChanged(),
-                      decoration: InputDecoration(
-                        labelText: lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7SetupUsername,
-                        hintText: 'opencode',
-                      ),
-                    ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     TextField(
                       enabled: !_submitting,
                       key: const ValueKey('server-password-field'),
@@ -2566,6 +2523,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       autocorrect: false,
                       enableSuggestions: false,
                       keyboardType: TextInputType.visiblePassword,
+                      // Room for the Save button above the keyboard, so the
+                      // field being typed in is never hidden behind it.
+                      scrollPadding: const EdgeInsets.only(bottom: 160),
                       style: _obscurePassword
                           ? null
                           : const TextStyle(fontFamily: AppTheme.monoFamily),
@@ -2739,7 +2699,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                                       ),
                                     ),
                                   ] else ...[
-                                    if (result.flavor == ServerFlavor.v2) ...[
+                                    // A missing password answers 401 on
+                                    // OpenCode 1 and 2 alike; which one it
+                                    // is shows once the password is in.
+                                    if (result.flavor == ServerFlavor.v2 &&
+                                        !result.needsPassword) ...[
                                       Text(
                                         lookupAppLocalizations(
                                           Localizations.localeOf(context),
@@ -2809,44 +2773,101 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     ),
                   ],
                   if (!_isCodex) ...[
-                    const SizedBox(height: 24),
-                    Text(
-                      _connectionL10n(context).teamUiEditorTitle,
-                      key: const ValueKey('server-editor-team-section'),
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _orchestration == null
-                          ? _connectionL10n(context).teamUiEditorBody
-                          : _connectionL10n(
-                              context,
-                            ).teamUiEditorConfigured(_orchestration!.url),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.35,
-                      ),
-                    ),
-                    Wrap(
-                      spacing: 4,
-                      children: [
-                        TextButton(
-                          key: const ValueKey('server-editor-team-learn'),
-                          onPressed: _submitting
-                              ? null
-                              : () => showTeamHostGuideSheet(context),
-                          child: Text(_connectionL10n(context).teamUiLearnHow),
+                    const SizedBox(height: 8),
+                    // What most people never change, out of the way: the name
+                    // comes from the address and the username is "opencode"
+                    // unless the server was started with another.
+                    Theme(
+                      data: theme.copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        key: const ValueKey('server-editor-more-options'),
+                        tilePadding: EdgeInsets.zero,
+                        childrenPadding: const EdgeInsets.only(bottom: 8),
+                        initiallyExpanded: _moreOptionsOpen,
+                        onExpansionChanged: (open) => _moreOptionsOpen = open,
+                        title: Text(
+                          _connectionL10n(context).serverEditorMoreOptions,
                         ),
-                        TextButton(
-                          key: const ValueKey('server-editor-team-add'),
-                          onPressed: _submitting ? null : _addTeamHost,
-                          child: Text(
-                            _orchestration == null
-                                ? _connectionL10n(context).teamUiAddManually
-                                : _connectionL10n(context).teamUiChange,
+                        children: [
+                          TextField(
+                            enabled: !_submitting,
+                            key: const ValueKey('server-name-field'),
+                            controller: _name,
+                            focusNode: _nameFocus,
+                            textInputAction: TextInputAction.next,
+                            onSubmitted: (_) => _userFocus.requestFocus(),
+                            onChanged: (_) => _fieldChanged(),
+                            decoration: InputDecoration(
+                              labelText: _connectionL10n(
+                                context,
+                              ).connectionDisplayName,
+                              hintText: _connectionL10n(
+                                context,
+                              ).connectionDisplayNameHint,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          TextField(
+                            enabled: !_submitting,
+                            key: const ValueKey('server-username-field'),
+                            textDirection: TextDirection.ltr,
+                            controller: _user,
+                            focusNode: _userFocus,
+                            textInputAction: TextInputAction.next,
+                            onSubmitted: (_) => _passFocus.requestFocus(),
+                            onChanged: (_) => _fieldChanged(),
+                            decoration: InputDecoration(
+                              labelText: lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupUsername,
+                              hintText: 'opencode',
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            _connectionL10n(context).teamUiEditorTitle,
+                            key: const ValueKey('server-editor-team-section'),
+                            style: theme.textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _orchestration == null
+                                ? _connectionL10n(context).teamUiEditorBody
+                                : _connectionL10n(
+                                    context,
+                                  ).teamUiEditorConfigured(_orchestration!.url),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              height: 1.35,
+                            ),
+                          ),
+                          Wrap(
+                            spacing: 4,
+                            children: [
+                              TextButton(
+                                key: const ValueKey('server-editor-team-learn'),
+                                onPressed: _submitting
+                                    ? null
+                                    : () => showTeamHostGuideSheet(context),
+                                child: Text(
+                                  _connectionL10n(context).teamUiLearnHow,
+                                ),
+                              ),
+                              TextButton(
+                                key: const ValueKey('server-editor-team-add'),
+                                onPressed: _submitting ? null : _addTeamHost,
+                                child: Text(
+                                  _orchestration == null
+                                      ? _connectionL10n(
+                                          context,
+                                        ).teamUiAddManually
+                                      : _connectionL10n(context).teamUiChange,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ],

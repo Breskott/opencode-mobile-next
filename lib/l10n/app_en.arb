@@ -10423,7 +10423,7 @@
   "@e7SetupServerPassword": {
     "description": "Setup journey: server password."
   },
-  "e7SetupHttpsHint": "Use HTTPS for remote machines. HTTP is limited to localhost or 127.0.0.1.",
+  "e7SetupHttpsHint": "https:// for other computers; http:// only on this device.",
   "@e7SetupHttpsHint": {
     "description": "Setup journey: https hint."
   },
@@ -10539,7 +10539,7 @@
   "@e7SetupSaveToFinish": {
     "description": "Setup journey: save to finish."
   },
-  "e7SetupPasswordStartupHint": "Printed by opencode2 serve at startup (\"server password …\"). Optional for servers without one.",
+  "e7SetupPasswordStartupHint": "Shown when the server starts. Leave empty if it has none.",
   "@e7SetupPasswordStartupHint": {
     "description": "Setup journey: password startup hint."
   },
@@ -18500,5 +18500,9 @@
         "type": "String"
       }
     }
+  },
+  "serverEditorMoreOptions": "More options",
+  "@serverEditorMoreOptions": {
+    "description": "Collapsed section on the add-server form holding the display name, username and AI Team host"
   }
 }

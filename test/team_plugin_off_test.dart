@@ -32,6 +32,7 @@ import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 Directory _findFixtureRoot() {
   var dir = Directory.current;
@@ -469,6 +470,7 @@ void main() {
       await openFirstRunConnect(tester);
       // The editor's entry point is meant to be there; the host form and
       // every other plugin widget are not.
+      await openServerMoreOptions(tester);
       expect(
         find.byKey(const ValueKey('server-editor-team-section')),
         findsOneWidget,

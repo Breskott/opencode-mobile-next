@@ -12,6 +12,7 @@ import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 /// Stands in for a real serve password. Never a live one.
 const _password = 'fixture-not-a-live-serve-password-000000000';
@@ -109,6 +110,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fieldText(tester, 'server-url-field'), 'http://127.0.0.1:4097');
+    await openServerMoreOptions(tester);
     expect(fieldText(tester, 'server-username-field'), 'opencode');
     expect(fieldText(tester, 'server-password-field'), _password);
   });

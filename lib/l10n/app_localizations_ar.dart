@@ -11098,7 +11098,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SetupHttpsHint =>
-      'استخدم HTTPS للأجهزة البعيدة. يُسمح بـ HTTP فقط مع localhost أو 127.0.0.1.';
+      '‏https://‏ للأجهزة الأخرى، و‏http://‏ على هذا الجهاز فقط.';
 
   @override
   String get e7SetupObservedVersionSaveFailed =>
@@ -11193,7 +11193,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SetupPasswordStartupHint =>
-      'يعرضها الأمر opencode2 serve عند التشغيل بجوار «server password …». اختيارية للخوادم التي لا تستخدم كلمة مرور.';
+      'تظهر عند تشغيل الخادم. اتركها فارغة إن لم تكن له كلمة مرور.';
 
   @override
   String get e7SetupInstallTermuxDetail =>
@@ -17481,4 +17481,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String builtinServerStatusFailed(String reason) {
     return 'تعذّرت قراءة حالة Linux المدمج: $reason';
   }
+
+  @override
+  String get serverEditorMoreOptions => 'خيارات أخرى';
 }
