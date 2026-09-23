@@ -18608,5 +18608,225 @@
   "builtinServerEntryAction": "Set it up",
   "@builtinServerEntryAction": {
     "description": "Button that opens the steps for running OpenCode inside the app"
+  },
+  "phoneSetupStartScreenTitle": "On this phone",
+  "@phoneSetupStartScreenTitle": {
+    "description": "App bar title of the phone setup start screen"
+  },
+  "phoneSetupStartHeadline": "Run a coding agent right here",
+  "@phoneSetupStartHeadline": {
+    "description": "Headline of the phone setup start screen for a phone with nothing set up"
+  },
+  "phoneSetupStartPromise": "No computer and no other apps. {time} and ~{size} the first time.",
+  "@phoneSetupStartPromise": {
+    "description": "One-line promise under the headline; time and size are computed from the components that Set up installs",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupStartPromiseNoSize": "No computer and no other apps. {time} the first time.",
+  "@phoneSetupStartPromiseNoSize": {
+    "description": "The promise when no download size is known",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupStartAboutMinutes": "{minutes, plural, =1{About a minute} other{About {minutes} minutes}}",
+  "@phoneSetupStartAboutMinutes": {
+    "description": "Estimated setup time, capitalised because it starts a sentence",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "phoneSetupStartMegabytes": "{value} MB",
+  "@phoneSetupStartMegabytes": {
+    "description": "A download size in megabytes",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupStartGigabytes": "{value} GB",
+  "@phoneSetupStartGigabytes": {
+    "description": "A download size in gigabytes",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupStartSetUp": "Set up",
+  "@phoneSetupStartSetUp": {
+    "description": "The one primary button: installs everything needed to run a coding agent on this phone"
+  },
+  "phoneSetupStartIncludes": "Includes {tools}.",
+  "@phoneSetupStartIncludes": {
+    "description": "What Set up installs besides the agent, e.g. 'Includes Git, Python and Node.js.'",
+    "placeholders": {
+      "tools": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupStartListPair": "{first} and {last}",
+  "@phoneSetupStartListPair": {
+    "description": "Joins the last two names of a list",
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "last": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupStartListSeparator": ", ",
+  "@phoneSetupStartListSeparator": {
+    "description": "Separator between names of a list, before the last pair"
+  },
+  "phoneSetupStartCustomize": "Customize",
+  "@phoneSetupStartCustomize": {
+    "description": "Opens the sheet to choose which tools Set up installs"
+  },
+  "phoneSetupStartOtherWays": "Other ways",
+  "@phoneSetupStartOtherWays": {
+    "description": "Collapsed section with the less common ways to get a coding agent"
+  },
+  "phoneSetupStartUseTermux": "Use Termux instead",
+  "@phoneSetupStartUseTermux": {
+    "description": "Opens the Termux-based setup"
+  },
+  "phoneSetupStartAdvanced": "Advanced",
+  "@phoneSetupStartAdvanced": {
+    "description": "Muted tag next to the Termux option"
+  },
+  "phoneSetupStartByAddress": "Connect to a computer by address",
+  "@phoneSetupStartByAddress": {
+    "description": "Opens the form for connecting to an agent running elsewhere"
+  },
+  "phoneSetupStartSetUpHere": "Set it up in this app instead",
+  "@phoneSetupStartSetUpHere": {
+    "description": "Under Other ways when Termux already runs OpenCode: set up the in-app one anyway"
+  },
+  "phoneSetupStartProgressHeadline": "Setup is {percent}% done",
+  "@phoneSetupStartProgressHeadline": {
+    "description": "Headline while a setup is running or was stopped part way",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "phoneSetupStartRunningBody": "It keeps going while you use other apps.",
+  "@phoneSetupStartRunningBody": {
+    "description": "Under the progress headline while setup runs"
+  },
+  "phoneSetupStartStoppedBody": "It stopped before finishing. Continuing picks up where it left off.",
+  "@phoneSetupStartStoppedBody": {
+    "description": "Under the progress headline when setup was interrupted, failed or cancelled"
+  },
+  "phoneSetupStartContinue": "Continue setup",
+  "@phoneSetupStartContinue": {
+    "description": "Opens (and if needed resumes) the setup in progress"
+  },
+  "phoneSetupStartReadyHeadline": "OpenCode is ready on this phone",
+  "@phoneSetupStartReadyHeadline": {
+    "description": "Headline once the in-app OpenCode is installed"
+  },
+  "phoneSetupStartReadyBody": "Open it to start a conversation.",
+  "@phoneSetupStartReadyBody": {
+    "description": "Under the ready headline"
+  },
+  "phoneSetupStartOpen": "Open",
+  "@phoneSetupStartOpen": {
+    "description": "Starts and connects to the in-app OpenCode"
+  },
+  "phoneSetupStartTermuxHeadline": "OpenCode is already set up in Termux",
+  "@phoneSetupStartTermuxHeadline": {
+    "description": "Headline when a Termux-managed OpenCode was found on this phone"
+  },
+  "phoneSetupStartTermuxBody": "You set it up with Termux before. Connect to keep using it.",
+  "@phoneSetupStartTermuxBody": {
+    "description": "Under the Termux headline"
+  },
+  "phoneSetupStartConnect": "Connect",
+  "@phoneSetupStartConnect": {
+    "description": "Connects to the Termux-managed OpenCode"
+  },
+  "phoneSetupStartFailed": "That didn't work: {reason}",
+  "@phoneSetupStartFailed": {
+    "description": "Inline message when starting setup or opening the agent failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupStartEntryDetail": "Run a coding agent right here. No computer needed.",
+  "@phoneSetupStartEntryDetail": {
+    "description": "Subtitle of the 'On this phone' entry in the servers list"
+  },
+  "phoneSetupStartCustomizeTitle": "Choose what to install",
+  "@phoneSetupStartCustomizeTitle": {
+    "description": "Title of the Customize sheet"
+  },
+  "phoneSetupStartAddTitle": "Add tools",
+  "@phoneSetupStartAddTitle": {
+    "description": "Title of the Customize sheet in add mode"
+  },
+  "phoneSetupStartRequiredWhy": "Needed for the agent to run",
+  "@phoneSetupStartRequiredWhy": {
+    "description": "Fallback reason a required component cannot be switched off"
+  },
+  "phoneSetupStartInstalled": "Installed",
+  "@phoneSetupStartInstalled": {
+    "description": "A tool that is already on this phone, in add mode"
+  },
+  "phoneSetupStartTotals": "{time} · ~{size}",
+  "@phoneSetupStartTotals": {
+    "description": "Live totals of the chosen tools",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupStartApproxSize": "~{size}",
+  "@phoneSetupStartApproxSize": {
+    "description": "Approximate download size of one tool",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupStartNothingChosen": "Nothing chosen yet",
+  "@phoneSetupStartNothingChosen": {
+    "description": "Totals line in add mode before anything is switched on"
+  },
+  "phoneSetupStartDone": "Done",
+  "@phoneSetupStartDone": {
+    "description": "Closes the Customize sheet keeping the choice"
+  },
+  "phoneSetupStartAdd": "Add",
+  "@phoneSetupStartAdd": {
+    "description": "Adds the chosen tools, in add mode"
+  },
+  "phoneSetupStartChecking": "Checking what's installed…",
+  "@phoneSetupStartChecking": {
+    "description": "While the add-mode sheet reads which tools are installed"
   }
 }

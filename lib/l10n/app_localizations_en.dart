@@ -17306,4 +17306,154 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get builtinServerEntryAction => 'Set it up';
+
+  @override
+  String get phoneSetupStartScreenTitle => 'On this phone';
+
+  @override
+  String get phoneSetupStartHeadline => 'Run a coding agent right here';
+
+  @override
+  String phoneSetupStartPromise(String time, String size) {
+    return 'No computer and no other apps. $time and ~$size the first time.';
+  }
+
+  @override
+  String phoneSetupStartPromiseNoSize(String time) {
+    return 'No computer and no other apps. $time the first time.';
+  }
+
+  @override
+  String phoneSetupStartAboutMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'About $minutes minutes',
+      one: 'About a minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String phoneSetupStartMegabytes(String value) {
+    return '$value MB';
+  }
+
+  @override
+  String phoneSetupStartGigabytes(String value) {
+    return '$value GB';
+  }
+
+  @override
+  String get phoneSetupStartSetUp => 'Set up';
+
+  @override
+  String phoneSetupStartIncludes(String tools) {
+    return 'Includes $tools.';
+  }
+
+  @override
+  String phoneSetupStartListPair(String first, String last) {
+    return '$first and $last';
+  }
+
+  @override
+  String get phoneSetupStartListSeparator => ', ';
+
+  @override
+  String get phoneSetupStartCustomize => 'Customize';
+
+  @override
+  String get phoneSetupStartOtherWays => 'Other ways';
+
+  @override
+  String get phoneSetupStartUseTermux => 'Use Termux instead';
+
+  @override
+  String get phoneSetupStartAdvanced => 'Advanced';
+
+  @override
+  String get phoneSetupStartByAddress => 'Connect to a computer by address';
+
+  @override
+  String get phoneSetupStartSetUpHere => 'Set it up in this app instead';
+
+  @override
+  String phoneSetupStartProgressHeadline(int percent) {
+    return 'Setup is $percent% done';
+  }
+
+  @override
+  String get phoneSetupStartRunningBody =>
+      'It keeps going while you use other apps.';
+
+  @override
+  String get phoneSetupStartStoppedBody =>
+      'It stopped before finishing. Continuing picks up where it left off.';
+
+  @override
+  String get phoneSetupStartContinue => 'Continue setup';
+
+  @override
+  String get phoneSetupStartReadyHeadline => 'OpenCode is ready on this phone';
+
+  @override
+  String get phoneSetupStartReadyBody => 'Open it to start a conversation.';
+
+  @override
+  String get phoneSetupStartOpen => 'Open';
+
+  @override
+  String get phoneSetupStartTermuxHeadline =>
+      'OpenCode is already set up in Termux';
+
+  @override
+  String get phoneSetupStartTermuxBody =>
+      'You set it up with Termux before. Connect to keep using it.';
+
+  @override
+  String get phoneSetupStartConnect => 'Connect';
+
+  @override
+  String phoneSetupStartFailed(String reason) {
+    return 'That didn\'t work: $reason';
+  }
+
+  @override
+  String get phoneSetupStartEntryDetail =>
+      'Run a coding agent right here. No computer needed.';
+
+  @override
+  String get phoneSetupStartCustomizeTitle => 'Choose what to install';
+
+  @override
+  String get phoneSetupStartAddTitle => 'Add tools';
+
+  @override
+  String get phoneSetupStartRequiredWhy => 'Needed for the agent to run';
+
+  @override
+  String get phoneSetupStartInstalled => 'Installed';
+
+  @override
+  String phoneSetupStartTotals(String time, String size) {
+    return '$time · ~$size';
+  }
+
+  @override
+  String phoneSetupStartApproxSize(String size) {
+    return '~$size';
+  }
+
+  @override
+  String get phoneSetupStartNothingChosen => 'Nothing chosen yet';
+
+  @override
+  String get phoneSetupStartDone => 'Done';
+
+  @override
+  String get phoneSetupStartAdd => 'Add';
+
+  @override
+  String get phoneSetupStartChecking => 'Checking what\'s installed…';
 }

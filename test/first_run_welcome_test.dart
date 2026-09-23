@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
+import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/first_run_choice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/fake_setup_engine.dart';
 import 'support/first_run_path.dart';
 
 Future<(ProfileStore, ConnectionController)> _state() async {
@@ -182,6 +185,7 @@ void main() {
   ) async {
     final (store, controller) = await _state();
     addTearDown(controller.dispose);
+    PhoneSetup.engine = FakeSetupEngine();
     await tester.pumpWidget(
       _app(
         store,
@@ -195,9 +199,12 @@ void main() {
       ),
     );
 
+    // Phone setup v2: "On this phone" opens its own screen (A), where the
+    // in-app setup leads; Termux moved behind it, under Other ways.
     await tester.tap(find.byKey(const ValueKey('welcome-choice-phone')));
     await tester.pumpAndSettle();
-    expect(find.text('termux-route'), findsOneWidget);
+    expect(find.byType(PhoneSetupStartScreen), findsOneWidget);
+    expect(find.text('termux-route'), findsNothing);
     await tester.pageBack();
     await tester.pumpAndSettle();
 

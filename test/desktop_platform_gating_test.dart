@@ -174,12 +174,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.byKey(const ValueKey('quick-add-termux-card')),
+        find.byKey(const ValueKey('quick-add-phone-card')),
         findsOneWidget,
       );
       expect(find.text('On this phone'), findsOneWidget);
       expect(
-        find.text('Set up OpenCode 1 or 2 here with Termux.'),
+        find.text('Run a coding agent right here. No computer needed.'),
         findsOneWidget,
       );
     });
@@ -193,7 +193,7 @@ void main() {
       await tester.tap(find.text('More setup options'));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('quick-add-termux-card')), findsNothing);
+      expect(find.byKey(const ValueKey('quick-add-phone-card')), findsNothing);
       expect(find.text('On-device (Termux)'), findsNothing);
       expect(find.text('Add server'), findsOneWidget);
     });
