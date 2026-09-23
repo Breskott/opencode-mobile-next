@@ -331,6 +331,81 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
     }
 
+    /**
+     * The built-in Ubuntu (BuiltinLinux.kt). Anything that waits on proot runs
+     * off the main thread and answers back on it.
+     */
+    private fun handleBuiltinLinux(call: MethodCall, result: MethodChannel.Result) {
+        val linux = BuiltinLinux.get(applicationContext)
+        val main = Handler(Looper.getMainLooper())
+        fun inBackground(work: () -> Any?) {
+            Thread {
+                try {
+                    val value = work()
+                    main.post { result.success(value) }
+                } catch (error: Throwable) {
+                    main.post {
+                        result.error("builtin_linux", error.message ?: error.javaClass.simpleName, null)
+                    }
+                }
+            }.start()
+        }
+        when (call.method) {
+            "status" -> result.success(
+                mapOf(
+                    "installed" to linux.installed,
+                    "phase" to linux.phase,
+                    "message" to linux.message,
+                    "serverRunning" to linux.serverRunning,
+                    "serverPort" to linux.port,
+                    "abi" to (Build.SUPPORTED_ABIS.firstOrNull() ?: ""),
+                    "bytesUsed" to linux.bytesUsed(),
+                ),
+            )
+            "installUbuntu" -> {
+                linux.installInBackground()
+                result.success(null)
+            }
+            "run" -> {
+                val script = call.argument<String>("script")
+                if (script == null) {
+                    result.error("builtin_linux", "No script to run", null)
+                    return
+                }
+                val timeout = (call.argument<Int>("timeoutSeconds") ?: 600).toLong()
+                inBackground {
+                    val run = linux.run(script, timeout)
+                    mapOf("exitCode" to run.exitCode, "output" to run.output)
+                }
+            }
+            "startServer" -> {
+                val script = call.argument<String>("script")
+                val port = call.argument<Int>("port")
+                if (script == null || port == null) {
+                    result.error("builtin_linux", "A server needs a script and a port", null)
+                    return
+                }
+                inBackground {
+                    linux.startServer(script, port)
+                    null
+                }
+            }
+            "stopServer" -> inBackground {
+                linux.stopServer()
+                null
+            }
+            "serverLog" -> {
+                val tail = call.argument<Int>("tailBytes") ?: 16_384
+                inBackground { linux.serverLogTail(tail) }
+            }
+            "uninstall" -> inBackground {
+                linux.uninstall()
+                null
+            }
+            else -> result.notImplemented()
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
