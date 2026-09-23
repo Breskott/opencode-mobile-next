@@ -27538,6 +27538,198 @@ abstract class AppLocalizations {
   /// **'Open all {count} lines'**
   String terminalOpenFull(int count);
 
+  /// Accessibility label of the overall setup progress bar
+  ///
+  /// In en, this message translates to:
+  /// **'Setup progress'**
+  String get setupProgressViewOverallLabel;
+
+  /// Shown under the setup bar until there is enough real progress to estimate the time left
+  ///
+  /// In en, this message translates to:
+  /// **'Getting started…'**
+  String get setupProgressViewGettingStarted;
+
+  /// Estimated time left for a setup job, in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{~1 min left} other{~{minutes} min left}}'**
+  String setupProgressViewMinutesLeft(int minutes);
+
+  /// Estimated time left for a setup job when under a minute
+  ///
+  /// In en, this message translates to:
+  /// **'Less than a minute'**
+  String get setupProgressViewUnderMinute;
+
+  /// Status under the setup bar when the job finished
+  ///
+  /// In en, this message translates to:
+  /// **'All set'**
+  String get setupProgressViewDone;
+
+  /// Status under the setup bar when the job failed
+  ///
+  /// In en, this message translates to:
+  /// **'Setup didn\'t finish'**
+  String get setupProgressViewFailedTitle;
+
+  /// Status when the setup job was interrupted (app killed, reboot)
+  ///
+  /// In en, this message translates to:
+  /// **'Setup was interrupted. What\'s finished is kept.'**
+  String get setupProgressViewInterrupted;
+
+  /// Status when the person cancelled the setup job
+  ///
+  /// In en, this message translates to:
+  /// **'Setup stopped. What\'s finished stays installed.'**
+  String get setupProgressViewCancelled;
+
+  /// Download progress of one setup component, e.g. '18 of 30 MB'; total carries the unit
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total}'**
+  String setupProgressViewBytes(String done, String total);
+
+  /// Percent progress of one setup component or the whole job
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String setupProgressViewPercent(int percent);
+
+  /// A setup component's current stage followed by its measured progress, e.g. 'Downloading · 18 of 30 MB'
+  ///
+  /// In en, this message translates to:
+  /// **'{stage} · {measured}'**
+  String setupProgressViewStageMeasured(String stage, String measured);
+
+  /// A setup component is being checked for an existing install
+  ///
+  /// In en, this message translates to:
+  /// **'Checking'**
+  String get setupProgressViewChecking;
+
+  /// A setup component started but has not reported what it is doing yet
+  ///
+  /// In en, this message translates to:
+  /// **'Starting'**
+  String get setupProgressViewStarting;
+
+  /// What failed in a setup component: its last stage and the reason
+  ///
+  /// In en, this message translates to:
+  /// **'{stage}: {reason}'**
+  String setupProgressViewFailedStageReason(String stage, String reason);
+
+  /// A setup component failed; only its last stage is known
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped during: {stage}'**
+  String setupProgressViewFailedDuring(String stage);
+
+  /// A setup component failed with no reason given
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Show details for the log.'**
+  String get setupProgressViewFailedUnknown;
+
+  /// A setup component failed because the network was unreachable
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection — Continue when you\'re back online'**
+  String get setupProgressViewNoInternet;
+
+  /// Button that resumes a setup job after it stopped
+  ///
+  /// In en, this message translates to:
+  /// **'Continue setup'**
+  String get setupProgressViewContinue;
+
+  /// Button that stops a running setup job
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get setupProgressViewCancel;
+
+  /// Expands the live setup log
+  ///
+  /// In en, this message translates to:
+  /// **'Show details'**
+  String get setupProgressViewShowDetails;
+
+  /// Collapses the live setup log
+  ///
+  /// In en, this message translates to:
+  /// **'Hide details'**
+  String get setupProgressViewHideDetails;
+
+  /// Shown in the setup details when the log is still empty
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing logged yet.'**
+  String get setupProgressViewNoLog;
+
+  /// Accessibility state of a finished setup component
+  ///
+  /// In en, this message translates to:
+  /// **'installed'**
+  String get setupProgressViewStateDone;
+
+  /// Accessibility state of the setup component being installed
+  ///
+  /// In en, this message translates to:
+  /// **'in progress'**
+  String get setupProgressViewStateRunning;
+
+  /// Accessibility state of a setup component not started yet
+  ///
+  /// In en, this message translates to:
+  /// **'waiting'**
+  String get setupProgressViewStatePending;
+
+  /// Accessibility state of a setup component that failed
+  ///
+  /// In en, this message translates to:
+  /// **'failed'**
+  String get setupProgressViewStateFailed;
+
+  /// Title of the screen showing phone setup in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up OpenCode on this phone'**
+  String get phoneSetupProgressTitle;
+
+  /// Reassurance under the setup checklist that setup continues in the background
+  ///
+  /// In en, this message translates to:
+  /// **'You can leave the app. We\'ll notify you when it\'s ready.'**
+  String get phoneSetupProgressLeaveHint;
+
+  /// Title of the confirmation before cancelling phone setup
+  ///
+  /// In en, this message translates to:
+  /// **'Stop setup?'**
+  String get phoneSetupProgressStopTitle;
+
+  /// Body of the confirmation before cancelling phone setup
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s finished stays installed.'**
+  String get phoneSetupProgressStopMessage;
+
+  /// Confirms cancelling phone setup
+  ///
+  /// In en, this message translates to:
+  /// **'Stop setup'**
+  String get phoneSetupProgressStopConfirm;
+
+  /// Dismisses the cancel confirmation and lets phone setup continue
+  ///
+  /// In en, this message translates to:
+  /// **'Keep going'**
+  String get phoneSetupProgressKeepGoing;
+
   /// Title of the built-in (no Termux) server screen
   ///
   /// In en, this message translates to:

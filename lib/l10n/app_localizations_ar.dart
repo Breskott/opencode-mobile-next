@@ -17313,6 +17313,126 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get setupProgressViewOverallLabel => 'تقدّم الإعداد';
+
+  @override
+  String get setupProgressViewGettingStarted => 'جارٍ البدء…';
+
+  @override
+  String setupProgressViewMinutesLeft(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'بقيت $minutes دقيقة تقريبًا',
+      few: 'بقيت $minutes دقائق تقريبًا',
+      two: 'بقيت دقيقتان تقريبًا',
+      one: 'بقيت دقيقة تقريبًا',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get setupProgressViewUnderMinute => 'أقل من دقيقة';
+
+  @override
+  String get setupProgressViewDone => 'اكتمل كل شيء';
+
+  @override
+  String get setupProgressViewFailedTitle => 'لم يكتمل الإعداد';
+
+  @override
+  String get setupProgressViewInterrupted => 'توقّف الإعداد. ما اكتمل محفوظ.';
+
+  @override
+  String get setupProgressViewCancelled =>
+      'أُوقف الإعداد. ما اكتمل يبقى مثبّتًا.';
+
+  @override
+  String setupProgressViewBytes(String done, String total) {
+    return '$done من $total';
+  }
+
+  @override
+  String setupProgressViewPercent(int percent) {
+    return '$percent٪';
+  }
+
+  @override
+  String setupProgressViewStageMeasured(String stage, String measured) {
+    return '$stage · $measured';
+  }
+
+  @override
+  String get setupProgressViewChecking => 'جارٍ الفحص';
+
+  @override
+  String get setupProgressViewStarting => 'جارٍ البدء';
+
+  @override
+  String setupProgressViewFailedStageReason(String stage, String reason) {
+    return '$stage: $reason';
+  }
+
+  @override
+  String setupProgressViewFailedDuring(String stage) {
+    return 'توقّف أثناء: $stage';
+  }
+
+  @override
+  String get setupProgressViewFailedUnknown =>
+      'حدث خطأ. اعرض التفاصيل لرؤية السجل.';
+
+  @override
+  String get setupProgressViewNoInternet =>
+      'لا يوجد اتصال بالإنترنت — تابع عند عودة الاتصال';
+
+  @override
+  String get setupProgressViewContinue => 'متابعة الإعداد';
+
+  @override
+  String get setupProgressViewCancel => 'إلغاء';
+
+  @override
+  String get setupProgressViewShowDetails => 'عرض التفاصيل';
+
+  @override
+  String get setupProgressViewHideDetails => 'إخفاء التفاصيل';
+
+  @override
+  String get setupProgressViewNoLog => 'لا يوجد سجل بعد.';
+
+  @override
+  String get setupProgressViewStateDone => 'مثبّت';
+
+  @override
+  String get setupProgressViewStateRunning => 'قيد التثبيت';
+
+  @override
+  String get setupProgressViewStatePending => 'في الانتظار';
+
+  @override
+  String get setupProgressViewStateFailed => 'فشل';
+
+  @override
+  String get phoneSetupProgressTitle => 'جارٍ إعداد OpenCode على هذا الهاتف';
+
+  @override
+  String get phoneSetupProgressLeaveHint =>
+      'يمكنك مغادرة التطبيق. سنُعلمك عندما يصبح جاهزًا.';
+
+  @override
+  String get phoneSetupProgressStopTitle => 'إيقاف الإعداد؟';
+
+  @override
+  String get phoneSetupProgressStopMessage => 'ما اكتمل يبقى مثبّتًا.';
+
+  @override
+  String get phoneSetupProgressStopConfirm => 'إيقاف الإعداد';
+
+  @override
+  String get phoneSetupProgressKeepGoing => 'متابعة';
+
+  @override
   String get builtinServerTitle => 'OpenCode داخل التطبيق';
 
   @override
