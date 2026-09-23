@@ -3,6 +3,7 @@ package io.github.eslamasabry.opencode_mobile
 import android.content.Context
 import android.os.Build
 import android.system.Os
+import android.system.OsConstants
 import android.util.Log
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
@@ -58,6 +59,34 @@ class BuiltinLinux(private val context: Context) {
 
     /** Runs [script] with /bin/sh inside Ubuntu as root (faked by proot). */
     fun run(script: String, timeoutSeconds: Long = 600): Result {
+        val process = start(script, null)
+        process.outputStream.close()
+        val output = StringBuilder()
+        val reader = Thread {
+            process.inputStream.bufferedReader().forEachLine { line ->
+                Log.i(TAG, line)
+                synchronized(output) {
+                    output.appendLine(line)
+                    // Keep the tail: that is where a failing command says why.
+                    if (output.length > OUTPUT_CAP * 2) {
+                        output.delete(0, output.length - OUTPUT_CAP)
+                    }
+                }
+            }
+        }.apply { start() }
+        val finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
+        if (!finished) process.destroyForcibly()
+        reader.join(2000)
+        val text = synchronized(output) { output.takeLast(OUTPUT_CAP).toString() }
+        return Result(if (finished) process.exitValue() else -1, text)
+    }
+
+    /**
+     * Starts [script] inside Ubuntu with its output appended to [log], or piped
+     * back when [log] is null. proot is given --kill-on-exit, so stopping it
+     * stops everything the script started.
+     */
+    fun start(script: String, log: File?): Process {
         val tmp = File(context.cacheDir, "proot-tmp").apply { mkdirs() }
         val command = listOf(
             "$nativeDir/libproot.so",
@@ -81,26 +110,123 @@ class BuiltinLinux(private val context: Context) {
             "TMPDIR=/tmp",
             "/bin/sh", "-c", script,
         )
-        val process = ProcessBuilder(command)
+        return ProcessBuilder(command)
             .redirectErrorStream(true)
             .apply {
                 environment()["PROOT_LOADER"] = "$nativeDir/libproot-loader.so"
                 environment()["PROOT_TMP_DIR"] = tmp.absolutePath
                 environment()["LD_LIBRARY_PATH"] = nativeDir
+                if (log != null) {
+                    log.parentFile?.mkdirs()
+                    redirectOutput(ProcessBuilder.Redirect.appendTo(log))
+                }
             }
             .start()
-        process.outputStream.close()
-        val output = StringBuilder()
-        val reader = Thread {
-            process.inputStream.bufferedReader().forEachLine { line ->
-                Log.i(TAG, line)
-                synchronized(output) { output.appendLine(line) }
+    }
+
+    // ---- server ------------------------------------------------------------
+
+    private var server: Process? = null
+    private var serverPort: Int? = null
+    val serverLog = File(home, "server.log")
+
+    val serverRunning: Boolean
+        get() = server?.isAlive == true
+
+    val port: Int? get() = if (serverRunning) serverPort else null
+
+    @Synchronized
+    fun startServer(script: String, port: Int) {
+        check(installed) { "Ubuntu is not installed in the app yet" }
+        stopServer()
+        // One log per run; the previous one stays for a look after a crash.
+        if (serverLog.isFile) serverLog.renameTo(File(home, "server.previous.log"))
+        server = start(script, serverLog).also { it.outputStream.close() }
+        serverPort = port
+    }
+
+    @Synchronized
+    fun stopServer() {
+        val process = server ?: return
+        process.destroy()
+        if (!process.waitFor(3, TimeUnit.SECONDS)) process.destroyForcibly()
+        server = null
+        serverPort = null
+    }
+
+    fun serverLogTail(tailBytes: Int): String {
+        if (!serverLog.isFile) return ""
+        val skip = (serverLog.length() - tailBytes).coerceAtLeast(0)
+        serverLog.inputStream().use { input ->
+            input.skip(skip)
+            return input.readBytes().toString(Charsets.UTF_8)
+        }
+    }
+
+    // ---- install state -----------------------------------------------------
+
+    @Volatile var phase: String = if (ready.isFile) "ready" else "idle"
+        private set
+
+    @Volatile var message: String? = null
+        private set
+
+    /** Starts [install] on its own thread; [phase] says how it went. */
+    @Synchronized
+    fun installInBackground() {
+        if (phase == "installing") return
+        if (installed) {
+            phase = "ready"
+            return
+        }
+        phase = "installing"
+        message = null
+        Thread {
+            try {
+                install { step -> message = step }
+                phase = "ready"
+                message = null
+            } catch (error: Throwable) {
+                Log.e(TAG, "install failed", error)
+                phase = "failed"
+                message = error.message ?: error.javaClass.simpleName
             }
-        }.apply { start() }
-        val finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
-        if (!finished) process.destroyForcibly()
-        reader.join(2000)
-        return Result(if (finished) process.exitValue() else -1, output.toString())
+        }.start()
+    }
+
+    fun uninstall() {
+        stopServer()
+        ready.delete()
+        rootfs.deleteRecursively()
+        serverLog.delete()
+        phase = "idle"
+        message = null
+    }
+
+    /** Disk used by Ubuntu and what is installed in it, measured at most once a minute. */
+    @Volatile private var measured: Pair<Long, Long>? = null
+
+    fun bytesUsed(): Long? {
+        val now = System.currentTimeMillis()
+        val last = measured
+        if (last == null || now - last.first > 60_000) {
+            measured = now to (last?.second ?: -1L)
+            Thread { measured = System.currentTimeMillis() to sizeOf(rootfs) }.start()
+        }
+        return measured?.second?.takeIf { it >= 0 }
+    }
+
+    private fun sizeOf(file: File): Long {
+        // lstat, not the link target: Ubuntu's links point at absolute paths
+        // that resolve outside the tree from here.
+        val stat = try {
+            Os.lstat(file.absolutePath)
+        } catch (_: Exception) {
+            return 0
+        }
+        if (OsConstants.S_ISLNK(stat.st_mode)) return 0
+        if (!file.isDirectory) return stat.st_size
+        return file.listFiles()?.sumOf { sizeOf(it) } ?: 0
     }
 
     private fun download(image: Image, target: File) {
@@ -208,6 +334,15 @@ class BuiltinLinux(private val context: Context) {
 
     companion object {
         const val TAG = "OcLinux"
+        private const val OUTPUT_CAP = 64 * 1024
+
+        @Volatile private var instance: BuiltinLinux? = null
+
+        /** One Ubuntu per app: it owns the server process and the install state. */
+        fun get(context: Context): BuiltinLinux =
+            instance ?: synchronized(this) {
+                instance ?: BuiltinLinux(context.applicationContext).also { instance = it }
+            }
 
         // Ubuntu Base 24.04.5 (noble), from Canonical's SHA256SUMS.
         private const val BASE =
