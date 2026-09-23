@@ -36,6 +36,7 @@ import 'ui/navigation/chat_route.dart';
 import 'ui/screens/settings_screen.dart';
 import 'ui/widgets/product_states.dart' show productErrorText;
 import 'ui/widgets/saved_server_connection_card.dart';
+import 'ui/widgets/phone_server_card.dart' show serverDisplayName;
 import 'ui/screens/guide_screen.dart';
 import 'ui/screens/about_screen.dart';
 import 'ui/screens/home_screen.dart';
@@ -1508,7 +1509,7 @@ class _RootState extends ConsumerState<_Root> {
     return Scaffold(
       body: SafeArea(
         child: SavedServerConnectionCard(
-          profileName: profile.name,
+          profileName: serverDisplayName(profile, l10n),
           usesConnectionToken: conn.usesConnectionToken,
           requiresTokenReentry: profile.requiresCodexTokenReentry,
           baseUrl: profile.baseUrl,

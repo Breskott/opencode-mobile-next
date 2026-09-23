@@ -17228,6 +17228,146 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get phoneSetupReadyTitle => 'OpenCode is ready';
+
+  @override
+  String get phoneSetupReadyNameTitle => 'Name your first project';
+
+  @override
+  String get phoneSetupReadyNameLabel => 'Project name';
+
+  @override
+  String get phoneSetupReadyNameHelp => 'Letters, numbers, - _ .';
+
+  @override
+  String get phoneSetupReadyCreate => 'Create';
+
+  @override
+  String get phoneSetupReadyCreating => 'Creating the project';
+
+  @override
+  String get phoneSetupReadyOr => 'or';
+
+  @override
+  String get phoneSetupReadyOpenExisting => 'Open an existing folder';
+
+  @override
+  String get phoneSetupReadyNameEmpty => 'Enter a name.';
+
+  @override
+  String get phoneSetupReadyNameOneFolder => 'Use one name, without slashes.';
+
+  @override
+  String get phoneSetupReadyNameInvalid =>
+      'Use letters, numbers, - _ or . and start with a letter or number (up to 64).';
+
+  @override
+  String phoneSetupReadyCreateFailed(String reason) {
+    return 'The project could not be created: $reason';
+  }
+
+  @override
+  String phoneSetupReadyOpenFailed(String reason) {
+    return 'The project could not be opened: $reason';
+  }
+
+  @override
+  String get phoneServerCardTitle => 'This phone';
+
+  @override
+  String get phoneServerCardRunning => 'Running';
+
+  @override
+  String get phoneServerCardStopped => 'Stopped';
+
+  @override
+  String get phoneServerCardStarting => 'Starting';
+
+  @override
+  String get phoneServerCardStopping => 'Stopping';
+
+  @override
+  String get phoneServerCardChecking => 'Checking';
+
+  @override
+  String get phoneServerCardNotSetUp => 'Not set up';
+
+  @override
+  String get phoneServerCardSettingUp => 'Setting up';
+
+  @override
+  String phoneServerCardVersion(String version) {
+    return 'OpenCode $version';
+  }
+
+  @override
+  String get phoneServerCardStart => 'Start';
+
+  @override
+  String get phoneServerCardStop => 'Stop';
+
+  @override
+  String get phoneServerCardOpen => 'Open';
+
+  @override
+  String get phoneServerCardSetUp => 'Set up';
+
+  @override
+  String get phoneServerCardShowProgress => 'Show progress';
+
+  @override
+  String get phoneServerCardContinueSetup => 'Continue setup';
+
+  @override
+  String get phoneServerCardShowLog => 'Show log';
+
+  @override
+  String get phoneServerCardLogTitle => 'Log';
+
+  @override
+  String get phoneServerCardLogEmpty => 'Nothing in the log yet.';
+
+  @override
+  String get phoneServerCardMore => 'More';
+
+  @override
+  String phoneServerCardSwitchTo(String runtime) {
+    return 'Switch to $runtime';
+  }
+
+  @override
+  String get phoneServerCardAddTools => 'Add tools (Python, AI Team…)';
+
+  @override
+  String get phoneServerCardUpdate => 'Update OpenCode';
+
+  @override
+  String get phoneServerCardRemove => 'Remove from this phone…';
+
+  @override
+  String get phoneServerCardRemoveTitle => 'Remove OpenCode from this phone?';
+
+  @override
+  String phoneServerCardRemoveBody(String size) {
+    return 'This deletes OpenCode, its tools and every project on this phone, and frees $size.';
+  }
+
+  @override
+  String get phoneServerCardRemoveBodyUnmeasured =>
+      'This deletes OpenCode, its tools and every project on this phone, and frees the space they use.';
+
+  @override
+  String get phoneServerCardRemoveConfirm => 'Remove';
+
+  @override
+  String get phoneServerCardRemoved => 'OpenCode was removed from this phone.';
+
+  @override
+  String phoneServerCardActionFailed(String reason) {
+    return 'That did not work: $reason';
+  }
+
+  @override
   String get serverEditorMoreOptions => 'More options';
 
   @override

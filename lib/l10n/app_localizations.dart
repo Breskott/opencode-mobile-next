@@ -27814,6 +27814,258 @@ abstract class AppLocalizations {
   /// **'Could not read the built-in Linux status: {reason}'**
   String builtinServerStatusFailed(String reason);
 
+  /// Screen C heading once phone setup finished
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is ready'**
+  String get phoneSetupReadyTitle;
+
+  /// Screen C prompt above the project name field
+  ///
+  /// In en, this message translates to:
+  /// **'Name your first project'**
+  String get phoneSetupReadyNameTitle;
+
+  /// Label of the first project name field
+  ///
+  /// In en, this message translates to:
+  /// **'Project name'**
+  String get phoneSetupReadyNameLabel;
+
+  /// Helper under the project name field listing the allowed characters
+  ///
+  /// In en, this message translates to:
+  /// **'Letters, numbers, - _ .'**
+  String get phoneSetupReadyNameHelp;
+
+  /// Creates the first project and opens a new conversation in it
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get phoneSetupReadyCreate;
+
+  /// Spoken label of the progress shown while the first project is made
+  ///
+  /// In en, this message translates to:
+  /// **'Creating the project'**
+  String get phoneSetupReadyCreating;
+
+  /// Word before the link to open an existing folder
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get phoneSetupReadyOr;
+
+  /// Link on screen C that opens the in-app folder sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Open an existing folder'**
+  String get phoneSetupReadyOpenExisting;
+
+  /// Project name is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name.'**
+  String get phoneSetupReadyNameEmpty;
+
+  /// Project name contains a slash or is . or ..
+  ///
+  /// In en, this message translates to:
+  /// **'Use one name, without slashes.'**
+  String get phoneSetupReadyNameOneFolder;
+
+  /// Project name has characters that are not allowed
+  ///
+  /// In en, this message translates to:
+  /// **'Use letters, numbers, - _ or . and start with a letter or number (up to 64).'**
+  String get phoneSetupReadyNameInvalid;
+
+  /// Creating the first project folder failed
+  ///
+  /// In en, this message translates to:
+  /// **'The project could not be created: {reason}'**
+  String phoneSetupReadyCreateFailed(String reason);
+
+  /// Opening the new project or its first conversation failed
+  ///
+  /// In en, this message translates to:
+  /// **'The project could not be opened: {reason}'**
+  String phoneSetupReadyOpenFailed(String reason);
+
+  /// Name of the OpenCode server that runs inside the app, wherever servers are listed
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get phoneServerCardTitle;
+
+  /// Status of the server on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get phoneServerCardRunning;
+
+  /// Status of the server on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get phoneServerCardStopped;
+
+  /// Status of the server on this phone while it starts
+  ///
+  /// In en, this message translates to:
+  /// **'Starting'**
+  String get phoneServerCardStarting;
+
+  /// Status of the server on this phone while it stops
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping'**
+  String get phoneServerCardStopping;
+
+  /// Status before the server on this phone has been read
+  ///
+  /// In en, this message translates to:
+  /// **'Checking'**
+  String get phoneServerCardChecking;
+
+  /// Status when OpenCode is no longer installed on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Not set up'**
+  String get phoneServerCardNotSetUp;
+
+  /// Status while an install or update runs
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up'**
+  String get phoneServerCardSettingUp;
+
+  /// The installed OpenCode version on the phone card
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode {version}'**
+  String phoneServerCardVersion(String version);
+
+  /// Starts the server on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get phoneServerCardStart;
+
+  /// Stops the server on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get phoneServerCardStop;
+
+  /// Connects to the server on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get phoneServerCardOpen;
+
+  /// Opens phone setup when OpenCode is not installed
+  ///
+  /// In en, this message translates to:
+  /// **'Set up'**
+  String get phoneServerCardSetUp;
+
+  /// Opens the setup progress screen while a job runs
+  ///
+  /// In en, this message translates to:
+  /// **'Show progress'**
+  String get phoneServerCardShowProgress;
+
+  /// Opens the stopped setup to continue it
+  ///
+  /// In en, this message translates to:
+  /// **'Continue setup'**
+  String get phoneServerCardContinueSetup;
+
+  /// Opens the server log
+  ///
+  /// In en, this message translates to:
+  /// **'Show log'**
+  String get phoneServerCardShowLog;
+
+  /// Title of the server log sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Log'**
+  String get phoneServerCardLogTitle;
+
+  /// Server log is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in the log yet.'**
+  String get phoneServerCardLogEmpty;
+
+  /// Tooltip of the phone card menu
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get phoneServerCardMore;
+
+  /// Menu item that installs and runs the other OpenCode version
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to {runtime}'**
+  String phoneServerCardSwitchTo(String runtime);
+
+  /// Menu item that installs optional tools
+  ///
+  /// In en, this message translates to:
+  /// **'Add tools (Python, AI Team…)'**
+  String get phoneServerCardAddTools;
+
+  /// Menu item that updates OpenCode on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Update OpenCode'**
+  String get phoneServerCardUpdate;
+
+  /// Menu item that removes OpenCode from the phone
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from this phone…'**
+  String get phoneServerCardRemove;
+
+  /// Title of the remove confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Remove OpenCode from this phone?'**
+  String get phoneServerCardRemoveTitle;
+
+  /// Remove confirmation with the space that comes back
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes OpenCode, its tools and every project on this phone, and frees {size}.'**
+  String phoneServerCardRemoveBody(String size);
+
+  /// Remove confirmation before the space has been measured
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes OpenCode, its tools and every project on this phone, and frees the space they use.'**
+  String get phoneServerCardRemoveBodyUnmeasured;
+
+  /// Confirms removing OpenCode from the phone
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get phoneServerCardRemoveConfirm;
+
+  /// Shown after OpenCode was removed from the phone
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode was removed from this phone.'**
+  String get phoneServerCardRemoved;
+
+  /// A phone card action failed
+  ///
+  /// In en, this message translates to:
+  /// **'That did not work: {reason}'**
+  String phoneServerCardActionFailed(String reason);
+
   /// Collapsed section on the add-server form holding the display name, username and AI Team host
   ///
   /// In en, this message translates to:

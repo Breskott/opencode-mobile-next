@@ -18501,6 +18501,204 @@
       }
     }
   },
+  "phoneSetupReadyTitle": "OpenCode is ready",
+  "@phoneSetupReadyTitle": {
+    "description": "Screen C heading once phone setup finished"
+  },
+  "phoneSetupReadyNameTitle": "Name your first project",
+  "@phoneSetupReadyNameTitle": {
+    "description": "Screen C prompt above the project name field"
+  },
+  "phoneSetupReadyNameLabel": "Project name",
+  "@phoneSetupReadyNameLabel": {
+    "description": "Label of the first project name field"
+  },
+  "phoneSetupReadyNameHelp": "Letters, numbers, - _ .",
+  "@phoneSetupReadyNameHelp": {
+    "description": "Helper under the project name field listing the allowed characters"
+  },
+  "phoneSetupReadyCreate": "Create",
+  "@phoneSetupReadyCreate": {
+    "description": "Creates the first project and opens a new conversation in it"
+  },
+  "phoneSetupReadyCreating": "Creating the project",
+  "@phoneSetupReadyCreating": {
+    "description": "Spoken label of the progress shown while the first project is made"
+  },
+  "phoneSetupReadyOr": "or",
+  "@phoneSetupReadyOr": {
+    "description": "Word before the link to open an existing folder"
+  },
+  "phoneSetupReadyOpenExisting": "Open an existing folder",
+  "@phoneSetupReadyOpenExisting": {
+    "description": "Link on screen C that opens the in-app folder sheet"
+  },
+  "phoneSetupReadyNameEmpty": "Enter a name.",
+  "@phoneSetupReadyNameEmpty": {
+    "description": "Project name is empty"
+  },
+  "phoneSetupReadyNameOneFolder": "Use one name, without slashes.",
+  "@phoneSetupReadyNameOneFolder": {
+    "description": "Project name contains a slash or is . or .."
+  },
+  "phoneSetupReadyNameInvalid": "Use letters, numbers, - _ or . and start with a letter or number (up to 64).",
+  "@phoneSetupReadyNameInvalid": {
+    "description": "Project name has characters that are not allowed"
+  },
+  "phoneSetupReadyCreateFailed": "The project could not be created: {reason}",
+  "@phoneSetupReadyCreateFailed": {
+    "description": "Creating the first project folder failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupReadyOpenFailed": "The project could not be opened: {reason}",
+  "@phoneSetupReadyOpenFailed": {
+    "description": "Opening the new project or its first conversation failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneServerCardTitle": "This phone",
+  "@phoneServerCardTitle": {
+    "description": "Name of the OpenCode server that runs inside the app, wherever servers are listed"
+  },
+  "phoneServerCardRunning": "Running",
+  "@phoneServerCardRunning": {
+    "description": "Status of the server on this phone"
+  },
+  "phoneServerCardStopped": "Stopped",
+  "@phoneServerCardStopped": {
+    "description": "Status of the server on this phone"
+  },
+  "phoneServerCardStarting": "Starting",
+  "@phoneServerCardStarting": {
+    "description": "Status of the server on this phone while it starts"
+  },
+  "phoneServerCardStopping": "Stopping",
+  "@phoneServerCardStopping": {
+    "description": "Status of the server on this phone while it stops"
+  },
+  "phoneServerCardChecking": "Checking",
+  "@phoneServerCardChecking": {
+    "description": "Status before the server on this phone has been read"
+  },
+  "phoneServerCardNotSetUp": "Not set up",
+  "@phoneServerCardNotSetUp": {
+    "description": "Status when OpenCode is no longer installed on this phone"
+  },
+  "phoneServerCardSettingUp": "Setting up",
+  "@phoneServerCardSettingUp": {
+    "description": "Status while an install or update runs"
+  },
+  "phoneServerCardVersion": "OpenCode {version}",
+  "@phoneServerCardVersion": {
+    "description": "The installed OpenCode version on the phone card",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneServerCardStart": "Start",
+  "@phoneServerCardStart": {
+    "description": "Starts the server on this phone"
+  },
+  "phoneServerCardStop": "Stop",
+  "@phoneServerCardStop": {
+    "description": "Stops the server on this phone"
+  },
+  "phoneServerCardOpen": "Open",
+  "@phoneServerCardOpen": {
+    "description": "Connects to the server on this phone"
+  },
+  "phoneServerCardSetUp": "Set up",
+  "@phoneServerCardSetUp": {
+    "description": "Opens phone setup when OpenCode is not installed"
+  },
+  "phoneServerCardShowProgress": "Show progress",
+  "@phoneServerCardShowProgress": {
+    "description": "Opens the setup progress screen while a job runs"
+  },
+  "phoneServerCardContinueSetup": "Continue setup",
+  "@phoneServerCardContinueSetup": {
+    "description": "Opens the stopped setup to continue it"
+  },
+  "phoneServerCardShowLog": "Show log",
+  "@phoneServerCardShowLog": {
+    "description": "Opens the server log"
+  },
+  "phoneServerCardLogTitle": "Log",
+  "@phoneServerCardLogTitle": {
+    "description": "Title of the server log sheet"
+  },
+  "phoneServerCardLogEmpty": "Nothing in the log yet.",
+  "@phoneServerCardLogEmpty": {
+    "description": "Server log is empty"
+  },
+  "phoneServerCardMore": "More",
+  "@phoneServerCardMore": {
+    "description": "Tooltip of the phone card menu"
+  },
+  "phoneServerCardSwitchTo": "Switch to {runtime}",
+  "@phoneServerCardSwitchTo": {
+    "description": "Menu item that installs and runs the other OpenCode version",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneServerCardAddTools": "Add tools (Python, AI Team…)",
+  "@phoneServerCardAddTools": {
+    "description": "Menu item that installs optional tools"
+  },
+  "phoneServerCardUpdate": "Update OpenCode",
+  "@phoneServerCardUpdate": {
+    "description": "Menu item that updates OpenCode on this phone"
+  },
+  "phoneServerCardRemove": "Remove from this phone…",
+  "@phoneServerCardRemove": {
+    "description": "Menu item that removes OpenCode from the phone"
+  },
+  "phoneServerCardRemoveTitle": "Remove OpenCode from this phone?",
+  "@phoneServerCardRemoveTitle": {
+    "description": "Title of the remove confirmation"
+  },
+  "phoneServerCardRemoveBody": "This deletes OpenCode, its tools and every project on this phone, and frees {size}.",
+  "@phoneServerCardRemoveBody": {
+    "description": "Remove confirmation with the space that comes back",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneServerCardRemoveBodyUnmeasured": "This deletes OpenCode, its tools and every project on this phone, and frees the space they use.",
+  "@phoneServerCardRemoveBodyUnmeasured": {
+    "description": "Remove confirmation before the space has been measured"
+  },
+  "phoneServerCardRemoveConfirm": "Remove",
+  "@phoneServerCardRemoveConfirm": {
+    "description": "Confirms removing OpenCode from the phone"
+  },
+  "phoneServerCardRemoved": "OpenCode was removed from this phone.",
+  "@phoneServerCardRemoved": {
+    "description": "Shown after OpenCode was removed from the phone"
+  },
+  "phoneServerCardActionFailed": "That did not work: {reason}",
+  "@phoneServerCardActionFailed": {
+    "description": "A phone card action failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "serverEditorMoreOptions": "More options",
   "@serverEditorMoreOptions": {
     "description": "Collapsed section on the add-server form holding the display name, username and AI Team host"
