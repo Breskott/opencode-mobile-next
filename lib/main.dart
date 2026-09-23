@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'background/live_background.dart';
+import 'builtin/builtin_server.dart';
 import 'desktop/window_icon.dart';
 import 'desktop/window_state.dart';
 import 'diagnostics/app_diagnostics.dart';
@@ -43,6 +44,7 @@ import 'ui/screens/chat_screen.dart';
 import 'ui/screens/activity_screen.dart';
 import 'ui/screens/team/run_screen.dart';
 import 'ui/screens/termux_setup_screen.dart';
+import 'ui/screens/builtin_server_screen.dart';
 import 'ui/screens/app_diagnostics_screen.dart';
 
 Future<void> main() async {
@@ -342,8 +344,29 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     // transport when the background connection had been suspended.
     await Future.wait<void>([
       _controller.consumeCodingAlertOpen(),
-      _controller.resumeFromLifecycle(),
+      _resumeTransport(),
     ]);
+  }
+
+  /// Coming back to the app with OpenCode-inside-the-app selected: if Android
+  /// stopped that server meanwhile, start it once before reconnecting, so
+  /// the person returns to their work rather than a "stopped" card.
+  Future<void> _resumeTransport() async {
+    final profile = _controller.profile;
+    var started = false;
+    if (looksLikeInAppServer(profile)) {
+      final starter = ref.read(builtinServerStarterProvider)..allowAutoStart();
+      started = await starter.autoStartIfStopped(profile);
+    }
+    await _controller.resumeFromLifecycle();
+    // The opening card was up (nothing to resume): connect to the server
+    // that now answers.
+    if (started &&
+        !_controller.hasConnectedServer &&
+        _controller.api == null &&
+        _controller.profile?.id == profile!.id) {
+      await _controller.connect(profile);
+    }
   }
 
   void _controllerChanged() {
@@ -1373,11 +1396,13 @@ class _RootState extends ConsumerState<_Root> {
   bool _started = false;
   int _attempts = 0;
   late final ConnectionController _controller;
+  late final BuiltinServerStarter _builtin;
 
   @override
   void initState() {
     super.initState();
     _controller = ref.read(connProvider)..addListener(_changed);
+    _builtin = ref.read(builtinServerStarterProvider)..addListener(_changed);
   }
 
   void _changed() {
@@ -1432,7 +1457,35 @@ class _RootState extends ConsumerState<_Root> {
     }
     _started = true;
     _attempts += 1;
+    if (looksLikeInAppServer(profile) && _builtin.autoStartAvailable) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => unawaited(_autoStartThenConnect(profile)),
+      );
+      return;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => conn.connect(profile));
+  }
+
+  /// The app opened on OpenCode-inside-the-app: when that server is stopped
+  /// (the app was closed or updated), start it first, so the person sees
+  /// "Starting…" instead of a failure. Runs once; a start that fails leaves
+  /// the card with its Start button rather than trying again by itself.
+  Future<void> _autoStartThenConnect(ServerProfile profile) async {
+    await _builtin.autoStartIfStopped(profile);
+    if (!mounted || _builtin.failureFor(profile) != null) return;
+    if (_controller.api != null || _controller.profile?.id != profile.id) {
+      return;
+    }
+    await _controller.connect(profile);
+  }
+
+  Future<void> _startInAppServer() async {
+    final profile = _controller.profile;
+    if (profile == null || _builtin.starting) return;
+    final failure = await _builtin.start(profile);
+    if (!mounted || failure != null) return;
+    _started = false;
+    _connectSaved();
   }
 
   @override
@@ -1448,19 +1501,33 @@ class _RootState extends ConsumerState<_Root> {
     }
     _connectSaved();
     final navigator = Navigator.of(context);
+    final profile = conn.profile!;
+    final inApp = _builtin.recognises(profile);
+    final startFailure = _builtin.failureFor(profile);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return Scaffold(
       body: SafeArea(
         child: SavedServerConnectionCard(
-          profileName: conn.profile!.name,
+          profileName: profile.name,
           usesConnectionToken: conn.usesConnectionToken,
-          requiresTokenReentry: conn.profile!.requiresCodexTokenReentry,
-          baseUrl: conn.profile!.baseUrl,
-          error: conn.lastError == null
+          requiresTokenReentry: profile.requiresCodexTokenReentry,
+          baseUrl: profile.baseUrl,
+          error: startFailure != null
+              ? l10n.builtinServerStartFailed(startFailure.reason(l10n))
+              : conn.lastError == null
               ? null
               : productErrorText(conn.lastError!),
           attempts: _attempts,
+          inAppServer: inApp,
+          startingInAppServer: inApp && _builtin.starting,
+          inAppStartFailed: startFailure != null,
+          onOpenInAppSetup: startFailure != null
+              ? () => openBuiltinServerScreen(context)
+              : null,
           supportsTermux:
-              !conn.usesConnectionToken && platformCapabilities.supportsTermux,
+              !inApp &&
+              !conn.usesConnectionToken &&
+              platformCapabilities.supportsTermux,
           onChangeServer: () =>
               navigator.pushNamedAndRemoveUntil('/servers', (_) => false),
           onUpdateToken: () => navigator.pushNamedAndRemoveUntil(
@@ -1474,19 +1541,24 @@ class _RootState extends ConsumerState<_Root> {
             arguments: 'edit-active',
           ),
           onOpenTermuxSetup:
-              !conn.usesConnectionToken && platformCapabilities.supportsTermux
+              !inApp &&
+                  !conn.usesConnectionToken &&
+                  platformCapabilities.supportsTermux
               ? () => navigator.pushNamed('/termux-setup')
               : null,
           // The app's own phone server: when nothing answers, it is stopped
-          // (a phone restart, Android closing Termux), and one tap starts it.
-          onStartPhoneServer:
-              !conn.usesConnectionToken &&
-                  platformCapabilities.supportsTermux &&
-                  TermuxBridge.managesServerUrl(conn.profile!.baseUrl)
+          // (a phone restart, Android closing Termux, the app closed for
+          // OpenCode inside the app), and one tap starts it.
+          onStartPhoneServer: inApp
+              ? _startInAppServer
+              : !conn.usesConnectionToken &&
+                    platformCapabilities.supportsTermux &&
+                    TermuxBridge.managesServerUrl(profile.baseUrl)
               ? _startPhoneServer
               : null,
-          startingPhoneServer: _startingPhoneServer,
+          startingPhoneServer: inApp ? _builtin.starting : _startingPhoneServer,
           onRetry: () {
+            _builtin.clearFailure();
             _started = false;
             _connectSaved();
           },
@@ -1498,6 +1570,7 @@ class _RootState extends ConsumerState<_Root> {
   @override
   void dispose() {
     _controller.removeListener(_changed);
+    _builtin.removeListener(_changed);
     super.dispose();
   }
 }

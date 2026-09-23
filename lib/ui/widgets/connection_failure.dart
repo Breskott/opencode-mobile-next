@@ -64,6 +64,14 @@ class ConnectionFailure {
     /// phone. When nothing answers there, it is stopped (the phone
     /// restarted, or Android closed Termux), and starting it is the fix.
     bool managedPhoneServer = false,
+
+    /// The address is OpenCode running inside this app (the built-in
+    /// Ubuntu). Whatever went wrong, starting it again is the fix, and
+    /// Termux, tunnels and passwords are not the person's business here.
+    bool inAppServer = false,
+
+    /// The app just tried to start that server and it did not answer.
+    bool inAppStartFailed = false,
     int attempts = 1,
     AppLocalizations? l10n,
   }) {
@@ -98,6 +106,27 @@ class ConnectionFailure {
 
     final retried = attempts >= 3 ? l10n.e7ConnectionFailure1(attempts) : null;
 
+    if (inAppServer && !usesConnectionToken) {
+      final stopped =
+          nothingAnswered ||
+          timedOut ||
+          !unauthorized && !serverError && !unhealthy;
+      return ConnectionFailure(
+        title: inAppStartFailed
+            ? l10n.inAppServerStartFailedTitle
+            : stopped
+            ? l10n.inAppServerStoppedTitle
+            : l10n.inAppServerNotRespondingTitle,
+        explanation: inAppStartFailed
+            ? l10n.inAppServerStartFailedBody
+            : stopped
+            ? l10n.inAppServerStoppedBody
+            : l10n.inAppServerNotRespondingBody,
+        checks: const [],
+        primary: ConnectionFailureAction.startPhoneServer,
+        rawError: error,
+      );
+    }
     if (usesConnectionToken && requiresTokenReentry) {
       return ConnectionFailure(
         title: l10n.e7ConnectionFailure2,

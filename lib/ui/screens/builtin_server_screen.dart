@@ -5,8 +5,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../api/server_probe.dart';
 import '../../builtin/builtin_linux.dart';
+import '../../builtin/builtin_server.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
@@ -57,7 +57,8 @@ const builtinRuntimePrefKey = 'builtin_linux_runtime';
 enum _Step { idle, running, done, error }
 
 class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
-  late final BuiltinLinux _linux = widget.linux ?? BuiltinLinux();
+  late final BuiltinLinux _linux =
+      widget.linux ?? ref.read(builtinLinuxProvider);
   final _outputScroll = ScrollController();
 
   BuiltinLinuxStatus? _status;
@@ -260,29 +261,17 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
       _startError = null;
       _connectError = null;
     });
-    ServerProfile? profile;
-    String? failure;
-    try {
-      profile = await _ensureProfile();
-      final written = await _linux.run(
-        BuiltinLinux.writePasswordScript(profile.password),
-        timeout: const Duration(seconds: 60),
-      );
-      if (!written.ok) {
-        failure = written.output.trim().isEmpty
-            ? 'exit ${written.exitCode}'
-            : written.output.trim();
-      } else {
-        await _linux.startServer(
-          BuiltinLinux.serverScript(runtime: _runtime),
-          port: BuiltinLinux.serverPort,
-        );
-        failure = await _waitUntilReady(profile);
-      }
-    } on BuiltinLinuxException catch (error) {
-      failure = error.message;
-    }
+    final profile = await _ensureProfile();
+    // The same start the opening card uses, so the two never differ.
+    final failed = await startBuiltinServer(
+      linux: _linux,
+      profile: profile,
+      readyTimeout: widget.readyTimeout,
+      pollInterval: widget.pollInterval,
+      stillWanted: () => mounted,
+    );
     if (!mounted) return;
+    final failure = failed?.reason(_l10n);
     await _refresh();
     if (!mounted) return;
     setState(() {
@@ -291,28 +280,7 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
           ? null
           : _l10n.builtinServerStartFailed(failure);
     });
-    if (failure == null && profile != null) await _connect(profile);
-  }
-
-  /// Null once the server answers with our password; otherwise why not.
-  Future<String?> _waitUntilReady(ServerProfile profile) async {
-    final l10n = _l10n;
-    final deadline = DateTime.now().add(widget.readyTimeout);
-    while (mounted) {
-      final probe = await serverProbe(
-        baseUrl: BuiltinLinux.serverUrl,
-        username: profile.username,
-        password: profile.password,
-      );
-      if (probe.ok) return null;
-      final status = await _linux.status();
-      if (!status.serverRunning) return l10n.builtinServerExited;
-      if (!DateTime.now().isBefore(deadline)) {
-        return l10n.builtinServerTimedOut(widget.readyTimeout.inSeconds);
-      }
-      await Future<void>.delayed(widget.pollInterval);
-    }
-    return null;
+    if (failure == null) await _connect(profile);
   }
 
   Future<void> _stop() async {

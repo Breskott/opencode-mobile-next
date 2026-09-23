@@ -52,6 +52,16 @@ class OpenCodeApi
     _dio.close(force: true);
   }
 
+  /// Drops the server's cached instance for the current location, so the
+  /// next request there builds it afresh.
+  Future<void> disposeInstance() async {
+    try {
+      await _dio.post<Object?>('/instance/dispose', queryParameters: _query());
+    } on DioException catch (e) {
+      _fail(e, 'Dispose instance');
+    }
+  }
+
   Map<String, dynamic> _query([Map<String, dynamic> values = const {}]) => {
     if (_directory != null) 'directory': _directory,
     if (_workspace != null) 'workspace': _workspace,

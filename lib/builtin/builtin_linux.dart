@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 
+import '../api/server_probe.dart' show ServerFlavor;
 import '../platform/platform_capabilities.dart';
 import '../termux/bridge.dart' show TermuxRuntime;
 import '../termux/opencode_ubuntu_setup.dart';
@@ -190,6 +191,12 @@ class BuiltinLinux {
 
   static String _quote(String value) => "'${value.replaceAll("'", "'\"'\"'")}'";
 
+  /// The runtime a saved in-app profile was set up with.
+  static TermuxRuntime runtimeFor(ServerFlavor flavor) =>
+      flavor == ServerFlavor.v2
+      ? TermuxRuntime.openCode2
+      : TermuxRuntime.openCode1;
+
   static final _versionPattern = RegExp(r'^[A-Za-z0-9._+-]+$');
 
   /// Installs OpenCode inside Ubuntu with the very script the Termux manager
@@ -241,6 +248,42 @@ class BuiltinLinux {
       return _versionPattern.hasMatch(line) ? line : null;
     }
     return null;
+  }
+
+  /// Lists the project folders under [projectsDir], one name per line.
+  /// Creates the parent first so a fresh install lists nothing instead of
+  /// failing.
+  static String listProjectsScript() =>
+      'set -eu\n'
+      'mkdir -p $projectsDir\n'
+      "find $projectsDir -mindepth 1 -maxdepth 1 -type d -printf '%f\\n' "
+      '| sort\n';
+
+  /// The folder names out of [listProjectsScript]. Hidden folders are left
+  /// out: they are tool state, not projects.
+  static List<String> parseProjectList(String output) => [
+    for (final line in output.split('\n'))
+      if (line.trim().isNotEmpty && !line.trim().startsWith('.')) line.trim(),
+  ];
+
+  /// Succeeds when [path] is a folder inside Ubuntu. Lets the app check a
+  /// typed path without asking OpenCode about it: OpenCode caches a folder
+  /// it was asked about before it existed as broken.
+  static String folderExistsScript(String path) => 'test -d ${_quote(path)}';
+
+  /// Makes [path] a new git project, or leaves an existing folder alone.
+  /// Prints `created <path>` or `exists <path>`, so the app knows whether
+  /// anything could already be running there.
+  static String createFolderScript(String path) {
+    if (!path.startsWith('/') || path.contains('\n') || path.contains('\x00')) {
+      throw ArgumentError.value(path, 'path', 'Must be an absolute path.');
+    }
+    return 'set -eu\n'
+        'dir=${_quote(path)}\n'
+        'if [ -d "\$dir" ]; then printf \'exists %s\\n\' "\$dir"; exit 0; fi\n'
+        'mkdir -p "\$dir"\n'
+        'git init -q "\$dir"\n'
+        'printf \'created %s\\n\' "\$dir"\n';
   }
 
   /// Saves the server password inside Ubuntu, readable by its root only.

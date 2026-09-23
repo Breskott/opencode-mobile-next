@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/server_probe.dart' show ServerFlavor;
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/termux/opencode_ubuntu_setup.dart';
@@ -235,6 +236,9 @@ void main() {
         'server2': BuiltinLinux.serverScript(runtime: TermuxRuntime.openCode2),
         'password': BuiltinLinux.writePasswordScript('pw'),
         'version': BuiltinLinux.versionScript(TermuxRuntime.openCode1),
+        'list': BuiltinLinux.listProjectsScript(),
+        'exists': BuiltinLinux.folderExistsScript('/root/projects/a b'),
+        'create': BuiltinLinux.createFolderScript("/root/projects/it's"),
       };
       for (final entry in scripts.entries) {
         final result = await Process.run('sh', ['-n', '-c', entry.value]);
@@ -247,6 +251,50 @@ void main() {
         openCodeUbuntuSetupScript,
       ]);
       expect(body.exitCode, 0, reason: '${body.stderr}');
+    });
+
+    test('project folders: create makes a git project once, list and '
+        'exists read them back', () async {
+      final root = await Directory.systemTemp.createTemp('oc-projects-');
+      addTearDown(() => root.delete(recursive: true));
+      // A quote in the path proves the quoting, not just the happy path.
+      final path = "${root.path}/it's-new";
+
+      Future<ProcessResult> sh(String script) =>
+          Process.run('sh', ['-c', script]);
+
+      expect((await sh(BuiltinLinux.folderExistsScript(path))).exitCode, 1);
+      final created = await sh(BuiltinLinux.createFolderScript(path));
+      expect(created.exitCode, 0, reason: '${created.stderr}');
+      expect(created.stdout, 'created $path\n');
+      expect(Directory('$path/.git').existsSync(), isTrue);
+      expect((await sh(BuiltinLinux.folderExistsScript(path))).exitCode, 0);
+
+      final again = await sh(BuiltinLinux.createFolderScript(path));
+      expect(again.stdout, 'exists $path\n');
+
+      final listed = await sh(
+        BuiltinLinux.listProjectsScript().replaceAll(
+          BuiltinLinux.projectsDir,
+          root.path,
+        ),
+      );
+      Directory('${root.path}/.cache').createSync();
+      expect(BuiltinLinux.parseProjectList('${listed.stdout}.cache\n'), [
+        "it's-new",
+      ]);
+    });
+
+    test('create refuses a relative path', () {
+      expect(
+        () => BuiltinLinux.createFolderScript('projects/x'),
+        throwsArgumentError,
+      );
+    });
+
+    test('a profile runs the runtime it was set up with', () {
+      expect(BuiltinLinux.runtimeFor(ServerFlavor.v2), TermuxRuntime.openCode2);
+      expect(BuiltinLinux.runtimeFor(ServerFlavor.v1), TermuxRuntime.openCode1);
     });
   });
 

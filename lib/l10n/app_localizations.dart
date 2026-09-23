@@ -27819,6 +27819,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More options'**
   String get serverEditorMoreOptions;
+
+  /// Connection card title when the in-app server is not running
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode inside the app is stopped'**
+  String get inAppServerStoppedTitle;
+
+  /// Why the in-app server is stopped
+  ///
+  /// In en, this message translates to:
+  /// **'It stops when the app is closed for a while or updated. Your conversations are kept; start it again to continue.'**
+  String get inAppServerStoppedBody;
+
+  /// Connection card title when the in-app server answers with an error
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode inside the app is not answering'**
+  String get inAppServerNotRespondingTitle;
+
+  /// Explanation when the in-app server answers with an error
+  ///
+  /// In en, this message translates to:
+  /// **'Starting it again usually fixes this. Your conversations are kept.'**
+  String get inAppServerNotRespondingBody;
+
+  /// Connection card title after starting the in-app server failed
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode inside the app did not start'**
+  String get inAppServerStartFailedTitle;
+
+  /// Explanation after starting the in-app server failed
+  ///
+  /// In en, this message translates to:
+  /// **'Open its setup to see the server log, or try starting it again.'**
+  String get inAppServerStartFailedBody;
+
+  /// Connecting card title while the in-app server boots
+  ///
+  /// In en, this message translates to:
+  /// **'Starting OpenCode inside the app…'**
+  String get inAppServerStarting;
+
+  /// Connecting card line while the in-app server boots
+  ///
+  /// In en, this message translates to:
+  /// **'This takes a few seconds.'**
+  String get inAppServerStartingBody;
+
+  /// Secondary button that opens the in-app server setup screen with its log
+  ///
+  /// In en, this message translates to:
+  /// **'Open setup'**
+  String get inAppServerOpenSetup;
+
+  /// Title of the sheet listing projects inside the app
+  ///
+  /// In en, this message translates to:
+  /// **'Open a project'**
+  String get projectFolderInAppTitle;
+
+  /// Shown when the in-app Ubuntu has no project folders
+  ///
+  /// In en, this message translates to:
+  /// **'No projects yet. Name one below to create it.'**
+  String get projectFolderInAppEmpty;
+
+  /// Shown when listing in-app project folders failed
+  ///
+  /// In en, this message translates to:
+  /// **'The projects could not be listed: {reason}'**
+  String projectFolderInAppListFailed(String reason);
+
+  /// Heading of the new-project name field
+  ///
+  /// In en, this message translates to:
+  /// **'New project'**
+  String get projectFolderNewProject;
+
+  /// Label of the new-project name field
+  ///
+  /// In en, this message translates to:
+  /// **'Project name'**
+  String get projectFolderProjectNameLabel;
+
+  /// Helper under the new-project name field
+  ///
+  /// In en, this message translates to:
+  /// **'The app makes the folder in {directory} and opens it.'**
+  String projectFolderNewProjectHelp(String directory);
+
+  /// Secondary action that opens the full-path folder dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a path'**
+  String get projectFolderEnterPath;
+
+  /// Shown when a typed folder path does not exist
+  ///
+  /// In en, this message translates to:
+  /// **'That folder does not exist yet.'**
+  String get projectFolderMissing;
+
+  /// Button that creates a typed folder that does not exist yet
+  ///
+  /// In en, this message translates to:
+  /// **'Create it'**
+  String get projectFolderCreateIt;
+
+  /// Shown when creating a project folder failed
+  ///
+  /// In en, this message translates to:
+  /// **'The folder could not be created: {reason}'**
+  String projectFolderCreateFailed(String reason);
+
+  /// Shown when checking whether a folder exists failed
+  ///
+  /// In en, this message translates to:
+  /// **'The folder could not be checked: {reason}'**
+  String projectFolderCheckFailed(String reason);
 }
 
 class _AppLocalizationsDelegate

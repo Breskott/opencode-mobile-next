@@ -18504,5 +18504,105 @@
   "serverEditorMoreOptions": "More options",
   "@serverEditorMoreOptions": {
     "description": "Collapsed section on the add-server form holding the display name, username and AI Team host"
+  },
+  "inAppServerStoppedTitle": "OpenCode inside the app is stopped",
+  "@inAppServerStoppedTitle": {
+    "description": "Connection card title when the in-app server is not running"
+  },
+  "inAppServerStoppedBody": "It stops when the app is closed for a while or updated. Your conversations are kept; start it again to continue.",
+  "@inAppServerStoppedBody": {
+    "description": "Why the in-app server is stopped"
+  },
+  "inAppServerNotRespondingTitle": "OpenCode inside the app is not answering",
+  "@inAppServerNotRespondingTitle": {
+    "description": "Connection card title when the in-app server answers with an error"
+  },
+  "inAppServerNotRespondingBody": "Starting it again usually fixes this. Your conversations are kept.",
+  "@inAppServerNotRespondingBody": {
+    "description": "Explanation when the in-app server answers with an error"
+  },
+  "inAppServerStartFailedTitle": "OpenCode inside the app did not start",
+  "@inAppServerStartFailedTitle": {
+    "description": "Connection card title after starting the in-app server failed"
+  },
+  "inAppServerStartFailedBody": "Open its setup to see the server log, or try starting it again.",
+  "@inAppServerStartFailedBody": {
+    "description": "Explanation after starting the in-app server failed"
+  },
+  "inAppServerStarting": "Starting OpenCode inside the app…",
+  "@inAppServerStarting": {
+    "description": "Connecting card title while the in-app server boots"
+  },
+  "inAppServerStartingBody": "This takes a few seconds.",
+  "@inAppServerStartingBody": {
+    "description": "Connecting card line while the in-app server boots"
+  },
+  "inAppServerOpenSetup": "Open setup",
+  "@inAppServerOpenSetup": {
+    "description": "Secondary button that opens the in-app server setup screen with its log"
+  },
+  "projectFolderInAppTitle": "Open a project",
+  "@projectFolderInAppTitle": {
+    "description": "Title of the sheet listing projects inside the app"
+  },
+  "projectFolderInAppEmpty": "No projects yet. Name one below to create it.",
+  "@projectFolderInAppEmpty": {
+    "description": "Shown when the in-app Ubuntu has no project folders"
+  },
+  "projectFolderInAppListFailed": "The projects could not be listed: {reason}",
+  "@projectFolderInAppListFailed": {
+    "description": "Shown when listing in-app project folders failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "projectFolderNewProject": "New project",
+  "@projectFolderNewProject": {
+    "description": "Heading of the new-project name field"
+  },
+  "projectFolderProjectNameLabel": "Project name",
+  "@projectFolderProjectNameLabel": {
+    "description": "Label of the new-project name field"
+  },
+  "projectFolderNewProjectHelp": "The app makes the folder in {directory} and opens it.",
+  "@projectFolderNewProjectHelp": {
+    "description": "Helper under the new-project name field",
+    "placeholders": {
+      "directory": {
+        "type": "String"
+      }
+    }
+  },
+  "projectFolderEnterPath": "Enter a path",
+  "@projectFolderEnterPath": {
+    "description": "Secondary action that opens the full-path folder dialog"
+  },
+  "projectFolderMissing": "That folder does not exist yet.",
+  "@projectFolderMissing": {
+    "description": "Shown when a typed folder path does not exist"
+  },
+  "projectFolderCreateIt": "Create it",
+  "@projectFolderCreateIt": {
+    "description": "Button that creates a typed folder that does not exist yet"
+  },
+  "projectFolderCreateFailed": "The folder could not be created: {reason}",
+  "@projectFolderCreateFailed": {
+    "description": "Shown when creating a project folder failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "projectFolderCheckFailed": "The folder could not be checked: {reason}",
+  "@projectFolderCheckFailed": {
+    "description": "Shown when checking whether a folder exists failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   }
 }
