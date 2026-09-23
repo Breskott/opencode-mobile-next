@@ -7688,17 +7688,19 @@ class ConnectionController extends ChangeNotifier {
         profile.flavor == ServerFlavor.v2) {
       return;
     }
-    final api = _apiFactory(profile)
+    // Through the one transport builder, like every other connection here.
+    final pair = _buildTransportPair(profile);
+    final gateway = pair.gateway
       ..setLocation(
         directory: normalizeDirectoryPath(directory),
         workspace: null,
       );
     try {
-      await api.disposeInstance();
+      if (gateway is OpenCodeApi) await gateway.disposeInstance();
     } catch (_) {
       // See above: the open reports anything that is really wrong.
     } finally {
-      api.close();
+      gateway.close();
     }
   }
 
@@ -7929,9 +7931,23 @@ class ConnectionController extends ChangeNotifier {
     lastError = null;
     final savedLibrary = _modelLibrary;
     final savedSessionModels = sessionModels;
+    // Same server, another folder: the models and agents are the server's,
+    // so the ones already shown stay while this folder's copy loads. Waiting
+    // for a fresh catalog here held the whole folder open behind OpenCode 1's
+    // 6 MB provider list (7.7 s on a phone-hosted server).
+    final savedProviders = providers;
+    final savedAgents = agents;
+    final savedCatalog = catalog;
+    final savedCatalogDetailed = catalogDetailed;
+    final savedUnloaded = unloadedProviderIDs;
     _clearLocationData();
     _modelLibrary = savedLibrary;
     sessionModels = savedSessionModels;
+    providers = savedProviders;
+    agents = savedAgents;
+    catalog = savedCatalog;
+    catalogDetailed = savedCatalogDetailed;
+    unloadedProviderIDs = savedUnloaded;
     status = StreamStatus.connecting;
     notifyListeners();
     enablePollingFallback();
@@ -7958,15 +7974,19 @@ class ConnectionController extends ChangeNotifier {
     if (!_isCurrent(generation, currentApi)) return;
     _markDataRefreshReady(generation, currentApi);
 
+    // The folder is open once its conversations and waiting requests are in.
+    // The catalog follows rather than alongside: OpenCode 1 answers on one
+    // thread, and asked together the small reads queued behind the catalog
+    // (permissions took 6.2 s waiting for a 7.7 s catalog on the phone).
     await Future.wait<void>([
       refreshSessions(),
-      _loadCatalog(),
       refreshPendingPermissions(),
       refreshPendingQuestions(),
     ]);
     if (!_isCurrent(generation, currentApi)) return;
     locationLoading = false;
     notifyListeners();
+    unawaited(_loadCatalog());
     if (_pendingLocationRevalidation) unawaited(revalidateRestoredLocation());
   }
 

@@ -1532,6 +1532,54 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('opening another folder does not wait for the catalog', (
+    tester,
+  ) async {
+    final apis = <_ControlledApi>[];
+    final controller = ConnectionController(
+      await _store(),
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        // After the first connect, the catalog never answers: a phone-hosted
+        // OpenCode 1 takes seconds to build its 6 MB provider list.
+        if (apis.isNotEmpty) api.providersResult = Completer();
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory([]),
+    );
+    final connect = controller.connect(_profile('server'));
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    await tester.pump();
+    final shownBefore = controller.providers;
+
+    var opened = false;
+    unawaited(
+      controller
+          .selectLocation(directory: '/work/other')
+          .then((_) => opened = true),
+    );
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+    final folderApi = apis.last;
+    folderApi.healthResult.complete(Health(healthy: true, version: '1'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+
+    // Open with the catalog still loading, and the server's models kept on
+    // screen meanwhile instead of an empty picker.
+    expect(opened, isTrue);
+    expect(controller.locationLoading, isFalse);
+    expect(controller.directory, '/work/other');
+    expect(controller.providers, same(shownBefore));
+    controller.dispose();
+  });
+
   testWidgets('an action after a wake does not wait for the catalog reload', (
     tester,
   ) async {
