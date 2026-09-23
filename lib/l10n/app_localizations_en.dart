@@ -17056,6 +17056,126 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get setupProgressViewOverallLabel => 'Setup progress';
+
+  @override
+  String get setupProgressViewGettingStarted => 'Getting started…';
+
+  @override
+  String setupProgressViewMinutesLeft(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '~$minutes min left',
+      one: '~1 min left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get setupProgressViewUnderMinute => 'Less than a minute';
+
+  @override
+  String get setupProgressViewDone => 'All set';
+
+  @override
+  String get setupProgressViewFailedTitle => 'Setup didn\'t finish';
+
+  @override
+  String get setupProgressViewInterrupted =>
+      'Setup was interrupted. What\'s finished is kept.';
+
+  @override
+  String get setupProgressViewCancelled =>
+      'Setup stopped. What\'s finished stays installed.';
+
+  @override
+  String setupProgressViewBytes(String done, String total) {
+    return '$done of $total';
+  }
+
+  @override
+  String setupProgressViewPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String setupProgressViewStageMeasured(String stage, String measured) {
+    return '$stage · $measured';
+  }
+
+  @override
+  String get setupProgressViewChecking => 'Checking';
+
+  @override
+  String get setupProgressViewStarting => 'Starting';
+
+  @override
+  String setupProgressViewFailedStageReason(String stage, String reason) {
+    return '$stage: $reason';
+  }
+
+  @override
+  String setupProgressViewFailedDuring(String stage) {
+    return 'Stopped during: $stage';
+  }
+
+  @override
+  String get setupProgressViewFailedUnknown =>
+      'Something went wrong. Show details for the log.';
+
+  @override
+  String get setupProgressViewNoInternet =>
+      'No internet connection — Continue when you\'re back online';
+
+  @override
+  String get setupProgressViewContinue => 'Continue setup';
+
+  @override
+  String get setupProgressViewCancel => 'Cancel';
+
+  @override
+  String get setupProgressViewShowDetails => 'Show details';
+
+  @override
+  String get setupProgressViewHideDetails => 'Hide details';
+
+  @override
+  String get setupProgressViewNoLog => 'Nothing logged yet.';
+
+  @override
+  String get setupProgressViewStateDone => 'installed';
+
+  @override
+  String get setupProgressViewStateRunning => 'in progress';
+
+  @override
+  String get setupProgressViewStatePending => 'waiting';
+
+  @override
+  String get setupProgressViewStateFailed => 'failed';
+
+  @override
+  String get phoneSetupProgressTitle => 'Setting up OpenCode on this phone';
+
+  @override
+  String get phoneSetupProgressLeaveHint =>
+      'You can leave the app. We\'ll notify you when it\'s ready.';
+
+  @override
+  String get phoneSetupProgressStopTitle => 'Stop setup?';
+
+  @override
+  String get phoneSetupProgressStopMessage =>
+      'What\'s finished stays installed.';
+
+  @override
+  String get phoneSetupProgressStopConfirm => 'Stop setup';
+
+  @override
+  String get phoneSetupProgressKeepGoing => 'Keep going';
+
+  @override
   String get builtinServerTitle => 'OpenCode inside the app';
 
   @override

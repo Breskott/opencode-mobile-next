@@ -18246,6 +18246,173 @@
       }
     }
   },
+  "setupProgressViewOverallLabel": "Setup progress",
+  "@setupProgressViewOverallLabel": {
+    "description": "Accessibility label of the overall setup progress bar"
+  },
+  "setupProgressViewGettingStarted": "Getting started…",
+  "@setupProgressViewGettingStarted": {
+    "description": "Shown under the setup bar until there is enough real progress to estimate the time left"
+  },
+  "setupProgressViewMinutesLeft": "{minutes, plural, =1{~1 min left} other{~{minutes} min left}}",
+  "@setupProgressViewMinutesLeft": {
+    "description": "Estimated time left for a setup job, in minutes",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "setupProgressViewUnderMinute": "Less than a minute",
+  "@setupProgressViewUnderMinute": {
+    "description": "Estimated time left for a setup job when under a minute"
+  },
+  "setupProgressViewDone": "All set",
+  "@setupProgressViewDone": {
+    "description": "Status under the setup bar when the job finished"
+  },
+  "setupProgressViewFailedTitle": "Setup didn't finish",
+  "@setupProgressViewFailedTitle": {
+    "description": "Status under the setup bar when the job failed"
+  },
+  "setupProgressViewInterrupted": "Setup was interrupted. What's finished is kept.",
+  "@setupProgressViewInterrupted": {
+    "description": "Status when the setup job was interrupted (app killed, reboot)"
+  },
+  "setupProgressViewCancelled": "Setup stopped. What's finished stays installed.",
+  "@setupProgressViewCancelled": {
+    "description": "Status when the person cancelled the setup job"
+  },
+  "setupProgressViewBytes": "{done} of {total}",
+  "@setupProgressViewBytes": {
+    "description": "Download progress of one setup component, e.g. '18 of 30 MB'; total carries the unit",
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "setupProgressViewPercent": "{percent}%",
+  "@setupProgressViewPercent": {
+    "description": "Percent progress of one setup component or the whole job",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "setupProgressViewStageMeasured": "{stage} · {measured}",
+  "@setupProgressViewStageMeasured": {
+    "description": "A setup component's current stage followed by its measured progress, e.g. 'Downloading · 18 of 30 MB'",
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      },
+      "measured": {
+        "type": "String"
+      }
+    }
+  },
+  "setupProgressViewChecking": "Checking",
+  "@setupProgressViewChecking": {
+    "description": "A setup component is being checked for an existing install"
+  },
+  "setupProgressViewStarting": "Starting",
+  "@setupProgressViewStarting": {
+    "description": "A setup component started but has not reported what it is doing yet"
+  },
+  "setupProgressViewFailedStageReason": "{stage}: {reason}",
+  "@setupProgressViewFailedStageReason": {
+    "description": "What failed in a setup component: its last stage and the reason",
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "setupProgressViewFailedDuring": "Stopped during: {stage}",
+  "@setupProgressViewFailedDuring": {
+    "description": "A setup component failed; only its last stage is known",
+    "placeholders": {
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "setupProgressViewFailedUnknown": "Something went wrong. Show details for the log.",
+  "@setupProgressViewFailedUnknown": {
+    "description": "A setup component failed with no reason given"
+  },
+  "setupProgressViewNoInternet": "No internet connection — Continue when you're back online",
+  "@setupProgressViewNoInternet": {
+    "description": "A setup component failed because the network was unreachable"
+  },
+  "setupProgressViewContinue": "Continue setup",
+  "@setupProgressViewContinue": {
+    "description": "Button that resumes a setup job after it stopped"
+  },
+  "setupProgressViewCancel": "Cancel",
+  "@setupProgressViewCancel": {
+    "description": "Button that stops a running setup job"
+  },
+  "setupProgressViewShowDetails": "Show details",
+  "@setupProgressViewShowDetails": {
+    "description": "Expands the live setup log"
+  },
+  "setupProgressViewHideDetails": "Hide details",
+  "@setupProgressViewHideDetails": {
+    "description": "Collapses the live setup log"
+  },
+  "setupProgressViewNoLog": "Nothing logged yet.",
+  "@setupProgressViewNoLog": {
+    "description": "Shown in the setup details when the log is still empty"
+  },
+  "setupProgressViewStateDone": "installed",
+  "@setupProgressViewStateDone": {
+    "description": "Accessibility state of a finished setup component"
+  },
+  "setupProgressViewStateRunning": "in progress",
+  "@setupProgressViewStateRunning": {
+    "description": "Accessibility state of the setup component being installed"
+  },
+  "setupProgressViewStatePending": "waiting",
+  "@setupProgressViewStatePending": {
+    "description": "Accessibility state of a setup component not started yet"
+  },
+  "setupProgressViewStateFailed": "failed",
+  "@setupProgressViewStateFailed": {
+    "description": "Accessibility state of a setup component that failed"
+  },
+  "phoneSetupProgressTitle": "Setting up OpenCode on this phone",
+  "@phoneSetupProgressTitle": {
+    "description": "Title of the screen showing phone setup in progress"
+  },
+  "phoneSetupProgressLeaveHint": "You can leave the app. We'll notify you when it's ready.",
+  "@phoneSetupProgressLeaveHint": {
+    "description": "Reassurance under the setup checklist that setup continues in the background"
+  },
+  "phoneSetupProgressStopTitle": "Stop setup?",
+  "@phoneSetupProgressStopTitle": {
+    "description": "Title of the confirmation before cancelling phone setup"
+  },
+  "phoneSetupProgressStopMessage": "What's finished stays installed.",
+  "@phoneSetupProgressStopMessage": {
+    "description": "Body of the confirmation before cancelling phone setup"
+  },
+  "phoneSetupProgressStopConfirm": "Stop setup",
+  "@phoneSetupProgressStopConfirm": {
+    "description": "Confirms cancelling phone setup"
+  },
+  "phoneSetupProgressKeepGoing": "Keep going",
+  "@phoneSetupProgressKeepGoing": {
+    "description": "Dismisses the cancel confirmation and lets phone setup continue"
+  },
   "builtinServerTitle": "OpenCode inside the app",
   "@builtinServerTitle": {
     "description": "Title of the built-in (no Termux) server screen"
