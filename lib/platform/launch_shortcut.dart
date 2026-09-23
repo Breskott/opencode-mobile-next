@@ -7,13 +7,16 @@ import 'platform_capabilities.dart';
 
 /// The whitelisted launcher actions. `connect` and `newTask` are the static
 /// shortcuts in `res/xml/shortcuts.xml`; `activity` is what the Quick
-/// Settings tile sends when tapped. Wire values are the action ids; anything
-/// else the native side or a future build might send is dropped rather than
-/// mapped.
+/// Settings tile sends when tapped; `phoneSetup` and `phoneSetupDone` are the
+/// phone setup notifications (SetupService.kt): the running or stopped job,
+/// and the finished one. Wire values are the action ids; anything else the
+/// native side or a future build might send is dropped rather than mapped.
 enum LaunchAction {
   connect('connect'),
   newTask('new_task'),
-  activity('activity');
+  activity('activity'),
+  phoneSetup('phone_setup'),
+  phoneSetupDone('phone_setup_done');
 
   const LaunchAction(this.wireValue);
 

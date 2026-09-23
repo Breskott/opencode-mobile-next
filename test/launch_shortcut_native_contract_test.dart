@@ -59,8 +59,17 @@ void main() {
     ).allMatches(whitelist!.group(1)!).map((m) => m.group(1)).toList();
     // The static shortcut ids plus the Quick Settings tile's action, which
     // reaches MainActivity through the same extra (see
-    // launch_surfaces_native_contract_test.dart for the tile half).
-    expect(ids, unorderedEquals([...extraValues, 'activity']));
+    // launch_surfaces_native_contract_test.dart for the tile half), and the
+    // phone setup notifications' two actions (SetupService.kt).
+    expect(
+      ids,
+      unorderedEquals([
+        ...extraValues,
+        'activity',
+        'phone_setup',
+        'phone_setup_done',
+      ]),
+    );
     expect(activity, contains('EXTRA_LAUNCH_ACTION = "oc.shortcut"'));
     expect(activity, contains('SHORTCUT_CHANNEL_NAME = "oc/shortcut"'));
   });

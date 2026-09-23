@@ -75,6 +75,10 @@ class FakeSetupEngine implements SetupEngine {
   var restores = 0;
   Set<String> optionalInstalled = {};
 
+  /// Published when [run] is called, as the real engine publishes the new
+  /// job; null leaves the progress as it was.
+  SetupProgress? afterRun;
+
   @override
   ValueListenable<SetupProgress> get progress => _progress;
 
@@ -87,6 +91,7 @@ class FakeSetupEngine implements SetupEngine {
   }) async {
     runs.add(ids);
     runParams.add(params);
+    if (afterRun != null) emit(afterRun!);
   }
 
   @override

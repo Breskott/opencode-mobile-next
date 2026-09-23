@@ -5,6 +5,7 @@ import '../../domain/provider_quota.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/provider_quota_monitor.dart';
+import 'phone_server_card.dart' show serverDisplayName;
 
 String _sourceOrigin(String value, String fallback) {
   try {
@@ -136,7 +137,11 @@ class _SourceState extends State<_Source> {
       children: [
         Text(
           l10n.quotaSourceTitle(
-            profile.name,
+            serverDisplayName(
+              profile,
+              l10n,
+              among: widget.controller.store.profiles,
+            ),
             quotaProviderLabel(l10n, target.provider),
           ),
           style: Theme.of(context).textTheme.titleMedium,

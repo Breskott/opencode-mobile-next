@@ -115,6 +115,7 @@ class SetupProgress {
     this.error,
     this.logTail = '',
     this.jobId,
+    this.firstSetup = false,
   });
 
   static const idle = SetupProgress(
@@ -141,10 +142,33 @@ class SetupProgress {
   /// its bar exactly when the job changes. Null while idle.
   final String? jobId;
 
+  /// The job was started as the phone's first setup (screen A or the
+  /// first-run welcome), so it ends on "name your first project". Kept in
+  /// the job's own params ([SetupJobParams]) so it survives the app being
+  /// killed: a notification tap after a cold start still knows where the
+  /// job should end.
+  final bool firstSetup;
+
   bool get canContinue =>
       state == SetupState.failed ||
       state == SetupState.interrupted ||
       state == SetupState.cancelled;
+}
+
+/// Facts about a job rather than a component, kept in the job's params
+/// under [key] so setup.json carries them without a schema change: the
+/// native runner stores params opaquely, and components read only their own
+/// id's entry.
+abstract final class SetupJobParams {
+  static const key = '_job';
+
+  /// Marks a job as the phone's first setup ([SetupProgress.firstSetup]).
+  static const firstSetup = <String, Map<String, String>>{
+    key: {'first': '1'},
+  };
+
+  static bool isFirstSetup(Map<String, Map<String, String>> params) =>
+      params[key]?['first'] == '1';
 }
 
 /// Runs any set of components; first setup, "Add tools" and updates are all

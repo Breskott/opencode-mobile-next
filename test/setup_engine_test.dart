@@ -298,6 +298,65 @@ void main() {
       });
     });
 
+    // Open point 2: a notification tap after a cold start must know that a
+    // job was the first setup, and only setup.json survives the process.
+    test('a first setup says so in its params, and the flag survives a '
+        'restart and a Continue', () async {
+      await engine.run(const {}, params: SetupJobParams.firstSetup);
+      expect(linux.started.single['params'], SetupJobParams.firstSetup);
+      expect(engine.progress.value.firstSetup, isTrue);
+
+      // The app is killed: a fresh engine reads only setup.json.
+      linux.job!['state'] = 'interrupted';
+      final restarted = ChannelSetupEngine(
+        linux: linux,
+        strings: () => en,
+        pollInterval: const Duration(milliseconds: 5),
+      );
+      addTearDown(restarted.dispose);
+      await restarted.restore();
+      expect(restarted.progress.value.firstSetup, isTrue);
+
+      // Continue from screen B passes no params and keeps the flag.
+      await restarted.run(const {});
+      expect(linux.started.last['params'], SetupJobParams.firstSetup);
+      expect(restarted.progress.value.firstSetup, isTrue);
+    });
+
+    test('the first-setup flag is laid over a stopped job\'s params, never '
+        'instead of them', () async {
+      linux.job = {
+        'jobId': 'old',
+        'state': 'failed',
+        'order': ['linux', 'opencode'],
+        'components': {
+          'linux': {'state': 'done'},
+          'opencode': {'state': 'failed'},
+        },
+        'params': {
+          'opencode': {'runtime': 'opencode2'},
+        },
+      };
+      linux.checks = {'linux': (true, '24.04.5')};
+      await engine.run(const {}, params: SetupJobParams.firstSetup);
+      expect(linux.started.single['params'], {
+        'opencode': {'runtime': 'opencode2'},
+        ...SetupJobParams.firstSetup,
+      });
+    });
+
+    test('jobs from the This phone card are not first setups', () async {
+      await engine.run(
+        {'opencode'},
+        params: const {
+          'opencode': {'runtime': 'opencode2'},
+        },
+      );
+      expect(engine.progress.value.firstSetup, isFalse);
+      await engine.restore();
+      expect(engine.progress.value.firstSetup, isFalse);
+    });
+
     test('a finished job does not lend its params to the next run', () async {
       linux.job = {
         'jobId': 'old',

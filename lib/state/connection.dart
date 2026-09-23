@@ -1093,12 +1093,37 @@ class ConnectionController extends ChangeNotifier {
     transcriptReasoningExpanded = store.transcriptReasoningExpanded;
     transcriptTimestampsVisible = store.transcriptTimestampsVisible;
     this.backgroundLive.addListener(_backgroundLiveChanged);
+    _profilesShown = _profilesSignature();
+    store.changes.addListener(_profilesSaved);
     if (!isIsolated) {
       this.backgroundLive.bindActionHandler(_handleCodingAlertAction);
       _syncProfileServices();
       profileMonitor.start();
       quotaMonitor.start();
     }
+  }
+
+  /// What screens show of the saved profiles when they last heard about
+  /// them: ids, names, generations and addresses.
+  late String _profilesShown;
+
+  String _profilesSignature() => [
+    for (final profile in store.profiles)
+      '${profile.id}\u0000${profile.name}\u0000${profile.flavor.name}'
+          '\u0000${profile.baseUrl}',
+  ].join('\u0001');
+
+  /// A saved profile changed its name (or generation, or address): the
+  /// app bar, the switcher and every list read those from [profile] and
+  /// [store] at build time, so they only need to rebuild. Saves that change
+  /// none of it (a version or a password stored while connecting) notify
+  /// nobody, so connecting does not rebuild the shell twice.
+  void _profilesSaved() {
+    if (_disposed) return;
+    final next = _profilesSignature();
+    if (next == _profilesShown) return;
+    _profilesShown = next;
+    notifyListeners();
   }
 
   /// Resolves an Android notification action while the app stays
@@ -8918,6 +8943,7 @@ class ConnectionController extends ChangeNotifier {
   void dispose() {
     if (_disposed) return;
     _disposed = true;
+    store.changes.removeListener(_profilesSaved);
     _profileDataChanges.notifyListeners();
     _profileDataChanges.dispose();
     _dismissAllCodingAlerts(clearActive: true);

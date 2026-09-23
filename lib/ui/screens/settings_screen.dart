@@ -21,6 +21,7 @@ import '../theme_packs.dart';
 import '../widgets/appearance_picker.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/language_picker.dart';
+import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/product_states.dart';
 import 'host_management_screen.dart';
 import 'library_screen.dart';
@@ -225,7 +226,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(copy.settingsHubThisServer),
         subtitle: Text(
           copy.settingsHubThisServerStatus(
-            controller.profile?.name ?? copy.e7SettingsUi9,
+            controller.profile == null
+                ? copy.e7SettingsUi9
+                : serverDisplayName(
+                    controller.profile,
+                    lookupAppLocalizations(Localizations.localeOf(context)),
+                    among: controller.store.profiles,
+                  ),
             status,
           ),
         ),

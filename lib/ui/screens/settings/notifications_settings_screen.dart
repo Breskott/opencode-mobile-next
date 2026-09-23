@@ -458,7 +458,13 @@ class _MonitoredServerRows extends StatelessWidget {
         SwitchListTile(
           key: ValueKey('monitor-enabled-${profile.id}'),
           secondary: const Icon(AppIconography.server),
-          title: Text(profile.name),
+          title: Text(
+            serverDisplayName(
+              profile,
+              lookupAppLocalizations(Localizations.localeOf(context)),
+              among: controller.store.profiles,
+            ),
+          ),
           subtitle: Text(
             supported ? copy.monitorOptIn : copy.e7ProjectMonitorUnsupported,
           ),

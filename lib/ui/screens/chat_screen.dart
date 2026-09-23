@@ -61,6 +61,7 @@ import '../widgets/first_reply_notify_card.dart';
 import '../widgets/info_label.dart';
 import '../widgets/markdown.dart';
 import '../widgets/nudge_card.dart';
+import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/pickers.dart';
 import '../widgets/model_shortcuts.dart';
 import '../widgets/product_states.dart';
@@ -6833,7 +6834,13 @@ class _ChatScreenState extends State<ChatScreen>
     // running on this phone, and their conversations look alike.
     final serverName = _conn.isIsolated || _conn.store.profiles.length < 2
         ? null
-        : _conn.profile?.name;
+        : serverDisplayName(
+            _conn.profile,
+            lookupAppLocalizations(Localizations.localeOf(context)),
+            // Two in-app profiles (OpenCode 1 and 2) are both "This phone";
+            // the line must say which one this conversation is on.
+            among: _conn.store.profiles,
+          );
     final serverStyle = theme.textTheme.labelSmall?.copyWith(
       color: AppTheme.mutedOf(theme),
     );

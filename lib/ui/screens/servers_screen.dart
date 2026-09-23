@@ -33,6 +33,7 @@ import '../widgets/safety_confirms.dart';
 import '../../state/local_server_controls.dart';
 import 'agent_choice_screen.dart';
 import 'phone_setup/phone_setup_routes.dart';
+import 'phone_setup/phone_setup_welcome_entry.dart';
 import 'demo_screen.dart';
 import 'guide_screen.dart' show Cmd;
 import 'attention_overview_screen.dart';
@@ -703,6 +704,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                 store.profiles,
                 accountConnection,
               ),
+              phoneSetup: PhoneSetupWelcomeEntry(revision: _termuxRevision),
               onComputer: _computerPath,
               onPhone: _openPhoneSetup,
               onDemo: _demo,
@@ -1018,6 +1020,11 @@ class _WelcomeView extends StatelessWidget {
   /// unless a running server was actually observed: a live thing the app
   /// found outranks every generic choice.
   final Widget runningServer;
+
+  /// A phone setup that was started and not finished (or finished with
+  /// nothing saved). Like [runningServer] it renders nothing when there is
+  /// no such job, and it outranks the generic question when there is.
+  final Widget phoneSetup;
   final VoidCallback onComputer;
   final VoidCallback onPhone;
   final VoidCallback onDemo;
@@ -1025,6 +1032,7 @@ class _WelcomeView extends StatelessWidget {
   const _WelcomeView({
     required this.busy,
     required this.runningServer,
+    required this.phoneSetup,
     required this.onComputer,
     required this.onPhone,
     required this.onDemo,
@@ -1061,6 +1069,7 @@ class _WelcomeView extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 32),
+                      if (platformCapabilities.supportsTermux) phoneSetup,
                       runningServer,
                       Semantics(
                         header: true,

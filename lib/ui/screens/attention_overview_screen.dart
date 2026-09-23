@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../domain/attention_item.dart';
 import '../../state/attention_overview.dart';
 import '../../state/connection.dart';
+import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/product_states.dart';
 import 'profile_monitor_screen.dart';
 import '../../l10n/app_localizations.dart';
@@ -82,6 +83,20 @@ class AttentionOverviewScreen extends StatelessWidget {
     ),
   );
 
+  /// The saved server's name as every other list shows it, so the two
+  /// in-app profiles read "This phone · OpenCode 1" and "… 2" here too.
+  String _name(AttentionItem item, AppLocalizations l10n) {
+    final profiles = controller.store.profiles;
+    for (final profile in profiles) {
+      if (profile.id == item.profileID) {
+        return serverDisplayName(profile, l10n, among: profiles);
+      }
+    }
+    return item.profileName.trim().isEmpty
+        ? l10n.e7ProjectAttentionSavedServer
+        : item.profileName;
+  }
+
   Widget _profileCard(BuildContext context, AttentionItem item) {
     final theme = Theme.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
@@ -92,12 +107,7 @@ class AttentionOverviewScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              item.profileName.trim().isEmpty
-                  ? l10n.e7ProjectAttentionSavedServer
-                  : item.profileName,
-              style: theme.textTheme.titleMedium,
-            ),
+            Text(_name(item, l10n), style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               item.isSelected

@@ -48,11 +48,43 @@ ServerProfile? phoneServerProfile(
 
 /// The name to show for [profile]: "This phone" for the in-app server,
 /// otherwise the name it was saved under.
-String serverDisplayName(ServerProfile? profile, AppLocalizations l10n) {
+///
+/// Setup saves one in-app profile per OpenCode generation, and both are
+/// "This phone". When [among] (the saved profiles) holds the other
+/// generation too, the name says which one this is ("This phone ·
+/// OpenCode 2"), so two of them never sit side by side looking the same.
+/// Only the shown name changes; the stored names stay as they were saved.
+String serverDisplayName(
+  ServerProfile? profile,
+  AppLocalizations l10n, {
+  Iterable<ServerProfile> among = const [],
+}) {
   if (profile == null) return 'OpenCode';
-  return looksLikeInAppServer(profile)
-      ? l10n.phoneServerCardTitle
-      : profile.name;
+  if (!looksLikeInAppServer(profile)) return profile.name;
+  return phoneServerDisplayName(profile, l10n, among: among);
+}
+
+/// [serverDisplayName] for a profile known to be the in-app server (the
+/// "This phone" card's own title).
+String phoneServerDisplayName(
+  ServerProfile profile,
+  AppLocalizations l10n, {
+  Iterable<ServerProfile> among = const [],
+}) {
+  final twoGenerations = among.any(
+    (other) =>
+        other.id != profile.id &&
+        other.backend == ServerBackend.openCode &&
+        BuiltinLinux.managesServerUrl(other.baseUrl) &&
+        other.flavor != profile.flavor,
+  );
+  if (!twoGenerations) return l10n.phoneServerCardTitle;
+  return l10n.phoneSetupOpenPhoneRuntime(
+    l10n.phoneServerCardTitle,
+    profile.flavor == ServerFlavor.v2
+        ? l10n.setupRuntimeTwo
+        : l10n.setupRuntimeOne,
+  );
 }
 
 /// Test seams for the routes this card calls but other screens own.
@@ -627,7 +659,12 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
               children: [
                 Expanded(
                   child: Text(
-                    l10n.phoneServerCardTitle,
+                    phoneServerDisplayName(
+                      widget.profile,
+                      l10n,
+                      among: widget.connection.store.profiles,
+                    ),
+                    key: const ValueKey('phone-server-title'),
                     style: theme.textTheme.titleMedium,
                   ),
                 ),

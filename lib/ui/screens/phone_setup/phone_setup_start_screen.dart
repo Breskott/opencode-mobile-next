@@ -180,7 +180,10 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
       _failure = null;
     });
     try {
-      await _engine.run(ids);
+      // Everything started here is the phone's first setup; the job keeps
+      // that fact so a notification tap after the app was killed still ends
+      // on "name your first project".
+      await _engine.run(ids, params: SetupJobParams.firstSetup);
     } catch (error) {
       if (mounted) {
         setState(() {

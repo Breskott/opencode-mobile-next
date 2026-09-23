@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show ChangeNotifier, Listenable, TargetPlatform;
 import 'package:flutter/services.dart'
     show MissingPluginException, PlatformException;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -654,6 +655,10 @@ class SecureStorageUnavailable implements Exception {
   String toString() => message;
 }
 
+class _ProfileStoreChanges extends ChangeNotifier {
+  void changed() => notifyListeners();
+}
+
 /// Persists server profiles. Metadata in SharedPreferences, secrets in the
 /// Android Keystore via flutter_secure_storage.
 class ProfileStore {
@@ -691,6 +696,14 @@ class ProfileStore {
 
   List<ServerProfile> _cache = [];
   List<ServerProfile> get profiles => List.unmodifiable(_cache);
+
+  final _changes = _ProfileStoreChanges();
+
+  /// Fires after a profile is saved. Profiles are also changed in place
+  /// (phone setup renames the in-app one to "This phone" while the app is
+  /// connected to it), and nothing else tells the screens that show a name:
+  /// without this the app bar kept the old name until a restart.
+  Listenable get changes => _changes;
 
   Future<List<ServerProfile>> load() async {
     final raw = prefs.getString(_profilesKey);
@@ -797,6 +810,7 @@ class ProfileStore {
     profile.requiresPasswordReentry = false;
     profile.requiresCodexTokenReentry = false;
     _cache = next;
+    _changes.changed();
   }
 
   /// flutter_secure_storage reports a missing or locked keyring as a

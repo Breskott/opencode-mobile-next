@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../builtin/setup/phone_setup.dart';
+import '../../../builtin/setup/setup_contract.dart';
 import 'phone_setup_customize_sheet.dart';
 import 'phone_setup_progress_screen.dart';
 import 'phone_setup_ready_screen.dart';
@@ -44,16 +47,78 @@ Future<Set<String>?> showPhoneSetupCustomize(
 Future<void> openPhoneSetupProgress(
   BuildContext context, {
   bool firstSetup = false,
-}) => Navigator.of(context).push(
-  MaterialPageRoute<void>(
-    builder: (_) => PhoneSetupProgressScreen(firstSetup: firstSetup),
-  ),
+}) => Navigator.of(context).push(_progressRoute(firstSetup));
+
+/// Route names of screens B and C, so a notification tap can tell that the
+/// person is already looking at the setup.
+const phoneSetupProgressRouteName = 'phone-setup-progress';
+const phoneSetupReadyRouteName = 'phone-setup-ready';
+
+Route<void> _progressRoute(bool firstSetup) => MaterialPageRoute<void>(
+  settings: const RouteSettings(name: phoneSetupProgressRouteName),
+  builder: (_) => PhoneSetupProgressScreen(firstSetup: firstSetup),
+);
+
+Route<void> _readyRoute() => MaterialPageRoute<void>(
+  settings: const RouteSettings(name: phoneSetupReadyRouteName),
+  builder: (_) => const PhoneSetupReadyScreen(),
 );
 
 /// Screen C: ready, name the first project. It takes the progress screen's
 /// place, so Back never returns to a finished setup. Screen B calls it only
 /// when a first setup is done; updates and added tools end on B.
 Future<void> openPhoneSetupReady(BuildContext context) =>
-    Navigator.of(context).pushReplacement<void, void>(
-      MaterialPageRoute<void>(builder: (_) => const PhoneSetupReadyScreen()),
-    );
+    Navigator.of(context).pushReplacement<void, void>(_readyRoute());
+
+/// Where a tap on a phone setup notification lands (SetupService.kt), with
+/// the app running, in the background or started by the tap.
+///
+/// The job is read first, since after a cold start only setup.json knows
+/// it, and the job's state decides rather than which notification was
+/// tapped (a progress notification can be tapped after the job finished):
+/// - running or stopped: screen B, which shows it live or offers Continue.
+///   A job begun as the first setup still ends on screen C, because the job
+///   itself remembers that ([SetupProgress.firstSetup]);
+/// - done: OpenCode is started and connected already, so bringing the app
+///   forward is the whole answer, except for a first setup whose "name your
+///   first project" has not been shown yet: that opens screen C;
+/// - no job, or B or C already on top ([topRouteName]): nothing changes.
+///
+/// Returns the route pushed, or null when the app stays where it is.
+Future<Route<void>?> openPhoneSetupFromNotification(
+  NavigatorState navigator, {
+  String? topRouteName,
+  SetupEngine? engine,
+  Duration restoreTimeout = const Duration(seconds: 3),
+}) async {
+  if (topRouteName == phoneSetupProgressRouteName ||
+      topRouteName == phoneSetupReadyRouteName) {
+    return null;
+  }
+  final setup = engine ?? PhoneSetup.engine;
+  try {
+    await setup.restore().timeout(restoreTimeout);
+  } catch (_) {
+    // Unreadable: what the engine already holds is the best answer.
+  }
+  if (!navigator.mounted) return null;
+  final progress = setup.progress.value;
+  final Route<void> route;
+  switch (progress.state) {
+    case SetupState.idle:
+      return null;
+    case SetupState.done:
+      if (!progress.firstSetup || PhoneSetup.readyShownFor(progress.jobId)) {
+        return null;
+      }
+      PhoneSetup.markReadyShown(progress.jobId);
+      route = _readyRoute();
+    case SetupState.running:
+    case SetupState.interrupted:
+    case SetupState.failed:
+    case SetupState.cancelled:
+      route = _progressRoute(progress.firstSetup);
+  }
+  unawaited(navigator.push(route));
+  return route;
+}

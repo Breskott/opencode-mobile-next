@@ -585,6 +585,55 @@ void main() {
     expect(formatPhoneStorage(734003200), '700.0 MB');
   });
 
+  // Open point 4 of phone setup v2: setup saves one in-app profile per
+  // OpenCode generation and names both "This phone".
+  group('OpenCode 1 and 2 both on this phone', () {
+    test('are told apart only when both exist; stored names are kept', () {
+      final one = phone(id: 'one');
+      final two = phone(id: 'two', flavor: ServerFlavor.v2)
+        ..name = 'My pocket server';
+      final all = [one, two, work];
+      final en = AppLocalizationsEn(), ar = AppLocalizationsAr();
+
+      expect(serverDisplayName(one, en, among: all), 'This phone · OpenCode 1');
+      expect(serverDisplayName(two, en, among: all), 'This phone · OpenCode 2');
+      expect(serverDisplayName(two, ar, among: all), 'هذا الهاتف · OpenCode 2');
+      // One generation alone keeps the plain name.
+      expect(serverDisplayName(two, en, among: [two, work]), 'This phone');
+      expect(serverDisplayName(one, en, among: [one]), 'This phone');
+      // Other servers never change.
+      expect(serverDisplayName(work, en, among: all), 'Work server');
+      // Nothing was renamed to get there.
+      expect(one.name, 'This phone, built-in (OpenCode 1)');
+      expect(two.name, 'My pocket server');
+    });
+
+    testWidgets('the card says which one it stands for', (tester) async {
+      store.saved.add(phone(id: 'one'));
+      await mountCard(
+        tester,
+        profile: phone(id: 'two', flavor: ServerFlavor.v2),
+        connected: true,
+      );
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('phone-server-title')))
+            .data,
+        'This phone · OpenCode 2',
+      );
+    });
+
+    testWidgets('alone, the card is just This phone', (tester) async {
+      await mountCard(tester, connected: true);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('phone-server-title')))
+            .data,
+        'This phone',
+      );
+    });
+  });
+
   group('hosts', () {
     testWidgets('the switcher shows the card, not the old in-app row', (
       tester,

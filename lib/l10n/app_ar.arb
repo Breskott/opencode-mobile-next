@@ -4769,5 +4769,11 @@
   "phoneSetupStartNothingChosen": "لم تختر شيئًا بعد",
   "phoneSetupStartDone": "تم",
   "phoneSetupStartAdd": "إضافة",
-  "phoneSetupStartChecking": "جارٍ التحقق مما هو مثبّت…"
+  "phoneSetupStartChecking": "جارٍ التحقق مما هو مثبّت…",
+  "phoneSetupOpenWelcomeRunning": "جارٍ إعداد OpenCode على هذا الهاتف · {percent}٪",
+  "phoneSetupOpenWelcomeStopped": "اكتمل الإعداد على هذا الهاتف بنسبة {percent}٪",
+  "phoneSetupOpenWelcomeStoppedDetail": "المتابعة تبدأ من حيث توقّف.",
+  "phoneSetupOpenWelcomeShowProgress": "عرض التقدّم",
+  "phoneSetupOpenWelcomeContinue": "متابعة",
+  "phoneSetupOpenPhoneRuntime": "{name} · {runtime}"
 }

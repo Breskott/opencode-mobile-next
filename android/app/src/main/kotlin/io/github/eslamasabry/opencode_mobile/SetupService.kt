@@ -17,8 +17,12 @@ import android.os.IBinder
  * The job is a thread and child processes of the app's process; without a
  * foreground service Android may reclaim the process as soon as the person
  * switches apps, minutes into a download. The ongoing notification mirrors
- * the overall percent and opens the app when tapped. When the job ends the
- * service stops and leaves one ordinary notification saying how it went.
+ * the overall percent and, when tapped, opens the app on the setup progress
+ * screen (the launch action [LAUNCH_ACTION_PROGRESS], which MainActivity
+ * hands to Dart like a launcher shortcut). When the job ends the service
+ * stops and leaves one ordinary notification saying how it went: a stopped
+ * job's opens the progress screen too (it offers Continue), a finished
+ * job's opens the app on the phone server ([LAUNCH_ACTION_DONE]).
  *
  * Every text comes from the app, already in the person's language.
  */
@@ -28,7 +32,7 @@ class SetupService : Service() {
         val title = intent?.getStringExtra(EXTRA_TITLE) ?: ""
         val text = intent?.getStringExtra(EXTRA_TEXT) ?: ""
         createChannel(this, channel)
-        val notification = build(this, title, text, ongoing = true)
+        val notification = build(this, title, text, ongoing = true, LAUNCH_ACTION_PROGRESS)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 NOTIFICATION_ID,
@@ -55,6 +59,11 @@ class SetupService : Service() {
         private const val EXTRA_TITLE = "title"
         private const val EXTRA_TEXT = "text"
 
+        // Whitelisted by MainActivity.LAUNCH_ACTIONS; Dart routes them
+        // (LaunchAction.phoneSetup / phoneSetupDone).
+        const val LAUNCH_ACTION_PROGRESS = "phone_setup"
+        const val LAUNCH_ACTION_DONE = "phone_setup_done"
+
         fun start(context: Context, channel: String, title: String, text: String) {
             context.getSystemService(NotificationManager::class.java)?.cancel(RESULT_NOTIFICATION_ID)
             val intent = Intent(context, SetupService::class.java)
@@ -72,19 +81,23 @@ class SetupService : Service() {
         fun update(context: Context, channel: String, title: String, text: String) {
             createChannel(context, channel)
             context.getSystemService(NotificationManager::class.java)
-                ?.notify(NOTIFICATION_ID, build(context, title, text, ongoing = true))
+                ?.notify(NOTIFICATION_ID, build(context, title, text, ongoing = true, LAUNCH_ACTION_PROGRESS))
         }
 
         fun stop(context: Context) {
             context.stopService(Intent(context, SetupService::class.java))
         }
 
-        /** Stops the service and leaves [text] as a plain, dismissable notification. */
-        fun finish(context: Context, channel: String, text: String) {
+        /**
+         * Stops the service and leaves [text] as a plain, dismissable
+         * notification; [done] says whether the job finished or stopped.
+         */
+        fun finish(context: Context, channel: String, text: String, done: Boolean) {
             stop(context)
             createChannel(context, channel)
+            val action = if (done) LAUNCH_ACTION_DONE else LAUNCH_ACTION_PROGRESS
             context.getSystemService(NotificationManager::class.java)
-                ?.notify(RESULT_NOTIFICATION_ID, build(context, text, null, ongoing = false))
+                ?.notify(RESULT_NOTIFICATION_ID, build(context, text, null, ongoing = false, action))
         }
 
         private fun createChannel(context: Context, name: String) {
@@ -96,13 +109,24 @@ class SetupService : Service() {
             )
         }
 
-        private fun build(context: Context, title: String, text: String?, ongoing: Boolean): Notification {
+        private fun build(
+            context: Context,
+            title: String,
+            text: String?,
+            ongoing: Boolean,
+            action: String,
+        ): Notification {
+            // One request code per action: PendingIntents that differ only
+            // in extras are the same PendingIntent to Android, so sharing a
+            // code would let one notification carry the other's action.
+            // UPDATE_CURRENT keeps an older build's intent from lingering.
             val open = PendingIntent.getActivity(
                 context,
-                2,
+                if (action == LAUNCH_ACTION_DONE) 3 else 2,
                 Intent(context, MainActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-                PendingIntent.FLAG_IMMUTABLE,
+                    .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    .putExtra(MainActivity.EXTRA_LAUNCH_ACTION, action),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
             val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Notification.Builder(context, CHANNEL_ID)

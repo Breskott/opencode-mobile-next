@@ -307,6 +307,61 @@ void main() {
     expect(find.byKey(const ValueKey('termux-running-server')), findsNothing);
   });
 
+  // Open point 3 of phone setup v2: setup renames the in-app profile to
+  // "This phone" while the app is connected to it. Nothing about the
+  // connection changes, so the app bar kept the old name until a restart.
+  group('a renamed profile shows at once', () {
+    ServerProfile fresh(String id, String name) => ServerProfile(
+      id: id,
+      name: name,
+      baseUrl: 'https://$id.example.test',
+      password: 'synthetic-$id',
+    );
+
+    testWidgets('renamed in place and saved, as setup does', (tester) async {
+      final connection = await pumpShell(
+        tester,
+        profiles: [fresh('desk', 'Old desk name')],
+      );
+      final title = find.byKey(const ValueKey('server-profile-title'));
+      expect(tester.widget<Text>(title).data, 'Old desk name');
+
+      final saved = connection.store.profiles.single..name = 'Desk';
+      await connection.store.upsert(saved);
+      await tester.pump();
+      expect(tester.widget<Text>(title).data, 'Desk');
+    });
+
+    testWidgets('replaced by an edited copy, as the editor does', (
+      tester,
+    ) async {
+      final connection = await pumpShell(
+        tester,
+        profiles: [fresh('desk', 'Desk'), fresh('lab', 'Lab box')],
+      );
+      await openSwitcher(tester);
+      expect(inSheet(find.text('Lab box')), findsOneWidget);
+
+      await connection.store.upsert(fresh('lab', 'Lab workstation'));
+      await tester.pump();
+      expect(inSheet(find.text('Lab workstation')), findsOneWidget);
+      expect(inSheet(find.text('Lab box')), findsNothing);
+    });
+
+    testWidgets('a save that changes nothing shown does not rebuild the '
+        'shell', (tester) async {
+      final connection = await pumpShell(
+        tester,
+        profiles: [fresh('desk', 'Desk')],
+      );
+      var notified = 0;
+      connection.addListener(() => notified++);
+      final saved = connection.store.profiles.single..serverVersion = '1.18.29';
+      await connection.store.upsert(saved);
+      expect(notified, 0);
+    });
+  });
+
   testWidgets('the current server status follows the connection', (
     tester,
   ) async {
