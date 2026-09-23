@@ -7102,236 +7102,254 @@ class _ChatScreenState extends State<ChatScreen>
                                                     const BoxConstraints(
                                                       maxWidth: 860,
                                                     ),
-                                                child: ScrollablePositionedList.builder(
-                                                  reverse: true,
-                                                  itemScrollController:
-                                                      _messageScroll,
-                                                  itemPositionsListener:
-                                                      _messagePositions,
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 6,
-                                                        vertical: 10,
-                                                      ),
-                                                  itemCount:
-                                                      _renderedMessageCount +
-                                                      (_olderCursor == null
-                                                          ? 0
-                                                          : 1),
-                                                  itemBuilder: (context, i) {
-                                                    if (i ==
-                                                        _renderedMessageCount) {
-                                                      return _olderHistoryRow();
-                                                    }
-                                                    // Reversed list: item 0 is
-                                                    // the newest turn. The
-                                                    // composer, not a
-                                                    // transcript row, says
-                                                    // when a run is active.
-                                                    final index =
-                                                        _renderedMessageCount -
-                                                        1 -
-                                                        i;
-                                                    final m = _messages[index];
-                                                    if (waitingLocalIDs
-                                                        .contains(m.info.id)) {
-                                                      return const SizedBox.shrink();
-                                                    }
-                                                    if (_isFoldedNotice(m)) {
-                                                      return const SizedBox.shrink();
-                                                    }
-                                                    if (v2VariantPart(m)
-                                                        case final tagged?) {
-                                                      return V2TranscriptRow(
+                                                // Scrolling repaints up to the nearest boundary; without one that is
+                                                // the whole route, so every scroll frame redrew the composer and its
+                                                // soft shadow.
+                                                child: RepaintBoundary(
+                                                  key: const ValueKey(
+                                                    'transcript-repaint-boundary',
+                                                  ),
+                                                  child: ScrollablePositionedList.builder(
+                                                    reverse: true,
+                                                    itemScrollController:
+                                                        _messageScroll,
+                                                    itemPositionsListener:
+                                                        _messagePositions,
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 10,
+                                                        ),
+                                                    itemCount:
+                                                        _renderedMessageCount +
+                                                        (_olderCursor == null
+                                                            ? 0
+                                                            : 1),
+                                                    itemBuilder: (context, i) {
+                                                      if (i ==
+                                                          _renderedMessageCount) {
+                                                        return _olderHistoryRow();
+                                                      }
+                                                      // Reversed list: item 0 is
+                                                      // the newest turn. The
+                                                      // composer, not a
+                                                      // transcript row, says
+                                                      // when a run is active.
+                                                      final index =
+                                                          _renderedMessageCount -
+                                                          1 -
+                                                          i;
+                                                      final m =
+                                                          _messages[index];
+                                                      if (waitingLocalIDs
+                                                          .contains(
+                                                            m.info.id,
+                                                          )) {
+                                                        return const SizedBox.shrink();
+                                                      }
+                                                      if (_isFoldedNotice(m)) {
+                                                        return const SizedBox.shrink();
+                                                      }
+                                                      if (v2VariantPart(m)
+                                                          case final tagged?) {
+                                                        return V2TranscriptRow(
+                                                          key: ValueKey(
+                                                            'message-${m.info.id}',
+                                                          ),
+                                                          part: tagged,
+                                                          messageId: m.info.id,
+                                                          parentSessionID:
+                                                              widget.sessionID,
+                                                          knownSessions: _conn
+                                                              .sessionsById,
+                                                          onCompactAgain:
+                                                              _canCompactAgain(
+                                                                index,
+                                                              )
+                                                              ? () => unawaited(
+                                                                  _compact(),
+                                                                )
+                                                              : null,
+                                                          onOpenChild:
+                                                              _conn
+                                                                  .capabilities
+                                                                  .projectManagement
+                                                              ? (
+                                                                  id,
+                                                                ) => _openSubagentSession(
+                                                                  id,
+                                                                  requireChild:
+                                                                      true,
+                                                                )
+                                                              : null,
+                                                        );
+                                                      }
+                                                      final rawMeta =
+                                                          _messageMeta(
+                                                            _messages,
+                                                            index,
+                                                          );
+                                                      final meta = rawMeta
+                                                          .withModelLabel(
+                                                            _catalogModelNames(
+                                                              rawMeta
+                                                                  .modelLabel,
+                                                            ),
+                                                          );
+                                                      final parts =
+                                                          displayParts[index];
+                                                      if (parts.isEmpty &&
+                                                          meta.isEmpty &&
+                                                          m.info.errorText ==
+                                                              null) {
+                                                        return const SizedBox.shrink();
+                                                      }
+                                                      return _MessageView(
                                                         key: ValueKey(
                                                           'message-${m.info.id}',
                                                         ),
-                                                        part: tagged,
-                                                        messageId: m.info.id,
-                                                        parentSessionID:
-                                                            widget.sessionID,
-                                                        knownSessions:
-                                                            _conn.sessionsById,
-                                                        onCompactAgain:
-                                                            _canCompactAgain(
+                                                        queued:
+                                                            queuedAfterIndex >=
+                                                                0 &&
+                                                            m.info.role ==
+                                                                'user' &&
+                                                            index >
+                                                                queuedAfterIndex,
+                                                        m: m,
+                                                        meta: meta,
+                                                        parts: parts,
+                                                        reasoningExpanded: _conn
+                                                            .transcriptReasoningExpanded,
+                                                        expansionStore:
+                                                            _transcriptExpansion,
+                                                        showTimestamp: _conn
+                                                            .transcriptTimestampsVisible,
+                                                        highlighted:
+                                                            (_findHits
+                                                                    .isNotEmpty &&
+                                                                _findHits[_findCursor]
+                                                                        .messageID ==
+                                                                    m
+                                                                        .info
+                                                                        .id) ||
+                                                            _highlightedMessageID ==
+                                                                m.info.id,
+                                                        searchQuery: _findQuery,
+                                                        onSearchExcerptContext: (context) {
+                                                          if (_findHits
+                                                                  .isNotEmpty &&
+                                                              _findHits[_findCursor]
+                                                                      .messageID ==
+                                                                  m.info.id) {
+                                                            _findExcerptContext =
+                                                                context;
+                                                          }
+                                                        },
+                                                        searchMatch:
+                                                            _findHits
+                                                                    .isNotEmpty &&
+                                                                _findHits[_findCursor]
+                                                                        .messageID ==
+                                                                    m.info.id
+                                                            ? _findHits[_findCursor]
+                                                            : null,
+                                                        searchLabel:
+                                                            _findHits.isEmpty
+                                                            ? ''
+                                                            : _chatL10n(
+                                                                context,
+                                                              ).transcriptFindCount(
+                                                                _findCursor + 1,
+                                                                _findHits
+                                                                    .length,
+                                                              ),
+                                                        // One "more" control
+                                                        // per turn: under the
+                                                        // message that ends a
+                                                        // reply, never under
+                                                        // each step of it or
+                                                        // under the prompt.
+                                                        // An error with more of the
+                                                        // turn after it was got over.
+                                                        errorRecovered:
+                                                            m.info.errorText !=
+                                                                null &&
+                                                            !_endsTurn(
+                                                              _messages,
                                                               index,
-                                                            )
-                                                            ? () => unawaited(
-                                                                _compact(),
-                                                              )
-                                                            : null,
-                                                        onOpenChild:
-                                                            _conn
-                                                                .capabilities
-                                                                .projectManagement
-                                                            ? (id) =>
-                                                                  _openSubagentSession(
-                                                                    id,
-                                                                    requireChild:
-                                                                        true,
-                                                                  )
-                                                            : null,
-                                                      );
-                                                    }
-                                                    final rawMeta =
-                                                        _messageMeta(
-                                                          _messages,
-                                                          index,
-                                                        );
-                                                    final meta = rawMeta
-                                                        .withModelLabel(
-                                                          _catalogModelNames(
-                                                            rawMeta.modelLabel,
-                                                          ),
-                                                        );
-                                                    final parts =
-                                                        displayParts[index];
-                                                    if (parts.isEmpty &&
-                                                        meta.isEmpty &&
-                                                        m.info.errorText ==
-                                                            null) {
-                                                      return const SizedBox.shrink();
-                                                    }
-                                                    return _MessageView(
-                                                      key: ValueKey(
-                                                        'message-${m.info.id}',
-                                                      ),
-                                                      queued:
-                                                          queuedAfterIndex >=
-                                                              0 &&
-                                                          m.info.role ==
-                                                              'user' &&
-                                                          index >
-                                                              queuedAfterIndex,
-                                                      m: m,
-                                                      meta: meta,
-                                                      parts: parts,
-                                                      reasoningExpanded: _conn
-                                                          .transcriptReasoningExpanded,
-                                                      expansionStore:
-                                                          _transcriptExpansion,
-                                                      showTimestamp: _conn
-                                                          .transcriptTimestampsVisible,
-                                                      highlighted:
-                                                          (_findHits
-                                                                  .isNotEmpty &&
-                                                              _findHits[_findCursor]
-                                                                      .messageID ==
-                                                                  m.info.id) ||
-                                                          _highlightedMessageID ==
-                                                              m.info.id,
-                                                      searchQuery: _findQuery,
-                                                      onSearchExcerptContext: (context) {
-                                                        if (_findHits
-                                                                .isNotEmpty &&
-                                                            _findHits[_findCursor]
-                                                                    .messageID ==
-                                                                m.info.id) {
-                                                          _findExcerptContext =
-                                                              context;
-                                                        }
-                                                      },
-                                                      searchMatch:
-                                                          _findHits
-                                                                  .isNotEmpty &&
-                                                              _findHits[_findCursor]
-                                                                      .messageID ==
-                                                                  m.info.id
-                                                          ? _findHits[_findCursor]
-                                                          : null,
-                                                      searchLabel:
-                                                          _findHits.isEmpty
-                                                          ? ''
-                                                          : _chatL10n(
-                                                              context,
-                                                            ).transcriptFindCount(
-                                                              _findCursor + 1,
-                                                              _findHits.length,
                                                             ),
-                                                      // One "more" control
-                                                      // per turn: under the
-                                                      // message that ends a
-                                                      // reply, never under
-                                                      // each step of it or
-                                                      // under the prompt.
-                                                      // An error with more of the
-                                                      // turn after it was got over.
-                                                      errorRecovered:
-                                                          m.info.errorText !=
-                                                              null &&
-                                                          !_endsTurn(
-                                                            _messages,
-                                                            index,
-                                                          ),
-                                                      showActions:
-                                                          turnActionOwners
-                                                              .contains(index),
-                                                      onCopy:
-                                                          _conn.isIsolated ||
-                                                              _messageCopy(
-                                                                m,
-                                                              ).text.isEmpty
-                                                          ? null
-                                                          : () => unawaited(
-                                                              _copyMessageText(
-                                                                m,
-                                                              ),
-                                                            ),
-                                                      onLongPress:
-                                                          _conn.isIsolated
-                                                          ? null
-                                                          : () => unawaited(
-                                                              _showMessageActions(
-                                                                m,
-                                                              ),
-                                                            ),
-                                                      contextActions:
-                                                          _conn.isIsolated
-                                                          ? null
-                                                          : () =>
-                                                                _messageContextActions(
+                                                        showActions:
+                                                            turnActionOwners
+                                                                .contains(
+                                                                  index,
+                                                                ),
+                                                        onCopy:
+                                                            _conn.isIsolated ||
+                                                                _messageCopy(
+                                                                  m,
+                                                                ).text.isEmpty
+                                                            ? null
+                                                            : () => unawaited(
+                                                                _copyMessageText(
                                                                   m,
                                                                 ),
-                                                      filePreviewLoader:
-                                                          _loadToolOutputFile,
-                                                      onAttachFile:
-                                                          _supportsPromptAttachments
-                                                          ? _attachToolOutputFile
-                                                          : null,
-                                                      onDownloadFile:
-                                                          _downloadToolOutputFile,
-                                                      onCompact:
-                                                          _conn.isIsolated ||
-                                                              !_supportsSessionCompact
-                                                          ? null
-                                                          : _compact,
-                                                      onOpenProviders:
-                                                          _conn.isIsolated
-                                                          ? null
-                                                          : _openProviders,
-                                                      onContinue:
-                                                          _conn.isIsolated
-                                                          ? null
-                                                          : _continueTruncated,
-                                                      onChooseModel:
-                                                          _conn.isIsolated
-                                                          ? null
-                                                          : () => showModelPicker(
-                                                              context,
-                                                              applyScope:
-                                                                  _modelApplyScope,
-                                                              sessionID: widget
-                                                                  .sessionID,
-                                                            ),
-                                                      onOpenSession:
-                                                          _conn.isIsolated ||
-                                                              !_conn
-                                                                  .capabilities
-                                                                  .projectManagement
-                                                          ? null
-                                                          : _openSubagentSession,
-                                                    );
-                                                  },
+                                                              ),
+                                                        onLongPress:
+                                                            _conn.isIsolated
+                                                            ? null
+                                                            : () => unawaited(
+                                                                _showMessageActions(
+                                                                  m,
+                                                                ),
+                                                              ),
+                                                        contextActions:
+                                                            _conn.isIsolated
+                                                            ? null
+                                                            : () =>
+                                                                  _messageContextActions(
+                                                                    m,
+                                                                  ),
+                                                        filePreviewLoader:
+                                                            _loadToolOutputFile,
+                                                        onAttachFile:
+                                                            _supportsPromptAttachments
+                                                            ? _attachToolOutputFile
+                                                            : null,
+                                                        onDownloadFile:
+                                                            _downloadToolOutputFile,
+                                                        onCompact:
+                                                            _conn.isIsolated ||
+                                                                !_supportsSessionCompact
+                                                            ? null
+                                                            : _compact,
+                                                        onOpenProviders:
+                                                            _conn.isIsolated
+                                                            ? null
+                                                            : _openProviders,
+                                                        onContinue:
+                                                            _conn.isIsolated
+                                                            ? null
+                                                            : _continueTruncated,
+                                                        onChooseModel:
+                                                            _conn.isIsolated
+                                                            ? null
+                                                            : () => showModelPicker(
+                                                                context,
+                                                                applyScope:
+                                                                    _modelApplyScope,
+                                                                sessionID: widget
+                                                                    .sessionID,
+                                                              ),
+                                                        onOpenSession:
+                                                            _conn.isIsolated ||
+                                                                !_conn
+                                                                    .capabilities
+                                                                    .projectManagement
+                                                            ? null
+                                                            : _openSubagentSession,
+                                                      );
+                                                    },
+                                                  ),
                                                 ),
                                               ),
                                               if (_awayFromLatest)

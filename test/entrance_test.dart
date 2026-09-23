@@ -61,6 +61,35 @@ void main() {
     );
   });
 
+  testWidgets('rows scrolled into view appear at once, not faded in', (
+    tester,
+  ) async {
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _host(
+        ListView.builder(
+          controller: controller,
+          itemCount: 200,
+          itemBuilder: (context, i) => EntranceReveal(
+            index: i,
+            child: SizedBox(height: 60, child: Text('row $i')),
+          ),
+        ),
+      ),
+    );
+    Finder revealOpacity(String label) =>
+        find.ancestor(of: find.text(label), matching: find.byType(Opacity));
+    // The first screenful at rest still gets its entrance.
+    expect(revealOpacity('row 0'), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    controller.jumpTo(60 * 100);
+    await tester.pump();
+    expect(find.text('row 100'), findsOneWidget);
+    expect(revealOpacity('row 100'), findsNothing);
+  });
+
   testWidgets('disposal mid-flight leaves no pending timers', (tester) async {
     await tester.pumpWidget(
       _host(const EntranceReveal(index: 4, child: Text('row'))),

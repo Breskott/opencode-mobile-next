@@ -47,9 +47,15 @@ class _ControlledApi extends OpenCodeApi {
   @override
   Future<Map<String, String>> sessionStatuses() async => const {};
 
+  Completer<ProvidersResponse>? providersResult;
+  int providersCalls = 0;
+
   @override
-  Future<ProvidersResponse> providers() async =>
-      ProvidersResponse(providers: const []);
+  Future<ProvidersResponse> providers() {
+    providersCalls += 1;
+    return providersResult?.future ??
+        Future.value(ProvidersResponse(providers: const []));
+  }
 
   // The v1 catalog load also reads the runtime view; answer it locally so
   // the test never reaches the network.
@@ -1018,7 +1024,10 @@ void main() {
 
       final failedApiIndex = apis.length;
       final failedRetry = controller.retryConnection();
-      apis[failedApiIndex].healthFailure = ApiException('server unavailable');
+      // The health check is already in flight; it fails on the wire.
+      apis[failedApiIndex].healthResult.completeError(
+        ApiException('server unavailable'),
+      );
       await tester.pump();
       await failedRetry;
       await tester.pump();
@@ -1413,6 +1422,110 @@ void main() {
     expect(await actionApi, same(apis.last));
     expect(controller.version, '2');
     expect(wakeLockCalls, 3);
+    controller.dispose();
+  });
+
+  // Issue #87: a phone-hosted server felt 20 seconds slow to every screen.
+  testWidgets('a slow Termux wake lock does not hold up the health check', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      BackgroundLiveController.preferenceKey: true,
+    });
+    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+    final backgroundLive = BackgroundLiveController(
+      preferences: store.prefs,
+      invoke: (method, [arguments]) async => const {
+        'enabled': true,
+        'active': true,
+        'notificationGranted': true,
+        'batteryOptimizationIgnored': false,
+      },
+    );
+    final apis = <_ControlledApi>[];
+    // Termux answers RUN_COMMAND slowly, or only at its 10-second timeout.
+    final wakeLock = Completer<void>();
+    var wakeLockCalls = 0;
+    final controller = ConnectionController(
+      store,
+      backgroundLive: backgroundLive,
+      localWakeLockEnsurer: () {
+        wakeLockCalls += 1;
+        return wakeLock.future;
+      },
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory([]),
+    );
+
+    final connect = controller.connect(_profile('server'));
+    await tester.pump();
+    expect(wakeLockCalls, 1);
+    expect(apis.single.healthCalls, 1);
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    expect(controller.version, '1');
+
+    // Waking the app asks for the lock again but acts without it.
+    controller.suspendForLifecycle();
+    final action = controller.prepareActionTransport();
+    await tester.pump();
+    expect(wakeLockCalls, 2);
+    expect(apis.single.healthCalls, 2);
+    expect(await action, same(apis.single));
+    controller.dispose();
+  });
+
+  testWidgets('an action after a wake does not wait for the catalog reload', (
+    tester,
+  ) async {
+    final apis = <_ControlledApi>[];
+    final controller = ConnectionController(
+      await _store(),
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory([]),
+    );
+    final connect = controller.connect(_profile('server'));
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    await tester.pump();
+
+    controller.suspendForLifecycle();
+    final action = controller.prepareActionTransport();
+    final woken = apis.last;
+    expect(woken, isNot(same(apis.first)));
+    // OpenCode 1's /provider is megabytes a phone-hosted server takes
+    // seconds to build; the sessions list is cheap.
+    woken
+      ..sessionsResult = Completer<List<Session>>()
+      ..providersResult = Completer<ProvidersResponse>();
+    Object? actionApi;
+    unawaited(action.then((value) => actionApi = value));
+    woken.healthResult.complete(Health(healthy: true, version: '1'));
+    await tester.pump();
+
+    expect(actionApi, same(woken));
+    // The catalog waits for the cheap reloads so the single-threaded server
+    // does not make them queue behind it.
+    expect(woken.sessionsCalls, 1);
+    expect(woken.providersCalls, 0);
+    woken.sessionsResult!.complete([Session(id: 'session-1')]);
+    await tester.pump();
+    expect(controller.sessionsById, contains('session-1'));
+    expect(woken.providersCalls, 1);
+    woken.providersResult!.complete(ProvidersResponse(providers: const []));
+    await tester.pump();
+    expect(controller.catalogLoading, isFalse);
     controller.dispose();
   });
 

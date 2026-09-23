@@ -3500,13 +3500,72 @@ install_target() {
   esac
 }
 
+# url_host <url>: the host a URL names, for the failure sentence.
+url_host() {
+  local host="${1#*://}"
+  host=${host%%/*}
+  host=${host##*@}
+  printf '%s' "${host:-unknown}"
+}
+
+# fetch <source> <target> [expected bytes]: copies a local path, or downloads
+# a URL with curl. --location matters: GitHub release assets answer with a
+# redirect to their CDN. A partial file an earlier attempt left behind is
+# resumed, and a complete one is kept as it is, so Try again after a network
+# failure does not start the 300 MB over; the checksum step still checks
+# every byte. On failure DOWNLOAD_FAILURE holds "<kind> <host> <code>" (the
+# HTTP status for kind http, curl's exit code otherwise) and
+# DOWNLOAD_DETAIL a plain sentence of the same.
 fetch() {
-  local source="$1" target="$2"
+  local source="$1" target="$2" bytes="${3:-}" have code=0 http='' kind
+  DOWNLOAD_FAILURE=''
+  DOWNLOAD_DETAIL=''
   case "$source" in
-    http://*|https://*|file://*)
-      curl -fsSL --retry 3 --retry-delay 2 -o "$target" "$source" ;;
-    *) cp "$source" "$target" ;;
+    http://*|https://*|file://*) ;;
+    *) cp "$source" "$target"; return ;;
   esac
+  local resume=()
+  if [ -n "$bytes" ] && [ -f "$target" ]; then
+    have=$(wc -c < "$target" | tr -d ' ')
+    if [ "$have" = "$bytes" ]; then
+      log "already downloaded $(basename "$target" .part)"
+      return 0
+    elif [ "$have" -gt 0 ] && [ "$have" -lt "$bytes" ]; then
+      log "resuming at $have of $bytes bytes"
+      resume=(--continue-at -)
+    else
+      rm -f "$target"
+    fi
+  fi
+  http=$(curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+    --connect-timeout 20 ${resume[@]+"${resume[@]}"} -w '%{http_code}' \
+    -o "$target" "$source") || code=$?
+  if [ "$code" = 33 ]; then
+    # The server does not do ranges: start this file over.
+    log 'the server cannot resume; downloading the whole file again'
+    rm -f "$target"
+    code=0
+    http=$(curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+      --connect-timeout 20 -w '%{http_code}' -o "$target" "$source") || code=$?
+  fi
+  [ "$code" = 0 ] && return 0
+  local host
+  host=$(url_host "$source")
+  case "$code" in
+    6) kind=dns; DOWNLOAD_DETAIL="could not find $host (DNS)" ;;
+    7) kind=connect; DOWNLOAD_DETAIL="could not connect to $host" ;;
+    28) kind=timeout; DOWNLOAD_DETAIL="$host did not answer in time" ;;
+    22) kind=http; code="${http:-000}"; DOWNLOAD_DETAIL="$host answered HTTP $code" ;;
+    35|51|53|54|58|59|60|64|66|77|80|82|83|90|91)
+      kind=tls; DOWNLOAD_DETAIL="the secure connection to $host failed (curl $code)" ;;
+    16|18|52|55|56|92)
+      kind=interrupted; DOWNLOAD_DETAIL="the connection to $host broke off (curl $code)" ;;
+    23) kind=write; DOWNLOAD_DETAIL="the file could not be written on this phone (curl $code)" ;;
+    *) kind=other; DOWNLOAD_DETAIL="curl failed with exit $code for $host" ;;
+  esac
+  DOWNLOAD_FAILURE="$kind $host $code"
+  log "download failed: $DOWNLOAD_DETAIL"
+  return 1
 }
 
 # ---------------------------------------------------------------------------
@@ -3549,7 +3608,9 @@ install_runtime() {
   mkdir -p "$TMP_DIR"
   chmod 700 "$TMP_DIR"
   local manifest_path="$TMP_DIR/manifest.json"
-  fetch "$source" "$manifest_path" || fail manifest-download "Could not download the manifest from $source"
+  rm -f "$manifest_path"
+  fetch "$source" "$manifest_path" ||
+    fail manifest-download "Could not download the manifest from $source: ${DOWNLOAD_DETAIL:-copy failed}"
   MANIFEST=$(tr -d '\n\r\t ' < "$manifest_path")
   local base_url
   base_url=$(manifest_str base_url)
@@ -3565,8 +3626,14 @@ install_runtime() {
       fail manifest-invalid "The manifest has no complete entry for $name"
     write_state downloading "Downloading $file ($((bytes / 1048576)) MB)"
     log "downloading $base_url$file"
-    fetch "$base_url$file" "$TMP_DIR/$file.part" ||
-      fail download "Could not download $file"
+    if ! fetch "$base_url$file" "$TMP_DIR/$file.part" "$bytes"; then
+      # A write error on a full disk is a space problem, not a network one.
+      if [ "${DOWNLOAD_FAILURE%% *}" = write ]; then
+        require_space $((bytes / 1048576 + 50)) "$file"
+      fi
+      fail "download ${DOWNLOAD_FAILURE:-other unknown 0}" \
+        "Could not download $file: ${DOWNLOAD_DETAIL:-unknown error}"
+    fi
   done
 
   write_state verifying 'Verifying checksums'
