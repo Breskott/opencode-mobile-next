@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/product_repository.dart' show ProductException;
 import '../../api/server_probe.dart';
+import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../demo/demo_copy.dart';
 import '../../l10n/app_localizations.dart';
 import '../widgets/setup_ui_messages.dart';
@@ -26,10 +27,12 @@ import '../widgets/managed_server_health.dart';
 import '../widgets/product_states.dart';
 import '../widgets/team_host_form.dart';
 import '../widgets/local_agent_server_entry.dart';
+import '../widgets/phone_server_card.dart';
 import '../widgets/termux_running_server_entry.dart';
 import '../widgets/safety_confirms.dart';
 import '../../state/local_server_controls.dart';
 import 'agent_choice_screen.dart';
+import 'phone_setup/phone_setup_routes.dart';
 import 'demo_screen.dart';
 import 'guide_screen.dart' show Cmd;
 import 'attention_overview_screen.dart';
@@ -38,7 +41,6 @@ import 'pairing_scanner_screen.dart';
 import 'tailscale_setup_screen.dart';
 import '../../state/tailscale_address.dart';
 import 'external_agents_screen.dart';
-import 'phone_setup/phone_setup_routes.dart';
 
 /// What the servers list learns back from the editor's save: whether the
 /// profile reached the store, and the product-facing failure to show inline
@@ -707,6 +709,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
             );
           }
           final activeId = store.activeId;
+          final phoneServer = phoneServerProfile(store.profiles, activeId);
           final needsCredential = store.profiles.any(
             (profile) =>
                 profile.id == activeId &&
@@ -794,146 +797,165 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                   ),
                 ),
               _runningServerEntry(store.profiles, accountConnection),
+              // OpenCode inside this app is "This phone", managed in place;
+              // its saved entries are how the app reaches it, so they are
+              // not listed again below.
+              if (phoneServer != null) ...[
+                PhoneServerCard(
+                  key: ValueKey('phone-server-card-${phoneServer.id}'),
+                  connection: accountConnection,
+                  profile: phoneServer,
+                  connected:
+                      accountConnection.api != null &&
+                      accountConnection.profile?.id == phoneServer.id,
+                  onOpen: _busy ? null : () => _connect(phoneServer),
+                  onRemoved: () {
+                    if (mounted) setState(() {});
+                  },
+                ),
+                const Divider(height: 17),
+              ],
               for (final p in store.profiles)
-                Card.filled(
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  color: p.id == activeId
-                      ? Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(alpha: .35)
-                      : null,
-                  child: ListTile(
-                    enabled: !_busy,
-                    onTap: _busy ? null : () => _connect(p),
-                    isThreeLine:
-                        p.requiresPasswordReentry ||
-                        p.requiresCodexTokenReentry,
-                    leading: CircleAvatar(
-                      backgroundColor: p.id == activeId
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                      child: Icon(
-                        isLoopbackHost(Uri.tryParse(p.baseUrl)?.host ?? '')
-                            ? AppIconography.phone
-                            : AppIconography.server,
-                        size: 18,
-                        color: p.id == activeId
-                            ? Theme.of(context).colorScheme.onPrimary
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    title: Text(
-                      p.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          p.baseUrl,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: AppTheme.monoFamily,
-                            fontSize: AppTheme.captionFontSize,
-                          ),
-                        ),
-                        if (p.backend == ServerBackend.openCode)
-                          Text(
-                            _knownOpenCodeGeneration(p),
-                            key: ValueKey('server-generation-${p.id}'),
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        if (p.requiresPasswordReentry)
-                          Text(
-                            lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).e7SetupPasswordRequired,
-                            key: ValueKey('password-reentry-${p.id}'),
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        if (p.usesAgentSocket)
-                          Text(
-                            '${p.backend == ServerBackend.paseo ? 'Paseo' : 'Codex'}${p.codexDirectory.isEmpty ? '' : ' · ${p.codexDirectory}'}',
-                            key: ValueKey('codex-profile-${p.id}'),
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        if (p.requiresCodexTokenReentry)
-                          Text(
-                            lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).e7SetupTokenRequired,
-                            key: ValueKey('codex-token-reentry-${p.id}'),
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                      ],
-                    ),
-                    trailing: PopupMenuButton<String>(
+                if (!looksLikeInAppServer(p))
+                  Card.filled(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    color: p.id == activeId
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer.withValues(alpha: .35)
+                        : null,
+                    child: ListTile(
                       enabled: !_busy,
-                      onSelected: (v) {
-                        if (v == 'edit') _edit(existing: p);
-                        if (v == 'del') _delete(p);
-                        if (v == 'conn') _connect(p);
-                        if (v == 'account') {
-                          Navigator.of(context).push<void>(
-                            MaterialPageRoute(
-                              builder: (_) => AgentAccountScreen(
-                                connection: accountConnection,
+                      onTap: _busy ? null : () => _connect(p),
+                      isThreeLine:
+                          p.requiresPasswordReentry ||
+                          p.requiresCodexTokenReentry,
+                      leading: CircleAvatar(
+                        backgroundColor: p.id == activeId
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
+                        child: Icon(
+                          isLoopbackHost(Uri.tryParse(p.baseUrl)?.host ?? '')
+                              ? AppIconography.phone
+                              : AppIconography.server,
+                          size: 18,
+                          color: p.id == activeId
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      title: Text(
+                        p.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            p.baseUrl,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: AppTheme.monoFamily,
+                              fontSize: AppTheme.captionFontSize,
+                            ),
+                          ),
+                          if (p.backend == ServerBackend.openCode)
+                            Text(
+                              _knownOpenCodeGeneration(p),
+                              key: ValueKey('server-generation-${p.id}'),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          if (p.requiresPasswordReentry)
+                            Text(
+                              lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupPasswordRequired,
+                              key: ValueKey('password-reentry-${p.id}'),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          );
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        if (p.id == activeId &&
-                            accountConnection.isConnected &&
-                            accountConnection.capabilities.agentAccount)
+                          if (p.usesAgentSocket)
+                            Text(
+                              '${p.backend == ServerBackend.paseo ? 'Paseo' : 'Codex'}${p.codexDirectory.isEmpty ? '' : ' · ${p.codexDirectory}'}',
+                              key: ValueKey('codex-profile-${p.id}'),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          if (p.requiresCodexTokenReentry)
+                            Text(
+                              lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupTokenRequired,
+                              key: ValueKey('codex-token-reentry-${p.id}'),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                        ],
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        enabled: !_busy,
+                        onSelected: (v) {
+                          if (v == 'edit') _edit(existing: p);
+                          if (v == 'del') _delete(p);
+                          if (v == 'conn') _connect(p);
+                          if (v == 'account') {
+                            Navigator.of(context).push<void>(
+                              MaterialPageRoute(
+                                builder: (_) => AgentAccountScreen(
+                                  connection: accountConnection,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          if (p.id == activeId &&
+                              accountConnection.isConnected &&
+                              accountConnection.capabilities.agentAccount)
+                            PopupMenuItem(
+                              value: 'account',
+                              child: Text(
+                                _connectionL10n(context).agentAccountTitle,
+                              ),
+                            ),
                           PopupMenuItem(
-                            value: 'account',
+                            value: 'conn',
                             child: Text(
-                              _connectionL10n(context).agentAccountTitle,
+                              lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupConnect,
                             ),
                           ),
-                        PopupMenuItem(
-                          value: 'conn',
-                          child: Text(
-                            lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).e7SetupConnect,
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text(
+                              lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupEdit,
+                            ),
                           ),
-                        ),
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Text(
-                            lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).e7SetupEdit,
+                          PopupMenuItem(
+                            value: 'del',
+                            child: Text(
+                              lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).capsuleRemove,
+                            ),
                           ),
-                        ),
-                        PopupMenuItem(
-                          value: 'del',
-                          child: Text(
-                            lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).capsuleRemove,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
               const SizedBox(height: 16),
               if (platformCapabilities.supportsTermux &&
                   store.profiles.any(

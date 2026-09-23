@@ -17603,6 +17603,147 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get phoneSetupReadyTitle => 'OpenCode جاهز';
+
+  @override
+  String get phoneSetupReadyNameTitle => 'سمِّ مشروعك الأول';
+
+  @override
+  String get phoneSetupReadyNameLabel => 'اسم المشروع';
+
+  @override
+  String get phoneSetupReadyNameHelp => 'أحرف لاتينية وأرقام و - _ .';
+
+  @override
+  String get phoneSetupReadyCreate => 'إنشاء';
+
+  @override
+  String get phoneSetupReadyCreating => 'جارٍ إنشاء المشروع';
+
+  @override
+  String get phoneSetupReadyOr => 'أو';
+
+  @override
+  String get phoneSetupReadyOpenExisting => 'فتح مجلد موجود';
+
+  @override
+  String get phoneSetupReadyNameEmpty => 'اكتب اسمًا.';
+
+  @override
+  String get phoneSetupReadyNameOneFolder =>
+      'استخدم اسمًا واحدًا بلا شرطات مائلة.';
+
+  @override
+  String get phoneSetupReadyNameInvalid =>
+      'استخدم أحرفًا لاتينية وأرقامًا و - _ . وابدأ بحرف أو رقم (حتى 64).';
+
+  @override
+  String phoneSetupReadyCreateFailed(String reason) {
+    return 'تعذّر إنشاء المشروع: $reason';
+  }
+
+  @override
+  String phoneSetupReadyOpenFailed(String reason) {
+    return 'تعذّر فتح المشروع: $reason';
+  }
+
+  @override
+  String get phoneServerCardTitle => 'هذا الهاتف';
+
+  @override
+  String get phoneServerCardRunning => 'يعمل';
+
+  @override
+  String get phoneServerCardStopped => 'متوقف';
+
+  @override
+  String get phoneServerCardStarting => 'جارٍ التشغيل';
+
+  @override
+  String get phoneServerCardStopping => 'جارٍ الإيقاف';
+
+  @override
+  String get phoneServerCardChecking => 'جارٍ التحقق';
+
+  @override
+  String get phoneServerCardNotSetUp => 'غير مُعَدّ';
+
+  @override
+  String get phoneServerCardSettingUp => 'جارٍ الإعداد';
+
+  @override
+  String phoneServerCardVersion(String version) {
+    return 'OpenCode $version';
+  }
+
+  @override
+  String get phoneServerCardStart => 'تشغيل';
+
+  @override
+  String get phoneServerCardStop => 'إيقاف';
+
+  @override
+  String get phoneServerCardOpen => 'فتح';
+
+  @override
+  String get phoneServerCardSetUp => 'إعداد';
+
+  @override
+  String get phoneServerCardShowProgress => 'عرض التقدم';
+
+  @override
+  String get phoneServerCardContinueSetup => 'متابعة الإعداد';
+
+  @override
+  String get phoneServerCardShowLog => 'عرض السجل';
+
+  @override
+  String get phoneServerCardLogTitle => 'السجل';
+
+  @override
+  String get phoneServerCardLogEmpty => 'لا شيء في السجل بعد.';
+
+  @override
+  String get phoneServerCardMore => 'المزيد';
+
+  @override
+  String phoneServerCardSwitchTo(String runtime) {
+    return 'التبديل إلى $runtime';
+  }
+
+  @override
+  String get phoneServerCardAddTools => 'إضافة أدوات (Python وAI Team…)';
+
+  @override
+  String get phoneServerCardUpdate => 'تحديث OpenCode';
+
+  @override
+  String get phoneServerCardRemove => 'إزالة من هذا الهاتف…';
+
+  @override
+  String get phoneServerCardRemoveTitle => 'إزالة OpenCode من هذا الهاتف؟';
+
+  @override
+  String phoneServerCardRemoveBody(String size) {
+    return 'سيحذف هذا OpenCode وأدواته وكل مشروع على هذا الهاتف، ويحرّر $size.';
+  }
+
+  @override
+  String get phoneServerCardRemoveBodyUnmeasured =>
+      'سيحذف هذا OpenCode وأدواته وكل مشروع على هذا الهاتف، ويحرّر المساحة التي تشغلها.';
+
+  @override
+  String get phoneServerCardRemoveConfirm => 'إزالة';
+
+  @override
+  String get phoneServerCardRemoved => 'أُزيل OpenCode من هذا الهاتف.';
+
+  @override
+  String phoneServerCardActionFailed(String reason) {
+    return 'لم ينجح ذلك: $reason';
+  }
+
+  @override
   String get serverEditorMoreOptions => 'خيارات أخرى';
 
   @override

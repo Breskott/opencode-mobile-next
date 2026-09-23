@@ -47,6 +47,12 @@ class BuiltinServerScreen extends ConsumerStatefulWidget {
 
 /// Opens the built-in server setup. Every entry point goes through here and
 /// hides itself when [BuiltinLinux.supported] is false.
+///
+/// Superseded by phone setup v2: first setup is screens A–C and management
+/// is the "This phone" card (`phone_server_card.dart`). It stays only as the
+/// fallback the opening card offers when the in-app server will not start
+/// before the app is connected, where no card is shown; delete it once screen
+/// B's "Continue setup" covers that repair.
 Future<void> openBuiltinServerScreen(BuildContext context) => Navigator.of(
   context,
 ).push(MaterialPageRoute<void>(builder: (_) => const BuiltinServerScreen()));

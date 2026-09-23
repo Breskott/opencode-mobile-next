@@ -66,6 +66,7 @@ Future<_Harness> _pump(
   bool reduceMotion = false,
   Locale locale = const Locale('en'),
   bool pushReady = true,
+  bool firstSetup = true,
 }) async {
   final h = _Harness();
   if (initial != null) h.engine.emit(initial);
@@ -95,6 +96,7 @@ Future<_Harness> _pump(
     MaterialPageRoute<void>(
       builder: (_) => PhoneSetupProgressScreen(
         engine: h.engine,
+        firstSetup: firstSetup,
         openReady: (context) async {
           h.readyOpened++;
           if (!pushReady) return;
@@ -428,6 +430,27 @@ void main() {
       );
       await _settle(tester);
       expect(h.readyOpened, 1);
+    });
+
+    testWidgets('an update or added tools end here, then close', (
+      tester,
+    ) async {
+      final h = await _pump(
+        tester,
+        initial: _job(current: _nodeDownloading),
+        firstSetup: false,
+      );
+      h.engine.emit(
+        _job(state: SetupState.done, overall: 1, done: _ids.toSet()),
+      );
+      await _settle(tester);
+      // The finished list stays for a moment, never screen C.
+      expect(h.readyOpened, 0);
+      expect(find.byType(PhoneSetupProgressScreen), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 1300));
+      await _settle(tester);
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.byType(PhoneSetupProgressScreen), findsNothing);
     });
 
     testWidgets('Back while running just leaves; setup is not cancelled', (

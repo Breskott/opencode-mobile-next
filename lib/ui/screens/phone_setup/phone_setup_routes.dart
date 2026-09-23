@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../builtin/setup/phone_setup.dart';
 import 'phone_setup_customize_sheet.dart';
 import 'phone_setup_progress_screen.dart';
+import 'phone_setup_ready_screen.dart';
 import 'phone_setup_start_screen.dart';
 
 // Routes between the phone setup screens (docs/design/phone-setup-v2-2026-09-24.md).
@@ -37,12 +38,22 @@ Future<Set<String>?> showPhoneSetupCustomize(
 );
 
 /// Screen B: the setup in progress (and continue after an interruption).
-Future<void> openPhoneSetupProgress(BuildContext context) =>
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const PhoneSetupProgressScreen()),
-    );
+///
+/// [firstSetup] (screen A) ends on screen C; updates and added tools (the
+/// "This phone" card) end back where they started.
+Future<void> openPhoneSetupProgress(
+  BuildContext context, {
+  bool firstSetup = false,
+}) => Navigator.of(context).push(
+  MaterialPageRoute<void>(
+    builder: (_) => PhoneSetupProgressScreen(firstSetup: firstSetup),
+  ),
+);
 
-/// Screen C: ready, name the first project.
-Future<void> openPhoneSetupReady(BuildContext context) async {
-  // Replaced by screen C.
-}
+/// Screen C: ready, name the first project. It takes the progress screen's
+/// place, so Back never returns to a finished setup. Screen B calls it only
+/// when a first setup is done; updates and added tools end on B.
+Future<void> openPhoneSetupReady(BuildContext context) =>
+    Navigator.of(context).pushReplacement<void, void>(
+      MaterialPageRoute<void>(builder: (_) => const PhoneSetupReadyScreen()),
+    );

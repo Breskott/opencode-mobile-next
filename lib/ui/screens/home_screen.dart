@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/sse.dart';
+import '../../builtin/builtin_server.dart' show builtinLinuxProvider;
 import '../../domain/server_gateway.dart' show ServerCapabilities;
 import '../../state/connection.dart';
 import '../../state/first_run.dart';
@@ -15,6 +16,7 @@ import '../navigation/chat_route.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/retained_tab_view.dart';
+import '../widgets/phone_server_card.dart';
 import '../widgets/server_switcher_sheet.dart';
 import 'activity_screen.dart';
 import 'servers_screen.dart' show ServersRouteRequest;
@@ -314,7 +316,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         appBar: AppBar(
           title: _WorkspaceAppBarTitle(
             onOpenSwitcher: () => unawaited(_openServerSwitcher(conn)),
-            profileName: conn.profile?.name ?? 'OpenCode',
+            profileName: serverDisplayName(conn.profile, _l10n(context)),
             tabTitle: _titles[activeTab],
             status: conn.status,
             compact: MediaQuery.sizeOf(context).width < 600,
@@ -395,6 +397,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         unawaited(navigator.pushNamed('/servers', arguments: request));
       case ServerSwitcherOpenPhoneSetup():
         unawaited(navigator.pushNamed('/termux-setup'));
+      case ServerSwitcherPhoneAction(
+        :final action,
+        :final profileID,
+        :final bytesUsed,
+      ):
+        final profile = conn.store.profiles
+            .where((profile) => profile.id == profileID)
+            .firstOrNull;
+        if (profile == null) return;
+        final removed = await runPhoneServerAction(
+          context,
+          action,
+          connection: conn,
+          linux: ref.read(builtinLinuxProvider),
+          profile: profile,
+          bytesUsed: bytesUsed,
+        );
+        // The shell was on the server that is gone: the Servers screen is
+        // where the person picks what comes next.
+        if (removed && navigator.mounted && conn.api == null) {
+          unawaited(
+            navigator.pushNamedAndRemoveUntil('/servers', (_) => false),
+          );
+        }
       case ServerSwitcherLeave(:final alreadyDisconnected):
         if (!alreadyDisconnected) await conn.disconnect();
         if (!navigator.mounted) return;

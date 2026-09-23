@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../api/sse.dart';
+import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/local_server_controls.dart';
@@ -10,6 +11,7 @@ import '../screens/servers_screen.dart' show ServersRouteRequest;
 import 'product_states.dart';
 import 'safety_confirms.dart';
 import 'local_agent_server_entry.dart';
+import 'phone_server_card.dart';
 import 'termux_running_server_entry.dart';
 
 /// What the person chose in the server switcher. The sheet only chooses; the
@@ -28,6 +30,16 @@ class ServerSwitcherOpenServers extends ServerSwitcherChoice {
 
 class ServerSwitcherOpenPhoneSetup extends ServerSwitcherChoice {
   const ServerSwitcherOpenPhoneSetup();
+}
+
+/// A "This phone" menu action. It leaves for another screen (or removes the
+/// server), so the shell runs it with [runPhoneServerAction] once the sheet
+/// is gone.
+class ServerSwitcherPhoneAction extends ServerSwitcherChoice {
+  const ServerSwitcherPhoneAction(this.action, this.profileID, this.bytesUsed);
+  final PhoneServerAction action;
+  final String profileID;
+  final int? bytesUsed;
 }
 
 /// The person confirmed leaving this server; [alreadyDisconnected] is true
@@ -66,10 +78,30 @@ class ServerSwitcherSheet extends StatelessWidget {
     final navigator = Navigator.of(context);
     final current = controller.profile;
     final profiles = controller.store.profiles;
+    // OpenCode inside this app is one "This phone" card, never rows named
+    // after its address or the runtime it was saved with.
+    final phone = phoneServerProfile(profiles, current?.id);
+    final currentIsPhone = current != null && current.id == phone?.id;
     final others = [
       for (final profile in profiles)
-        if (profile.id != current?.id) profile,
+        if (profile.id != current?.id && !looksLikeInAppServer(profile))
+          profile,
     ];
+    Widget phoneCard(ServerProfile profile) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: PhoneServerCard(
+        key: ValueKey('server-switcher-phone-${profile.id}'),
+        connection: controller,
+        profile: profile,
+        connected: controller.api != null && profile.id == current?.id,
+        onOpen: () => navigator.pop(
+          ServerSwitcherOpenServers(ServersRouteRequest.connect(profile.id)),
+        ),
+        onAction: (action, bytesUsed) => navigator.pop(
+          ServerSwitcherPhoneAction(action, profile.id, bytesUsed),
+        ),
+      ),
+    );
     return SafeArea(
       child: SingleChildScrollView(
         key: const ValueKey('server-switcher-sheet'),
@@ -77,7 +109,9 @@ class ServerSwitcherSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (current != null)
+            if (currentIsPhone)
+              phoneCard(current)
+            else if (current != null)
               ListTile(
                 key: const ValueKey('server-switcher-current'),
                 leading: _ServerAvatar(profile: current, active: true),
@@ -89,6 +123,7 @@ class ServerSwitcherSheet extends StatelessWidget {
                 subtitle: Text(_statusLabel(l10n, controller.status)),
                 trailing: const Icon(AppIconography.check),
               ),
+            if (phone != null && !currentIsPhone) phoneCard(phone),
             // A live server the app found on this phone outranks the saved
             // ones and is controlled where it is shown (plan 5.7). The entry
             // decides on its own whether there is anything to show.

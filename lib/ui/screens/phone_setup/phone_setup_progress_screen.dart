@@ -22,7 +22,13 @@ class PhoneSetupProgressScreen extends StatefulWidget {
     super.key,
     this.engine,
     this.openReady = openPhoneSetupReady,
+    this.firstSetup = false,
   });
+
+  /// Only a first setup ends on screen C ("name your first project"). An
+  /// update or added tools end here: the finished list shows for a moment,
+  /// then the screen closes back to where it was opened.
+  final bool firstSetup;
 
   /// Tests pass a fake; the app uses [PhoneSetup.engine].
   final SetupEngine? engine;
@@ -72,6 +78,12 @@ class _PhoneSetupProgressScreenState extends State<PhoneSetupProgressScreen> {
     if (!_restored || _handedOff || !mounted) return;
     if (_engine.progress.value.state != SetupState.done) return;
     _handedOff = true;
+    if (!widget.firstSetup) {
+      Future<void>.delayed(const Duration(milliseconds: 1200), () {
+        if (mounted) Navigator.of(context).maybePop();
+      });
+      return;
+    }
     final navigator = Navigator.of(context);
     final route = ModalRoute.of(context);
     unawaited(widget.openReady(context));

@@ -30,7 +30,7 @@ class PhoneSetupStartScreen extends ConsumerStatefulWidget {
     super.key,
     this.termuxProbe,
     this.inAppProbe,
-    this.openProgress = openPhoneSetupProgress,
+    this.openProgress = _openFirstSetupProgress,
   });
 
   /// Looks for an OpenCode that the Termux path already set up. Defaults to
@@ -736,3 +736,8 @@ class _PhoneSparkPainter extends CustomPainter {
       old.wash != wash ||
       old.direction != direction;
 }
+
+/// Everything started from this screen is a first setup, so it ends on
+/// "name your first project".
+Future<void> _openFirstSetupProgress(BuildContext context) =>
+    openPhoneSetupProgress(context, firstSetup: true);
