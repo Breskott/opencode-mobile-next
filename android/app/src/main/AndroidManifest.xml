@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <!-- The OpenCode server running inside the app (BuiltinServerService). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <!-- QR pairing uses an ephemeral preview. The composer's explicit Take
          photo action also opens the system camera; that result is kept locally
@@ -96,6 +98,14 @@
         <service
             android:name=".TermuxResultService"
             android:exported="false" />
+        <service
+            android:name=".BuiltinServerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Runs the user's own coding-agent server (OpenCode) inside the app, on this device only, while they use other apps." />
+        </service>
         <service
             android:name=".BackgroundConnectionService"
             android:exported="false"

@@ -141,17 +141,32 @@ class BuiltinLinux(private val context: Context) {
         stopServer()
         // One log per run; the previous one stays for a look after a crash.
         if (serverLog.isFile) serverLog.renameTo(File(home, "server.previous.log"))
-        server = start(script, serverLog).also { it.outputStream.close() }
+        val process = start(script, serverLog).also { it.outputStream.close() }
+        server = process
         serverPort = port
+        BuiltinServerService.start(context)
+        // A server that exits on its own (a crash, a bad config) takes its
+        // "running" notification with it.
+        Thread {
+            process.waitFor()
+            synchronized(this) {
+                if (server === process) {
+                    server = null
+                    serverPort = null
+                    BuiltinServerService.stop(context)
+                }
+            }
+        }.start()
     }
 
     @Synchronized
     fun stopServer() {
         val process = server ?: return
-        process.destroy()
-        if (!process.waitFor(3, TimeUnit.SECONDS)) process.destroyForcibly()
         server = null
         serverPort = null
+        process.destroy()
+        if (!process.waitFor(3, TimeUnit.SECONDS)) process.destroyForcibly()
+        BuiltinServerService.stop(context)
     }
 
     fun serverLogTail(tailBytes: Int): String {
