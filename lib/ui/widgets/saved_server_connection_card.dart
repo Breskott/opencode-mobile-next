@@ -26,6 +26,10 @@ class SavedServerConnectionCard extends StatefulWidget {
     this.onUpdateToken,
     this.onStartPhoneServer,
     this.startingPhoneServer = false,
+    this.inAppServer = false,
+    this.startingInAppServer = false,
+    this.inAppStartFailed = false,
+    this.onOpenInAppSetup,
   });
 
   final String profileName;
@@ -51,6 +55,21 @@ class SavedServerConnectionCard extends StatefulWidget {
   /// True while the phone server is being started.
   final bool startingPhoneServer;
 
+  /// The profile is OpenCode running inside this app. Its failures offer
+  /// [onStartPhoneServer] and nothing about Termux or tunnels.
+  final bool inAppServer;
+
+  /// The in-app server is booting: the card stays in its calm connecting
+  /// state and says so, instead of showing a failure first.
+  final bool startingInAppServer;
+
+  /// The last start of the in-app server ended without an answer.
+  final bool inAppStartFailed;
+
+  /// Opens the in-app server's setup, where its log is. Given only after a
+  /// start failed, when the log is what the person needs.
+  final VoidCallback? onOpenInAppSetup;
+
   @override
   State<SavedServerConnectionCard> createState() =>
       _SavedServerConnectionCardState();
@@ -63,8 +82,11 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final error = widget.error;
-    final failure = widget.requiresTokenReentry || error != null
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final error = widget.startingInAppServer ? null : widget.error;
+    final failure =
+        !widget.startingInAppServer &&
+            (widget.requiresTokenReentry || error != null)
         ? ConnectionFailure.diagnose(
             l10n: lookupAppLocalizations(Localizations.localeOf(context)),
             error: error ?? 'Connection token is required',
@@ -74,6 +96,8 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
             requiresTokenReentry: widget.requiresTokenReentry,
             attempts: widget.attempts,
             managedPhoneServer: widget.onStartPhoneServer != null,
+            inAppServer: widget.inAppServer,
+            inAppStartFailed: widget.inAppStartFailed,
           )
         : null;
     final failed = failure != null;
@@ -83,6 +107,8 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
       liveRegion: true,
       label: failed
           ? '${failure.title}. ${failure.explanation}'
+          : widget.startingInAppServer
+          ? l10n.inAppServerStarting
           : lookupAppLocalizations(
               Localizations.localeOf(context),
             ).e7SetupConnectingProfile(widget.profileName),
@@ -129,6 +155,8 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
                     Text(
                       failed
                           ? failure.title
+                          : widget.startingInAppServer
+                          ? l10n.inAppServerStarting
                           : widget.attempts > 1
                           ? lookupAppLocalizations(
                               Localizations.localeOf(context),
@@ -143,6 +171,8 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
                     Text(
                       failed
                           ? failure.explanation
+                          : widget.startingInAppServer
+                          ? l10n.inAppServerStartingBody
                           : lookupAppLocalizations(
                               Localizations.localeOf(context),
                             ).e7SetupOpeningWorkspace,
@@ -152,8 +182,12 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
                         height: 1.45,
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    _AddressRow(baseUrl: widget.baseUrl),
+                    // The in-app server's address is the app's business, not
+                    // something the person typed or can change.
+                    if (!widget.inAppServer) ...[
+                      const SizedBox(height: 18),
+                      _AddressRow(baseUrl: widget.baseUrl),
+                    ],
                     if (!failed) ...[
                       const SizedBox(height: 22),
                       const LinearProgressIndicator(
@@ -178,7 +212,8 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
                         onChangeServer: widget.onChangeServer,
                         onRetry: widget.onRetry,
                         onOpenTermuxSetup:
-                            widget.supportsTermux &&
+                            !widget.inAppServer &&
+                                widget.supportsTermux &&
                                 !widget.usesConnectionToken &&
                                 isLoopbackHost(
                                   Uri.tryParse(widget.baseUrl)?.host ?? '',
@@ -189,6 +224,10 @@ class _SavedServerConnectionCardState extends State<SavedServerConnectionCard> {
                         onUpdateToken: widget.onUpdateToken,
                         onStartPhoneServer: widget.onStartPhoneServer,
                         startingPhoneServer: widget.startingPhoneServer,
+                        inAppServer: widget.inAppServer,
+                        onOpenInAppSetup: widget.inAppServer
+                            ? widget.onOpenInAppSetup
+                            : null,
                       ),
                     ],
                   ],
@@ -360,9 +399,13 @@ class _Actions extends StatelessWidget {
     required this.onUpdateToken,
     this.onStartPhoneServer,
     this.startingPhoneServer = false,
+    this.inAppServer = false,
+    this.onOpenInAppSetup,
   });
   final VoidCallback? onStartPhoneServer;
   final bool startingPhoneServer;
+  final bool inAppServer;
+  final VoidCallback? onOpenInAppSetup;
   final ConnectionFailure failure;
   final VoidCallback onChangeServer;
   final VoidCallback onRetry;
@@ -484,6 +527,16 @@ class _Actions extends StatelessWidget {
         failure.primary == ConnectionFailureAction.changeServer;
     final stacked = AppTheme.stackedActions(context);
     final buttons = <Widget>[
+      if (onOpenInAppSetup != null)
+        TextButton(
+          key: const ValueKey('saved-server-open-in-app-setup'),
+          onPressed: onOpenInAppSetup,
+          child: Text(
+            lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).inAppServerOpenSetup,
+          ),
+        ),
       if ((primaryIsRetry || startsServer) && onOpenTermuxSetup != null)
         TextButton(
           key: const ValueKey('saved-server-open-termux'),
@@ -495,7 +548,9 @@ class _Actions extends StatelessWidget {
           ),
         ),
       if (!primaryIsChange) change,
-      if (!primaryIsRetry) retry,
+      // Starting the in-app server already connects: a second "try again"
+      // next to it would be the same button twice.
+      if (!primaryIsRetry && !(inAppServer && startsServer)) retry,
       primary,
     ];
     if (stacked) {

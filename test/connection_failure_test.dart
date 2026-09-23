@@ -168,4 +168,49 @@ void main() {
       ConnectionFailureAction.retry,
     );
   });
+
+  test('OpenCode inside the app: starting it is the fix, and nothing is '
+      'said about Termux, tunnels or passwords', () {
+    for (final error in const [
+      'Connection refused',
+      'Health check timed out',
+      'HTTP 401 Unauthorized',
+    ]) {
+      final failure = ConnectionFailure.diagnose(
+        error: error,
+        baseUrl: 'http://127.0.0.1:4097',
+        supportsTermux: true,
+        inAppServer: true,
+        attempts: 4,
+      );
+      expect(failure.primary, ConnectionFailureAction.startPhoneServer);
+      expect(failure.checks, isEmpty, reason: error);
+      expect(
+        '${failure.title} ${failure.explanation}',
+        isNot(
+          matches(RegExp('Termux|adb|tunnel|password', caseSensitive: false)),
+        ),
+        reason: error,
+      );
+    }
+    expect(
+      ConnectionFailure.diagnose(
+        error: 'Connection refused',
+        baseUrl: 'http://127.0.0.1:4097',
+        supportsTermux: true,
+        inAppServer: true,
+      ).title,
+      'OpenCode inside the app is stopped',
+    );
+    expect(
+      ConnectionFailure.diagnose(
+        error: 'the server stopped',
+        baseUrl: 'http://127.0.0.1:4097',
+        supportsTermux: true,
+        inAppServer: true,
+        inAppStartFailed: true,
+      ).title,
+      'OpenCode inside the app did not start',
+    );
+  });
 }

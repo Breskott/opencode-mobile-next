@@ -17484,4 +17484,76 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get serverEditorMoreOptions => 'خيارات أخرى';
+
+  @override
+  String get inAppServerStoppedTitle => 'OpenCode داخل التطبيق متوقف';
+
+  @override
+  String get inAppServerStoppedBody =>
+      'يتوقف عند إغلاق التطبيق لفترة أو تحديثه. محادثاتك محفوظة؛ شغّله مجددًا للمتابعة.';
+
+  @override
+  String get inAppServerNotRespondingTitle => 'OpenCode داخل التطبيق لا يستجيب';
+
+  @override
+  String get inAppServerNotRespondingBody =>
+      'إعادة تشغيله تحل هذا عادةً. محادثاتك محفوظة.';
+
+  @override
+  String get inAppServerStartFailedTitle => 'لم يبدأ OpenCode داخل التطبيق';
+
+  @override
+  String get inAppServerStartFailedBody =>
+      'افتح الإعداد لترى سجل الخادم، أو حاول تشغيله مرة أخرى.';
+
+  @override
+  String get inAppServerStarting => 'جارٍ تشغيل OpenCode داخل التطبيق…';
+
+  @override
+  String get inAppServerStartingBody => 'يستغرق هذا بضع ثوانٍ.';
+
+  @override
+  String get inAppServerOpenSetup => 'فتح الإعداد';
+
+  @override
+  String get projectFolderInAppTitle => 'فتح مشروع';
+
+  @override
+  String get projectFolderInAppEmpty =>
+      'لا توجد مشاريع بعد. اكتب اسمًا بالأسفل لإنشاء مشروع.';
+
+  @override
+  String projectFolderInAppListFailed(String reason) {
+    return 'تعذّر عرض المشاريع: $reason';
+  }
+
+  @override
+  String get projectFolderNewProject => 'مشروع جديد';
+
+  @override
+  String get projectFolderProjectNameLabel => 'اسم المشروع';
+
+  @override
+  String projectFolderNewProjectHelp(String directory) {
+    return 'ينشئ التطبيق المجلد في $directory ويفتحه.';
+  }
+
+  @override
+  String get projectFolderEnterPath => 'إدخال مسار';
+
+  @override
+  String get projectFolderMissing => 'هذا المجلد غير موجود بعد.';
+
+  @override
+  String get projectFolderCreateIt => 'إنشاؤه';
+
+  @override
+  String projectFolderCreateFailed(String reason) {
+    return 'تعذّر إنشاء المجلد: $reason';
+  }
+
+  @override
+  String projectFolderCheckFailed(String reason) {
+    return 'تعذّر التحقق من المجلد: $reason';
+  }
 }

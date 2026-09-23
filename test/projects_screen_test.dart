@@ -7,6 +7,7 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/manage_project_screen.dart';
@@ -167,6 +168,20 @@ class _FreshServerController extends _ProjectsController {
   String? createSessionDirectory;
   final probed = <String>[];
   String? probeProblem;
+
+  /// Disposes and opens in order, so a test can see a new folder's cached
+  /// instance dropped before the folder is opened.
+  final folderEvents = <String>[];
+
+  @override
+  Future<void> disposeFolderInstance(String directory) async =>
+      folderEvents.add('dispose:$directory');
+
+  @override
+  Future<void> selectLocation({String? directory, String? workspace}) {
+    folderEvents.add('open:$directory');
+    return super.selectLocation(directory: directory, workspace: workspace);
+  }
 
   @override
   Future<String?> probeProjectFolder(String directory) async {
@@ -1001,6 +1016,11 @@ void main() {
         find.text('That folder was not found on the server.'),
         findsOneWidget,
       );
+      // This app cannot make folders on someone else's server.
+      expect(
+        find.byKey(const ValueKey('open-folder-create-missing')),
+        findsNothing,
+      );
       expect(controller.locations, isEmpty);
 
       // A real folder is opened and only then can a session start in it.
@@ -1108,4 +1128,214 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('cannot create folders'), findsOneWidget);
   });
+
+  group('OpenCode inside the app', () {
+    late _InAppLinux linux;
+    late _FreshServerController controller;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      linux = _InAppLinux();
+      ProjectFolderActions.builtinLinuxOverride = linux;
+      controller = _FreshServerController(
+        _InAppStore(prefs: await SharedPreferences.getInstance()),
+        _ProjectsRepository()..projects = const [],
+      );
+    });
+
+    tearDown(() {
+      ProjectFolderActions.builtinLinuxOverride = null;
+      controller.dispose();
+    });
+
+    Future<void> openSheet(WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: WorkspaceScreen(controller: controller)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('workspace-open-folder')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('its projects are listed and open with one tap', (
+      tester,
+    ) async {
+      linux.projects.addAll(['demo', 'hello']);
+      await openSheet(tester);
+      expect(find.text('Open a project'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('in-app-project-demo')));
+      await tester.pumpAndSettle();
+      expect(controller.folderEvents, ['open:/root/projects/demo']);
+      expect(linux.created, isEmpty);
+      expect(controller.probed, isEmpty, reason: 'OpenCode is never probed');
+    });
+
+    testWidgets('a new project needs only a safe name', (tester) async {
+      await openSheet(tester);
+      expect(find.textContaining('No projects yet'), findsOneWidget);
+      for (final bad in const ['', '../etc', 'a/b', '.hidden']) {
+        await tester.enterText(
+          find.byKey(const ValueKey('in-app-new-project-name')),
+          bad,
+        );
+        await tester.tap(
+          find.byKey(const ValueKey('in-app-new-project-create')),
+        );
+        await tester.pumpAndSettle();
+        expect(linux.created, isEmpty, reason: bad);
+        expect(find.text('Open a project'), findsOneWidget, reason: bad);
+      }
+
+      await tester.enterText(
+        find.byKey(const ValueKey('in-app-new-project-name')),
+        'hello',
+      );
+      await tester.tap(find.byKey(const ValueKey('in-app-new-project-create')));
+      await tester.pumpAndSettle();
+      expect(linux.created, ['/root/projects/hello']);
+      expect(
+        linux.scripts.last,
+        BuiltinLinux.createFolderScript('/root/projects/hello'),
+      );
+      // The new folder's cached instance goes before OpenCode opens it.
+      expect(controller.folderEvents, [
+        'dispose:/root/projects/hello',
+        'open:/root/projects/hello',
+      ]);
+      expect(controller.probed, isEmpty);
+    });
+
+    testWidgets('a name that already exists just opens it', (tester) async {
+      linux.projects.add('hello');
+      await openSheet(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('in-app-new-project-name')),
+        'hello',
+      );
+      await tester.tap(find.byKey(const ValueKey('in-app-new-project-create')));
+      await tester.pumpAndSettle();
+      expect(linux.created, isEmpty);
+      expect(controller.folderEvents, ['open:/root/projects/hello']);
+    });
+
+    testWidgets('a typed path that does not exist offers Create it', (
+      tester,
+    ) async {
+      await openSheet(tester);
+      await tester.tap(find.byKey(const ValueKey('in-app-enter-path')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('open-folder-path')),
+        '/root/projects/missing',
+      );
+      await tester.tap(find.byKey(const ValueKey('open-folder-confirm')));
+      await tester.pumpAndSettle();
+      expect(find.text('That folder does not exist yet.'), findsOneWidget);
+      expect(controller.probed, isEmpty, reason: 'checked in Ubuntu only');
+      expect(controller.folderEvents, isEmpty);
+
+      await tester.tap(
+        find.byKey(const ValueKey('open-folder-create-missing')),
+      );
+      await tester.pumpAndSettle();
+      expect(linux.created, ['/root/projects/missing']);
+      expect(controller.folderEvents, [
+        'dispose:/root/projects/missing',
+        'open:/root/projects/missing',
+      ]);
+    });
+
+    testWidgets('Create a new folder makes it inside the app', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: WorkspaceScreen(controller: controller)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('workspace-create-folder')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('new-folder-name')),
+        'app',
+      );
+      await tester.tap(find.byKey(const ValueKey('new-folder-create')));
+      await tester.pumpAndSettle();
+      expect(linux.created, ['/root/projects/app']);
+      expect(controller.folderEvents, [
+        'dispose:/root/projects/app',
+        'open:/root/projects/app',
+      ]);
+    });
+  });
+}
+
+class _InAppStore extends ProfileStore {
+  _InAppStore({required super.prefs});
+
+  final profile = ServerProfile(
+    id: 'builtin',
+    name: 'This phone, built-in (OpenCode)',
+    baseUrl: BuiltinLinux.serverUrl,
+    username: BuiltinLinux.serverUsername,
+  );
+
+  @override
+  List<ServerProfile> get profiles => [profile];
+
+  @override
+  String? get activeId => profile.id;
+}
+
+/// Ubuntu inside the app, as far as project folders go: a set of folders
+/// under /root/projects that the scripts list, test and create.
+class _InAppLinux extends BuiltinLinux {
+  final projects = <String>[];
+  final extraFolders = <String>{};
+  final created = <String>[];
+  final scripts = <String>[];
+
+  @override
+  Future<BuiltinLinuxStatus> status() async => const BuiltinLinuxStatus(
+    installed: true,
+    phase: BuiltinLinuxPhase.ready,
+    serverRunning: true,
+  );
+
+  bool _exists(String path) =>
+      extraFolders.contains(path) ||
+      projects.any((name) => '${BuiltinLinux.projectsDir}/$name' == path);
+
+  @override
+  Future<BuiltinLinuxRunResult> run(
+    String script, {
+    Duration timeout = const Duration(minutes: 2),
+  }) async {
+    scripts.add(script);
+    if (script == BuiltinLinux.listProjectsScript()) {
+      return BuiltinLinuxRunResult(
+        exitCode: 0,
+        output: projects.map((name) => '$name\n').join(),
+      );
+    }
+    final test = RegExp(r"^test -d '(.*)'$").firstMatch(script);
+    if (test != null) {
+      return BuiltinLinuxRunResult(
+        exitCode: _exists(test[1]!) ? 0 : 1,
+        output: '',
+      );
+    }
+    final create = RegExp(r"dir='([^']*)'").firstMatch(script);
+    if (create != null) {
+      final path = create[1]!;
+      if (_exists(path)) {
+        return BuiltinLinuxRunResult(exitCode: 0, output: 'exists $path\n');
+      }
+      created.add(path);
+      extraFolders.add(path);
+      return BuiltinLinuxRunResult(exitCode: 0, output: 'created $path\n');
+    }
+    return const BuiltinLinuxRunResult(exitCode: 127, output: 'unexpected');
+  }
 }

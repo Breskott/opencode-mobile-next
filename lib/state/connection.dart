@@ -7673,6 +7673,35 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
+  /// Forgets whatever OpenCode 1 cached for [directory]. Asked about a folder
+  /// before it existed, OpenCode keeps that folder's instance as broken and
+  /// fails there even after the folder is made, until the instance is
+  /// disposed. Called right after the app creates a folder and before it
+  /// opens it; nothing can be running in a folder that did not exist, so
+  /// disposing loses nothing. Best effort: a failure here only means the
+  /// open that follows reports its own error.
+  Future<void> disposeFolderInstance(String directory) async {
+    final profile = _connectedProfile;
+    if (profile == null ||
+        isIsolated ||
+        profile.backend != ServerBackend.openCode ||
+        profile.flavor == ServerFlavor.v2) {
+      return;
+    }
+    final api = _apiFactory(profile)
+      ..setLocation(
+        directory: normalizeDirectoryPath(directory),
+        workspace: null,
+      );
+    try {
+      await api.disposeInstance();
+    } catch (_) {
+      // See above: the open reports anything that is really wrong.
+    } finally {
+      api.close();
+    }
+  }
+
   /// Running and waiting conversations in this server's other projects,
   /// from its server-wide event channel.
   late final elsewhereAttention = ElsewhereAttention()

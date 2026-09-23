@@ -17229,4 +17229,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serverEditorMoreOptions => 'More options';
+
+  @override
+  String get inAppServerStoppedTitle => 'OpenCode inside the app is stopped';
+
+  @override
+  String get inAppServerStoppedBody =>
+      'It stops when the app is closed for a while or updated. Your conversations are kept; start it again to continue.';
+
+  @override
+  String get inAppServerNotRespondingTitle =>
+      'OpenCode inside the app is not answering';
+
+  @override
+  String get inAppServerNotRespondingBody =>
+      'Starting it again usually fixes this. Your conversations are kept.';
+
+  @override
+  String get inAppServerStartFailedTitle =>
+      'OpenCode inside the app did not start';
+
+  @override
+  String get inAppServerStartFailedBody =>
+      'Open its setup to see the server log, or try starting it again.';
+
+  @override
+  String get inAppServerStarting => 'Starting OpenCode inside the app…';
+
+  @override
+  String get inAppServerStartingBody => 'This takes a few seconds.';
+
+  @override
+  String get inAppServerOpenSetup => 'Open setup';
+
+  @override
+  String get projectFolderInAppTitle => 'Open a project';
+
+  @override
+  String get projectFolderInAppEmpty =>
+      'No projects yet. Name one below to create it.';
+
+  @override
+  String projectFolderInAppListFailed(String reason) {
+    return 'The projects could not be listed: $reason';
+  }
+
+  @override
+  String get projectFolderNewProject => 'New project';
+
+  @override
+  String get projectFolderProjectNameLabel => 'Project name';
+
+  @override
+  String projectFolderNewProjectHelp(String directory) {
+    return 'The app makes the folder in $directory and opens it.';
+  }
+
+  @override
+  String get projectFolderEnterPath => 'Enter a path';
+
+  @override
+  String get projectFolderMissing => 'That folder does not exist yet.';
+
+  @override
+  String get projectFolderCreateIt => 'Create it';
+
+  @override
+  String projectFolderCreateFailed(String reason) {
+    return 'The folder could not be created: $reason';
+  }
+
+  @override
+  String projectFolderCheckFailed(String reason) {
+    return 'The folder could not be checked: $reason';
+  }
 }

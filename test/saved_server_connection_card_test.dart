@@ -194,6 +194,94 @@ void main() {
     expect(find.textContaining('opencode'), findsNothing);
   });
 
+  group('OpenCode inside the app', () {
+    Widget inApp({
+      String? error = 'Health check failed: connection refused',
+      bool starting = false,
+      bool startFailed = false,
+      VoidCallback? onStart,
+      VoidCallback? onSetup,
+      VoidCallback? onTermux,
+    }) => MaterialApp(
+      theme: AppTheme.light(),
+      home: Scaffold(
+        body: SavedServerConnectionCard(
+          profileName: 'This phone, built-in (OpenCode)',
+          baseUrl: 'http://127.0.0.1:4097',
+          error: error,
+          attempts: 1,
+          supportsTermux: false,
+          onChangeServer: () {},
+          onRetry: () {},
+          onOpenTermuxSetup: onTermux,
+          onStartPhoneServer: onStart ?? () {},
+          inAppServer: true,
+          startingInAppServer: starting,
+          inAppStartFailed: startFailed,
+          onOpenInAppSetup: onSetup,
+        ),
+      ),
+    );
+
+    testWidgets('stopped: one Start button, no Termux checklist', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      var started = 0;
+      await tester.pumpWidget(inApp(onStart: () => started++, onTermux: () {}));
+      expect(find.text('OpenCode inside the app is stopped'), findsOneWidget);
+      expect(find.text('Start and connect'), findsOneWidget);
+      expect(find.textContaining('Termux'), findsNothing);
+      expect(find.textContaining('adb'), findsNothing);
+      expect(find.byKey(const ValueKey('saved-server-checks')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('saved-server-open-termux')),
+        findsNothing,
+      );
+      // Start already connects; no second "Try again" beside it.
+      expect(find.byKey(const ValueKey('saved-server-retry')), findsNothing);
+      expect(find.text('http://127.0.0.1:4097'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('saved-server-start-phone')));
+      expect(started, 1);
+    });
+
+    testWidgets('starting: the calm connecting state says so', (tester) async {
+      await tester.pumpWidget(inApp(starting: true));
+      expect(find.text('Starting OpenCode inside the app…'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('saved-server-connect-progress')),
+        findsOneWidget,
+      );
+      expect(find.text('OpenCode inside the app is stopped'), findsNothing);
+    });
+
+    testWidgets('a failed start points at the setup and its log', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      var opened = false;
+      await tester.pumpWidget(
+        inApp(
+          error: 'OpenCode did not answer: the server stopped.',
+          startFailed: true,
+          onSetup: () => opened = true,
+        ),
+      );
+      expect(
+        find.text('OpenCode inside the app did not start'),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('saved-server-open-in-app-setup')),
+      );
+      expect(opened, isTrue);
+    });
+  });
+
   testWidgets('repeated attempts are counted in the connecting title', (
     tester,
   ) async {
