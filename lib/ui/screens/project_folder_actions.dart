@@ -136,8 +136,9 @@ class ProjectFolderActions {
 
   /// Makes [path] inside the app's Ubuntu (a new git project, or the folder
   /// that is already there) and opens it. OpenCode hears of the folder only
-  /// once it exists; a brand-new folder also gets any instance OpenCode
-  /// cached for it dropped first, in case something asked about it earlier.
+  /// once it exists: here folders are checked through Ubuntu, never through
+  /// OpenCode, so it has no stale view of the folder to forget. (Dropping
+  /// one anyway restarted OpenCode's event stream, flashing "Reconnecting".)
   static Future<String?> _createInApp(
     BuildContext context,
     ConnectionController controller,
@@ -154,7 +155,6 @@ class ProjectFolderActions {
       }
       return null;
     }
-    if (made.created) await controller.disposeFolderInstance(made.path);
     if (!context.mounted) return null;
     return _open(context, controller, made.path);
   }

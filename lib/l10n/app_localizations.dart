@@ -27939,6 +27939,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The folder could not be checked: {reason}'**
   String projectFolderCheckFailed(String reason);
+
+  /// Button that opens the steps for running OpenCode inside the app
+  ///
+  /// In en, this message translates to:
+  /// **'Set it up'**
+  String get builtinServerEntryAction;
 }
 
 class _AppLocalizationsDelegate

@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 
 import '../api/server_probe.dart' show ServerFlavor;
 import '../platform/platform_capabilities.dart';
-import '../termux/bridge.dart' show TermuxRuntime;
+import '../termux/bridge.dart' show TermuxBridge, TermuxRuntime;
 import '../termux/opencode_ubuntu_setup.dart';
 
 /// Where the built-in Ubuntu is in its life, as the Android side reports it.
@@ -223,12 +223,47 @@ class BuiltinLinux {
     // Interpolated verbatim: the shared text is a raw string, so nothing in
     // it is re-read as Dart here.
     return 'set -eu\n'
+        '$_fastPrerequisites'
         'export OC_REQUESTED_VERSION=${_quote(selected)}\n'
         'export OC_RUNTIME=${_quote(runtime.wireName)}\n'
         "bash -s <<'OC_PROOT_SETUP'\n"
         '${openCodeUbuntuSetupScript}OC_PROOT_SETUP\n'
         '$refresh';
   }
+
+  /// Node from its official pinned download instead of Ubuntu's `npm`
+  /// package, and only the few small packages OpenCode needs. Ubuntu's npm
+  /// drags in hundreds of packages, which under proot took ten minutes on
+  /// the emulator; the shared setup then finds everything in place and skips
+  /// apt entirely. npm's global folder is /usr/local, so `opencode` lands on
+  /// the PATH the server starts with.
+  static final _fastPrerequisites =
+      '''export DEBIAN_FRONTEND=noninteractive
+if ! command -v curl >/dev/null 2>&1 || ! command -v git >/dev/null 2>&1 ||
+   ! command -v ssh >/dev/null 2>&1 || [ ! -s /etc/ssl/certs/ca-certificates.crt ]; then
+  echo '[oc] Installing Git, SSH and certificates'
+  apt-get update -y -o Acquire::Retries=5 >/dev/null
+  apt-get install -y --no-install-recommends -o Acquire::Retries=5 \\
+    curl ca-certificates git openssh-client >/dev/null
+fi
+if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+  case "\$(uname -m)" in
+    aarch64|arm64) node_arch=arm64; node_sha=${TermuxBridge.localAgentsPins['node_sha256_arm64']} ;;
+    x86_64|amd64) node_arch=x64; node_sha=${TermuxBridge.localAgentsPins['node_sha256_x64']} ;;
+    *) echo "[oc] Unsupported CPU: \$(uname -m)" >&2; exit 64 ;;
+  esac
+  node_version=${TermuxBridge.localAgentsPins['node_version']}
+  echo "[oc] Installing Node.js \$node_version"
+  curl -fsSL --retry 5 -o /tmp/node.tar.gz \\
+    "${TermuxBridge.localAgentsPins['node_base_url']}/\$node_version/node-\$node_version-linux-\$node_arch.tar.gz"
+  echo "\$node_sha  /tmp/node.tar.gz" | sha256sum -c --quiet -
+  rm -rf /opt/node && mkdir -p /opt/node
+  tar -xzf /tmp/node.tar.gz -C /opt/node --strip-components=1
+  rm -f /tmp/node.tar.gz
+  for tool in node npm npx; do ln -sf /opt/node/bin/\$tool /usr/local/bin/\$tool; done
+  npm config set prefix /usr/local
+fi
+''';
 
   /// Prints the installed version of [runtime], or fails when it is missing.
   static String versionScript(TermuxRuntime runtime) =>

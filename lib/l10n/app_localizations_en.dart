@@ -17303,4 +17303,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String projectFolderCheckFailed(String reason) {
     return 'The folder could not be checked: $reason';
   }
+
+  @override
+  String get builtinServerEntryAction => 'Set it up';
 }

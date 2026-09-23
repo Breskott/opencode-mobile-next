@@ -4630,5 +4630,6 @@
   "projectFolderMissing": "هذا المجلد غير موجود بعد.",
   "projectFolderCreateIt": "إنشاؤه",
   "projectFolderCreateFailed": "تعذّر إنشاء المجلد: {reason}",
-  "projectFolderCheckFailed": "تعذّر التحقق من المجلد: {reason}"
+  "projectFolderCheckFailed": "تعذّر التحقق من المجلد: {reason}",
+  "builtinServerEntryAction": "إعداده"
 }

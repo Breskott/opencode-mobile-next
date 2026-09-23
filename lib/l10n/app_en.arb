@@ -18604,5 +18604,9 @@
         "type": "String"
       }
     }
+  },
+  "builtinServerEntryAction": "Set it up",
+  "@builtinServerEntryAction": {
+    "description": "Button that opens the steps for running OpenCode inside the app"
   }
 }

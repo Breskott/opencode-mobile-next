@@ -729,7 +729,8 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
               ),
               if (ubuntuReady) ...[
                 const Divider(height: 32),
-                if (status?.bytesUsed != null)
+                // Measured in the background: nothing until a real figure.
+                if ((status?.bytesUsed ?? 0) > 0)
                   Text(
                     l10n.builtinServerBytesUsed(
                       _formatBytes(status!.bytesUsed!),

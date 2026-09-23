@@ -1754,6 +1754,16 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                 ),
               ),
               const SizedBox(height: 16),
+              // Without Termux on the phone, running OpenCode inside the app
+              // is the shortest way in: offered first, not after three
+              // Termux steps the person would have to complete or skip.
+              if (_builtinFirst) ...[
+                _builtinServerChoice(primary: true),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(),
+                ),
+              ],
               _existingServerChoice(),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
@@ -2175,7 +2185,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
               ),
               // Last, so the Termux steps keep their place; this is the
               // alternative for a phone that cannot or will not use Termux.
-              if (BuiltinLinux.supported) ...[
+              if (BuiltinLinux.supported && !_builtinFirst) ...[
                 const Divider(height: 32),
                 _builtinServerChoice(),
               ],
@@ -2682,7 +2692,12 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   /// The no-Termux option: Ubuntu and OpenCode inside this app instead.
-  Widget _builtinServerChoice() {
+  // Only once Termux is known to be missing: leading with it while the check
+  // runs would reshuffle the screen the moment Termux turns out to be there.
+  bool get _builtinFirst =>
+      BuiltinLinux.supported && _phase == _Phase.needTermux;
+
+  Widget _builtinServerChoice({bool primary = false}) {
     final theme = Theme.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return Column(
@@ -2693,13 +2708,25 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         const SizedBox(height: 4),
         Text(l10n.builtinServerEntryDetail),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: _busy || _connecting
-              ? null
-              : () => openBuiltinServerScreen(context),
-          icon: const Icon(AppIconography.experiments),
-          label: Text(l10n.builtinServerStepUbuntu),
-        ),
+        // It opens the steps; the download starts there, on its own button.
+        if (primary)
+          FilledButton.icon(
+            key: const Key('termux-setup-builtin-open'),
+            onPressed: _busy || _connecting
+                ? null
+                : () => openBuiltinServerScreen(context),
+            icon: const Icon(AppIconography.experiments),
+            label: Text(l10n.builtinServerEntryAction),
+          )
+        else
+          OutlinedButton.icon(
+            key: const Key('termux-setup-builtin-open'),
+            onPressed: _busy || _connecting
+                ? null
+                : () => openBuiltinServerScreen(context),
+            icon: const Icon(AppIconography.experiments),
+            label: Text(l10n.builtinServerEntryAction),
+          ),
       ],
     );
   }

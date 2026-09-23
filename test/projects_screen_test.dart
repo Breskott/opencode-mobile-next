@@ -1199,11 +1199,9 @@ void main() {
         linux.scripts.last,
         BuiltinLinux.createFolderScript('/root/projects/hello'),
       );
-      // The new folder's cached instance goes before OpenCode opens it.
-      expect(controller.folderEvents, [
-        'dispose:/root/projects/hello',
-        'open:/root/projects/hello',
-      ]);
+      // Checked and made through Ubuntu, so OpenCode has nothing stale to
+      // forget: it just opens it.
+      expect(controller.folderEvents, ['open:/root/projects/hello']);
       expect(controller.probed, isEmpty);
     });
 
@@ -1241,10 +1239,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(linux.created, ['/root/projects/missing']);
-      expect(controller.folderEvents, [
-        'dispose:/root/projects/missing',
-        'open:/root/projects/missing',
-      ]);
+      expect(controller.folderEvents, ['open:/root/projects/missing']);
     });
 
     testWidgets('Create a new folder makes it inside the app', (tester) async {
@@ -1263,10 +1258,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('new-folder-create')));
       await tester.pumpAndSettle();
       expect(linux.created, ['/root/projects/app']);
-      expect(controller.folderEvents, [
-        'dispose:/root/projects/app',
-        'open:/root/projects/app',
-      ]);
+      expect(controller.folderEvents, ['open:/root/projects/app']);
     });
   });
 }

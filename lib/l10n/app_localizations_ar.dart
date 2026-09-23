@@ -17556,4 +17556,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String projectFolderCheckFailed(String reason) {
     return 'تعذّر التحقق من المجلد: $reason';
   }
+
+  @override
+  String get builtinServerEntryAction => 'إعداده';
 }
