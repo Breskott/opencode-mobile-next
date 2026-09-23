@@ -24946,6 +24946,54 @@ abstract class AppLocalizations {
   /// **'The download did not finish. Check the connection and try again.'**
   String get teamUiPhoneFailedDownload;
 
+  /// On-device setup: download failed because the host name did not resolve
+  ///
+  /// In en, this message translates to:
+  /// **'The phone could not find the download server {host}. Check that the phone is online and that no private DNS or ad blocker is blocking it, then try again.'**
+  String teamUiPhoneFailedDownloadDns(String host);
+
+  /// On-device setup: download failed because the host could not be reached
+  ///
+  /// In en, this message translates to:
+  /// **'The phone could not reach the download server {host}. Check the connection, then try again; the download continues where it stopped.'**
+  String teamUiPhoneFailedDownloadConnect(String host);
+
+  /// On-device setup: download timed out
+  ///
+  /// In en, this message translates to:
+  /// **'The download server {host} took too long to answer. Try again on a steadier connection; the download continues where it stopped.'**
+  String teamUiPhoneFailedDownloadTimeout(String host);
+
+  /// On-device setup: download failed on TLS
+  ///
+  /// In en, this message translates to:
+  /// **'A secure connection to {host} could not be made. Check that the phone\'s date and time are right and that no proxy is in the way, then try again.'**
+  String teamUiPhoneFailedDownloadTls(String host);
+
+  /// On-device setup: download failed with an HTTP error status
+  ///
+  /// In en, this message translates to:
+  /// **'The download server {host} refused the file (HTTP {code}). Try again later; if it keeps happening, this app version\'s AI Team download is unavailable.'**
+  String teamUiPhoneFailedDownloadHttp(String host, String code);
+
+  /// On-device setup: download interrupted mid-file
+  ///
+  /// In en, this message translates to:
+  /// **'The connection to {host} broke off during the download. Try again; the download continues where it stopped.'**
+  String teamUiPhoneFailedDownloadInterrupted(String host);
+
+  /// On-device setup: downloaded file could not be written
+  ///
+  /// In en, this message translates to:
+  /// **'The download could not be saved on this phone. Free some space, then try again.'**
+  String get teamUiPhoneFailedDownloadWrite;
+
+  /// On-device setup: download failed for another reason
+  ///
+  /// In en, this message translates to:
+  /// **'The download from {host} failed (error {code}). Check the connection, then try again.'**
+  String teamUiPhoneFailedDownloadOther(String host, String code);
+
   /// On-device setup: package install failure
   ///
   /// In en, this message translates to:

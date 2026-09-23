@@ -15474,6 +15474,45 @@ class AppLocalizationsEn extends AppLocalizations {
       'The download did not finish. Check the connection and try again.';
 
   @override
+  String teamUiPhoneFailedDownloadDns(String host) {
+    return 'The phone could not find the download server $host. Check that the phone is online and that no private DNS or ad blocker is blocking it, then try again.';
+  }
+
+  @override
+  String teamUiPhoneFailedDownloadConnect(String host) {
+    return 'The phone could not reach the download server $host. Check the connection, then try again; the download continues where it stopped.';
+  }
+
+  @override
+  String teamUiPhoneFailedDownloadTimeout(String host) {
+    return 'The download server $host took too long to answer. Try again on a steadier connection; the download continues where it stopped.';
+  }
+
+  @override
+  String teamUiPhoneFailedDownloadTls(String host) {
+    return 'A secure connection to $host could not be made. Check that the phone\'s date and time are right and that no proxy is in the way, then try again.';
+  }
+
+  @override
+  String teamUiPhoneFailedDownloadHttp(String host, String code) {
+    return 'The download server $host refused the file (HTTP $code). Try again later; if it keeps happening, this app version\'s AI Team download is unavailable.';
+  }
+
+  @override
+  String teamUiPhoneFailedDownloadInterrupted(String host) {
+    return 'The connection to $host broke off during the download. Try again; the download continues where it stopped.';
+  }
+
+  @override
+  String get teamUiPhoneFailedDownloadWrite =>
+      'The download could not be saved on this phone. Free some space, then try again.';
+
+  @override
+  String teamUiPhoneFailedDownloadOther(String host, String code) {
+    return 'The download from $host failed (error $code). Check the connection, then try again.';
+  }
+
+  @override
   String get teamUiPhoneFailedPackages =>
       'Termux could not install the prerequisites (libicu, git, jq, tmux). The output below says which.';
 

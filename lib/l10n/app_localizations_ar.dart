@@ -15736,6 +15736,45 @@ class AppLocalizationsAr extends AppLocalizations {
       'لم يكتمل التنزيل. تحقّق من الاتصال وحاول مجددًا.';
 
   @override
+  String teamUiPhoneFailedDownloadDns(String host) {
+    return 'تعذّر على الهاتف العثور على خادم التنزيل $host. تأكّد من اتصال الهاتف بالإنترنت ومن أن DNS الخاص أو مانع الإعلانات لا يحجبه، ثم حاول مجددًا.';
+  }
+
+  @override
+  String teamUiPhoneFailedDownloadConnect(String host) {
+    return 'تعذّر على الهاتف الوصول إلى خادم التنزيل $host. تحقّق من الاتصال ثم حاول مجددًا؛ يُستأنف التنزيل من حيث توقف.';
+  }
+
+  @override
+  String teamUiPhoneFailedDownloadTimeout(String host) {
+    return 'استغرق خادم التنزيل $host وقتًا طويلًا للرد. حاول مجددًا على اتصال أكثر ثباتًا؛ يُستأنف التنزيل من حيث توقف.';
+  }
+
+  @override
+  String teamUiPhoneFailedDownloadTls(String host) {
+    return 'تعذّر إنشاء اتصال آمن مع $host. تأكّد من صحة تاريخ الهاتف ووقته ومن عدم وجود وكيل (proxy) يعترض الاتصال، ثم حاول مجددًا.';
+  }
+
+  @override
+  String teamUiPhoneFailedDownloadHttp(String host, String code) {
+    return 'رفض خادم التنزيل $host الملف (HTTP $code). حاول مجددًا لاحقًا؛ وإن تكرر ذلك فتنزيل فريق الذكاء الاصطناعي غير متاح لهذا الإصدار من التطبيق.';
+  }
+
+  @override
+  String teamUiPhoneFailedDownloadInterrupted(String host) {
+    return 'انقطع الاتصال مع $host أثناء التنزيل. حاول مجددًا؛ يُستأنف التنزيل من حيث توقف.';
+  }
+
+  @override
+  String get teamUiPhoneFailedDownloadWrite =>
+      'تعذّر حفظ التنزيل على هذا الهاتف. حرّر بعض المساحة ثم حاول مجددًا.';
+
+  @override
+  String teamUiPhoneFailedDownloadOther(String host, String code) {
+    return 'فشل التنزيل من $host (الخطأ $code). تحقّق من الاتصال ثم حاول مجددًا.';
+  }
+
+  @override
   String get teamUiPhoneFailedPackages =>
       'لم يتمكن Termux من تثبيت المتطلبات (libicu وgit وjq وtmux). يوضح المخرج أدناه أيها.';
 

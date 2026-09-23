@@ -749,6 +749,60 @@ void main() {
         text('something-new', error: 'odd'),
         l10n.teamUiPhoneFailedReason('odd'),
       );
+      // Download failures name the server and what went wrong (#87).
+      const gh = 'github.com';
+      expect(
+        text('download dns $gh 6', verb: 'install'),
+        l10n.teamUiPhoneFailedDownloadDns(gh),
+      );
+      expect(
+        text('download connect $gh 7', verb: 'install'),
+        l10n.teamUiPhoneFailedDownloadConnect(gh),
+      );
+      expect(
+        text('download timeout $gh 28', verb: 'install'),
+        l10n.teamUiPhoneFailedDownloadTimeout(gh),
+      );
+      expect(
+        text('download tls $gh 60', verb: 'install'),
+        l10n.teamUiPhoneFailedDownloadTls(gh),
+      );
+      expect(
+        text('download http $gh 404', verb: 'install'),
+        l10n.teamUiPhoneFailedDownloadHttp(gh, '404'),
+      );
+      expect(
+        text('download interrupted $gh 56', verb: 'install'),
+        l10n.teamUiPhoneFailedDownloadInterrupted(gh),
+      );
+      expect(
+        text('download write $gh 23', verb: 'install'),
+        l10n.teamUiPhoneFailedDownloadWrite,
+      );
+      expect(
+        text('download other $gh 99', verb: 'install'),
+        l10n.teamUiPhoneFailedDownloadOther(gh, '99'),
+      );
+      // An older script's bare token keeps the general sentence.
+      expect(text('download', verb: 'install'), l10n.teamUiPhoneFailedDownload);
+      expect(
+        text('manifest-download', verb: 'install'),
+        l10n.teamUiPhoneFailedDownload,
+      );
+      expect(l10n.teamUiPhoneFailedDownloadHttp(gh, '404'), contains(gh));
+      for (final reason in ['download http $gh 404', 'download']) {
+        expect(
+          teamPhoneFailedStep(
+            _status(
+              TeamRuntimePhase.failed,
+              rawPhase: 'failed:$reason',
+              reason: reason,
+              verb: 'install',
+            ),
+          ),
+          TeamPhoneStep.download,
+        );
+      }
     });
 
     testWidgets(
