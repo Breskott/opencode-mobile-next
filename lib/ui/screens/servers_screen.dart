@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/product_repository.dart' show ProductException;
 import '../../api/server_probe.dart';
+import '../../builtin/builtin_linux.dart';
 import '../../demo/demo_copy.dart';
 import '../../l10n/app_localizations.dart';
 import '../widgets/setup_ui_messages.dart';
@@ -30,6 +31,7 @@ import '../widgets/termux_running_server_entry.dart';
 import '../widgets/safety_confirms.dart';
 import '../../state/local_server_controls.dart';
 import 'agent_choice_screen.dart';
+import 'builtin_server_screen.dart';
 import 'demo_screen.dart';
 import 'guide_screen.dart' show Cmd;
 import 'attention_overview_screen.dart';
@@ -230,6 +232,11 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   Future<void> _openTermuxSetup() async {
     await Navigator.pushNamed(context, '/termux-setup');
     if (mounted) setState(() => _termuxRevision++);
+  }
+
+  Future<void> _openBuiltinServer() async {
+    await openBuiltinServerScreen(context);
+    if (mounted) setState(() {});
   }
 
   /// The detected running-server entry for [profiles]: it decides on its own
@@ -968,6 +975,13 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                 onGuide: () => Navigator.pushNamed(context, '/guide'),
                 onExternalAgents: _externalAgents,
               ),
+              // Experimental, so after the settled options rather than beside
+              // the Termux entry it may one day replace.
+              if (BuiltinLinux.supported)
+                _BuiltinEntry(
+                  key: const ValueKey('quick-add-builtin-card'),
+                  onTap: _busy ? null : _openBuiltinServer,
+                ),
             ],
           );
         },
@@ -1131,6 +1145,22 @@ class _OpenCode2Entry extends StatelessWidget {
 }
 
 /// A phone feature must stay discoverable when the current server is remote.
+/// The no-Termux phone server: Ubuntu and OpenCode inside this app.
+class _BuiltinEntry extends StatelessWidget {
+  const _BuiltinEntry({super.key, required this.onTap});
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    leading: const Icon(AppIconography.experiments),
+    title: Text(_connectionL10n(context).builtinServerEntryTitle),
+    subtitle: Text(_connectionL10n(context).builtinServerEntryDetail),
+    trailing: const Icon(AppIconography.chevronRight),
+    onTap: onTap,
+  );
+}
+
 class _TermuxEntry extends StatelessWidget {
   const _TermuxEntry({super.key, required this.onTap});
   final VoidCallback? onTap;

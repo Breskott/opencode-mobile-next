@@ -27537,6 +27537,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open all {count} lines'**
   String terminalOpenFull(int count);
+
+  /// Title of the built-in (no Termux) server screen
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode inside the app'**
+  String get builtinServerTitle;
+
+  /// Entry point to the built-in server setup
+  ///
+  /// In en, this message translates to:
+  /// **'Run OpenCode inside the app — no Termux'**
+  String get builtinServerEntryTitle;
+
+  /// Subtitle of the built-in server entry point
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental. The app downloads Ubuntu into its own storage and runs OpenCode there. Nothing else to install.'**
+  String get builtinServerEntryDetail;
+
+  /// Badge marking the built-in server as experimental
+  ///
+  /// In en, this message translates to:
+  /// **'Experimental'**
+  String get builtinServerExperimental;
+
+  /// Intro text of the built-in server screen
+  ///
+  /// In en, this message translates to:
+  /// **'The app downloads a small Ubuntu into its own storage and runs the OpenCode server inside it. No Termux needed. The server listens on this phone only; nothing on your network or the internet can reach it.'**
+  String get builtinServerIntro;
+
+  /// Shown when the built-in server screen is opened off Android
+  ///
+  /// In en, this message translates to:
+  /// **'The built-in server runs on Android only.'**
+  String get builtinServerAndroidOnly;
+
+  /// Step 1 title
+  ///
+  /// In en, this message translates to:
+  /// **'Download Ubuntu (about 30 MB)'**
+  String get builtinServerStepUbuntu;
+
+  /// Step 2 title
+  ///
+  /// In en, this message translates to:
+  /// **'Install OpenCode'**
+  String get builtinServerStepOpenCode;
+
+  /// Step 3 title
+  ///
+  /// In en, this message translates to:
+  /// **'Start the server'**
+  String get builtinServerStepStart;
+
+  /// Step 4 title
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get builtinServerStepConnect;
+
+  /// Screen reader label of one setup step
+  ///
+  /// In en, this message translates to:
+  /// **'Step {number} of 4, {state}. {title}'**
+  String builtinServerStepSemantics(int number, String state, String title);
+
+  /// Explains the Ubuntu download
+  ///
+  /// In en, this message translates to:
+  /// **'Canonical\'s Ubuntu Base 24.04, checked against its published checksum. It unpacks to a few hundred MB.'**
+  String get builtinServerUbuntuHint;
+
+  /// Button starting the Ubuntu download
+  ///
+  /// In en, this message translates to:
+  /// **'Download Ubuntu'**
+  String get builtinServerUbuntuAction;
+
+  /// Progress while Ubuntu installs
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading and unpacking Ubuntu…'**
+  String get builtinServerUbuntuWorking;
+
+  /// Ubuntu step done
+  ///
+  /// In en, this message translates to:
+  /// **'Ubuntu is ready.'**
+  String get builtinServerUbuntuDone;
+
+  /// Ubuntu install failed with a reason
+  ///
+  /// In en, this message translates to:
+  /// **'Ubuntu did not install: {reason}'**
+  String builtinServerUbuntuFailed(String reason);
+
+  /// Explains the OpenCode install
+  ///
+  /// In en, this message translates to:
+  /// **'Takes a few minutes and needs internet: Node.js, Git and OpenCode {version} are downloaded into Ubuntu.'**
+  String builtinServerOpenCodeHint(String version);
+
+  /// Button starting the OpenCode install
+  ///
+  /// In en, this message translates to:
+  /// **'Install OpenCode'**
+  String get builtinServerOpenCodeAction;
+
+  /// Progress while OpenCode installs
+  ///
+  /// In en, this message translates to:
+  /// **'Installing OpenCode. This takes a few minutes; keep the app open.'**
+  String get builtinServerOpenCodeWorking;
+
+  /// OpenCode step done
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode {version} is installed.'**
+  String builtinServerOpenCodeInstalled(String version);
+
+  /// OpenCode install failed
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode did not install (exit code {code}). The end of its output is below.'**
+  String builtinServerOpenCodeFailed(int code);
+
+  /// Label above the OpenCode 1 / OpenCode 2 choice
+  ///
+  /// In en, this message translates to:
+  /// **'Which OpenCode'**
+  String get builtinServerChooseRuntime;
+
+  /// Button starting the server
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get builtinServerStartAction;
+
+  /// Button stopping the server
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get builtinServerStopAction;
+
+  /// Progress while the server starts
+  ///
+  /// In en, this message translates to:
+  /// **'Starting OpenCode and waiting for it to answer…'**
+  String get builtinServerStarting;
+
+  /// Server is running
+  ///
+  /// In en, this message translates to:
+  /// **'Running on this phone at 127.0.0.1:{port}.'**
+  String builtinServerRunning(int port);
+
+  /// Server is not running
+  ///
+  /// In en, this message translates to:
+  /// **'Not running.'**
+  String get builtinServerStopped;
+
+  /// Server start failed
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode did not answer: {reason}. Open the log to see why.'**
+  String builtinServerStartFailed(String reason);
+
+  /// Reason: the server process exited while starting
+  ///
+  /// In en, this message translates to:
+  /// **'the server stopped'**
+  String get builtinServerExited;
+
+  /// Reason: the server did not answer in time
+  ///
+  /// In en, this message translates to:
+  /// **'no answer within {seconds} seconds'**
+  String builtinServerTimedOut(int seconds);
+
+  /// Button connecting to the built-in server
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get builtinServerConnectAction;
+
+  /// Explains the connect step
+  ///
+  /// In en, this message translates to:
+  /// **'Saves this server as \"{name}\" and opens it.'**
+  String builtinServerConnectHint(String name);
+
+  /// Progress while connecting
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get builtinServerConnecting;
+
+  /// Connect step done
+  ///
+  /// In en, this message translates to:
+  /// **'Connected.'**
+  String get builtinServerConnected;
+
+  /// Connect failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect: {reason}'**
+  String builtinServerConnectFailed(String reason);
+
+  /// Saved server name for the built-in server
+  ///
+  /// In en, this message translates to:
+  /// **'This phone, built-in ({runtime})'**
+  String builtinServerProfileName(String runtime);
+
+  /// Storage used by the built-in Ubuntu
+  ///
+  /// In en, this message translates to:
+  /// **'Using {size} of storage'**
+  String builtinServerBytesUsed(String size);
+
+  /// Opens the server log
+  ///
+  /// In en, this message translates to:
+  /// **'Show log'**
+  String get builtinServerShowLog;
+
+  /// Title of the server log sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Server log'**
+  String get builtinServerLogTitle;
+
+  /// Server log has no lines
+  ///
+  /// In en, this message translates to:
+  /// **'The log is empty.'**
+  String get builtinServerLogEmpty;
+
+  /// Button removing the built-in Ubuntu
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Ubuntu'**
+  String get builtinServerRemove;
+
+  /// Remove confirmation title
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the built-in Ubuntu?'**
+  String get builtinServerRemoveTitle;
+
+  /// Remove confirmation body
+  ///
+  /// In en, this message translates to:
+  /// **'This stops the server and deletes Ubuntu, OpenCode and every project folder inside it. The saved server entry stays.'**
+  String get builtinServerRemoveBody;
+
+  /// Shown after removal
+  ///
+  /// In en, this message translates to:
+  /// **'Ubuntu was removed.'**
+  String get builtinServerRemoved;
+
+  /// Retry button
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get builtinServerRetry;
+
+  /// Status read failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the built-in Linux status: {reason}'**
+  String builtinServerStatusFailed(String reason);
 }
 
 class _AppLocalizationsDelegate

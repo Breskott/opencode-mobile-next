@@ -17054,4 +17054,176 @@ class AppLocalizationsEn extends AppLocalizations {
   String terminalOpenFull(int count) {
     return 'Open all $count lines';
   }
+
+  @override
+  String get builtinServerTitle => 'OpenCode inside the app';
+
+  @override
+  String get builtinServerEntryTitle =>
+      'Run OpenCode inside the app — no Termux';
+
+  @override
+  String get builtinServerEntryDetail =>
+      'Experimental. The app downloads Ubuntu into its own storage and runs OpenCode there. Nothing else to install.';
+
+  @override
+  String get builtinServerExperimental => 'Experimental';
+
+  @override
+  String get builtinServerIntro =>
+      'The app downloads a small Ubuntu into its own storage and runs the OpenCode server inside it. No Termux needed. The server listens on this phone only; nothing on your network or the internet can reach it.';
+
+  @override
+  String get builtinServerAndroidOnly =>
+      'The built-in server runs on Android only.';
+
+  @override
+  String get builtinServerStepUbuntu => 'Download Ubuntu (about 30 MB)';
+
+  @override
+  String get builtinServerStepOpenCode => 'Install OpenCode';
+
+  @override
+  String get builtinServerStepStart => 'Start the server';
+
+  @override
+  String get builtinServerStepConnect => 'Connect';
+
+  @override
+  String builtinServerStepSemantics(int number, String state, String title) {
+    return 'Step $number of 4, $state. $title';
+  }
+
+  @override
+  String get builtinServerUbuntuHint =>
+      'Canonical\'s Ubuntu Base 24.04, checked against its published checksum. It unpacks to a few hundred MB.';
+
+  @override
+  String get builtinServerUbuntuAction => 'Download Ubuntu';
+
+  @override
+  String get builtinServerUbuntuWorking => 'Downloading and unpacking Ubuntu…';
+
+  @override
+  String get builtinServerUbuntuDone => 'Ubuntu is ready.';
+
+  @override
+  String builtinServerUbuntuFailed(String reason) {
+    return 'Ubuntu did not install: $reason';
+  }
+
+  @override
+  String builtinServerOpenCodeHint(String version) {
+    return 'Takes a few minutes and needs internet: Node.js, Git and OpenCode $version are downloaded into Ubuntu.';
+  }
+
+  @override
+  String get builtinServerOpenCodeAction => 'Install OpenCode';
+
+  @override
+  String get builtinServerOpenCodeWorking =>
+      'Installing OpenCode. This takes a few minutes; keep the app open.';
+
+  @override
+  String builtinServerOpenCodeInstalled(String version) {
+    return 'OpenCode $version is installed.';
+  }
+
+  @override
+  String builtinServerOpenCodeFailed(int code) {
+    return 'OpenCode did not install (exit code $code). The end of its output is below.';
+  }
+
+  @override
+  String get builtinServerChooseRuntime => 'Which OpenCode';
+
+  @override
+  String get builtinServerStartAction => 'Start';
+
+  @override
+  String get builtinServerStopAction => 'Stop';
+
+  @override
+  String get builtinServerStarting =>
+      'Starting OpenCode and waiting for it to answer…';
+
+  @override
+  String builtinServerRunning(int port) {
+    return 'Running on this phone at 127.0.0.1:$port.';
+  }
+
+  @override
+  String get builtinServerStopped => 'Not running.';
+
+  @override
+  String builtinServerStartFailed(String reason) {
+    return 'OpenCode did not answer: $reason. Open the log to see why.';
+  }
+
+  @override
+  String get builtinServerExited => 'the server stopped';
+
+  @override
+  String builtinServerTimedOut(int seconds) {
+    return 'no answer within $seconds seconds';
+  }
+
+  @override
+  String get builtinServerConnectAction => 'Connect';
+
+  @override
+  String builtinServerConnectHint(String name) {
+    return 'Saves this server as \"$name\" and opens it.';
+  }
+
+  @override
+  String get builtinServerConnecting => 'Connecting…';
+
+  @override
+  String get builtinServerConnected => 'Connected.';
+
+  @override
+  String builtinServerConnectFailed(String reason) {
+    return 'Could not connect: $reason';
+  }
+
+  @override
+  String builtinServerProfileName(String runtime) {
+    return 'This phone, built-in ($runtime)';
+  }
+
+  @override
+  String builtinServerBytesUsed(String size) {
+    return 'Using $size of storage';
+  }
+
+  @override
+  String get builtinServerShowLog => 'Show log';
+
+  @override
+  String get builtinServerLogTitle => 'Server log';
+
+  @override
+  String get builtinServerLogEmpty => 'The log is empty.';
+
+  @override
+  String get builtinServerRemove => 'Remove Ubuntu';
+
+  @override
+  String get builtinServerRemoveTitle => 'Remove the built-in Ubuntu?';
+
+  @override
+  String get builtinServerRemoveBody =>
+      'This stops the server and deletes Ubuntu, OpenCode and every project folder inside it. The saved server entry stays.';
+
+  @override
+  String get builtinServerRemoved => 'Ubuntu was removed.';
+
+  @override
+  String get builtinServerRetry => 'Try again';
+
+  @override
+  String builtinServerStatusFailed(String reason) {
+    return 'Could not read the built-in Linux status: $reason';
+  }
 }

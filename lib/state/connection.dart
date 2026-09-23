@@ -38,6 +38,7 @@ import '../l10n/app_localizations.dart';
 import '../platform/platform_capabilities.dart';
 import '../diagnostics/app_diagnostics.dart';
 import '../termux/bridge.dart';
+import '../builtin/builtin_linux.dart';
 import 'isolated_task_launch.dart';
 import 'model_library.dart';
 import 'offline_queue.dart';
@@ -1455,7 +1456,10 @@ class ConnectionController extends ChangeNotifier {
     final profile = _connectedProfile;
     if (profile == null ||
         profile.usesAgentSocket ||
-        !_isLoopbackUrl(profile.baseUrl)) {
+        !_isLoopbackUrl(profile.baseUrl) ||
+        // The built-in Linux server lives in this app's own process, not in
+        // Termux: a Termux wake lock would only launch Termux for nothing.
+        BuiltinLinux.managesServerUrl(profile.baseUrl)) {
       return;
     }
     unawaited(

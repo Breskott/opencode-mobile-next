@@ -18245,5 +18245,260 @@
         "type": "int"
       }
     }
+  },
+  "builtinServerTitle": "OpenCode inside the app",
+  "@builtinServerTitle": {
+    "description": "Title of the built-in (no Termux) server screen"
+  },
+  "builtinServerEntryTitle": "Run OpenCode inside the app — no Termux",
+  "@builtinServerEntryTitle": {
+    "description": "Entry point to the built-in server setup"
+  },
+  "builtinServerEntryDetail": "Experimental. The app downloads Ubuntu into its own storage and runs OpenCode there. Nothing else to install.",
+  "@builtinServerEntryDetail": {
+    "description": "Subtitle of the built-in server entry point"
+  },
+  "builtinServerExperimental": "Experimental",
+  "@builtinServerExperimental": {
+    "description": "Badge marking the built-in server as experimental"
+  },
+  "builtinServerIntro": "The app downloads a small Ubuntu into its own storage and runs the OpenCode server inside it. No Termux needed. The server listens on this phone only; nothing on your network or the internet can reach it.",
+  "@builtinServerIntro": {
+    "description": "Intro text of the built-in server screen"
+  },
+  "builtinServerAndroidOnly": "The built-in server runs on Android only.",
+  "@builtinServerAndroidOnly": {
+    "description": "Shown when the built-in server screen is opened off Android"
+  },
+  "builtinServerStepUbuntu": "Download Ubuntu (about 30 MB)",
+  "@builtinServerStepUbuntu": {
+    "description": "Step 1 title"
+  },
+  "builtinServerStepOpenCode": "Install OpenCode",
+  "@builtinServerStepOpenCode": {
+    "description": "Step 2 title"
+  },
+  "builtinServerStepStart": "Start the server",
+  "@builtinServerStepStart": {
+    "description": "Step 3 title"
+  },
+  "builtinServerStepConnect": "Connect",
+  "@builtinServerStepConnect": {
+    "description": "Step 4 title"
+  },
+  "builtinServerStepSemantics": "Step {number} of 4, {state}. {title}",
+  "@builtinServerStepSemantics": {
+    "description": "Screen reader label of one setup step",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "state": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "builtinServerUbuntuHint": "Canonical's Ubuntu Base 24.04, checked against its published checksum. It unpacks to a few hundred MB.",
+  "@builtinServerUbuntuHint": {
+    "description": "Explains the Ubuntu download"
+  },
+  "builtinServerUbuntuAction": "Download Ubuntu",
+  "@builtinServerUbuntuAction": {
+    "description": "Button starting the Ubuntu download"
+  },
+  "builtinServerUbuntuWorking": "Downloading and unpacking Ubuntu…",
+  "@builtinServerUbuntuWorking": {
+    "description": "Progress while Ubuntu installs"
+  },
+  "builtinServerUbuntuDone": "Ubuntu is ready.",
+  "@builtinServerUbuntuDone": {
+    "description": "Ubuntu step done"
+  },
+  "builtinServerUbuntuFailed": "Ubuntu did not install: {reason}",
+  "@builtinServerUbuntuFailed": {
+    "description": "Ubuntu install failed with a reason",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "builtinServerOpenCodeHint": "Takes a few minutes and needs internet: Node.js, Git and OpenCode {version} are downloaded into Ubuntu.",
+  "@builtinServerOpenCodeHint": {
+    "description": "Explains the OpenCode install",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "builtinServerOpenCodeAction": "Install OpenCode",
+  "@builtinServerOpenCodeAction": {
+    "description": "Button starting the OpenCode install"
+  },
+  "builtinServerOpenCodeWorking": "Installing OpenCode. This takes a few minutes; keep the app open.",
+  "@builtinServerOpenCodeWorking": {
+    "description": "Progress while OpenCode installs"
+  },
+  "builtinServerOpenCodeInstalled": "OpenCode {version} is installed.",
+  "@builtinServerOpenCodeInstalled": {
+    "description": "OpenCode step done",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "builtinServerOpenCodeFailed": "OpenCode did not install (exit code {code}). The end of its output is below.",
+  "@builtinServerOpenCodeFailed": {
+    "description": "OpenCode install failed",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "builtinServerChooseRuntime": "Which OpenCode",
+  "@builtinServerChooseRuntime": {
+    "description": "Label above the OpenCode 1 / OpenCode 2 choice"
+  },
+  "builtinServerStartAction": "Start",
+  "@builtinServerStartAction": {
+    "description": "Button starting the server"
+  },
+  "builtinServerStopAction": "Stop",
+  "@builtinServerStopAction": {
+    "description": "Button stopping the server"
+  },
+  "builtinServerStarting": "Starting OpenCode and waiting for it to answer…",
+  "@builtinServerStarting": {
+    "description": "Progress while the server starts"
+  },
+  "builtinServerRunning": "Running on this phone at 127.0.0.1:{port}.",
+  "@builtinServerRunning": {
+    "description": "Server is running",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "builtinServerStopped": "Not running.",
+  "@builtinServerStopped": {
+    "description": "Server is not running"
+  },
+  "builtinServerStartFailed": "OpenCode did not answer: {reason}. Open the log to see why.",
+  "@builtinServerStartFailed": {
+    "description": "Server start failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "builtinServerExited": "the server stopped",
+  "@builtinServerExited": {
+    "description": "Reason: the server process exited while starting"
+  },
+  "builtinServerTimedOut": "no answer within {seconds} seconds",
+  "@builtinServerTimedOut": {
+    "description": "Reason: the server did not answer in time",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "builtinServerConnectAction": "Connect",
+  "@builtinServerConnectAction": {
+    "description": "Button connecting to the built-in server"
+  },
+  "builtinServerConnectHint": "Saves this server as \"{name}\" and opens it.",
+  "@builtinServerConnectHint": {
+    "description": "Explains the connect step",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "builtinServerConnecting": "Connecting…",
+  "@builtinServerConnecting": {
+    "description": "Progress while connecting"
+  },
+  "builtinServerConnected": "Connected.",
+  "@builtinServerConnected": {
+    "description": "Connect step done"
+  },
+  "builtinServerConnectFailed": "Could not connect: {reason}",
+  "@builtinServerConnectFailed": {
+    "description": "Connect failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "builtinServerProfileName": "This phone, built-in ({runtime})",
+  "@builtinServerProfileName": {
+    "description": "Saved server name for the built-in server",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "builtinServerBytesUsed": "Using {size} of storage",
+  "@builtinServerBytesUsed": {
+    "description": "Storage used by the built-in Ubuntu",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "builtinServerShowLog": "Show log",
+  "@builtinServerShowLog": {
+    "description": "Opens the server log"
+  },
+  "builtinServerLogTitle": "Server log",
+  "@builtinServerLogTitle": {
+    "description": "Title of the server log sheet"
+  },
+  "builtinServerLogEmpty": "The log is empty.",
+  "@builtinServerLogEmpty": {
+    "description": "Server log has no lines"
+  },
+  "builtinServerRemove": "Remove Ubuntu",
+  "@builtinServerRemove": {
+    "description": "Button removing the built-in Ubuntu"
+  },
+  "builtinServerRemoveTitle": "Remove the built-in Ubuntu?",
+  "@builtinServerRemoveTitle": {
+    "description": "Remove confirmation title"
+  },
+  "builtinServerRemoveBody": "This stops the server and deletes Ubuntu, OpenCode and every project folder inside it. The saved server entry stays.",
+  "@builtinServerRemoveBody": {
+    "description": "Remove confirmation body"
+  },
+  "builtinServerRemoved": "Ubuntu was removed.",
+  "@builtinServerRemoved": {
+    "description": "Shown after removal"
+  },
+  "builtinServerRetry": "Try again",
+  "@builtinServerRetry": {
+    "description": "Retry button"
+  },
+  "builtinServerStatusFailed": "Could not read the built-in Linux status: {reason}",
+  "@builtinServerStatusFailed": {
+    "description": "Status read failed",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -10,6 +10,7 @@ import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/background/live_background.dart';
+import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1477,6 +1478,57 @@ void main() {
     expect(wakeLockCalls, 2);
     expect(apis.single.healthCalls, 2);
     expect(await action, same(apis.single));
+    controller.dispose();
+  });
+
+  // The built-in Linux server runs inside this app, not in Termux: asking
+  // Termux for a wake lock would launch Termux for nothing.
+  testWidgets('the built-in Linux server never asks Termux for a wake lock', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      BackgroundLiveController.preferenceKey: true,
+    });
+    final store = ProfileStore(prefs: await SharedPreferences.getInstance());
+    final backgroundLive = BackgroundLiveController(
+      preferences: store.prefs,
+      invoke: (method, [arguments]) async => const {
+        'enabled': true,
+        'active': true,
+        'notificationGranted': true,
+        'batteryOptimizationIgnored': false,
+      },
+    );
+    final apis = <_ControlledApi>[];
+    var wakeLockCalls = 0;
+    final controller = ConnectionController(
+      store,
+      backgroundLive: backgroundLive,
+      localWakeLockEnsurer: () async => wakeLockCalls += 1,
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: _repositoryFactory,
+      eventStreamFactory: _streamFactory([]),
+    );
+
+    final connect = controller.connect(
+      ServerProfile(
+        id: 'builtin',
+        name: 'builtin',
+        baseUrl: BuiltinLinux.serverUrl,
+      ),
+    );
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    controller.suspendForLifecycle();
+    final action = controller.prepareActionTransport();
+    await tester.pump();
+    expect(await action, same(apis.single));
+    expect(wakeLockCalls, 0);
     controller.dispose();
   });
 

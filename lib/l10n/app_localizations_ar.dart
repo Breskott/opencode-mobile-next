@@ -17311,4 +17311,174 @@ class AppLocalizationsAr extends AppLocalizations {
   String terminalOpenFull(int count) {
     return 'فتح كل الأسطر ($count)';
   }
+
+  @override
+  String get builtinServerTitle => 'OpenCode داخل التطبيق';
+
+  @override
+  String get builtinServerEntryTitle =>
+      'تشغيل OpenCode داخل التطبيق — بدون Termux';
+
+  @override
+  String get builtinServerEntryDetail =>
+      'تجريبي. ينزّل التطبيق Ubuntu في مساحته الخاصة ويشغّل OpenCode فيه. لا حاجة لتثبيت أي شيء آخر.';
+
+  @override
+  String get builtinServerExperimental => 'تجريبي';
+
+  @override
+  String get builtinServerIntro =>
+      'ينزّل التطبيق نسخة صغيرة من Ubuntu في مساحته الخاصة ويشغّل خادم OpenCode داخلها. لا حاجة إلى Termux. يستمع الخادم على هذا الهاتف فقط، ولا يمكن لأي جهاز على شبكتك أو على الإنترنت الوصول إليه.';
+
+  @override
+  String get builtinServerAndroidOnly => 'الخادم المدمج يعمل على Android فقط.';
+
+  @override
+  String get builtinServerStepUbuntu => 'تنزيل Ubuntu (نحو 30 ميجابايت)';
+
+  @override
+  String get builtinServerStepOpenCode => 'تثبيت OpenCode';
+
+  @override
+  String get builtinServerStepStart => 'تشغيل الخادم';
+
+  @override
+  String get builtinServerStepConnect => 'الاتصال';
+
+  @override
+  String builtinServerStepSemantics(int number, String state, String title) {
+    return 'الخطوة $number من 4، $state. $title';
+  }
+
+  @override
+  String get builtinServerUbuntuHint =>
+      'Ubuntu Base 24.04 من Canonical، مع التحقق من بصمته المنشورة. ويشغل بعد فك ضغطه بضع مئات من الميجابايت.';
+
+  @override
+  String get builtinServerUbuntuAction => 'تنزيل Ubuntu';
+
+  @override
+  String get builtinServerUbuntuWorking => 'جارٍ تنزيل Ubuntu وفك ضغطه…';
+
+  @override
+  String get builtinServerUbuntuDone => 'Ubuntu جاهز.';
+
+  @override
+  String builtinServerUbuntuFailed(String reason) {
+    return 'لم يُثبَّت Ubuntu: $reason';
+  }
+
+  @override
+  String builtinServerOpenCodeHint(String version) {
+    return 'يستغرق بضع دقائق ويحتاج إلى الإنترنت: يُنزَّل Node.js وGit وOpenCode $version داخل Ubuntu.';
+  }
+
+  @override
+  String get builtinServerOpenCodeAction => 'تثبيت OpenCode';
+
+  @override
+  String get builtinServerOpenCodeWorking =>
+      'جارٍ تثبيت OpenCode. يستغرق ذلك بضع دقائق؛ أبقِ التطبيق مفتوحًا.';
+
+  @override
+  String builtinServerOpenCodeInstalled(String version) {
+    return 'OpenCode $version مثبّت.';
+  }
+
+  @override
+  String builtinServerOpenCodeFailed(int code) {
+    return 'لم يُثبَّت OpenCode (رمز الخروج $code). آخر مخرجاته بالأسفل.';
+  }
+
+  @override
+  String get builtinServerChooseRuntime => 'أي إصدار من OpenCode';
+
+  @override
+  String get builtinServerStartAction => 'تشغيل';
+
+  @override
+  String get builtinServerStopAction => 'إيقاف';
+
+  @override
+  String get builtinServerStarting => 'جارٍ تشغيل OpenCode وانتظار استجابته…';
+
+  @override
+  String builtinServerRunning(int port) {
+    return 'يعمل على هذا الهاتف على 127.0.0.1:$port.';
+  }
+
+  @override
+  String get builtinServerStopped => 'متوقف.';
+
+  @override
+  String builtinServerStartFailed(String reason) {
+    return 'لم يستجب OpenCode: $reason. افتح السجل لمعرفة السبب.';
+  }
+
+  @override
+  String get builtinServerExited => 'توقف الخادم';
+
+  @override
+  String builtinServerTimedOut(int seconds) {
+    return 'لا استجابة خلال $seconds ثانية';
+  }
+
+  @override
+  String get builtinServerConnectAction => 'اتصال';
+
+  @override
+  String builtinServerConnectHint(String name) {
+    return 'يحفظ هذا الخادم باسم \"$name\" ويفتحه.';
+  }
+
+  @override
+  String get builtinServerConnecting => 'جارٍ الاتصال…';
+
+  @override
+  String get builtinServerConnected => 'متصل.';
+
+  @override
+  String builtinServerConnectFailed(String reason) {
+    return 'تعذّر الاتصال: $reason';
+  }
+
+  @override
+  String builtinServerProfileName(String runtime) {
+    return 'هذا الهاتف، مدمج ($runtime)';
+  }
+
+  @override
+  String builtinServerBytesUsed(String size) {
+    return 'يستخدم $size من التخزين';
+  }
+
+  @override
+  String get builtinServerShowLog => 'عرض السجل';
+
+  @override
+  String get builtinServerLogTitle => 'سجل الخادم';
+
+  @override
+  String get builtinServerLogEmpty => 'السجل فارغ.';
+
+  @override
+  String get builtinServerRemove => 'إزالة Ubuntu';
+
+  @override
+  String get builtinServerRemoveTitle => 'إزالة Ubuntu المدمج؟';
+
+  @override
+  String get builtinServerRemoveBody =>
+      'سيؤدي هذا إلى إيقاف الخادم وحذف Ubuntu وOpenCode وكل مجلدات المشاريع داخله. يبقى الخادم المحفوظ في القائمة.';
+
+  @override
+  String get builtinServerRemoved => 'أُزيل Ubuntu.';
+
+  @override
+  String get builtinServerRetry => 'إعادة المحاولة';
+
+  @override
+  String builtinServerStatusFailed(String reason) {
+    return 'تعذّرت قراءة حالة Linux المدمج: $reason';
+  }
 }
