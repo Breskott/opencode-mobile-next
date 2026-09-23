@@ -1065,8 +1065,40 @@ void main() {
     final reconciliation = controller.reconcileBusySessionsForTesting();
     api.statusesCompleter!.complete(const {});
     await reconciliation;
+    // Once could be the moment between two steps of a run still going.
+    expect(controller.busySessions, contains('session-1'));
 
+    await controller.reconcileBusySessionsForTesting();
     expect(controller.busySessions, isNot(contains('session-1')));
+  });
+
+  test('a run missing from one status read, between two steps, stays '
+      'running', () async {
+    final api = _V2Api()..statusesCompleter = Completer<Map<String, String>>();
+    final controller = ConnectionController(await _store())
+      ..api = api
+      ..status = StreamStatus.connected;
+    addTearDown(controller.dispose);
+    controller.handleEventForTesting(
+      EventEnvelope(
+        type: 'session.status',
+        properties: const {
+          'sessionID': 'session-1',
+          'status': {'type': 'busy'},
+        },
+      ),
+    );
+
+    final gap = controller.reconcileBusySessionsForTesting();
+    api.statusesCompleter!.complete(const {});
+    await gap;
+    api.statusesCompleter = Completer()..complete({'session-1': 'busy'});
+    await controller.reconcileBusySessionsForTesting();
+    api.statusesCompleter = Completer()..complete(const {});
+    await controller.reconcileBusySessionsForTesting();
+
+    // Idle, busy, idle: never idle twice running, so never ended.
+    expect(controller.busySessions, contains('session-1'));
   });
 
   testWidgets('catalog replaces stale saved model and agent', (tester) async {

@@ -5000,6 +5000,10 @@ class ConnectionController extends ChangeNotifier {
     return tracked;
   }
 
+  /// Busy conversations the status check has seen idle once; see
+  /// [_reconcileBusySessionStatuses].
+  final _idleOnce = <String>{};
+
   Future<void> _reconcileBusySessionStatuses() async {
     final currentApi = api;
     final generation = _generation;
@@ -5021,15 +5025,24 @@ class ConnectionController extends ChangeNotifier {
     for (final entry in tracked.entries) {
       if ((_sessionStatusRevisions[entry.key] ?? 0) != entry.value) continue;
       final remoteStatus = statuses[entry.key] ?? 'idle';
-      if (remoteStatus == 'idle') {
-        final removed = busySessions.remove(entry.key);
-        changed = retryStates.remove(entry.key) != null || changed;
-        changed = removed || changed;
-        if (removed) {
-          _settleSessionAttention(entry.key, CodingAlertKind.complete);
-          _markSessionChanged(entry.key);
-          unawaited(_refreshOneSession(entry.key));
-        }
+      if (remoteStatus != 'idle') {
+        _idleOnce.remove(entry.key);
+        continue;
+      }
+      // An OpenCode 2 run is missing from the active list for a moment
+      // between two steps. Taken at its word once, that ended a run that
+      // was still going: no Stop, no progress, a "finished" turn, while the
+      // agent kept working. Idle twice running is idle; a real end is
+      // reported by the server's own event long before.
+      if (_idleOnce.add(entry.key)) continue;
+      _idleOnce.remove(entry.key);
+      final removed = busySessions.remove(entry.key);
+      changed = retryStates.remove(entry.key) != null || changed;
+      changed = removed || changed;
+      if (removed) {
+        _settleSessionAttention(entry.key, CodingAlertKind.complete);
+        _markSessionChanged(entry.key);
+        unawaited(_refreshOneSession(entry.key));
       }
     }
     if (changed) notifyListeners();

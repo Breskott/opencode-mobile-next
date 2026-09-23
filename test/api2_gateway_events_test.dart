@@ -72,6 +72,11 @@ void main() {
         )
         .toList();
     expect(assistantUpdates, isNotEmpty);
+    // A step starting says the run is going, so a busy state lost between
+    // two steps comes back with the next one.
+    final stepAt = out.indexOf(assistantUpdates.first);
+    expect(out[stepAt - 1].type, 'session.status');
+    expect((out[stepAt - 1].properties['status'] as Map)['type'], 'busy');
     final first = assistantUpdates.first.properties['info'] as Map;
     expect(first['id'], startsWith('msg_'));
     expect(first['providerID'], 'openai');
