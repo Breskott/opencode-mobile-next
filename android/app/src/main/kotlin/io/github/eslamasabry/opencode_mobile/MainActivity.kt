@@ -402,8 +402,75 @@ class MainActivity : FlutterActivity() {
                 linux.uninstall()
                 null
             }
+            // The phone setup job (SetupRunner.kt). The runner is made off
+            // the main thread: its first use reads setup.json.
+            "startSetup" -> {
+                val jobId = call.argument<String>("jobId")
+                val components = call.argument<List<Map<String, Any?>>>("components")
+                if (jobId.isNullOrEmpty() || components.isNullOrEmpty()) {
+                    result.error("builtin_linux", "A setup job needs an id and components", null)
+                    return
+                }
+                val params = call.argument<Map<String, Any?>>("params")
+                val texts = call.argument<Map<String, String>>("texts").orEmpty()
+                inBackground {
+                    SetupRunner.get(applicationContext).start(
+                        jobId,
+                        components.map(::setupSpec),
+                        params?.let { org.json.JSONObject(it) },
+                        SetupRunner.Texts(
+                            channel = texts["channel"] ?: "Setup",
+                            title = texts["title"] ?: "",
+                            progress = texts["progress"] ?: "{percent}%",
+                            done = texts["done"] ?: "",
+                            stopped = texts["stopped"] ?: "",
+                        ),
+                    )
+                    null
+                }
+            }
+            "setupStatus" -> inBackground { SetupRunner.get(applicationContext).status() }
+            "cancelSetup" -> inBackground {
+                SetupRunner.get(applicationContext).cancel()
+                null
+            }
+            "completeSetupStep" -> {
+                val jobId = call.argument<String>("jobId")
+                val id = call.argument<String>("id")
+                if (jobId == null || id == null) {
+                    result.error("builtin_linux", "A step needs a job and an id", null)
+                    return
+                }
+                val ok = call.argument<Boolean>("ok") == true
+                val error = call.argument<String>("error")
+                val version = call.argument<String>("version")
+                inBackground {
+                    SetupRunner.get(applicationContext).completeStep(jobId, id, ok, error, version)
+                    null
+                }
+            }
             else -> result.notImplemented()
         }
+    }
+
+    private fun setupSpec(raw: Map<String, Any?>): SetupRunner.Spec {
+        fun strings(value: Any?): Map<String, String> =
+            (value as? Map<*, *>)?.entries
+                ?.filter { it.key is String && it.value is String }
+                ?.associate { it.key as String to it.value as String }
+                .orEmpty()
+        return SetupRunner.Spec(
+            id = raw["id"] as? String ?: error("A setup component needs an id"),
+            script = raw["script"] as? String,
+            native = raw["native"] == true,
+            step = raw["step"] == true,
+            weight = (raw["weight"] as? Number)?.toDouble() ?: 1.0,
+            skipped = raw["skipped"] == true,
+            version = raw["version"] as? String,
+            stage = raw["stage"] as? String,
+            labels = strings(raw["labels"]),
+            data = strings(raw["data"]),
+        )
     }
 
     override fun onNewIntent(intent: Intent) {

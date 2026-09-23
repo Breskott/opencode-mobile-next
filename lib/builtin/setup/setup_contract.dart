@@ -24,6 +24,7 @@ class SetupComponent {
     this.removeScript,
     this.why,
     this.native = false,
+    this.jobStep = false,
   });
 
   final String id;
@@ -50,6 +51,12 @@ class SetupComponent {
 
   /// Installed by native code rather than a script (the Linux base itself).
   final bool native;
+
+  /// Not something installed but a step the engine itself runs at the end of
+  /// every job: starting OpenCode and connecting to it. It is in the registry
+  /// so the progress checklist can name it; lists of things to install
+  /// (Customize, sizes) leave it out.
+  final bool jobStep;
 }
 
 enum SetupState { idle, running, done, failed, interrupted, cancelled }
@@ -107,6 +114,7 @@ class SetupProgress {
     this.etaSeconds,
     this.error,
     this.logTail = '',
+    this.jobId,
   });
 
   static const idle = SetupProgress(
@@ -128,6 +136,10 @@ class SetupProgress {
   final int? etaSeconds;
   final String? error;
   final String logTail;
+
+  /// Which job this is; a new `run` makes a new one, so a view can reset
+  /// its bar exactly when the job changes. Null while idle.
+  final String? jobId;
 
   bool get canContinue =>
       state == SetupState.failed ||

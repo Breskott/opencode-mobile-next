@@ -17313,6 +17313,97 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get phoneSetupProfileName => 'This phone';
+
+  @override
+  String get phoneSetupLinuxTitle => 'Linux base';
+
+  @override
+  String get phoneSetupLinuxWhy => 'Everything else runs inside it.';
+
+  @override
+  String get phoneSetupEssentialsTitle => 'Git, SSH and certificates';
+
+  @override
+  String get phoneSetupEssentialsShort => 'Git and SSH';
+
+  @override
+  String get phoneSetupEssentialsWhy =>
+      'Agents use Git and SSH to work on your projects.';
+
+  @override
+  String get phoneSetupNodeWhy => 'OpenCode runs on Node.js.';
+
+  @override
+  String get phoneSetupOpenCodeWhy => 'The coding agent itself.';
+
+  @override
+  String get phoneSetupStartTitle => 'Start OpenCode';
+
+  @override
+  String get phoneSetupStartWhy => 'Setup ends with OpenCode running.';
+
+  @override
+  String get phoneSetupStageDownloadingLinux => 'Downloading Linux base';
+
+  @override
+  String get phoneSetupStageUnpackingLinux => 'Unpacking Linux base';
+
+  @override
+  String get phoneSetupStageStarting => 'Starting OpenCode';
+
+  @override
+  String get phoneSetupNotificationChannel => 'Phone setup';
+
+  @override
+  String get phoneSetupNotificationTitle => 'Setting up OpenCode on this phone';
+
+  @override
+  String phoneSetupNotificationProgress(String percent) {
+    return '$percent% done';
+  }
+
+  @override
+  String get phoneSetupNotificationDone => 'OpenCode is ready on this phone';
+
+  @override
+  String get phoneSetupNotificationStopped =>
+      'Setup stopped. Open the app to continue.';
+
+  @override
+  String get phoneSetupErrorNoInternet =>
+      'No internet connection. Continue when you\'re back online.';
+
+  @override
+  String phoneSetupErrorOffline(String name) {
+    return 'Could not download $name: no internet connection';
+  }
+
+  @override
+  String phoneSetupErrorInstall(String name) {
+    return 'Could not install $name';
+  }
+
+  @override
+  String phoneSetupErrorChecksum(String name) {
+    return 'The download of $name was damaged. Continue to fetch it again.';
+  }
+
+  @override
+  String phoneSetupErrorNoSpace(String name) {
+    return 'Not enough free space to install $name';
+  }
+
+  @override
+  String phoneSetupErrorStart(String reason) {
+    return 'Could not start OpenCode: $reason';
+  }
+
+  @override
+  String get phoneSetupErrorCannotStart =>
+      'OpenCode is installed, but the app could not start it here.';
+
+  @override
   String builtinServerBytesUsed(String size) {
     return 'Using $size of storage';
   }

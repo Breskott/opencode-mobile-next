@@ -27946,6 +27946,156 @@ abstract class AppLocalizations {
   /// **'This phone, built-in ({runtime})'**
   String builtinServerProfileName(String runtime);
 
+  /// Saved server name for OpenCode running inside the app, made by phone setup
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get phoneSetupProfileName;
+
+  /// Setup checklist name of the Linux base component
+  ///
+  /// In en, this message translates to:
+  /// **'Linux base'**
+  String get phoneSetupLinuxTitle;
+
+  /// Why the Linux base cannot be switched off
+  ///
+  /// In en, this message translates to:
+  /// **'Everything else runs inside it.'**
+  String get phoneSetupLinuxWhy;
+
+  /// Setup component: Git, SSH and TLS certificates
+  ///
+  /// In en, this message translates to:
+  /// **'Git, SSH and certificates'**
+  String get phoneSetupEssentialsTitle;
+
+  /// Short checklist name of the Git/SSH component
+  ///
+  /// In en, this message translates to:
+  /// **'Git and SSH'**
+  String get phoneSetupEssentialsShort;
+
+  /// Why Git and SSH cannot be switched off
+  ///
+  /// In en, this message translates to:
+  /// **'Agents use Git and SSH to work on your projects.'**
+  String get phoneSetupEssentialsWhy;
+
+  /// Why Node.js cannot be switched off
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode runs on Node.js.'**
+  String get phoneSetupNodeWhy;
+
+  /// Why OpenCode cannot be switched off
+  ///
+  /// In en, this message translates to:
+  /// **'The coding agent itself.'**
+  String get phoneSetupOpenCodeWhy;
+
+  /// Last setup step: start OpenCode and connect to it
+  ///
+  /// In en, this message translates to:
+  /// **'Start OpenCode'**
+  String get phoneSetupStartTitle;
+
+  /// Why the start step is always part of setup
+  ///
+  /// In en, this message translates to:
+  /// **'Setup ends with OpenCode running.'**
+  String get phoneSetupStartWhy;
+
+  /// Setup stage while the Linux base downloads
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading Linux base'**
+  String get phoneSetupStageDownloadingLinux;
+
+  /// Setup stage while the Linux base is unpacked
+  ///
+  /// In en, this message translates to:
+  /// **'Unpacking Linux base'**
+  String get phoneSetupStageUnpackingLinux;
+
+  /// Setup stage while the server starts and the app connects
+  ///
+  /// In en, this message translates to:
+  /// **'Starting OpenCode'**
+  String get phoneSetupStageStarting;
+
+  /// Android notification channel name for setup progress
+  ///
+  /// In en, this message translates to:
+  /// **'Phone setup'**
+  String get phoneSetupNotificationChannel;
+
+  /// Ongoing notification title while setup runs
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up OpenCode on this phone'**
+  String get phoneSetupNotificationTitle;
+
+  /// Ongoing notification text with the overall percent
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% done'**
+  String phoneSetupNotificationProgress(String percent);
+
+  /// Notification when setup finished
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is ready on this phone'**
+  String get phoneSetupNotificationDone;
+
+  /// Notification when setup failed or was interrupted
+  ///
+  /// In en, this message translates to:
+  /// **'Setup stopped. Open the app to continue.'**
+  String get phoneSetupNotificationStopped;
+
+  /// Setup error when a download could not reach the internet
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Continue when you\'re back online.'**
+  String get phoneSetupErrorNoInternet;
+
+  /// Setup error on a component whose download could not reach the internet
+  ///
+  /// In en, this message translates to:
+  /// **'Could not download {name}: no internet connection'**
+  String phoneSetupErrorOffline(String name);
+
+  /// Setup error on a component whose install failed; the details show why
+  ///
+  /// In en, this message translates to:
+  /// **'Could not install {name}'**
+  String phoneSetupErrorInstall(String name);
+
+  /// Setup error when a download did not match its checksum and was deleted
+  ///
+  /// In en, this message translates to:
+  /// **'The download of {name} was damaged. Continue to fetch it again.'**
+  String phoneSetupErrorChecksum(String name);
+
+  /// Setup error when the phone ran out of storage
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough free space to install {name}'**
+  String phoneSetupErrorNoSpace(String name);
+
+  /// Setup error when the last step could not start or connect to OpenCode
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start OpenCode: {reason}'**
+  String phoneSetupErrorStart(String reason);
+
+  /// Setup error when nothing can start the server (no app shell)
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is installed, but the app could not start it here.'**
+  String get phoneSetupErrorCannotStart;
+
   /// Storage used by the built-in Ubuntu
   ///
   /// In en, this message translates to:

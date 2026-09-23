@@ -18618,6 +18618,136 @@
       }
     }
   },
+  "phoneSetupProfileName": "This phone",
+  "@phoneSetupProfileName": {
+    "description": "Saved server name for OpenCode running inside the app, made by phone setup"
+  },
+  "phoneSetupLinuxTitle": "Linux base",
+  "@phoneSetupLinuxTitle": {
+    "description": "Setup checklist name of the Linux base component"
+  },
+  "phoneSetupLinuxWhy": "Everything else runs inside it.",
+  "@phoneSetupLinuxWhy": {
+    "description": "Why the Linux base cannot be switched off"
+  },
+  "phoneSetupEssentialsTitle": "Git, SSH and certificates",
+  "@phoneSetupEssentialsTitle": {
+    "description": "Setup component: Git, SSH and TLS certificates"
+  },
+  "phoneSetupEssentialsShort": "Git and SSH",
+  "@phoneSetupEssentialsShort": {
+    "description": "Short checklist name of the Git/SSH component"
+  },
+  "phoneSetupEssentialsWhy": "Agents use Git and SSH to work on your projects.",
+  "@phoneSetupEssentialsWhy": {
+    "description": "Why Git and SSH cannot be switched off"
+  },
+  "phoneSetupNodeWhy": "OpenCode runs on Node.js.",
+  "@phoneSetupNodeWhy": {
+    "description": "Why Node.js cannot be switched off"
+  },
+  "phoneSetupOpenCodeWhy": "The coding agent itself.",
+  "@phoneSetupOpenCodeWhy": {
+    "description": "Why OpenCode cannot be switched off"
+  },
+  "phoneSetupStartTitle": "Start OpenCode",
+  "@phoneSetupStartTitle": {
+    "description": "Last setup step: start OpenCode and connect to it"
+  },
+  "phoneSetupStartWhy": "Setup ends with OpenCode running.",
+  "@phoneSetupStartWhy": {
+    "description": "Why the start step is always part of setup"
+  },
+  "phoneSetupStageDownloadingLinux": "Downloading Linux base",
+  "@phoneSetupStageDownloadingLinux": {
+    "description": "Setup stage while the Linux base downloads"
+  },
+  "phoneSetupStageUnpackingLinux": "Unpacking Linux base",
+  "@phoneSetupStageUnpackingLinux": {
+    "description": "Setup stage while the Linux base is unpacked"
+  },
+  "phoneSetupStageStarting": "Starting OpenCode",
+  "@phoneSetupStageStarting": {
+    "description": "Setup stage while the server starts and the app connects"
+  },
+  "phoneSetupNotificationChannel": "Phone setup",
+  "@phoneSetupNotificationChannel": {
+    "description": "Android notification channel name for setup progress"
+  },
+  "phoneSetupNotificationTitle": "Setting up OpenCode on this phone",
+  "@phoneSetupNotificationTitle": {
+    "description": "Ongoing notification title while setup runs"
+  },
+  "phoneSetupNotificationProgress": "{percent}% done",
+  "@phoneSetupNotificationProgress": {
+    "description": "Ongoing notification text with the overall percent",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupNotificationDone": "OpenCode is ready on this phone",
+  "@phoneSetupNotificationDone": {
+    "description": "Notification when setup finished"
+  },
+  "phoneSetupNotificationStopped": "Setup stopped. Open the app to continue.",
+  "@phoneSetupNotificationStopped": {
+    "description": "Notification when setup failed or was interrupted"
+  },
+  "phoneSetupErrorNoInternet": "No internet connection. Continue when you're back online.",
+  "@phoneSetupErrorNoInternet": {
+    "description": "Setup error when a download could not reach the internet"
+  },
+  "phoneSetupErrorOffline": "Could not download {name}: no internet connection",
+  "@phoneSetupErrorOffline": {
+    "description": "Setup error on a component whose download could not reach the internet",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupErrorInstall": "Could not install {name}",
+  "@phoneSetupErrorInstall": {
+    "description": "Setup error on a component whose install failed; the details show why",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupErrorChecksum": "The download of {name} was damaged. Continue to fetch it again.",
+  "@phoneSetupErrorChecksum": {
+    "description": "Setup error when a download did not match its checksum and was deleted",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupErrorNoSpace": "Not enough free space to install {name}",
+  "@phoneSetupErrorNoSpace": {
+    "description": "Setup error when the phone ran out of storage",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupErrorStart": "Could not start OpenCode: {reason}",
+  "@phoneSetupErrorStart": {
+    "description": "Setup error when the last step could not start or connect to OpenCode",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneSetupErrorCannotStart": "OpenCode is installed, but the app could not start it here.",
+  "@phoneSetupErrorCannotStart": {
+    "description": "Setup error when nothing can start the server (no app shell)"
+  },
   "builtinServerBytesUsed": "Using {size} of storage",
   "@builtinServerBytesUsed": {
     "description": "Storage used by the built-in Ubuntu",
