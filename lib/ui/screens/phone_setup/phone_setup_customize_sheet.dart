@@ -30,7 +30,7 @@ Future<Set<String>?> showSetupCustomizeSheet(
   useSafeArea: true,
   showDragHandle: true,
   builder: (_) => SetupCustomizeSheet(
-    registry: engine.registry,
+    registry: installableComponents(engine.registry),
     addMode: addMode,
     selected: selected,
     installedOptional: addMode ? engine.installedOptional() : null,

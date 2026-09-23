@@ -91,3 +91,11 @@ List<String> includedToolNames(Iterable<SetupComponent> components) => [
   for (final component in components)
     if (!component.native && component.id != 'opencode') component.shortTitle,
 ];
+
+/// The components a person installs: the registry without the steps the
+/// engine runs by itself at the end of every job ("Start OpenCode"), which
+/// have no size, no switch and nothing to choose.
+List<SetupComponent> installableComponents(List<SetupComponent> registry) => [
+  for (final component in registry)
+    if (!component.jobStep) component,
+];

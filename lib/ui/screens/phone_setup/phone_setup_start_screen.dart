@@ -73,7 +73,7 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
   void initState() {
     super.initState();
     _engine = PhoneSetup.engine;
-    _selection = defaultSetupSelection(_engine.registry);
+    _selection = defaultSetupSelection(installableComponents(_engine.registry));
     unawaited(_load());
   }
 
@@ -361,7 +361,10 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
   ) {
     final theme = Theme.of(context);
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final install = expandSetupSelection(_engine.registry, _selection);
+    final install = expandSetupSelection(
+      installableComponents(_engine.registry),
+      _selection,
+    );
     final included = includedToolNames(install);
     final includesText = included.isEmpty
         ? null

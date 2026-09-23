@@ -109,9 +109,8 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     super.didUpdateWidget(old);
     final next = widget.progress;
     final key = _keyOf(next);
-    // The contract carries no job id, so a job is its set of components; a
-    // fresh start after a finished (or never-started) job is also new, as
-    // when an update re-runs the same component.
+    // A new job id (or, without one, a new set of components) is a new job;
+    // so is a fresh start after a finished or never-started one.
     final restarted =
         next.state == SetupState.running &&
         (old.progress.state == SetupState.done ||
@@ -125,8 +124,10 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     }
   }
 
+  // The engine names each job; the component list is only the fallback for
+  // hosts whose progress carries no id.
   static String _keyOf(SetupProgress progress) =>
-      progress.components.map((c) => c.id).join(',');
+      progress.jobId ?? progress.components.map((c) => c.id).join(',');
 
   @override
   Widget build(BuildContext context) {
