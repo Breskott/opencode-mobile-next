@@ -45,7 +45,6 @@ class MainActivity : FlutterActivity() {
     private var localPdf: LocalPdfBridge? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-        maybeRunLinuxSpike(intent)
         super.configureFlutterEngine(flutterEngine)
         TailscaleHandoff(this, flutterEngine.dartExecutor.binaryMessenger)
         localPdf?.dispose()
@@ -332,141 +331,7 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
     }
 
-    /**
-     * Spike only (feat/builtin-linux-spike): `adb shell am start -n
-     * <app>/.MainActivity --es oc_linux_spike 1` installs Ubuntu into the app
-     * and runs a few commands in it, reporting to logcat tag OcLinux.
-     */
-    /**
-     * The built-in Ubuntu (BuiltinLinux.kt). Anything that waits on proot runs
-     * off the main thread and answers back on it.
-     */
-    private fun handleBuiltinLinux(call: MethodCall, result: MethodChannel.Result) {
-        val linux = BuiltinLinux.get(applicationContext)
-        val main = Handler(Looper.getMainLooper())
-        fun inBackground(work: () -> Any?) {
-            Thread {
-                try {
-                    val value = work()
-                    main.post { result.success(value) }
-                } catch (error: Throwable) {
-                    main.post {
-                        result.error("builtin_linux", error.message ?: error.javaClass.simpleName, null)
-                    }
-                }
-            }.start()
-        }
-        when (call.method) {
-            "status" -> result.success(
-                mapOf(
-                    "installed" to linux.installed,
-                    "phase" to linux.phase,
-                    "message" to linux.message,
-                    "serverRunning" to linux.serverRunning,
-                    "serverPort" to linux.port,
-                    "abi" to (Build.SUPPORTED_ABIS.firstOrNull() ?: ""),
-                    "bytesUsed" to linux.bytesUsed(),
-                ),
-            )
-            "installUbuntu" -> {
-                linux.installInBackground()
-                result.success(null)
-            }
-            "run" -> {
-                val script = call.argument<String>("script")
-                if (script == null) {
-                    result.error("builtin_linux", "No script to run", null)
-                    return
-                }
-                val timeout = (call.argument<Int>("timeoutSeconds") ?: 600).toLong()
-                inBackground {
-                    val run = linux.run(script, timeout)
-                    mapOf("exitCode" to run.exitCode, "output" to run.output)
-                }
-            }
-            "startServer" -> {
-                val script = call.argument<String>("script")
-                val port = call.argument<Int>("port")
-                if (script == null || port == null) {
-                    result.error("builtin_linux", "A server needs a script and a port", null)
-                    return
-                }
-                inBackground {
-                    linux.startServer(script, port)
-                    null
-                }
-            }
-            "stopServer" -> inBackground {
-                linux.stopServer()
-                null
-            }
-            "serverLog" -> {
-                val tail = call.argument<Int>("tailBytes") ?: 16_384
-                inBackground { linux.serverLogTail(tail) }
-            }
-            "uninstall" -> inBackground {
-                linux.uninstall()
-                null
-            }
-            else -> result.notImplemented()
-        }
-    }
-
-    private fun maybeRunLinuxSpike(intent: Intent?) {
-        // Spike only: run one command inside the built-in Ubuntu and log it.
-        intent?.getStringExtra("oc_linux_run")?.let { script ->
-            Thread {
-                val linux = BuiltinLinux.get(applicationContext)
-                val result = linux.run(script, timeoutSeconds = 1800)
-                android.util.Log.i(BuiltinLinux.TAG, "RUN RESULT exit=${result.exitCode}")
-            }.start()
-            return
-        }
-        intent?.getStringExtra("oc_linux_server")?.let { script ->
-            BuiltinLinux.get(applicationContext).startServer(script, 4097)
-            android.util.Log.i(BuiltinLinux.TAG, "SERVER STARTED")
-            return
-        }
-        if (intent?.getStringExtra("oc_linux_spike") == null) return
-        Thread {
-            val linux = BuiltinLinux.get(applicationContext)
-            try {
-                val started = System.currentTimeMillis()
-                linux.install { android.util.Log.i(BuiltinLinux.TAG, "install: $it") }
-                android.util.Log.i(BuiltinLinux.TAG, "install took ${System.currentTimeMillis() - started} ms")
-                val arch = if (Build.SUPPORTED_ABIS.firstOrNull() == "x86_64") "linux-x64-baseline" else "linux-arm64"
-                val setup = linux.run(
-                    "set -e; export DEBIAN_FRONTEND=noninteractive UV_USE_IO_URING=0; " +
-                        "command -v node >/dev/null || { apt-get update -q >/dev/null; " +
-                        "apt-get install -y -q --no-install-recommends nodejs npm curl ca-certificates git openssh-client >/dev/null; }; " +
-                        "node --version; command -v opencode >/dev/null || " +
-                        "npm install -g --include=optional --no-fund --no-audit opencode-$arch@1.18.29 opencode-ai@1.18.29 2>&1 | tail -3; " +
-                        "opencode --version",
-                    timeoutSeconds = 1800,
-                )
-                android.util.Log.i(BuiltinLinux.TAG, "SETUP exit=${setup.exitCode}")
-                linux.startServer(
-                    "mkdir -p /root/projects && cd /root/projects && export UV_USE_IO_URING=0 && " +
-                        "exec env OPENCODE_SERVER_USERNAME=opencode OPENCODE_SERVER_PASSWORD=spike " +
-                        "opencode serve --hostname 127.0.0.1 --port 4097",
-                    4097,
-                )
-                Thread.sleep(25_000)
-                val result = linux.run(
-                    "curl -s -u opencode:spike -w ' http=%{http_code} %{time_total}s' http://127.0.0.1:4097/global/health; echo; " +
-                        "curl -s -u opencode:spike -o /dev/null -w 'session http=%{http_code} %{time_total}s' http://127.0.0.1:4097/session",
-                    timeoutSeconds = 60,
-                )
-                android.util.Log.i(BuiltinLinux.TAG, "SERVER running=${linux.serverRunning} log=" + linux.serverLogTail(2000))
-                android.util.Log.i(BuiltinLinux.TAG, "SPIKE RESULT exit=${result.exitCode}")
-            } catch (error: Throwable) {
-                android.util.Log.e(BuiltinLinux.TAG, "SPIKE FAILED", error)
-            }
-        }.start()
-    }
-
     override fun onNewIntent(intent: Intent) {
-        maybeRunLinuxSpike(intent)
         super.onNewIntent(intent)
         setIntent(intent)
         captureCodingAlertOpen(intent)
