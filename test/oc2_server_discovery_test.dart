@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
+import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 
+import 'support/fake_setup_engine.dart';
 import 'support/setup_capture_preferences.dart';
 
 class _Store extends ProfileStore {
@@ -287,13 +290,25 @@ void main() {
     addTearDown(conn.dispose);
     await tester.pumpWidget(_app(store, conn, scale: 2));
     await tester.pumpAndSettle();
-    final entry = find.byKey(const ValueKey('quick-add-termux-card'));
+    PhoneSetup.engine = FakeSetupEngine();
+    // Phone setup v2: the list's one phone entry opens "On this phone",
+    // and Termux (where OpenCode 1 or 2 is chosen) is one of its Other ways.
+    final entry = find.byKey(const ValueKey('quick-add-phone-card'));
     await _reveal(tester, entry);
-    expect(
-      find.text('Set up OpenCode 1 or 2 here with Termux.'),
-      findsOneWidget,
-    );
     await tester.tap(entry);
+    await tester.pumpAndSettle();
+    expect(find.byType(PhoneSetupStartScreen), findsOneWidget);
+    final otherWays = find.byKey(
+      const ValueKey('phone-setup-start-other-ways'),
+    );
+    await tester.ensureVisible(otherWays);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Other ways'));
+    await tester.pumpAndSettle();
+    final termux = find.byKey(const ValueKey('phone-setup-start-use-termux'));
+    await tester.ensureVisible(termux);
+    await tester.pumpAndSettle();
+    await tester.tap(termux);
     await tester.pumpAndSettle();
     expect(find.text('Termux route: null'), findsOneWidget);
     expect(store.saved.single.flavor, ServerFlavor.v1);

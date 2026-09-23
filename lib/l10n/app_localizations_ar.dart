@@ -17679,4 +17679,155 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get builtinServerEntryAction => 'إعداده';
+
+  @override
+  String get phoneSetupStartScreenTitle => 'على هذا الهاتف';
+
+  @override
+  String get phoneSetupStartHeadline => 'شغّل وكيل برمجة هنا مباشرة';
+
+  @override
+  String phoneSetupStartPromise(String time, String size) {
+    return 'لا حاجة إلى حاسوب أو تطبيقات أخرى. $time و~$size في المرة الأولى.';
+  }
+
+  @override
+  String phoneSetupStartPromiseNoSize(String time) {
+    return 'لا حاجة إلى حاسوب أو تطبيقات أخرى. $time في المرة الأولى.';
+  }
+
+  @override
+  String phoneSetupStartAboutMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'نحو $minutes دقيقة',
+      few: 'نحو $minutes دقائق',
+      two: 'نحو دقيقتين',
+      one: 'نحو دقيقة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String phoneSetupStartMegabytes(String value) {
+    return '$value ميغابايت';
+  }
+
+  @override
+  String phoneSetupStartGigabytes(String value) {
+    return '$value غيغابايت';
+  }
+
+  @override
+  String get phoneSetupStartSetUp => 'ابدأ الإعداد';
+
+  @override
+  String phoneSetupStartIncludes(String tools) {
+    return 'يشمل $tools.';
+  }
+
+  @override
+  String phoneSetupStartListPair(String first, String last) {
+    return '$first و$last';
+  }
+
+  @override
+  String get phoneSetupStartListSeparator => '، ';
+
+  @override
+  String get phoneSetupStartCustomize => 'تخصيص';
+
+  @override
+  String get phoneSetupStartOtherWays => 'طرق أخرى';
+
+  @override
+  String get phoneSetupStartUseTermux => 'استخدام Termux بدلًا من ذلك';
+
+  @override
+  String get phoneSetupStartAdvanced => 'متقدّم';
+
+  @override
+  String get phoneSetupStartByAddress => 'الاتصال بحاسوب عبر عنوانه';
+
+  @override
+  String get phoneSetupStartSetUpHere => 'إعداده داخل هذا التطبيق بدلًا من ذلك';
+
+  @override
+  String phoneSetupStartProgressHeadline(int percent) {
+    return 'اكتمل الإعداد بنسبة $percent٪';
+  }
+
+  @override
+  String get phoneSetupStartRunningBody =>
+      'يستمر العمل وأنت تستخدم تطبيقات أخرى.';
+
+  @override
+  String get phoneSetupStartStoppedBody =>
+      'توقّف الإعداد قبل أن يكتمل. المتابعة تبدأ من حيث توقّف.';
+
+  @override
+  String get phoneSetupStartContinue => 'متابعة الإعداد';
+
+  @override
+  String get phoneSetupStartReadyHeadline => 'OpenCode جاهز على هذا الهاتف';
+
+  @override
+  String get phoneSetupStartReadyBody => 'افتحه لبدء محادثة.';
+
+  @override
+  String get phoneSetupStartOpen => 'فتح';
+
+  @override
+  String get phoneSetupStartTermuxHeadline => 'OpenCode مُعدّ مسبقًا في Termux';
+
+  @override
+  String get phoneSetupStartTermuxBody =>
+      'أعددته عبر Termux من قبل. اتصل لمواصلة استخدامه.';
+
+  @override
+  String get phoneSetupStartConnect => 'اتصال';
+
+  @override
+  String phoneSetupStartFailed(String reason) {
+    return 'لم ينجح ذلك: $reason';
+  }
+
+  @override
+  String get phoneSetupStartEntryDetail =>
+      'شغّل وكيل برمجة هنا مباشرة. لا تحتاج إلى حاسوب.';
+
+  @override
+  String get phoneSetupStartCustomizeTitle => 'اختر ما تريد تثبيته';
+
+  @override
+  String get phoneSetupStartAddTitle => 'إضافة أدوات';
+
+  @override
+  String get phoneSetupStartRequiredWhy => 'يحتاجه الوكيل ليعمل';
+
+  @override
+  String get phoneSetupStartInstalled => 'مثبّت';
+
+  @override
+  String phoneSetupStartTotals(String time, String size) {
+    return '$time · ~$size';
+  }
+
+  @override
+  String phoneSetupStartApproxSize(String size) {
+    return '~$size';
+  }
+
+  @override
+  String get phoneSetupStartNothingChosen => 'لم تختر شيئًا بعد';
+
+  @override
+  String get phoneSetupStartDone => 'تم';
+
+  @override
+  String get phoneSetupStartAdd => 'إضافة';
+
+  @override
+  String get phoneSetupStartChecking => 'جارٍ التحقق مما هو مثبّت…';
 }

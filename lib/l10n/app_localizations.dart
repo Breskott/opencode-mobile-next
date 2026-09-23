@@ -28137,6 +28137,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set it up'**
   String get builtinServerEntryAction;
+
+  /// App bar title of the phone setup start screen
+  ///
+  /// In en, this message translates to:
+  /// **'On this phone'**
+  String get phoneSetupStartScreenTitle;
+
+  /// Headline of the phone setup start screen for a phone with nothing set up
+  ///
+  /// In en, this message translates to:
+  /// **'Run a coding agent right here'**
+  String get phoneSetupStartHeadline;
+
+  /// One-line promise under the headline; time and size are computed from the components that Set up installs
+  ///
+  /// In en, this message translates to:
+  /// **'No computer and no other apps. {time} and ~{size} the first time.'**
+  String phoneSetupStartPromise(String time, String size);
+
+  /// The promise when no download size is known
+  ///
+  /// In en, this message translates to:
+  /// **'No computer and no other apps. {time} the first time.'**
+  String phoneSetupStartPromiseNoSize(String time);
+
+  /// Estimated setup time, capitalised because it starts a sentence
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{About a minute} other{About {minutes} minutes}}'**
+  String phoneSetupStartAboutMinutes(int minutes);
+
+  /// A download size in megabytes
+  ///
+  /// In en, this message translates to:
+  /// **'{value} MB'**
+  String phoneSetupStartMegabytes(String value);
+
+  /// A download size in gigabytes
+  ///
+  /// In en, this message translates to:
+  /// **'{value} GB'**
+  String phoneSetupStartGigabytes(String value);
+
+  /// The one primary button: installs everything needed to run a coding agent on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Set up'**
+  String get phoneSetupStartSetUp;
+
+  /// What Set up installs besides the agent, e.g. 'Includes Git, Python and Node.js.'
+  ///
+  /// In en, this message translates to:
+  /// **'Includes {tools}.'**
+  String phoneSetupStartIncludes(String tools);
+
+  /// Joins the last two names of a list
+  ///
+  /// In en, this message translates to:
+  /// **'{first} and {last}'**
+  String phoneSetupStartListPair(String first, String last);
+
+  /// Separator between names of a list, before the last pair
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get phoneSetupStartListSeparator;
+
+  /// Opens the sheet to choose which tools Set up installs
+  ///
+  /// In en, this message translates to:
+  /// **'Customize'**
+  String get phoneSetupStartCustomize;
+
+  /// Collapsed section with the less common ways to get a coding agent
+  ///
+  /// In en, this message translates to:
+  /// **'Other ways'**
+  String get phoneSetupStartOtherWays;
+
+  /// Opens the Termux-based setup
+  ///
+  /// In en, this message translates to:
+  /// **'Use Termux instead'**
+  String get phoneSetupStartUseTermux;
+
+  /// Muted tag next to the Termux option
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get phoneSetupStartAdvanced;
+
+  /// Opens the form for connecting to an agent running elsewhere
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to a computer by address'**
+  String get phoneSetupStartByAddress;
+
+  /// Under Other ways when Termux already runs OpenCode: set up the in-app one anyway
+  ///
+  /// In en, this message translates to:
+  /// **'Set it up in this app instead'**
+  String get phoneSetupStartSetUpHere;
+
+  /// Headline while a setup is running or was stopped part way
+  ///
+  /// In en, this message translates to:
+  /// **'Setup is {percent}% done'**
+  String phoneSetupStartProgressHeadline(int percent);
+
+  /// Under the progress headline while setup runs
+  ///
+  /// In en, this message translates to:
+  /// **'It keeps going while you use other apps.'**
+  String get phoneSetupStartRunningBody;
+
+  /// Under the progress headline when setup was interrupted, failed or cancelled
+  ///
+  /// In en, this message translates to:
+  /// **'It stopped before finishing. Continuing picks up where it left off.'**
+  String get phoneSetupStartStoppedBody;
+
+  /// Opens (and if needed resumes) the setup in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Continue setup'**
+  String get phoneSetupStartContinue;
+
+  /// Headline once the in-app OpenCode is installed
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is ready on this phone'**
+  String get phoneSetupStartReadyHeadline;
+
+  /// Under the ready headline
+  ///
+  /// In en, this message translates to:
+  /// **'Open it to start a conversation.'**
+  String get phoneSetupStartReadyBody;
+
+  /// Starts and connects to the in-app OpenCode
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get phoneSetupStartOpen;
+
+  /// Headline when a Termux-managed OpenCode was found on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is already set up in Termux'**
+  String get phoneSetupStartTermuxHeadline;
+
+  /// Under the Termux headline
+  ///
+  /// In en, this message translates to:
+  /// **'You set it up with Termux before. Connect to keep using it.'**
+  String get phoneSetupStartTermuxBody;
+
+  /// Connects to the Termux-managed OpenCode
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get phoneSetupStartConnect;
+
+  /// Inline message when starting setup or opening the agent failed
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t work: {reason}'**
+  String phoneSetupStartFailed(String reason);
+
+  /// Subtitle of the 'On this phone' entry in the servers list
+  ///
+  /// In en, this message translates to:
+  /// **'Run a coding agent right here. No computer needed.'**
+  String get phoneSetupStartEntryDetail;
+
+  /// Title of the Customize sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what to install'**
+  String get phoneSetupStartCustomizeTitle;
+
+  /// Title of the Customize sheet in add mode
+  ///
+  /// In en, this message translates to:
+  /// **'Add tools'**
+  String get phoneSetupStartAddTitle;
+
+  /// Fallback reason a required component cannot be switched off
+  ///
+  /// In en, this message translates to:
+  /// **'Needed for the agent to run'**
+  String get phoneSetupStartRequiredWhy;
+
+  /// A tool that is already on this phone, in add mode
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get phoneSetupStartInstalled;
+
+  /// Live totals of the chosen tools
+  ///
+  /// In en, this message translates to:
+  /// **'{time} · ~{size}'**
+  String phoneSetupStartTotals(String time, String size);
+
+  /// Approximate download size of one tool
+  ///
+  /// In en, this message translates to:
+  /// **'~{size}'**
+  String phoneSetupStartApproxSize(String size);
+
+  /// Totals line in add mode before anything is switched on
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing chosen yet'**
+  String get phoneSetupStartNothingChosen;
+
+  /// Closes the Customize sheet keeping the choice
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get phoneSetupStartDone;
+
+  /// Adds the chosen tools, in add mode
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get phoneSetupStartAdd;
+
+  /// While the add-mode sheet reads which tools are installed
+  ///
+  /// In en, this message translates to:
+  /// **'Checking what\'s installed…'**
+  String get phoneSetupStartChecking;
 }
 
 class _AppLocalizationsDelegate

@@ -171,7 +171,7 @@ void main() {
   }
 
   testWidgets(
-    'saved remote Servers has a direct Termux route without expansion',
+    'saved remote Servers has a direct phone setup route without expansion',
     (tester) async {
       final controller = await _state();
       addTearDown(controller.dispose);
@@ -179,7 +179,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('On this phone').hitTestable(), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('quick-add-termux-card')),
+        find.byKey(const ValueKey('quick-add-phone-card')),
         findsOneWidget,
       );
       expect(find.text('Connect with Tailscale'), findsNothing);
