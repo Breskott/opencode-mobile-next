@@ -71,6 +71,7 @@ import '../widgets/session_title.dart';
 import '../widgets/session_read_state.dart';
 import '../widgets/session_handoff_sheets.dart';
 import '../widgets/running_agents_strip.dart';
+import '../widgets/terminal_view.dart';
 import '../widgets/tool_card.dart';
 import '../widgets/transcript_display_toggles.dart';
 import '../../api2/models.dart' show Api2Delivery, Api2FormInfo, Api2InboxItem;

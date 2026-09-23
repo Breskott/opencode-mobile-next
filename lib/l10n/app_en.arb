@@ -18154,5 +18154,23 @@
         "type": "String"
       }
     }
+  },
+  "terminalShowEarlier": "{count, plural, =1{Show 1 earlier line} other{Show {count} earlier lines}}",
+  "@terminalShowEarlier": {
+    "description": "Button above the end of a command output, revealing the lines before it",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "terminalOpenFull": "Open all {count} lines",
+  "@terminalOpenFull": {
+    "description": "Opens a very long command output in the file viewer",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

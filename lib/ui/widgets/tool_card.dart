@@ -9,6 +9,7 @@ import 'mobile_task_view.dart';
 import '../app_theme.dart';
 import 'agent_color.dart';
 import 'file_preview.dart';
+import 'terminal_view.dart';
 import 'markdown.dart';
 
 AppLocalizations _chatL10n(BuildContext context) =>
@@ -1084,15 +1085,10 @@ class _ToolContractBody extends StatelessWidget {
       RegExp(r'\n*<shell_metadata>.*?</shell_metadata>', dotAll: true),
       '',
     );
-    output = output.replaceAll(
-      RegExp(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])'),
-      '',
+    return TerminalView(
+      command: command.isEmpty ? null : command,
+      output: output.trimRight(),
     );
-    final text = [
-      if (command.isNotEmpty) '\$ $command',
-      if (output.isNotEmpty) output,
-    ].join('\n\n');
-    return _Mono(text: text, name: 'terminal.log', maxLines: 260);
   }
 
   Widget _editBody(BuildContext context) {

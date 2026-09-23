@@ -17256,4 +17256,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String chatUiAskAgent(String agent) {
     return 'اسأل $agent…';
   }
+
+  @override
+  String terminalShowEarlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'عرض $count سطرًا سابقًا',
+      one: 'عرض سطر سابق',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String terminalOpenFull(int count) {
+    return 'فتح كل الأسطر ($count)';
+  }
 }

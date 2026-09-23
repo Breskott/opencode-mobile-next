@@ -645,10 +645,6 @@ class _BackgroundShellResultRowState extends State<BackgroundShellResultRow> {
             : strings.workExitCode(result.exitCode!),
     };
     final title = shortCommand(result.command);
-    final mono = theme.textTheme.bodySmall?.copyWith(
-      fontFamily: AppTheme.monoFamily,
-      color: theme.colorScheme.onSurfaceVariant,
-    );
     return Column(
       key: const Key('background-shell-result'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -718,24 +714,10 @@ class _BackgroundShellResultRowState extends State<BackgroundShellResultRow> {
         if (_open)
           Padding(
             padding: const EdgeInsetsDirectional.fromSTEB(28, 0, 4, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SelectableText(result.command, style: mono),
-                if (result.output.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 320),
-                    child: SingleChildScrollView(
-                      child: SelectableText(
-                        result.output,
-                        key: const Key('background-shell-output'),
-                        style: mono,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
+            child: TerminalView(
+              key: const Key('background-shell-output'),
+              command: result.command,
+              output: result.output,
             ),
           ),
       ],

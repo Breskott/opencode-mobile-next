@@ -4553,5 +4553,7 @@
   "otherServersTitle": "على خوادمك الأخرى",
   "otherServerNeedsYou": "بانتظارك",
   "otherServerWorking": "{count, plural, =1{محادثة قيد العمل} other{{count} قيد العمل}}",
-  "chatUiAskAgent": "اسأل {agent}…"
+  "chatUiAskAgent": "اسأل {agent}…",
+  "terminalShowEarlier": "{count, plural, =1{عرض سطر سابق} other{عرض {count} سطرًا سابقًا}}",
+  "terminalOpenFull": "فتح كل الأسطر ({count})"
 }

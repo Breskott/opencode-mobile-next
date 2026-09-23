@@ -27477,6 +27477,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask {agent}…'**
   String chatUiAskAgent(String agent);
+
+  /// Button above the end of a command output, revealing the lines before it
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Show 1 earlier line} other{Show {count} earlier lines}}'**
+  String terminalShowEarlier(int count);
+
+  /// Opens a very long command output in the file viewer
+  ///
+  /// In en, this message translates to:
+  /// **'Open all {count} lines'**
+  String terminalOpenFull(int count);
 }
 
 class _AppLocalizationsDelegate

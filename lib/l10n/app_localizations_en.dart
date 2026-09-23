@@ -16999,4 +16999,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String chatUiAskAgent(String agent) {
     return 'Ask $agent…';
   }
+
+  @override
+  String terminalShowEarlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show $count earlier lines',
+      one: 'Show 1 earlier line',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String terminalOpenFull(int count) {
+    return 'Open all $count lines';
+  }
 }
