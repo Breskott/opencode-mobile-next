@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -37,6 +40,57 @@ Future<bool> isInAppServer(ServerProfile? profile, BuiltinLinux linux) async {
   } on BuiltinLinuxException {
     return false;
   }
+}
+
+/// The saved profile of the in-app server for [flavor], if there is one.
+ServerProfile? findBuiltinProfile(ProfileStore store, ServerFlavor flavor) {
+  for (final profile in store.profiles) {
+    if (profile.backend == ServerBackend.openCode &&
+        BuiltinLinux.managesServerUrl(profile.baseUrl) &&
+        profile.flavor == flavor) {
+      return profile;
+    }
+  }
+  return null;
+}
+
+/// The saved profile of the in-app server for [flavor], made on first use.
+///
+/// One profile per runtime, like the Termux server. The password is made
+/// once and lives with the profile in secure storage; the server reads its
+/// copy from a root-only file that every start rewrites, so a password the
+/// keystore lost is simply replaced.
+Future<ServerProfile> ensureBuiltinProfile(
+  ProfileStore store, {
+  required ServerFlavor flavor,
+  required String name,
+  String? version,
+  Set<String> replaceNames = const {},
+}) async {
+  final existing = findBuiltinProfile(store, flavor);
+  // A name the app generated earlier gives way to [name]; one the person
+  // chose stays.
+  if (existing != null && replaceNames.contains(existing.name)) {
+    existing.name = name;
+  }
+  final profile =
+      existing ??
+      ServerProfile(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        name: name,
+        baseUrl: BuiltinLinux.serverUrl,
+        flavor: flavor,
+      );
+  profile.username = BuiltinLinux.serverUsername;
+  if (profile.password.isEmpty || profile.requiresPasswordReentry) {
+    final random = Random.secure();
+    final bytes = List<int>.generate(32, (_) => random.nextInt(256));
+    profile.password = base64UrlEncode(bytes).replaceAll('=', '');
+    profile.requiresPasswordReentry = false;
+  }
+  if (version != null) profile.serverVersion = version;
+  await store.upsert(profile);
+  return profile;
 }
 
 /// Why a start did not end with a server answering our password.

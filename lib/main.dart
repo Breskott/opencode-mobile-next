@@ -3,6 +3,7 @@ import 'ui/screens/profile_monitor_screen.dart';
 import 'ui/screens/usage_hub_screen.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -11,6 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'background/live_background.dart';
 import 'builtin/builtin_server.dart';
+import 'builtin/setup/phone_setup.dart';
+import 'builtin/setup/setup_finish.dart';
 import 'desktop/window_icon.dart';
 import 'desktop/window_state.dart';
 import 'diagnostics/app_diagnostics.dart';
@@ -1403,6 +1406,44 @@ class _RootState extends ConsumerState<_Root> {
     super.initState();
     _controller = ref.read(connProvider)..addListener(_changed);
     _builtin = ref.read(builtinServerStarterProvider)..addListener(_changed);
+    _attachPhoneSetup();
+  }
+
+  /// The phone setup engine ends every job by starting OpenCode and
+  /// connecting; only the app shell has the profiles and the connection.
+  void _attachPhoneSetup() {
+    AppLocalizations strings() {
+      final locale =
+          _controller.appLocale.value ?? PlatformDispatcher.instance.locale;
+      final supported = AppLocalizations.supportedLocales.any(
+        (candidate) => candidate.languageCode == locale.languageCode,
+      );
+      return lookupAppLocalizations(
+        supported ? Locale(locale.languageCode) : const Locale('en'),
+      );
+    }
+
+    PhoneSetup.attach(
+      strings: strings,
+      // Built when the step runs, so the shell reads the profile store only
+      // when a setup job actually needs it.
+      finisher: (request) => BuiltinSetupFinisher(
+        store: ref.read(bootstrapProvider).store,
+        starter: _builtin,
+        strings: strings,
+        isConnectedTo: (profile) =>
+            _controller.profile?.id == profile.id &&
+            _controller.hasConnectedServer,
+        connect: (profile) async {
+          await _controller.connect(profile);
+          if (_controller.hasConnectedServer) return null;
+          final l10n = strings();
+          return l10n.builtinServerConnectFailed(
+            _controller.lastError ?? l10n.builtinServerStopped,
+          );
+        },
+      ).call(request),
+    );
   }
 
   void _changed() {

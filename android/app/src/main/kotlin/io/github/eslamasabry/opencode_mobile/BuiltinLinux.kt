@@ -41,20 +41,49 @@ class BuiltinLinux(private val context: Context) {
 
     val installed: Boolean get() = ready.isFile
 
-    fun install(image: Image = imageForDevice(), log: (String) -> Unit = {}) {
+    enum class InstallStage { DOWNLOAD, UNPACK }
+
+    /** How [install] reports to a setup job (SetupRunner.kt), and hears a cancel. */
+    interface InstallProgress {
+        fun stage(which: InstallStage) {}
+        fun bytes(done: Long, total: Long) {}
+        fun log(line: String) {}
+        val cancelled: Boolean get() = false
+    }
+
+    class Cancelled : Exception("cancelled")
+
+    fun install(image: Image = imageForDevice(), log: (String) -> Unit = {}) =
+        install(
+            image,
+            object : InstallProgress {
+                override fun log(line: String) = log(line)
+            },
+        )
+
+    /**
+     * Downloads (resuming a partial archive) and unpacks Ubuntu. The archive
+     * stays in the cache until the unpack has finished, so an install killed
+     * while unpacking starts again from the unpack, not the download.
+     */
+    fun install(image: Image = imageForDevice(), progress: InstallProgress) {
         if (installed) return
         home.mkdirs()
         val archive = File(context.cacheDir, "ubuntu-base.tar.gz")
-        log("downloading ${image.url}")
-        download(image, archive)
-        log("unpacking")
+        progress.stage(InstallStage.DOWNLOAD)
+        progress.log("Downloading ${image.url}")
+        download(image, archive, progress)
+        progress.stage(InstallStage.UNPACK)
+        progress.log("Unpacking Ubuntu Base $VERSION")
         rootfs.deleteRecursively()
         rootfs.mkdirs()
-        unpack(archive, rootfs)
-        archive.delete()
+        unpack(archive, rootfs, progress)
         configure()
         ready.writeText(image.sha256)
-        log("installed")
+        phase = "ready"
+        message = null
+        archive.delete()
+        progress.log("Ubuntu Base $VERSION is installed")
     }
 
     /** Runs [script] with /bin/sh inside Ubuntu as root (faked by proot). */
@@ -75,7 +104,7 @@ class BuiltinLinux(private val context: Context) {
             }
         }.apply { start() }
         val finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
-        if (!finished) process.destroyForcibly()
+        if (!finished) stopTree(process)
         reader.join(2000)
         val text = synchronized(output) { output.takeLast(OUTPUT_CAP).toString() }
         return Result(if (finished) process.exitValue() else -1, text)
@@ -164,8 +193,7 @@ class BuiltinLinux(private val context: Context) {
         val process = server ?: return
         server = null
         serverPort = null
-        process.destroy()
-        if (!process.waitFor(3, TimeUnit.SECONDS)) process.destroyForcibly()
+        stopTree(process)
         BuiltinServerService.stop(context)
     }
 
@@ -214,6 +242,9 @@ class BuiltinLinux(private val context: Context) {
         ready.delete()
         rootfs.deleteRecursively()
         serverLog.delete()
+        // A finished setup job would otherwise still read as "done".
+        File(home, "setup.json").delete()
+        File(home, "setup.log").delete()
         phase = "idle"
         message = null
     }
@@ -244,37 +275,80 @@ class BuiltinLinux(private val context: Context) {
         return file.listFiles()?.sumOf { sizeOf(it) } ?: 0
     }
 
-    private fun download(image: Image, target: File) {
+    /**
+     * Fetches [image] into [target], continuing a partial [target] with an
+     * HTTP Range request. The server answers 206 (append), 200 (it ignores
+     * ranges: start over) or 416 (the file is already whole: just check it).
+     * The checksum covers the whole file, so a partial one is hashed first.
+     */
+    private fun download(image: Image, target: File, progress: InstallProgress) {
         val digest = MessageDigest.getInstance("SHA-256")
+        var have = if (target.isFile) target.length() else 0L
         var url = URL(image.url)
         var connection: HttpURLConnection
         var redirects = 0
+        var code: Int
         while (true) {
             connection = url.openConnection() as HttpURLConnection
             connection.connectTimeout = 20_000
             connection.readTimeout = 60_000
             connection.instanceFollowRedirects = false
-            val code = connection.responseCode
+            if (have > 0) connection.setRequestProperty("Range", "bytes=$have-")
+            code = connection.responseCode
             if (code in 300..399 && redirects < 5) {
                 url = URL(url, connection.getHeaderField("Location"))
                 redirects++
                 connection.disconnect()
                 continue
             }
-            if (code != 200) error("download failed: HTTP $code from ${url.host}")
+            if (code != 200 && code != 206 && !(code == 416 && have > 0)) {
+                error("download failed: HTTP $code from ${url.host}")
+            }
             break
         }
-        connection.inputStream.use { input ->
-            FileOutputStream(target).use { out ->
+        val total: Long = when (code) {
+            206 -> connection.getHeaderField("Content-Range")
+                ?.substringAfterLast('/')?.toLongOrNull() ?: -1L
+            416 -> have
+            else -> connection.contentLengthLong
+        }
+        if (code == 200) have = 0
+        if (have > 0) {
+            progress.log("Resuming the download at $have bytes")
+            target.inputStream().use { input ->
                 val buffer = ByteArray(1 shl 16)
                 while (true) {
                     val read = input.read(buffer)
                     if (read < 0) break
                     digest.update(buffer, 0, read)
-                    out.write(buffer, 0, read)
                 }
             }
         }
+        progress.bytes(have, total.coerceAtLeast(0))
+        if (code != 416) {
+            connection.inputStream.use { input ->
+                FileOutputStream(target, have > 0).use { out ->
+                    val buffer = ByteArray(1 shl 16)
+                    var done = have
+                    var reported = 0L
+                    while (true) {
+                        if (progress.cancelled) throw Cancelled()
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        digest.update(buffer, 0, read)
+                        out.write(buffer, 0, read)
+                        done += read
+                        val now = System.currentTimeMillis()
+                        if (now - reported >= 250) {
+                            reported = now
+                            progress.bytes(done, total.coerceAtLeast(0))
+                        }
+                    }
+                    progress.bytes(done, total.coerceAtLeast(done))
+                }
+            }
+        }
+        connection.disconnect()
         val actual = digest.digest().joinToString("") { "%02x".format(it) }
         if (actual != image.sha256) {
             target.delete()
@@ -282,12 +356,30 @@ class BuiltinLinux(private val context: Context) {
         }
     }
 
-    private fun unpack(archive: File, into: File) {
+    private fun unpack(archive: File, into: File, progress: InstallProgress) {
         // Hard links are made after everything else is in place: their targets
         // may come later in the archive.
         val hardLinks = mutableListOf<Pair<File, File>>()
-        TarArchiveInputStream(GZIPInputStream(BufferedInputStream(archive.inputStream()))).use { tar ->
+        // Progress is the compressed bytes read so far against the archive's
+        // size: the only total known before the end.
+        val size = archive.length()
+        var reported = 0L
+        val counting = object : java.io.FilterInputStream(archive.inputStream()) {
+            var count = 0L
+
+            override fun read(): Int = super.read().also { if (it >= 0) count++ }
+
+            override fun read(b: ByteArray, off: Int, len: Int): Int =
+                super.read(b, off, len).also { if (it > 0) count += it }
+        }
+        TarArchiveInputStream(GZIPInputStream(BufferedInputStream(counting))).use { tar ->
             while (true) {
+                if (progress.cancelled) throw Cancelled()
+                val now = System.currentTimeMillis()
+                if (now - reported >= 250) {
+                    reported = now
+                    progress.bytes(counting.count, size)
+                }
                 val entry: TarArchiveEntry = tar.nextEntry ?: break
                 val name = entry.name.removePrefix("./").trimEnd('/')
                 if (name.isEmpty() || name.split('/').contains("..")) continue
@@ -348,6 +440,77 @@ class BuiltinLinux(private val context: Context) {
     }
 
     companion object {
+        /**
+         * Stops a proot [process] together with everything it started.
+         *
+         * Neither half works alone: proot ignores SIGTERM, and killing proot
+         * with SIGKILL detaches its tracees, which then run on as orphans
+         * (seen on the emulator: an OpenCode server kept port 4097 after its
+         * proot was killed, so the next start failed "port in use"). So the
+         * programs inside get SIGTERM first, to finish cleanly; whatever is
+         * left after [graceMs] gets SIGKILL, proot last.
+         */
+        fun stopTree(process: Process, graceMs: Long = 3000) {
+            val root = pidOf(process)
+            if (root == null) {
+                process.destroy()
+                if (!process.waitFor(graceMs, TimeUnit.MILLISECONDS)) process.destroyForcibly()
+                return
+            }
+            for (pid in descendants(root)) signal(pid, OsConstants.SIGTERM)
+            if (process.waitFor(graceMs, TimeUnit.MILLISECONDS)) {
+                // proot left when its command did; a straggler may remain.
+                return
+            }
+            for (pid in descendants(root)) signal(pid, OsConstants.SIGKILL)
+            process.destroyForcibly()
+            process.waitFor(graceMs, TimeUnit.MILLISECONDS)
+        }
+
+        private fun signal(pid: Int, signal: Int) {
+            try {
+                Os.kill(pid, signal)
+            } catch (_: Exception) {
+                // Already gone.
+            }
+        }
+
+        /** Android's ProcessImpl keeps the pid in a private field; no public API has it. */
+        private fun pidOf(process: Process): Int? {
+            return try {
+                process.javaClass.getDeclaredField("pid").run {
+                    isAccessible = true
+                    getInt(process)
+                }
+            } catch (_: Throwable) {
+                null
+            }
+        }
+
+        /** Every process below [root], read from /proc (same app, same user). */
+        private fun descendants(root: Int): List<Int> {
+            val parents = HashMap<Int, Int>()
+            File("/proc").listFiles()?.forEach { dir ->
+                val pid = dir.name.toIntOrNull() ?: return@forEach
+                val stat = try {
+                    File(dir, "stat").readText()
+                } catch (_: Exception) {
+                    return@forEach
+                }
+                // "pid (comm) state ppid …"; comm may hold spaces and parens.
+                val ppid = stat.substringAfterLast(')').trim().split(' ').getOrNull(1)?.toIntOrNull()
+                if (ppid != null) parents[pid] = ppid
+            }
+            val found = mutableListOf<Int>()
+            var frontier = listOf(root)
+            while (frontier.isNotEmpty()) {
+                val next = parents.filter { it.value in frontier }.keys.toList()
+                found += next
+                frontier = next
+            }
+            return found
+        }
+
         const val TAG = "OcLinux"
         private const val OUTPUT_CAP = 64 * 1024
 
@@ -360,6 +523,9 @@ class BuiltinLinux(private val context: Context) {
             }
 
         // Ubuntu Base 24.04.5 (noble), from Canonical's SHA256SUMS.
+        /** What the setup checklist shows for the Linux base once installed. */
+        const val VERSION = "24.04.5"
+
         private const val BASE =
             "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/"
         val arm64 = Image(

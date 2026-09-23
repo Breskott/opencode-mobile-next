@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -218,42 +216,15 @@ class _BuiltinServerScreenState extends ConsumerState<BuiltinServerScreen> {
       ? _l10n.setupRuntimeTwo
       : _l10n.setupRuntimeOne;
 
-  ServerProfile? _existingProfile() {
-    for (final profile in ref.read(bootstrapProvider).store.profiles) {
-      if (profile.backend == ServerBackend.openCode &&
-          BuiltinLinux.managesServerUrl(profile.baseUrl) &&
-          profile.flavor == _flavor) {
-        return profile;
-      }
-    }
-    return null;
-  }
+  ServerProfile? _existingProfile() =>
+      findBuiltinProfile(ref.read(bootstrapProvider).store, _flavor);
 
-  /// One saved profile per runtime, like the Termux server. The password is
-  /// made once and lives with the profile in secure storage; the server reads
-  /// its copy from a root-only file that every start rewrites, so a password
-  /// the keystore lost is simply replaced.
-  Future<ServerProfile> _ensureProfile() async {
-    final store = ref.read(bootstrapProvider).store;
-    final profile =
-        _existingProfile() ??
-        ServerProfile(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-          name: _l10n.builtinServerProfileName(_runtimeName),
-          baseUrl: BuiltinLinux.serverUrl,
-          flavor: _flavor,
-        );
-    profile.username = BuiltinLinux.serverUsername;
-    if (profile.password.isEmpty || profile.requiresPasswordReentry) {
-      final random = Random.secure();
-      final bytes = List<int>.generate(32, (_) => random.nextInt(256));
-      profile.password = base64UrlEncode(bytes).replaceAll('=', '');
-      profile.requiresPasswordReentry = false;
-    }
-    if (_installedVersion != null) profile.serverVersion = _installedVersion;
-    await store.upsert(profile);
-    return profile;
-  }
+  Future<ServerProfile> _ensureProfile() => ensureBuiltinProfile(
+    ref.read(bootstrapProvider).store,
+    flavor: _flavor,
+    name: _l10n.builtinServerProfileName(_runtimeName),
+    version: _installedVersion,
+  );
 
   Future<void> _start() async {
     setState(() {

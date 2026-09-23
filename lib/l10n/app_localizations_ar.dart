@@ -17448,6 +17448,98 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get phoneSetupProfileName => 'هذا الهاتف';
+
+  @override
+  String get phoneSetupLinuxTitle => 'قاعدة لينكس';
+
+  @override
+  String get phoneSetupLinuxWhy => 'كل ما عداها يعمل داخلها.';
+
+  @override
+  String get phoneSetupEssentialsTitle => 'Git وSSH والشهادات';
+
+  @override
+  String get phoneSetupEssentialsShort => 'Git وSSH';
+
+  @override
+  String get phoneSetupEssentialsWhy =>
+      'يستخدم الوكلاء Git وSSH للعمل على مشاريعك.';
+
+  @override
+  String get phoneSetupNodeWhy => 'يعمل OpenCode على Node.js.';
+
+  @override
+  String get phoneSetupOpenCodeWhy => 'وكيل البرمجة نفسه.';
+
+  @override
+  String get phoneSetupStartTitle => 'تشغيل OpenCode';
+
+  @override
+  String get phoneSetupStartWhy => 'ينتهي الإعداد وOpenCode يعمل.';
+
+  @override
+  String get phoneSetupStageDownloadingLinux => 'جارٍ تنزيل قاعدة لينكس';
+
+  @override
+  String get phoneSetupStageUnpackingLinux => 'جارٍ فك قاعدة لينكس';
+
+  @override
+  String get phoneSetupStageStarting => 'جارٍ تشغيل OpenCode';
+
+  @override
+  String get phoneSetupNotificationChannel => 'إعداد الهاتف';
+
+  @override
+  String get phoneSetupNotificationTitle =>
+      'جارٍ إعداد OpenCode على هذا الهاتف';
+
+  @override
+  String phoneSetupNotificationProgress(String percent) {
+    return 'اكتمل $percent٪';
+  }
+
+  @override
+  String get phoneSetupNotificationDone => 'OpenCode جاهز على هذا الهاتف';
+
+  @override
+  String get phoneSetupNotificationStopped =>
+      'توقف الإعداد. افتح التطبيق للمتابعة.';
+
+  @override
+  String get phoneSetupErrorNoInternet =>
+      'لا يوجد اتصال بالإنترنت. تابع عندما يعود الاتصال.';
+
+  @override
+  String phoneSetupErrorOffline(String name) {
+    return 'تعذّر تنزيل $name: لا يوجد اتصال بالإنترنت';
+  }
+
+  @override
+  String phoneSetupErrorInstall(String name) {
+    return 'تعذّر تثبيت $name';
+  }
+
+  @override
+  String phoneSetupErrorChecksum(String name) {
+    return 'تلف تنزيل $name. تابع لتنزيله من جديد.';
+  }
+
+  @override
+  String phoneSetupErrorNoSpace(String name) {
+    return 'لا توجد مساحة كافية لتثبيت $name';
+  }
+
+  @override
+  String phoneSetupErrorStart(String reason) {
+    return 'تعذّر تشغيل OpenCode: $reason';
+  }
+
+  @override
+  String get phoneSetupErrorCannotStart =>
+      'تم تثبيت OpenCode، لكن التطبيق لم يتمكن من تشغيله هنا.';
+
+  @override
   String builtinServerBytesUsed(String size) {
     return 'يستخدم $size من التخزين';
   }

@@ -165,6 +165,43 @@ class BuiltinLinux {
   /// Stops the server and deletes Ubuntu with everything inside it.
   Future<void> uninstall() => _invoke<void>('uninstall');
 
+  /// Starts a phone setup job in native code (SetupRunner.kt) and returns at
+  /// once; [setupStatus] follows it. The shapes are the engine's
+  /// (lib/builtin/setup/setup_engine.dart).
+  Future<void> startSetup({
+    required String jobId,
+    required List<Map<String, Object?>> components,
+    required Map<String, Map<String, String>> params,
+    required Map<String, String> texts,
+  }) => _invoke<void>('startSetup', {
+    'jobId': jobId,
+    'components': components,
+    'params': params,
+    'texts': texts,
+  });
+
+  /// The setup job as `files/linux/setup.json` holds it (the live one while
+  /// it runs), or null when there has never been one.
+  Future<String?> setupStatus() => _invoke<String>('setupStatus');
+
+  /// Stops the running setup job; what finished stays installed.
+  Future<void> cancelSetup() => _invoke<void>('cancelSetup');
+
+  /// Reports a step the app runs itself (starting OpenCode) as finished.
+  Future<void> completeSetupStep({
+    required String jobId,
+    required String id,
+    required bool ok,
+    String? error,
+    String? version,
+  }) => _invoke<void>('completeSetupStep', {
+    'jobId': jobId,
+    'id': id,
+    'ok': ok,
+    'error': error,
+    'version': version,
+  });
+
   Future<T?> _invoke<T>(String method, [Object? arguments]) async {
     if (!supported) {
       throw const BuiltinLinuxException(
