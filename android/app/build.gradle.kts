@@ -60,10 +60,23 @@ flutter {
     source = "../.."
 }
 
+android {
+    // proot and its loader ship as native libraries and must exist as real
+    // files in the app's native library folder: the one place this app may
+    // run programs from (BuiltinLinux.kt).
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+}
+
 dependencies {
     // ShortcutManagerCompat for the pinned-session launcher shortcuts
     // (PinnedSessionShortcuts.kt); same major line the Flutter embedding
     // already pulls in transitively, pinned so the compile classpath is
     // explicit rather than inherited.
     implementation("androidx.core:core:1.13.1")
+    // Reads the Ubuntu Base tarball for the built-in Linux (BuiltinLinux.kt).
+    implementation("org.apache.commons:commons-compress:1.27.1")
 }

@@ -45,6 +45,7 @@ class MainActivity : FlutterActivity() {
     private var localPdf: LocalPdfBridge? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        maybeRunLinuxSpike(intent)
         super.configureFlutterEngine(flutterEngine)
         TailscaleHandoff(this, flutterEngine.dartExecutor.binaryMessenger)
         localPdf?.dispose()
@@ -329,7 +330,38 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
     }
 
+    /**
+     * Spike only (feat/builtin-linux-spike): `adb shell am start -n
+     * <app>/.MainActivity --es oc_linux_spike 1` installs Ubuntu into the app
+     * and runs a few commands in it, reporting to logcat tag OcLinux.
+     */
+    private fun maybeRunLinuxSpike(intent: Intent?) {
+        if (intent?.getStringExtra("oc_linux_spike") == null) return
+        Thread {
+            val linux = BuiltinLinux(applicationContext)
+            try {
+                val started = System.currentTimeMillis()
+                linux.install { android.util.Log.i(BuiltinLinux.TAG, "install: $it") }
+                android.util.Log.i(BuiltinLinux.TAG, "install took ${System.currentTimeMillis() - started} ms")
+                val result = linux.run(
+                    "set -x; uname -a; head -2 /etc/os-release; id; " +
+                        "apt-get update -q 2>&1 | tail -3; " +
+                        "DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends " +
+                        "git ca-certificates curl 2>&1 | tail -3; " +
+                        "git --version; curl -sI https://example.com | head -1; " +
+                        "cd /tmp && git init -q spike && cd spike && echo hi > a && git add a && " +
+                        "git -c user.email=a@b -c user.name=spike commit -qm first && git log --oneline",
+                    timeoutSeconds = 900,
+                )
+                android.util.Log.i(BuiltinLinux.TAG, "SPIKE RESULT exit=${result.exitCode}")
+            } catch (error: Throwable) {
+                android.util.Log.e(BuiltinLinux.TAG, "SPIKE FAILED", error)
+            }
+        }.start()
+    }
+
     override fun onNewIntent(intent: Intent) {
+        maybeRunLinuxSpike(intent)
         super.onNewIntent(intent)
         setIntent(intent)
         captureCodingAlertOpen(intent)
