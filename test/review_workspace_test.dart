@@ -146,7 +146,7 @@ void main() {
       pending = Completer<List<FileDiff>>();
       await tester.tap(find.byKey(const Key('review-refresh')));
       await tester.pump();
-      await tester.tap(find.text('Working tree'));
+      await tester.tap(find.text('Uncommitted'));
       await tester.pump();
       pending.complete([diff('stale.dart')]);
       await tester.pumpAndSettle();
@@ -361,20 +361,83 @@ void main() {
     expect(find.text('+session change'), findsOneWidget);
     expect(sessionLoads, 1);
 
-    await tester.tap(find.text('Working tree'));
+    await tester.tap(find.text('Uncommitted'));
     await tester.pumpAndSettle();
     expect(find.text('+working change'), findsOneWidget);
     expect(workingTreeLoads, 1);
 
-    await tester.tap(find.text('Branch'));
+    await tester.tap(find.text('Whole branch'));
     await tester.pumpAndSettle();
     expect(find.text('+branch change'), findsOneWidget);
     expect(branchLoads, 1);
 
-    await tester.tap(find.text('Conversation'));
+    await tester.tap(find.text('This chat'));
     await tester.pumpAndSettle();
     expect(find.text('+session change'), findsOneWidget);
     expect(sessionLoads, 2);
+  });
+
+  testWidgets('each view says what it covers, in words on screen', (
+    tester,
+  ) async {
+    await _pumpReview(
+      tester,
+      () async => const [],
+      workingTreeLoader: () async => const [],
+      branchLoader: () async => const [],
+    );
+    expect(find.text('Files this conversation changed.'), findsOneWidget);
+    await tester.tap(find.text('Whole branch'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Everything on this branch, compared with the main branch.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('reopening shows the last result at once and the other views '
+      'are ready before they are asked for', (tester) async {
+    ReviewWorkspace.clearCache();
+    addTearDown(ReviewWorkspace.clearCache);
+    final slow = Completer<List<FileDiff>>();
+    var workingLoads = 0;
+    FileDiff change(String file, String line) => FileDiff(
+      file: file,
+      patch: '@@ -0,0 +1 @@\n+$line',
+      additions: 1,
+      deletions: 0,
+    );
+    Widget review() => MaterialApp(
+      theme: AppTheme.dark(),
+      home: ReviewWorkspace(
+        cacheKey: 'server|/work|chat',
+        initialScope: ReviewDiffScope.workingTree,
+        loadWorkingTreeDiffs: () {
+          workingLoads++;
+          return workingLoads == 1
+              ? Future.value([change('a.txt', 'first read')])
+              : slow.future;
+        },
+        loadBranchDiffs: () async => [change('b.txt', 'branch read')],
+      ),
+    );
+
+    await tester.pumpWidget(review());
+    await tester.pumpAndSettle();
+    expect(find.text('+first read'), findsOneWidget);
+
+    // Closed and opened again: the fresh read is slow, the last one shows.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(review());
+    await tester.pump();
+    expect(find.text('+first read'), findsOneWidget);
+
+    // The branch view was loaded behind the first one.
+    await tester.tap(find.text('Whole branch'));
+    await tester.pump();
+    expect(find.text('+branch read'), findsOneWidget);
+    slow.complete(const []);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('opens one working-tree file directly without a fake session', (

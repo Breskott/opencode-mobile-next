@@ -7223,17 +7223,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get readerUiSelectedChange => 'التغيير المحدد';
 
   @override
-  String get readerUiWorkingTree => 'شجرة العمل';
+  String get readerUiWorkingTree => 'غير مثبّت';
 
   @override
-  String get readerUiSessionScopeHint =>
-      'التغييرات المرتبطة بمحادثة OpenCode هذه';
+  String get readerUiSessionScopeHint => 'الملفات التي غيّرتها هذه المحادثة.';
 
   @override
-  String get readerUiWorkingScopeHint => 'تغييرات Git الحالية غير المثبّتة';
+  String get readerUiWorkingScopeHint =>
+      'كل ما لم يُثبَّت بعد، أيًا كان من غيّره.';
 
   @override
-  String get readerUiBranchScopeHint => 'التغييرات مقارنة بالفرع الافتراضي';
+  String get readerUiBranchScopeHint =>
+      'كل ما في هذا الفرع، مقارنةً بالفرع الرئيسي.';
 
   @override
   String get readerUiUnified => 'موحّد';
@@ -7628,10 +7629,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get readerUiChanged => 'متغير';
 
   @override
-  String get readerUiSession => 'المحادثة';
+  String get readerUiSession => 'هذه المحادثة';
 
   @override
-  String get readerUiBranch => 'الفرع';
+  String get readerUiBranch => 'الفرع كله';
 
   @override
   String get readerUiRemoved => 'محذوف';

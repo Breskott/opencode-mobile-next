@@ -7149,17 +7149,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerUiSelectedChange => 'Selected change';
 
   @override
-  String get readerUiWorkingTree => 'Working tree';
+  String get readerUiWorkingTree => 'Uncommitted';
 
   @override
-  String get readerUiSessionScopeHint =>
-      'Changes attributed to this OpenCode conversation';
+  String get readerUiSessionScopeHint => 'Files this conversation changed.';
 
   @override
-  String get readerUiWorkingScopeHint => 'Current uncommitted Git changes';
+  String get readerUiWorkingScopeHint =>
+      'Everything not committed yet, whoever changed it.';
 
   @override
-  String get readerUiBranchScopeHint => 'Changes against the default branch';
+  String get readerUiBranchScopeHint =>
+      'Everything on this branch, compared with the main branch.';
 
   @override
   String get readerUiUnified => 'Unified';
@@ -7532,10 +7533,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerUiChanged => 'Changed';
 
   @override
-  String get readerUiSession => 'Conversation';
+  String get readerUiSession => 'This chat';
 
   @override
-  String get readerUiBranch => 'Branch';
+  String get readerUiBranch => 'Whole branch';
 
   @override
   String get readerUiRemoved => 'Removed';

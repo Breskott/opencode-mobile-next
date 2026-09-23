@@ -6155,13 +6155,22 @@ class _ChatScreenState extends State<ChatScreen>
       MaterialPageRoute<String>(
         builder: (_) => ReviewWorkspace(
           handoff: _handoff, // UX-103 review handoff
-          loadDiffs: () async {
-            final api = await _conn.prepareActionTransport();
-            if (api == null) {
-              throw ProductException(strings.chatUiOpenCodeIsReconnecting);
-            }
-            return api.diff(widget.sessionID);
-          },
+          cacheKey:
+              '${_conn.profile?.id}|${_conn.directory}|${widget.sessionID}',
+          // OpenCode 2 has no per-conversation diff: what it answers for
+          // "this chat" is the uncommitted changes, which is its own view
+          // already. Two views showing the same thing is one too many.
+          loadDiffs: _conn.serverFlavor == ServerFlavor.v2
+              ? null
+              : () async {
+                  final api = await _conn.prepareActionTransport();
+                  if (api == null) {
+                    throw ProductException(
+                      strings.chatUiOpenCodeIsReconnecting,
+                    );
+                  }
+                  return api.diff(widget.sessionID);
+                },
           loadWorkingTreeDiffs: () async {
             final repository = await _conn.prepareActionRepository();
             if (repository == null) {

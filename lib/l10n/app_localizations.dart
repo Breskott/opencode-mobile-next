@@ -11831,25 +11831,25 @@ abstract class AppLocalizations {
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Working tree'**
+  /// **'Uncommitted'**
   String get readerUiWorkingTree;
 
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Changes attributed to this OpenCode conversation'**
+  /// **'Files this conversation changed.'**
   String get readerUiSessionScopeHint;
 
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Current uncommitted Git changes'**
+  /// **'Everything not committed yet, whoever changed it.'**
   String get readerUiWorkingScopeHint;
 
   /// Reader, Files and review user interface.
   ///
   /// In en, this message translates to:
-  /// **'Changes against the default branch'**
+  /// **'Everything on this branch, compared with the main branch.'**
   String get readerUiBranchScopeHint;
 
   /// Reader, Files and review user interface.
@@ -12395,13 +12395,13 @@ abstract class AppLocalizations {
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
   /// In en, this message translates to:
-  /// **'Conversation'**
+  /// **'This chat'**
   String get readerUiSession;
 
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
   /// In en, this message translates to:
-  /// **'Branch'**
+  /// **'Whole branch'**
   String get readerUiBranch;
 
   /// Reader display, status or accessible label. Technical placeholders remain original.

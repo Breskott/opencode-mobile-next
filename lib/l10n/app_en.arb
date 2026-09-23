@@ -5462,19 +5462,19 @@
   "@readerUiSelectedChange": {
     "description": "Reader, Files and review user interface."
   },
-  "readerUiWorkingTree": "Working tree",
+  "readerUiWorkingTree": "Uncommitted",
   "@readerUiWorkingTree": {
     "description": "Reader, Files and review user interface."
   },
-  "readerUiSessionScopeHint": "Changes attributed to this OpenCode conversation",
+  "readerUiSessionScopeHint": "Files this conversation changed.",
   "@readerUiSessionScopeHint": {
     "description": "Reader, Files and review user interface."
   },
-  "readerUiWorkingScopeHint": "Current uncommitted Git changes",
+  "readerUiWorkingScopeHint": "Everything not committed yet, whoever changed it.",
   "@readerUiWorkingScopeHint": {
     "description": "Reader, Files and review user interface."
   },
-  "readerUiBranchScopeHint": "Changes against the default branch",
+  "readerUiBranchScopeHint": "Everything on this branch, compared with the main branch.",
   "@readerUiBranchScopeHint": {
     "description": "Reader, Files and review user interface."
   },
@@ -6033,12 +6033,12 @@
     "description": "Reader display, status or accessible label. Technical placeholders remain original.",
     "placeholders": {}
   },
-  "readerUiSession": "Conversation",
+  "readerUiSession": "This chat",
   "@readerUiSession": {
     "description": "Reader display, status or accessible label. Technical placeholders remain original.",
     "placeholders": {}
   },
-  "readerUiBranch": "Branch",
+  "readerUiBranch": "Whole branch",
   "@readerUiBranch": {
     "description": "Reader display, status or accessible label. Technical placeholders remain original.",
     "placeholders": {}

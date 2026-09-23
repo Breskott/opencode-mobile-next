@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter/services.dart';
@@ -35,6 +37,7 @@ class ReviewWorkspace extends StatefulWidget {
     this.initialScope = ReviewDiffScope.session,
     this.initialFile,
     this.handoff,
+    this.cacheKey,
   }) : assert(
          loadDiffs != null ||
              loadWorkingTreeDiffs != null ||
@@ -53,6 +56,28 @@ class ReviewWorkspace extends StatefulWidget {
   /// chat behind it — the workspace keeps its older behaviour of returning
   /// the formatted comment to the caller, which falls back to the clipboard.
   final ReviewHandoffSession? handoff;
+
+  /// Names what is being reviewed (server, project, conversation). With it,
+  /// reopening shows the last result at once while a fresh one loads, and
+  /// the other views load behind the first so switching is instant. A diff
+  /// is a git run on the server and, on a phone, a slow one.
+  final String? cacheKey;
+
+  /// Recent results by [cacheKey] and view. Small, in memory only: the
+  /// fresh read always follows, so a stale entry is only ever a head start.
+  static final _cache = <String, List<FileDiff>>{};
+  static const _cacheLimit = 12;
+
+  static void _remember(String key, List<FileDiff> diffs) {
+    _cache.remove(key);
+    _cache[key] = diffs;
+    while (_cache.length > _cacheLimit) {
+      _cache.remove(_cache.keys.first);
+    }
+  }
+
+  @visibleForTesting
+  static void clearCache() => _cache.clear();
 
   @override
   State<ReviewWorkspace> createState() => _ReviewWorkspaceState();
@@ -107,49 +132,19 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
       _refreshing = true;
       if (_diffs == null) _error = null;
     });
+    final scope = _scope;
+    final cached = _cacheKeyFor(scope) == null
+        ? null
+        : ReviewWorkspace._cache[_cacheKeyFor(scope)];
+    if (_diffs == null && cached != null) _apply(cached, generation);
     try {
-      final diffs = await _loaderFor(_scope)();
+      final diffs = await _loaderFor(scope)();
       if (!mounted || generation != _loadGeneration) return;
-      // Read the current selection after the await: the reader may have
-      // opened a different cached file while this request was in flight.
-      final previous = _diffs;
-      final previousSelected = previous != null && previous.isNotEmpty
-          ? previous[_selectedFile]
-          : null;
-      var resetPosition = false;
-      setState(() {
-        _diffs = diffs;
-        _error = null;
-        final initialFile = _pendingInitialFile ?? previousSelected?.file;
-        final initialIndex = initialFile == null
-            ? -1
-            : diffs.indexWhere(
-                (diff) =>
-                    _normalizedPath(diff.file) == _normalizedPath(initialFile),
-              );
-        if (initialIndex >= 0) {
-          _selectedFile = initialIndex;
-        } else {
-          _selectedFile = 0;
-        }
-        final current = diffs.isEmpty ? null : diffs[_selectedFile];
-        _viewedFiles.removeWhere(
-          (key, viewed) =>
-              key.startsWith('$_scope:') &&
-              !diffs.any((diff) => _sameReviewDiff(viewed, diff)),
-        );
-        if (previous == null) _markViewed(_selectedFile);
-        _pendingInitialFile = null;
-        resetPosition = !_sameReviewDiff(previousSelected, current);
-        if (resetPosition) _clearSelection();
-      });
-      if (resetPosition) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted || generation != _loadGeneration) return;
-          if (_vertical.hasClients) _vertical.jumpTo(0);
-          if (_horizontal.hasClients) _horizontal.jumpTo(0);
-        });
+      if (_cacheKeyFor(scope) case final key?) {
+        ReviewWorkspace._remember(key, diffs);
       }
+      _apply(diffs, generation);
+      unawaited(_prefetchOthers(scope));
     } catch (error) {
       if (mounted && generation == _loadGeneration) {
         setState(() => _error = error);
@@ -158,6 +153,67 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
       if (mounted && generation == _loadGeneration) {
         setState(() => _refreshing = false);
       }
+    }
+  }
+
+  String? _cacheKeyFor(ReviewDiffScope scope) =>
+      widget.cacheKey == null ? null : '${widget.cacheKey}|${scope.name}';
+
+  /// Loads the views not on screen, one at a time, into the cache.
+  Future<void> _prefetchOthers(ReviewDiffScope shown) async {
+    for (final scope in _availableScopes) {
+      if (scope == shown || !mounted) continue;
+      final key = _cacheKeyFor(scope);
+      if (key == null || ReviewWorkspace._cache.containsKey(key)) continue;
+      try {
+        final diffs = await _loaderFor(scope)();
+        if (mounted) ReviewWorkspace._remember(key, diffs);
+      } catch (_) {
+        // Loading it when opened reports the failure; ahead of time, none.
+      }
+    }
+  }
+
+  /// Shows [diffs], keeping the file being read when it is still there.
+  void _apply(List<FileDiff> diffs, int generation) {
+    // The reader may have opened a different file while this was loading.
+    final previous = _diffs;
+    final previousSelected = previous != null && previous.isNotEmpty
+        ? previous[_selectedFile]
+        : null;
+    var resetPosition = false;
+    setState(() {
+      _diffs = diffs;
+      _error = null;
+      final initialFile = _pendingInitialFile ?? previousSelected?.file;
+      final initialIndex = initialFile == null
+          ? -1
+          : diffs.indexWhere(
+              (diff) =>
+                  _normalizedPath(diff.file) == _normalizedPath(initialFile),
+            );
+      if (initialIndex >= 0) {
+        _selectedFile = initialIndex;
+      } else {
+        _selectedFile = 0;
+      }
+      final current = diffs.isEmpty ? null : diffs[_selectedFile];
+      _viewedFiles.removeWhere(
+        (key, viewed) =>
+            key.startsWith('$_scope:') &&
+            !diffs.any((diff) => _sameReviewDiff(viewed, diff)),
+      );
+      if (previous == null) _markViewed(_selectedFile);
+      _pendingInitialFile = null;
+      resetPosition = !_sameReviewDiff(previousSelected, current);
+      if (resetPosition) _clearSelection();
+    });
+    if (resetPosition) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || generation != _loadGeneration) return;
+        if (_vertical.hasClients) _vertical.jumpTo(0);
+        if (_horizontal.hasClients) _horizontal.jumpTo(0);
+      });
     }
   }
 
@@ -349,11 +405,11 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
     final diffs = _diffs!;
     final totalAdded = diffs.fold<int>(
       0,
-      (sum, diff) => sum + diff.counts.added,
+      (sum, diff) => sum + _countsOf(diff).added,
     );
     final totalRemoved = diffs.fold<int>(
       0,
-      (sum, diff) => sum + diff.counts.removed,
+      (sum, diff) => sum + _countsOf(diff).removed,
     );
     final viewedCount = diffs.where(_isViewed).length;
     final summary = _ReviewSummary(
@@ -363,7 +419,7 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
       viewed: viewedCount,
     );
     final selected = diffs[_selectedFile];
-    final lines = _parseDiff(selected);
+    final lines = _linesOf(selected);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -546,8 +602,8 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
           lineLabel: wholeFile ? null : _selectionLabel(lines),
           snippet: wholeFile ? null : _selectedSnippet(lines),
           comment: comment.trim(),
-          added: diff.counts.added,
-          removed: diff.counts.removed,
+          added: _countsOf(diff).added,
+          removed: _countsOf(diff).removed,
           status: diff.status,
         ),
       );
@@ -579,8 +635,8 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
         kind: ReviewReferenceKind.changedFile,
         path: diff.file,
         scope: _referenceScope,
-        added: diff.counts.added,
-        removed: diff.counts.removed,
+        added: _countsOf(diff).added,
+        removed: _countsOf(diff).removed,
         status: diff.status,
       ),
     );
@@ -717,23 +773,43 @@ class _ReviewScopePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-    child: SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SegmentedButton<ReviewDiffScope>(
-        key: const Key('review-scope-picker'),
-        showSelectedIcon: false,
-        segments: [
-          for (final scope in scopes)
-            ButtonSegment(
-              value: scope,
-              label: Text(_scopeLabel(context, scope)),
-              tooltip: _scopeDescription(context, scope),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: _segments(context),
+        ),
+        // What the chosen view covers, in words, where it can be read: the
+        // names alone ("Uncommitted", "Whole branch") left people guessing,
+        // and a tooltip is out of reach on a phone.
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 4, 0),
+          child: Text(
+            _scopeDescription(context, selected),
+            key: const Key('review-scope-hint'),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.mutedOf(Theme.of(context)),
             ),
-        ],
-        selected: {selected},
-        onSelectionChanged: (value) => onSelected(value.single),
-      ),
+          ),
+        ),
+      ],
     ),
+  );
+
+  Widget _segments(BuildContext context) => SegmentedButton<ReviewDiffScope>(
+    key: const Key('review-scope-picker'),
+    showSelectedIcon: false,
+    segments: [
+      for (final scope in scopes)
+        ButtonSegment(
+          value: scope,
+          label: Text(_scopeLabel(context, scope)),
+          tooltip: _scopeDescription(context, scope),
+        ),
+    ],
+    selected: {selected},
+    onSelectionChanged: (value) => onSelected(value.single),
   );
 
   static String _scopeLabel(BuildContext context, ReviewDiffScope scope) =>
@@ -881,7 +957,7 @@ class _ReviewFileTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final counts = diff.counts;
+    final counts = _countsOf(diff);
     return Semantics(
       selected: selected,
       button: true,
@@ -1002,7 +1078,7 @@ class _ReviewFileList extends StatelessWidget {
             itemCount: diffs.length,
             itemBuilder: (context, index) {
               final diff = diffs[index];
-              final counts = diff.counts;
+              final counts = _countsOf(diff);
               final active = selected == index;
               return Semantics(
                 selected: active,
@@ -1109,7 +1185,7 @@ class _ReviewDiffToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final counts = diff.counts;
+    final counts = _countsOf(diff);
     return LayoutBuilder(
       builder: (context, constraints) {
         if (!compact && constraints.maxWidth < 560) {
@@ -1303,7 +1379,7 @@ class _ReviewPhoneDiffToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final counts = diff.counts;
+    final counts = _countsOf(diff);
     final canCopy = (diff.patch ?? diff.after ?? '').isNotEmpty;
     return Semantics(
       container: true,
@@ -2109,7 +2185,7 @@ class _CompactFileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final counts = diff.counts;
+    final counts = _countsOf(diff);
     final directory = _directory(diff.file);
     return Material(
       key: const Key('review-compact-file-header'),
@@ -2986,6 +3062,17 @@ class _ReviewSplitRow {
       ? sourceIndices.first
       : null;
 }
+
+// A patch can be megabytes (a regenerated translation file) and the
+// screen rebuilds on every tap; each file is parsed and counted once.
+final _parsedLines = Expando<List<_ReviewDiffLine>>('review lines');
+final _changeCounts = Expando<({int added, int removed})>('review counts');
+
+List<_ReviewDiffLine> _linesOf(FileDiff diff) =>
+    _parsedLines[diff] ??= _parseDiff(diff);
+
+({int added, int removed}) _countsOf(FileDiff diff) =>
+    _changeCounts[diff] ??= diff.counts;
 
 List<_ReviewDiffLine> _parseDiff(FileDiff diff) {
   final patch = diff.patch;
