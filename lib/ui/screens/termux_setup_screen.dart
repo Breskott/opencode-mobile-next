@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../builtin/builtin_linux.dart';
 import '../../l10n/app_localizations.dart';
 import '../widgets/setup_ui_messages.dart';
 import '../../platform/platform_capabilities.dart';
@@ -16,6 +17,7 @@ import '../../termux/bridge.dart';
 import '../../termux/managed_server_recovery.dart';
 import '../app_theme.dart';
 import '../widgets/confirm_sheet.dart';
+import 'builtin_server_screen.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/setup_terminal.dart';
 import '../widgets/local_agent_onboarding.dart';
@@ -2171,6 +2173,12 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                   _ => null,
                 },
               ),
+              // Last, so the Termux steps keep their place; this is the
+              // alternative for a phone that cannot or will not use Termux.
+              if (BuiltinLinux.supported) ...[
+                const Divider(height: 32),
+                _builtinServerChoice(),
+              ],
             ],
           ),
         ),
@@ -2668,6 +2676,29 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
               Localizations.localeOf(context),
             ).setupConnectExisting,
           ),
+        ),
+      ],
+    );
+  }
+
+  /// The no-Termux option: Ubuntu and OpenCode inside this app instead.
+  Widget _builtinServerChoice() {
+    final theme = Theme.of(context);
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return Column(
+      key: const Key('termux-setup-builtin-choice'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.builtinServerEntryTitle, style: theme.textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Text(l10n.builtinServerEntryDetail),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _busy || _connecting
+              ? null
+              : () => openBuiltinServerScreen(context),
+          icon: const Icon(AppIconography.experiments),
+          label: Text(l10n.builtinServerStepUbuntu),
         ),
       ],
     );
