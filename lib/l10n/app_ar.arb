@@ -4769,5 +4769,17 @@
   "phoneSetupStartNothingChosen": "لم تختر شيئًا بعد",
   "phoneSetupStartDone": "تم",
   "phoneSetupStartAdd": "إضافة",
-  "phoneSetupStartChecking": "جارٍ التحقق مما هو مثبّت…"
+  "phoneSetupStartChecking": "جارٍ التحقق مما هو مثبّت…",
+  "perfTraceTitle": "الأداء",
+  "perfTraceBody": "كم استغرقت كل خطوة منذ فتح التطبيق: الاتصال والتحميل وكل طلب إلى الخادم. يُحفظ في الذاكرة فقط ويُمسح عند إغلاق التطبيق. يحتوي التقرير على الأسماء والأوقات فقط، ولا يحتوي أبدًا على الرسائل أو كلمات المرور.",
+  "perfTraceCopy": "نسخ التقرير",
+  "perfTraceClear": "مسح",
+  "perfTraceCopied": "تم نسخ تقرير الأداء",
+  "perfTraceEmpty": "لم يُقَس شيء بعد.",
+  "perfTraceSlowest": "أبطأ الخطوات",
+  "perfTraceRecent": "أحدث الخطوات",
+  "perfTraceStatLine": "{count}× · المعتاد {p50} · البطيء {p95} · الأطول {max}",
+  "perfTraceFailed": "{count, plural, =1{فشلت مرة واحدة} other{فشلت {count} مرات}}",
+  "perfTraceAt": "عند {time}",
+  "perfTraceWithin": "ضمن {parent}"
 }

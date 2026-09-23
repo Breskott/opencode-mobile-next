@@ -58,8 +58,10 @@ void main() {
 
   test('the location rescope path uses the flavor-aware builder', () {
     final source = File('lib/state/connection.dart').readAsStringSync();
-    final start = source.indexOf('Future<void> _selectLocation(');
-    expect(start, isNot(-1), reason: '_selectLocation is missing');
+    // _selectLocation only wraps the rescope in a performance span; the
+    // body that rebuilds the transport is _selectLocationUntraced.
+    final start = source.indexOf('Future<void> _selectLocationUntraced(');
+    expect(start, isNot(-1), reason: '_selectLocationUntraced is missing');
 
     // The rescope rebuilds the transport after the early-return branch; look
     // at the body that follows, not the whole file.

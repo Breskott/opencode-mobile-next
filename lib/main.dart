@@ -17,6 +17,7 @@ import 'builtin/setup/setup_finish.dart';
 import 'desktop/window_icon.dart';
 import 'desktop/window_state.dart';
 import 'diagnostics/app_diagnostics.dart';
+import 'diagnostics/perf_trace.dart';
 import 'domain/server_gateway.dart' show ProductException;
 import 'l10n/app_localizations.dart';
 import 'platform/launch_shortcut.dart';
@@ -52,6 +53,9 @@ import 'ui/screens/builtin_server_screen.dart';
 import 'ui/screens/app_diagnostics_screen.dart';
 
 Future<void> main() async {
+  // First thing: starts the trace clock, so every later OCTRACE `at=` reads
+  // as time since launch.
+  PerfTrace.markOnce('app.main');
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
     // Restores the remembered size, position and maximized state, clamped to
@@ -73,6 +77,9 @@ Future<void> main() async {
   final diagnostics = AppDiagnosticsController();
   installAppErrorCapture(diagnostics);
   runApp(AppBootstrapGate(diagnostics: diagnostics));
+  WidgetsBinding.instance.addPostFrameCallback(
+    (_) => PerfTrace.markOnce('app.first_frame'),
+  );
 }
 
 typedef AppBootstrapLoader = Future<AppBootstrap> Function();
@@ -109,7 +116,10 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
       _error = null;
     });
     try {
-      final bootstrap = await (widget.loader ?? AppBootstrap.create)();
+      final bootstrap = await PerfTrace.span(
+        'app.bootstrap',
+        widget.loader ?? AppBootstrap.create,
+      );
       if (!mounted || generation != _generation) return;
       final controller = ConnectionController(
         bootstrap.store,
@@ -136,6 +146,9 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
         _controller = controller;
         _loading = false;
       });
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => PerfTrace.markOnce('app.shell_frame'),
+      );
     } catch (error, stack) {
       widget.diagnostics.record(error, stack, source: 'bootstrap');
       if (!mounted || generation != _generation) return;
@@ -296,6 +309,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   // Tracks the route on top of the shell navigator so a shortcut never
   // stacks a second servers screen over one already showing.
   final _routeTracker = _TopRouteTracker();
+  final _routeTiming = PerfTraceNavigatorObserver();
 
   @override
   void initState() {
@@ -1227,7 +1241,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
           final pack = effectiveThemePack(_controller.themePack.value);
           return MaterialApp(
             navigatorKey: _navigatorKey,
-            navigatorObservers: [_routeTracker],
+            navigatorObservers: [_routeTracker, _routeTiming],
             scaffoldMessengerKey: _messengerKey,
             builder: (context, child) {
               // Global text-scale safety net: the system setting passes

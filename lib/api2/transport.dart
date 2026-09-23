@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 import 'dialect.dart';
+import '../diagnostics/perf_trace.dart';
 
 /// Transport layer for the OpenCode 2 server API (`/api/...`).
 ///
@@ -52,6 +53,7 @@ class Api2Transport {
     if (password.isNotEmpty) {
       _dio.options.headers['Authorization'] = 'Basic $basicToken';
     }
+    PerfTraceInterceptor.attach(_dio, 'oc2');
   }
 
   /// Strips trailing slashes and a trailing `/api` path segment so both

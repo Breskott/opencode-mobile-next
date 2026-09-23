@@ -10,6 +10,7 @@ import '../../state/connection.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/product_states.dart';
 import '../app_theme.dart';
+import 'perf_trace_section.dart';
 
 class AppDiagnosticsScreen extends StatefulWidget {
   const AppDiagnosticsScreen({super.key, required this.controller});
@@ -183,9 +184,10 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                     ),
                   ),
                 ),
+                // Not SliverFillRemaining: that would push the performance
+                // section below a screen of empty space.
                 if (entries.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
+                  SliverToBoxAdapter(
                     child: Center(
                       child: Padding(
                         padding: EdgeInsets.all(32),
@@ -257,6 +259,13 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                   ),
                   const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
+                const SliverToBoxAdapter(child: Divider(height: 1)),
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 32),
+                    child: PerfTraceSection(),
+                  ),
+                ),
               ],
             );
           },

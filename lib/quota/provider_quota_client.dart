@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 
 import '../domain/provider_quota.dart';
 import '../state/profiles.dart';
+import '../diagnostics/perf_trace.dart';
 
 /// A separately installed, explicitly trusted deployment extension. This is
 /// not an OpenCode API client and must only be acquired after screen consent.
@@ -51,6 +52,7 @@ class HttpProviderQuotaGateway implements ProviderQuotaGateway {
     _dio.httpClientAdapter = _BoundedQuotaAdapter(
       adapter ?? _dio.httpClientAdapter,
     );
+    PerfTraceInterceptor.attach(_dio, 'quota');
   }
 
   /// Setup eligibility only, NOT permission to send a request. Even loopback

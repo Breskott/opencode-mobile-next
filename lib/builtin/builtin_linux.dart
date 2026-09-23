@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 
 import '../api/server_probe.dart' show ServerFlavor;
+import '../diagnostics/perf_trace.dart';
 import '../platform/platform_capabilities.dart';
 import '../termux/bridge.dart' show TermuxBridge, TermuxRuntime;
 import '../termux/opencode_ubuntu_setup.dart';
@@ -202,7 +203,44 @@ class BuiltinLinux {
     'version': version,
   });
 
-  Future<T?> _invoke<T>(String method, [Object? arguments]) async {
+  // Every call into Android is timed as `linux.<method>`; a `run` also
+  // carries a label from its script (see [scriptLabel]). The status reads
+  // that setup polls twice a second reach the device log only when slow.
+  Future<T?> _invoke<T>(String method, [Object? arguments]) {
+    final script = arguments is Map ? arguments['script'] : null;
+    return PerfTrace.span(
+      'linux.$method',
+      () => _invokeUntraced<T>(method, arguments),
+      attrs: {
+        if (method == 'run' && script is String) 'label': scriptLabel(script),
+      },
+      logMinMs: method == 'setupStatus' || method == 'status' ? 50 : 0,
+    );
+  }
+
+  /// A short, shareable name for [script]: its first line that does real
+  /// work, with quoted text blanked. The password script is only ever
+  /// "write-password" — its body holds the password.
+  static String scriptLabel(String script) {
+    if (script.contains('$passwordFile.tmp')) return 'write-password';
+    for (final raw in script.split('\n')) {
+      final line = raw.trim();
+      if (line.isEmpty ||
+          line.startsWith('#') ||
+          line.startsWith('set ') ||
+          line.startsWith('umask ') ||
+          line.startsWith('export ')) {
+        continue;
+      }
+      final blanked = line
+          .replaceAll(RegExp(r"'[^']*'"), "'…'")
+          .replaceAll(RegExp(r'"[^"]*"'), '"…"');
+      return blanked.length > 60 ? '${blanked.substring(0, 59)}…' : blanked;
+    }
+    return 'script';
+  }
+
+  Future<T?> _invokeUntraced<T>(String method, [Object? arguments]) async {
     if (!supported) {
       throw const BuiltinLinuxException(
         'The built-in Linux runs on Android only.',

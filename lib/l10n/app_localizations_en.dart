@@ -17807,4 +17807,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneSetupStartChecking => 'Checking what\'s installed…';
+
+  @override
+  String get perfTraceTitle => 'Performance';
+
+  @override
+  String get perfTraceBody =>
+      'How long each step took while the app has been open: connecting, loading, every request to the server. Kept in memory only and cleared when the app closes. The report holds names and timings, never messages or passwords.';
+
+  @override
+  String get perfTraceCopy => 'Copy report';
+
+  @override
+  String get perfTraceClear => 'Clear';
+
+  @override
+  String get perfTraceCopied => 'Performance report copied';
+
+  @override
+  String get perfTraceEmpty => 'Nothing measured yet.';
+
+  @override
+  String get perfTraceSlowest => 'Slowest steps';
+
+  @override
+  String get perfTraceRecent => 'Latest steps';
+
+  @override
+  String perfTraceStatLine(int count, String p50, String p95, String max) {
+    return '$count× · typical $p50 · slow $p95 · longest $max';
+  }
+
+  @override
+  String perfTraceFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count failed',
+      one: '1 failed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String perfTraceAt(String time) {
+    return 'at $time';
+  }
+
+  @override
+  String perfTraceWithin(String parent) {
+    return 'in $parent';
+  }
 }

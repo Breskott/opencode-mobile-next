@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import 'models.dart';
+import '../diagnostics/perf_trace.dart';
 
 /// Which protocol generation answered a probe.
 ///
@@ -103,6 +104,7 @@ Future<ServerProbeResult> probeServerConnection({
           status != null && status >= 200 && status < 300,
     ),
   );
+  PerfTraceInterceptor.attach(dio, 'probe');
   final adapterFactory = serverProbeAdapterFactory;
   if (adapterFactory != null) dio.httpClientAdapter = adapterFactory();
   try {
