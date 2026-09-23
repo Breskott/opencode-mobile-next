@@ -62,7 +62,6 @@ String _outcomeLabel(AppLocalizations l10n, ManagedShell shell) =>
 /// live or what environment they were given. `FOO=1 /tmp/x/bin/flutter test
 /// && ./build.sh` reads "flutter test && build.sh". The full text is on the
 /// command's own screen.
-@visibleForTesting
 String shortCommand(String command) {
   final parts = command.trim().split(RegExp(r'\s+(&&|\|\||;|\|)\s+'));
   final joins = RegExp(

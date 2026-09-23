@@ -20,6 +20,7 @@ import '../../domain/prompt_attachment.dart';
 import '../../domain/context_capsule.dart';
 import '../../domain/background_work.dart';
 import '../../domain/background_agent_result.dart';
+import '../../domain/background_shell_result.dart';
 import '../../domain/session_handoff.dart';
 import '../../domain/session_history.dart';
 import '../../domain/transcript_search.dart';

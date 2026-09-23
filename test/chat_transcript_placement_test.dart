@@ -323,6 +323,38 @@ void main() {
     expect(find.text('python3 release_discovery.py'), findsOneWidget);
   });
 
+  testWidgets('a background command finishing at the end of a turn is '
+      'one line inside its work, not markup', (tester) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Run the tests')], created: 1),
+      _message('a1', 'assistant', [tool('t1', 'bash')], created: 2),
+      _message('a2', 'assistant', [tool('t2', 'read')], created: 3),
+      _message('n1', 'user', [
+        Part(
+          id: 'n1-p',
+          messageID: 'n1',
+          type: 'v2:notice',
+          toolName: 'synthetic',
+          filename: '/tmp/opencode/flutter/bin/flutter test',
+          text:
+              '<shell id="sh_1" state="completed" '
+              'command="/tmp/opencode/flutter/bin/flutter test">\n'
+              'All tests passed!\n\nCommand exited with code 0.\n</shell>',
+        ),
+      ], created: 4),
+    ]);
+
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.byKey(const Key('background-shell-result')), findsNothing);
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('background-shell-result')), findsOneWidget);
+    expect(find.text('flutter test'), findsOneWidget);
+    expect(find.textContaining('<shell'), findsNothing);
+    // The output waits behind a tap of its own.
+    expect(find.byKey(const Key('background-shell-output')), findsNothing);
+  });
+
   testWidgets('a thought titles its step and explains itself inside it', (
     tester,
   ) async {

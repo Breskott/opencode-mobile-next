@@ -612,6 +612,137 @@ class TranscriptMarker extends StatelessWidget {
 /// Full-width quiet card for `synthetic` / `system` / `skill` messages and
 /// completed/failed compaction: collapsed two-line preview, tap toggles the
 /// full text.
+/// A background command that finished, as one line like the work lines:
+/// the command as a person would say it and how it ended. The full command
+/// and its output open under it. OpenCode 2 files these as notices whose
+/// text is the raw `<shell …>` envelope; shown as it came, that was markup
+/// and a wall of output after every background run.
+class BackgroundShellResultRow extends StatefulWidget {
+  const BackgroundShellResultRow({super.key, required this.result});
+
+  final BackgroundShellResult result;
+
+  @override
+  State<BackgroundShellResultRow> createState() =>
+      _BackgroundShellResultRowState();
+}
+
+class _BackgroundShellResultRowState extends State<BackgroundShellResultRow> {
+  late bool _open = widget.result.outcome == BackgroundShellOutcome.failed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final strings = _chatL10n(context);
+    final result = widget.result;
+    final failed = result.outcome == BackgroundShellOutcome.failed;
+    final status = switch (result.outcome) {
+      BackgroundShellOutcome.finished => strings.workFinished,
+      BackgroundShellOutcome.stopped => strings.workStopped,
+      BackgroundShellOutcome.failed =>
+        result.exitCode == null
+            ? strings.chatUiBackgroundError
+            : strings.workExitCode(result.exitCode!),
+    };
+    final title = shortCommand(result.command);
+    final mono = theme.textTheme.bodySmall?.copyWith(
+      fontFamily: AppTheme.monoFamily,
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    return Column(
+      key: const Key('background-shell-result'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _open,
+          label: '$title, $status',
+          excludeSemantics: true,
+          child: InkWell(
+            onTap: () => setState(() => _open = !_open),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 4, 6),
+                child: Row(
+                  children: [
+                    Icon(
+                      AppIconography.terminal,
+                      size: 16,
+                      color: failed
+                          ? theme.colorScheme.error
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TitleWithDetail(
+                        gap: 8,
+                        title: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        detail: Text(
+                          status,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: failed
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    AnimatedRotation(
+                      turns: _open ? .5 : 0,
+                      duration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 150),
+                      child: Icon(
+                        AppIconography.chevronDown,
+                        size: 18,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_open)
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(28, 0, 4, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SelectableText(result.command, style: mono),
+                if (result.output.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 320),
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        result.output,
+                        key: const Key('background-shell-output'),
+                        style: mono,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class TranscriptNotice extends StatefulWidget {
   const TranscriptNotice({
     super.key,
@@ -791,6 +922,12 @@ class V2TranscriptRow extends StatelessWidget {
         onOpenChild: result.isKnownChild(parentSessionID, knownSessions)
             ? onOpenChild
             : null,
+      );
+    }
+    if (BackgroundShellResult.fromPart(part) case final shell?) {
+      return BackgroundShellResultRow(
+        key: ValueKey('background-shell-$messageId'),
+        result: shell,
       );
     }
     final kind = part.toolName ?? '';
@@ -1011,8 +1148,11 @@ void _markFoldedWork(List<MessageWithParts> messages, {bool liveTail = false}) {
         cutoff -= 1;
       }
     }
-    for (var i = 0; i < cutoff; i += 1) {
-      if (isText(entries[i]) || entries[i] is MessageWithParts) {
+    for (var i = 0; i < entries.length; i += 1) {
+      // Text folds only on the way to the answer; a notice (a background
+      // command finishing) is part of the work wherever it landed.
+      if ((isText(entries[i]) && i < cutoff) ||
+          entries[i] is MessageWithParts) {
         _foldedIntoWork[entries[i]] = true;
       }
     }
