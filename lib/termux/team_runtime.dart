@@ -11,7 +11,7 @@
 ///
 /// | Verb | Args | Phases written |
 /// |---|---|---|
-/// | `install` | `<manifest path or URL>` | downloading → verifying → installing-packages → installed; `failed:checksum-mismatch <name>` (exit 65), `failed:unsupported-arch`, `failed:manifest-*`, `failed:download`, `failed:packages` |
+/// | `install` | `<manifest path or URL>` | downloading → verifying → installing-packages → installed; `failed:checksum-mismatch <name>` (exit 65), `failed:unsupported-arch`, `failed:manifest-*`, `failed:download <kind> <host> <code>` (see [TeamDownloadFailure]), `failed:no-space`, `failed:packages` |
 /// | `init` | `<project path> [--city n] [--rig n]` | creating-city → city-ready; `failed:not-installed`, `failed:project-*`, `failed:gc-*` |
 /// | `start` | — | starting → ready (health ok within 120 s); `failed:no-city`, `failed:supervisor-exited`, `failed:health-timeout` |
 /// | `stop` | — | stopping → stopped |
@@ -201,6 +201,10 @@ class TeamRuntimeStatus {
   /// The `checksum-mismatch <name>` refusal of `install`.
   bool get checksumMismatch => reason?.startsWith('checksum-mismatch') ?? false;
 
+  /// Why a download of `install` failed, or null when [reason] is not a
+  /// download failure.
+  TeamDownloadFailure? get downloadFailure => TeamDownloadFailure.parse(reason);
+
   /// Parses the `aiteam.sh status` JSON line; [unreadable] when it is not
   /// JSON so a UI still has a phase to show.
   factory TeamRuntimeStatus.parse(String raw) {
@@ -275,6 +279,63 @@ class TeamRuntimeStatus {
       'TeamRuntimeStatus(${phase.name}${busy ? ' busy' : ''}'
       '${killedByAndroid ? ' killed' : ''}'
       '${lastError == null ? '' : ' error=$lastError'})';
+}
+
+/// What kind of network trouble stopped a download (`aiteam.sh` maps
+/// curl's exit code onto these).
+enum TeamDownloadFailureKind {
+  /// The host name did not resolve (curl 6).
+  dns,
+
+  /// Nothing answered on the host (curl 7).
+  connect,
+
+  /// The host took too long (curl 28).
+  timeout,
+
+  /// The secure connection failed: often a wrong clock or a proxy.
+  tls,
+
+  /// The server answered with an HTTP error status.
+  http,
+
+  /// The connection dropped mid-file.
+  interrupted,
+
+  /// The file could not be written on the phone.
+  write,
+
+  /// Anything else, or an older script that gave no detail.
+  other,
+}
+
+/// The `download <kind> <host> <code>` reason of a failed `install`: the
+/// kind of failure, the host that was asked, and the HTTP status (for
+/// [TeamDownloadFailureKind.http]) or curl's exit code.
+class TeamDownloadFailure {
+  const TeamDownloadFailure({required this.kind, this.host = '', this.code});
+
+  final TeamDownloadFailureKind kind;
+  final String host;
+  final int? code;
+
+  /// Null when [reason] is not a download failure; a bare `download` (no
+  /// detail) parses to [TeamDownloadFailureKind.other].
+  static TeamDownloadFailure? parse(String? reason) {
+    final parts = (reason ?? '').trim().split(RegExp(r'\s+'));
+    if (parts.first != 'download') return null;
+    final kind = parts.length > 1
+        ? TeamDownloadFailureKind.values.firstWhere(
+            (k) => k.name == parts[1],
+            orElse: () => TeamDownloadFailureKind.other,
+          )
+        : TeamDownloadFailureKind.other;
+    return TeamDownloadFailure(
+      kind: kind,
+      host: parts.length > 2 ? parts[2] : '',
+      code: parts.length > 3 ? int.tryParse(parts[3]) : null,
+    );
+  }
 }
 
 /// The pinned download manifest the app ships (`assets/aiteam/manifest.json`).

@@ -90,6 +90,9 @@ class _Fixture {
   final Directory root;
   final HttpServer server;
   final files = <String, List<int>>{};
+
+  /// Every file request, with the byte offset it asked to start at.
+  final served = <String>[];
   String manifestJson = '';
 
   String get home => '${root.path}/home';
@@ -192,9 +195,25 @@ class _Fixture {
     final path = request.uri.path;
     final response = request.response;
     if (path.startsWith('/aiteam/')) {
-      final body = files[path.substring('/aiteam/'.length)];
+      final name = path.substring('/aiteam/'.length);
+      final body = files[name];
+      // Byte ranges, as GitHub's CDN answers them, so a resumed download
+      // is exercised for real.
+      final range = RegExp(
+        r'^bytes=(\d+)-$',
+      ).firstMatch(request.headers.value(HttpHeaders.rangeHeader) ?? '');
+      final from = range == null ? 0 : int.parse(range.group(1)!);
+      served.add('$name@$from');
       if (body == null) {
         response.statusCode = 404;
+      } else if (from > 0 && from < body.length) {
+        response.statusCode = HttpStatus.partialContent;
+        response.headers.contentType = ContentType.binary;
+        response.headers.set(
+          HttpHeaders.contentRangeHeader,
+          'bytes $from-${body.length - 1}/${body.length}',
+        );
+        response.add(body.sublist(from));
       } else {
         response.headers.contentType = ContentType.binary;
         response.add(body);
@@ -453,6 +472,74 @@ void main() {
       final result = await fx.verb(['install', fx.manifestPath]);
       expect(result.exitCode, 65);
       expect(result.stdout, contains('checksum-mismatch gc'));
+    });
+
+    test('a refused download says which host and HTTP status', () async {
+      final dolt = fx.files.remove('dolt-2.3.3-android-arm64');
+      final result = await fx.verb(['install', fx.manifestPath]);
+      expect(result.exitCode, isNot(0));
+      final status = await fx.status();
+      final host = '127.0.0.1:${fx.server.port}';
+      expect(status.rawPhase, 'failed:download http $host 404');
+      expect(status.lastError, contains('$host answered HTTP 404'));
+      final failure = status.downloadFailure!;
+      expect(failure.kind, TeamDownloadFailureKind.http);
+      expect(failure.host, host);
+      expect(failure.code, 404);
+      expect(fx.log, contains('download failed: $host answered HTTP 404'));
+
+      // Try again once the file is back: what already came down stays, so
+      // only the missing file is fetched and the install completes.
+      fx.files['dolt-2.3.3-android-arm64'] = dolt!;
+      fx.served.clear();
+      await fx.install();
+      expect((await fx.status()).phase, TeamRuntimePhase.installed);
+      expect(fx.served, [
+        'dolt-2.3.3-android-arm64@0',
+        'opencode-wrapper.sh@0',
+      ]);
+      expect(fx.log, contains('already downloaded gc-1.4.1-android-arm64'));
+    });
+
+    test('a download cut off mid-file resumes where it stopped', () async {
+      final name = 'gc-1.4.1-android-arm64';
+      final body = fx.files[name]!;
+      Directory('${fx.aiteamDir}/tmp').createSync(recursive: true);
+      File(
+        '${fx.aiteamDir}/tmp/$name.part',
+      ).writeAsBytesSync(body.sublist(0, body.length ~/ 2));
+      await fx.install();
+      expect((await fx.status()).phase, TeamRuntimePhase.installed);
+      expect(fx.served, contains('$name@${body.length ~/ 2}'));
+      expect(fx.read('${fx.bin}/gc'), utf8.decode(body));
+    });
+
+    test('a corrupt leftover is thrown away, so Try again recovers', () async {
+      // Same size, wrong bytes: the checksum refuses it and drops every
+      // partial file, so the next attempt downloads cleanly instead of
+      // failing on the same leftover forever.
+      final name = 'bd-1.2.2-android-arm64';
+      Directory('${fx.aiteamDir}/tmp').createSync(recursive: true);
+      File(
+        '${fx.aiteamDir}/tmp/$name.part',
+      ).writeAsBytesSync(List.filled(fx.files[name]!.length, 0x41));
+      final first = await fx.verb(['install', fx.manifestPath]);
+      expect(first.exitCode, 65);
+      expect((await fx.status()).rawPhase, 'failed:checksum-mismatch bd');
+      await fx.install();
+      expect((await fx.status()).phase, TeamRuntimePhase.installed);
+    });
+
+    test('an unreachable server fails as connect with the host', () async {
+      final tampered = jsonDecode(fx.manifestJson) as Map<String, Object?>;
+      tampered['base_url'] = 'http://127.0.0.1:1/aiteam/';
+      File(fx.manifestPath).writeAsStringSync(jsonEncode(tampered));
+      final result = await fx.verb(['install', fx.manifestPath]);
+      expect(result.exitCode, isNot(0));
+      final status = await fx.status();
+      expect(status.rawPhase, 'failed:download connect 127.0.0.1:1 7');
+      expect(status.downloadFailure!.kind, TeamDownloadFailureKind.connect);
+      expect(status.lastError, contains('could not connect to 127.0.0.1:1'));
     });
 
     test('install takes the manifest from a URL too', () async {
@@ -875,6 +962,26 @@ void main() {
   });
 
   group('TeamRuntimeStatus', () {
+    test('parses the download failure detail', () {
+      final failure = TeamDownloadFailure.parse(
+        'download http github.com 404',
+      )!;
+      expect(failure.kind, TeamDownloadFailureKind.http);
+      expect(failure.host, 'github.com');
+      expect(failure.code, 404);
+      expect(
+        TeamDownloadFailure.parse('download')!.kind,
+        TeamDownloadFailureKind.other,
+      );
+      expect(
+        TeamDownloadFailure.parse('download brand-new h 1')!.kind,
+        TeamDownloadFailureKind.other,
+      );
+      expect(TeamDownloadFailure.parse('manifest-download'), isNull);
+      expect(TeamDownloadFailure.parse('checksum-mismatch gc'), isNull);
+      expect(TeamDownloadFailure.parse(null), isNull);
+    });
+
     test('parses every phase and the failed reason', () {
       for (final entry in {
         'idle': TeamRuntimePhase.idle,
@@ -946,45 +1053,45 @@ void main() {
   });
 
   group('TermuxTeamRuntime', () {
-    test(
-      'supportsAiTeam needs an arm64 device and an arm64 manifest',
-      () async {
-        final manifest = File('assets/aiteam/manifest.json').readAsStringSync();
-        final parsed = TeamRuntimeManifest.parse(manifest)!;
-        expect(parsed.arch, 'arm64');
-        expect(parsed.gascity, '1.4.1');
-        expect(parsed.baseUrl, 'http://100.126.15.6:8876/aiteam/');
-        expect(
-          manifest,
-          File('tool/host/aiteam-manifest-2026-09-11.json').readAsStringSync(),
-          reason: 'the asset is the pinned manifest',
-        );
-        Future<String> noRun(String script, {Duration? timeout}) async => '';
-        final phone = TermuxTeamRuntime(
-          runner: noRun,
-          manifestLoader: () async => manifest,
-          archProbe: () async => 'aarch64\n',
-        );
-        expect(await phone.supportsAiTeam, isTrue);
-        expect(await phone.unsupportedReason, isNull);
-        final x86 = TermuxTeamRuntime(
-          runner: noRun,
-          manifestLoader: () async => manifest,
-          archProbe: () async => 'x86_64',
-        );
-        expect(await x86.supportsAiTeam, isFalse);
-        expect(await x86.unsupportedReason, contains('64-bit ARM'));
-        final noManifest = TermuxTeamRuntime(
-          runner: noRun,
-          manifestLoader: () async => null,
-          archProbe: () async => 'aarch64',
-        );
-        expect(await noManifest.supportsAiTeam, isFalse);
-        expect(await noManifest.unsupportedReason, contains('ships no'));
-        expect(TeamRuntimeManifest.parse('{"schema":2}'), isNull);
-        expect(TeamRuntimeManifest.parse('nope'), isNull);
-      },
-    );
+    test('supportsAiTeam needs an arm64 device and an arm64 manifest', () async {
+      final manifest = File('assets/aiteam/manifest.json').readAsStringSync();
+      final parsed = TeamRuntimeManifest.parse(manifest)!;
+      expect(parsed.arch, 'arm64');
+      expect(parsed.gascity, '1.4.1');
+      expect(
+        parsed.baseUrl,
+        'https://github.com/Eslamasabry/opencode-mobile-next/releases/download/aiteam-assets-1/',
+      );
+      expect(
+        manifest,
+        File('tool/host/aiteam-manifest-2026-09-11.json').readAsStringSync(),
+        reason: 'the asset is the pinned manifest',
+      );
+      Future<String> noRun(String script, {Duration? timeout}) async => '';
+      final phone = TermuxTeamRuntime(
+        runner: noRun,
+        manifestLoader: () async => manifest,
+        archProbe: () async => 'aarch64\n',
+      );
+      expect(await phone.supportsAiTeam, isTrue);
+      expect(await phone.unsupportedReason, isNull);
+      final x86 = TermuxTeamRuntime(
+        runner: noRun,
+        manifestLoader: () async => manifest,
+        archProbe: () async => 'x86_64',
+      );
+      expect(await x86.supportsAiTeam, isFalse);
+      expect(await x86.unsupportedReason, contains('64-bit ARM'));
+      final noManifest = TermuxTeamRuntime(
+        runner: noRun,
+        manifestLoader: () async => null,
+        archProbe: () async => 'aarch64',
+      );
+      expect(await noManifest.supportsAiTeam, isFalse);
+      expect(await noManifest.unsupportedReason, contains('ships no'));
+      expect(TeamRuntimeManifest.parse('{"schema":2}'), isNull);
+      expect(TeamRuntimeManifest.parse('nope'), isNull);
+    });
 
     test(
       'a verb dispatches, polls status until idle and answers the last',

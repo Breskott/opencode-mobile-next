@@ -138,7 +138,7 @@ TeamPhoneStep teamPhoneFailedStep(TeamRuntimeStatus status) {
   if (status.phase == TeamRuntimePhase.ready) return TeamPhoneStep.start;
   if (reason == 'packages') return TeamPhoneStep.packages;
   if (reason.startsWith('checksum-mismatch') ||
-      reason == 'download' ||
+      status.downloadFailure != null ||
       reason == 'unsupported-arch' ||
       reason.startsWith('manifest')) {
     return TeamPhoneStep.download;
@@ -179,9 +179,9 @@ String teamPhoneFailureText(AppLocalizations l10n, TeamRuntimeStatus status) {
       detail.isEmpty ? '' : '${detail.split(':').last.trim()}.',
     );
   }
-  if (reason == 'download' || reason.startsWith('manifest')) {
-    return l10n.teamUiPhoneFailedDownload;
-  }
+  final download = status.downloadFailure;
+  if (download != null) return teamPhoneDownloadFailureText(l10n, download);
+  if (reason.startsWith('manifest')) return l10n.teamUiPhoneFailedDownload;
   if (reason == 'packages') return l10n.teamUiPhoneFailedPackages;
   if (reason.startsWith('project')) return l10n.teamUiPhoneFailedProject;
   if (reason.startsWith('gc-') ||
@@ -202,6 +202,39 @@ String teamPhoneFailureText(AppLocalizations l10n, TeamRuntimeStatus status) {
   return l10n.teamUiPhoneFailedReason(
     error.isNotEmpty ? error : (reason.isNotEmpty ? reason : status.rawPhase),
   );
+}
+
+/// Why a download failed, naming the server that was asked, so a user can
+/// tell a phone that is offline from a server that refused the file (issue
+/// #87: a download pointed at a private address failed as "did not finish").
+String teamPhoneDownloadFailureText(
+  AppLocalizations l10n,
+  TeamDownloadFailure failure,
+) {
+  final host = failure.host;
+  if (host.isEmpty) return l10n.teamUiPhoneFailedDownload;
+  final code = failure.code?.toString() ?? '?';
+  return switch (failure.kind) {
+    TeamDownloadFailureKind.dns => l10n.teamUiPhoneFailedDownloadDns(host),
+    TeamDownloadFailureKind.connect => l10n.teamUiPhoneFailedDownloadConnect(
+      host,
+    ),
+    TeamDownloadFailureKind.timeout => l10n.teamUiPhoneFailedDownloadTimeout(
+      host,
+    ),
+    TeamDownloadFailureKind.tls => l10n.teamUiPhoneFailedDownloadTls(host),
+    TeamDownloadFailureKind.http => l10n.teamUiPhoneFailedDownloadHttp(
+      host,
+      code,
+    ),
+    TeamDownloadFailureKind.interrupted =>
+      l10n.teamUiPhoneFailedDownloadInterrupted(host),
+    TeamDownloadFailureKind.write => l10n.teamUiPhoneFailedDownloadWrite,
+    TeamDownloadFailureKind.other => l10n.teamUiPhoneFailedDownloadOther(
+      host,
+      code,
+    ),
+  };
 }
 
 /// The Termux (managed) profile the on-device team belongs to, or null.
