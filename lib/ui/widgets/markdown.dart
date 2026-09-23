@@ -94,6 +94,13 @@ class _MarkdownTextState extends State<MarkdownText> {
   String? _parsedData;
   bool? _parsedSelectable;
 
+  /// Block widgets from the previous parse keyed by their kind and source.
+  /// A streaming reply only grows at its tail, so every block before the
+  /// tail comes back as the very same widget instance and Flutter skips
+  /// rebuilding it — no inline re-parse, no re-highlighting of closed code
+  /// fences — on each delta flush.
+  Map<String, Widget> _blocksBySource = const {};
+
   List<Widget> _blocksFor() {
     final cached = _blocks;
     if (cached != null &&
@@ -102,6 +109,7 @@ class _MarkdownTextState extends State<MarkdownText> {
       return cached;
     }
     MarkdownText.debugParseCount++;
+    if (_parsedSelectable != widget.selectable) _blocksBySource = const {};
     _parsedData = widget.data;
     _parsedSelectable = widget.selectable;
     return _blocks = _splitBlocks(widget.data);
@@ -127,14 +135,22 @@ class _MarkdownTextState extends State<MarkdownText> {
   List<Widget> _splitBlocks(String src) {
     final selectable = widget.selectable;
     final widgets = <Widget>[];
+    final previous = _blocksBySource;
+    final current = <String, Widget>{};
     final lines = src.replaceAll('\r\n', '\n').split('\n');
     var i = 0;
     var paragraph = <String>[];
 
+    void add(String source, Widget Function() create) {
+      widgets.add(current[source] ??= previous[source] ?? create());
+    }
+
     void flushParagraph() {
       if (paragraph.isEmpty) return;
-      widgets.add(
-        _RichLines(lines: List.of(paragraph), selectable: selectable),
+      final paragraphLines = List.of(paragraph);
+      add(
+        'p\u0000${paragraphLines.join('\n')}',
+        () => _RichLines(lines: paragraphLines, selectable: selectable),
       );
       paragraph.clear();
     }
@@ -151,6 +167,7 @@ class _MarkdownTextState extends State<MarkdownText> {
         final headers = _tableCells(line);
         final delimiter = _tableCells(lines[i + 1]);
         final rows = <List<String>>[];
+        final start = i;
         i += 2;
         while (i < lines.length) {
           final cells = _tableCells(lines[i]);
@@ -158,8 +175,13 @@ class _MarkdownTextState extends State<MarkdownText> {
           rows.add(cells);
           i++;
         }
-        widgets.add(
-          _MarkdownTable(headers: headers, delimiter: delimiter, rows: rows),
+        add(
+          't\u0000${lines.sublist(start, i).join('\n')}',
+          () => _MarkdownTable(
+            headers: headers,
+            delimiter: delimiter,
+            rows: rows,
+          ),
         );
         continue;
       }
@@ -181,12 +203,11 @@ class _MarkdownTextState extends State<MarkdownText> {
         // code still appears streamed, as plain monospace.
         final closed = i < lines.length;
         i++; // skip closing fence
-        widgets.add(
-          CodeBlock(
-            code: code.join('\n'),
-            language: lang,
-            highlightEnabled: closed,
-          ),
+        final source = code.join('\n');
+        add(
+          'c\u0000$lang\u0000$closed\u0000$source',
+          () =>
+              CodeBlock(code: source, language: lang, highlightEnabled: closed),
         );
         continue;
       }
@@ -196,7 +217,7 @@ class _MarkdownTextState extends State<MarkdownText> {
       if (h != null) {
         flushParagraph();
         final level = h.group(1)!.length;
-        widgets.add(_Heading(level: level, text: h.group(2)!));
+        add('h\u0000$line', () => _Heading(level: level, text: h.group(2)!));
         i++;
         continue;
       }
@@ -222,7 +243,8 @@ class _MarkdownTextState extends State<MarkdownText> {
           quote.add(lines[i].replaceFirst(RegExp(r'^\s*>\s?'), ''));
           i++;
         }
-        widgets.add(_Quote(text: quote.join('\n')));
+        final text = quote.join('\n');
+        add('q\u0000$text', () => _Quote(text: text));
         continue;
       }
 
@@ -234,7 +256,10 @@ class _MarkdownTextState extends State<MarkdownText> {
           items.add(lines[i].replaceFirst(RegExp(r'^\s*[-*+]\s+'), ''));
           i++;
         }
-        widgets.add(_List(items: items, ordered: false));
+        add(
+          'u\u0000${items.join('\n')}',
+          () => _List(items: items, ordered: false),
+        );
         continue;
       }
 
@@ -247,7 +272,10 @@ class _MarkdownTextState extends State<MarkdownText> {
           items.add(lines[i].replaceFirst(RegExp(r'^\s*\d+[.)]\s+'), ''));
           i++;
         }
-        widgets.add(_List(items: items, ordered: true));
+        add(
+          'o\u0000${items.join('\n')}',
+          () => _List(items: items, ordered: true),
+        );
         continue;
       }
 
@@ -262,6 +290,7 @@ class _MarkdownTextState extends State<MarkdownText> {
       i++;
     }
     flushParagraph();
+    _blocksBySource = current;
     return widgets;
   }
 }

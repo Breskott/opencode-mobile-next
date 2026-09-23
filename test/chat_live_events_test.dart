@@ -3105,6 +3105,49 @@ void main() {
     },
   );
 
+  testWidgets('the working caret blinks without drawing every frame', (
+    tester,
+  ) async {
+    final api = _FakeOpenCodeApi();
+    final controller = await _pumpChat(tester, api);
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Send'));
+    await _pumpEvent(tester);
+    controller.handleEventForTesting(
+      _event('session.status', {
+        'sessionID': 'session-1',
+        'status': {'type': 'busy'},
+      }),
+    );
+    await _pumpEvent(tester);
+    expect(find.byKey(const ValueKey('typing-indicator')), findsOneWidget);
+    // Unfocus so the text field's own cursor blink does not count here.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    double caretAlpha() {
+      final caret = tester.widget<Container>(
+        find.byKey(const ValueKey('typing-caret')),
+      );
+      return (caret.decoration! as BoxDecoration).color!.a;
+    }
+
+    // Two seconds at 60 Hz: a repeating animation asks for all ~120 frames;
+    // the timer-driven blink asks only when the caret actually flips.
+    final seen = <double>{};
+    var framesRequested = 0;
+    for (var i = 0; i < 120; i++) {
+      if (tester.binding.hasScheduledFrame) framesRequested++;
+      await tester.pump(const Duration(milliseconds: 16));
+      seen.add(caretAlpha());
+    }
+    expect(framesRequested, lessThan(12));
+    // It still blinks: both the lit and the dimmed caret were drawn.
+    expect(seen.length, 2);
+  });
+
   testWidgets('session errors stop thinking and remain visible in chat', (
     tester,
   ) async {

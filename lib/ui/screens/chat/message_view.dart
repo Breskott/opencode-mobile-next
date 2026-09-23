@@ -59,26 +59,39 @@ class _PromptErrorBanner extends StatelessWidget {
 }
 
 /// A terminal-style block caret that blinks while the assistant works.
-class __TypingIndicatorState extends State<_TypingIndicator>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  );
-  bool _animating = false;
+///
+/// The blink is a hard two-state toggle, so it runs on a timer rather than a
+/// repeating animation: a ticker would draw a frame every vsync for the whole
+/// run just to change the caret twice a second, and that steady frame load
+/// is what made streaming stutter on phones also hosting the server.
+class __TypingIndicatorState extends State<_TypingIndicator> {
+  static const _onFor = Duration(milliseconds: 605);
+  static const _offFor = Duration(milliseconds: 495);
+
+  Timer? _blink;
+  bool _lit = true;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final animate = !MediaQuery.disableAnimationsOf(context);
-    if (animate == _animating) return;
-    _animating = animate;
-    if (animate) {
-      _c.repeat();
-    } else {
-      _c.stop();
-      _c.value = 0;
-    }
+    // Blink only when motion is allowed and the route is on screen; the
+    // ticker-mode check stops covered routes from redrawing in the dark.
+    final animate =
+        !MediaQuery.disableAnimationsOf(context) &&
+        TickerMode.valuesOf(context).enabled;
+    if (animate == (_blink != null)) return;
+    _blink?.cancel();
+    _blink = null;
+    _lit = true;
+    if (animate) _scheduleBlink();
+  }
+
+  void _scheduleBlink() {
+    _blink = Timer(_lit ? _onFor : _offFor, () {
+      if (!mounted) return;
+      setState(() => _lit = !_lit);
+      _scheduleBlink();
+    });
   }
 
   @override
@@ -92,18 +105,17 @@ class __TypingIndicatorState extends State<_TypingIndicator>
         padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
         child: Row(
           children: [
-            AnimatedBuilder(
-              animation: _c,
-              builder: (context, child) => Opacity(
-                // A hard on/off blink like a terminal caret, not a pulse.
-                opacity: _c.value < .55 ? 1 : .18,
-                child: child,
-              ),
+            // A hard on/off blink like a terminal caret, not a pulse; the
+            // dim state is baked into the colour so no layer is composited.
+            RepaintBoundary(
               child: Container(
+                key: const ValueKey('typing-caret'),
                 width: 9,
                 height: 17,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
+                  color: theme.colorScheme.primary.withValues(
+                    alpha: _lit ? 1 : .18,
+                  ),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -124,7 +136,7 @@ class __TypingIndicatorState extends State<_TypingIndicator>
 
   @override
   void dispose() {
-    _c.dispose();
+    _blink?.cancel();
     super.dispose();
   }
 }

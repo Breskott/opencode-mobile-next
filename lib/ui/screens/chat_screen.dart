@@ -3708,85 +3708,95 @@ class _ChatScreenState extends State<ChatScreen>
                                               constraints: const BoxConstraints(
                                                 maxWidth: 860,
                                               ),
-                                              child: ScrollablePositionedList.builder(
-                                                reverse: true,
-                                                itemScrollController:
-                                                    _messageScroll,
-                                                itemPositionsListener:
-                                                    _messagePositions,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 10,
-                                                    ),
-                                                itemCount:
-                                                    _renderedMessageCount +
-                                                    (busy ? 1 : 0),
-                                                itemBuilder: (context, i) {
-                                                  final index =
-                                                      _renderedMessageCount -
-                                                      1 -
-                                                      i;
-                                                  if (index < 0) {
-                                                    return _TypingIndicator();
-                                                  }
-                                                  final m = _messages[index];
-                                                  if (v2VariantPart(m)
-                                                      case final tagged?) {
-                                                    return V2TranscriptRow(
+                                              // Scrolling repaints up to the
+                                              // nearest boundary; without one
+                                              // that is the whole route, so
+                                              // every scroll frame redrew the
+                                              // composer and its soft shadow.
+                                              child: RepaintBoundary(
+                                                key: const ValueKey(
+                                                  'transcript-repaint-boundary',
+                                                ),
+                                                  child: ScrollablePositionedList.builder(
+                                                  reverse: true,
+                                                  itemScrollController:
+                                                      _messageScroll,
+                                                  itemPositionsListener:
+                                                      _messagePositions,
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 10,
+                                                      ),
+                                                  itemCount:
+                                                      _renderedMessageCount +
+                                                      (busy ? 1 : 0),
+                                                  itemBuilder: (context, i) {
+                                                    final index =
+                                                        _renderedMessageCount -
+                                                        1 -
+                                                        i;
+                                                    if (index < 0) {
+                                                      return _TypingIndicator();
+                                                    }
+                                                    final m = _messages[index];
+                                                    if (v2VariantPart(m)
+                                                        case final tagged?) {
+                                                      return V2TranscriptRow(
+                                                        key: ValueKey(
+                                                          'message-${m.info.id}',
+                                                        ),
+                                                        part: tagged,
+                                                        messageId: m.info.id,
+                                                      );
+                                                    }
+                                                    final meta = _messageMeta(
+                                                      _messages,
+                                                      index,
+                                                    );
+                                                    final parts =
+                                                        displayParts[index];
+                                                    if (parts.isEmpty &&
+                                                        meta.isEmpty &&
+                                                        m.info.errorText ==
+                                                            null) {
+                                                      return const SizedBox.shrink();
+                                                    }
+                                                    return _MessageView(
                                                       key: ValueKey(
                                                         'message-${m.info.id}',
                                                       ),
-                                                      part: tagged,
-                                                      messageId: m.info.id,
-                                                    );
-                                                  }
-                                                  final meta = _messageMeta(
-                                                    _messages,
-                                                    index,
-                                                  );
-                                                  final parts =
-                                                      displayParts[index];
-                                                  if (parts.isEmpty &&
-                                                      meta.isEmpty &&
-                                                      m.info.errorText ==
-                                                          null) {
-                                                    return const SizedBox.shrink();
-                                                  }
-                                                  return _MessageView(
-                                                    key: ValueKey(
-                                                      'message-${m.info.id}',
-                                                    ),
-                                                    m: m,
-                                                    meta: meta,
-                                                    parts: parts,
-                                                    reasoningExpanded: _conn
-                                                        .transcriptReasoningExpanded,
-                                                    expansionStore:
-                                                        _transcriptExpansion,
-                                                    showTimestamp: _conn
-                                                        .transcriptTimestampsVisible,
-                                                    highlighted:
-                                                        _highlightedMessageID ==
-                                                        m.info.id,
-                                                    onLongPress: () =>
-                                                        unawaited(
-                                                          _showMessageActions(
+                                                      m: m,
+                                                      meta: meta,
+                                                      parts: parts,
+                                                      reasoningExpanded: _conn
+                                                          .transcriptReasoningExpanded,
+                                                      expansionStore:
+                                                          _transcriptExpansion,
+                                                      showTimestamp: _conn
+                                                          .transcriptTimestampsVisible,
+                                                      highlighted:
+                                                          _highlightedMessageID ==
+                                                          m.info.id,
+                                                      onLongPress: () =>
+                                                          unawaited(
+                                                            _showMessageActions(
+                                                              m,
+                                                            ),
+                                                          ),
+                                                      contextActions: () =>
+                                                          _messageContextActions(
                                                             m,
                                                           ),
-                                                        ),
-                                                    contextActions: () =>
-                                                        _messageContextActions(
-                                                          m,
-                                                        ),
-                                                    filePreviewLoader:
-                                                        _loadToolOutputFile,
-                                                    onAttachFile:
-                                                        _attachToolOutputFile,
-                                                    onDownloadFile:
-                                                        _downloadToolOutputFile,
-                                                  );
-                                                },
+                                                      filePreviewLoader:
+                                                          _loadToolOutputFile,
+                                                      onAttachFile:
+                                                          _attachToolOutputFile,
+                                                      onDownloadFile:
+                                                          _downloadToolOutputFile,
+                                                    );
+                                                  },
+                                                ),
                                               ),
                                             ),
                                             if (_awayFromLatest)
