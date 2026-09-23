@@ -276,6 +276,14 @@ class ConnectionController extends ChangeNotifier {
   bool _lifecycleSuspended = false;
   bool _lifecycleWasBackgrounded = false;
   Future<void>? _lifecycleResume;
+
+  /// Completes once the wake-time transport can carry requests, which is
+  /// usually long before the sessions, permissions and model catalog behind
+  /// it have reloaded. Foreground actions wait on this, not on the reload:
+  /// OpenCode 1 answers `/provider` with a multi-megabyte catalog that a
+  /// phone-hosted server takes seconds to build, and every settings check or
+  /// sent message used to sit behind it after each app switch.
+  Future<void>? _lifecycleTransportReady;
   Future<void>? _manualReconnect;
 
   /// True only while the app intentionally has its transport retired in the
@@ -482,7 +490,7 @@ class ConnectionController extends ChangeNotifier {
 
   void _backgroundLiveChanged() {
     if (keepLiveInBackground) {
-      unawaited(_ensureLocalServerWakeLock());
+      _ensureLocalServerWakeLock();
     } else {
       _dismissAllCodingAlerts(clearActive: true);
     }
@@ -621,17 +629,22 @@ class ConnectionController extends ChangeNotifier {
     if (clearActive) _attentionActiveSessions.clear();
   }
 
-  Future<void> _ensureLocalServerWakeLock() async {
+  /// Asks Termux to hold its wake lock without waiting for the answer. The
+  /// request round-trips through Termux's command service and can take up to
+  /// its ten-second timeout; nothing the app does next depends on it, and
+  /// awaiting it put that delay in front of every connect and every return
+  /// to the app.
+  void _ensureLocalServerWakeLock() {
     if (_disposed || !keepLiveInBackground) return;
     final profile = _connectedProfile;
     if (profile == null || !_isLoopbackUrl(profile.baseUrl)) return;
-    try {
-      await _localWakeLockEnsurer();
-    } catch (_) {
-      // The profile may point at a developer server rather than managed
-      // Termux. Transport recovery must continue even when the bridge is not
-      // installed or Android has revoked its command permission.
-    }
+    unawaited(
+      Future<void>.sync(_localWakeLockEnsurer).catchError((Object _) {
+        // The profile may point at a developer server rather than managed
+        // Termux. Transport recovery must continue even when the bridge is
+        // not installed or Android has revoked its command permission.
+      }),
+    );
   }
 
   static bool _isLoopbackUrl(String value) {
@@ -808,6 +821,7 @@ class ConnectionController extends ChangeNotifier {
     _lifecycleSuspended = false;
     _lifecycleWasBackgrounded = false;
     _lifecycleResume = null;
+    _lifecycleTransportReady = null;
     final validationError = validateServerProfileUrl(
       profile.baseUrl,
       username: profile.username,
@@ -857,7 +871,7 @@ class ConnectionController extends ChangeNotifier {
     if (!_isCurrent(generation, currentApi)) return;
 
     try {
-      await _ensureLocalServerWakeLock();
+      _ensureLocalServerWakeLock();
       final health = await currentApi.health();
       if (!_isCurrent(generation, currentApi)) return;
       if (!health.healthy) {
@@ -1353,6 +1367,7 @@ class ConnectionController extends ChangeNotifier {
     _lifecycleSuspended = false;
     _lifecycleWasBackgrounded = false;
     _lifecycleResume = null;
+    _lifecycleTransportReady = null;
     _manualReconnect = null;
     final generation = _beginGeneration();
     _retireTransport();
@@ -2680,6 +2695,7 @@ class ConnectionController extends ChangeNotifier {
     // A resume already in flight is invalidated by the generation change
     // below. Detach it so a later resume can create a fresh transport.
     _lifecycleResume = null;
+    _lifecycleTransportReady = null;
     if (api == null) return;
     _beginGeneration();
     _retireTransport();
@@ -2697,7 +2713,10 @@ class ConnectionController extends ChangeNotifier {
       if (keepLiveInBackground && _lifecycleWasBackgrounded) {
         _lifecycleWasBackgrounded = false;
         _dismissAllCodingAlerts(clearActive: true);
-        return _trackLifecycleResume(_reconcileAfterBackground());
+        return _trackLifecycleResume(
+          (transportReady) =>
+              _reconcileAfterBackground(onTransportReady: transportReady),
+        );
       }
       return Future.value();
     }
@@ -2707,10 +2726,11 @@ class ConnectionController extends ChangeNotifier {
     final profile = _connectedProfile;
     if (profile == null) return Future.value();
     return _trackLifecycleResume(
-      _resumeLifecycleTransport(
+      (transportReady) => _resumeLifecycleTransport(
         profile,
         directory: directory,
         workspace: workspace,
+        onTransportReady: transportReady,
       ),
     );
   }
@@ -2750,20 +2770,32 @@ class ConnectionController extends ChangeNotifier {
     return tracked;
   }
 
-  Future<void> _trackLifecycleResume(Future<void> operation) {
+  /// Runs one wake-time recovery. [start] receives a callback it invokes as
+  /// soon as the transport answers; the returned future still covers the
+  /// data reload behind it.
+  Future<void> _trackLifecycleResume(
+    Future<void> Function(void Function() transportReady) start,
+  ) {
+    final ready = Completer<void>();
+    void transportReady() {
+      if (!ready.isCompleted) ready.complete();
+    }
+
     late final Future<void> tracked;
-    tracked = operation.whenComplete(() {
-      if (identical(_lifecycleResume, tracked)) _lifecycleResume = null;
+    tracked = start(transportReady).whenComplete(() {
+      // A recovery that failed or was superseded never reported a ready
+      // transport; release waiting actions so they see the outcome.
+      transportReady();
+      if (identical(_lifecycleResume, tracked)) {
+        _lifecycleResume = null;
+        _lifecycleTransportReady = null;
+      }
     });
     _lifecycleResume = tracked;
+    _lifecycleTransportReady = ready.future;
     return tracked;
   }
 
-  /// Waits until wake-time transport and catalog reconciliation completes,
-  /// then returns the API instance that foreground actions should use.
-  ///
-  /// Chat and other retained screens must not capture [api] before this
-  /// future completes because a stale background transport may be replaced.
   OfflineQueueStore get _queueStore =>
       _offlineQueueStore ??= OfflineQueueStore(prefs: store.prefs);
 
@@ -3107,8 +3139,17 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
+  /// Waits until the wake-time transport answers, then returns the API
+  /// instance that foreground actions should use. The data reload that
+  /// follows a wake is not awaited.
+  ///
+  /// Chat and other retained screens must not capture [api] before this
+  /// future completes because a stale background transport may be replaced.
   Future<ServerGateway?> prepareActionTransport() async {
-    await resumeFromLifecycle();
+    final resume = resumeFromLifecycle();
+    // Only the transport matters to an action; the sessions and catalog
+    // reload that follows a wake keeps running behind it.
+    await (_lifecycleTransportReady ?? resume);
     if (_disposed || _lifecycleSuspended) return null;
     return api;
   }
@@ -3156,13 +3197,14 @@ class ConnectionController extends ChangeNotifier {
     await (await _requireActionTransport()).deleteSession(sessionID);
   }
 
-  Future<void> _reconcileAfterBackground() async {
+  Future<void> _reconcileAfterBackground({
+    void Function()? onTransportReady,
+  }) async {
     final currentApi = api;
     if (currentApi == null) return;
     final generation = _generation;
     try {
-      await _ensureLocalServerWakeLock();
-      if (!_isCurrent(generation, currentApi)) return;
+      _ensureLocalServerWakeLock();
       final health = await currentApi.health();
       if (!_isCurrent(generation, currentApi)) return;
       if (!health.healthy) {
@@ -3177,23 +3219,35 @@ class ConnectionController extends ChangeNotifier {
         profile,
         directory: directory,
         workspace: workspace,
+        onTransportReady: onTransportReady,
       );
       return;
     }
+    onTransportReady?.call();
     _markDataRefreshReady(generation, currentApi);
     notifyListeners();
-    await Future.wait([
+    await _reloadRetainedLocationData();
+  }
+
+  /// Reloads what a wake or reconnect may have missed. The model catalog
+  /// goes last: on OpenCode 1 its `/provider` answer is several megabytes the
+  /// server serialises on its only thread, so sessions, permissions and
+  /// questions requested alongside it waited for it too. The previous
+  /// catalog stays on screen until the new one lands.
+  Future<void> _reloadRetainedLocationData() async {
+    await Future.wait<void>([
       refreshSessions(),
-      refreshCatalog(),
       refreshPendingPermissions(),
       refreshPendingQuestions(),
     ]);
+    await _loadCatalog();
   }
 
   Future<void> _resumeLifecycleTransport(
     ServerProfile profile, {
     String? directory,
     String? workspace,
+    void Function()? onTransportReady,
   }) async {
     final generation = _beginGeneration();
     _retireTransport();
@@ -3210,8 +3264,7 @@ class ConnectionController extends ChangeNotifier {
     notifyListeners();
     enablePollingFallback();
     try {
-      await _ensureLocalServerWakeLock();
-      if (!_isCurrent(generation, currentApi)) return;
+      _ensureLocalServerWakeLock();
       final health = await currentApi.health();
       if (!_isCurrent(generation, currentApi)) return;
       if (!health.healthy) {
@@ -3229,13 +3282,9 @@ class ConnectionController extends ChangeNotifier {
       return;
     }
     _startEvents(generation, currentApi);
+    onTransportReady?.call();
     _markDataRefreshReady(generation, currentApi);
-    await Future.wait<void>([
-      refreshSessions(),
-      _loadCatalog(),
-      refreshPendingPermissions(),
-      refreshPendingQuestions(),
-    ]);
+    await _reloadRetainedLocationData();
   }
 
   @override
