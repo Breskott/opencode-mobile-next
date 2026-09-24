@@ -147,8 +147,8 @@ class BuiltinTeam {
   ///   `phone-upkeep` order ([upkeepOrder]), never side by side.
   ///
   /// Measured on the Android 15 emulator (docs/qa/aiteam-builtin-2026-09-24,
-  /// Run 3): at the tallest moment (37) the orders were 17 of the
-  /// processes, ten of them `dolt-health` alone (a report nobody reads on a
+  /// Run 3): at the tallest moment (37) the orders were 18 of the
+  /// processes, 11 of them `dolt-health` alone (a report nobody reads on a
   /// phone; the supervisor's own watchdog keeps Dolt up), with
   /// `nudge-on-route` and `cascade-nudge-on-blocker-close` firing on the
   /// agents' own bead updates at the same moment. A task given with
