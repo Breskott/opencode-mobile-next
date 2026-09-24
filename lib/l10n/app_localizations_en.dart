@@ -17708,6 +17708,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Try again, or enter its path instead.';
 
   @override
+  String get folderBrowserErrorTimedOut =>
+      'It took too long to answer. Try again.';
+
+  @override
   String get folderBrowserRetry => 'Try again';
 
   @override

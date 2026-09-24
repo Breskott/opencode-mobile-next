@@ -28631,6 +28631,12 @@ abstract class AppLocalizations {
   /// **'Try again, or enter its path instead.'**
   String get folderBrowserErrorFailed;
 
+  /// Error body: listing the folder did not answer in time
+  ///
+  /// In en, this message translates to:
+  /// **'It took too long to answer. Try again.'**
+  String get folderBrowserErrorTimedOut;
+
   /// Action that lists the folder again after an error
   ///
   /// In en, this message translates to:

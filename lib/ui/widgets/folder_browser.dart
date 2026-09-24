@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../builtin/builtin_folders.dart';
-import '../../builtin/builtin_linux.dart';
 import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
@@ -36,8 +35,9 @@ final class FolderBrowserEnterPath extends FolderBrowserChoice {
   final String startPath;
 }
 
-/// "Open a project" for OpenCode inside the app: the folders of its Ubuntu,
-/// browsed from the projects folder. The list is the content: a project
+/// "Open a project" for a server on this phone (OpenCode inside the app, or
+/// the one this app runs in Termux): the folders of its Ubuntu, browsed from
+/// the projects folder; [list] says how they are read. The list is the content: a project
 /// (a git repository, a project OpenCode knows, or any folder straight in
 /// the projects folder) opens with a tap, and its chevron shows what is in
 /// it; any other folder is gone into with a tap. "Up one folder" goes back
@@ -52,7 +52,7 @@ class FolderBrowserSheet extends StatefulWidget {
     super.key,
     required this.list,
     this.knownProjects,
-    this.start = BuiltinLinux.projectsDir,
+    this.start = managedProjectsDirectory,
   });
 
   final FolderLister list;
@@ -149,13 +149,13 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
       (entry.isGit ||
           _known.contains(entry.path) ||
           BuiltinRootfsFolders.parentOf(entry.path) ==
-              BuiltinLinux.projectsDir);
+              managedProjectsDirectory);
 
   /// The folder shown can be opened as it is: not home or `/`, and not the
   /// projects folder that holds the projects.
   bool get _canOpenHere =>
       !isProtectedWorkspaceDirectory(_path) &&
-      _path != BuiltinLinux.projectsDir;
+      _path != managedProjectsDirectory;
 
   void _create() {
     final name = _name.text.trim();
@@ -249,7 +249,7 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
     } else if (error != null) {
       state = _errorState(l10n, error);
     } else if (entries != null && entries.isEmpty) {
-      final projects = _path == BuiltinLinux.projectsDir;
+      final projects = _path == managedProjectsDirectory;
       state = KitStateView(
         size: KitStateSize.inline,
         icon: AppIconography.folderOpen,
@@ -349,6 +349,7 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
         FolderListProblem.missing => l10n.folderBrowserErrorMissing,
         FolderListProblem.denied => l10n.folderBrowserErrorDenied,
         FolderListProblem.linked => l10n.folderBrowserErrorLinked,
+        FolderListProblem.timedOut => l10n.folderBrowserErrorTimedOut,
         _ => l10n.folderBrowserErrorFailed,
       },
       secondary: KitAction(
@@ -368,7 +369,7 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
         ? null
         : isProtectedWorkspaceDirectory(_path)
         ? l10n.folderBrowserHomeHere
-        : _path == BuiltinLinux.projectsDir
+        : _path == managedProjectsDirectory
         ? l10n.folderBrowserProjectsHere
         : null;
     final field = TextField(

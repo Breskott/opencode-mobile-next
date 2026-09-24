@@ -7,8 +7,10 @@ import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../termux/bridge.dart';
+import '../../termux/termux_folders.dart';
 import '../widgets/folder_browser.dart';
 import '../widgets/product_states.dart';
+import '../widgets/termux_running_server_entry.dart' show isManagedPhoneProfile;
 
 /// The ways a workspace gets a project folder: create one on a server this
 /// app runs (Termux, or OpenCode inside the app), pick one of its projects,
@@ -85,12 +87,13 @@ class ProjectFolderActions {
   @visibleForTesting
   static FolderLister? folderListerOverride;
 
-  /// OpenCode inside the app: browse its folders from the projects folder
-  /// and open one, name a new project in the folder shown, or enter a path.
-  /// Any other server: enter a path, which is confirmed on the server
-  /// before it opens (OpenCode lists files only inside the project it is
-  /// asked about, so its folders cannot be browsed from here). Returns the
-  /// opened directory, or null when cancelled or refused.
+  /// A server on this phone (OpenCode inside the app, or the one this app
+  /// runs in Termux): browse its folders from the projects folder and open
+  /// one, name a new project in the folder shown, or enter a path. Any other
+  /// server: enter a path, which is confirmed on the server before it opens
+  /// (OpenCode lists files only inside the project it is asked about, so its
+  /// folders cannot be browsed from here). Returns the opened directory, or
+  /// null when cancelled or refused.
   static Future<String?> openFolder(
     BuildContext context,
     ConnectionController controller,
@@ -126,7 +129,81 @@ class ProjectFolderActions {
       };
     }
     if (!context.mounted) return null;
+    if (await _termuxBrowsable(controller)) {
+      if (!context.mounted) return null;
+      final termux = TermuxFolders();
+      final choice = await showModalBottomSheet<FolderBrowserChoice>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => FolderBrowserSheet(
+          list: folderListerOverride ?? termux.list,
+          knownProjects: () => _knownProjects(controller),
+        ),
+      );
+      if (choice == null || !context.mounted) return null;
+      return switch (choice) {
+        FolderBrowserOpen(:final path) => _open(context, controller, path),
+        FolderBrowserCreate(:final path) => _createInTermux(
+          context,
+          controller,
+          termux,
+          path,
+        ),
+        FolderBrowserEnterPath(:final startPath) => _openByPath(
+          context,
+          controller,
+          null,
+          startPath: startPath,
+        ),
+      };
+    }
+    if (!context.mounted) return null;
     return _openByPath(context, controller, null);
+  }
+
+  /// The server in use is the one this app runs in Termux, and Termux can
+  /// run the app's commands now (installed, its service there, the app
+  /// allowed to use it). Then its folders are listed through Termux; any
+  /// other server has no way to list folders outside its project.
+  static Future<bool> _termuxBrowsable(ConnectionController controller) async {
+    final profile = controller.profile;
+    if (profile == null ||
+        !TermuxBridge.supported ||
+        !isManagedPhoneProfile(profile)) {
+      return false;
+    }
+    try {
+      final termux = await TermuxBridge.capabilities();
+      return termux.installed &&
+          termux.serviceAvailable &&
+          termux.protocolSupported &&
+          termux.permissionGranted;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Makes [path] in Termux's Ubuntu (or finds it already there) and opens
+  /// it.
+  static Future<String?> _createInTermux(
+    BuildContext context,
+    ConnectionController controller,
+    TermuxFolders termux,
+    String path,
+  ) async {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final ({String path, bool created}) made;
+    try {
+      made = await termux.create(path);
+    } on FolderListException catch (error) {
+      if (context.mounted) {
+        _notify(context, l10n.projectFolderCreateFailed(error.toString()));
+      }
+      return null;
+    }
+    if (!context.mounted) return null;
+    return _open(context, controller, made.path);
   }
 
   /// The folders the connected OpenCode already has as projects, for the

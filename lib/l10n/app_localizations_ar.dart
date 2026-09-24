@@ -17965,6 +17965,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'حاول مرة أخرى، أو أدخل مساره بدلًا من ذلك.';
 
   @override
+  String get folderBrowserErrorTimedOut =>
+      'لم يأتِ رد في الوقت المناسب. حاول مرة أخرى.';
+
+  @override
   String get folderBrowserRetry => 'حاول مرة أخرى';
 
   @override

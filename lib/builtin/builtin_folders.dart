@@ -37,6 +37,9 @@ enum FolderListProblem {
   /// The path is not a plain absolute path.
   invalid,
 
+  /// No answer in time (Termux, where each listing is a round trip).
+  timedOut,
+
   /// Anything else the filesystem said.
   failed,
 }

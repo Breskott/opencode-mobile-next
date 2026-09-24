@@ -19235,6 +19235,10 @@
   "@folderBrowserErrorFailed": {
     "description": "Error body: listing failed for another reason"
   },
+  "folderBrowserErrorTimedOut": "It took too long to answer. Try again.",
+  "@folderBrowserErrorTimedOut": {
+    "description": "Error body: listing the folder did not answer in time"
+  },
   "folderBrowserRetry": "Try again",
   "@folderBrowserRetry": {
     "description": "Action that lists the folder again after an error"

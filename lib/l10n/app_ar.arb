@@ -4747,6 +4747,7 @@
   "folderBrowserErrorDenied": "لا يُسمح للتطبيق بقراءته.",
   "folderBrowserErrorLinked": "إنه رابط. أدخل مساره بدلًا من ذلك.",
   "folderBrowserErrorFailed": "حاول مرة أخرى، أو أدخل مساره بدلًا من ذلك.",
+  "folderBrowserErrorTimedOut": "لم يأتِ رد في الوقت المناسب. حاول مرة أخرى.",
   "folderBrowserRetry": "حاول مرة أخرى",
   "builtinServerEntryAction": "إعداده",
   "phoneSetupStartScreenTitle": "على هذا الهاتف",
