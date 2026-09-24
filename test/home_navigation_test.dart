@@ -15,7 +15,9 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
+import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -409,6 +411,45 @@ void main() {
       'Settings',
     );
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('switching destinations fades through: the tab being left '
+      'clears before the chosen one shows, never both half-visible', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = await _controller();
+    addTearDown(controller.dispose);
+    await _pumpShell(tester, controller);
+    expect(
+      tester
+          .widget<NavigationBar>(find.byType(NavigationBar))
+          .animationDuration,
+      KitMotion.standard,
+    );
+
+    double opacityOf(Type screen) => tester
+        .widget<Opacity>(
+          find
+              .ancestor(of: find.byType(screen), matching: find.byType(Opacity))
+              .first,
+        )
+        .opacity;
+
+    await tester.tap(find.byIcon(AppIconography.activity));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+    expect(opacityOf(ActivityScreen), 0);
+    expect(opacityOf(WorkspaceScreen), inExclusiveRange(0, 1));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(opacityOf(ActivityScreen), inExclusiveRange(0, 1));
+    await tester.pumpAndSettle();
+    expect(opacityOf(ActivityScreen), 1);
+    // The status dot is still while connected: nothing runs at rest.
+    expect(tester.binding.transientCallbackCount, 0);
   });
 
   testWidgets(

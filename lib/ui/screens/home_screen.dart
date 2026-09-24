@@ -13,10 +13,12 @@ import '../../state/first_run.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../desktop/shortcuts.dart';
+import '../kit/kit_motion.dart';
+import '../kit/motion/kit_reveal.dart';
+import '../kit/motion/kit_tab_switcher.dart';
 import '../navigation/chat_route.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/glass_surface.dart';
-import '../widgets/retained_tab_view.dart';
 import '../widgets/phone_server_card.dart';
 import '../widgets/phone_server_restart.dart';
 import '../widgets/server_switcher_sheet.dart';
@@ -347,11 +349,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 // Work says it itself, in its one status line and only
                 // once reconnecting has taken a while (work-tab cleanup item
                 // 3); a rejected password keeps the banner and its fix.
-                if (conn.status != StreamStatus.connected &&
-                    (activeTab != _workTab || conn.passwordRejected))
-                  ConnectionStatusBanner(controller: conn),
+                // It unfolds and folds (§10) rather than pushing the tab
+                // down in one frame.
+                KitReveal(
+                  child:
+                      conn.status != StreamStatus.connected &&
+                          (activeTab != _workTab || conn.passwordRejected)
+                      ? ConnectionStatusBanner(controller: conn)
+                      : null,
+                ),
                 Expanded(
-                  child: RetainedTabView(
+                  child: KitTabSwitcher(
                     index: activeTab,
                     reduceMotion: GlassSurface.reduceEffects(context),
                     children: tabs,
@@ -579,7 +587,7 @@ class _ShellNavigationState extends State<_ShellNavigation> {
           ),
           animationDuration: GlassSurface.reduceEffects(context)
               ? Duration.zero
-              : RetainedTabView.duration,
+              : KitMotion.standard,
           selectedIndex: widget.selectedIndex,
           onDestinationSelected: widget.onSelected,
           destinations: widget.destinations,
@@ -643,13 +651,20 @@ class _WorkspaceAppBarTitle extends StatelessWidget {
         ),
       ),
     );
-    final page = Text(
-      tabTitle,
-      key: const ValueKey('current-tab-title'),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.labelSmall?.copyWith(
-        color: AppTheme.mutedOf(theme),
+    // The destination's name settles in with the tab (§10): one Text, so
+    // there is never a second, fading copy of it.
+    final page = KitEntrance(
+      trigger: tabTitle,
+      onMount: false,
+      rise: 3,
+      child: Text(
+        tabTitle,
+        key: const ValueKey('current-tab-title'),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: AppTheme.mutedOf(theme),
+        ),
       ),
     );
     final server = Row(
@@ -715,7 +730,7 @@ class _StatusDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final (tone, pulse) = switch (status) {
+    final (tone, waiting) = switch (status) {
       StreamStatus.connected => (AppStatusTone.ok, false),
       StreamStatus.connecting ||
       StreamStatus.reconnecting => (AppStatusTone.progress, true),
@@ -732,20 +747,102 @@ class _StatusDot extends StatelessWidget {
       label: _l10n(context).e7WorkspaceServerStatus(label),
       child: Tooltip(
         message: label,
-        child: pulse && !GlassSurface.reduceEffects(context)
-            ? SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(strokeWidth: 2, color: color),
-              )
-            : Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
+        child: _PingDot(
+          color: color,
+          waiting: waiting && !GlassSurface.reduceEffects(context),
+        ),
       ),
     );
   }
+}
+
+/// The server's status dot. While the app connects it sends out a slow,
+/// soft ring (twice per [KitMotion.breath]) instead of a spinning wheel: a
+/// wait, calmly shown. It stops the moment the wait ends, and never runs
+/// under reduced motion or in tests ([KitMotion.loopsIn]).
+class _PingDot extends StatefulWidget {
+  const _PingDot({required this.color, required this.waiting});
+
+  final Color color;
+  final bool waiting;
+
+  @override
+  State<_PingDot> createState() => _PingDotState();
+}
+
+class _PingDotState extends State<_PingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ping = AnimationController(
+    vsync: this,
+    duration: KitMotion.breath,
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(_PingDot old) {
+    super.didUpdateWidget(old);
+    _sync();
+  }
+
+  void _sync() {
+    final run = widget.waiting && KitMotion.loopsIn(context);
+    if (run && !_ping.isAnimating) {
+      _ping.repeat();
+    } else if (!run && _ping.isAnimating) {
+      _ping
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ping.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+    child: CustomPaint(
+      key: const ValueKey('server-status-dot'),
+      // The ring paints beyond the 10 dp dot; the layout never moves.
+      size: const Size.square(10),
+      painter: _PingPainter(color: widget.color, ping: _ping),
+    ),
+  );
+}
+
+class _PingPainter extends CustomPainter {
+  _PingPainter({required this.color, required this.ping})
+    : super(repaint: ping);
+
+  final Color color;
+  final AnimationController ping;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centre = size.center(Offset.zero);
+    canvas.drawCircle(centre, 5, Paint()..color = color);
+    if (!ping.isAnimating) return;
+    final t = (ping.value * 2) % 1;
+    final ring = KitMotion.enter.transform(t);
+    canvas.drawCircle(
+      centre,
+      5 + 5 * ring,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = color.withValues(alpha: color.a * .6 * (1 - ring)),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_PingPainter old) => old.color != color;
 }
 
 AppLocalizations _l10n(BuildContext context) =>
