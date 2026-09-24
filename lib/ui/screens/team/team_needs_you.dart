@@ -217,7 +217,9 @@ class _TeamNeedsYouCardState extends State<TeamNeedsYouCard> {
                   onTap: () => setState(() => _selected = index),
                 ),
             ],
-            if (record != null && answered)
+            // Sent, or refused by the host: either way the person sees what
+            // became of the answer (a refusal offers the choices again).
+            if (record != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Align(
