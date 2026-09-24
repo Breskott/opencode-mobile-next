@@ -17,6 +17,7 @@ import '../../termux/bridge.dart';
 import '../../termux/managed_server_recovery.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import '../kit/scenes/setup_phone_scene.dart';
 import '../widgets/confirm_sheet.dart';
 import 'builtin_server_screen.dart';
 import '../widgets/safety_confirms.dart';
@@ -2204,6 +2205,7 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         size: KitStateSize.inline,
         padding: EdgeInsets.zero,
         icon: AppIconography.phone,
+        illustration: const SetupPhoneScene(mood: SetupPhoneMood.termux),
         tone: AppStatusTone.ok,
         title: l10n.termuxPhoneTitle,
         titleKey: const ValueKey('termux-phone-title'),
@@ -2256,6 +2258,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         size: KitStateSize.inline,
         padding: EdgeInsets.zero,
         icon: pending || failed ? AppIconography.warning : AppIconography.phone,
+        // Stopped is a rest, drawn (design standard §10): the dark screen
+        // and the quiet portal. A problem keeps its warning icon.
+        illustration: pending || failed
+            ? null
+            : const SetupPhoneScene(mood: SetupPhoneMood.stopped),
         tone: failed
             ? AppStatusTone.failure
             : pending

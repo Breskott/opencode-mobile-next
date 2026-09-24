@@ -4,6 +4,8 @@ import '../../l10n/app_localizations.dart';
 import '../../state/profiles.dart' show isLoopbackHost;
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import '../kit/scenes/setup_phone_scene.dart';
+import '../kit/scenes/setup_unplugged_scene.dart';
 import 'connection_failure.dart';
 import 'grace_timer.dart';
 import 'work_status_line.dart' show confirmPhoneServerRestart;
@@ -122,6 +124,9 @@ class SavedServerConnectionCard extends StatelessWidget {
     key: const ValueKey('saved-server-connecting'),
     icon: AppIconography.terminal,
     tone: AppStatusTone.progress,
+    // The portal breathing while the app reaches it (design standard §10).
+    illustration: const KitPortalScene(),
+    illustrationAmbient: true,
     title: attempts > 1
         ? l10n.e7SetupConnectingAttempt(attempts)
         : l10n.e7SetupConnectingProfile(profileName),
@@ -138,6 +143,10 @@ class SavedServerConnectionCard extends StatelessWidget {
     key: const ValueKey('saved-server-starting'),
     icon: AppIconography.play,
     tone: AppStatusTone.progress,
+    // The phone with the portal forming on its screen, breathing until
+    // OpenCode answers.
+    illustration: const SetupPhoneScene(mood: SetupPhoneMood.starting),
+    illustrationAmbient: true,
     title: inAppServer ? l10n.inAppServerStarting : l10n.connectStartingPhone,
     titleKey: const ValueKey('saved-server-title'),
     body: inAppServer ? l10n.inAppServerStartingBody : l10n.connectStartingBody,
@@ -166,6 +175,9 @@ class SavedServerConnectionCard extends StatelessWidget {
       key: const ValueKey('saved-server-not-answering'),
       icon: AppIconography.cloudOff,
       tone: AppStatusTone.attention,
+      // The plug short of a quiet portal, nudging while the app keeps trying.
+      illustration: const SetupUnpluggedScene(),
+      illustrationAmbient: true,
       title: _onThisPhone
           ? l10n.workServerNotAnsweringPhone
           : l10n.workServerNotAnswering(profileName),
@@ -290,6 +302,11 @@ class SavedServerConnectionCard extends StatelessWidget {
       key: const ValueKey('saved-server-failed'),
       icon: stopped ? AppIconography.stopCircle : AppIconography.cloudOff,
       tone: stopped ? AppStatusTone.attention : AppStatusTone.failure,
+      // The phone's own server at rest: a dark screen and a quiet portal.
+      // Other failures keep the icon; a drawing would not say which.
+      illustration: stopped
+          ? const SetupPhoneScene(mood: SetupPhoneMood.stopped)
+          : null,
       title: failure.title,
       titleKey: const ValueKey('saved-server-title'),
       body: failure.explanation,

@@ -457,6 +457,9 @@ Future<void> openOtherVersions(WidgetTester tester) async {
     return;
   }
   await tester.ensureVisible(tile);
+  // Lay the scrolled page out before tapping: below the fold (a drawn
+  // stopped state is taller than the icon was) the tap would miss.
+  await tester.pump();
   await tester.tap(tile);
   for (var i = 0; i < 6; i++) {
     await tester.pump(const Duration(milliseconds: 100));
