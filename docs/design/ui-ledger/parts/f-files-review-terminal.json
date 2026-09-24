@@ -2731,6 +2731,10 @@
     {
       "file": "lib/ui/widgets/code_highlight.dart",
       "reason": "pure syntax-highlighting helper, no surface and no interactive element"
+    },
+    {
+      "file": "lib/ui/screens/local_terminal_screen.dart",
+      "reason": "LocalTerminalView: the \"This phone\" source of the Terminal page (terminal_screen.dart, same route), a shell in the built-in Ubuntu with its key bar and the shell list in the top bar's menu; not a page of its own (docs/design/local-terminal-2026-09-24.md)."
     }
   ],
   "notes": [

@@ -1,5 +1,5 @@
 {
- "generatedFrom": "d1e39af88c748fd2b793c49fe39ab7aa2bf7e1f7",
+ "generatedFrom": "c0db399f1d07feacdebc77ce2bca2399b6ea9a0d",
  "pages": [
   {
    "id": "system",
@@ -42811,6 +42811,11 @@
    "file": "lib/ui/screens/library_screen.dart",
    "reason": "No surface since UX phase 2: the More tab (LibraryScreen) merged into the Settings hub. The file only hosts the library part files (catalog, integrations, commands, skills, references) and defaultModelLabel().",
    "part": "j1-settings-more"
+  },
+  {
+   "file": "lib/ui/screens/local_terminal_screen.dart",
+   "reason": "LocalTerminalView: the \"This phone\" source of the Terminal page (terminal_screen.dart, same route), a shell in the built-in Ubuntu with its key bar and the shell list in the top bar's menu; not a page of its own (docs/design/local-terminal-2026-09-24.md).",
+   "part": "f-files-review-terminal"
   },
   {
    "file": "lib/ui/screens/perf_trace_section.dart",
