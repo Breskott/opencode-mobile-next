@@ -21236,12 +21236,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No agents working} =1{1 agent working} other{{count} agents working}}'**
   String teamUiCardAgentsWorking(int count);
 
-  /// Small secondary Gas City term on the Workspace AI Team card header, naming the city
-  ///
-  /// In en, this message translates to:
-  /// **'city {city}'**
-  String teamUiCardCity(String city);
-
   /// Collapsed row on the Workspace AI Team card for runs that finished
   ///
   /// In en, this message translates to:
@@ -21445,18 +21439,6 @@ abstract class AppLocalizations {
   /// **'Done · merged'**
   String get teamUiCardRunStateMerged;
 
-  /// Small secondary Gas City term beside a batch run title
-  ///
-  /// In en, this message translates to:
-  /// **'convoy'**
-  String get teamUiCardRunTermBatch;
-
-  /// Small secondary Gas City term beside a formula run title
-  ///
-  /// In en, this message translates to:
-  /// **'formula'**
-  String get teamUiCardRunTermFormula;
-
   /// Workspace AI Team card one-sentence status for a blocked headline run
   ///
   /// In en, this message translates to:
@@ -21522,12 +21504,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Showing data from {time} · host unreachable'**
   String teamUiCardStale(String time);
-
-  /// Workspace AI Team card header name; the provider is named openly
-  ///
-  /// In en, this message translates to:
-  /// **'AI Team · Gas City'**
-  String get teamUiCardTitle;
 
   /// AI Team home fleet row when the agent has no work item
   ///
@@ -21721,23 +21697,6 @@ abstract class AppLocalizations {
   /// **'Options'**
   String get teamUiHomeGateOptions;
 
-  /// AI Team home host identity chip; host is the host name from the team URL with its kind word (teamUiHomeHostChipHost), city the Gas City name, access the read-only or controls word
-  ///
-  /// In en, this message translates to:
-  /// **'{host} · Gas City {version} · city {city} · {access}'**
-  String teamUiHomeHostChip(
-    String host,
-    String version,
-    String city,
-    String access,
-  );
-
-  /// AI Team home host identity chip when the host reported no city
-  ///
-  /// In en, this message translates to:
-  /// **'{host} · Gas City {version} · {access}'**
-  String teamUiHomeHostChipNoCity(String host, String version, String access);
-
   /// AI Team home Technical details sheet heading over the copyable provider values
   ///
   /// In en, this message translates to:
@@ -21755,24 +21714,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Decisions, failed runs and blocked agents show up here.'**
   String get teamUiHomeNeedsYouEmptyHint;
-
-  /// AI Team home run row subtitle for a batch run; the Gas City term follows the product term
-  ///
-  /// In en, this message translates to:
-  /// **'Batch · convoy'**
-  String get teamUiHomeRunKindBatch;
-
-  /// AI Team home run row subtitle for a formula run without a formula name
-  ///
-  /// In en, this message translates to:
-  /// **'Run · formula'**
-  String get teamUiHomeRunKindFormula;
-
-  /// AI Team home run row subtitle for a formula run; formula is the server-side formula name
-  ///
-  /// In en, this message translates to:
-  /// **'Run · formula {formula}'**
-  String teamUiHomeRunKindFormulaNamed(String formula);
 
   /// AI Team home run row marker when a gate waits on the person for this run
   ///

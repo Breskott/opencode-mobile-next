@@ -13383,15 +13383,6 @@
       }
     }
   },
-  "teamUiCardCity": "city {city}",
-  "@teamUiCardCity": {
-    "description": "Small secondary Gas City term on the Workspace AI Team card header, naming the city",
-    "placeholders": {
-      "city": {
-        "type": "String"
-      }
-    }
-  },
   "teamUiCardCompletedRuns": "{count, plural, =1{1 completed run} other{{count} completed runs}}",
   "@teamUiCardCompletedRuns": {
     "description": "Collapsed row on the Workspace AI Team card for runs that finished",
@@ -13563,14 +13554,6 @@
   "@teamUiCardRunStateMerged": {
     "description": "Run state word (card row, home row) for a finished run whose work landed on its target branch"
   },
-  "teamUiCardRunTermBatch": "convoy",
-  "@teamUiCardRunTermBatch": {
-    "description": "Small secondary Gas City term beside a batch run title"
-  },
-  "teamUiCardRunTermFormula": "formula",
-  "@teamUiCardRunTermFormula": {
-    "description": "Small secondary Gas City term beside a formula run title"
-  },
   "teamUiCardSentenceBlocked": "{title} is blocked.",
   "@teamUiCardSentenceBlocked": {
     "description": "Workspace AI Team card one-sentence status for a blocked headline run",
@@ -13669,10 +13652,6 @@
         "type": "String"
       }
     }
-  },
-  "teamUiCardTitle": "AI Team · Gas City",
-  "@teamUiCardTitle": {
-    "description": "Workspace AI Team card header name; the provider is named openly"
   },
   "teamUiHomeAgentNoWork": "No current work",
   "@teamUiHomeAgentNoWork": {
@@ -13827,39 +13806,6 @@
   "@teamUiHomeGateOptions": {
     "description": "AI Team home read-only gate sheet heading over the choice options"
   },
-  "teamUiHomeHostChip": "{host} · Gas City {version} · city {city} · {access}",
-  "@teamUiHomeHostChip": {
-    "description": "AI Team home host identity chip; host is the host name from the team URL with its kind word (teamUiHomeHostChipHost), city the Gas City name, access the read-only or controls word",
-    "placeholders": {
-      "host": {
-        "type": "String"
-      },
-      "version": {
-        "type": "String"
-      },
-      "city": {
-        "type": "String"
-      },
-      "access": {
-        "type": "String"
-      }
-    }
-  },
-  "teamUiHomeHostChipNoCity": "{host} · Gas City {version} · {access}",
-  "@teamUiHomeHostChipNoCity": {
-    "description": "AI Team home host identity chip when the host reported no city",
-    "placeholders": {
-      "host": {
-        "type": "String"
-      },
-      "version": {
-        "type": "String"
-      },
-      "access": {
-        "type": "String"
-      }
-    }
-  },
   "teamUiHomeHostRawHeading": "Raw values",
   "@teamUiHomeHostRawHeading": {
     "description": "AI Team home Technical details sheet heading over the copyable provider values"
@@ -13871,23 +13817,6 @@
   "teamUiHomeNeedsYouEmptyHint": "Decisions, failed runs and blocked agents show up here.",
   "@teamUiHomeNeedsYouEmptyHint": {
     "description": "AI Team home Needs you segment empty hint"
-  },
-  "teamUiHomeRunKindBatch": "Batch · convoy",
-  "@teamUiHomeRunKindBatch": {
-    "description": "AI Team home run row subtitle for a batch run; the Gas City term follows the product term"
-  },
-  "teamUiHomeRunKindFormula": "Run · formula",
-  "@teamUiHomeRunKindFormula": {
-    "description": "AI Team home run row subtitle for a formula run without a formula name"
-  },
-  "teamUiHomeRunKindFormulaNamed": "Run · formula {formula}",
-  "@teamUiHomeRunKindFormulaNamed": {
-    "description": "AI Team home run row subtitle for a formula run; formula is the server-side formula name",
-    "placeholders": {
-      "formula": {
-        "type": "String"
-      }
-    }
   },
   "teamUiHomeRunNeedsYou": "Needs you",
   "@teamUiHomeRunNeedsYou": {

@@ -13314,11 +13314,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String teamUiCardCity(String city) {
-    return 'المدينة $city';
-  }
-
-  @override
   String teamUiCardCompletedRuns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13471,12 +13466,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiCardRunStateMerged => 'مكتمل · دُمج';
 
   @override
-  String get teamUiCardRunTermBatch => 'convoy';
-
-  @override
-  String get teamUiCardRunTermFormula => 'formula';
-
-  @override
   String teamUiCardSentenceBlocked(String title) {
     return '$title معطّل.';
   }
@@ -13530,9 +13519,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String teamUiCardStale(String time) {
     return 'تُعرض بيانات من $time · تعذّر الوصول إلى المضيف';
   }
-
-  @override
-  String get teamUiCardTitle => 'فريق الذكاء الاصطناعي · Gas City';
 
   @override
   String get teamUiHomeAgentNoWork => 'لا عمل حالي';
@@ -13644,21 +13630,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiHomeGateOptions => 'الخيارات';
 
   @override
-  String teamUiHomeHostChip(
-    String host,
-    String version,
-    String city,
-    String access,
-  ) {
-    return '$host · Gas City $version · المدينة $city · $access';
-  }
-
-  @override
-  String teamUiHomeHostChipNoCity(String host, String version, String access) {
-    return '$host · Gas City $version · $access';
-  }
-
-  @override
   String get teamUiHomeHostRawHeading => 'القيم الخام';
 
   @override
@@ -13667,17 +13638,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamUiHomeNeedsYouEmptyHint =>
       'تظهر هنا القرارات والتشغيلات الفاشلة والوكلاء المعطّلون.';
-
-  @override
-  String get teamUiHomeRunKindBatch => 'دفعة · convoy';
-
-  @override
-  String get teamUiHomeRunKindFormula => 'تشغيل · formula';
-
-  @override
-  String teamUiHomeRunKindFormulaNamed(String formula) {
-    return 'تشغيل · formula $formula';
-  }
 
   @override
   String get teamUiHomeRunNeedsYou => 'يحتاجك';

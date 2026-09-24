@@ -13111,11 +13111,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String teamUiCardCity(String city) {
-    return 'city $city';
-  }
-
-  @override
   String teamUiCardCompletedRuns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13254,12 +13249,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiCardRunStateMerged => 'Done · merged';
 
   @override
-  String get teamUiCardRunTermBatch => 'convoy';
-
-  @override
-  String get teamUiCardRunTermFormula => 'formula';
-
-  @override
   String teamUiCardSentenceBlocked(String title) {
     return '$title is blocked.';
   }
@@ -13313,9 +13302,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String teamUiCardStale(String time) {
     return 'Showing data from $time · host unreachable';
   }
-
-  @override
-  String get teamUiCardTitle => 'AI Team · Gas City';
 
   @override
   String get teamUiHomeAgentNoWork => 'No current work';
@@ -13427,21 +13413,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiHomeGateOptions => 'Options';
 
   @override
-  String teamUiHomeHostChip(
-    String host,
-    String version,
-    String city,
-    String access,
-  ) {
-    return '$host · Gas City $version · city $city · $access';
-  }
-
-  @override
-  String teamUiHomeHostChipNoCity(String host, String version, String access) {
-    return '$host · Gas City $version · $access';
-  }
-
-  @override
   String get teamUiHomeHostRawHeading => 'Raw values';
 
   @override
@@ -13450,17 +13421,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamUiHomeNeedsYouEmptyHint =>
       'Decisions, failed runs and blocked agents show up here.';
-
-  @override
-  String get teamUiHomeRunKindBatch => 'Batch · convoy';
-
-  @override
-  String get teamUiHomeRunKindFormula => 'Run · formula';
-
-  @override
-  String teamUiHomeRunKindFormulaNamed(String formula) {
-    return 'Run · formula $formula';
-  }
 
   @override
   String get teamUiHomeRunNeedsYou => 'Needs you';

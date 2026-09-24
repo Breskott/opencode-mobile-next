@@ -180,15 +180,21 @@ void main() {
         '(${scene.name})', (tester) async {
       await _pump(tester, _card, scene: scene);
       final card = find.byType(TeamCard);
-      final rows = find.descendant(of: card, matching: find.byType(InkWell));
-      expect(rows.evaluate().length, lessThanOrEqualTo(3));
+      // The header ("AI Team · On this phone ›") opens the team; under it
+      // at most three rows: what needs you and up to two running tasks.
+      final rows = find
+          .descendant(of: card, matching: find.byType(InkWell))
+          .evaluate()
+          .where((row) => row.widget.key != const ValueKey('team-card-open'))
+          .toList();
+      expect(rows.length, lessThanOrEqualTo(3));
       // No percentage, no bar, no dots: the rows say it in words.
       expect(
         find.descendant(of: card, matching: find.textContaining('%')),
         findsNothing,
       );
-      // The height of three list rows, the section's label included.
-      expect(tester.getSize(card).height, lessThanOrEqualTo(3 * 56 + 16));
+      // A header (48) and three list rows, a question's two lines included.
+      expect(tester.getSize(card).height, lessThanOrEqualTo(48 + 3 * 64));
       expect(tester.takeException(), isNull);
     });
   }
