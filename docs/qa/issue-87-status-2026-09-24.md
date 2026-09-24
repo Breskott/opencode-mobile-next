@@ -20,3 +20,20 @@ Issue: https://github.com/Eslamasabry/opencode-mobile-next/issues/87. The report
 3. **A real arm64 phone.** On the owner's phone this needs about 5 GB free, wireless debugging paired, and his OK. His Termux projects are backed up (`/home/eslam/phone-backups/termux-2026-09-24/`). Setup, AI Team, one task, and the same timings.
 4. **Decide the Termux AI Team path:** publish `aiteam-assets-1`, or point Termux users to the built-in setup.
 5. Owner's call: push, release, and reply on #87 with the numbers.
+
+## Update (2026-09-24, late)
+
+- **Still not fixed for the reporter.** Nothing is pushed or released: latest release 1.0.44+50, branch 105 commits ahead of `mobile-next/dev`. `aiteam-assets-1` still does not exist.
+- **Item 2, the design standard:** now applied to every screen group, step by step, each with goldens and before/after renders in `docs/qa/design-standard-*-2026-09-24/`:
+  - the connection screens;
+  - the Work tab;
+  - phone setup;
+  - the AI Team;
+  - chat states;
+  - Settings.
+
+  The owner found the AI Team screens "very ugly" after the component pass. A content and words redesign is in progress (`docs/design/aiteam-redesign-2026-09-24.md`). **Not viewed on a device; no frame-time numbers yet.**
+- **Item 3, the built-in terminal:** a local terminal that needs no server is in progress (`docs/design/local-terminal-2026-09-24.md`, branch `feat/local-terminal`), with its device checks pending.
+- **Item 4, slow loading:** the first-connect wait was also removed (`787fa137`). Nothing is re-measured on a device.
+- **Infrastructure:** the PC ran out of memory at 21:27 with two emulators and six agents running. Nothing was lost. Heavy jobs now run one at a time.
+- **Unchanged to close:** the integrated device run with the timings, a real arm64 phone, the Termux AI Team decision, and the release plus reply.
