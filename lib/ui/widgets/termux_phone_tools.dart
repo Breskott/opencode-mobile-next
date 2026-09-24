@@ -15,6 +15,7 @@ import '../../termux/bridge.dart';
 import '../../termux/processes.dart';
 import '../../termux/storage.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import '../screens/termux_processes_screen.dart';
 import '../screens/termux_storage_screen.dart';
 import 'work_status_line.dart' show WorkRunawayNotice;
@@ -22,7 +23,7 @@ import 'work_status_line.dart' show WorkRunawayNotice;
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// Section label plus the Storage and Running now rows, each with its live
+/// The Storage and Running now rows, each with its live
 /// summary ("11.6 GB used", "14 processes · CPU 3%").
 class TermuxPhoneToolsRows extends StatefulWidget {
   const TermuxPhoneToolsRows({super.key});
@@ -72,7 +73,6 @@ class _TermuxPhoneToolsRowsState extends State<TermuxPhoneToolsRows> {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     final storage = _storage;
     final storageSubtitle = _storageFailed
         ? l10n.termuxStorageRowNotScanned
@@ -94,58 +94,27 @@ class _TermuxPhoneToolsRowsState extends State<TermuxPhoneToolsRows> {
             processes.count,
             formatTermuxCpuPct(processes.totalCpuPct),
           );
+    // Kit rows under the caller's "Options" label (design standard §6).
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
-          child: Text(
-            l10n.termuxStorageOnThisPhone,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: AppTheme.mutedOf(theme),
-            ),
-          ),
-        ),
-        ListTile(
+        KitRow(
           key: const Key('termux-storage-row'),
-          contentPadding: EdgeInsets.zero,
-          minLeadingWidth: 32,
-          horizontalTitleGap: 12,
-          leading: SizedBox.square(
-            dimension: 32,
-            child: Icon(
-              AppIconography.database,
-              size: 24,
-              color: AppTheme.mutedOf(theme),
-            ),
-          ),
-          title: Text(l10n.termuxStorageTitle),
-          subtitle: Text(
-            storageSubtitle,
-            key: const Key('termux-storage-row-subtitle'),
-          ),
-          trailing: const Icon(AppIconography.chevronRight, size: 20),
+          leading: KitRow.icon(context, AppIconography.database),
+          title: l10n.termuxStorageTitle,
+          supporting: TextSpan(text: storageSubtitle),
+          supportingKey: const Key('termux-storage-row-subtitle'),
+          trailing: const KitChevron(),
           onTap: () => _open(const TermuxStorageScreen()),
         ),
-        ListTile(
+        KitRow(
           key: const Key('termux-procs-row'),
-          contentPadding: EdgeInsets.zero,
-          minLeadingWidth: 32,
-          horizontalTitleGap: 12,
-          leading: SizedBox.square(
-            dimension: 32,
-            child: Icon(
-              AppIconography.processor,
-              size: 24,
-              color: AppTheme.mutedOf(theme),
-            ),
-          ),
-          title: Text(l10n.termuxProcsTitle),
-          subtitle: Text(
-            processesSubtitle,
-            key: const Key('termux-procs-row-subtitle'),
-          ),
-          trailing: const Icon(AppIconography.chevronRight, size: 20),
+          leading: KitRow.icon(context, AppIconography.processor),
+          title: l10n.termuxProcsTitle,
+          supporting: TextSpan(text: processesSubtitle),
+          supportingKey: const Key('termux-procs-row-subtitle'),
+          trailing: const KitChevron(),
           onTap: () => _open(const TermuxProcessesScreen()),
         ),
       ],

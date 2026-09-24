@@ -10,6 +10,7 @@ import '../../widgets/confirm_sheet.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
 
 /// The "On the server" section of the one Plugins screen
 /// (settings/plugins_screen.dart): the server's plugin inventory and the
@@ -33,6 +34,11 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
   bool _editingMapping = false;
   bool _mappingLoading = false;
   Map<String, List<String>> _mappings = {};
+
+  /// Whether the server has commands a plugin could be linked to; null
+  /// until known (or when the list could not be read), which keeps
+  /// "Link commands" offered.
+  bool? _hasCommands;
   PluginCommandMappings? get _mappingStore {
     final id = _controller.profile?.id;
     return id == null
@@ -102,6 +108,7 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
       _request++;
       _plugins = null;
       _mappings = {};
+      _hasCommands = null;
       _loading = false;
       _failed = false;
       _reloadQueued = false;
@@ -117,6 +124,7 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
       _request++;
       _plugins = null;
       _mappings = {};
+      _hasCommands = null;
       _loading = false;
       _failed = false;
       _reloadQueued = false;
@@ -146,6 +154,22 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
           _mappings = _mappingStore?.load(_mappingScope) ?? {};
         });
       }
+      // "Link commands" only where there is something to link. A failure
+      // here leaves it offered; the link sheet then says what went wrong.
+      if (current() && _mappingStore != null && result.isNotEmpty) {
+        try {
+          final commands = await _controller.repository!.listCommands();
+          if (current()) {
+            setState(
+              () => _hasCommands = commands.any(
+                (command) => PluginCommandMappings.validName(command.name),
+              ),
+            );
+          }
+        } catch (_) {
+          if (current()) setState(() => _hasCommands = null);
+        }
+      }
     } catch (_) {
       if (current()) setState(() => _failed = true);
     } finally {
@@ -170,71 +194,136 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final theme = Theme.of(context);
-    return Padding(
+    final plugins = _plugins ?? const <PluginInfo>[];
+    final builtIn = [
+      for (final plugin in plugins)
+        if (plugin.source == PluginSourceKind.builtin) plugin,
+    ];
+    final added = [
+      for (final plugin in plugins)
+        if (plugin.source != PluginSourceKind.builtin) plugin,
+    ];
+    final builtInActive = builtIn
+        .where((plugin) => plugin.status == PluginStatus.active)
+        .length;
+    final builtInFailed = builtIn
+        .where((plugin) => plugin.status == PluginStatus.failed)
+        .length;
+    final canClear = _mappingStore != null;
+    return Column(
       key: const ValueKey('plugins-section-server'),
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 20, bottom: 4),
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      l10n.pluginsSectionOnServer,
-                      style: theme.textTheme.labelLarge?.copyWith(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // The section's own actions sit on its label (§6): refresh, and
+        // the rare "Clear personal links" in its menu, confirmed.
+        SectionLabel(
+          l10n.pluginsSectionOnServer,
+          padding: const EdgeInsets.fromLTRB(16, 16, 4, 0),
+          trailing: _connected && _supported
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: l10n.pluginsRefresh,
+                      onPressed: _loading ? null : _load,
+                      icon: Icon(
+                        AppIconography.retry,
                         color: AppTheme.mutedOf(theme),
                       ),
                     ),
-                  ),
-                ),
-              ),
-              if (_connected && _supported)
-                IconButton(
-                  tooltip: l10n.pluginsRefresh,
-                  onPressed: _loading ? null : _load,
-                  icon: const Icon(AppIconography.retry),
-                ),
-            ],
+                    if (canClear)
+                      KitRowMenu(
+                        key: const ValueKey('plugins-section-menu'),
+                        tooltip: l10n.pluginsSectionMore,
+                        enabled: !_editingMapping,
+                        items: [
+                          KitMenuItem(
+                            key: const ValueKey('plugins-clear-links'),
+                            label: l10n.pluginMappingClearAll,
+                            destructive: true,
+                            onSelected: () => unawaited(_clearMappings()),
+                          ),
+                        ],
+                      ),
+                  ],
+                )
+              : null,
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+          child: Text(
+            l10n.pluginsDescriptionShort,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppTheme.mutedOf(theme),
+            ),
           ),
-          Text(l10n.pluginsDescription),
-          if (_mappingStore != null)
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton.icon(
-                icon: const Icon(AppIconography.unlink),
-                label: Text(l10n.pluginMappingClearAll),
-                onPressed: _editingMapping ? null : _clearMappings,
+        ),
+        KitLoadingBar(
+          loading: _connected && _supported && (_loading || _mappingLoading),
+          label: l10n.pluginsLoading,
+        ),
+        if (!_supported)
+          _message(l10n.pluginsUnsupported)
+        else if (!_connected)
+          _message(l10n.pluginsDisconnected)
+        else ...[
+          if (_failed)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: KitNotice(
+                tone: AppStatusTone.failure,
+                message: l10n.pluginsLoadFailed,
+                actions: [
+                  KitAction(
+                    label: l10n.pluginsRetry,
+                    onPressed: _loading ? null : _load,
+                  ),
+                ],
               ),
             ),
-          const SizedBox(height: 12),
-          if (!_supported)
-            Text(l10n.pluginsUnsupported)
-          else if (!_connected)
-            Text(l10n.pluginsDisconnected)
-          else ...[
-            if (_loading || _mappingLoading) const LinearProgressIndicator(),
-            if (_failed) ...[
-              Text(l10n.pluginsLoadFailed),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: TextButton(
-                  onPressed: _loading ? null : _load,
-                  child: Text(l10n.pluginsRetry),
-                ),
+          if (_plugins == null && _loading && !_failed)
+            const KitSkeletonRows(count: 3),
+          if (_plugins?.isEmpty == true && !_loading && !_failed)
+            _message(l10n.pluginsEmpty),
+          // What the person added is listed openly; the server's own
+          // plugins fold into one row, open when one of them failed.
+          for (final plugin in added) _row(plugin, l10n),
+          if (builtIn.isNotEmpty)
+            KitExpandRow(
+              key: ValueKey('plugins-builtin-${builtInFailed > 0}'),
+              headerKey: const ValueKey('plugins-builtin-group'),
+              initiallyExpanded: builtInFailed > 0,
+              leading: KitRow.icon(context, AppIconography.extensions),
+              title: l10n.pluginsBuiltinGroup,
+              supporting: TextSpan(
+                children: [
+                  TextSpan(text: l10n.pluginsBuiltinActive(builtInActive)),
+                  if (builtInFailed > 0)
+                    TextSpan(
+                      text: ' · ${l10n.pluginsBuiltinFailed(builtInFailed)}',
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                ],
               ),
-            ],
-            if (_plugins?.isEmpty == true && !_loading && !_failed)
-              Text(l10n.pluginsEmpty),
-            for (final plugin in _plugins ?? const <PluginInfo>[]) ...[
-              _row(plugin, l10n),
-              const Divider(height: 1),
-            ],
-          ],
+              children: [for (final plugin in builtIn) _row(plugin, l10n)],
+            ),
         ],
+      ],
+    );
+  }
+
+  Widget _message(String text) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Text(
+        text,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: AppTheme.mutedOf(theme),
+        ),
       ),
     );
   }
@@ -376,7 +465,9 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
                     MaterialLocalizations.of(context).cancelButtonLabel,
                   ),
                 ),
-                FilledButton(
+                KitButton.primary(
+                  expand: false,
+                  label: _l10n.pluginMappingSave,
                   onPressed: saving
                       ? null
                       : () async {
@@ -412,7 +503,6 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
                             }
                           }
                         },
-                  child: Text(_l10n.pluginMappingSave),
                 ),
               ],
             ),
@@ -497,8 +587,80 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
     }
   }
 
+  /// One plugin as a kit row (§6): its state as the leading mark, a plain
+  /// name, and one line that says where it stands. Its personal command
+  /// links, "Link commands" (when the server has commands to link) and
+  /// Details are in the row's menu; tapping the row opens Details, where the
+  /// raw id is.
   Widget _row(PluginInfo plugin, AppLocalizations l10n) {
     final theme = Theme.of(context);
+    final id = plugin.id;
+    final links = id == null ? const <String>[] : _mappings[id] ?? const [];
+    final failed = plugin.status == PluginStatus.failed;
+    final canLink =
+        id != null &&
+        PluginCommandMappings.validName(id) &&
+        (links.isNotEmpty || _hasCommands != false);
+    return KitRow(
+      key: ValueKey('plugin-row-${id ?? plugins.indexOf(plugin)}'),
+      leading: KitStatusMark(
+        state: switch (plugin.status) {
+          PluginStatus.active => KitMarkState.done,
+          PluginStatus.failed => KitMarkState.failed,
+          PluginStatus.unknown => KitMarkState.waiting,
+        },
+      ),
+      title: pluginDisplayName(plugin, l10n),
+      titleKey: ValueKey('plugin-title-${id ?? ''}'),
+      supporting: TextSpan(
+        text: _statusWord(plugin, l10n),
+        style: failed ? TextStyle(color: theme.colorScheme.error) : null,
+      ),
+      onTap: () => unawaited(_details(plugin)),
+      trailing: KitRowMenu(
+        key: ValueKey('plugin-menu-${id ?? ''}'),
+        tooltip: l10n.pluginsRowMore,
+        items: [
+          for (final name in links)
+            KitMenuItem(
+              label: l10n.pluginMappingReview(name),
+              enabled:
+                  _connected &&
+                  !_editingMapping &&
+                  plugin.status == PluginStatus.active,
+              onSelected: () => unawaited(_reviewCommand(plugin, name)),
+            ),
+          if (canLink)
+            KitMenuItem(
+              key: ValueKey('plugin-link-$id'),
+              label: l10n.pluginMappingManage,
+              enabled: _connected && !_editingMapping,
+              onSelected: () => unawaited(_editMapping(plugin)),
+            ),
+          KitMenuItem(
+            key: ValueKey('plugin-details-${id ?? ''}'),
+            label: l10n.phoneServerRowDetails,
+            onSelected: () => unawaited(_details(plugin)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<PluginInfo> get plugins => _plugins ?? const [];
+
+  String _statusWord(PluginInfo plugin, AppLocalizations l10n) =>
+      switch (plugin.status) {
+        PluginStatus.active => l10n.pluginsStatusActive,
+        PluginStatus.failed => l10n.pluginsStatusFailedToLoad,
+        PluginStatus.unknown => l10n.pluginsStatusUnknown,
+      };
+
+  /// What a person may want to know about one plugin and rarely does: where
+  /// it comes from, its personal links, and the id the server knows it by,
+  /// in mono.
+  Future<void> _details(PluginInfo plugin) {
+    final l10n = _l10n;
     final source = switch (plugin.source) {
       PluginSourceKind.builtin => l10n.pluginsSourceBuiltin,
       PluginSourceKind.package => l10n.pluginsSourcePackage,
@@ -506,84 +668,160 @@ class _ServerPluginsSectionState extends State<ServerPluginsSection> {
       PluginSourceKind.sdk => l10n.pluginsSourceSdk,
       PluginSourceKind.unknown => l10n.pluginsSourceUnknown,
     };
-    final status = switch (plugin.status) {
-      PluginStatus.active => l10n.pluginsStatusActive,
-      PluginStatus.failed => l10n.pluginsStatusFailed,
-      PluginStatus.unknown => l10n.pluginsStatusUnknown,
-    };
-    final tone = switch (plugin.status) {
-      PluginStatus.active => AppStatusTone.ok,
-      PluginStatus.failed => AppStatusTone.failure,
-      PluginStatus.unknown => AppStatusTone.neutral,
-    };
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            plugin.status == PluginStatus.active
-                ? AppIconography.checkCircle
-                : plugin.status == PluginStatus.failed
-                ? AppIconography.error
-                : AppIconography.question,
-            color: AppTheme.statusColor(theme, tone),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  plugin.id ?? l10n.pluginsUnnamed,
-                  style: theme.textTheme.titleMedium,
-                ),
-                Text(
-                  status,
-                  style: TextStyle(color: AppTheme.statusColor(theme, tone)),
-                ),
-                Text(
-                  plugin.packageName == null
-                      ? source
-                      : '$source · ${plugin.packageName}',
-                ),
-                if (plugin.terminalUi) Text(l10n.pluginsTerminalUi),
-                if (plugin.id case final id?) ...[
-                  if ((_mappings[id] ?? []).isNotEmpty)
-                    Text(l10n.pluginMappingPersonal),
-                  for (final name in _mappings[id] ?? const <String>[])
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
-                        icon: const Icon(AppIconography.play),
-                        label: Text(l10n.pluginMappingReview(name)),
-                        onPressed:
-                            !_connected ||
-                                _editingMapping ||
-                                plugin.status != PluginStatus.active
-                            ? null
-                            : () => _reviewCommand(plugin, name),
-                      ),
-                    ),
-                  if (PluginCommandMappings.validName(id))
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
-                        icon: const Icon(AppIconography.link),
-                        label: Text(l10n.pluginMappingManage),
-                        onPressed: !_connected || _editingMapping
-                            ? null
-                            : () => _editMapping(plugin),
-                      ),
-                    ),
-                ],
-                if (plugin.status == PluginStatus.failed)
-                  Text(l10n.pluginsFailureDetail),
+    final id = plugin.id;
+    final links = id == null ? const <String>[] : _mappings[id] ?? const [];
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        final muted = theme.textTheme.bodyMedium?.copyWith(
+          color: AppTheme.mutedOf(theme),
+        );
+        return SingleChildScrollView(
+          key: const ValueKey('plugin-details-sheet'),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                pluginDisplayName(plugin, l10n),
+                style: theme.textTheme.titleLarge,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _statusWord(plugin, l10n),
+                style: plugin.status == PluginStatus.failed
+                    ? theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.error,
+                      )
+                    : muted,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                plugin.packageName == null
+                    ? source
+                    : '$source · ${plugin.packageName}',
+              ),
+              if (plugin.terminalUi) Text(l10n.pluginsTerminalUi),
+              if (plugin.status == PluginStatus.failed) ...[
+                const SizedBox(height: 8),
+                Text(l10n.pluginsFailureDetail, style: muted),
               ],
-            ),
+              if (links.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(l10n.pluginMappingPersonal, style: muted),
+                for (final name in links)
+                  Text(
+                    '/$name',
+                    textDirection: TextDirection.ltr,
+                    style: const TextStyle(fontFamily: AppTheme.monoFamily),
+                  ),
+              ],
+              const SizedBox(height: 16),
+              SectionLabel.inline(l10n.pluginsDetailsId),
+              SelectableText(
+                id ?? l10n.pluginsUnnamed,
+                key: const ValueKey('plugin-details-id'),
+                textDirection: TextDirection.ltr,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontFamily: AppTheme.monoFamily,
+                  color: AppTheme.mutedOf(theme),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
+}
+
+/// A plugin's name for people (docs/design/phone-server-screens-cleanup-
+/// 2026-09-24.md §3). The server reports only an id, so the name is a
+/// readable form of the id's last part: the namespace (`opencode.`) and
+/// category words (`tool`, `config`) go, the rest is in sentence case with
+/// the known acronyms in capitals. `opencode.tool.input.repair` is "Input
+/// repair", `opencode.config.mcp` is "MCP", `@example/opencode-wakatime` is
+/// "Wakatime". The raw id stays under the plugin's Details.
+String pluginDisplayName(PluginInfo plugin, AppLocalizations l10n) {
+  final id = plugin.id;
+  if (id == null) return l10n.pluginsUnnamed;
+  return readablePluginName(id);
+}
+
+/// [pluginDisplayName] for a known id.
+String readablePluginName(String id) {
+  var name = id.trim();
+  if (name.startsWith('@')) {
+    final slash = name.indexOf('/');
+    if (slash > 0) name = name.substring(slash + 1);
+  }
+  final version = name.indexOf('@');
+  if (version > 0) name = name.substring(0, version);
+  if (name.contains('/')) name = name.split('/').last;
+  var parts = name.split('.').where((part) => part.isNotEmpty).toList();
+  if (parts.length > 1) parts = parts.sublist(1);
+  const categories = {
+    'tool',
+    'tools',
+    'config',
+    'plugin',
+    'plugins',
+    'provider',
+    'providers',
+    'builtin',
+    'core',
+  };
+  while (parts.length > 1 && categories.contains(parts.first.toLowerCase())) {
+    parts.removeAt(0);
+  }
+  final words = [
+    for (final part in parts)
+      ...part
+          .replaceAllMapped(
+            RegExp(r'([a-z0-9])([A-Z])'),
+            (match) => '${match[1]} ${match[2]}',
+          )
+          .split(RegExp(r'[-_\s]+'))
+          .where((word) => word.isNotEmpty),
+  ];
+  while (words.length > 1 &&
+      const {'opencode', 'plugin'}.contains(words.first.toLowerCase())) {
+    words.removeAt(0);
+  }
+  if (words.isEmpty) return id;
+  const acronyms = {
+    'ai',
+    'api',
+    'cli',
+    'git',
+    'http',
+    'https',
+    'id',
+    'json',
+    'llm',
+    'lsp',
+    'mcp',
+    'pr',
+    'sdk',
+    'ssh',
+    'tui',
+    'ui',
+    'url',
+  };
+  final shown = <String>[];
+  for (var i = 0; i < words.length; i++) {
+    final word = words[i].toLowerCase();
+    if (acronyms.contains(word)) {
+      shown.add(word.toUpperCase());
+    } else if (i == 0) {
+      shown.add(word[0].toUpperCase() + word.substring(1));
+    } else {
+      shown.add(word);
+    }
+  }
+  return shown.join(' ');
 }

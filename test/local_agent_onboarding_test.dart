@@ -779,15 +779,16 @@ void main() {
             );
       await tester.pumpWidget(app(card(runtime, busyConversations: 1)));
       await settle(tester);
-      expect(find.text(l10n.localAgentCardStopped), findsOneWidget);
+      expect(find.text(l10n.phoneServerCardStopped), findsOneWidget);
       expect(
         find.byKey(const ValueKey('local-agent-server-connect')),
         findsNothing,
       );
       await tapKey(tester, 'local-agent-server-start');
       expect(runtime.calls, ['start']);
-      expect(find.text(l10n.localAgentReadyTitle), findsOneWidget);
+      expect(find.text(l10n.phoneServerCardRunning), findsOneWidget);
 
+      await tapKey(tester, 'local-agent-server-menu');
       await tapKey(tester, 'local-agent-server-restart');
       expect(find.text(l10n.localAgentRestartTitle), findsOneWidget);
       expect(find.text(l10n.termuxRestartBusyMessage(1)), findsNothing);
@@ -799,15 +800,17 @@ void main() {
       await tapKey(tester, 'confirm-restart-local-agents');
       expect(runtime.calls, ['start', 'restart']);
 
+      await tapKey(tester, 'local-agent-server-menu');
       await tapKey(tester, 'local-agent-server-stop');
       expect(find.text(l10n.localAgentStopBody), findsOneWidget);
       await tester.tap(find.text(l10n.safetyStopLocalServerKeep));
       await settle(tester);
       expect(runtime.calls, ['start', 'restart']);
+      await tapKey(tester, 'local-agent-server-menu');
       await tapKey(tester, 'local-agent-server-stop');
       await tapKey(tester, 'confirm-stop-local-agents');
       expect(runtime.calls, ['start', 'restart', 'stop']);
-      expect(find.text(l10n.localAgentCardStopped), findsOneWidget);
+      expect(find.text(l10n.phoneServerCardStopped), findsOneWidget);
       await finish(tester);
     });
 
@@ -848,6 +851,7 @@ void main() {
       expect(connected.single.id, 'claude');
       expect(managed, 1);
 
+      await tapKey(tester, 'local-agent-server-menu');
       await tapKey(tester, 'local-agent-server-restart');
       await tapKey(tester, 'confirm-restart-local-agents');
       expect(
@@ -858,7 +862,7 @@ void main() {
       );
 
       await tapKey(tester, 'local-agent-server-menu');
-      for (final item in ['recheck', 'manage', 'forget']) {
+      for (final item in ['manage', 'forget']) {
         expect(
           find.byKey(ValueKey('local-agent-server-$item')),
           findsOneWidget,

@@ -486,7 +486,10 @@ void main() {
       debugTeamPhoneRuntime = runtime;
       final (controller, _) = await pumpSetup(tester);
       // Step 3 succeeded: the managed server is running and connected.
-      expect(find.text(l10n.e7SetupRunningOnPhone), findsOneWidget);
+      expect(
+        find.textContaining('${l10n.phoneServerCardRunning} · '),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey('team-phone-offer')), findsNothing);
       expect(
         find.byWidgetPredicate(

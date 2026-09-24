@@ -9,6 +9,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/first_run_choice.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_setup_engine.dart';
@@ -272,7 +273,7 @@ void main() {
         final controller = ConnectionController(store);
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(store, controller));
-        await tester.tap(find.byType(PopupMenuButton<String>));
+        await tester.tap(find.byType(KitRowMenu));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Edit'));
         await tester.pumpAndSettle();

@@ -1,5 +1,7 @@
 /// Settings › Plugins (TEAM-106): the discovery card, the Plugins group with
-/// its single "AI Team · Gas City" row (subtitle per state, 02-ux §1.1) and
+/// its single "AI Team" row (subtitle per state, 02-ux §1.1; "Off" or
+/// "On · This phone", docs/design/phone-server-screens-cleanup-2026-09-24.md
+/// §3) and
 /// the AI Team sheet of 02-ux §9: status, host identity, live updates,
 /// Technical details with the side-by-side terms (§8), the host
 /// performance disclaimer (03-onboarding §4) and the actions Add manually /
@@ -23,7 +25,9 @@ import '../../../state/orchestration.dart';
 import '../../../state/profiles.dart';
 import '../../../termux/bridge.dart';
 import '../../../termux/team_runtime.dart';
+import '../../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
 import '../../desktop/desktop_interaction.dart';
 import '../../widgets/builtin_team_section.dart';
 import '../../widgets/team_discovery_card.dart';
@@ -117,30 +121,40 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
     final theme = Theme.of(context);
     final controller = widget.controller;
     final profile = controller.profile;
+    Widget rails(Widget child) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: child,
+    );
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamUiPluginsTitle)),
       body: DesktopScrollbarArea(
         builder: (scrollController) => ListView(
           controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+          padding: const EdgeInsets.only(top: 8, bottom: 24),
           children: [
-            TeamDiscoveryCard(
-              controller: controller,
-              discovery: _discovery,
-              probe: widget.probe,
+            rails(
+              TeamDiscoveryCard(
+                controller: controller,
+                discovery: _discovery,
+                probe: widget.probe,
+              ),
             ),
             if (BuiltinTeamSection.appliesTo(profile))
-              BuiltinTeamSection(connection: controller, profile: profile!),
+              rails(
+                BuiltinTeamSection(connection: controller, profile: profile!),
+              ),
             if (teamPhoneProfile(profile))
-              TeamPhoneReofferCard(
-                connection: controller,
-                profile: profile!,
-                runtime: widget.teamRuntime,
+              rails(
+                TeamPhoneReofferCard(
+                  connection: controller,
+                  profile: profile!,
+                  runtime: widget.teamRuntime,
+                ),
               ),
             if (profile == null)
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 4,
+                  horizontal: 16,
                   vertical: 12,
                 ),
                 child: Text(
@@ -152,45 +166,28 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
                 ),
               )
             else ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
-                child: Semantics(
-                  header: true,
-                  child: Text(
-                    l10n.pluginsSectionInApp,
-                    key: const ValueKey('plugins-section-app'),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: AppTheme.mutedOf(theme),
-                    ),
-                  ),
-                ),
+              SectionLabel(
+                l10n.pluginsSectionInApp,
+                key: const ValueKey('plugins-section-app'),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               ),
-              ListTile(
+              // One row: its name, and whether it is on and where. Gas
+              // City, the host and "Add manually" are on its own page.
+              KitRow(
                 key: const ValueKey('plugins-ai-team-row'),
-                minTileHeight: 72,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                minLeadingWidth: 32,
-                horizontalTitleGap: 12,
-                leading: SizedBox.square(
-                  dimension: 32,
-                  child: Icon(
-                    AppIconography.extensions,
-                    size: 24,
-                    color: AppTheme.mutedOf(theme),
-                  ),
-                ),
-                title: Text(l10n.teamUiRowTitle),
-                subtitle: Text(
-                  teamRowSubtitle(
+                leading: KitRow.icon(context, AppIconography.extensions),
+                title: l10n.pluginsTeamRowTitle,
+                supporting: TextSpan(
+                  text: teamRowSubtitle(
                     l10n,
                     profile: profile,
                     orchestration: controller.orchestration,
                     discovery: _discovery,
                     now: widget.now?.call() ?? DateTime.now(),
                   ),
-                  key: const ValueKey('plugins-ai-team-subtitle'),
                 ),
-                trailing: const Icon(AppIconography.chevronRight, size: 20),
+                supportingKey: const ValueKey('plugins-ai-team-subtitle'),
+                trailing: const KitChevron(),
                 onTap: _openSheet,
               ),
             ],
@@ -223,21 +220,21 @@ String teamRowSubtitle(
   required DateTime now,
 }) {
   final config = profile.orchestration;
+  // The server by the name a person knows it: "This phone" for the one on
+  // this phone, not the name it was saved under.
+  final server = teamPhoneProfile(profile) || looksLikeInAppServer(profile)
+      ? l10n.phoneServerCardTitle
+      : profile.name;
   if (config == null) {
+    // "Off", or where a team was found. The engine's name, its version
+    // and "Add manually" are on the AI Team page, not in the row.
     final found = discovery?.result;
-    if (found != null) {
-      return l10n.teamUiRowFound(
-        profile.name,
-        found.found.version ?? l10n.teamUiVersionUnknown,
-      );
-    }
-    return discovery?.probed == true
-        ? l10n.teamUiRowOffAddManually
-        : l10n.teamUiRowOff;
+    if (found != null) return l10n.pluginsTeamRowFound(server);
+    return l10n.teamUiRowOff;
   }
   final c = orchestration;
   if (c == null || c.profileId != profile.id) {
-    return l10n.teamUiRowOn(profile.name);
+    return l10n.teamUiRowOn(server);
   }
   switch (c.phase) {
     case OrchestrationPhase.idle:
@@ -250,7 +247,7 @@ String teamRowSubtitle(
           ? l10n.teamUiRowNotAvailable
           : l10n.teamUiRowNotAvailableReason(teamErrorReason(l10n, error.kind));
     case OrchestrationPhase.stopped:
-      return l10n.teamUiRowOn(profile.name);
+      return l10n.teamUiRowOn(server);
     case OrchestrationPhase.ready:
       switch (c.streamStatus) {
         case OrchestrationStreamStatus.connecting:
@@ -266,8 +263,8 @@ String teamRowSubtitle(
         case OrchestrationStreamStatus.closed:
         case OrchestrationStreamStatus.live:
           return teamReadOnly(config, c)
-              ? l10n.teamUiRowOnReadOnly(profile.name)
-              : l10n.teamUiRowOn(profile.name);
+              ? l10n.teamUiRowOnReadOnly(server)
+              : l10n.teamUiRowOn(server);
       }
   }
 }

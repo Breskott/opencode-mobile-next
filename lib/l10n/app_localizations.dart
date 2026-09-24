@@ -5698,7 +5698,7 @@ abstract class AppLocalizations {
   /// No description provided for @managedRecoveryStoppedWithCleanupError.
   ///
   /// In en, this message translates to:
-  /// **'The local server is stopped. Recovery settings could not be fully cleared; retry disabling recovery in Servers before removing the server.'**
+  /// **'The local server is stopped. Recovery settings could not be fully cleared; turn off Restart after a crash again before removing the server.'**
   String get managedRecoveryStoppedWithCleanupError;
 
   /// No description provided for @pluginMappingPersonal.
@@ -29560,6 +29560,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Time'**
   String get teamUiRunDetailsElapsed;
+
+  /// Leads the supporting line of the server row the app is connected to (the current-server mark)
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get serverRowConnected;
+
+  /// The phone server row's one line: what it runs and where it stands, e.g. 'OpenCode 2 · Running'
+  ///
+  /// In en, this message translates to:
+  /// **'{runtime} · {state}'**
+  String phoneServerRowStatus(String runtime, String state);
+
+  /// State of the server on this phone while it restarts
+  ///
+  /// In en, this message translates to:
+  /// **'Restarting'**
+  String get phoneServerRowRestarting;
+
+  /// State of a server on this phone when the app could not reach it
+  ///
+  /// In en, this message translates to:
+  /// **'Not answering'**
+  String get phoneServerRowNotAnswering;
+
+  /// State of a saved server on this phone that is not set up or not ready
+  ///
+  /// In en, this message translates to:
+  /// **'Not running'**
+  String get phoneServerRowNotRunning;
+
+  /// Menu entry that opens a server's or plugin's details
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get phoneServerRowDetails;
+
+  /// Title of the running OpenCode server on the On this phone page
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode on this phone'**
+  String get termuxPhoneTitle;
+
+  /// One status line under the title, e.g. 'Running · OpenCode 2 · version 2.0.10'
+  ///
+  /// In en, this message translates to:
+  /// **'{state} · {detail}'**
+  String termuxPhoneStatus(String state, String detail);
+
+  /// Which OpenCode and its version, e.g. 'OpenCode 2 · version 2.0.10'
+  ///
+  /// In en, this message translates to:
+  /// **'{runtime} · version {version}'**
+  String termuxPhoneRuntimeVersion(String runtime, String version);
+
+  /// Title of the On this phone page when the installed server is not running
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode is stopped'**
+  String get termuxPhoneStoppedTitle;
+
+  /// Title of the On this phone page when setup failed or a version switch is half done
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode needs attention'**
+  String get termuxPhoneAttentionTitle;
+
+  /// Section of rarer settings on the On this phone page
+  ///
+  /// In en, this message translates to:
+  /// **'Options'**
+  String get termuxPhoneOptions;
+
+  /// Supporting line of the Claude Code row on the On this phone page
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get localAgentRowOptional;
+
+  /// Title of the page for Claude Code on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code'**
+  String get localAgentPageTitle;
+
+  /// Switch that lets the app restart the phone server after it crashes
+  ///
+  /// In en, this message translates to:
+  /// **'Restart after a crash'**
+  String get managedRecoveryRowTitle;
+
+  /// What the restart-after-a-crash switch does
+  ///
+  /// In en, this message translates to:
+  /// **'Up to 3 tries, only while this app is open. It never installs or updates.'**
+  String get managedRecoveryRowDetail;
+
+  /// The AI Team row in Settings › Plugins
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team'**
+  String get pluginsTeamRowTitle;
+
+  /// AI Team row line when a team was found on the server
+  ///
+  /// In en, this message translates to:
+  /// **'Found on {server}'**
+  String pluginsTeamRowFound(String server);
+
+  /// Tooltip of the On the server section menu
+  ///
+  /// In en, this message translates to:
+  /// **'More plugin actions'**
+  String get pluginsSectionMore;
+
+  /// One line under On the server in Settings › Plugins
+  ///
+  /// In en, this message translates to:
+  /// **'Loaded by the server for this project.'**
+  String get pluginsDescriptionShort;
+
+  /// Label of the loading bar while the plugin list loads
+  ///
+  /// In en, this message translates to:
+  /// **'Loading plugins'**
+  String get pluginsLoading;
+
+  /// Row that folds the plugins the server ships with
+  ///
+  /// In en, this message translates to:
+  /// **'Built in'**
+  String get pluginsBuiltinGroup;
+
+  /// How many built-in plugins are active
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active'**
+  String pluginsBuiltinActive(int count);
+
+  /// How many built-in plugins failed to load
+  ///
+  /// In en, this message translates to:
+  /// **'{count} failed to load'**
+  String pluginsBuiltinFailed(int count);
+
+  /// State of a plugin the server could not load
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load'**
+  String get pluginsStatusFailedToLoad;
+
+  /// Tooltip of a plugin row's menu
+  ///
+  /// In en, this message translates to:
+  /// **'More actions for this plugin'**
+  String get pluginsRowMore;
+
+  /// Label above a plugin's raw id in its details
+  ///
+  /// In en, this message translates to:
+  /// **'ID'**
+  String get pluginsDetailsId;
 }
 
 class _AppLocalizationsDelegate

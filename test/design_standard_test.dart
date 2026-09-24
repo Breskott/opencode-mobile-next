@@ -156,8 +156,22 @@ const _migrated = <String, List<String>>{
     'servers_list',
     'servers_add',
     'servers_add_failed',
+    'servers_phone',
   ],
-  'lib/ui/screens/termux_setup_screen.dart': ['termux_setup'],
+  'lib/ui/screens/termux_setup_screen.dart': [
+    'termux_setup',
+    'phone_running',
+    'phone_stopped',
+  ],
+  // The Servers, On this phone and Plugins cleanup
+  // (docs/design/phone-server-screens-cleanup-2026-09-24.md; goldens:
+  // test/goldens/phone_server_screens_golden_test.dart): the phone's server
+  // as one row, its options on On this phone, the server's plugins.
+  'lib/ui/widgets/local_server_row.dart': ['servers_phone'],
+  'lib/ui/widgets/termux_running_server_entry.dart': ['servers_phone'],
+  'lib/ui/widgets/managed_server_recovery_option.dart': ['phone_running'],
+  'lib/ui/widgets/termux_phone_tools.dart': ['phone_running'],
+  'lib/ui/screens/settings/server_plugins_section.dart': ['plugins_server'],
 };
 
 /// file -> classes migrated inside a file too mixed to list whole, with the
@@ -168,6 +182,12 @@ const _migratedClasses = <String, Map<String, List<String>>>{
   'lib/ui/screens/chat/message_view.dart': {
     '_AssistantErrorRow': ['chat_model_error'],
     '_ErrorActionCard': ['chat_model_error'],
+  },
+  // Settings › Plugins: the page and its AI Team row. The AI Team sheet in
+  // the same file (TeamPluginSheet) belongs to the AI Team redesign.
+  'lib/ui/screens/settings/plugins_screen.dart': {
+    'PluginsSettingsScreen': ['plugins_server'],
+    '_PluginsSettingsScreenState': ['plugins_server'],
   },
 };
 

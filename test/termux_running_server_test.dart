@@ -414,7 +414,13 @@ void main() {
       );
       capabilities['permissionGranted'] = true;
       health = const ServerProbeResult.failure('unreachable');
-      await tester.tap(find.byTooltip('Try again'));
+      await tester.tap(
+        find.byKey(const ValueKey('termux-running-server-menu')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const ValueKey('termux-running-server-recheck')),
+      );
       await tester.pumpAndSettle();
       expect(
         find.text('Could not check the server on this phone.'),
@@ -632,6 +638,14 @@ void main() {
     const stoppedStatus = 'phase=stopped\nport=4096\nruntime=opencode1\n';
     Finder key(String name) =>
         find.byKey(ValueKey('termux-running-server-$name'));
+    // Restart, Stop and the rest are in the row's menu (one row per server,
+    // no buttons in rows).
+    Future<void> menu(WidgetTester tester, String name) async {
+      await tester.tap(key('menu'));
+      await tester.pumpAndSettle();
+      await tester.tap(key(name));
+      await tester.pumpAndSettle();
+    }
 
     test(
       'a stopped, set-up server is observed as stopped, not absent',
@@ -667,15 +681,18 @@ void main() {
           stop: () async {},
         ),
       );
-      expect(find.text('Server on this phone is stopped'), findsOneWidget);
+      expect(find.text('This phone'), findsOneWidget);
+      expect(find.text('OpenCode 1 · Stopped'), findsOneWidget);
       expect(key('connect'), findsNothing);
+      // Nothing to restart or stop: no menu offers them.
+      expect(key('menu'), findsNothing);
       expect(key('restart'), findsNothing);
       expect(key('stop'), findsNothing);
       await tester.tap(key('start'));
       await tester.pumpAndSettle();
       // Starting loses nothing, so it does not ask first.
       expect(restarts, 1);
-      expect(find.text('Server found on this phone'), findsOneWidget);
+      expect(find.text('OpenCode 1 · Running'), findsOneWidget);
       expect(key('connect'), findsOneWidget);
     });
 
@@ -695,8 +712,7 @@ void main() {
           },
         ),
       );
-      await tester.tap(key('restart'));
-      await tester.pumpAndSettle();
+      await menu(tester, 'restart');
       expect(
         find.byKey(const ValueKey('restart-local-server-sheet')),
         findsOneWidget,
@@ -707,30 +723,27 @@ void main() {
       await tester.pumpAndSettle();
       expect(restarts, 0);
 
-      await tester.tap(key('restart'));
-      await tester.pumpAndSettle();
+      await menu(tester, 'restart');
       await tester.tap(
         find.byKey(const ValueKey('confirm-restart-local-server')),
       );
       await tester.pumpAndSettle();
       expect(restarts, 1);
 
-      await tester.tap(key('stop'));
-      await tester.pumpAndSettle();
+      await menu(tester, 'stop');
       await tester.tapAt(const Offset(5, 5));
       await tester.pumpAndSettle();
       expect(stops, 0);
 
-      await tester.tap(key('stop'));
-      await tester.pumpAndSettle();
+      await menu(tester, 'stop');
       await tester.tap(find.text('Stop local server').last);
       await tester.pumpAndSettle();
       expect(stops, 1);
-      // The card stays, now offering Start: nothing was taken away.
+      // The row stays, now offering Start: nothing was taken away.
       expect(key('start'), findsOneWidget);
     });
 
-    testWidgets('a failed control says so on the card and keeps its buttons', (
+    testWidgets('a failed control says so in the row and keeps its controls', (
       tester,
     ) async {
       await entry(
@@ -741,16 +754,16 @@ void main() {
           stop: () async => throw const LocalServerControlFailure(''),
         ),
       );
-      await tester.tap(key('restart'));
-      await tester.pumpAndSettle();
+      await menu(tester, 'restart');
       await tester.tap(
         find.byKey(const ValueKey('confirm-restart-local-server')),
       );
       await tester.pumpAndSettle();
       // The manager's own words when it gave any.
       expect(find.text('proot is missing'), findsOneWidget);
+      await tester.tap(key('menu'));
+      await tester.pumpAndSettle();
       expect(key('restart'), findsOneWidget);
-
       await tester.tap(key('stop'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Stop local server').last);
@@ -762,7 +775,7 @@ void main() {
     });
 
     testWidgets(
-      'the connected server stays on the card with Disconnect, and no Open',
+      'the connected server is marked, with Disconnect, and no Open',
       (tester) async {
         final opened = <ServerProfile>[];
         var disconnects = 0;
@@ -776,8 +789,10 @@ void main() {
           onForget: forgotten.add,
           onManage: () => managed++,
         );
+        // The current mark: the word leads the row's line.
+        expect(find.text('Connected · OpenCode 1 · Running'), findsOneWidget);
         expect(
-          find.text('Connected to the server on this phone'),
+          find.byKey(const ValueKey('kit-row-current-mark')),
           findsOneWidget,
         );
         // Already connected: no button leading to where the person is.
@@ -814,11 +829,11 @@ void main() {
           onDisconnect: () async {},
           onForget: (_) {},
         );
-        await tester.tap(key('menu'));
-        await tester.pumpAndSettle();
+        // Nothing to disconnect from and nothing saved to forget: no menu
+        // at all, rather than an empty one.
+        expect(key('menu'), findsNothing);
         expect(key('disconnect'), findsNothing);
         expect(key('forget'), findsNothing);
-        expect(key('recheck'), findsOneWidget);
       },
     );
 
@@ -837,8 +852,14 @@ void main() {
           ),
         );
         expect(tester.takeException(), isNull);
-        for (final name in ['connect', 'restart', 'stop', 'menu']) {
+        for (final name in ['connect', 'menu']) {
           await tester.ensureVisible(key(name));
+          expect(tester.getSize(key(name)).height, greaterThanOrEqualTo(48));
+        }
+        await tester.tap(key('menu'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        for (final name in ['restart', 'stop']) {
           expect(tester.getSize(key(name)).height, greaterThanOrEqualTo(48));
         }
       });

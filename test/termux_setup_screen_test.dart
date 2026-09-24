@@ -11,6 +11,7 @@ import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
+import 'package:opencode_mobile/termux/managed_server_recovery.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -568,10 +569,13 @@ void main() {
     fixture.store.pendingSave = null;
     fixture.statusOutput = null;
     final before = fixture.statusReads;
-    await _revealGuideTarget(tester, find.text('Restart local server'));
-    await tester.tap(find.text('Restart local server'));
+    await _revealGuideTarget(
+      tester,
+      find.byKey(const Key('restart-managed-opencode')),
+    );
+    await tester.tap(find.byKey(const Key('restart-managed-opencode')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Restart'));
+    await tester.tap(find.byKey(const Key('confirm-restart-managed-opencode')));
     await tester.pumpAndSettle();
     expect(fixture.restartCalls, 1);
     expect(fixture.statusReads, greaterThan(before));
@@ -606,7 +610,7 @@ void main() {
           '__OC_SETUP_OUTPUT__\n[oc] authenticated server ready on 127.0.0.1:4096\n';
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
-      expect(find.text('OpenCode is running on this phone.'), findsOneWidget);
+      expect(find.textContaining('Running · OpenCode'), findsOneWidget);
       expect(find.byKey(const Key('setup-live-output')), findsNothing);
       expect(find.text('Continue to app'), findsNothing);
       expect(find.textContaining('Connecting to'), findsOneWidget);
@@ -648,7 +652,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Cancel connection'), findsNothing);
         await _scrollToTop(tester);
-        expect(find.text('OpenCode is running on this phone.'), findsOneWidget);
+        expect(find.textContaining('Running · OpenCode'), findsOneWidget);
         expect(fixture.restartCalls, 0);
         expect(fixture.launchCalls, 1);
         pending.complete();
@@ -683,7 +687,7 @@ void main() {
           'runtime=opencode1\npid=123\n__OC_SETUP_OUTPUT__\n';
       await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
-      expect(find.text('OpenCode is running on this phone.'), findsOneWidget);
+      expect(find.textContaining('Running · OpenCode'), findsOneWidget);
       expect(
         find.text('Could not connect to the phone server.'),
         findsOneWidget,
@@ -760,7 +764,14 @@ void main() {
           const Offset(0, 3000),
         );
         await tester.pumpAndSettle();
-        expect(find.text(l10n.setupRuntimeTwo), findsOneWidget);
+        // The status line names the running version.
+        expect(
+          find.textContaining(
+            '${l10n.phoneServerCardRunning} · '
+            '${l10n.setupRuntimeTwo}',
+          ),
+          findsOneWidget,
+        );
         await openOtherVersions(tester);
         await tester.ensureVisible(
           find.text(l10n.setupSwitchReturn(l10n.setupRuntimeOne)),
@@ -1670,9 +1681,14 @@ void main() {
           'ubuntu=installed\nversion=2.0.10\nruntime=opencode2\n';
       await tester.pump(const Duration(seconds: 3));
       await tester.pumpAndSettle();
-      await _revealGuideTarget(tester, find.text('Stop local server'));
+      await _revealGuideTarget(
+        tester,
+        find.byKey(const Key('stop-managed-opencode')),
+      );
       fixture.pendingInventory = Completer<Map<String, Object>>();
-      await tester.tap(find.text('Stop local server').hitTestable());
+      await tester.tap(
+        find.byKey(const Key('stop-managed-opencode')).hitTestable(),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('confirm-stop-local-server')));
       await tester.pump();
@@ -1811,7 +1827,7 @@ void main() {
       ),
     );
     await fixture.mount(tester);
-    expect(find.text('Version 1.18.29'), findsOneWidget);
+    expect(find.text('OpenCode 1 · version 1.18.29'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Start installed OpenCode'), 200);
     await tester.pump();
     await tester.tap(find.text('Start installed OpenCode'));
@@ -1941,6 +1957,13 @@ void main() {
             if (script.contains('exec "\$MANAGER" recovery-disarm')) {
               return {..._commandResult(), 'exitCode': 75};
             }
+            if (script.contains('exec "\$MANAGER" recovery-arm')) {
+              return _commandResult(
+                stdout:
+                    'phase=ready\nport=4096\nrunner=proot\n'
+                    'version=1.18.21\npid=321\n',
+              );
+            }
             if (script.contains('ubuntu=absent')) {
               return _commandResult(
                 stdout: launchCalls > 0
@@ -2055,11 +2078,11 @@ pid=
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('OpenCode is running on this phone.'), findsOneWidget);
+      expect(find.textContaining('Running · OpenCode'), findsOneWidget);
       expect(find.text('Continue to app'), findsOneWidget);
-      expect(find.text('Stop local server'), findsOneWidget);
-      expect(find.text('Restart local server'), findsOneWidget);
-      expect(find.textContaining('Version 1.18.21'), findsOneWidget);
+      expect(find.byKey(const Key('stop-managed-opencode')), findsOneWidget);
+      expect(find.byKey(const Key('restart-managed-opencode')), findsOneWidget);
+      expect(find.textContaining('version 1.18.21'), findsOneWidget);
 
       await tester.ensureVisible(
         find.byKey(const Key('restart-managed-opencode')),
@@ -2097,21 +2120,25 @@ pid=
       connection.retriesToFail = 1;
       await tester.tap(find.byKey(const Key('restart-managed-opencode')));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Restart'));
+      await tester.tap(
+        find.byKey(const Key('confirm-restart-managed-opencode')),
+      );
       await tester.pumpAndSettle();
       expect(restartCalls, 1);
       expect(connection.retryCalls, 2);
       expect(launchCalls, 1);
-      expect(find.text('OpenCode is running on this phone.'), findsOneWidget);
+      expect(find.textContaining('Running · OpenCode'), findsOneWidget);
 
       restartShouldFail = true;
       await tester.tap(find.byKey(const Key('restart-managed-opencode')));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Restart'));
+      await tester.tap(
+        find.byKey(const Key('confirm-restart-managed-opencode')),
+      );
       await tester.pumpAndSettle();
       expect(restartCalls, 2);
       expect(connection.retryCalls, 2);
-      expect(find.text('OpenCode is running on this phone.'), findsOneWidget);
+      expect(find.textContaining('Running · OpenCode'), findsOneWidget);
       restartShouldFail = false;
 
       await tester.tap(find.byKey(const Key('update-managed-opencode')));
@@ -2130,17 +2157,33 @@ pid=
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       expect(launchCalls, 2);
-      expect(find.text('OpenCode is running on this phone.'), findsOneWidget);
+      expect(find.textContaining('Running · OpenCode'), findsOneWidget);
 
-      await store.prefs.setString(
-        'oc.managedServerRecovery.${store.profiles.first.id}',
-        '{"enabled":true,"token":"synthetic-permit"}',
+      // Restart after a crash is turned on from this page (it moved here
+      // from the servers list); Stop must still stop when clearing it fails.
+      addTearDown(
+        () => ManagedServerRecovery.disposeForPreferences(store.prefs),
+      );
+      final recovery = find.byKey(const ValueKey('managed-recovery-switch'));
+      await tester.ensureVisible(recovery);
+      await tester.pump();
+      await tester.tap(recovery);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(tester.widget<Switch>(recovery).value, isTrue);
+      expect(
+        store.prefs.getString(
+          'oc.managedServerRecovery.${store.profiles.first.id}',
+        ),
+        contains('"enabled":true'),
       );
       // Stopping interrupts whatever the agent is running, so it asks first;
       // both "Keep running" and the scrim leave the server alone.
       Future<void> tapStop() async {
-        await tester.ensureVisible(find.text('Stop local server'));
-        await tester.tap(find.text('Stop local server'));
+        await tester.ensureVisible(
+          find.byKey(const Key('stop-managed-opencode')),
+        );
+        await tester.tap(find.byKey(const Key('stop-managed-opencode')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
       }
@@ -2285,7 +2328,9 @@ __OC_SETUP_OUTPUT__
         await tester.pumpAndSettle();
         await tester.tap(restartButton.hitTestable());
         await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(FilledButton, 'Restart'));
+        await tester.tap(
+          find.byKey(const Key('confirm-restart-managed-opencode')),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
         expect(operation, isNotNull);
@@ -2308,10 +2353,7 @@ __OC_SETUP_OUTPUT__
           await tester.pump(const Duration(seconds: 1));
           await tester.pumpAndSettle();
           expect(connection.retryCalls, 1);
-          expect(
-            find.text('OpenCode is running on this phone.'),
-            findsOneWidget,
-          );
+          expect(find.textContaining('Running · OpenCode'), findsOneWidget);
         }
         await tester.pumpWidget(const SizedBox.shrink());
       },

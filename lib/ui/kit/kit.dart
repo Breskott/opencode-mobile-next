@@ -5,6 +5,7 @@
 /// |---|---|
 /// | [KitScreen] | §1 screen: header, one loading bar, body, pinned bottom |
 /// | [KitButton], [KitActionBlock], [KitAction] | §2 one button hierarchy |
+/// | [KitActionStack] | §2 the same hierarchy with each rare path on its own line |
 /// | [KitStateView] | §3 every not-normal state, page or inline |
 /// | [KitLoadingBar], [KitSkeletonRows], [KitProgress] | §4 progress |
 /// | [KitSkeletonTranscript] | §4 a conversation loading |
@@ -12,6 +13,7 @@
 /// | [KitAskLine] | §2, §5 a one-time question with its two answers |
 /// | [KitRequestCard] | §2, §3 a request the person answers (permission, question) |
 /// | [KitRow], [SectionLabel] | §6 rows and sections |
+/// | [KitRowIcon], [KitRowMenu], [KitChevron], [KitSwitchRow], [KitExpandRow] | §6 a row's current mark, overflow menu, chevron, switch and unfolding group |
 /// | [KitPanel] | §3 a block of content the person works with |
 /// | [KitStatusMark] | §6 a step's leading state mark (waiting, working, done, failed) |
 /// | [KitTaskMark] | §6 a task's leading mark: a step's four, needs you, stopped |
@@ -29,6 +31,7 @@ export '../widgets/product_states.dart'
         ProductErrorState,
         ProductInlineEmpty,
         SectionLabel;
+export 'kit_action_stack.dart';
 export 'kit_ask_line.dart';
 export 'kit_buttons.dart';
 export 'kit_panel.dart';
@@ -36,6 +39,7 @@ export 'kit_notice.dart';
 export 'kit_progress.dart';
 export 'kit_request_card.dart';
 export 'kit_row.dart';
+export 'kit_row_parts.dart';
 export 'kit_screen.dart';
 export 'kit_skeleton_transcript.dart';
 export 'kit_state_view.dart';

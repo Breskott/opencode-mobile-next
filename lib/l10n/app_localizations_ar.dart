@@ -3465,7 +3465,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get managedRecoveryStoppedWithCleanupError =>
-      'الخادم المحلي متوقف. تعذّر مسح إعدادات الاستعادة بالكامل؛ أعد محاولة تعطيل الاستعادة في «الخوادم» قبل إزالة الخادم.';
+      'الخادم المحلي متوقف. تعذّر مسح إعدادات الاستعادة بالكامل؛ أوقف «إعادة التشغيل بعد التعطل» مرة أخرى قبل إزالة الخادم.';
 
   @override
   String get pluginMappingPersonal =>
@@ -18594,4 +18594,98 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiRunDetailsElapsed => 'الوقت';
+
+  @override
+  String get serverRowConnected => 'متصل';
+
+  @override
+  String phoneServerRowStatus(String runtime, String state) {
+    return '$runtime · $state';
+  }
+
+  @override
+  String get phoneServerRowRestarting => 'تجري إعادة التشغيل';
+
+  @override
+  String get phoneServerRowNotAnswering => 'لا يستجيب';
+
+  @override
+  String get phoneServerRowNotRunning => 'لا يعمل';
+
+  @override
+  String get phoneServerRowDetails => 'التفاصيل';
+
+  @override
+  String get termuxPhoneTitle => 'OpenCode على هذا الهاتف';
+
+  @override
+  String termuxPhoneStatus(String state, String detail) {
+    return '$state · $detail';
+  }
+
+  @override
+  String termuxPhoneRuntimeVersion(String runtime, String version) {
+    return '$runtime · الإصدار $version';
+  }
+
+  @override
+  String get termuxPhoneStoppedTitle => 'OpenCode متوقف';
+
+  @override
+  String get termuxPhoneAttentionTitle => 'OpenCode يحتاج إلى انتباه';
+
+  @override
+  String get termuxPhoneOptions => 'الخيارات';
+
+  @override
+  String get localAgentRowOptional => 'اختياري';
+
+  @override
+  String get localAgentPageTitle => 'Claude Code';
+
+  @override
+  String get managedRecoveryRowTitle => 'إعادة التشغيل بعد التعطل';
+
+  @override
+  String get managedRecoveryRowDetail =>
+      'حتى 3 محاولات، فقط أثناء فتح هذا التطبيق. لا يثبّت ولا يحدّث أبدًا.';
+
+  @override
+  String get pluginsTeamRowTitle => 'فريق الذكاء الاصطناعي';
+
+  @override
+  String pluginsTeamRowFound(String server) {
+    return 'موجود على $server';
+  }
+
+  @override
+  String get pluginsSectionMore => 'إجراءات إضافية للإضافات';
+
+  @override
+  String get pluginsDescriptionShort => 'يحمّلها الخادم لهذا المشروع.';
+
+  @override
+  String get pluginsLoading => 'جارٍ تحميل الإضافات';
+
+  @override
+  String get pluginsBuiltinGroup => 'مدمجة';
+
+  @override
+  String pluginsBuiltinActive(int count) {
+    return '$count نشطة';
+  }
+
+  @override
+  String pluginsBuiltinFailed(int count) {
+    return 'تعذّر تحميل $count';
+  }
+
+  @override
+  String get pluginsStatusFailedToLoad => 'تعذّر التحميل';
+
+  @override
+  String get pluginsRowMore => 'إجراءات إضافية لهذه الإضافة';
+
+  @override
+  String get pluginsDetailsId => 'المعرّف';
 }

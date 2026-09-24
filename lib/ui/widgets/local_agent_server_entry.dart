@@ -8,7 +8,7 @@ import '../../state/local_agent_server.dart';
 import '../../state/profiles.dart';
 import '../../termux/local_agent_runtime.dart';
 import 'local_agent_onboarding.dart';
-import 'local_server_card.dart';
+import 'local_server_row.dart';
 import 'safety_confirms.dart';
 
 enum _Operation { starting, restarting, stopping }
@@ -16,12 +16,13 @@ enum _Operation { starting, restarting, stopping }
 /// Claude Code on this phone, on the Servers screen and in the server
 /// switcher, controlled where it is shown.
 ///
-/// It sits beside the OpenCode server's card and looks the same
-/// ([LocalServerCard]), but its state is the daemon's: `claude.sh status`
+/// It sits beside the OpenCode server's row and looks the same
+/// ([LocalServerRow]), but its state is the daemon's: `claude.sh status`
 /// read on mount, on app resume, whenever [revision] changes and after every
 /// control. Installing, signing in and choosing a project folder stay in the
-/// setup wizard ("Manage setup"); the card appears only once there is
-/// something installed to control.
+/// setup wizard (Details); the row appears once there is something
+/// installed to control, or a saved server for it (the saved server is
+/// this row, never a second one on the list).
 class LocalAgentServerEntry extends StatefulWidget {
   const LocalAgentServerEntry({
     super.key,
@@ -34,6 +35,7 @@ class LocalAgentServerEntry extends StatefulWidget {
     this.onDisconnect,
     this.onForget,
     this.onManage,
+    this.onOpenSaved,
     this.runtime,
   });
 
@@ -62,6 +64,12 @@ class LocalAgentServerEntry extends StatefulWidget {
   /// Opens the setup wizard, where install, sign-in and the project folder
   /// live. Also where Connect goes when no server is saved yet.
   final VoidCallback? onManage;
+
+  /// Opens the saved server the ordinary way while the phone cannot say
+  /// whether it runs (no access, no answer, still checking): connecting may
+  /// still work, and a choice between OpenCode versions goes to setup. Null
+  /// opens [onManage] instead.
+  final ValueChanged<ServerProfile>? onOpenSaved;
 
   final LocalAgentRuntime? runtime;
 
@@ -213,22 +221,64 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
   Widget build(BuildContext context) {
     if (!platformCapabilities.supportsTermux) return const SizedBox.shrink();
     final status = _status;
-    // Nothing installed is the wizard's business, not a server to control.
-    if (status == null || !status.installed) return const SizedBox.shrink();
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final profile = savedLocalAgentProfile(widget.profiles);
+    // Nothing installed is the wizard's business, not a server to control;
+    // but a saved server stays on the list as this one row.
+    if (status == null || !status.installed) {
+      if (profile == null) return const SizedBox.shrink();
+      return LocalServerRow(
+        keyPrefix: 'local-agent-server',
+        title: l10n.localAgentTitle,
+        status: status == null
+            ? (_checking
+                  ? l10n.phoneServerCardChecking
+                  : l10n.phoneServerRowNotAnswering)
+            : l10n.phoneServerRowNotRunning,
+        connectedLabel: l10n.serverRowConnected,
+        stopped: false,
+        running: false,
+        locked: false,
+        inProgress: _checking,
+        connected: false,
+        menuTooltip: l10n.localAgentMore,
+        menuItems: [
+          LocalServerRowMenuItem(
+            keySuffix: 'recheck',
+            label: l10n.commonRetry,
+            onSelected: () => unawaited(_check()),
+          ),
+          if (widget.onManage != null)
+            LocalServerRowMenuItem(
+              keySuffix: 'manage',
+              label: l10n.phoneServerRowDetails,
+              onSelected: widget.onManage!,
+            ),
+          if (widget.onForget != null)
+            LocalServerRowMenuItem(
+              keySuffix: 'forget',
+              label: l10n.phoneServerForget,
+              onSelected: () => widget.onForget!(profile),
+            ),
+        ],
+        startLabel: l10n.phoneServerStart,
+        restartLabel: l10n.termuxRestartConfirm,
+        stopLabel: l10n.phoneServerStop,
+        onOpen: widget.onOpenSaved != null
+            ? () => widget.onOpenSaved!(profile)
+            : widget.onManage ?? () => unawaited(_check()),
+      );
+    }
     final running = status.isReady;
     final connected =
         running && profile != null && profile.id == widget.connectedProfileID;
-    final title = switch (_operation) {
-      _Operation.starting => l10n.localAgentCardStarting,
-      _Operation.restarting => l10n.localAgentCardRestarting,
-      _Operation.stopping => l10n.localAgentCardStopping,
-      null when _checking => l10n.managedHealthChecking,
-      null when connected => l10n.localAgentCardConnected,
-      null when running => l10n.localAgentReadyTitle,
-      null when status.busy => l10n.localAgentInstalling,
-      null => l10n.localAgentCardStopped,
+    final state = switch (_operation) {
+      _Operation.starting => l10n.phoneServerCardStarting,
+      _Operation.restarting => l10n.phoneServerRowRestarting,
+      _Operation.stopping => l10n.phoneServerCardStopping,
+      null when running => l10n.phoneServerCardRunning,
+      null when status.busy => l10n.phoneServerCardSettingUp,
+      null => l10n.phoneServerCardStopped,
     };
     final failure =
         _failure ??
@@ -242,10 +292,11 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
             ? l10n.localAgentKilled
             : null);
 
-    return LocalServerCard(
+    return LocalServerRow(
       keyPrefix: 'local-agent-server',
-      title: title,
-      subtitle: l10n.localAgentCardSubtitle,
+      title: l10n.localAgentTitle,
+      status: state,
+      connectedLabel: l10n.serverRowConnected,
       stopped: !running,
       locked: _locked || status.busy,
       inProgress: _operation != null || status.busy,
@@ -253,53 +304,33 @@ class _LocalAgentServerEntryState extends State<LocalAgentServerEntry>
       failure: failure,
       menuTooltip: l10n.localAgentMore,
       menuItems: [
+        if (widget.onManage != null)
+          LocalServerRowMenuItem(
+            keySuffix: 'manage',
+            label: l10n.phoneServerRowDetails,
+            onSelected: widget.onManage!,
+          ),
         if (connected && widget.onDisconnect != null)
-          LocalServerCardMenuItem(
+          LocalServerRowMenuItem(
             keySuffix: 'disconnect',
             label: l10n.e7WorkspaceDisconnect,
             onSelected: () => unawaited(widget.onDisconnect!()),
           ),
-        LocalServerCardMenuItem(
-          keySuffix: 'recheck',
-          label: l10n.workRefresh,
-          onSelected: () => unawaited(_check()),
-        ),
-        if (widget.onManage != null)
-          LocalServerCardMenuItem(
-            keySuffix: 'manage',
-            label: l10n.phoneServerManage,
-            onSelected: widget.onManage!,
-          ),
         if (profile != null && widget.onForget != null)
-          LocalServerCardMenuItem(
+          LocalServerRowMenuItem(
             keySuffix: 'forget',
             label: l10n.phoneServerForget,
             onSelected: () => widget.onForget!(profile),
           ),
       ],
       startLabel: l10n.phoneServerStart,
-      connectLabel: l10n.phoneServerConnect,
-      openLabel: l10n.phoneServerOpen,
       restartLabel: l10n.termuxRestartConfirm,
       stopLabel: l10n.phoneServerStop,
       onStart: () => unawaited(_start()),
       onConnect: () => unawaited(_connect()),
       onRestart: () => unawaited(_restart()),
       onStop: () => unawaited(_stop()),
-      detailsTitle: status.claudeVersion.isEmpty
-          ? null
-          : l10n.termuxRunningDetails,
-      details: [
-        if (status.claudeVersion.isNotEmpty)
-          Text(
-            l10n.localAgentVersions(
-              status.claudeVersion,
-              status.paseoVersion,
-              status.nodeVersion,
-            ),
-            textDirection: TextDirection.ltr,
-          ),
-      ],
+      onOpen: widget.onManage,
     );
   }
 }

@@ -517,7 +517,11 @@ void main() {
               .dy,
         ),
       );
-      // Controlled where it is shown.
+      // Controlled where it is shown, from its row's menu.
+      await tester.tap(
+        find.byKey(const ValueKey('termux-running-server-menu')),
+      );
+      await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('termux-running-server-restart')),
         findsOneWidget,
@@ -526,6 +530,8 @@ void main() {
         find.byKey(const ValueKey('termux-running-server-stop')),
         findsOneWidget,
       );
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
 
       await tester.tap(
         find.byKey(const ValueKey('termux-running-server-connect')),

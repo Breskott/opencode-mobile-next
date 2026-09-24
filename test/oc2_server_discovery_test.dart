@@ -218,7 +218,11 @@ void main() {
       ]);
       await tester.pumpWidget(_app(store, conn));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('OpenCode one'));
+      // The phone's own server is the one "This phone" row; a remote one
+      // keeps its saved name.
+      await tester.tap(
+        find.text(mode == 'mixed-remote' ? 'OpenCode one' : 'This phone'),
+      );
       await tester.pumpAndSettle();
       expect(conn.connectCalls, mode == 'mixed-local' ? 0 : 1);
       expect(
@@ -252,7 +256,7 @@ void main() {
         addTearDown(conn.dispose);
         await tester.pumpWidget(_app(store, conn));
         await tester.pumpAndSettle();
-        await tester.tap(find.byType(PopupMenuButton<String>).first);
+        await tester.tap(find.byType(KitRowMenu).first);
         await tester.pumpAndSettle();
         await tester.tap(find.text('Edit'));
         await tester.pumpAndSettle();

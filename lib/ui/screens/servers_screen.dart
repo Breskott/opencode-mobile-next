@@ -17,6 +17,7 @@ import '../../state/paseo_connection_probe.dart';
 import '../../state/pairing.dart';
 import '../../state/profiles.dart';
 import '../../state/external_agents.dart';
+import '../../state/local_agent_server.dart';
 import '../../state/first_run.dart';
 import '../../termux/bridge.dart';
 import '../app_theme.dart';
@@ -24,7 +25,6 @@ import '../kit/kit.dart';
 import '../setup_commands.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/first_run_choice.dart';
-import '../widgets/managed_server_health.dart';
 import '../widgets/product_states.dart';
 import '../widgets/team_host_form.dart';
 import '../widgets/local_agent_server_entry.dart';
@@ -276,6 +276,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           onForget: _delete,
           onManage: _openTermuxSetup,
           onConnect: (profile) => _connect(profile, detectedRunning: true),
+          onOpenSaved: _connect,
         ),
       ],
     );
@@ -310,6 +311,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       onForget: _delete,
       onManage: _openTermuxSetup,
       onConnect: (profile) => _connect(profile, detectedRunning: true),
+      onOpenSaved: _connect,
       onEnterCredentials: (server, existing) => _enterPhoneCredentials(
         existing: existing,
         openCode2: server.flavor == ServerFlavor.v2,
@@ -782,9 +784,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                       onDismiss: () => setState(() => _listFailure = null),
                     ),
                   ),
-                _Rails(
-                  child: _runningServerEntry(store.profiles, accountConnection),
-                ),
+                // The phone's own servers lead the list, one row each; the
+                // saved sign-ins they stand for are not listed again below.
+                _runningServerEntry(store.profiles, accountConnection),
                 // OpenCode inside this app is "This phone", managed in place;
                 // its saved entries are how the app reaches it, so they are
                 // not listed again below.
@@ -806,10 +808,12 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                   const Divider(height: 17),
                 ],
                 for (final p in store.profiles)
-                  if (!looksLikeInAppServer(p))
+                  if (!looksLikeInAppServer(p) && !_shownAsPhoneRow(p))
                     _ServerRow(
                       profile: p,
-                      active: p.id == activeId,
+                      connected:
+                          accountConnection.api != null &&
+                          accountConnection.profile?.id == p.id,
                       busy: _busy,
                       showAccount:
                           p.id == activeId &&
@@ -825,24 +829,10 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                         ),
                       ),
                     ),
-                if (platformCapabilities.supportsTermux &&
-                    store.profiles.any(
-                      (p) => TermuxBridge.managesServerUrl(p.baseUrl),
-                    ))
-                  _Rails(
-                    child: ManagedServerHealth(
-                      prefs: store.prefs,
-                      profileID: store.profiles
-                          .firstWhere(
-                            (p) => TermuxBridge.managesServerUrl(p.baseUrl),
-                          )
-                          .id,
-                      onManage: _openTermuxSetup,
-                    ),
-                  ),
                 // Other ways in, as rows (§6): the OpenCode 2 shortcut, this
-                // phone, and the rarer setups folded under one row.
-                const SizedBox(height: 8),
+                // phone, and the rarer setups folded under one row. A
+                // hairline keeps them from reading as more servers.
+                const Divider(height: 17, indent: 16, endIndent: 16),
                 _OpenCode2Entry(
                   onTap: _busy ? null : () => _edit(openCode2Intent: true),
                 ),
@@ -866,6 +856,15 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   }
 }
 
+/// A saved server the phone's own row stands for (the OpenCode server this
+/// app runs in Termux, or Claude Code on this phone): on a phone that can
+/// run them the list shows that row, not a second one named after the
+/// address it was saved with (docs/design/phone-server-screens-cleanup-
+/// 2026-09-24.md §1: one row per server).
+bool _shownAsPhoneRow(ServerProfile profile) =>
+    platformCapabilities.supportsTermux &&
+    (isManagedPhoneProfile(profile) || isLocalAgentProfile(profile));
+
 /// The page's 16 dp side rails for a part that does not pad itself (the
 /// kit's rows and section labels do).
 class _Rails extends StatelessWidget {
@@ -881,13 +880,14 @@ class _Rails extends StatelessWidget {
 }
 
 /// One saved server as a kit row (design standard §6): its kind as the
-/// icon (tinted when it is the active one), the name, then what it runs and
-/// its address, with a credential that must be re-entered said first, in
-/// the error colour. Its actions are behind the row's menu.
+/// icon, the name, then what it runs and its address, with a credential that
+/// must be re-entered said first, in the error colour. The server the app is
+/// connected to carries the current mark: a filled accent circle and
+/// "Connected" leading its line. Tapping connects; the rest is in the menu.
 class _ServerRow extends StatelessWidget {
   const _ServerRow({
     required this.profile,
-    required this.active,
+    required this.connected,
     required this.busy,
     required this.showAccount,
     required this.onConnect,
@@ -897,7 +897,7 @@ class _ServerRow extends StatelessWidget {
   });
 
   final ServerProfile profile;
-  final bool active;
+  final bool connected;
   final bool busy;
   final bool showAccount;
   final VoidCallback onConnect;
@@ -921,60 +921,64 @@ class _ServerRow extends StatelessWidget {
         : p.requiresCodexTokenReentry
         ? copy.e7SetupTokenRequired
         : null;
-    return KitRow(
-      key: ValueKey('server-row-${p.id}'),
-      leading: KitRow.icon(
-        context,
-        isLoopbackHost(Uri.tryParse(p.baseUrl)?.host ?? '')
-            ? AppIconography.phone
-            : AppIconography.server,
-        color: active ? theme.colorScheme.primary : null,
-      ),
-      title: p.name,
-      supporting: TextSpan(
-        children: [
-          if (reentry != null)
-            TextSpan(
-              text: '$reentry · ',
-              style: TextStyle(color: error, fontWeight: FontWeight.w600),
-            ),
-          if (kind != null) TextSpan(text: '$kind · '),
-          TextSpan(
-            text: p.baseUrl,
-            style: const TextStyle(fontFamily: AppTheme.monoFamily),
-          ),
-        ],
-      ),
-      supportingMaxLines: 2,
-      enabled: !busy,
-      onTap: onConnect,
-      trailing: PopupMenuButton<String>(
-        key: ValueKey('server-menu-${p.id}'),
+    return Semantics(
+      selected: connected,
+      child: KitRow(
+        key: ValueKey('server-row-${p.id}'),
+        leading: KitRowIcon(
+          isLoopbackHost(Uri.tryParse(p.baseUrl)?.host ?? '')
+              ? AppIconography.phone
+              : AppIconography.server,
+          current: connected,
+        ),
+        title: p.name,
+        supporting: TextSpan(
+          children: [
+            if (reentry != null)
+              TextSpan(
+                text: '$reentry · ',
+                style: TextStyle(color: error, fontWeight: FontWeight.w600),
+              ),
+            if (connected) kitCurrentSpan(context, copy.serverRowConnected),
+            if (kind != null) TextSpan(text: '$kind · '),
+            TextSpan(text: _shortAddress(p.baseUrl)),
+          ],
+        ),
+        supportingMaxLines: 2,
         enabled: !busy,
-        iconColor: AppTheme.mutedOf(theme),
-        onSelected: (v) {
-          if (v == 'edit') onEdit();
-          if (v == 'del') onRemove();
-          if (v == 'conn') onConnect();
-          if (v == 'account') onAccount();
-        },
-        itemBuilder: (_) => [
-          if (showAccount)
-            PopupMenuItem(
-              value: 'account',
-              child: Text(_connectionL10n(context).agentAccountTitle),
+        onTap: onConnect,
+        trailing: KitRowMenu(
+          key: ValueKey('server-menu-${p.id}'),
+          enabled: !busy,
+          items: [
+            if (showAccount)
+              KitMenuItem(
+                label: _connectionL10n(context).agentAccountTitle,
+                onSelected: onAccount,
+              ),
+            KitMenuItem(label: copy.e7SetupConnect, onSelected: onConnect),
+            KitMenuItem(label: copy.e7SetupEdit, onSelected: onEdit),
+            // Destructive: error-coloured, confirmed by the sheet it opens.
+            KitMenuItem(
+              label: copy.capsuleRemove,
+              destructive: true,
+              onSelected: onRemove,
             ),
-          PopupMenuItem(value: 'conn', child: Text(copy.e7SetupConnect)),
-          PopupMenuItem(value: 'edit', child: Text(copy.e7SetupEdit)),
-          // Destructive: error-coloured, confirmed by the sheet it opens.
-          PopupMenuItem(
-            value: 'del',
-            child: Text(copy.capsuleRemove, style: TextStyle(color: error)),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+/// Where a saved server is, as a row shows it: the host and an explicit
+/// port, without the scheme, so the line reads as a place and does not
+/// break at "https://". The full address is in the server's editor.
+String _shortAddress(String baseUrl) {
+  final uri = Uri.tryParse(baseUrl.trim());
+  if (uri == null || uri.host.isEmpty) return baseUrl;
+  final host = uri.host.contains(':') ? '[${uri.host}]' : uri.host;
+  return uri.hasPort ? '$host:${uri.port}' : host;
 }
 
 /// First run asks the only real fork, one question with plain answers (UX

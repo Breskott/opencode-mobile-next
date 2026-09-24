@@ -9,6 +9,7 @@ import 'package:opencode_mobile/state/codex_connection_probe.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
@@ -270,7 +271,7 @@ void main() {
     );
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.tap(find.byType(KitRowMenu));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
