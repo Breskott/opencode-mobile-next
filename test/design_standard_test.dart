@@ -32,12 +32,23 @@ const _migrated = <String, List<String>>{
     'work_not_answering',
     'work_runaway',
     'work_chooser',
+    // Step 2 leftovers: conversation rows on KitRow, the parts below.
+    'work_team',
+    'work_nudge',
+    'work_other_servers',
   ],
   'lib/ui/widgets/other_projects_panel.dart': ['work_loaded'],
   'lib/ui/widgets/work_status_line.dart': [
     'work_not_answering',
     'work_runaway',
   ],
+  // Step 2 leftovers (test/goldens/work_parts_golden_test.dart): the AI
+  // Team section, the one-time tip, the other servers and the shell's
+  // connection line on the other tabs.
+  'lib/ui/widgets/team_card.dart': ['work_team'],
+  'lib/ui/widgets/nudge_card.dart': ['work_nudge'],
+  'lib/ui/widgets/other_servers_panel.dart': ['work_other_servers'],
+  'lib/ui/widgets/connection_status_banner.dart': ['shell_reconnecting'],
 };
 
 /// file -> (pattern, reason) exceptions. Keep it short.

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api2/models.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitRow;
 import 'package:opencode_mobile/ui/screens/run_result_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
@@ -37,7 +38,7 @@ Future<void> _menu(WidgetTester tester, String item) async {
     find.descendant(
       of: find.ancestor(
         of: find.text('Polish the mobile checkout'),
-        matching: find.byType(ListTile),
+        matching: find.byType(KitRow),
       ),
       matching: find.byType(PopupMenuButton<String>),
     ),
