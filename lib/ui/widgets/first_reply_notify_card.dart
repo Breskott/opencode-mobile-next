@@ -5,6 +5,7 @@ import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/first_run.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 
 /// "Get told when it's done?" — the one time the app asks for notifications
 /// (UX plan 5.6 step 6).
@@ -111,82 +112,27 @@ class _FirstReplyNotifyCardState extends State<FirstReplyNotifyCard> {
       return const SizedBox.shrink();
     }
     if (widget.compact) return const SizedBox.shrink();
-    final theme = Theme.of(context);
     final copy = lookupAppLocalizations(Localizations.localeOf(context));
     // One line, not a card: it sits above the composer, where every row is
     // taken from the transcript. The explanation is Android's own prompt.
+    // Both answers stay in view; at large text they move under the question.
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 860),
-        child: Semantics(
-          container: true,
-          label: copy.firstRunNotifyBody,
-          child: Padding(
-            key: const ValueKey('first-reply-notify-card'),
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 2),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final scale = MediaQuery.textScalerOf(context).scale(1);
-                final oneLine = constraints.maxWidth / scale >= 380;
-                final question = Row(
-                  children: [
-                    Icon(
-                      AppIconography.inbox,
-                      size: 18,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        copy.firstRunNotifyTitle,
-                        // The full explanation is the semantics label and
-                        // Android's own prompt; two lines is enough here.
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ),
-                  ],
-                );
-                final buttons = [
-                  TextButton(
-                    key: const ValueKey('first-reply-notify-decline'),
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                      foregroundColor: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    onPressed: _working ? null : _decline,
-                    child: Text(copy.firstRunNotifyDecline),
-                  ),
-                  TextButton(
-                    key: const ValueKey('first-reply-notify-accept'),
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                    ),
-                    onPressed: _working ? null : _accept,
-                    child: Text(copy.firstRunNotifyAccept),
-                  ),
-                ];
-                // One line where it fits; at large text the answers move
-                // under the question instead of squeezing it.
-                if (oneLine) {
-                  return Row(
-                    children: [
-                      Expanded(child: question),
-                      ...buttons,
-                    ],
-                  );
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    question,
-                    Wrap(alignment: WrapAlignment.end, children: buttons),
-                  ],
-                );
-              },
-            ),
+        child: KitAskLine(
+          key: const ValueKey('first-reply-notify-card'),
+          icon: AppIconography.inbox,
+          question: copy.firstRunNotifyTitle,
+          semanticsLabel: copy.firstRunNotifyBody,
+          decline: KitAction(
+            key: const ValueKey('first-reply-notify-decline'),
+            label: copy.firstRunNotifyDecline,
+            onPressed: _working ? null : _decline,
+          ),
+          accept: KitAction(
+            key: const ValueKey('first-reply-notify-accept'),
+            label: copy.firstRunNotifyAccept,
+            onPressed: _working ? null : _accept,
           ),
         ),
       ),

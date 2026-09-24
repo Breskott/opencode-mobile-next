@@ -17925,6 +17925,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Type / for commands · long-press a message for its actions';
 
   @override
+  String get chatLoadingConversation => 'Loading the conversation';
+
+  @override
+  String get chatLoadFailedTitle => 'Couldn\'t open this conversation';
+
+  @override
+  String get chatLoadFailedBody =>
+      'Nothing is lost. Try again when OpenCode answers.';
+
+  @override
+  String get chatSendFailed => 'Your message wasn\'t sent';
+
+  @override
+  String get chatSendFailedKept => 'It\'s back in the message box.';
+
+  @override
   String get chatStartSuggestionsLabel => 'Ways to start';
 
   @override

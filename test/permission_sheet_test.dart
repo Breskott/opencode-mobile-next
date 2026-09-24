@@ -78,9 +78,13 @@ void main() {
           tester.getBottomLeft(allow).dy,
           lessThanOrEqualTo(tester.getTopLeft(always).dy),
         );
-        if (scale == 1) {
-          expect(tester.getTopLeft(allow).dy, tester.getTopLeft(reject).dy);
-        }
+        // Design standard §2: stacked on a phone, Allow once (primary)
+        // above Reject (secondary), both full width.
+        expect(
+          tester.getBottomLeft(allow).dy,
+          lessThanOrEqualTo(tester.getTopLeft(reject).dy),
+        );
+        expect(tester.getSize(allow).width, tester.getSize(reject).width);
         expect(tester.takeException(), isNull);
       },
     );
@@ -103,7 +107,14 @@ void main() {
       await tester.tap(allow);
       await tester.pump();
       expect(find.text('Allow once'), findsOneWidget);
-      expect(tester.widget<FilledButton>(allow).onPressed, isNull);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.descendant(of: allow, matching: find.byType(FilledButton)),
+            )
+            .onPressed,
+        isNull,
+      );
       await tester.tap(allow);
       expect(submitted, 1);
       pending.complete();

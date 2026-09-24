@@ -22,6 +22,9 @@ class KitStatusLine extends StatelessWidget {
     this.dismissKey,
     this.dismissTooltip,
     this.controlsTogether = false,
+    this.supporting,
+    this.supportingKey,
+    this.supportingSemanticsLabel,
   });
 
   final IconData icon;
@@ -45,6 +48,17 @@ class KitStatusLine extends StatelessWidget {
   /// height-limited slot that scrolls to its end then shows every control
   /// together (a one-time tip above the composer).
   final bool controlsTogether;
+
+  /// Optional: one short muted sentence under [message], for what to do
+  /// next ("Send it again") or a fact that belongs to the same condition
+  /// ("2 drafts will send when connected"). Never the raw error: that goes
+  /// behind a Details action.
+  final String? supporting;
+  final Key? supportingKey;
+
+  /// What a screen reader says for [supporting] when its words alone would
+  /// not (a bare link: "Shared conversation link …").
+  final String? supportingSemanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +173,23 @@ class KitStatusLine extends StatelessWidget {
                           key: messageKey,
                           style: theme.textTheme.bodyMedium,
                         ),
+                        if (supporting case final supporting?)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Semantics(
+                              label: supportingSemanticsLabel,
+                              excludeSemantics:
+                                  supportingSemanticsLabel != null,
+                              child: Text(
+                                supporting,
+                                key: supportingKey,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.mutedOf(theme),
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ),
                         // At large text the action moves under the words
                         // instead of squeezing them.
                         if (stacked && controlsTogether)

@@ -10,6 +10,7 @@ import '../../../api/models.dart';
 import '../../../state/connection.dart';
 import '../../permission_presentation.dart';
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
 import '../../widgets/code_highlight.dart';
 import '../../widgets/diff_view.dart';
 import '../../widgets/request_routes.dart';
@@ -230,14 +231,29 @@ class _PermissionSheetState extends State<PermissionSheet> {
                   ),
                 ],
               ),
+              // The one hierarchy (design standard §2): the confirmation
+              // full width, the way back under it, start-aligned. (Kit
+              // buttons, not KitActionBlock: a dialog measures its actions'
+              // intrinsic size, which a LayoutBuilder cannot give.)
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text(_chatL10n(context).chatUiKeepAsking),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: Text(_chatL10n(context).chatUiConfirmAlwaysAllow),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    KitButton.primary(
+                      key: const Key('permission-confirm-always'),
+                      onPressed: () => Navigator.pop(context, true),
+                      label: _chatL10n(context).chatUiConfirmAlwaysAllow,
+                    ),
+                    const SizedBox(height: 4),
+                    KitInset(
+                      child: KitButton.tertiary(
+                        key: const Key('permission-keep-asking'),
+                        onPressed: () => Navigator.pop(context, false),
+                        label: _chatL10n(context).chatUiKeepAsking,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             );
@@ -310,7 +326,8 @@ class _PermissionSheetState extends State<PermissionSheet> {
       children: [
         Flexible(
           child: SingleChildScrollView(
-            padding: const EdgeInsetsDirectional.fromSTEB(20, 18, 20, 12),
+            // The standard's 16 dp rails, the same as the actions below.
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 18, 16, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -498,72 +515,35 @@ class _PermissionSheetState extends State<PermissionSheet> {
     );
   }
 
-  Widget _pendingLabel(String label, {required bool pending}) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      if (pending) ...[
-        const SizedBox.square(
-          dimension: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        const SizedBox(width: 8),
-      ],
-      Flexible(child: Text(label, textAlign: TextAlign.center)),
-    ],
-  );
-
-  Widget _triad(ThemeData theme) {
-    final allow = FilledButton(
+  /// The decision in the one button hierarchy (design standard §2): Allow
+  /// once is the primary, Reject the secondary under it, Always allow the
+  /// rare path, start-aligned under both. A reply in flight keeps its label
+  /// and shows the button's own spinner; the others wait.
+  Widget _triad(ThemeData theme) => KitActionBlock(
+    primary: KitAction(
       key: const Key('permission-allow-once'),
       onPressed: _replying ? null : () => _reply('once'),
-      child: _pendingLabel(
-        _chatL10n(context).chatUiAllowOnce,
-        pending: _replying && _pendingReply == 'once',
-      ),
-    );
-    final reject = OutlinedButton(
+      working: _replying && _pendingReply == 'once',
+      label: _chatL10n(context).chatUiAllowOnce,
+    ),
+    secondary: KitAction(
       key: const Key('permission-reject'),
       onPressed: _replying ? null : _startReject,
-      child: Text(
-        widget.supportsRejectMessage
-            ? _chatL10n(context).chatUiReject1
-            : _chatL10n(context).chatUiReject,
-      ),
-    );
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final largeText = MediaQuery.textScalerOf(context).scale(14) > 20;
-            if (largeText || constraints.maxWidth < 280) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [allow, const SizedBox(height: 8), reject],
-              );
-            }
-            return Row(
-              children: [
-                Expanded(child: reject),
-                const SizedBox(width: 12),
-                Expanded(child: allow),
-              ],
-            );
-          },
+      working: _replying && _pendingReply == 'reject',
+      label: widget.supportsRejectMessage
+          ? _chatL10n(context).chatUiReject1
+          : _chatL10n(context).chatUiReject,
+    ),
+    tertiary: [
+      if (widget.allowPersistentPermission)
+        KitAction(
+          key: const Key('permission-allow-always'),
+          onPressed: _replying ? null : () => _reply('always'),
+          icon: AppIconography.permissions,
+          label: _chatL10n(context).chatUiAlwaysAllow,
         ),
-        if (widget.allowPersistentPermission) ...[
-          const SizedBox(height: 4),
-          TextButton.icon(
-            key: const Key('permission-allow-always'),
-            onPressed: _replying ? null : () => _reply('always'),
-            icon: const Icon(AppIconography.permissions, size: 18),
-            label: Text(_chatL10n(context).chatUiAlwaysAllow),
-          ),
-        ],
-      ],
-    );
-  }
+    ],
+  );
 
   Widget _rejectPane(ThemeData theme) {
     return Column(
@@ -581,25 +561,26 @@ class _PermissionSheetState extends State<PermissionSheet> {
             hintText: _chatL10n(context).chatUiTellTheAgentWhyOrWhatTo,
           ),
         ),
-        const SizedBox(height: 10),
-        FilledButton.tonal(
-          key: const Key('permission-reject-send'),
-          style: FilledButton.styleFrom(
-            backgroundColor: theme.colorScheme.errorContainer,
-            foregroundColor: theme.colorScheme.onErrorContainer,
+        const SizedBox(height: 12),
+        // Sending the rejection is what this pane is for, and it stops the
+        // agent's step: error-coloured, never the filled primary (§2).
+        KitActionBlock(
+          secondary: KitAction(
+            key: const Key('permission-reject-send'),
+            onPressed: _replying ? null : _sendRejection,
+            working: _replying,
+            destructive: true,
+            label: _chatL10n(context).chatUiSendRejection,
           ),
-          onPressed: _replying ? null : _sendRejection,
-          child: _pendingLabel(
-            _chatL10n(context).chatUiSendRejection,
-            pending: _replying,
-          ),
-        ),
-        const SizedBox(height: 4),
-        TextButton(
-          onPressed: _replying
-              ? null
-              : () => setState(() => _rejecting = false),
-          child: Text(_chatL10n(context).a2aBack),
+          tertiary: [
+            KitAction(
+              key: const Key('permission-reject-back'),
+              onPressed: _replying
+                  ? null
+                  : () => setState(() => _rejecting = false),
+              label: _chatL10n(context).a2aBack,
+            ),
+          ],
         ),
       ],
     );
