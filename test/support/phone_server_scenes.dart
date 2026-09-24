@@ -23,6 +23,7 @@ import 'package:opencode_mobile/termux/bridge.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
+import 'package:opencode_mobile/ui/widgets/server_switcher_sheet.dart';
 
 import '../../tool/capture/fixtures.dart';
 import 'setup_capture_preferences.dart';
@@ -192,6 +193,60 @@ ServerProfile _remote() => ServerProfile(
   serverVersion: '2.0.10',
   password: 'synthetic',
 );
+
+/// The server switcher on the owner's phone (2026-09-25): OpenCode 2 in
+/// Termux running and in use, and a remote server saved. Opens the sheet
+/// and settles it. Returns what to call when done.
+Future<Future<void> Function()> mountPhoneServerSwitcher(
+  WidgetTester tester,
+) async {
+  debugPlatformCapabilities = const PlatformCapabilities.android();
+  _mockPlatform(tester, running: true);
+  final previousProbe = termuxRunningServerProbe;
+  termuxRunningServerProbe =
+      ({required baseUrl, username, password, cancellation}) async =>
+          const ServerProbeResult.success('2.0.10');
+  tester.view.physicalSize = const Size(412, 915);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final prefs = await setupCapturePreferences();
+  final store = SeededProfileStore(
+    prefs: prefs,
+    seeded: [phoneProfile(), _remote()],
+  );
+  final controller = CaptureController(store)
+    ..api = CaptureApi()
+    ..repository = CaptureRepository()
+    ..status = StreamStatus.connected
+    ..directory = projectDirectory
+    ..version = '2.0.10';
+  await tester.pumpWidget(
+    captureApp(
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: TextButton(
+            onPressed: () => showServerSwitcher(context, controller),
+            child: const Text('Switch'),
+          ),
+        ),
+      ),
+      boundaryKey: GlobalKey(),
+      controller: controller,
+      light: false,
+    ),
+  );
+  await tester.tap(find.text('Switch'));
+  for (var i = 0; i < 10; i++) {
+    await tester.pump(const Duration(milliseconds: 200));
+  }
+  return () async {
+    termuxRunningServerProbe = previousProbe;
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+    await tester.pump();
+    debugPlatformCapabilities = null;
+  };
+}
 
 /// Mounts [scene] under [boundary] at 412x915 and settles it. Returns what
 /// to call once the frame has been captured.

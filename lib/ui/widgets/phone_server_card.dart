@@ -18,6 +18,7 @@ import '../screens/terminal_screen.dart' show TerminalPage, TerminalSource;
 import 'confirm_sheet.dart';
 import 'product_states.dart';
 import 'terminal_view.dart';
+import 'termux_running_server_entry.dart' show isManagedPhoneProfile;
 
 /// Screen D of phone setup (docs/design/phone-setup-v2-2026-09-24.md): the
 /// one place OpenCode running inside this app is managed, wherever servers
@@ -62,6 +63,10 @@ String serverDisplayName(
   Iterable<ServerProfile> among = const [],
 }) {
   if (profile == null) return 'OpenCode';
+  // OpenCode in Termux is named as its row on Servers and in the switcher
+  // ("This phone · Termux"), not by the name setup saved it under; the
+  // app's own server is plain "This phone".
+  if (isManagedPhoneProfile(profile)) return l10n.phoneServerTermuxTitle;
   if (!looksLikeInAppServer(profile)) return profile.name;
   return phoneServerDisplayName(profile, l10n, among: among);
 }

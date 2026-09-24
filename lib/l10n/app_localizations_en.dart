@@ -18538,4 +18538,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get localTerminalSemantics =>
       'Terminal on this phone. Tap to type; touch and hold to select text.';
+
+  @override
+  String get phoneServerTermuxTitle => 'This phone · Termux';
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
+import '../../state/local_agent_server.dart';
 import '../../state/local_server_controls.dart';
 import '../../state/profiles.dart';
 import '../../state/termux_running_server.dart';
@@ -311,7 +312,7 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
     // owns is the OpenCode server's state and what its controls do.
     return LocalServerRow(
       keyPrefix: 'termux-running-server',
-      title: l10n.phoneServerCardTitle,
+      title: l10n.phoneServerTermuxTitle,
       status: l10n.phoneServerRowStatus(runtime, state),
       connectedLabel: l10n.serverRowConnected,
       stopped: server.isStopped,
@@ -361,7 +362,7 @@ class _TermuxRunningServerEntryState extends State<TermuxRunningServerEntry>
     String state,
   ) => LocalServerRow(
     keyPrefix: 'termux-running-server',
-    title: l10n.phoneServerCardTitle,
+    title: l10n.phoneServerTermuxTitle,
     status: state,
     connectedLabel: l10n.serverRowConnected,
     stopped: false,
@@ -407,6 +408,14 @@ ServerProfile? savedManagedPhoneProfile(Iterable<ServerProfile> profiles) {
   }
   return null;
 }
+
+/// Whether [profile] is shown as one of the phone's own server rows ("This
+/// phone", or Claude Code on this phone) rather than as a saved server of
+/// its own: the Servers list and the server switcher never list it twice.
+/// Those rows always draw themselves when a saved sign-in exists.
+bool shownAsPhoneRow(ServerProfile profile) =>
+    platformCapabilities.supportsTermux &&
+    (isManagedPhoneProfile(profile) || isLocalAgentProfile(profile));
 
 /// Whether [profile] reaches the OpenCode server this app runs in Termux.
 bool isManagedPhoneProfile(ServerProfile profile) =>

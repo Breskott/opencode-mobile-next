@@ -29926,6 +29926,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Terminal on this phone. Tap to type; touch and hold to select text.'**
   String get localTerminalSemantics;
+
+  /// Name of the OpenCode server this app runs in Termux (Servers row, switcher, Work tab header); the app's built-in server is plain "This phone"
+  ///
+  /// In en, this message translates to:
+  /// **'This phone · Termux'**
+  String get phoneServerTermuxTitle;
 }
 
 class _AppLocalizationsDelegate

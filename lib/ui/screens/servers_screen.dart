@@ -17,7 +17,6 @@ import '../../state/paseo_connection_probe.dart';
 import '../../state/pairing.dart';
 import '../../state/profiles.dart';
 import '../../state/external_agents.dart';
-import '../../state/local_agent_server.dart';
 import '../../state/first_run.dart';
 import '../../termux/bridge.dart';
 import '../app_theme.dart';
@@ -808,7 +807,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                   const Divider(height: 17),
                 ],
                 for (final p in store.profiles)
-                  if (!looksLikeInAppServer(p) && !_shownAsPhoneRow(p))
+                  if (!looksLikeInAppServer(p) && !shownAsPhoneRow(p))
                     _ServerRow(
                       profile: p,
                       connected:
@@ -861,10 +860,6 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
 /// run them the list shows that row, not a second one named after the
 /// address it was saved with (docs/design/phone-server-screens-cleanup-
 /// 2026-09-24.md §1: one row per server).
-bool _shownAsPhoneRow(ServerProfile profile) =>
-    platformCapabilities.supportsTermux &&
-    (isManagedPhoneProfile(profile) || isLocalAgentProfile(profile));
-
 /// The page's 16 dp side rails for a part that does not pad itself (the
 /// kit's rows and section labels do).
 class _Rails extends StatelessWidget {

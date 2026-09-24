@@ -29,8 +29,9 @@ void main() {
     testWidgets('the phone server appears once, as one row', (tester) async {
       final done = await mount(tester, PhoneServerScene.servers);
       expect(tester.takeException(), isNull);
-      // One row named "This phone" with what it runs and where it stands.
-      expect(find.text('This phone'), findsOneWidget);
+      // One row named "This phone · Termux" (where it runs) with what it
+      // runs and where it stands.
+      expect(find.text('This phone · Termux'), findsOneWidget);
       expect(find.text('OpenCode 2 · Running'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('termux-running-server')),
@@ -90,6 +91,45 @@ void main() {
       await tester.pump();
       expect(find.byType(Switch), findsNothing);
       expect(find.textContaining('Attempts used'), findsNothing);
+      await done();
+    });
+  });
+
+  group('Server switcher', () {
+    // The owner's phone, 2026-09-25: the sheet showed the saved sign-in
+    // "This device (Termux) · Connected" and, under it, "This phone ·
+    // Connected · OpenCode 2 · Running": one server, twice.
+    testWidgets('the phone server in use appears once, named with Termux', (
+      tester,
+    ) async {
+      final done = await mountPhoneServerSwitcher(tester);
+      expect(tester.takeException(), isNull);
+      final sheet = find.byKey(const ValueKey('server-switcher-sheet'));
+      expect(
+        find.descendant(of: sheet, matching: find.text('This phone · Termux')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: sheet, matching: find.text(phoneProfile().name)),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('server-switcher-current')),
+        findsNothing,
+      );
+      // The one row says it is the server in use.
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('termux-running-server')),
+          matching: find.textContaining('Connected'),
+        ),
+        findsOneWidget,
+      );
+      // The other saved server is still offered.
+      expect(
+        find.descendant(of: sheet, matching: find.text('Studio Mac')),
+        findsOneWidget,
+      );
       await done();
     });
   });

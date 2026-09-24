@@ -4962,5 +4962,6 @@
   "localTerminalKeyPageUp": "صفحة لأعلى",
   "localTerminalKeyPageDown": "صفحة لأسفل",
   "phoneServerCardTerminal": "الطرفية",
-  "localTerminalSemantics": "الطرفية على هذا الهاتف. انقر للكتابة، والمس مطولًا لتحديد النص."
+  "localTerminalSemantics": "الطرفية على هذا الهاتف. انقر للكتابة، والمس مطولًا لتحديد النص.",
+  "phoneServerTermuxTitle": "هذا الهاتف · Termux"
 }

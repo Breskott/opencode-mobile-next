@@ -20459,5 +20459,9 @@
   "localTerminalSemantics": "Terminal on this phone. Tap to type; touch and hold to select text.",
   "@localTerminalSemantics": {
     "description": "Accessibility label of the local terminal's screen"
+  },
+  "phoneServerTermuxTitle": "This phone · Termux",
+  "@phoneServerTermuxTitle": {
+    "description": "Name of the OpenCode server this app runs in Termux (Servers row, switcher, Work tab header); the app's built-in server is plain \"This phone\""
   }
 }

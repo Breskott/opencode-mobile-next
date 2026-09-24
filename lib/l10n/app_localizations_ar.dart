@@ -18803,4 +18803,7 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get localTerminalSemantics =>
       'الطرفية على هذا الهاتف. انقر للكتابة، والمس مطولًا لتحديد النص.';
+
+  @override
+  String get phoneServerTermuxTitle => 'هذا الهاتف · Termux';
 }

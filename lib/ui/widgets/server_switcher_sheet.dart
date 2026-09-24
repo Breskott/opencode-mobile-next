@@ -82,9 +82,15 @@ class ServerSwitcherSheet extends StatelessWidget {
     // after its address or the runtime it was saved with.
     final phone = phoneServerProfile(profiles, current?.id);
     final currentIsPhone = current != null && current.id == phone?.id;
+    // The phone's own servers in Termux are the rows below, "Connected" when
+    // in use: their saved sign-ins are never listed again (owner's phone,
+    // 2026-09-25: "This device (Termux)" above "This phone", one server).
+    final currentIsPhoneRow = current != null && shownAsPhoneRow(current);
     final others = [
       for (final profile in profiles)
-        if (profile.id != current?.id && !looksLikeInAppServer(profile))
+        if (profile.id != current?.id &&
+            !looksLikeInAppServer(profile) &&
+            !shownAsPhoneRow(profile))
           profile,
     ];
     Widget phoneCard(ServerProfile profile) => Padding(
@@ -111,7 +117,7 @@ class ServerSwitcherSheet extends StatelessWidget {
           children: [
             if (currentIsPhone)
               phoneCard(current)
-            else if (current != null)
+            else if (current != null && !currentIsPhoneRow)
               ListTile(
                 key: const ValueKey('server-switcher-current'),
                 leading: _ServerAvatar(profile: current, active: true),
