@@ -3,30 +3,72 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../domain/server_gateway.dart' show ProductException;
+import '../../domain/workspace_paths.dart' show managedProjectsDirectory;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import '../../state/profiles.dart' show ProfileLocation;
 import '../app_theme.dart';
-import 'product_states.dart';
+import '../kit/kit.dart';
+import 'product_states.dart' show showProductError;
+import 'relative_time.dart';
 import 'session_title.dart';
 import '../../domain/team_directories.dart';
 
 /// Working in several projects at once, from the Work tab.
 ///
 /// The app shows one project at a time; the server does not work that way.
-/// A run started in one project keeps going when you look at another, and
-/// until now it simply vanished from view. This panel keeps the others in
-/// reach: the projects you have used recently are one tap away, each marked
-/// when something is running there, and the conversations going on in them
-/// are listed under the current project's own, so you can step into one
-/// without first hunting for its project.
+/// A run started in one project keeps going when you look at another. This
+/// section, under the current project's own conversations, lists the other
+/// projects in play once each: its name and what is going on there
+/// (needs you, running, unreviewed, or when it was last used). Tapping a
+/// row switches to that project; the trailing button opens the conversation
+/// that is live there, when there is one.
+///
+/// It replaces the old chip strip plus "In other projects" list, which named
+/// the same projects twice (work-tab cleanup, 2026-09-24).
 class OtherProjectsPanel extends StatefulWidget {
-  const OtherProjectsPanel({super.key, required this.controller});
+  const OtherProjectsPanel({
+    super.key,
+    required this.controller,
+    this.currentDirectory,
+    this.onAllProjects,
+    this.maxShown = 3,
+  });
 
   final ConnectionController controller;
 
+  /// The project the Work tab is about, when it is not open yet (being
+  /// restored): it is the header's, never an "other" project. Defaults to
+  /// the open folder.
+  final String? currentDirectory;
+
+  /// Opens the full project list; shown as "All projects" when there are
+  /// more than [maxShown] other projects.
+  final VoidCallback? onAllProjects;
+  final int maxShown;
+
   @override
   State<OtherProjectsPanel> createState() => _OtherProjectsPanelState();
+}
+
+/// One other project and what is going on there, already worked out.
+class _ProjectRow {
+  _ProjectRow(this.directory, this.order);
+
+  final String directory;
+
+  /// Position in the recent-projects order, for a stable sort.
+  final int order;
+
+  /// The workspace last used there, reopened with the folder.
+  String? workspace;
+  String? name;
+  int running = 0;
+  int waiting = 0;
+  bool unreviewed = false;
+  int? lastActivity;
+
+  /// The conversation the trailing button opens: waiting, else running.
+  ElsewhereConversation? live;
 }
 
 class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
@@ -62,9 +104,9 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
   }
 
   void _changed() {
-    // The strip reads the controller directly (recent projects, the current
-    // one), so any change redraws it; a new project or server reloads the
-    // list as well.
+    // The rows read the controller directly (recent projects, the current
+    // one), so any change redraws them; a new project or server reloads the
+    // conversations as well.
     if (mounted) setState(() {});
     if (_loadedFor != _scope) _load();
   }
@@ -74,7 +116,7 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
     _loading = true;
     final scope = _scope;
     try {
-      final found = await _conn.conversationsElsewhere();
+      final found = await _conn.conversationsElsewhere(limit: 12);
       if (!mounted || scope != _scope) return;
       setState(() {
         _elsewhere = found;
@@ -97,19 +139,24 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
       Localizations.of<AppLocalizations>(context, AppLocalizations) ??
       lookupAppLocalizations(const Locale('en'));
 
-  static String _name(String directory) {
+  static String _folderName(String directory) {
     final parts = directory.split('/').where((part) => part.isNotEmpty);
     return parts.isEmpty ? directory : parts.last;
   }
 
-  Future<void> _switchTo(ProfileLocation location) async {
+  static bool _isProject(String? directory, String? here) =>
+      directory != null &&
+      directory != here &&
+      // The phone server's folder of projects is not a project.
+      directory.replaceAll(RegExp(r'/+$'), '') != managedProjectsDirectory &&
+      // Nor is a folder the AI Team made for its own agents.
+      !isAiTeamDirectory(directory);
+
+  Future<void> _switchTo(String directory, {String? workspace}) async {
     if (_switching != null) return;
-    setState(() => _switching = location.directory);
+    setState(() => _switching = directory);
     try {
-      await _conn.selectLocation(
-        directory: location.directory,
-        workspace: location.workspace,
-      );
+      await _conn.selectLocation(directory: directory, workspace: workspace);
       final error = _conn.locationError;
       if (error != null && mounted) showProductError(context, error);
     } catch (error) {
@@ -129,7 +176,7 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
     final strings = _strings(context);
     try {
       // The conversation's project becomes the current one: everything a
-      // chat needs (its events, approvals, files) is per project.
+      // conversation needs (its events, approvals, files) is per project.
       await _conn.selectLocationForExistingSession(
         directory: item.directory,
         workspace: item.session.workspaceID,
@@ -145,243 +192,205 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final strings = _strings(context);
-    final here = _conn.directory;
-    final recents = [
-      for (final location in _conn.recentLocations)
-        if (location.directory != null &&
-            location.directory != here &&
-            // The phone server's folder of projects is not a project.
-            location.directory!.replaceAll(RegExp(r'/+$'), '') !=
-                '/root/projects' &&
-            // Nor is a folder the AI Team made for its own agents.
-            !isAiTeamDirectory(location.directory))
-          location,
-    ];
-    for (final project in _conn.elsewhereAttention.activity(except: here)) {
-      if (isAiTeamDirectory(project.directory)) continue;
-      if (!recents.any((r) => r.directory == project.directory)) {
-        recents.add(ProfileLocation(directory: project.directory));
-      }
+  /// Every other project once, needs-you first, then running, then in the
+  /// order they were last used.
+  List<_ProjectRow> _rows() {
+    final here = _conn.directory ?? widget.currentDirectory;
+    final rows = <String, _ProjectRow>{};
+    _ProjectRow row(String directory) =>
+        rows.putIfAbsent(directory, () => _ProjectRow(directory, rows.length));
+    for (final location in _conn.recentLocations) {
+      if (!_isProject(location.directory, here)) continue;
+      row(location.directory!).workspace = location.workspace;
     }
-    if (recents.isEmpty && _elsewhere.isEmpty) return const SizedBox.shrink();
-    // Live, from the server-wide event channel; the listed conversations'
-    // own "running" flag is as of the last look.
     final live = {
       for (final project in _conn.elsewhereAttention.activity(except: here))
-        project.directory: project,
+        if (_isProject(project.directory, here)) project.directory: project,
     };
-    final waitingIDs = {for (final p in live.values) ...p.waiting};
-    final runningIDs = {for (final p in live.values) ...p.running};
-    final runningIn = <String, int>{};
+    for (final directory in live.keys) {
+      row(directory);
+    }
     for (final item in _elsewhere) {
-      if (item.running || runningIDs.contains(item.session.id)) {
-        runningIn[item.directory] = (runningIn[item.directory] ?? 0) + 1;
+      if (!_isProject(item.directory, here)) continue;
+      final entry = row(item.directory);
+      entry.name ??= item.projectName?.trim().isNotEmpty == true
+          ? item.projectName!.trim()
+          : null;
+      final updated = item.session.time?.updated ?? item.session.time?.created;
+      if (updated != null && (entry.lastActivity ?? 0) < updated) {
+        entry.lastActivity = updated;
+      }
+      final activity = live[item.directory];
+      final waiting = activity?.waiting.contains(item.session.id) ?? false;
+      final running =
+          item.running ||
+          (activity?.running.contains(item.session.id) ?? false);
+      if (running) entry.running++;
+      if (waiting) {
+        entry.live = item;
+      } else if (running && entry.live == null) {
+        entry.live = item;
+      }
+      if (!running &&
+          !waiting &&
+          item.session.time?.idle != null &&
+          _conn.isSessionUnread(item.session)) {
+        entry.unreviewed = true;
       }
     }
-    for (final project in live.values) {
-      if (project.running.length > (runningIn[project.directory] ?? 0)) {
-        runningIn[project.directory] = project.running.length;
+    for (final entry in rows.values) {
+      final activity = live[entry.directory];
+      if (activity == null) continue;
+      entry.waiting = activity.waiting.length;
+      if (activity.running.length > entry.running) {
+        entry.running = activity.running.length;
       }
     }
+    final sorted = rows.values.toList()
+      ..sort((a, b) {
+        final byWaiting = (b.waiting > 0 ? 1 : 0) - (a.waiting > 0 ? 1 : 0);
+        if (byWaiting != 0) return byWaiting;
+        final byRunning = (b.running > 0 ? 1 : 0) - (a.running > 0 ? 1 : 0);
+        if (byRunning != 0) return byRunning;
+        return a.order.compareTo(b.order);
+      });
+    return sorted;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = _strings(context);
+    final rows = _rows();
+    if (rows.isEmpty) return const SizedBox.shrink();
+    final shown = rows.take(widget.maxShown).toList();
+    final onAll = widget.onAllProjects;
     return Column(
       key: const Key('other-projects-panel'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (recents.isNotEmpty)
-          SingleChildScrollView(
-            key: const Key('recent-projects-strip'),
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 4),
-            child: Row(
-              spacing: 8,
-              children: [
-                for (final location in recents)
-                  _ProjectChip(
-                    key: ValueKey('recent-project-${location.directory}'),
-                    name: _name(location.directory!),
-                    running: runningIn[location.directory] ?? 0,
-                    waiting: live[location.directory]?.waiting.length ?? 0,
-                    busy: _switching == location.directory,
-                    tooltip: location.directory!,
-                    onTap: () => _switchTo(location),
-                    onForget: () =>
-                        _conn.forgetRecentLocation(location.directory!),
-                    forgetLabel: strings.otherProjectsForget,
-                    needsYouLabel: strings.otherProjectsNeedsYou,
-                  ),
-              ],
-            ),
+        SectionLabel(strings.workOtherProjects),
+        for (final entry in shown)
+          _OtherProjectTile(
+            key: ValueKey('other-project-${entry.directory}'),
+            entry: entry,
+            name: entry.name ?? _folderName(entry.directory),
+            strings: strings,
+            busy: _switching != null || _opening != null,
+            onTap: () => _switchTo(entry.directory, workspace: entry.workspace),
+            onOpenLive: entry.live == null ? null : () => _open(entry.live!),
+            onForget: () => _conn.forgetRecentLocation(entry.directory),
           ),
-        if (_elsewhere.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 2),
-            child: Text(
-              strings.otherProjectsTitle,
-              style: theme.textTheme.titleSmall,
+        if (rows.length > shown.length && onAll != null)
+          KitRow(
+            key: const ValueKey('other-projects-all'),
+            leading: KitRow.icon(context, AppIconography.folders),
+            title: strings.workAllProjects,
+            trailing: const SizedBox.square(
+              dimension: 48,
+              child: Icon(AppIconography.chevronRight, size: 20),
             ),
+            onTap: onAll,
           ),
-          for (final item in _elsewhere)
-            InkWell(
-              key: ValueKey('elsewhere-${item.session.id}'),
-              onTap: () => _open(item),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 56),
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: waitingIDs.contains(item.session.id)
-                              ? theme.colorScheme.error
-                              : item.running ||
-                                    runningIDs.contains(item.session.id)
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.outlineVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              presentedSessionTitle(
-                                item.session,
-                                fallback: strings.otherProjectsUntitled,
-                                l10n: strings,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              waitingIDs.contains(item.session.id)
-                                  ? '${item.project} · ${strings.otherProjectsNeedsYou}'
-                                  : item.running ||
-                                        runningIDs.contains(item.session.id)
-                                  ? '${item.project} · ${strings.workRunning}'
-                                  : item.project,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: waitingIDs.contains(item.session.id)
-                                    ? theme.colorScheme.error
-                                    : item.running ||
-                                          runningIDs.contains(item.session.id)
-                                    ? theme.colorScheme.primary
-                                    : theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (_opening == item.session.id)
-                        const SizedBox.square(
-                          dimension: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      else
-                        Icon(
-                          AppIconography.chevronRight,
-                          size: 16,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-        ],
       ],
     );
   }
 }
 
-class _ProjectChip extends StatelessWidget {
-  const _ProjectChip({
+class _OtherProjectTile extends StatelessWidget {
+  const _OtherProjectTile({
     super.key,
+    required this.entry,
     required this.name,
-    required this.running,
-    required this.waiting,
+    required this.strings,
     required this.busy,
-    required this.tooltip,
     required this.onTap,
+    required this.onOpenLive,
     required this.onForget,
-    required this.forgetLabel,
-    required this.needsYouLabel,
   });
 
-  final String needsYouLabel;
-
+  final _ProjectRow entry;
   final String name;
-  final int running;
+  final AppLocalizations strings;
 
-  /// Conversations there stopped on a permission or a question.
-  final int waiting;
+  /// A switch or open from this section is in flight.
   final bool busy;
-  final String tooltip;
   final VoidCallback onTap;
+  final VoidCallback? onOpenLive;
   final VoidCallback onForget;
-  final String forgetLabel;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return GestureDetector(
-      // Long-press takes a project off the strip; it is not deleted anywhere.
+    final attention = AppTheme.statusColor(theme, AppStatusTone.attention);
+    final muted = AppTheme.mutedOf(theme);
+    // Needs you outranks running outranks unreviewed: the first is stuck.
+    final (String? status, Color statusColor) = entry.waiting > 0
+        ? (strings.otherProjectsNeedsYou, attention)
+        : entry.running > 0
+        ? (strings.workRunningCount(entry.running), theme.colorScheme.primary)
+        : entry.unreviewed
+        ? (strings.workUnreviewed, theme.colorScheme.primary)
+        : (null, muted);
+    final when = entry.lastActivity == null
+        ? null
+        : relativeTimeLabel(entry.lastActivity!, l10n: strings);
+    final live = entry.live;
+    final liveTitle = live == null
+        ? null
+        : presentedSessionTitle(
+            live.session,
+            fallback: strings.otherProjectsUntitled,
+            l10n: strings,
+          );
+    final rest = liveTitle ?? when;
+    // Switching or opening shows on the screen's one loading bar (the
+    // folder is loading), so the row itself stays still.
+    return KitRow(
+      title: name,
+      leading: KitRow.icon(
+        context,
+        AppIconography.files,
+        color: status == null ? null : statusColor,
+      ),
+      supporting: status == null && rest == null
+          ? null
+          : TextSpan(
+              children: [
+                if (status != null)
+                  TextSpan(
+                    text: status,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                if (status != null && rest != null) const TextSpan(text: ' · '),
+                if (rest != null) TextSpan(text: rest),
+              ],
+            ),
+      trailing: onOpenLive == null
+          ? null
+          : IconButton(
+              key: ValueKey('other-project-open-${entry.directory}'),
+              tooltip: strings.workOpenLiveConversation(liveTitle!),
+              onPressed: busy ? null : onOpenLive,
+              icon: const Icon(AppIconography.chevronRight, size: 20),
+            ),
+      onTap: busy ? null : onTap,
+      // Long-press takes a project off the list; nothing is deleted.
       onLongPress: () async {
         final forget = await showMenu<bool>(
           context: context,
           position: _menuPosition(context),
-          items: [PopupMenuItem(value: true, child: Text(forgetLabel))],
+          items: [
+            PopupMenuItem(
+              value: true,
+              child: Text(strings.otherProjectsForget),
+            ),
+          ],
         );
         if (forget == true) onForget();
       },
-      // No tooltip: it would claim the long-press that removes the chip. The
-      // full path is in the project header once you are there.
-      child: Semantics(
-        label: tooltip,
-        child: ActionChip(
-          onPressed: busy ? null : onTap,
-          materialTapTargetSize: MaterialTapTargetSize.padded,
-          side: BorderSide.none,
-          backgroundColor: theme.colorScheme.surfaceContainerHigh,
-          avatar: busy
-              ? const SizedBox.square(
-                  dimension: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Icon(
-                  AppIconography.files,
-                  size: 16,
-                  color: waiting > 0
-                      ? theme.colorScheme.error
-                      : running > 0
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-          // Needs you outranks running: it is the one that is stuck.
-          label: Text(
-            waiting > 0
-                ? '$name · $needsYouLabel'
-                : running > 0
-                ? '$name · $running'
-                : name,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: waiting > 0 ? theme.colorScheme.error : null,
-            ),
-          ),
-        ),
-      ),
     );
   }
 

@@ -891,20 +891,30 @@ void main() {
 
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
+    // On Work, the failed attempt is the one status line, at once (no
+    // grace: nothing is in flight), not the shell banner.
     expect(
       find.byKey(const ValueKey('connection-status-banner')),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(find.text('Connection lost'), findsOneWidget);
+    final line = find.byKey(const ValueKey('work-status-server'));
+    expect(line, findsOneWidget);
     expect(
       find.descendant(
-        of: find.byKey(const ValueKey('connection-status-banner')),
-        matching: find.text('Try again'),
+        of: line,
+        matching: find.text("This device (Termux) isn't answering"),
       ),
       findsOneWidget,
     );
+    expect(
+      find.descendant(of: line, matching: find.text('Try again')),
+      findsOneWidget,
+    );
     // The raw error and the secondary action live behind Details.
-    await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byKey(const ValueKey('work-status-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('Endpoint is unavailable'), findsOneWidget);
@@ -947,17 +957,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final line = find.byKey(const ValueKey('work-status-server'));
     expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('connection-status-banner')),
-        matching: find.text('Try again'),
-      ),
+      find.descendant(of: line, matching: find.text('Try again')),
       findsOneWidget,
     );
-    expect(
-      find.byKey(const ValueKey('connection-banner-details')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('kit-status-more')), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     controller.dispose();
@@ -981,12 +986,20 @@ void main() {
       ),
     );
     await tester.pump();
+    // Quiet while the automatic reconnect has its grace time, then the one
+    // status line offers a manual retry.
+    expect(find.byKey(const ValueKey('work-status-server')), findsNothing);
+    await tester.pump(const Duration(seconds: 9));
+    await tester.pump(const Duration(milliseconds: 300));
 
     final retry = tester.widget<TextButton>(
       find.widgetWithText(TextButton, 'Try again'),
     );
     expect(retry.onPressed, isNotNull);
-    await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byKey(const ValueKey('work-status-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Change server'), findsOneWidget);

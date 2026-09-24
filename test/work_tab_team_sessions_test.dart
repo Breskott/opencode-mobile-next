@@ -222,29 +222,22 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('In other projects'), findsOneWidget);
-    expect(find.text(_mine), findsOneWidget);
-    expect(find.byKey(const ValueKey('elsewhere-ses_mine')), findsOneWidget);
+    // One row per project of the person's (work-tab cleanup, 2026-09-24):
+    // my-app is there, the team's folders are not.
+    expect(find.text('Other projects'), findsOneWidget);
+    expect(find.byKey(const ValueKey('other-project-$_myApp')), findsOneWidget);
     for (final title in [
       _refineryStartup,
       _refineryStartupShown,
       _patrol,
       _polecatStartup,
     ]) {
-      expect(find.text(title), findsNothing, reason: title);
+      expect(find.textContaining(title), findsNothing, reason: title);
     }
     expect(find.textContaining('<tool_call>'), findsNothing);
-
+    expect(find.byKey(const ValueKey('other-project-$_polecat')), findsNothing);
     expect(
-      find.byKey(const ValueKey('recent-project-$_myApp')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('recent-project-$_polecat')),
-      findsNothing,
-    );
-    expect(
-      find.byKey(const ValueKey('recent-project-$_refinery')),
+      find.byKey(const ValueKey('other-project-$_refinery')),
       findsNothing,
     );
     expect(find.text('gastown.furiosa'), findsNothing);
@@ -259,7 +252,11 @@ void main() {
     // The same title on a conversation of the person's own: the markup is
     // cut for display only.
     final session = _result('ses_own', _refineryStartup, _myApp, updated: 5);
-    final controller = await _controller(_Repository([session]));
+    // Running, so the project's row names it as its live conversation.
+    final controller = await _controller(
+      _Repository([session]),
+      statuses: {'ses_own': 'busy'},
+    );
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(
@@ -272,7 +269,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text(_refineryStartupShown), findsOneWidget);
+    expect(find.textContaining(_refineryStartupShown), findsOneWidget);
     expect(find.textContaining('<tool_call>'), findsNothing);
     expect(session.session.title, _refineryStartup);
 

@@ -157,6 +157,41 @@ class ReturnBrief {
         ],
       );
 
+  /// A brief holding exactly [run], so one row can be dismissed with the
+  /// same acknowledgement a whole brief uses.
+  factory ReturnBrief.single(ReturnBriefRun run) => ReturnBrief._(
+    unreviewed: List.unmodifiable([run]),
+    requests: const [],
+    readStateKnown: true,
+    inventoryPartial: false,
+    hiddenUnreviewed: 0,
+    hiddenRequests: 0,
+  );
+
+  /// The unreviewed run [session] stands for, or null: a finished (idle,
+  /// not busy) root conversation whose result is unread and was not
+  /// dismissed. A blocked conversation is "needs you", never unreviewed;
+  /// callers check that first, as [build] does.
+  static ReturnBriefRun? unreviewedRun(
+    Session session, {
+    required bool readStateKnown,
+    required bool Function(Session session) isUnread,
+    required bool Function(String sessionID) isBusy,
+    ReturnBriefAck? ack,
+  }) {
+    if (session.parentID != null || session.archived) return null;
+    final idle = session.time?.idle;
+    if (!readStateKnown ||
+        idle == null ||
+        idle <= 0 ||
+        isBusy(session.id) ||
+        !isUnread(session)) {
+      return null;
+    }
+    if (ack != null && ack.coversRun(session.id, idle)) return null;
+    return ReturnBriefRun(session: session, idleAt: idle);
+  }
+
   /// [sessions] are the current location's sessions in the order the
   /// Workspace shows them. [isUnread] is the app's read-state test and is
   /// consulted only when [readStateKnown]. [blockerOf] returns the pending
@@ -187,16 +222,14 @@ class ReturnBrief {
         }
         continue;
       }
-      final idle = session.time?.idle;
-      if (!readStateKnown ||
-          idle == null ||
-          idle <= 0 ||
-          isBusy(session.id) ||
-          !isUnread(session)) {
-        continue;
-      }
-      if (ack != null && ack.coversRun(session.id, idle)) continue;
-      runs.add(ReturnBriefRun(session: session, idleAt: idle));
+      final run = unreviewedRun(
+        session,
+        readStateKnown: readStateKnown,
+        isUnread: isUnread,
+        isBusy: isBusy,
+        ack: ack,
+      );
+      if (run != null) runs.add(run);
     }
     runs.sort((a, b) {
       final byTime = b.idleAt.compareTo(a.idleAt);

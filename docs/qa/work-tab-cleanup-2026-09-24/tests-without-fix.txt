@@ -1,0 +1,370 @@
+00:00 +0: loading <4699191e>/test/work_tab_cleanup_test.dart
+00:00 +0: item 1: restoring the saved project no folder chooser; the header names the saved project
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: no matching candidates
+  Actual: _KeyWidgetFinder:<Found 1 widget with key [<'workspace-folder-chooser'>]: [
+            ListView-[<'workspace-folder-chooser'>](scrollDirection: vertical,
+AlwaysScrollableScrollPhysics, padding: EdgeInsets(16.0, 8.0, 16.0, 96.0), dependencies:
+[InheritedCupertinoTheme, PrimaryScrollController, ScrollConfiguration, _InheritedTheme,
+_LocalizationsScope-[GlobalKey#09d54]]),
+          ]>
+   Which: means one was found but none were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:247:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://<4699191e>/test/work_tab_cleanup_test.dart line 247
+The test description was:
+  no folder chooser; the header names the saved project
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +0 -1: item 1: restoring the saved project no folder chooser; the header names the saved project [E]
+  Test failed. See exception logs above.
+  The test description was: no folder chooser; the header names the saved project
+  
+00:00 +0 -1: item 1: restoring the saved project a project picked for a fresh connection opens without the chooser flashing first
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: no matching candidates
+  Actual: _KeyWidgetFinder:<Found 1 widget with key [<'workspace-folder-chooser'>]: [
+            ListView-[<'workspace-folder-chooser'>](scrollDirection: vertical,
+AlwaysScrollableScrollPhysics, padding: EdgeInsets(16.0, 8.0, 16.0, 96.0), dependencies:
+[InheritedCupertinoTheme, PrimaryScrollController, ScrollConfiguration, _InheritedTheme,
+_LocalizationsScope-[GlobalKey#a3190]]),
+          ]>
+   Which: means one was found but none were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:269:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://<4699191e>/test/work_tab_cleanup_test.dart line 269
+The test description was:
+  a project picked for a fresh connection opens without the chooser flashing first
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +0 -2: item 1: restoring the saved project a project picked for a fresh connection opens without the chooser flashing first [E]
+  Test failed. See exception logs above.
+  The test description was: a project picked for a fresh connection opens without the chooser flashing first
+  
+00:01 +0 -2: item 1: restoring the saved project the chooser shows once there really is no project
+00:01 +1 -2: item 2: the project is named from the first frame, before the project list arrives
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.widget (package:flutter_test/src/controller.dart:828:30)
+#2      main.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:304:12)
+<asynchronous suspension>
+#3      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#4      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  item 2: the project is named from the first frame, before the project list arrives
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +1 -3: item 2: the project is named from the first frame, before the project list arrives [E]
+  Test failed. See exception logs above.
+  The test description was: item 2: the project is named from the first frame, before the project list arrives
+  
+00:01 +1 -3: items 3 and 4: first load one loading bar, skeleton rows, and nothing contradicting them
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TypeWidgetFinder:<Found 2 widgets with type "LinearProgressIndicator": [
+            LinearProgressIndicator(<indeterminate>, dependencies: [Directionality], state:
+_LinearProgressIndicatorState#500c9(ticker active)),
+            LinearProgressIndicator(<indeterminate>, dependencies: [Directionality], state:
+_LinearProgressIndicatorState#c71bd(ticker active)),
+          ]>
+   Which: is too many
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:322:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://<4699191e>/test/work_tab_cleanup_test.dart line 322
+The test description was:
+  one loading bar, skeleton rows, and nothing contradicting them
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +1 -4: items 3 and 4: first load one loading bar, skeleton rows, and nothing contradicting them [E]
+  Test failed. See exception logs above.
+  The test description was: one loading bar, skeleton rows, and nothing contradicting them
+  
+00:01 +1 -4: items 3 and 4: first load a reconnect on the Work tab shows the one bar, not the shell banner
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: no matching candidates
+  Actual: _KeyWidgetFinder:<Found 1 widget with key [<'connection-status-banner'>]: [
+            MaterialBanner-[<'connection-status-banner'>](dependencies: [InheritedCupertinoTheme,
+MediaQuery, _InheritedTheme, _LocalizationsScope-[GlobalKey#bd8e7]], state:
+_MaterialBannerState#64745),
+          ]>
+   Which: means one was found but none were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:343:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://<4699191e>/test/work_tab_cleanup_test.dart line 343
+The test description was:
+  a reconnect on the Work tab shows the one bar, not the shell banner
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +1 -5: items 3 and 4: first load a reconnect on the Work tab shows the one bar, not the shell banner [E]
+  Test failed. See exception logs above.
+  The test description was: a reconnect on the Work tab shows the one bar, not the shell banner
+  
+Warning: At least one test in this suite creates an HttpClient. When running a test suite that uses
+TestWidgetsFlutterBinding, all HTTP requests will return status code 400, and no network request
+will actually be made. Any test expecting a real network connection and status code will fail.
+To test code that needs an HttpClient, provide your own HttpClient implementation to the code under
+test, so that your test can consistently provide a testable response to the code under test.
+00:02 +1 -5: items 3 and 4: first load the empty state shows only once the load has finished
+00:02 +2 -5: item 5: an unreviewed result is marked in its own row; no separate card
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: no matching candidates
+  Actual: _TextWidgetFinder:<Found 1 widget with text "Unreviewed work": [
+            Text("Unreviewed work", debugLabel: (englishLike titleLarge
+2021).merge(((whiteMountainView titleLarge).apply).copyWith), inherit: false, color: Color(alpha:
+1.0000, red: 0.8902, green: 0.9098, blue: 0.8941, colorSpace: ColorSpace.sRGB), family: AppDisplay,
+size: 24.0, weight: 600, letterSpacing: -0.3, baseline: alphabetic, height: 1.3x,
+leadingDistribution: even, decoration: Color(alpha: 1.0000, red: 0.8902, green: 0.9098, blue:
+0.8941, colorSpace: ColorSpace.sRGB) TextDecoration.none, dependencies: [DefaultSelectionStyle,
+DefaultTextStyle, MediaQuery]),
+          ]>
+   Which: means one was found but none were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:392:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://<4699191e>/test/work_tab_cleanup_test.dart line 392
+The test description was:
+  item 5: an unreviewed result is marked in its own row; no separate card
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:03 +2 -6: item 5: an unreviewed result is marked in its own row; no separate card [E]
+  Test failed. See exception logs above.
+  The test description was: item 5: an unreviewed result is marked in its own row; no separate card
+  
+00:03 +2 -6: item 8: other projects each other project is listed once
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _WidgetPredicateWidgetFinder:<Found 2 widgets with text containing "Tradebook": [
+            Text("Tradebook", debugLabel: ((englishLike labelMedium 2021).merge((whiteMountainView
+labelMedium).apply)).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.8902, green:
+0.9098, blue: 0.8941, colorSpace: ColorSpace.sRGB), family: Roboto, size: 12.0, weight: 500,
+letterSpacing: 0.5, baseline: alphabetic, height: 1.3x, leadingDistribution: even, decoration:
+Color(alpha: 1.0000, red: 0.8902, green: 0.9098, blue: 0.8941, colorSpace: ColorSpace.sRGB)
+TextDecoration.none, dependencies: [DefaultSelectionStyle, DefaultTextStyle, MediaQuery]),
+            Text("Tradebook", debugLabel: ((englishLike labelMedium 2021).merge((whiteMountainView
+labelMedium).apply)).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.5725, green:
+0.6196, blue: 0.5922, colorSpace: ColorSpace.sRGB), family: Roboto, size: 12.0, weight: 500,
+letterSpacing: 0.5, baseline: alphabetic, height: 1.3x, leadingDistribution: even, decoration:
+Color(alpha: 1.0000, red: 0.8902, green: 0.9098, blue: 0.8941, colorSpace: ColorSpace.sRGB)
+TextDecoration.none, overflow: ellipsis, maxLines: 1, dependencies: [DefaultSelectionStyle,
+DefaultTextStyle, MediaQuery]),
+          ]>
+   Which: is too many
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:426:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://<4699191e>/test/work_tab_cleanup_test.dart line 426
+The test description was:
+  each other project is listed once
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:03 +2 -7: item 8: other projects each other project is listed once [E]
+  Test failed. See exception logs above.
+  The test description was: each other project is listed once
+  
+00:03 +2 -7: item 8: other projects at most three, then All projects
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: no matching candidates
+  Actual: _TextWidgetFinder:<Found 1 widget with text "D4": [
+            Text("D4", debugLabel: ((englishLike labelMedium 2021).merge((whiteMountainView
+labelMedium).apply)).copyWith, inherit: false, color: Color(alpha: 1.0000, red: 0.8902, green:
+0.9098, blue: 0.8941, colorSpace: ColorSpace.sRGB), family: Roboto, size: 12.0, weight: 500,
+letterSpacing: 0.5, baseline: alphabetic, height: 1.3x, leadingDistribution: even, decoration:
+Color(alpha: 1.0000, red: 0.8902, green: 0.9098, blue: 0.8941, colorSpace: ColorSpace.sRGB)
+TextDecoration.none, dependencies: [DefaultSelectionStyle, DefaultTextStyle, MediaQuery]),
+          ]>
+   Which: means one was found but none were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:460:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://<4699191e>/test/work_tab_cleanup_test.dart line 460
+The test description was:
+  at most three, then All projects
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:03 +2 -8: item 8: other projects at most three, then All projects [E]
+  Test failed. See exception logs above.
+  The test description was: at most three, then All projects
+  
+00:03 +2 -8: item 9: New conversation and the tab bar cover nothing at rest and at the end of the list
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: ['(rich)', 'Conversation 10']
+under the button
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:506:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://<4699191e>/test/work_tab_cleanup_test.dart line 506
+The test description was:
+  at rest and at the end of the list
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:04 +2 -9: item 9: New conversation and the tab bar cover nothing at rest and at the end of the list [E]
+  Test failed. See exception logs above.
+  The test description was: at rest and at the end of the list
+  
+00:04 +2 -9: item 10: a server that does not answer the Work tab says so after 8 s, with Try again and Restart
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "OpenCode on this phone isn't answering": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:539:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://<4699191e>/test/work_tab_cleanup_test.dart line 539
+The test description was:
+  the Work tab says so after 8 s, with Try again and Restart
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:05 +2 -10: item 10: a server that does not answer the Work tab says so after 8 s, with Try again and Restart [E]
+  Test failed. See exception logs above.
+  The test description was: the Work tab says so after 8 s, with Try again and Restart
+  
+00:05 +2 -10: item 10: a server that does not answer the connecting card says so after 8 s and offers the ways out
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "OpenCode on this phone isn't answering": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:589:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://<4699191e>/test/work_tab_cleanup_test.dart line 589
+The test description was:
+  the connecting card says so after 8 s and offers the ways out
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:05 +2 -11: item 10: a server that does not answer the connecting card says so after 8 s and offers the ways out [E]
+  Test failed. See exception logs above.
+  The test description was: the connecting card says so after 8 s and offers the ways out
+  
+00:05 +2 -11: text scale 2 at 320 dp: nothing overflows
+
+Warning: A call to drag() with finder "Found 1 widget with key [String <'workspace-scroll'>]: [
+  CustomScrollView-[String <'workspace-scroll'>](scrollDirection: vertical, AlwaysScrollableScrollPhysics, dependencies: [InheritedCupertinoTheme, PrimaryScrollController, ScrollConfiguration, _InheritedTheme, _LocalizationsScope-[GlobalKey#7f854]]),
+]" derived an Offset (Offset(160.0, 534.0)) that would not hit test on the specified widget.
+Maybe the widget is actually off-screen, or another widget is obscuring it, or the widget cannot receive pointer events.
+The finder corresponds to this RenderBox: RenderClipRect#2191e relayoutBoundary=up2
+The hit test result at that offset is: HitTestResult(RenderPointerListener#1695a@Offset(144.0, 6.0), RenderSemanticsAnnotations#cb354@Offset(144.0, 6.0), RenderMouseRegion#33bc8@Offset(144.0, 6.0), RenderSemanticsAnnotations#a853e@Offset(144.0, 6.0), _RenderInkFeatures#942aa@Offset(144.0, 6.0), RenderCustomPaint#715cc@Offset(144.0, 6.0), RenderPhysicalShape#9e27a@Offset(144.0, 6.0), RenderConstrainedBox#fade3@Offset(144.0, 6.0), _RenderInputPadding#49ecd@Offset(144.0, 6.0), RenderSemanticsAnnotations#ec50d@Offset(144.0, 6.0), RenderFlex#e199c@Offset(144.0, 86.0), _RenderLayoutBuilder#53f92@Offset(144.0, 86.0), _RenderInkFeatures#e6a06@Offset(144.0, 86.0), RenderPhysicalModel#a88dd@Offset(144.0, 86.0), RenderStack#56f1b@Offset(160.0, 166.0), RenderFlex#5193b@Offset(160.0, 286.0), RenderRepaintBoundary#a9583@Offset(160.0, 286.0), RenderOpacity#947bf@Offset(160.0, 286.0), RenderIgnorePointer#81e57@Offset(160.0, 286.0), RenderExcludeSemantics#6c452@Offset(160.0, 286.0), RenderOffstage#beb48@Offset(160.0, 286.0), RenderStack#bad7f@Offset(160.0, 286.0), RenderFlex#e8b63@Offset(160.0, 470.0), _RenderLayoutBuilder#50505@Offset(160.0, 470.0), _RenderLayoutBuilder#3051d@Offset(160.0, 470.0), RenderCustomMultiChildLayoutBox#24a7a@Offset(160.0, 534.0), _RenderInkFeatures#0d1b1@Offset(160.0, 534.0), RenderPhysicalModel#707cd@Offset(160.0, 534.0), RenderSemanticsAnnotations#5fc40@Offset(160.0, 534.0), RenderRepaintBoundary#dff4e@Offset(160.0, 534.0), RenderIgnorePointer#c43e1@Offset(160.0, 534.0), RenderAnimatedOpacity#4267e@Offset(160.0, 534.0), RenderAnimatedOpacity#035a2@Offset(160.0, 534.0), _RenderColoredBox#42229@Offset(160.0, 534.0), RenderAnimatedOpacity#831e3@Offset(160.0, 534.0), RenderIgnorePointer#c5b0d@Offset(160.0, 534.0), RenderAnimatedOpacity#30a24@Offset(160.0, 534.0), RenderRepaintBoundary#92656@Offset(160.0, 534.0), RenderSemanticsAnnotations#79f35@Offset(160.0, 534.0), RenderOffstage#297b7@Offset(160.0, 534.0), RenderSemanticsAnnotations#e561f@Offset(160.0, 534.0), _RenderTheater#868dd@Offset(160.0, 534.0), RenderAbsorbPointer#c7335@Offset(160.0, 534.0), RenderPointerListener#9d73b@Offset(160.0, 534.0), RenderSemanticsAnnotations#f9073@Offset(160.0, 534.0), RenderSemanticsAnnotations#cf260@Offset(160.0, 534.0), RenderSemanticsAnnotations#db21b@Offset(160.0, 534.0), RenderSemanticsAnnotations#2bd40@Offset(160.0, 534.0), RenderTapRegionSurface#5d4c3@Offset(160.0, 534.0), RenderSemanticsAnnotations#ad9cb@Offset(160.0, 534.0), RenderSemanticsAnnotations#643ad@Offset(160.0, 534.0), HitTestEntry<HitTestTarget>#f21b1(_ReusableRenderView#b951f), HitTestEntry<HitTestTarget>#03936(<AutomatedTestWidgetsFlutterBinding>))
+#0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2165:25)
+#1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1947:12)
+#2      WidgetController.drag (package:flutter_test/src/controller.dart:1604:7)
+#3      main.<anonymous closure> (file://<4699191e>/test/work_tab_cleanup_test.dart:649:18)
+<asynchronous suspension>
+#4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#5      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+#6      StackZoneSpecification._registerCallback.<anonymous closure> (package:stack_trace/src/stack_zone_specification.dart:114:42)
+<asynchronous suspension>
+To silence this warning, pass "warnIfMissed: false" to "drag()".
+To make this warning fatal, set WidgetController.hitTestWarningShouldBeFatal to true.
+
+00:05 +3 -11: Some tests failed.
+
+Failing tests:
+  <4699191e>/test/work_tab_cleanup_test.dart: item 10: a server that does not answer the Work tab says so after 8 s, with Try again and Restart
+  <4699191e>/test/work_tab_cleanup_test.dart: item 10: a server that does not answer the connecting card says so after 8 s and offers the ways out
+  <4699191e>/test/work_tab_cleanup_test.dart: item 1: restoring the saved project a project picked for a fresh connection opens without the chooser flashing first
+  <4699191e>/test/work_tab_cleanup_test.dart: item 1: restoring the saved project no folder chooser; the header names the saved project
+  ... and 7 more

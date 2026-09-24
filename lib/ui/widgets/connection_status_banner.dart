@@ -83,7 +83,6 @@ class ConnectionStatusBanner extends StatelessWidget {
 
     final manualRetry = controller.manualReconnectInProgress;
     final reconnecting = controller.connectionLoading || manualRetry;
-    final error = controller.connectionError?.trim();
     final server = controller.profile?.name ?? 'OpenCode';
     // One line. The raw error and the secondary action live behind Details,
     // so the banner never grows into a paragraph over the content it sits on.
@@ -127,11 +126,10 @@ class ConnectionStatusBanner extends StatelessWidget {
           ),
           TextButton(
             key: const ValueKey('connection-banner-details'),
-            onPressed: () => _showDetails(
+            onPressed: () => showConnectionDetailsSheet(
               context,
-              reconnecting: reconnecting,
-              manualRetry: manualRetry,
-              error: error,
+              controller,
+              showChangeServer: showChangeServer,
             ),
             child: Text(l10n.e7BannerDetails),
           ),
@@ -139,89 +137,94 @@ class ConnectionStatusBanner extends StatelessWidget {
       ),
     );
   }
+}
 
-  Future<void> _showDetails(
-    BuildContext context, {
-    required bool reconnecting,
-    required bool manualRetry,
-    required String? error,
-  }) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
-        return SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-              child: Column(
-                key: const ValueKey('connection-banner-details-sheet'),
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    reconnecting ? l10n.mcpReconnecting : l10n.e7BannerLost,
-                    style: theme.textTheme.titleLarge,
+/// The connection's details: what is going on, the raw error, Try again and
+/// (optionally) Change server. Shared by the shell banner and the Work tab's
+/// status line.
+Future<void> showConnectionDetailsSheet(
+  BuildContext context,
+  ConnectionController controller, {
+  bool showChangeServer = true,
+}) {
+  final manualRetry = controller.manualReconnectInProgress;
+  final reconnecting = controller.connectionLoading || manualRetry;
+  final error = controller.connectionError?.trim();
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (sheetContext) {
+      final theme = Theme.of(sheetContext);
+      return SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+            child: Column(
+              key: const ValueKey('connection-banner-details-sheet'),
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  reconnecting ? l10n.mcpReconnecting : l10n.e7BannerLost,
+                  style: theme.textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  reconnecting
+                      ? l10n.e7BannerCheckingExplanation
+                      : l10n.e7BannerStaleExplanation,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.35,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    reconnecting
-                        ? l10n.e7BannerCheckingExplanation
-                        : l10n.e7BannerStaleExplanation,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      height: 1.35,
+                ),
+                if (error != null && error.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ),
-                  if (error != null && error.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(10),
+                    child: SelectableText(
+                      error,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontFamily: 'monospace',
+                        height: 1.35,
                       ),
-                      child: SelectableText(
-                        error,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: 'monospace',
-                          height: 1.35,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: manualRetry
-                        ? null
-                        : () {
-                            Navigator.of(sheetContext).pop();
-                            unawaited(controller.retryConnection());
-                          },
-                    child: Text(
-                      manualRetry
-                          ? l10n.e7BannerRetrying
-                          : l10n.isolatedTaskRetryOpen,
                     ),
                   ),
-                  if (showChangeServer && !manualRetry) ...[
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(sheetContext).pop();
-                        Navigator.of(context).pushNamed('/servers');
-                      },
-                      child: Text(l10n.e7BannerChangeServer),
-                    ),
-                  ],
                 ],
-              ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: manualRetry
+                      ? null
+                      : () {
+                          Navigator.of(sheetContext).pop();
+                          unawaited(controller.retryConnection());
+                        },
+                  child: Text(
+                    manualRetry
+                        ? l10n.e7BannerRetrying
+                        : l10n.isolatedTaskRetryOpen,
+                  ),
+                ),
+                if (showChangeServer && !manualRetry) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      Navigator.of(context).pushNamed('/servers');
+                    },
+                    child: Text(l10n.e7BannerChangeServer),
+                  ),
+                ],
+              ],
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
 }

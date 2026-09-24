@@ -5,7 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/sse.dart';
-import '../../builtin/builtin_server.dart' show builtinLinuxProvider;
+import '../../builtin/builtin_server.dart'
+    show builtinLinuxProvider, builtinServerStarterProvider;
 import '../../domain/server_gateway.dart' show ServerCapabilities;
 import '../../state/connection.dart';
 import '../../state/first_run.dart';
@@ -17,6 +18,7 @@ import '../widgets/connection_status_banner.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/retained_tab_view.dart';
 import '../widgets/phone_server_card.dart';
+import '../widgets/phone_server_restart.dart';
 import '../widgets/server_switcher_sheet.dart';
 import 'activity_screen.dart';
 import 'servers_screen.dart' show ServersRouteRequest;
@@ -248,8 +250,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // Inbox carries the product's single pending badge. Project is absent
     // only when the server offers none of its tools (Codex, Paseo today).
     final hasProjectTools = ProjectHub.isAvailable(conn.capabilities);
+    final phoneServer = phoneServerRestartFor(
+      connection: conn,
+      builtin: ref.read(builtinServerStarterProvider),
+      context: context,
+    );
     final tabs = <Widget>[
-      WorkspaceScreen(controller: conn),
+      WorkspaceScreen(
+        controller: conn,
+        serverOnThisPhone: phoneServer.onThisPhone,
+        onRestartServer: phoneServer.restart,
+      ),
       ActivityScreen(controller: conn, embedded: true),
       if (hasProjectTools)
         ProjectHub(
@@ -333,7 +344,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           builder: (context, constraints) {
             final content = Column(
               children: [
-                if (conn.status != StreamStatus.connected)
+                // Work says it itself, in its one status line and only
+                // once reconnecting has taken a while (work-tab cleanup item
+                // 3); a rejected password keeps the banner and its fix.
+                if (conn.status != StreamStatus.connected &&
+                    (activeTab != _workTab || conn.passwordRejected))
                   ConnectionStatusBanner(controller: conn),
                 Expanded(
                   child: RetainedTabView(

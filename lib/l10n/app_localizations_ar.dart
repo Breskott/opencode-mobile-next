@@ -18314,4 +18314,86 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get aiteamComponentChildProcesses =>
       'يوقف أندرويد البرامج الإضافية للتطبيق حين يشغّل كثيرًا منها معًا، والفريق يشغّل عدة برامج. إذا توقف الفريق أثناء العمل، فعّل خيارات المطوّرين › تعطيل قيود العمليات الفرعية.';
+
+  @override
+  String get workUnreviewed => 'غير مراجَعة';
+
+  @override
+  String get workMarkReviewed => 'وضع علامة كمراجَعة';
+
+  @override
+  String get workMarkReviewedFailed =>
+      'تعذّر وضع علامة المراجعة. حاول مرة أخرى.';
+
+  @override
+  String get workOtherProjects => 'مشاريع أخرى';
+
+  @override
+  String get workAllProjects => 'كل المشاريع';
+
+  @override
+  String workOpenLiveConversation(String title) {
+    return 'فتح «$title»';
+  }
+
+  @override
+  String workRunningCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'قيد التشغيل · $count',
+      one: 'قيد التشغيل',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workLoadingLabel => 'جارٍ التحميل';
+
+  @override
+  String get workServerNotAnsweringPhone => 'OpenCode على هذا الهاتف لا يستجيب';
+
+  @override
+  String workServerNotAnswering(String server) {
+    return '$server لا يستجيب';
+  }
+
+  @override
+  String get workServerKeepsTrying => 'يواصل التطبيق المحاولة في الخلفية.';
+
+  @override
+  String get workServerRestart => 'إعادة التشغيل';
+
+  @override
+  String get workServerRestartTitle => 'إعادة تشغيل OpenCode على هذا الهاتف؟';
+
+  @override
+  String get workServerRestartBody =>
+      'سيتوقف أي دور قيد التشغيل للوكيل. تبقى محادثاتك محفوظة.';
+
+  @override
+  String get workChooseAnotherServer => 'اختيار خادم آخر';
+
+  @override
+  String get workStale => 'قد لا يكون هذا محدّثًا';
+
+  @override
+  String workRunaway(String duration) {
+    return 'OpenCode مشغول منذ $duration دون عمل ينتظره';
+  }
+
+  @override
+  String workRunawayInProject(String project, String duration) {
+    return 'OpenCode مشغول في $project منذ $duration دون عمل ينتظره';
+  }
+
+  @override
+  String get workRunawaySee => 'عرض ما يعمل';
+
+  @override
+  String get connectStartingPhone => 'جارٍ تشغيل OpenCode على هذا الهاتف…';
+
+  @override
+  String get connectStartingBody =>
+      'تبقى محادثاتك محفوظة. قد يستغرق هذا دقيقة.';
 }
