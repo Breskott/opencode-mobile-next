@@ -6,6 +6,10 @@ import '../app_theme.dart';
 /// one-line title, a one-line muted supporting line, and a trailing value,
 /// chevron or single icon action. State lives in the row (a tinted icon, a
 /// "Needs you" word in [supporting]), not in cards above the list.
+///
+/// One line each is the rule. A list whose titles are the person's own words
+/// (conversation titles) may let them wrap with [titleMaxLines] and
+/// [supportingMaxLines], so large text does not cut them to a few letters.
 class KitRow extends StatelessWidget {
   const KitRow({
     super.key,
@@ -15,6 +19,10 @@ class KitRow extends StatelessWidget {
     this.trailing,
     this.onTap,
     this.onLongPress,
+    this.titleMaxLines = 1,
+    this.supportingMaxLines = 1,
+    this.titleKey,
+    this.supportingKey,
   });
 
   final Widget? leading;
@@ -25,6 +33,17 @@ class KitRow extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+
+  /// Lines the title may take before it is cut; 1 unless the titles are
+  /// the person's own words (see the class doc).
+  final int titleMaxLines;
+
+  /// Lines the supporting line may take before it is cut.
+  final int supportingMaxLines;
+
+  /// Keys of the title and supporting texts, for tests.
+  final Key? titleKey;
+  final Key? supportingKey;
 
   /// A leading icon at the row's size, muted unless [color] is given.
   static Widget icon(BuildContext context, IconData icon, {Color? color}) =>
@@ -66,7 +85,8 @@ class KitRow extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      maxLines: 1,
+                      key: titleKey,
+                      maxLines: titleMaxLines,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyLarge,
                     ),
@@ -74,7 +94,8 @@ class KitRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text.rich(
                         supporting,
-                        maxLines: 1,
+                        key: supportingKey,
+                        maxLines: supportingMaxLines,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppTheme.mutedOf(theme),
