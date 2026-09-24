@@ -1064,10 +1064,17 @@ class Api2OperationsGateway extends ProductRepository
   );
 
   @override
-  Future<void> removeTerminal(String id) => _guard(
-    'Could not close the terminal',
-    () => _transport.deleteJson('/pty/$id'),
-  );
+  Future<void> removeTerminal(String id) =>
+      _guard('Could not close the terminal', () async {
+        try {
+          await _transport.deleteJson('/pty/$id');
+        } on Api2Error catch (error) {
+          // Already gone (the shell exited, or another client closed it):
+          // closing it is done, not an error to show.
+          if (error.statusCode == 404) return;
+          rethrow;
+        }
+      });
 
   @override
   Future<TerminalChannel> connectTerminal(String id, {int? cursor}) =>

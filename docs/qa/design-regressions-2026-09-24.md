@@ -16,7 +16,7 @@ Every place where a redesign made something worse, or an owner complaint is stil
 | 10 | Settings › Plugins | Internal plugin IDs (`opencode.tool.input.repair`…), "Link commands" repeated on every row, "Clear personal links"; never put on the kit (the Settings pass skipped it). | `design-regressions-2026-09-24/phone-1-plugins.jpg` (owner's phone, build 2051) | Owner: "Wttf is this shiit" | **Open** |
 | 11 | On this phone (Termux screen) | Two big buttons, then "Update OpenCode" and a red-square "Stop local server" crammed on one line; not built to the standard. | `design-regressions-2026-09-24/phone-2-on-this-phone-termux.jpg` | Owner | **Open** |
 | 12 | Servers list | The phone server is shown three times: the "Server found on this phone" card (three big buttons over two rows), the "This device (Termux)" row, and an "On-device server" block with a recovery toggle and an attempt counter. | `design-regressions-2026-09-24/phone-3-servers.jpg` | Owner | **Open** |
-| 13 | Terminal | Closing a terminal whose shell had already ended showed the raw server error `DELETE /pty/… failed (HTTP 404)`, and the list still said Running. | `design-regressions-2026-09-24/phone-4-terminal-404.jpg` | Owner | **Fix in progress:** a 404 on close counts as done, in both gateways (`test/terminal_close_gone_test.dart`). |
+| 13 | Terminal | Closing a terminal whose shell had already ended showed the raw server error `DELETE /pty/… failed (HTTP 404)`, and the list still said Running. | `design-regressions-2026-09-24/phone-4-terminal-404.jpg` | Owner | **Fixed:** a 404 on close counts as done, in both gateways; `test/terminal_close_gone_test.dart` fails without it. Not yet on a device. |
 
 ## How rows get added
 
