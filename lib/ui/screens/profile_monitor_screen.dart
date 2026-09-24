@@ -12,6 +12,7 @@ import 'chat/form_flow.dart';
 import 'chat/permission_sheet.dart';
 import 'chat_screen.dart' show ChatScreen;
 import 'settings_screen.dart' show NotificationsSettingsScreen;
+import '../../domain/session_title_text.dart';
 
 /// Shared explicit route: revalidates profile, location and exact request before
 /// displaying the existing resolver. It never answers from monitor metadata.
@@ -263,8 +264,8 @@ class _MonitorRequestRow extends StatelessWidget {
             ? const Icon(AppIconography.waitingStart, size: 20)
             : const ServerAttentionDot(current: true),
         title: Text(
-          request.title?.trim().isNotEmpty == true
-              ? request.title!
+          displaySessionTitleText(request.title).isNotEmpty
+              ? displaySessionTitleText(request.title)
               : l10n.monitorSession,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -424,9 +425,8 @@ class _BusyIntervalRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final title = interval.title?.trim().isNotEmpty == true
-        ? interval.title!
-        : l10n.monitorSession;
+    final shown = displaySessionTitleText(interval.title);
+    final title = shown.isNotEmpty ? shown : l10n.monitorSession;
     final observed = l10n.monitorObservedBusy(
       interval.observedFor.inMinutes,
       _time(context, interval.firstObservedBusyAt),

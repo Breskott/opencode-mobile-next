@@ -26,6 +26,7 @@ import 'profile_monitor_screen.dart';
 import 'run_result_screen.dart';
 import 'team/agent_screen.dart';
 import 'team/gate_sheet.dart';
+import '../widgets/session_title.dart';
 
 /// Activity: the single cross-session control centre (audit §3, §8).
 ///
@@ -203,9 +204,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
           for (final session in sessions) ...[
             ListTile(
               title: Text(
-                session.title?.trim().isNotEmpty == true
-                    ? session.title!
-                    : _l10n(context).globalSessionsUntitled,
+                presentedSessionTitle(
+                  session,
+                  fallback: _l10n(context).globalSessionsUntitled,
+                  l10n: _l10n(context),
+                ),
               ),
               subtitle: Text(l10n.digestIdle),
               trailing: Icon(
@@ -987,9 +990,11 @@ class _SessionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final title = session.title?.trim().isNotEmpty == true
-        ? session.title!.trim()
-        : _l10n(context).globalSessionsUntitled;
+    final title = presentedSessionTitle(
+      session,
+      fallback: _l10n(context).globalSessionsUntitled,
+      l10n: _l10n(context),
+    );
     return ListTile(
       leading: running
           ? SizedBox.square(
@@ -1318,9 +1323,11 @@ String _sessionTitle(
   String id,
 ) {
   final session = controller.sessionsById[id];
-  return session?.title?.isNotEmpty == true
-      ? session!.title!
-      : _l10n(context).e7WorkspaceSessionId(id);
+  return presentedSessionTitle(
+    session,
+    fallback: _l10n(context).e7WorkspaceSessionId(id),
+    l10n: _l10n(context),
+  );
 }
 
 class _BackgroundUpdatesHint extends StatelessWidget {

@@ -9,6 +9,7 @@ import '../widgets/product_states.dart';
 import '../widgets/session_handoff.dart';
 import '../app_iconography.dart';
 import '../early_l10n.dart';
+import '../widgets/session_title.dart';
 
 class SessionRelationsScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -381,9 +382,11 @@ class _SessionFamilyHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  parent.title?.trim().isNotEmpty == true
-                      ? parent.title!
-                      : _sharedCopy(context).e7SharedParentSession,
+                  presentedSessionTitle(
+                    parent,
+                    fallback: _sharedCopy(context).e7SharedParentSession,
+                    l10n: _sharedCopy(context),
+                  ),
                   style: theme.textTheme.titleMedium,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -454,9 +457,11 @@ class _SessionRelationTile extends StatelessWidget {
             )
           : Icon(icon),
       title: Text(
-        session.title?.trim().isNotEmpty == true
-            ? session.title!
-            : _sharedCopy(context).globalSessionsUntitled,
+        presentedSessionTitle(
+          session,
+          fallback: _sharedCopy(context).globalSessionsUntitled,
+          l10n: _sharedCopy(context),
+        ),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),

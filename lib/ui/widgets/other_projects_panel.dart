@@ -8,6 +8,8 @@ import '../../state/connection.dart';
 import '../../state/profiles.dart' show ProfileLocation;
 import '../app_theme.dart';
 import 'product_states.dart';
+import 'session_title.dart';
+import '../../domain/team_directories.dart';
 
 /// Working in several projects at once, from the Work tab.
 ///
@@ -154,10 +156,13 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
             location.directory != here &&
             // The phone server's folder of projects is not a project.
             location.directory!.replaceAll(RegExp(r'/+$'), '') !=
-                '/root/projects')
+                '/root/projects' &&
+            // Nor is a folder the AI Team made for its own agents.
+            !isAiTeamDirectory(location.directory))
           location,
     ];
     for (final project in _conn.elsewhereAttention.activity(except: here)) {
+      if (isAiTeamDirectory(project.directory)) continue;
       if (!recents.any((r) => r.directory == project.directory)) {
         recents.add(ProfileLocation(directory: project.directory));
       }
@@ -248,9 +253,11 @@ class _OtherProjectsPanelState extends State<OtherProjectsPanel> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              item.session.title?.trim().isNotEmpty == true
-                                  ? item.session.title!.trim()
-                                  : strings.otherProjectsUntitled,
+                              presentedSessionTitle(
+                                item.session,
+                                fallback: strings.otherProjectsUntitled,
+                                l10n: strings,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.bodyMedium,

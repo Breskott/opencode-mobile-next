@@ -58,6 +58,8 @@ import 'session_read_state.dart';
 import 'return_brief_state.dart';
 import '../domain/return_brief.dart';
 import '../domain/workspace_paths.dart';
+import '../domain/session_title_text.dart';
+import '../domain/team_directories.dart';
 
 Map<String, dynamic> _catalogMap(Object? value) =>
     value is Map ? Map<String, dynamic>.from(value) : const {};
@@ -1695,6 +1697,8 @@ class ConnectionController extends ChangeNotifier {
     for (final project in projects) {
       final directory = normalizeDirectoryPath(project.directory);
       if (isProtectedWorkspaceDirectory(directory)) continue;
+      // The AI Team's own folders are never opened for the person.
+      if (isAiTeamDirectory(directory)) continue;
       if (best == null || project.updatedAt > best.updatedAt) best = project;
     }
     return best;
@@ -7475,7 +7479,9 @@ class ConnectionController extends ChangeNotifier {
         current = session;
       }
     }
-    final title = current?.title?.trim();
+    final title = current == null
+        ? null
+        : displaySessionTitleText(current.title);
     final detail = current == null ? null : _runningToolDetail[current.id];
     return LiveStatus(
       runningCount: busySessions.length,
@@ -7859,17 +7865,45 @@ class ConnectionController extends ChangeNotifier {
     }
     final generation = _generation;
     final here = directory;
-    final page = await currentRepository.listGlobalSessions(limit: 40);
+    // The AI Team's agents keep their own sessions on this server, and a
+    // busy team can fill a whole page with them; look a little further for
+    // the person's own, then leave the team's out (see team_directories.dart).
+    final items = <GlobalSessionResult>[];
+    String? cursor;
+    for (var pages = 0; pages < 3; pages++) {
+      final page = await currentRepository.listGlobalSessions(
+        limit: 40,
+        cursor: cursor,
+      );
+      if (_disposed || generation != _generation) return const [];
+      items.addAll(page.items);
+      final listable = items.where(
+        (r) =>
+            r.session.parentID == null &&
+            !isAiTeamConversation(r) &&
+            (r.session.directory ?? r.projectDirectory) != here,
+      );
+      if (listable.length >= limit ||
+          !page.hasMore ||
+          page.nextCursor == cursor) {
+        break;
+      }
+      cursor = page.nextCursor;
+    }
     Map<String, String> statuses = const {};
     try {
       statuses = await currentApi.sessionStatuses();
     } catch (_) {}
     if (_disposed || generation != _generation) return const [];
+    final seen = <String>{};
     final elsewhere = [
-      for (final result in page.items)
+      for (final result in items)
         if ((result.session.directory ?? result.projectDirectory)
             case final String where
-            when where != here && result.session.parentID == null)
+            when where != here &&
+                result.session.parentID == null &&
+                !isAiTeamConversation(result) &&
+                seen.add(result.session.id))
           ElsewhereConversation(
             session: result.session,
             directory: where,

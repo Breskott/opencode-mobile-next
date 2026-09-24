@@ -8,6 +8,7 @@ import '../../domain/server_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../app_iconography.dart';
+import '../../domain/team_directories.dart';
 
 class SessionImportFile {
   final String name;
@@ -217,7 +218,8 @@ class _SessionImportScreenState extends State<SessionImportScreen> {
       if (!_isCurrent(scope)) return;
       final choices = <({String label, SessionImportDestination destination})>[
         for (final project in projects) ...[
-          if (project.directory.isNotEmpty)
+          if (project.directory.isNotEmpty &&
+              !isAiTeamDirectory(project.directory))
             (
               label: project.name,
               destination: SessionImportDestination(
@@ -225,7 +227,9 @@ class _SessionImportScreenState extends State<SessionImportScreen> {
               ),
             ),
           for (final path in project.worktrees)
-            if (path.isNotEmpty && path != project.directory)
+            if (path.isNotEmpty &&
+                path != project.directory &&
+                !isAiTeamDirectory(path))
               (
                 label: project.name,
                 destination: SessionImportDestination(directory: path),

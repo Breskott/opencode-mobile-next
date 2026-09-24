@@ -183,6 +183,76 @@ void main() {
         .setMockMethodCallHandler(secureChannel, null);
   });
 
+  testWidgets('All conversations leaves out the AI Team\'s own sessions', (
+    tester,
+  ) async {
+    // The emulator's server on 2026-09-24, after the in-app team ran one
+    // task in my-app: its agents' sessions came back with the person's.
+    const refinery = '/root/aiteam/city/.gc/worktrees/my-app/refinery';
+    const polecat =
+        '/root/aiteam/city/.gc/worktrees/my-app/polecats/gastown.furiosa';
+    final repository = _FinderRepository.pages(
+      (query) async => switch (query.cursor) {
+        null => ServerPage(
+          items: [
+            _result(
+              1,
+              updated: 90,
+              directory: refinery,
+              title:
+                  "I'll run the startup sequence to check for existing work "
+                  'and prime the merge queue.<tool_call><fu…',
+            ),
+            _result(
+              2,
+              updated: 80,
+              directory: refinery,
+              title: 'Refinery merge queue patrol',
+            ),
+            _result(
+              3,
+              updated: 20,
+              directory: '/root/projects/my-app',
+              title: 'Add a dark mode toggle',
+            ),
+          ],
+          nextCursor: 'more',
+        ),
+        _ => ServerPage(
+          items: [
+            _result(
+              4,
+              updated: 70,
+              directory: polecat,
+              title: 'Polecat startup: claim work and execute',
+            ),
+            _result(
+              5,
+              updated: 10,
+              directory: '/root/projects/my-app',
+              title: 'Fix the login form',
+            ),
+          ],
+        ),
+      },
+    );
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(_app(controller));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('global-sessions-load-more')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add a dark mode toggle'), findsOneWidget);
+    expect(find.text('Fix the login form'), findsOneWidget);
+    for (final id in [1, 2, 4]) {
+      expect(find.byKey(ValueKey('global-session-ses_$id')), findsNothing);
+    }
+    expect(find.textContaining('merge queue'), findsNothing);
+    expect(find.textContaining('Polecat'), findsNothing);
+    expect(find.textContaining('.gc/worktrees'), findsNothing);
+  });
+
   for (final rtl in [false, true]) {
     testWidgets(
       '320dp 2.5x ${rtl ? 'RTL' : 'LTR'} finder keeps filters and project paths readable',

@@ -35,6 +35,7 @@ import 'projects_screen.dart';
 import 'settings_screen.dart';
 import 'team/team_home_screen.dart';
 import '../app_theme.dart';
+import '../../domain/team_directories.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -199,7 +200,9 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           // catch-all root and any home folder are skipped, so a fresh
           // connection lands on the folder chooser instead of `/root`.
           final usable = projects.where(
-            (project) => !isProtectedWorkspaceDirectory(project.directory),
+            (project) =>
+                !isProtectedWorkspaceDirectory(project.directory) &&
+                !isAiTeamDirectory(project.directory),
           );
           final retained = usable.where(
             (project) => project.id == _selectedProjectID,
@@ -1276,9 +1279,11 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   Future<void> _archiveWithUndo(Session session) async {
     if (_pendingArchive.contains(session.id)) return;
     setState(() => _pendingArchive.add(session.id));
-    final title = session.title?.isNotEmpty == true
-        ? session.title!
-        : _l10n(context).globalSessionsUntitled;
+    final title = presentedSessionTitle(
+      session,
+      fallback: _l10n(context).globalSessionsUntitled,
+      l10n: _l10n(context),
+    );
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     final snackBar = messenger.showSnackBar(
@@ -1431,9 +1436,11 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   );
                 }
                 final session = sessions[index];
-                final title = session.title?.isNotEmpty == true
-                    ? session.title!
-                    : _l10n(context).globalSessionsUntitled;
+                final title = presentedSessionTitle(
+                  session,
+                  fallback: _l10n(context).globalSessionsUntitled,
+                  l10n: _l10n(context),
+                );
                 void run(String action) {
                   Navigator.pop(sheetContext);
                   unawaited(_sessionAction(action, session));

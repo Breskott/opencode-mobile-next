@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/models.dart';
 import '../platform/platform_capabilities.dart';
+import '../domain/session_title_text.dart';
 
 /// Publishes the connected profile's pinned sessions as dynamic launcher
 /// shortcuts (long-press the app icon) and remembers what was published so
@@ -133,7 +134,7 @@ class PinnedSessionShortcuts {
   }) => {'profileID': profileID, 'sessions': sessions};
 
   static String _title(String? title, String untitledLabel) {
-    final trimmed = title?.trim() ?? '';
+    final trimmed = displaySessionTitleText(title);
     if (trimmed.isEmpty) return untitledLabel;
     if (trimmed.length <= maxTitleLength) return trimmed;
     return trimmed.substring(0, maxTitleLength).trimRight();

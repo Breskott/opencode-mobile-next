@@ -1,0 +1,87 @@
+00:00 +0: loading test/team_directories_test.dart
+00:00 +0: test/team_directories_test.dart: isAiTeamDirectory the in-app team home and everything in it is the team's
+00:00 +1: test/team_directories_test.dart: isAiTeamDirectory a Gas City work folder is the team's wherever the city lives
+00:00 +2: test/team_directories_test.dart: isAiTeamDirectory the person's own folders are not, the team's rig included
+00:00 +3: test/team_directories_test.dart: isAiTeamDirectory the built-in team home and the rule are one constant
+00:00 +4: test/team_directories_test.dart: isAiTeamConversation judged by the conversation's own folder
+00:00 +5: test/team_directories_test.dart: isAiTeamConversation the project folder decides only when the conversation has none
+00:02 +6: test/session_title_text_test.dart: displaySessionTitleText cuts the leaked tool call off the refinery title
+00:02 +7: test/session_title_text_test.dart: displaySessionTitleText cuts at every kind of model markup
+00:02 +8: test/session_title_text_test.dart: displaySessionTitleText drops a marker the server cut in half, with its ellipsis
+00:02 +9: test/session_title_text_test.dart: displaySessionTitleText ellipsis after cut markup goes too
+00:02 +10: test/session_title_text_test.dart: displaySessionTitleText ordinary titles are left as they are
+00:02 +11: test/session_title_text_test.dart: displaySessionTitleText nothing readable left is empty
+00:02 +12: test/session_title_text_test.dart: presentedSessionTitle every session list shows the cleaned title
+00:02 +13: test/session_title_text_test.dart: presentedSessionTitle markup-only titles fall back to the untitled wording
+00:02 +14: test/session_title_text_test.dart: presentedSessionTitle the stored title is not changed
+00:05 +15: test/work_tab_team_sessions_test.dart: In other projects: the team's sessions are left out, the person's conversation in the team's rig stays
+00:05 +16: test/work_tab_team_sessions_test.dart: a team busy enough to fill the first pages does not push the person's conversations out
+00:05 +17: test/work_tab_team_sessions_test.dart: the team's runs and requests are not counted as the person's other projects or the Inbox badge
+00:05 +18: test/work_tab_team_sessions_test.dart: a team folder is never the project opened for the person
+00:05 +19: test/work_tab_team_sessions_test.dart: the Work tab panel shows the person's conversation and project, and none of the team's
+00:06 +20: test/work_tab_team_sessions_test.dart: a leaked tool call never reaches the Work tab list
+00:08 +21: test/global_sessions_screen_test.dart: All conversations leaves out the AI Team's own sessions
+00:10 +22: test/global_sessions_screen_test.dart: 320dp 2.5x LTR finder keeps filters and project paths readable
+00:10 +23: test/global_sessions_screen_test.dart: 320dp 2.5x RTL finder keeps filters and project paths readable
+00:10 +24: test/global_sessions_screen_test.dart: results are grouped by working directory, newest first
+00:10 +25: test/global_sessions_screen_test.dart: folders with the same name are told apart by their parent
+00:11 +26: test/global_sessions_screen_test.dart: empty and duplicate pages keep their continuation reachable
+00:11 +27: test/global_sessions_screen_test.dart: failed next page preserves rows and retries the same cursor
+00:11 +28: test/global_sessions_screen_test.dart: failed refresh preserves rows and offers a refresh retry
+00:12 +29: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:12 +30: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:13 +31: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:13 +32: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:13 +33: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:14 +34: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:14 +35: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:14 +36: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:14 +37: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:14 +38: test/global_sessions_screen_test.dart: accessible clear search resets the query and reloads all sessions
+00:14 +39: test/projects_screen_test.dart: project browser and rename dialog fit compact large text
+00:15 +40: test/projects_screen_test.dart: project browser and rename dialog fit compact large text
+00:16 +41: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:16 +42: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:16 +43: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:16 +44: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:16 +45: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:16 +46: test/projects_screen_test.dart: project search and reset-name use server project truth
+00:17 +47: test/projects_screen_test.dart: project search and reset-name use server project truth
+00:17 +48: test/other_projects_panel_test.dart: recent projects are one tap away and show what runs there
+00:17 +49: test/global_sessions_screen_test.dart: repository replacement retires a pending page and keeps retry
+00:17 +50: test/projects_screen_test.dart: selecting a project opens its exact local directory
+00:17 +51: test/projects_screen_test.dart: selecting a project opens its exact local directory
+00:17 +52: test/projects_screen_test.dart: selecting a project opens its exact local directory
+00:17 +53: test/projects_screen_test.dart: selecting a project opens its exact local directory
+00:17 +54: test/other_projects_panel_test.dart: conversations elsewhere are listed, running first in words, and open in their own project
+00:17 +55: test/global_sessions_screen_test.dart: unavailable finder stays scoped on a compact large-text phone
+00:17 +56: test/projects_screen_test.dart: workspace groups projects behind one compact context entry
+00:18 +57: test/projects_screen_test.dart: workspace groups projects behind one compact context entry
+00:18 +58: test/projects_screen_test.dart: workspace groups projects behind one compact context entry
+00:18 +59: test/projects_screen_test.dart: workspace groups projects behind one compact context entry
+00:18 +60: test/projects_screen_test.dart: workspace groups projects behind one compact context entry
+00:19 +61: test/global_sessions_screen_test.dart: stealing confirms, calls the repository, and opens the chat
+00:19 +62: test/projects_screen_test.dart: workspace puts sessions above the one management route
+00:19 +63: test/projects_screen_test.dart: workspace puts sessions above the one management route
+00:20 +64: test/global_sessions_screen_test.dart: a failed steal reports inline and keeps the list
+00:20 +65: test/global_sessions_screen_test.dart: a failed steal reports inline and keeps the list
+00:20 +66: test/projects_screen_test.dart: recent session end-swipe archives with an undo window
+00:21 +67: test/projects_screen_test.dart: recent session end-swipe archives with an undo window
+00:21 +68: test/projects_screen_test.dart: delete stays in the session menu behind a confirm
+00:21 +69: test/projects_screen_test.dart: project discovery does not block already loaded conversations
+00:22 +70: test/projects_screen_test.dart: failed project discovery still finds and opens a previous chat
+00:22 +71: test/projects_screen_test.dart: retrying the project catalog keeps loaded conversations visible
+00:22 +72: test/projects_screen_test.dart: a fresh server with zero projects asks for a project folder
+00:23 +73: test/projects_screen_test.dart: a home-folder project is never opened automatically
+00:23 +74: test/projects_screen_test.dart: an empty project catalog does not hide existing sessions
+00:23 +75: test/projects_screen_test.dart: zero projects still allows finding and opening an older chat
+00:23 +76: test/projects_screen_test.dart: zero projects keeps session errors and older pages reachable
+00:23 +77: test/projects_screen_test.dart: a first session starts only after a project folder is opened by path
+00:24 +78: test/projects_screen_test.dart: creating a folder on the managed server opens it
+00:25 +79: test/projects_screen_test.dart: remote servers offer open by path but not create
+00:25 +80: test/projects_screen_test.dart: OpenCode inside the app its projects are listed and open with one tap
+00:25 +81: test/projects_screen_test.dart: OpenCode inside the app a new project needs only a safe name
+00:26 +82: test/projects_screen_test.dart: OpenCode inside the app a name that already exists just opens it
+00:26 +83: test/projects_screen_test.dart: OpenCode inside the app a typed path that does not exist offers Create it
+00:27 +84: test/projects_screen_test.dart: OpenCode inside the app Create a new folder makes it inside the app
+00:27 +85: All tests passed!
