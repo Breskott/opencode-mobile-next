@@ -1,5 +1,5 @@
 {
- "generatedFrom": "cf1d7464c94cbddc7dd660d13a98719b49036957",
+ "generatedFrom": "2fb803f04614f11e0a378e306e002b75be7a5eea",
  "pages": [
   {
    "id": "system",
@@ -42783,6 +42783,11 @@
    "part": "a-shell"
   },
   {
+   "file": "lib/ui/kit/scenes/team_scenes.dart",
+   "reason": "Drawings (KitScene, design standard §10), not pages: the AI Team's cast (board, planning, waking, merged, nudge, rest, idle) shown on team-home (no tasks, Needs you, the planning card, the host starting), team-run-overview-tab, team-agents (no agents), embedded-team-card (Nothing running) and the in-app and Termux AI Team sections while the team starts.",
+   "part": "i1-team-core"
+  },
+  {
    "file": "lib/ui/navigation/chat_route.dart",
    "reason": "ChatRouteArguments value class (discardIfUntouched) passed to '/chat/<id>'; no UI",
    "part": "a-shell"
@@ -42931,6 +42936,11 @@
    "file": "lib/ui/widgets/setup_ui_messages.dart",
    "reason": "pure function `setupUiMessage(l10n, message)` mapping raw setup/bridge messages to localized text; no widget, surface or interactive element",
    "part": "h-termux"
+  },
+  {
+   "file": "lib/ui/widgets/team_moments.dart",
+   "reason": "Embedded moments, no surface and no interactive element (motion slice D, 2026-09-25): TeamMergedCelebration heads team-run-overview-tab (run_screen.dart), the first time a merged task is seen, remembered per profile under oc.orchestration.{profileId}.celebrated; TeamNeedsYouLabel is the 'Needs you' heading on team-home and team-run-overview-tab, with an agent that waves once. Both drawings are decorative (excluded from semantics).",
+   "part": "i1-team-core"
   },
   {
    "file": "lib/ui/widgets/team_vocabulary.dart",
