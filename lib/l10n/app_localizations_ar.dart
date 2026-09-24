@@ -18088,4 +18088,78 @@ class AppLocalizationsAr extends AppLocalizations {
   String phoneSetupOpenPhoneRuntime(String name, String runtime) {
     return '$name · $runtime';
   }
+
+  @override
+  String get chatStartBuildWebPage => 'أنشئ صفحة ويب صغيرة';
+
+  @override
+  String get chatStartPythonScript => 'اكتب سكربت بايثون…';
+
+  @override
+  String get chatStartNodeProject => 'ابدأ مشروع Node.js';
+
+  @override
+  String get chatStartReadme => 'أنشئ ملف README';
+
+  @override
+  String get chatStartExplainProject => 'اشرح هذا المشروع';
+
+  @override
+  String get chatStartWhatChanged => 'ما الذي تغيّر مؤخرًا؟';
+
+  @override
+  String get chatStartFindBug => 'اعثر على خطأ وأصلحه';
+
+  @override
+  String get chatStartAddTests => 'أضف اختبارات';
+
+  @override
+  String get chatStartListFolder => 'اعرض محتويات هذا المجلد';
+
+  @override
+  String get chatStartEmptyFolder => 'مجلد فارغ';
+
+  @override
+  String chatStartItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count عنصر',
+      many: '$count عنصرًا',
+      few: '$count عناصر',
+      two: 'عنصران',
+      one: 'عنصر واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatStartGit => 'Git';
+
+  @override
+  String chatStartChangeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count تغيير',
+      many: '$count تغييرًا',
+      few: '$count تغييرات',
+      two: 'تغييران',
+      one: 'تغيير واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatStartLooking => 'جارٍ فحص المجلد…';
+
+  @override
+  String get chatStartServerFolder => 'مجلد الخادم';
+
+  @override
+  String get chatStartTip =>
+      'اكتب / للأوامر · اضغط مطولًا على رسالة لإجراءاتها';
+
+  @override
+  String get chatStartSuggestionsLabel => 'طرق للبدء';
 }

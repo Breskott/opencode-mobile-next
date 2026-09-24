@@ -4815,48 +4815,54 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('empty transcript suggestions fill the composer', (tester) async {
+  testWidgets('empty transcript starters fill the composer', (tester) async {
     final api = _FakeOpenCodeApi();
-    // No directory is selected, so the project- and git-dependent chips give
-    // way to one that works in the server's default directory.
+    // No directory is selected, so the project- and git-dependent starters
+    // give way to ones that work in the server's default folder.
     await _pumpChat(tester, api);
+    await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Start coding'), findsOneWidget);
-    expect(find.byKey(const ValueKey('empty-transcript-tip')), findsOneWidget);
+    expect(find.text('Server folder'), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat-start-tip')), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('empty-suggestion-What changed recently?')),
+      find.byKey(const ValueKey('chat-starter-What changed recently?')),
       findsNothing,
     );
 
     await tester.tap(
-      find.byKey(
-        const ValueKey("empty-suggestion-List what's in this directory"),
-      ),
+      find.byKey(const ValueKey("chat-starter-List what's in this folder")),
     );
     await tester.pump();
 
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller?.text,
-      "List what's in this directory",
+      "List what's in this folder",
     );
     expect(api.promptCalls, 0);
   });
 
-  testWidgets('empty transcript chips are seeded from the active project', (
+  testWidgets('empty transcript starters are seeded from the active project', (
     tester,
   ) async {
-    final api = _FakeOpenCodeApi();
+    final api = _FakeOpenCodeApi()
+      ..projectFiles = [
+        FileNode(name: 'pubspec.yaml', path: 'pubspec.yaml', isDir: false),
+      ];
     final controller = await _controller(api);
     controller.directory = '/work/oc_app';
     await _pumpChat(tester, api, controller: controller);
+    await tester.pump(const Duration(milliseconds: 300));
 
+    expect(find.text('oc_app'), findsOneWidget);
+    expect(find.text('1 item'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('empty-suggestion-Explain the oc_app project')),
+      find.byKey(const ValueKey('chat-starter-Explain this project')),
       findsOneWidget,
     );
+    // No Git history is known here, so nothing asks what changed.
     expect(
-      find.byKey(const ValueKey('empty-suggestion-What changed recently?')),
-      findsOneWidget,
+      find.byKey(const ValueKey('chat-starter-What changed recently?')),
+      findsNothing,
     );
   });
 

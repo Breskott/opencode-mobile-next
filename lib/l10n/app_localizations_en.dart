@@ -17832,4 +17832,72 @@ class AppLocalizationsEn extends AppLocalizations {
   String phoneSetupOpenPhoneRuntime(String name, String runtime) {
     return '$name · $runtime';
   }
+
+  @override
+  String get chatStartBuildWebPage => 'Build a small web page';
+
+  @override
+  String get chatStartPythonScript => 'Write a Python script that…';
+
+  @override
+  String get chatStartNodeProject => 'Start a Node.js project';
+
+  @override
+  String get chatStartReadme => 'Set up a README';
+
+  @override
+  String get chatStartExplainProject => 'Explain this project';
+
+  @override
+  String get chatStartWhatChanged => 'What changed recently?';
+
+  @override
+  String get chatStartFindBug => 'Find and fix a bug';
+
+  @override
+  String get chatStartAddTests => 'Add tests';
+
+  @override
+  String get chatStartListFolder => 'List what\'s in this folder';
+
+  @override
+  String get chatStartEmptyFolder => 'Empty folder';
+
+  @override
+  String chatStartItemCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatStartGit => 'Git';
+
+  @override
+  String chatStartChangeCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count changes',
+      one: '1 change',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get chatStartLooking => 'Looking at the folder…';
+
+  @override
+  String get chatStartServerFolder => 'Server folder';
+
+  @override
+  String get chatStartTip =>
+      'Type / for commands · long-press a message for its actions';
+
+  @override
+  String get chatStartSuggestionsLabel => 'Ways to start';
 }

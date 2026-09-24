@@ -28809,6 +28809,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} · {runtime}'**
   String phoneSetupOpenPhoneRuntime(String name, String runtime);
+
+  /// Starter chip for an empty project folder; fills the composer
+  ///
+  /// In en, this message translates to:
+  /// **'Build a small web page'**
+  String get chatStartBuildWebPage;
+
+  /// Starter chip for an empty project; the ellipsis marks an unfinished sentence the person completes (the composer gets it without the ellipsis)
+  ///
+  /// In en, this message translates to:
+  /// **'Write a Python script that…'**
+  String get chatStartPythonScript;
+
+  /// Starter chip for an empty project folder
+  ///
+  /// In en, this message translates to:
+  /// **'Start a Node.js project'**
+  String get chatStartNodeProject;
+
+  /// Starter chip for an empty project folder
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a README'**
+  String get chatStartReadme;
+
+  /// Starter chip for a project folder that has files
+  ///
+  /// In en, this message translates to:
+  /// **'Explain this project'**
+  String get chatStartExplainProject;
+
+  /// Starter chip shown only when the project's Git repository has commits
+  ///
+  /// In en, this message translates to:
+  /// **'What changed recently?'**
+  String get chatStartWhatChanged;
+
+  /// Starter chip for a project folder that has files
+  ///
+  /// In en, this message translates to:
+  /// **'Find and fix a bug'**
+  String get chatStartFindBug;
+
+  /// Starter chip for a project folder that has files
+  ///
+  /// In en, this message translates to:
+  /// **'Add tests'**
+  String get chatStartAddTests;
+
+  /// Starter chip when no project folder is selected (the server's own folder)
+  ///
+  /// In en, this message translates to:
+  /// **'List what\'s in this folder'**
+  String get chatStartListFolder;
+
+  /// Fact under the project name in a new conversation: the folder has no files
+  ///
+  /// In en, this message translates to:
+  /// **'Empty folder'**
+  String get chatStartEmptyFolder;
+
+  /// Fact under the project name: how many files and folders sit at the top of the project folder
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String chatStartItemCount(int count);
+
+  /// Fact under the project name: the folder is a Git repository
+  ///
+  /// In en, this message translates to:
+  /// **'Git'**
+  String get chatStartGit;
+
+  /// Fact under the project name: uncommitted Git changes
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 change} other{{count} changes}}'**
+  String chatStartChangeCount(int count);
+
+  /// Fact line while the app reads the project folder and its Git status
+  ///
+  /// In en, this message translates to:
+  /// **'Looking at the folder…'**
+  String get chatStartLooking;
+
+  /// Header of a new conversation when no project folder is selected
+  ///
+  /// In en, this message translates to:
+  /// **'Server folder'**
+  String get chatStartServerFolder;
+
+  /// Tip under the header of a new conversation, shown only while the keyboard is down
+  ///
+  /// In en, this message translates to:
+  /// **'Type / for commands · long-press a message for its actions'**
+  String get chatStartTip;
+
+  /// Screen reader label for the row of starter chips above the composer
+  ///
+  /// In en, this message translates to:
+  /// **'Ways to start'**
+  String get chatStartSuggestionsLabel;
 }
 
 class _AppLocalizationsDelegate

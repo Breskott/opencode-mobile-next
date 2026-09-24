@@ -17410,11 +17410,22 @@
     "description": "Shell app bar: accessibility hint on the server name and status, which open the server switcher sheet."
   },
   "discoverSearchGoTo": "Go to",
-  "@discoverSearchGoTo": {"description": "Header above search results that are places in the app rather than settings rows."},
+  "@discoverSearchGoTo": {
+    "description": "Header above search results that are places in the app rather than settings rows."
+  },
   "discoverSearchInsideSettings": "Inside settings",
-  "@discoverSearchInsideSettings": {"description": "Header above search results that sit inside a second-level settings screen."},
+  "@discoverSearchInsideSettings": {
+    "description": "Header above search results that sit inside a second-level settings screen."
+  },
   "discoverSearchIn": "In {parent}",
-  "@discoverSearchIn": {"description": "Second line of a search result: the screen that holds it.", "placeholders": {"parent": {"type": "String"}}},
+  "@discoverSearchIn": {
+    "description": "Second line of a search result: the screen that holds it.",
+    "placeholders": {
+      "parent": {
+        "type": "String"
+      }
+    }
+  },
   "discoverWorkAliases": "work home conversations sessions chats recent pinned new conversation",
   "discoverInboxAliases": "inbox activity needs you approvals permissions questions forms waiting running finished",
   "discoverProjectAliases": "project tools code folder files changes terminal health worktrees",
@@ -17427,7 +17438,9 @@
   "discoverAllConversationsAliases": "all conversations sessions chats history every project search",
   "discoverTeamAliases": "ai team agents runs needs you orchestration plugin",
   "discoverNotifyServersTitle": "Notifications from saved servers",
-  "@discoverNotifyServersTitle": {"description": "Search result title for the saved-server monitoring section of Notifications."},
+  "@discoverNotifyServersTitle": {
+    "description": "Search result title for the saved-server monitoring section of Notifications."
+  },
   "discoverNotifyWhatAliases": "finished runs approvals questions check-ins check in quota alerts what notifies",
   "discoverNotifyQuietAliases": "quiet hours do not disturb night silence mute schedule",
   "discoverNotifyBackgroundAliases": "background connection stay connected battery keep alive service",
@@ -17448,37 +17461,76 @@
   "discoverMonitorAliases": "saved-server attention monitor other servers waiting server attention",
   "discoverConnectionHelpAliases": "connection help cannot connect troubleshooting network refused timeout",
   "gestureEquivFileRowActions": "Actions for {name}",
-  "@gestureEquivFileRowActions": {"description": "Files list: tooltip and accessibility label of the trailing button on a file or folder row. It opens the same actions as a long press or right click on the row.", "placeholders": {"name": {"type": "String"}}},
+  "@gestureEquivFileRowActions": {
+    "description": "Files list: tooltip and accessibility label of the trailing button on a file or folder row. It opens the same actions as a long press or right click on the row.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "gestureEquivShortcutFindMatch": "Next / previous match while finding in a conversation",
-  "@gestureEquivShortcutFindMatch": {"description": "Keyboard shortcuts help: what F3 and Shift+F3 do."},
+  "@gestureEquivShortcutFindMatch": {
+    "description": "Keyboard shortcuts help: what F3 and Shift+F3 do."
+  },
   "gestureEquivShortcutPromptHistory": "Earlier / later prompt, with the cursor at the start or end of the message box",
-  "@gestureEquivShortcutPromptHistory": {"description": "Keyboard shortcuts help: what Arrow Up and Arrow Down do in the message box."},
+  "@gestureEquivShortcutPromptHistory": {
+    "description": "Keyboard shortcuts help: what Arrow Up and Arrow Down do in the message box."
+  },
   "emptyTeachInboxMessage": "Nothing needs you. Approvals and questions from running work appear here.",
-  "@emptyTeachInboxMessage": {"description": "Inbox: body of the all-clear empty state; says what will appear in the list."},
+  "@emptyTeachInboxMessage": {
+    "description": "Inbox: body of the all-clear empty state; says what will appear in the list."
+  },
   "emptyTeachWorkTitle": "No conversations yet",
-  "@emptyTeachWorkTitle": {"description": "Work tab: title of the empty state shown when the project has no conversations at all."},
+  "@emptyTeachWorkTitle": {
+    "description": "Work tab: title of the empty state shown when the project has no conversations at all."
+  },
   "emptyTeachWorkMessage": "Conversations you start in this project are listed here, with the ones that need you first. Start one with New conversation.",
-  "@emptyTeachWorkMessage": {"description": "Work tab: body of the empty state. It names the docked New conversation button instead of repeating it, so the label must match workspaceNewSession."},
+  "@emptyTeachWorkMessage": {
+    "description": "Work tab: body of the empty state. It names the docked New conversation button instead of repeating it, so the label must match workspaceNewSession."
+  },
   "emptyTeachChangesTitle": "No changes yet",
-  "@emptyTeachChangesTitle": {"description": "Project > Changes: title of the empty review."},
+  "@emptyTeachChangesTitle": {
+    "description": "Project > Changes: title of the empty review."
+  },
   "emptyTeachChangesMessage": "Edits the agent makes show up here to review.",
-  "@emptyTeachChangesMessage": {"description": "Project > Changes: body of the empty review."},
+  "@emptyTeachChangesMessage": {
+    "description": "Project > Changes: body of the empty review."
+  },
   "emptyTeachWorktreesMessage": "A worktree is a separate copy of this project on its own branch, so parallel work does not mix. Worktrees of this project appear here.",
-  "@emptyTeachWorktreesMessage": {"description": "Worktrees: body of the empty list."},
+  "@emptyTeachWorktreesMessage": {
+    "description": "Worktrees: body of the empty list."
+  },
   "emptyTeachAllowedMessage": "When you choose Always allow on an approval in this project, it is listed here so you can take it back.",
-  "@emptyTeachAllowedMessage": {"description": "Always allowed actions: body of the empty list."},
+  "@emptyTeachAllowedMessage": {
+    "description": "Always allowed actions: body of the empty list."
+  },
   "emptyTeachTeamRunsMessage": "A run is a job the team works through. Start one and its progress shows here.",
-  "@emptyTeachTeamRunsMessage": {"description": "AI Team home, Runs: body of the empty list when this phone can start a run."},
+  "@emptyTeachTeamRunsMessage": {
+    "description": "AI Team home, Runs: body of the empty list when this phone can start a run."
+  },
   "emptyTeachSkillsMessage": "Skills are reusable instructions the agent can follow. Skills from this project and this server appear here.",
-  "@emptyTeachSkillsMessage": {"description": "Skills: body of the empty list."},
+  "@emptyTeachSkillsMessage": {
+    "description": "Skills: body of the empty list."
+  },
   "emptyTeachToolsMessage": "Tools the agent can call with this model appear here. This model has none.",
-  "@emptyTeachToolsMessage": {"description": "Tools: body of the empty list for the chosen model."},
+  "@emptyTeachToolsMessage": {
+    "description": "Tools: body of the empty list for the chosen model."
+  },
   "capabilityScreenTitle": "Available on this server",
-  "@capabilityScreenTitle": {"description": "Settings > Help row and screen title: what the connected server supports."},
+  "@capabilityScreenTitle": {
+    "description": "Settings > Help row and screen title: what the connected server supports."
+  },
   "capabilityScreenSubtitle": "What this server can and cannot do",
   "capabilityScreenAliases": "available supported not available missing feature hidden why can't capabilities server support shell",
   "capabilityScreenIntro": "{server} decides what appears in this app. Anything it cannot do is left out of the menus and tabs instead of being shown greyed out.",
-  "@capabilityScreenIntro": {"placeholders": {"server": {"type": "String"}}},
+  "@capabilityScreenIntro": {
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
   "capabilityGroupAvailable": "Available here",
   "capabilityGroupUnavailable": "Not available on this server",
   "capabilityGroupDevice": "Not available on this device",
@@ -17544,22 +17596,46 @@
   "capabilityVoice": "Voice",
   "capabilityVoiceDetail": "Dictate prompts with on-device speech models",
   "discoverShowTipsAgain": "Show tips again",
-  "@discoverShowTipsAgain": {"description": "Settings > Help row that resets the one-time nudges."},
+  "@discoverShowTipsAgain": {
+    "description": "Settings > Help row that resets the one-time nudges."
+  },
   "discoverShowTipsSubtitle": "One-time tips will appear again at their moment",
   "discoverShowTipsAliases": "tips hints nudges help reset show again tutorial",
   "discoverShowTipsDone": "Tips will show again.",
   "nudgeApprovals": "Asked for “{action}” 3 times: this conversation can approve requests for you.",
-  "@nudgeApprovals": {"description": "One-time tip above the composer after the third permission request of one kind in a conversation. {action} is the request's title, such as Edit a file. Its button opens Approvals.", "placeholders": {"action": {"type": "String"}}},
+  "@nudgeApprovals": {
+    "description": "One-time tip above the composer after the third permission request of one kind in a conversation. {action} is the request's title, such as Edit a file. Its button opens Approvals.",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
   "nudgeReviewChanges": "This run changed files: review what changed before you continue.",
-  "@nudgeReviewChanges": {"description": "One-time tip above the composer when a run that edited files finishes. Its button opens Review changes."},
+  "@nudgeReviewChanges": {
+    "description": "One-time tip above the composer when a run that edited files finishes. Its button opens Review changes."
+  },
   "nudgeLeave": "You can leave: this phone tells you when the run is done.",
-  "@nudgeLeave": {"description": "One-time tip above the composer after a run has kept the person waiting for a minute while finished-run notifications are on."},
+  "@nudgeLeave": {
+    "description": "One-time tip above the composer after a run has kept the person waiting for a minute while finished-run notifications are on."
+  },
   "nudgeCompact": "The context is {percent}% full: compact to keep going.",
-  "@nudgeCompact": {"description": "One-time tip above the composer when the conversation uses most of the model's context window. Its button compacts the conversation.", "placeholders": {"percent": {"type": "String"}}},
+  "@nudgeCompact": {
+    "description": "One-time tip above the composer when the conversation uses most of the model's context window. Its button compacts the conversation.",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "nudgePin": "Pin conversations you return to from their menu; they stay at the top of Work.",
-  "@nudgePin": {"description": "One-time tip at the top of the Work tab once a second project has been used."},
+  "@nudgePin": {
+    "description": "One-time tip at the top of the Work tab once a second project has been used."
+  },
   "nudgeDismiss": "Hide tip",
-  "@nudgeDismiss": {"description": "Tooltip of the close button on a one-time tip card."},
+  "@nudgeDismiss": {
+    "description": "Tooltip of the close button on a one-time tip card."
+  },
   "firstRunWhereQuestion": "Where does your coding agent run?",
   "@firstRunWhereQuestion": {
     "description": "First-run welcome: the one question asked before any server exists."
@@ -18115,9 +18191,15 @@
   "@chatAttachmentSheetAttached": {
     "description": "Composer note after a workbook was converted to CSV text",
     "placeholders": {
-      "name": {"type": "String"},
-      "sheets": {"type": "int"},
-      "rows": {"type": "int"}
+      "name": {
+        "type": "String"
+      },
+      "sheets": {
+        "type": "int"
+      },
+      "rows": {
+        "type": "int"
+      }
     }
   },
   "otherProjectsTitle": "In other projects",
@@ -19365,5 +19447,83 @@
         "type": "String"
       }
     }
+  },
+  "chatStartBuildWebPage": "Build a small web page",
+  "@chatStartBuildWebPage": {
+    "description": "Starter chip for an empty project folder; fills the composer"
+  },
+  "chatStartPythonScript": "Write a Python script that…",
+  "@chatStartPythonScript": {
+    "description": "Starter chip for an empty project; the ellipsis marks an unfinished sentence the person completes (the composer gets it without the ellipsis)"
+  },
+  "chatStartNodeProject": "Start a Node.js project",
+  "@chatStartNodeProject": {
+    "description": "Starter chip for an empty project folder"
+  },
+  "chatStartReadme": "Set up a README",
+  "@chatStartReadme": {
+    "description": "Starter chip for an empty project folder"
+  },
+  "chatStartExplainProject": "Explain this project",
+  "@chatStartExplainProject": {
+    "description": "Starter chip for a project folder that has files"
+  },
+  "chatStartWhatChanged": "What changed recently?",
+  "@chatStartWhatChanged": {
+    "description": "Starter chip shown only when the project's Git repository has commits"
+  },
+  "chatStartFindBug": "Find and fix a bug",
+  "@chatStartFindBug": {
+    "description": "Starter chip for a project folder that has files"
+  },
+  "chatStartAddTests": "Add tests",
+  "@chatStartAddTests": {
+    "description": "Starter chip for a project folder that has files"
+  },
+  "chatStartListFolder": "List what's in this folder",
+  "@chatStartListFolder": {
+    "description": "Starter chip when no project folder is selected (the server's own folder)"
+  },
+  "chatStartEmptyFolder": "Empty folder",
+  "@chatStartEmptyFolder": {
+    "description": "Fact under the project name in a new conversation: the folder has no files"
+  },
+  "chatStartItemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@chatStartItemCount": {
+    "description": "Fact under the project name: how many files and folders sit at the top of the project folder",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatStartGit": "Git",
+  "@chatStartGit": {
+    "description": "Fact under the project name: the folder is a Git repository"
+  },
+  "chatStartChangeCount": "{count, plural, =1{1 change} other{{count} changes}}",
+  "@chatStartChangeCount": {
+    "description": "Fact under the project name: uncommitted Git changes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatStartLooking": "Looking at the folder…",
+  "@chatStartLooking": {
+    "description": "Fact line while the app reads the project folder and its Git status"
+  },
+  "chatStartServerFolder": "Server folder",
+  "@chatStartServerFolder": {
+    "description": "Header of a new conversation when no project folder is selected"
+  },
+  "chatStartTip": "Type / for commands · long-press a message for its actions",
+  "@chatStartTip": {
+    "description": "Tip under the header of a new conversation, shown only while the keyboard is down"
+  },
+  "chatStartSuggestionsLabel": "Ways to start",
+  "@chatStartSuggestionsLabel": {
+    "description": "Screen reader label for the row of starter chips above the composer"
   }
 }
