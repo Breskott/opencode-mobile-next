@@ -34,7 +34,7 @@
         </intent>
     </queries>
     <application
-        android:label="OpenCode Mobile"
+        android:label="${appLabel}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
@@ -93,7 +93,7 @@
                  MainActivity whitelists and forwards to Dart. -->
             <meta-data
                 android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
+                android:resource="${appShortcuts}" />
         </activity>
         <service
             android:name=".TermuxResultService"

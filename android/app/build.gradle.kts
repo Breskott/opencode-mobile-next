@@ -7,6 +7,7 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val ocPreview = (project.findProperty("ocPreview") as String?) == "true"
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.isFile) {
@@ -32,6 +33,16 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // A preview build installs beside the stable app instead of over it
+        // (`flutter build apk --android-project-arg=ocPreview=true`): its own
+        // package, name, data and built-in Ubuntu, so trying a new version
+        // never needs uninstalling the one that holds the person's servers.
+        // Projects in Termux are shared by both, since neither owns them.
+        if (ocPreview) applicationIdSuffix = ".preview"
+        manifestPlaceholders["appLabel"] =
+            if (ocPreview) "OpenCode Preview" else "OpenCode Mobile"
+        manifestPlaceholders["appShortcuts"] =
+            if (ocPreview) "@xml/shortcuts_preview" else "@xml/shortcuts"
     }
 
     signingConfigs {
