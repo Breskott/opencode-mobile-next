@@ -13401,11 +13401,11 @@
       }
     }
   },
-  "teamUiCardEmptyHint": "Start runs from the host for now.",
+  "teamUiCardEmptyHint": "Start tasks on the computer for now.",
   "@teamUiCardEmptyHint": {
     "description": "Workspace AI Team card empty state, second line (Sprint A: no start-a-run on the phone)"
   },
-  "teamUiCardEmptyTitle": "No recent runs.",
+  "teamUiCardEmptyTitle": "No recent tasks",
   "@teamUiCardEmptyTitle": {
     "description": "AI Team empty runs list, first line (Workspace card and home). 'Recent': a host lists finished runs for a bounded time, so the list can be empty after the team has worked"
   },
@@ -13547,7 +13547,7 @@
   "@teamUiCardRunStateUnknown": {
     "description": "Run state word on a Workspace AI Team card run row"
   },
-  "teamUiCardRunStateWaiting": "Waiting for an agent",
+  "teamUiCardRunStateWaiting": "Waiting for a worker",
   "@teamUiCardRunStateWaiting": {
     "description": "Run state word on a Workspace AI Team card run row"
   },
@@ -13555,7 +13555,7 @@
   "@teamUiCardRunStateWorking": {
     "description": "Run state word on a Workspace AI Team card run row"
   },
-  "teamUiCardRunStateWaitingMerge": "Waiting for merge",
+  "teamUiCardRunStateWaitingMerge": "Reviewing",
   "@teamUiCardRunStateWaitingMerge": {
     "description": "Run state word (card row, home row, run detail) when every open work item of the batch is in the merge agent's hands (TEAM-117)"
   },
@@ -13698,7 +13698,7 @@
   "@teamUiHomeAgentStateUnknown": {
     "description": "AI Team home fleet row agent state when the host reported none"
   },
-  "teamUiHomeAgentStateWaiting": "Waiting (needs input)",
+  "teamUiHomeAgentStateWaiting": "Waiting for you",
   "@teamUiHomeAgentStateWaiting": {
     "description": "AI Team home fleet row agent state when the agent waits on the person"
   },
@@ -13752,7 +13752,7 @@
   "@teamUiHomeFilterBlocked": {
     "description": "AI Team home Runs filter chip: blocked, waiting, failed or gated runs"
   },
-  "teamUiHomeFilterCompleted": "Completed",
+  "teamUiHomeFilterCompleted": "Done",
   "@teamUiHomeFilterCompleted": {
     "description": "AI Team home Runs filter chip: completed and cancelled runs"
   },
@@ -13914,7 +13914,7 @@
       }
     }
   },
-  "teamUiHomeRunsEmptyFiltered": "No runs match.",
+  "teamUiHomeRunsEmptyFiltered": "No tasks match.",
   "@teamUiHomeRunsEmptyFiltered": {
     "description": "AI Team home Runs segment empty title when a filter or search hides every run"
   },
@@ -13926,7 +13926,7 @@
   "@teamUiHomeSearchClear": {
     "description": "AI Team home Runs search field clear button tooltip"
   },
-  "teamUiHomeSearchHint": "Search runs by title",
+  "teamUiHomeSearchHint": "Search tasks",
   "@teamUiHomeSearchHint": {
     "description": "AI Team home Runs search field hint"
   },
@@ -13977,7 +13977,7 @@
       }
     }
   },
-  "teamUiRunBlockedByDeps": "{count, plural, =1{waiting on one other item} other{waiting on {count} other items}}",
+  "teamUiRunBlockedByDeps": "{count, plural, =1{waiting on one other step} other{waiting on {count} other steps}}",
   "@teamUiRunBlockedByDeps": {
     "description": "Run detail blocked cause derived from open dependencies",
     "placeholders": {
@@ -14103,7 +14103,7 @@
   "@teamUiRunMissingHint": {
     "description": "Run detail hint when the run id is not in the host’s list"
   },
-  "teamUiRunMissingTitle": "This run is no longer on the host",
+  "teamUiRunMissingTitle": "This task is no longer on the host",
   "@teamUiRunMissingTitle": {
     "description": "Run detail state when the run id is not in the host’s list"
   },
@@ -14162,19 +14162,19 @@
   "@teamUiRunTabTimeline": {
     "description": "Run detail tab"
   },
-  "teamUiRunTabWork": "Work",
+  "teamUiRunTabWork": "Steps",
   "@teamUiRunTabWork": {
     "description": "Run detail tab"
   },
-  "teamUiRunTermBatch": "Run · convoy",
+  "teamUiRunTermBatch": "Task · convoy",
   "@teamUiRunTermBatch": {
     "description": "Run detail app bar term for a batch run; convoy is the Gas City term"
   },
-  "teamUiRunTermFormula": "Run · formula",
+  "teamUiRunTermFormula": "Task · formula",
   "@teamUiRunTermFormula": {
     "description": "Run detail app bar term for a formula run; formula is the Gas City term"
   },
-  "teamUiRunTermUnknown": "Run",
+  "teamUiRunTermUnknown": "Task",
   "@teamUiRunTermUnknown": {
     "description": "Run detail app bar term when the kind is unknown"
   },
@@ -14208,7 +14208,7 @@
   "@teamUiRunTimelineEmptyFilteredHint": {
     "description": "Run timeline empty state hint when a filter hides every row"
   },
-  "teamUiRunTimelineEmptyHint": "Events appear here as the team works on this run.",
+  "teamUiRunTimelineEmptyHint": "Events appear here as the team works on this task.",
   "@teamUiRunTimelineEmptyHint": {
     "description": "Run timeline empty state hint"
   },
@@ -14816,7 +14816,7 @@
   "@teamUiWorkViewList": {
     "description": "Work tab view toggle"
   },
-  "teamUiWorkWaitsOn": "{count, plural, =1{Waits on 1 item} other{Waits on {count} items}}",
+  "teamUiWorkWaitsOn": "{count, plural, =1{Waits on 1 step} other{Waits on {count} steps}}",
   "@teamUiWorkWaitsOn": {
     "description": "Work row detail: how many open items this one still needs",
     "placeholders": {
@@ -15413,11 +15413,11 @@
   "@teamUiControlCloseBatchConfirmBody": {
     "description": "Body of the Close batch confirmation"
   },
-  "teamUiStartRunFab": "Start a run",
+  "teamUiStartRunFab": "Give the team a task",
   "@teamUiStartRunFab": {
     "description": "Label of the floating action button on the AI Team home (02-ux §3, §7)"
   },
-  "teamUiStartRunTitle": "Start a run",
+  "teamUiStartRunTitle": "Give the team a task",
   "@teamUiStartRunTitle": {
     "description": "Title of the Start-a-run sheet"
   },
@@ -15542,11 +15542,11 @@
       }
     }
   },
-  "teamUiStartRunPlanning": "Planning… (Mayor)",
+  "teamUiStartRunPlanning": "Planning the steps…",
   "@teamUiStartRunPlanning": {
     "description": "Title of the pending card on the AI Team home after the objective was sent, until a run appears"
   },
-  "teamUiStartRunPlanningHint": "The planner is turning the objective into work. The run appears in this list once it has.",
+  "teamUiStartRunPlanningHint": "The planner is turning it into steps. The task shows in this list once it has.",
   "@teamUiStartRunPlanningHint": {
     "description": "Body of the pending Planning card"
   },
@@ -17538,7 +17538,7 @@
   "@emptyTeachAllowedMessage": {
     "description": "Always allowed actions: body of the empty list."
   },
-  "emptyTeachTeamRunsMessage": "A run is a job the team works through. Start one and its progress shows here.",
+  "emptyTeachTeamRunsMessage": "Say what you need, and the team splits it into steps and shows its progress here.",
   "@emptyTeachTeamRunsMessage": {
     "description": "AI Team home, Runs: body of the empty list when this phone can start a run."
   },
@@ -19917,5 +19917,241 @@
   "settingsAboutLoadFailed": "The notices didn't load",
   "@settingsAboutLoadFailed": {
     "description": "Title of the About screen state when its documents could not be read"
+  },
+  "teamUiHostPhrasePhone": "On this phone",
+  "@teamUiHostPhrasePhone": {
+    "description": "AI Team host phrase (home subtitle, Work tab section) when the team runs on this phone"
+  },
+  "teamUiHostPhraseComputerNamed": "On {name}",
+  "@teamUiHostPhraseComputerNamed": {
+    "description": "AI Team host phrase when the team runs on a computer with a name, e.g. \"On pop-os\"",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "pop-os"
+      }
+    }
+  },
+  "teamUiHostPhraseComputer": "On your computer",
+  "@teamUiHostPhraseComputer": {
+    "description": "AI Team host phrase when the computer has no name, only an address"
+  },
+  "teamUiHostPhrasePaused": "Paused",
+  "@teamUiHostPhrasePaused": {
+    "description": "Added to the AI Team host phrase after \" · \" when every agent is switched off on the host"
+  },
+  "teamUiHostPhraseNotAnswering": "Not answering",
+  "@teamUiHostPhraseNotAnswering": {
+    "description": "Added to the AI Team host phrase after \" · \" when the shown data is old or the host stopped answering"
+  },
+  "teamUiTaskSteps": "{total, plural, =1{{done} of 1 step done} other{{done} of {total} steps done}}",
+  "@teamUiTaskSteps": {
+    "description": "How far an AI Team task is, on its row and its Overview",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "teamUiTaskDoneAgo": "Done {when}",
+  "@teamUiTaskDoneAgo": {
+    "description": "Supporting line of a finished AI Team task, e.g. \"Done 5h ago\"",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "5h ago"
+      }
+    }
+  },
+  "teamUiTaskMergedAgo": "Done · merged {when}",
+  "@teamUiTaskMergedAgo": {
+    "description": "Supporting line of a finished AI Team task whose work was merged, e.g. \"Done · merged 5h ago\"",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "5h ago"
+      }
+    }
+  },
+  "teamUiTaskCancelledAgo": "Cancelled {when}",
+  "@teamUiTaskCancelledAgo": {
+    "description": "Supporting line of a cancelled AI Team task, e.g. \"Cancelled 5h ago\"",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "5h ago"
+      }
+    }
+  },
+  "teamUiHomeTasksHeading": "Tasks",
+  "@teamUiHomeTasksHeading": {
+    "description": "Section heading of the open tasks on the AI Team home"
+  },
+  "teamUiHomeDoneToday": "Done today",
+  "@teamUiHomeDoneToday": {
+    "description": "Section heading of the tasks finished today on the AI Team home"
+  },
+  "teamUiHomeDoneEarlier": "Done",
+  "@teamUiHomeDoneEarlier": {
+    "description": "Section heading of finished tasks on the AI Team home when some finished before today"
+  },
+  "teamUiHomeDoneMore": "{count, plural, =1{Show 1 more} other{Show {count} more}}",
+  "@teamUiHomeDoneMore": {
+    "description": "Row under the first three finished tasks that shows the rest",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamUiHomeAgentsRowCount": "{count, plural, =0{No agents} =1{1 agent} other{{count} agents}}",
+  "@teamUiHomeAgentsRowCount": {
+    "description": "The AI Team home row that opens the agents list: how many agents are on",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamUiHomeAgentsRowWorking": "{count} working",
+  "@teamUiHomeAgentsRowWorking": {
+    "description": "Added after \" · \" to the agents row: how many agents are working now",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamUiHomeSearchClose": "Close search",
+  "@teamUiHomeSearchClose": {
+    "description": "Top bar button that hides the task search on the AI Team home"
+  },
+  "teamUiHomeNeedsYouAnswer": "Answer",
+  "@teamUiHomeNeedsYouAnswer": {
+    "description": "Opens the full question to answer it (AI Team home, run Overview and the Work tab section)"
+  },
+  "teamUiHomeNeedsYouMore": "More",
+  "@teamUiHomeNeedsYouMore": {
+    "description": "Opens the full question sheet from the inline question block"
+  },
+  "teamUiHomeNeedsYouFallbackTitle": "The team has a question",
+  "@teamUiHomeNeedsYouFallbackTitle": {
+    "description": "Title of the inline question block when the question belongs to no known task"
+  },
+  "teamUiHomeNeedsYouAnnouncement": "Needs you: {question}",
+  "@teamUiHomeNeedsYouAnnouncement": {
+    "description": "Screen-reader announcement of an inline AI Team question",
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "teamUiHomeAgentsRowHint": "Open the agents list",
+  "@teamUiHomeAgentsRowHint": {
+    "description": "Screen-reader hint of the agents row on the AI Team home"
+  },
+  "teamUiCardNothingRunning": "Nothing running",
+  "@teamUiCardNothingRunning": {
+    "description": "The Work tab AI Team section when no task is running or waiting"
+  },
+  "teamUiCardOpenHint": "Open AI Team",
+  "@teamUiCardOpenHint": {
+    "description": "Screen-reader hint of the Work tab AI Team section header, which opens the AI Team home"
+  },
+  "teamUiAgentRoleWorker": "Worker",
+  "@teamUiAgentRoleWorker": {
+    "description": "An AI Team agent that does the steps of tasks"
+  },
+  "teamUiAgentRoleReviewer": "Reviewer (merges)",
+  "@teamUiAgentRoleReviewer": {
+    "description": "An AI Team agent that reviews finished work and merges it"
+  },
+  "teamUiAgentRolePlanner": "Planner",
+  "@teamUiAgentRolePlanner": {
+    "description": "The AI Team agent that turns a task into steps"
+  },
+  "teamUiAgentRoleSupervisor": "Supervisor",
+  "@teamUiAgentRoleSupervisor": {
+    "description": "An AI Team agent that watches the others and restarts stuck ones"
+  },
+  "teamUiAgentRoleHelper": "Helper",
+  "@teamUiAgentRoleHelper": {
+    "description": "An AI Team agent that does chores for the team"
+  },
+  "teamUiAgentRoleOther": "Agent",
+  "@teamUiAgentRoleOther": {
+    "description": "An AI Team agent whose role the app does not know"
+  },
+  "teamUiRunStageWaiting": "Waiting",
+  "@teamUiRunStageWaiting": {
+    "description": "First of the four stages of an AI Team task"
+  },
+  "teamUiRunStageWorking": "Working",
+  "@teamUiRunStageWorking": {
+    "description": "Second of the four stages of an AI Team task"
+  },
+  "teamUiRunStageReviewing": "Reviewing",
+  "@teamUiRunStageReviewing": {
+    "description": "Third of the four stages of an AI Team task: handed to the reviewer, who merges"
+  },
+  "teamUiRunStageDone": "Done",
+  "@teamUiRunStageDone": {
+    "description": "Last of the four stages of an AI Team task: merged"
+  },
+  "teamUiRunStageSemantics": "Stage {position} of 4: {stage}",
+  "@teamUiRunStageSemantics": {
+    "description": "Screen-reader label of the four-stage line on an AI Team task",
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "stage": {
+        "type": "String"
+      }
+    }
+  },
+  "teamUiRunStepsHeading": "Steps",
+  "@teamUiRunStepsHeading": {
+    "description": "Section heading of the steps on an AI Team task Overview"
+  },
+  "teamUiRunStepsAll": "{count, plural, other{See all {count} steps}}",
+  "@teamUiRunStepsAll": {
+    "description": "Row under the first steps on the Overview that opens the Steps tab",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamUiRunDetailsCounts": "{done} done · {working} working · {blocked} held up",
+  "@teamUiRunDetailsCounts": {
+    "description": "The step counts under the Details row of an AI Team task",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "working": {
+        "type": "int"
+      },
+      "blocked": {
+        "type": "int"
+      }
+    }
+  },
+  "teamUiRunDetailsUsage": "Usage",
+  "@teamUiRunDetailsUsage": {
+    "description": "Label of the cost and tokens under the Details row of an AI Team task"
+  },
+  "teamUiRunDetailsStepsLabel": "Steps",
+  "@teamUiRunDetailsStepsLabel": {
+    "description": "Label of the step counts under the Details row of an AI Team task"
+  },
+  "teamUiRunDetailsElapsed": "Time",
+  "@teamUiRunDetailsElapsed": {
+    "description": "Label of how long the task has run, under the Details row"
   }
 }

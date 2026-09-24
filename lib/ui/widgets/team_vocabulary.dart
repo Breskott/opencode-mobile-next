@@ -4,6 +4,12 @@
 /// error copy of 03-onboarding §5. The Workspace card (TEAM-107) and the
 /// AI Team home (TEAM-108) both read from here so a run never sorts or
 /// reads differently between the two.
+///
+/// The person's words (docs/design/aiteam-redesign-2026-09-24.md): a run
+/// is a "task" with "steps", agents are named by role ([teamAgentRole]),
+/// the host is one short phrase ([teamHostPhrase]) and a task moves through
+/// four stages ([TeamStage]). Gas City's own words stay under Technical
+/// details.
 library;
 
 import 'package:flutter/material.dart';
@@ -12,6 +18,214 @@ import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
 import '../app_theme.dart';
+import '../kit/kit_task_mark.dart';
+import 'relative_time.dart';
+
+// ---------------------------------------------------------------------------
+// The person's words: host phrase, task line, stages, roles
+// ---------------------------------------------------------------------------
+
+/// The computer's name from the team URL ("pop-os"), or null when the URL
+/// names no host or only an address (an IP or `localhost`): an address is
+/// not a name a person would call their computer.
+String? teamComputerName(OrchestrationController controller) {
+  final name =
+      teamHostName(controller.host?.url) ?? teamHostName(controller.config.url);
+  if (name == null) return null;
+  final lower = name.toLowerCase();
+  if (lower == 'localhost' || lower.endsWith('.localhost')) return null;
+  final ipv4 = RegExp(r'^\d{1,3}(\.\d{1,3}){3}$');
+  if (ipv4.hasMatch(name) || name.contains(':')) return null;
+  return name;
+}
+
+/// "Paused" when every agent is switched off on the host, "Not answering"
+/// when the shown data is old or the host could not be reached; null when
+/// neither holds.
+String? teamHostCondition(
+  AppLocalizations l10n,
+  OrchestrationController controller,
+) {
+  if (controller.isStale ||
+      (controller.phase == OrchestrationPhase.ready &&
+          controller.lastError?.kind == OrchestrationErrorKind.readFailed)) {
+    return l10n.teamUiHostPhraseNotAnswering;
+  }
+  if (controller.phase == OrchestrationPhase.failed) {
+    return switch (controller.lastError?.kind) {
+      OrchestrationErrorKind.unreachable ||
+      OrchestrationErrorKind.readFailed ||
+      null => l10n.teamUiHostPhraseNotAnswering,
+      OrchestrationErrorKind.notGasCity ||
+      OrchestrationErrorKind.cityNotRunning ||
+      OrchestrationErrorKind.plainHttpRefused => null,
+    };
+  }
+  final snapshot = controller.snapshot;
+  if (controller.phase == OrchestrationPhase.ready &&
+      snapshot.hasData &&
+      snapshot.agents.isNotEmpty &&
+      teamLiveAgents(snapshot.agents).isEmpty) {
+    return l10n.teamUiHostPhrasePaused;
+  }
+  return null;
+}
+
+/// Where the team runs, as one short phrase: "On this phone", "On pop-os"
+/// or "On your computer", then " · Paused" or " · Not answering" when true.
+/// Never an address, a version or the engine's name: those are under the
+/// info button's Technical details.
+String teamHostPhrase(
+  AppLocalizations l10n,
+  OrchestrationController controller,
+) {
+  final hostMode = controller.host?.hostMode ?? controller.config.hostMode;
+  final place = switch (hostMode) {
+    OrchestrationHostMode.phone => l10n.teamUiHostPhrasePhone,
+    OrchestrationHostMode.computer => switch (teamComputerName(controller)) {
+      final name? => l10n.teamUiHostPhraseComputerNamed(name),
+      null => l10n.teamUiHostPhraseComputer,
+    },
+  };
+  final condition = teamHostCondition(l10n, controller);
+  return condition == null ? place : '$place$teamUsageSeparator$condition';
+}
+
+/// The four stages a task moves through, in order. At most these show,
+/// on the task's Overview only.
+enum TeamStage { waiting, working, reviewing, done }
+
+/// The stage [run] is at: done once completed, reviewing while its work is
+/// in the merge agent's hands ([teamRunAwaitsMerge]), working while work
+/// moves (held-up work included), waiting before that. Null for a failed or
+/// cancelled task: it left the stages, and its status line says so.
+TeamStage? teamRunStage(
+  OrchestrationRun run,
+  List<WorkItem> work, {
+  DispatchCycle? Function(String workId)? cycleOf,
+}) {
+  switch (run.state) {
+    case RunState.completed:
+      return TeamStage.done;
+    case RunState.failed || RunState.cancelled:
+      return null;
+    case RunState.working ||
+        RunState.blocked ||
+        RunState.waiting ||
+        RunState.planning ||
+        RunState.unknown:
+      break;
+  }
+  if (teamRunAwaitsMerge(run, work, cycleOf: cycleOf)) {
+    return TeamStage.reviewing;
+  }
+  return switch (run.state) {
+    RunState.working || RunState.blocked => TeamStage.working,
+    _ => TeamStage.waiting,
+  };
+}
+
+/// The one word for a stage.
+String teamStageWord(AppLocalizations l10n, TeamStage stage) => switch (stage) {
+  TeamStage.waiting => l10n.teamUiRunStageWaiting,
+  TeamStage.working => l10n.teamUiRunStageWorking,
+  TeamStage.reviewing => l10n.teamUiRunStageReviewing,
+  TeamStage.done => l10n.teamUiRunStageDone,
+};
+
+/// A task's leading mark: needs you, then failed, done, stopped
+/// (cancelled), working (planning and the merge wait included) and
+/// waiting (held up or not started).
+KitTaskState teamRunMark(OrchestrationRun run, {required bool needsYou}) {
+  if (needsYou) return KitTaskState.needsYou;
+  return switch (run.state) {
+    RunState.failed => KitTaskState.failed,
+    RunState.completed => KitTaskState.done,
+    RunState.cancelled => KitTaskState.stopped,
+    RunState.working || RunState.planning => KitTaskState.working,
+    RunState.waiting ||
+    RunState.blocked ||
+    RunState.unknown => KitTaskState.waiting,
+  };
+}
+
+/// "3 of 5 steps done", or null for a task of one step or none (its state
+/// says it all).
+String? teamTaskSteps(AppLocalizations l10n, TeamRunProgress progress) =>
+    progress.total <= 1
+    ? null
+    : l10n.teamUiTaskSteps(progress.done, progress.total);
+
+/// A task's one supporting line: "Working · 3 of 5 steps done", "Needs
+/// you · 1 of 5 steps done", "Waiting for a worker", "Reviewing", "Done ·
+/// merged 5h ago".
+String teamTaskLine(
+  AppLocalizations l10n,
+  OrchestrationRun run,
+  List<WorkItem> work, {
+  required bool needsYou,
+  required DateTime now,
+  DispatchCycle? Function(String workId)? cycleOf,
+}) {
+  final finishedAt = run.finishedAt;
+  if (finishedAt != null &&
+      (run.state == RunState.completed || run.state == RunState.cancelled)) {
+    final when = relativeTimeLabel(
+      finishedAt.millisecondsSinceEpoch,
+      now: now,
+      l10n: l10n,
+    );
+    return switch (run.state) {
+      RunState.cancelled => l10n.teamUiTaskCancelledAgo(when),
+      _ when run.merged => l10n.teamUiTaskMergedAgo(when),
+      _ => l10n.teamUiTaskDoneAgo(when),
+    };
+  }
+  final word = needsYou
+      ? l10n.teamUiHomeRunNeedsYou
+      : teamRunStateWordFor(l10n, run, work, cycleOf: cycleOf);
+  final open =
+      run.state != RunState.completed && run.state != RunState.cancelled;
+  final steps = open
+      ? teamTaskSteps(l10n, TeamRunProgress.of(run, work))
+      : null;
+  return [word, ?steps].join(teamUsageSeparator);
+}
+
+/// What an agent does for the team, in plain words. Gas City's own names
+/// (polecat, refinery, mayor…) stay on the agent's Technical details.
+enum TeamAgentRole { worker, reviewer, planner, supervisor, helper, other }
+
+/// The role of [agent], read from its pool (or, for a named agent, its
+/// name): the last part after "/" and ".", without an instance number.
+TeamAgentRole teamAgentRole(OrchestrationAgent agent) {
+  final source = (agent.pool ?? agent.name).toLowerCase();
+  final tail = source
+      .split('/')
+      .last
+      .split('.')
+      .last
+      .replaceFirst(RegExp(r'-\d+$'), '');
+  return switch (tail) {
+    'polecat' || 'polecats' => TeamAgentRole.worker,
+    'refinery' => TeamAgentRole.reviewer,
+    'mayor' => TeamAgentRole.planner,
+    'witness' || 'deacon' || 'boot' => TeamAgentRole.supervisor,
+    'dog' || 'dogs' => TeamAgentRole.helper,
+    _ => TeamAgentRole.other,
+  };
+}
+
+/// The one word for a role.
+String teamAgentRoleWord(AppLocalizations l10n, TeamAgentRole role) =>
+    switch (role) {
+      TeamAgentRole.worker => l10n.teamUiAgentRoleWorker,
+      TeamAgentRole.reviewer => l10n.teamUiAgentRoleReviewer,
+      TeamAgentRole.planner => l10n.teamUiAgentRolePlanner,
+      TeamAgentRole.supervisor => l10n.teamUiAgentRoleSupervisor,
+      TeamAgentRole.helper => l10n.teamUiAgentRoleHelper,
+      TeamAgentRole.other => l10n.teamUiAgentRoleOther,
+    };
 
 /// How much of a run is done, working and blocked, from its work items
 /// when the snapshot has them and from its step counts otherwise.

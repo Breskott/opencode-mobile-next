@@ -111,6 +111,14 @@ const _migrated = <String, List<String>>{
   'lib/ui/screens/team/gate_sheet.dart': ['team_gate_sheet'],
   'lib/ui/screens/team/work_sheet.dart': ['team_work_sheet'],
   'lib/ui/screens/team/merge_section.dart': ['team_merge'],
+  // The AI Team redesign (docs/design/aiteam-redesign-2026-09-24.md): the
+  // agents list, the shared needs-you block, the plain agent row.
+  'lib/ui/screens/team/team_agents_screen.dart': ['team_agents'],
+  'lib/ui/screens/team/team_needs_you.dart': [
+    'team_home_loaded',
+    'team_run_overview',
+  ],
+  'lib/ui/widgets/team_agent_row.dart': ['team_agents'],
   // §9 step 5: the chat's states and banners (not the transcript's
   // messages). Loading, could not load, the one status line (connection,
   // a message not sent, a prompt error, staged revert, subagent, sharing).

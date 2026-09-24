@@ -13127,10 +13127,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiCardEmptyHint => 'Start runs from the host for now.';
+  String get teamUiCardEmptyHint => 'Start tasks on the computer for now.';
 
   @override
-  String get teamUiCardEmptyTitle => 'No recent runs.';
+  String get teamUiCardEmptyTitle => 'No recent tasks';
 
   @override
   String get teamUiCardErrorCityNotRunning =>
@@ -13242,13 +13242,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiCardRunStateUnknown => 'Unknown';
 
   @override
-  String get teamUiCardRunStateWaiting => 'Waiting for an agent';
+  String get teamUiCardRunStateWaiting => 'Waiting for a worker';
 
   @override
   String get teamUiCardRunStateWorking => 'Working';
 
   @override
-  String get teamUiCardRunStateWaitingMerge => 'Waiting for merge';
+  String get teamUiCardRunStateWaitingMerge => 'Reviewing';
 
   @override
   String get teamUiCardRunStateMerged => 'Done · merged';
@@ -13336,7 +13336,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiHomeAgentStateUnknown => 'Unknown';
 
   @override
-  String get teamUiHomeAgentStateWaiting => 'Waiting (needs input)';
+  String get teamUiHomeAgentStateWaiting => 'Waiting for you';
 
   @override
   String get teamUiHomeAgentStateWorking => 'Working';
@@ -13374,7 +13374,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiHomeFilterBlocked => 'Blocked';
 
   @override
-  String get teamUiHomeFilterCompleted => 'Completed';
+  String get teamUiHomeFilterCompleted => 'Done';
 
   @override
   String get teamUiHomeGateAnswerOnComputer =>
@@ -13476,7 +13476,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiHomeRunsEmptyFiltered => 'No runs match.';
+  String get teamUiHomeRunsEmptyFiltered => 'No tasks match.';
 
   @override
   String get teamUiHomeRunsEmptyHint =>
@@ -13486,7 +13486,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiHomeSearchClear => 'Clear search';
 
   @override
-  String get teamUiHomeSearchHint => 'Search runs by title';
+  String get teamUiHomeSearchHint => 'Search tasks';
 
   @override
   String teamUiHomeSegmentAgents(int count) {
@@ -13519,8 +13519,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'waiting on $count other items',
-      one: 'waiting on one other item',
+      other: 'waiting on $count other steps',
+      one: 'waiting on one other step',
     );
     return '$_temp0';
   }
@@ -13598,7 +13598,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'It may have been closed or removed. Refresh to check again.';
 
   @override
-  String get teamUiRunMissingTitle => 'This run is no longer on the host';
+  String get teamUiRunMissingTitle => 'This task is no longer on the host';
 
   @override
   String get teamUiRunNeedsYou => 'Needs you';
@@ -13637,16 +13637,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiRunTabTimeline => 'Timeline';
 
   @override
-  String get teamUiRunTabWork => 'Work';
+  String get teamUiRunTabWork => 'Steps';
 
   @override
-  String get teamUiRunTermBatch => 'Run · convoy';
+  String get teamUiRunTermBatch => 'Task · convoy';
 
   @override
-  String get teamUiRunTermFormula => 'Run · formula';
+  String get teamUiRunTermFormula => 'Task · formula';
 
   @override
-  String get teamUiRunTermUnknown => 'Run';
+  String get teamUiRunTermUnknown => 'Task';
 
   @override
   String teamUiRunTimelineAgentStopped(String name) {
@@ -13669,7 +13669,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiRunTimelineEmptyHint =>
-      'Events appear here as the team works on this run.';
+      'Events appear here as the team works on this task.';
 
   @override
   String get teamUiRunTimelineFilterAgents => 'Agents';
@@ -14140,8 +14140,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Waits on $count items',
-      one: 'Waits on 1 item',
+      other: 'Waits on $count steps',
+      one: 'Waits on 1 step',
     );
     return '$_temp0';
   }
@@ -14589,10 +14589,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The batch closes on the host. Its open work items stay open for another batch.';
 
   @override
-  String get teamUiStartRunFab => 'Start a run';
+  String get teamUiStartRunFab => 'Give the team a task';
 
   @override
-  String get teamUiStartRunTitle => 'Start a run';
+  String get teamUiStartRunTitle => 'Give the team a task';
 
   @override
   String get teamUiStartRunObjectiveLabel => 'Objective';
@@ -14694,11 +14694,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get teamUiStartRunPlanning => 'Planning… (Mayor)';
+  String get teamUiStartRunPlanning => 'Planning the steps…';
 
   @override
   String get teamUiStartRunPlanningHint =>
-      'The planner is turning the objective into work. The run appears in this list once it has.';
+      'The planner is turning it into steps. The task shows in this list once it has.';
 
   @override
   String get teamUiStartRunStillPlanning =>
@@ -16239,7 +16239,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyTeachTeamRunsMessage =>
-      'A run is a job the team works through. Start one and its progress shows here.';
+      'Say what you need, and the team splits it into steps and shows its progress here.';
 
   @override
   String get emptyTeachSkillsMessage =>
@@ -18175,4 +18175,172 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAboutLoadFailed => 'The notices didn\'t load';
+
+  @override
+  String get teamUiHostPhrasePhone => 'On this phone';
+
+  @override
+  String teamUiHostPhraseComputerNamed(String name) {
+    return 'On $name';
+  }
+
+  @override
+  String get teamUiHostPhraseComputer => 'On your computer';
+
+  @override
+  String get teamUiHostPhrasePaused => 'Paused';
+
+  @override
+  String get teamUiHostPhraseNotAnswering => 'Not answering';
+
+  @override
+  String teamUiTaskSteps(int done, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$done of $total steps done',
+      one: '$done of 1 step done',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamUiTaskDoneAgo(String when) {
+    return 'Done $when';
+  }
+
+  @override
+  String teamUiTaskMergedAgo(String when) {
+    return 'Done · merged $when';
+  }
+
+  @override
+  String teamUiTaskCancelledAgo(String when) {
+    return 'Cancelled $when';
+  }
+
+  @override
+  String get teamUiHomeTasksHeading => 'Tasks';
+
+  @override
+  String get teamUiHomeDoneToday => 'Done today';
+
+  @override
+  String get teamUiHomeDoneEarlier => 'Done';
+
+  @override
+  String teamUiHomeDoneMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show $count more',
+      one: 'Show 1 more',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamUiHomeAgentsRowCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count agents',
+      one: '1 agent',
+      zero: 'No agents',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamUiHomeAgentsRowWorking(int count) {
+    return '$count working';
+  }
+
+  @override
+  String get teamUiHomeSearchClose => 'Close search';
+
+  @override
+  String get teamUiHomeNeedsYouAnswer => 'Answer';
+
+  @override
+  String get teamUiHomeNeedsYouMore => 'More';
+
+  @override
+  String get teamUiHomeNeedsYouFallbackTitle => 'The team has a question';
+
+  @override
+  String teamUiHomeNeedsYouAnnouncement(String question) {
+    return 'Needs you: $question';
+  }
+
+  @override
+  String get teamUiHomeAgentsRowHint => 'Open the agents list';
+
+  @override
+  String get teamUiCardNothingRunning => 'Nothing running';
+
+  @override
+  String get teamUiCardOpenHint => 'Open AI Team';
+
+  @override
+  String get teamUiAgentRoleWorker => 'Worker';
+
+  @override
+  String get teamUiAgentRoleReviewer => 'Reviewer (merges)';
+
+  @override
+  String get teamUiAgentRolePlanner => 'Planner';
+
+  @override
+  String get teamUiAgentRoleSupervisor => 'Supervisor';
+
+  @override
+  String get teamUiAgentRoleHelper => 'Helper';
+
+  @override
+  String get teamUiAgentRoleOther => 'Agent';
+
+  @override
+  String get teamUiRunStageWaiting => 'Waiting';
+
+  @override
+  String get teamUiRunStageWorking => 'Working';
+
+  @override
+  String get teamUiRunStageReviewing => 'Reviewing';
+
+  @override
+  String get teamUiRunStageDone => 'Done';
+
+  @override
+  String teamUiRunStageSemantics(int position, String stage) {
+    return 'Stage $position of 4: $stage';
+  }
+
+  @override
+  String get teamUiRunStepsHeading => 'Steps';
+
+  @override
+  String teamUiRunStepsAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'See all $count steps',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamUiRunDetailsCounts(int done, int working, int blocked) {
+    return '$done done · $working working · $blocked held up';
+  }
+
+  @override
+  String get teamUiRunDetailsUsage => 'Usage';
+
+  @override
+  String get teamUiRunDetailsStepsLabel => 'Steps';
+
+  @override
+  String get teamUiRunDetailsElapsed => 'Time';
 }
