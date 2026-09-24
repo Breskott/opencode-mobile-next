@@ -128,23 +128,32 @@ class BuiltinTeam {
       '[[patches.agent]]\nname = "gastown.polecat"\ndir = "$rig"\n'
       'max_active_sessions = 1\n';
 
-  /// The environment of every team script and of the supervisor (so of its
-  /// agents too). The three programs send usage metrics by default; this
-  /// app sends nothing about its users' work anywhere, so all of them are
-  /// told not to.
   /// Gas City tuned for a phone. Android stops an app's child processes
   /// past 32 in all, oldest first, and the oldest is the OpenCode server
   /// (seen on the Android 14 emulator: a default team peaked at 40 and
   /// Android killed OpenCode and the team). The defaults poll every 30 s,
   /// run up to 8 store probes at once and give each session its own
   /// polling process; here:
-  /// - patrols every minute, the frequent health orders every two;
+  /// - patrols every minute;
   /// - one store probe and one session start at a time;
   /// - queued nudges delivered inside the supervisor, not by a process
   ///   per session;
+  /// - each agent's OpenCode replaces the shell that starts it (`exec`), one
+  ///   process per agent instead of two;
   /// - the maintenance orders a single phone project does not need are
   ///   left out, among them the two that wake an AI "dog" (a whole
-  ///   OpenCode session, and model usage) for digests and stale stores.
+  ///   OpenCode session, and model usage) for digests and stale stores;
+  /// - the upkeep orders it does need run one after another, in the
+  ///   `phone-upkeep` order ([upkeepOrder]), never side by side.
+  ///
+  /// Measured on the Android 15 emulator (docs/qa/aiteam-builtin-2026-09-24,
+  /// Run 3): at the tallest moment (37) the orders were 17 of the
+  /// processes, ten of them `dolt-health` alone (a report nobody reads on a
+  /// phone; the supervisor's own watchdog keeps Dolt up), with
+  /// `nudge-on-route` and `cascade-nudge-on-blocker-close` firing on the
+  /// agents' own bead updates at the same moment. A task given with
+  /// "Send to an agent" goes straight to the project's worker, and the
+  /// worker wakes the merger itself, so those nudges add nothing here.
   static const phoneTuning =
       '[daemon]\n'
       'patrol_interval = "60s"\n'
@@ -158,14 +167,91 @@ class BuiltinTeam {
       'skip = ["digest-generate", "mol-dog-stale-db", "mol-dog-backup", '
       '"mol-dog-compactor", "mol-dog-phantom-db", "mol-dog-doctor", '
       '"spawn-storm-detect", "cross-rig-deps", "jsonl-export", '
-      '"dolt-remotes-patrol", "prune-branches", "wisp-compact"]\n'
-      '[[orders.overrides]]\nname = "dolt-health"\ninterval = "2m"\n'
-      // Three minutes, not two: dolt-health and beads-health firing on the
-      // same tick made the tallest spike (33 on the Android 15 emulator).
-      '[[orders.overrides]]\nname = "beads-health"\ninterval = "3m"\n'
-      '[[orders.overrides]]\nname = "gate-sweep"\ninterval = "1m"\n'
-      '[[orders.overrides]]\nname = "order-tracking-sweep"\ninterval = "2m"\n'
-      '[[orders.overrides]]\nname = "orphan-sweep"\ninterval = "10m"\n';
+      '"dolt-remotes-patrol", "prune-branches", "wisp-compact", '
+      '"dolt-health", "nudge-on-route", "cascade-nudge-on-blocker-close", '
+      // The controller runs this sweep itself every five minutes.
+      '"nudge-mail-sweep"]\n'
+      // Run by phone-upkeep, one at a time, not on their own schedules.
+      '[[orders.overrides]]\nname = "beads-health"\ntrigger = "manual"\n'
+      '[[orders.overrides]]\nname = "order-tracking-sweep"\n'
+      'trigger = "manual"\n'
+      '[[orders.overrides]]\nname = "gate-sweep"\ntrigger = "manual"\n'
+      '[[orders.overrides]]\nname = "orphan-sweep"\ntrigger = "manual"\n'
+      '[[orders.overrides]]\nname = "reaper"\ntrigger = "manual"\n';
+
+  /// Each agent's OpenCode replaces the shell Gas City starts it with
+  /// (`sh -c "<command>"`): one process per agent instead of two. A line of
+  /// the city's `[providers.opencode]` (Gas City 1.4.1 does not take it as
+  /// a `[[patches.provider]]`: "unknown field").
+  static const acpCommand = 'acp_command = "exec opencode"';
+
+  /// The city's own order that runs the core pack's upkeep orders the phone
+  /// keeps (store health, order tracking and gate sweeps every two minutes;
+  /// the orphan sweep every ten, the reaper every thirty) one after
+  /// another, as `gc order run` so each gets its own pack's settings,
+  /// instead of each on its own cooldown, where they fire on the same tick
+  /// and add up. It fails when the store's health check fails, like
+  /// `beads-health` on its own did.
+  static const upkeepOrder =
+      '[order]\n'
+      'description = "Phone upkeep: the core sweeps one at a time '
+      '(written by OpenCode Mobile)"\n'
+      'trigger = "cooldown"\n'
+      'interval = "2m"\n'
+      'timeout = "10m"\n'
+      'exec = "exec sh $cityDir/assets/phone-upkeep.sh"\n';
+
+  static const upkeepScript = r'''#!/bin/sh
+# Phone upkeep (written by OpenCode Mobile on every AI Team start).
+cd /root/aiteam/city || exit 1
+state=/root/aiteam/city/.gc/runtime/packs/phone
+mkdir -p "$state"
+n=$(cat "$state/upkeep.count" 2>/dev/null || echo 0)
+case $n in *[!0-9]*|'') n=0 ;; esac
+n=$((n + 1))
+echo "$n" > "$state/upkeep.count"
+rc=0
+gc order run beads-health >/dev/null 2>&1 || rc=$?
+gc order run order-tracking-sweep >/dev/null 2>&1 || true
+gc order run gate-sweep >/dev/null 2>&1 || true
+if [ $((n % 5)) -eq 0 ]; then gc order run orphan-sweep >/dev/null 2>&1 || true; fi
+if [ $((n % 15)) -eq 0 ]; then gc order run reaper >/dev/null 2>&1 || true; fi
+exit "$rc"
+''';
+
+  /// Brings a team made by an older version up to [phoneTuning] and writes
+  /// the upkeep order; run before every supervisor start. The tuning's own
+  /// tables (`[daemon]`, `[orders]` and its overrides) are dropped from
+  /// `city.toml` and written again at the end, and `[providers.opencode]`
+  /// gets [acpCommand]; nothing else in it is touched. A team that has this
+  /// version's tuning is left as is.
+  static String get tuneScript =>
+      'mkdir -p $cityDir/orders $cityDir/assets\n'
+      "cat > $cityDir/orders/phone-upkeep.toml <<'OC_EOF'\n"
+      '${upkeepOrder}OC_EOF\n'
+      "cat > $cityDir/assets/phone-upkeep.sh <<'OC_EOF'\n"
+      '${upkeepScript}OC_EOF\n'
+      'if [ -f $cityDir/city.toml ] && '
+      '! grep -qx \'$acpCommand\' $cityDir/city.toml; then\n'
+      "  awk '/^[[:space:]]*\\[/ { h = \$0; gsub(/[[:space:]]/, \"\", h); "
+      'skip = (h == "[daemon]" || h == "[orders]" || '
+      'h == "[[orders.overrides]]" || h == "[[patches.provider]]"); '
+      'prov = (h == "[providers.opencode]") } '
+      'skip { next } '
+      'prov && /^[[:space:]]*acp_command[[:space:]]*=/ { next } '
+      '{ print } '
+      r'''prov && /^[[:space:]]*\[/ { print "acp_command = \"exec opencode\"" }' '''
+      '$cityDir/city.toml > $cityDir/city.toml.oc-new &&\n'
+      "  cat >> $cityDir/city.toml.oc-new <<'OC_EOF' &&\n"
+      '\n${phoneTuning}OC_EOF\n'
+      '  mv $cityDir/city.toml.oc-new $cityDir/city.toml || '
+      'rm -f $cityDir/city.toml.oc-new\n'
+      'fi\n';
+
+  /// The environment of every team script and of the supervisor (so of its
+  /// agents too). The three programs send usage metrics by default; this
+  /// app sends nothing about its users' work anywhere, so all of them are
+  /// told not to.
 
   static const _env =
       'export HOME=/root GC_BIN=/usr/local/bin/gc\n'
@@ -192,6 +278,7 @@ class BuiltinTeam {
       '[providers]\n'
       '[providers.opencode]\n'
       'base = "builtin:opencode"\n'
+      '$acpCommand\n'
       'ready_delay_ms = 0\n'
       '[defaults]\n'
       '[defaults.rig]\n'
@@ -451,6 +538,7 @@ exit 0
       'mkdir -p /root/.gc\n'
       "cat > /root/.gc/supervisor.toml <<'OC_EOF'\n"
       '${supervisorConfig}OC_EOF\n'
+      '$tuneScript'
       '$hooksScript'
       'exec gc supervisor run\n';
 
