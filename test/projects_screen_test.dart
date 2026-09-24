@@ -7,6 +7,7 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/builtin/builtin_folders.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -1178,6 +1179,10 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       linux = _InAppLinux();
       ProjectFolderActions.builtinLinuxOverride = linux;
+      // Its fake Ubuntu has no files on disk: folders are listed through it.
+      ProjectFolderActions.folderListerOverride = BuiltinFolders.throughUbuntu(
+        linux,
+      ).list;
       controller = _FreshServerController(
         _InAppStore(prefs: await SharedPreferences.getInstance()),
         _ProjectsRepository()..projects = const [],
@@ -1186,6 +1191,7 @@ void main() {
 
     tearDown(() {
       ProjectFolderActions.builtinLinuxOverride = null;
+      ProjectFolderActions.folderListerOverride = null;
       controller.dispose();
     });
 

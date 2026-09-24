@@ -19156,6 +19156,101 @@
       }
     }
   },
+  "folderBrowserUp": "Up one folder",
+  "@folderBrowserUp": {
+    "description": "Row at the top of the folder browser that goes to the folder above"
+  },
+  "folderBrowserCurrent": "Current folder: {path}",
+  "@folderBrowserCurrent": {
+    "description": "Screen-reader label of the folder browser's current path",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "folderBrowserOpen": "Open {name}",
+  "@folderBrowserOpen": {
+    "description": "Primary button of the folder browser: opens the folder being shown as the project",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "folderBrowserGit": "Git repository",
+  "@folderBrowserGit": {
+    "description": "Supporting line of a folder row that is a git repository"
+  },
+  "folderBrowserProject": "OpenCode project",
+  "@folderBrowserProject": {
+    "description": "Supporting line of a folder row OpenCode already knows as a project"
+  },
+  "folderBrowserShowInside": "Show the folders in {name}",
+  "@folderBrowserShowInside": {
+    "description": "Tooltip of a project row's button that browses into it instead of opening it",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "folderBrowserProjectsHere": "Your projects live here. Tap one to open it, or make a new one below.",
+  "@folderBrowserProjectsHere": {
+    "description": "Shown in place of the Open button while the browser shows the projects folder itself"
+  },
+  "folderBrowserHomeHere": "The home folder and the root cannot be projects. Open a folder inside.",
+  "@folderBrowserHomeHere": {
+    "description": "Shown in place of the Open button while the browser shows the home folder or /"
+  },
+  "folderBrowserNoProjectsTitle": "No projects yet",
+  "@folderBrowserNoProjectsTitle": {
+    "description": "Empty state title of the projects folder"
+  },
+  "folderBrowserNoProjectsBody": "Name one below to make it here.",
+  "@folderBrowserNoProjectsBody": {
+    "description": "Empty state body of the projects folder"
+  },
+  "folderBrowserEmptyTitle": "No folders in here",
+  "@folderBrowserEmptyTitle": {
+    "description": "Empty state title of a folder with no folders inside"
+  },
+  "folderBrowserEmptyBody": "Make a new project in it below, or go up one folder.",
+  "@folderBrowserEmptyBody": {
+    "description": "Empty state body of a folder with no folders inside"
+  },
+  "folderBrowserErrorTitle": "This folder can’t be shown",
+  "@folderBrowserErrorTitle": {
+    "description": "Error state title when a folder could not be listed"
+  },
+  "folderBrowserErrorNotInstalled": "Ubuntu isn’t installed in the app yet.",
+  "@folderBrowserErrorNotInstalled": {
+    "description": "Error body: the built-in Ubuntu is missing"
+  },
+  "folderBrowserErrorMissing": "It isn’t there any more.",
+  "@folderBrowserErrorMissing": {
+    "description": "Error body: the folder does not exist"
+  },
+  "folderBrowserErrorDenied": "The app isn’t allowed to read it.",
+  "@folderBrowserErrorDenied": {
+    "description": "Error body: permission denied"
+  },
+  "folderBrowserErrorLinked": "It is a link. Enter its path instead.",
+  "@folderBrowserErrorLinked": {
+    "description": "Error body: the folder is a symbolic link the app does not follow"
+  },
+  "folderBrowserErrorFailed": "Try again, or enter its path instead.",
+  "@folderBrowserErrorFailed": {
+    "description": "Error body: listing failed for another reason"
+  },
+  "folderBrowserErrorTimedOut": "It took too long to answer. Try again.",
+  "@folderBrowserErrorTimedOut": {
+    "description": "Error body: listing the folder did not answer in time"
+  },
+  "folderBrowserRetry": "Try again",
+  "@folderBrowserRetry": {
+    "description": "Action that lists the folder again after an error"
+  },
   "builtinServerEntryAction": "Set it up",
   "@builtinServerEntryAction": {
     "description": "Button that opens the steps for running OpenCode inside the app"

@@ -1,0 +1,17 @@
+00:01 +0 -1: starts at the projects folder, goes into a folder and up [E]
+Expected: contains 'Git repository'
+  Actual: ''
+00:01 +0 -2: git repositories and known OpenCode projects are marked [E]
+could not find any matching widgets.
+00:01 +0 -3: a project opens with a tap and returns its path [E]
+Expected: exactly one matching candidate
+  Actual: _TextContainingWidgetFinder:<Found 0 widgets with text containing Your projects live here:
+00:02 +0 -4: Open opens the folder shown, returning its path [E]
+00:02 +0 -5: a new project is made in the folder shown [E]
+00:02 +1 -6: the home folder and / are never offered as a project [E]
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "This folder can’t be shown": []>
+00:02 +1 -7: a folder that cannot be listed says why and can be retried [E]
+00:03 +1 -8: Enter a path starts from the folder shown [E]
+00:03 +1 -9: fits 320 dp at twice the text size, in Arabic, paths left to right [E]
+00:03 +1 -9: Some tests failed.

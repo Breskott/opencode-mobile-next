@@ -495,6 +495,7 @@ graph LR
   manage_project["manage-project"]
   managed_workspaces["managed-workspaces"]
   notifications_settings["notifications-settings"]:::ext
+  project_folder_browser(["project-folder-browser"])
   project_health["project-health"]
   project_hub["project-hub"]:::ext
   projects["projects"]
@@ -556,6 +557,8 @@ graph LR
   project_hub --> project_health
   project_hub --> worktrees
   home_shell --> workspace_folder_chooser
+  workspace_folder_chooser --> project_folder_browser
+  projects --> project_folder_browser
   global_sessions -.-> embedded_context_menu_region
   managed_workspaces -.-> embedded_context_menu_region
   workspace -.-> embedded_context_menu_region
@@ -1579,10 +1582,10 @@ graph LR
 | `managed-workspaces-create-dialog` | dialog | 4 / 6 | `managed-workspaces` / managed-workspaces-create | _none_ |
 | `managed-workspaces-remove-dialog` | dialog | 4 / 6 | `managed-workspaces` / managed-workspaces-tile-menu-remove<br>`managed-workspaces` / managed-workspaces-tile-context-remove | _none_ |
 | `project-folder-new-dialog` | dialog | 1 / 3 | `workspace-folder-chooser` / workspace-folder-chooser-create<br>`projects` / projects-create-folder | _none_ |
-| `project-folder-open-dialog` | dialog | 1 / 3 | `workspace-folder-chooser` / workspace-folder-chooser-open<br>`projects` / projects-open-folder<br>`phone-setup-ready` / phone-setup-ready-open-existing | _none_ |
+| `project-folder-open-dialog` | dialog | 1 / 3 | `workspace-folder-chooser` / workspace-folder-chooser-open<br>`projects` / projects-open-folder<br>`project-folder-browser` / project-folder-browser-enter-path<br>`phone-setup-ready` / phone-setup-ready-open-existing | _none_ |
 | `project-health` | screen | 1 / 3 | `manage-project` / manage-project-health<br>`chat`<br>`command-launcher-sheet` / chat-command-health<br>`project-hub` / project-hub-health | project-health-git-init -> `project-health-git-init-dialog`<br>project-health-git-init-retry -> `project-health-git-init-dialog`<br>(embedded) -> `embedded-product-states` |
 | `project-health-git-init-dialog` | dialog | 2 / 4 | `project-health` / project-health-git-init<br>`project-health` / project-health-git-init-retry | _none_ |
-| `projects` | screen | 1 / 3 | `workspace-folder-chooser` / workspace-folder-chooser-browse<br>`workspace-context-sheet` / workspace-context-sheet-switch-project<br>`manage-project` / manage-project-switch-project | projects-create-folder -> `project-folder-new-dialog`<br>projects-open-folder -> `project-folder-open-dialog`<br>projects-project-rename -> `projects-rename-dialog`<br>(embedded) -> `embedded-product-states` |
+| `projects` | screen | 1 / 3 | `workspace-folder-chooser` / workspace-folder-chooser-browse<br>`workspace-context-sheet` / workspace-context-sheet-switch-project<br>`manage-project` / manage-project-switch-project | projects-create-folder -> `project-folder-new-dialog`<br>projects-open-folder -> `project-folder-open-dialog`<br>projects-project-rename -> `projects-rename-dialog`<br>projects-open-folder -> `project-folder-browser`<br>(embedded) -> `embedded-product-states` |
 | `projects-rename-dialog` | dialog | 2 / 4 | `projects` / projects-project-rename | _none_ |
 | `running-work-sheet` | sheet | 2 / 3 | `chat` / chat-appbar-running-work<br>`session-menu-sheet` / session-menu-sheet-results | running-work-sheet-agent -> `chat`<br>running-work-sheet-shell -> `shell-output` |
 | `shell-output` | screen | 3 / 4 | `running-work-sheet` / running-work-sheet-shell | shell-output-timeout -> `shell-output-timeout-sheet`<br>shell-output-stop -> `shell-output-stop-dialog` |
@@ -1601,11 +1604,12 @@ graph LR
 | `workspace-share-session-sheet` | sheet | 1 / 3 | `workspace` / workspace-session-menu-share<br>`workspace` / workspace-session-context-share | _none_ |
 | `workspace-delete-session-sheet` | sheet | 1 / 3 | `workspace` / workspace-session-menu-delete<br>`workspace` / workspace-session-context-delete<br>`workspace` / workspace-session-row-swipe<br>`workspace-archived-sheet` / workspace-archived-sheet-menu-delete<br>`workspace-archived-sheet` / workspace-archived-sheet-context-delete | _none_ |
 | `workspace-archived-sheet` | sheet | 1 / 3 | `workspace` / workspace-archived-sessions | workspace-archived-sheet-row -> `chat`<br>workspace-archived-sheet-menu-rename -> `workspace-rename-session-dialog`<br>workspace-archived-sheet-menu-delete -> `workspace-delete-session-sheet`<br>workspace-archived-sheet-context-open -> `chat`<br>workspace-archived-sheet-context-delete -> `workspace-delete-session-sheet`<br>(embedded) -> `embedded-session-inventory-footer` |
-| `workspace-folder-chooser` | tab | 0 / 2 | `home-shell` / home-shell-tab-workspace<br>`system` / system-automatic-replaces-the-workspace-tab-body-while-controller-w-to-workspace-folder-chooser<br>`workspace` / (state) | workspace-folder-chooser-create -> `project-folder-new-dialog`<br>workspace-folder-chooser-open -> `project-folder-open-dialog`<br>workspace-folder-chooser-browse -> `projects`<br>workspace-folder-chooser-search-all -> `global-sessions` |
+| `workspace-folder-chooser` | tab | 0 / 2 | `home-shell` / home-shell-tab-workspace<br>`system` / system-automatic-replaces-the-workspace-tab-body-while-controller-w-to-workspace-folder-chooser<br>`workspace` / (state) | workspace-folder-chooser-create -> `project-folder-new-dialog`<br>workspace-folder-chooser-open -> `project-folder-open-dialog`<br>workspace-folder-chooser-browse -> `projects`<br>workspace-folder-chooser-search-all -> `global-sessions`<br>workspace-folder-chooser-open -> `project-folder-browser` |
 | `worktrees` | screen | 1 / 3 | `manage-project` / manage-project-worktrees<br>`project-hub` / project-hub-worktrees | worktrees-create -> `worktrees-create-dialog`<br>worktrees-empty-create -> `worktrees-create-dialog`<br>worktrees-glossary-label -> `info-label-sheet`<br>worktrees-tile-menu-reset -> `worktrees-reset-dialog`<br>worktrees-tile-menu-remove -> `worktrees-remove-dialog`<br>worktrees-tile-context-reset -> `worktrees-reset-dialog`<br>worktrees-tile-context-remove -> `worktrees-remove-dialog`<br>(embedded) -> `embedded-context-menu-region`<br>(embedded) -> `embedded-product-states`<br>(embedded) -> `embedded-info-label` |
 | `worktrees-reset-dialog` | dialog | 2 / 4 | `worktrees` / worktrees-tile-menu-reset<br>`worktrees` / worktrees-tile-context-reset | _none_ |
 | `worktrees-create-dialog` | dialog | 2 / 4 | `worktrees` / worktrees-create<br>`worktrees` / worktrees-empty-create | _none_ |
 | `worktrees-remove-dialog` | dialog | 2 / 4 | `worktrees` / worktrees-tile-menu-remove<br>`worktrees` / worktrees-tile-context-remove | _none_ |
+| `project-folder-browser` | sheet | 1 / 3 | `workspace-folder-chooser` / workspace-folder-chooser-open<br>`projects` / projects-open-folder | project-folder-browser-enter-path -> `project-folder-open-dialog` |
 | `embedded-mobile-task-list` | overlay | 1 / 2 | `embedded-tool-card` / (embedded) | _none_ |
 | `embedded-session-inventory-footer` | overlay | 0 / 2 | `workspace` / workspace-inventory-footer<br>`run-command-dialog` / (embedded)<br>`workspace` / (embedded)<br>`workspace-archived-sheet` / (embedded) | _none_ |
 

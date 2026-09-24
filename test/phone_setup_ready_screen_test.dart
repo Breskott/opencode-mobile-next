@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
+import 'package:opencode_mobile/builtin/builtin_folders.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/builtin/builtin_server.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -128,10 +129,15 @@ void main() {
     linux = _Linux();
     pushed = [];
     ProjectFolderActions.builtinLinuxOverride = linux;
+    // Its fake Ubuntu has no files on disk: folders are listed through it.
+    ProjectFolderActions.folderListerOverride = BuiltinFolders.throughUbuntu(
+      linux,
+    ).list;
   });
 
   tearDown(() {
     ProjectFolderActions.builtinLinuxOverride = null;
+    ProjectFolderActions.folderListerOverride = null;
     connection.dispose();
   });
 

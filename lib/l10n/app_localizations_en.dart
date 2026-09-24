@@ -17648,6 +17648,79 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get folderBrowserUp => 'Up one folder';
+
+  @override
+  String folderBrowserCurrent(String path) {
+    return 'Current folder: $path';
+  }
+
+  @override
+  String folderBrowserOpen(String name) {
+    return 'Open $name';
+  }
+
+  @override
+  String get folderBrowserGit => 'Git repository';
+
+  @override
+  String get folderBrowserProject => 'OpenCode project';
+
+  @override
+  String folderBrowserShowInside(String name) {
+    return 'Show the folders in $name';
+  }
+
+  @override
+  String get folderBrowserProjectsHere =>
+      'Your projects live here. Tap one to open it, or make a new one below.';
+
+  @override
+  String get folderBrowserHomeHere =>
+      'The home folder and the root cannot be projects. Open a folder inside.';
+
+  @override
+  String get folderBrowserNoProjectsTitle => 'No projects yet';
+
+  @override
+  String get folderBrowserNoProjectsBody => 'Name one below to make it here.';
+
+  @override
+  String get folderBrowserEmptyTitle => 'No folders in here';
+
+  @override
+  String get folderBrowserEmptyBody =>
+      'Make a new project in it below, or go up one folder.';
+
+  @override
+  String get folderBrowserErrorTitle => 'This folder can’t be shown';
+
+  @override
+  String get folderBrowserErrorNotInstalled =>
+      'Ubuntu isn’t installed in the app yet.';
+
+  @override
+  String get folderBrowserErrorMissing => 'It isn’t there any more.';
+
+  @override
+  String get folderBrowserErrorDenied => 'The app isn’t allowed to read it.';
+
+  @override
+  String get folderBrowserErrorLinked =>
+      'It is a link. Enter its path instead.';
+
+  @override
+  String get folderBrowserErrorFailed =>
+      'Try again, or enter its path instead.';
+
+  @override
+  String get folderBrowserErrorTimedOut =>
+      'It took too long to answer. Try again.';
+
+  @override
+  String get folderBrowserRetry => 'Try again';
+
+  @override
   String get builtinServerEntryAction => 'Set it up';
 
   @override

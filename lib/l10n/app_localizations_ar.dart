@@ -17905,6 +17905,79 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get folderBrowserUp => 'مجلد واحد للأعلى';
+
+  @override
+  String folderBrowserCurrent(String path) {
+    return 'المجلد الحالي: $path';
+  }
+
+  @override
+  String folderBrowserOpen(String name) {
+    return 'فتح $name';
+  }
+
+  @override
+  String get folderBrowserGit => 'مستودع Git';
+
+  @override
+  String get folderBrowserProject => 'مشروع OpenCode';
+
+  @override
+  String folderBrowserShowInside(String name) {
+    return 'عرض المجلدات داخل $name';
+  }
+
+  @override
+  String get folderBrowserProjectsHere =>
+      'هنا مشاريعك. انقر على مشروع لفتحه، أو أنشئ مشروعًا جديدًا بالأسفل.';
+
+  @override
+  String get folderBrowserHomeHere =>
+      'لا يمكن أن يكون المجلد الرئيسي أو الجذر مشروعًا. افتح مجلدًا بداخله.';
+
+  @override
+  String get folderBrowserNoProjectsTitle => 'لا توجد مشاريع بعد';
+
+  @override
+  String get folderBrowserNoProjectsBody =>
+      'اكتب اسمًا بالأسفل لإنشاء مشروع هنا.';
+
+  @override
+  String get folderBrowserEmptyTitle => 'لا توجد مجلدات هنا';
+
+  @override
+  String get folderBrowserEmptyBody =>
+      'أنشئ مشروعًا جديدًا فيه بالأسفل، أو اصعد مجلدًا واحدًا.';
+
+  @override
+  String get folderBrowserErrorTitle => 'تعذّر عرض هذا المجلد';
+
+  @override
+  String get folderBrowserErrorNotInstalled =>
+      'لم يُثبَّت Ubuntu في التطبيق بعد.';
+
+  @override
+  String get folderBrowserErrorMissing => 'لم يعد موجودًا.';
+
+  @override
+  String get folderBrowserErrorDenied => 'لا يُسمح للتطبيق بقراءته.';
+
+  @override
+  String get folderBrowserErrorLinked => 'إنه رابط. أدخل مساره بدلًا من ذلك.';
+
+  @override
+  String get folderBrowserErrorFailed =>
+      'حاول مرة أخرى، أو أدخل مساره بدلًا من ذلك.';
+
+  @override
+  String get folderBrowserErrorTimedOut =>
+      'لم يأتِ رد في الوقت المناسب. حاول مرة أخرى.';
+
+  @override
+  String get folderBrowserRetry => 'حاول مرة أخرى';
+
+  @override
   String get builtinServerEntryAction => 'إعداده';
 
   @override

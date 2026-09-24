@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../builtin/builtin_folders.dart';
 import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_server.dart';
 import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../termux/bridge.dart';
-import '../app_theme.dart';
+import '../../termux/termux_folders.dart';
+import '../widgets/folder_browser.dart';
 import '../widgets/product_states.dart';
+import '../widgets/termux_running_server_entry.dart' show isManagedPhoneProfile;
 
 /// The ways a workspace gets a project folder: create one on a server this
 /// app runs (Termux, or OpenCode inside the app), pick one of its projects,
@@ -80,10 +83,17 @@ class ProjectFolderActions {
     return _open(context, controller, path);
   }
 
-  /// OpenCode inside the app: pick one of its projects, name a new one, or
-  /// enter a path. Any other server: enter a path, which is confirmed on the
-  /// server before it opens. Returns the opened directory, or null when
-  /// cancelled or refused.
+  /// Widget tests list folders without Ubuntu's files on disk.
+  @visibleForTesting
+  static FolderLister? folderListerOverride;
+
+  /// A server on this phone (OpenCode inside the app, or the one this app
+  /// runs in Termux): browse its folders from the projects folder and open
+  /// one, name a new project in the folder shown, or enter a path. Any other
+  /// server: enter a path, which is confirmed on the server before it opens
+  /// (OpenCode lists files only inside the project it is asked about, so its
+  /// folders cannot be browsed from here). Returns the opened directory, or
+  /// null when cancelled or refused.
   static Future<String?> openFolder(
     BuildContext context,
     ConnectionController controller,
@@ -92,40 +102,140 @@ class ProjectFolderActions {
     if (await isInAppServer(controller.profile, linux)) {
       if (!context.mounted) return null;
       final folders = BuiltinProjectFolders(linux);
-      final choice = await showModalBottomSheet<_InAppChoice>(
+      final choice = await showModalBottomSheet<FolderBrowserChoice>(
         context: context,
         isScrollControlled: true,
         showDragHandle: true,
-        builder: (_) => _InAppProjectSheet(folders: folders),
+        builder: (_) => FolderBrowserSheet(
+          list: folderListerOverride ?? BuiltinFolders(linux).list,
+          knownProjects: () => _knownProjects(controller),
+        ),
       );
       if (choice == null || !context.mounted) return null;
       return switch (choice) {
-        _OpenProject(:final name) => _open(
-          context,
-          controller,
-          BuiltinProjectFolders.pathFor(name),
-        ),
-        _NewProject(:final name) => _createInApp(
+        FolderBrowserOpen(:final path) => _open(context, controller, path),
+        FolderBrowserCreate(:final path) => _createInApp(
           context,
           controller,
           folders,
-          BuiltinProjectFolders.pathFor(name),
+          path,
         ),
-        _EnterPath() => _openByPath(context, controller, folders),
+        FolderBrowserEnterPath(:final startPath) => _openByPath(
+          context,
+          controller,
+          folders,
+          startPath: startPath,
+        ),
+      };
+    }
+    if (!context.mounted) return null;
+    if (await _termuxBrowsable(controller)) {
+      if (!context.mounted) return null;
+      final termux = TermuxFolders();
+      final choice = await showModalBottomSheet<FolderBrowserChoice>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (_) => FolderBrowserSheet(
+          list: folderListerOverride ?? termux.list,
+          knownProjects: () => _knownProjects(controller),
+        ),
+      );
+      if (choice == null || !context.mounted) return null;
+      return switch (choice) {
+        FolderBrowserOpen(:final path) => _open(context, controller, path),
+        FolderBrowserCreate(:final path) => _createInTermux(
+          context,
+          controller,
+          termux,
+          path,
+        ),
+        FolderBrowserEnterPath(:final startPath) => _openByPath(
+          context,
+          controller,
+          null,
+          startPath: startPath,
+        ),
       };
     }
     if (!context.mounted) return null;
     return _openByPath(context, controller, null);
   }
 
+  /// The server in use is the one this app runs in Termux, and Termux can
+  /// run the app's commands now (installed, its service there, the app
+  /// allowed to use it). Then its folders are listed through Termux; any
+  /// other server has no way to list folders outside its project.
+  static Future<bool> _termuxBrowsable(ConnectionController controller) async {
+    final profile = controller.profile;
+    if (profile == null ||
+        !TermuxBridge.supported ||
+        !isManagedPhoneProfile(profile)) {
+      return false;
+    }
+    try {
+      final termux = await TermuxBridge.capabilities();
+      return termux.installed &&
+          termux.serviceAvailable &&
+          termux.protocolSupported &&
+          termux.permissionGranted;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Makes [path] in Termux's Ubuntu (or finds it already there) and opens
+  /// it.
+  static Future<String?> _createInTermux(
+    BuildContext context,
+    ConnectionController controller,
+    TermuxFolders termux,
+    String path,
+  ) async {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final ({String path, bool created}) made;
+    try {
+      made = await termux.create(path);
+    } on FolderListException catch (error) {
+      if (context.mounted) {
+        _notify(context, l10n.projectFolderCreateFailed(error.toString()));
+      }
+      return null;
+    }
+    if (!context.mounted) return null;
+    return _open(context, controller, made.path);
+  }
+
+  /// The folders the connected OpenCode already has as projects, for the
+  /// browser's marks. Asked of the connection as it is; nothing is started.
+  static Future<Set<String>> _knownProjects(
+    ConnectionController controller,
+  ) async {
+    final repository = controller.repository;
+    if (repository == null) return const {};
+    final projects = await repository.listProjects().timeout(
+      const Duration(seconds: 5),
+    );
+    return {
+      for (final project in projects)
+        for (final directory in [project.directory, ...project.worktrees])
+          ConnectionController.normalizeDirectoryPath(directory),
+    };
+  }
+
   static Future<String?> _openByPath(
     BuildContext context,
     ConnectionController controller,
-    BuiltinProjectFolders? inApp,
-  ) async {
+    BuiltinProjectFolders? inApp, {
+    String? startPath,
+  }) async {
     final picked = await showDialog<({String path, bool create})>(
       context: context,
-      builder: (_) => _OpenFolderDialog(controller: controller, inApp: inApp),
+      builder: (_) => _OpenFolderDialog(
+        controller: controller,
+        inApp: inApp,
+        startPath: startPath,
+      ),
     );
     if (picked == null || !context.mounted) return null;
     if (picked.create && inApp != null) {
@@ -250,9 +360,16 @@ class _NewFolderDialogState extends State<_NewFolderDialog> {
 }
 
 class _OpenFolderDialog extends StatefulWidget {
-  const _OpenFolderDialog({required this.controller, this.inApp});
+  const _OpenFolderDialog({
+    required this.controller,
+    this.inApp,
+    this.startPath,
+  });
 
   final ConnectionController controller;
+
+  /// The folder the browser was showing: the path starts there.
+  final String? startPath;
 
   /// Given for OpenCode inside the app: the path is checked, and a missing
   /// folder created, through the app's own Ubuntu instead of OpenCode.
@@ -263,7 +380,13 @@ class _OpenFolderDialog extends StatefulWidget {
 }
 
 class _OpenFolderDialogState extends State<_OpenFolderDialog> {
-  final _path = TextEditingController();
+  late final _path = TextEditingController(
+    text: switch (widget.startPath) {
+      null => '',
+      '/' => '/',
+      final start => '$start/',
+    },
+  );
   String? _problem;
   bool _checking = false;
 
@@ -387,207 +510,6 @@ class _OpenFolderDialogState extends State<_OpenFolderDialog> {
             child: Text(l10n.projectFolderOpenAction),
           ),
       ],
-    );
-  }
-}
-
-/// What the in-app project sheet was closed with.
-sealed class _InAppChoice {
-  const _InAppChoice();
-}
-
-class _OpenProject extends _InAppChoice {
-  const _OpenProject(this.name);
-  final String name;
-}
-
-class _NewProject extends _InAppChoice {
-  const _NewProject(this.name);
-  final String name;
-}
-
-class _EnterPath extends _InAppChoice {
-  const _EnterPath();
-}
-
-/// OpenCode inside the app keeps its projects in one folder, so choosing one
-/// is a tap and making one is a name. A full path stays one tap away.
-class _InAppProjectSheet extends StatefulWidget {
-  const _InAppProjectSheet({required this.folders});
-
-  final BuiltinProjectFolders folders;
-
-  @override
-  State<_InAppProjectSheet> createState() => _InAppProjectSheetState();
-}
-
-class _InAppProjectSheetState extends State<_InAppProjectSheet> {
-  final _name = TextEditingController();
-  List<String>? _projects;
-  String? _listError;
-  String? _problem;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final projects = await widget.folders.list();
-      if (mounted) setState(() => _projects = projects);
-    } on BuiltinLinuxException catch (error) {
-      if (mounted) setState(() => _listError = error.message);
-    }
-  }
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  void _create() {
-    final name = _name.text.trim();
-    final problem = projectFolderNameProblem(name);
-    if (problem != null) {
-      setState(() => _problem = problem);
-      return;
-    }
-    // A name that is already a project simply opens it.
-    Navigator.of(context).pop(
-      _projects?.contains(name) == true
-          ? _OpenProject(name)
-          : _NewProject(name),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final muted = theme.textTheme.bodyMedium!.copyWith(
-      color: AppTheme.mutedOf(theme),
-    );
-    final projects = _projects;
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * .85,
-          ),
-          child: ListView(
-            key: const ValueKey('in-app-projects'),
-            shrinkWrap: true,
-            padding: const EdgeInsets.only(bottom: 16),
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                child: Text(
-                  l10n.projectFolderInAppTitle,
-                  style: theme.textTheme.titleMedium,
-                ),
-              ),
-              if (projects == null && _listError == null)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: LinearProgressIndicator(minHeight: 2),
-                )
-              else if (_listError != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
-                  child: Text(
-                    l10n.projectFolderInAppListFailed(_listError!),
-                    style: muted,
-                  ),
-                )
-              else if (projects!.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
-                  child: Text(l10n.projectFolderInAppEmpty, style: muted),
-                )
-              else
-                for (final name in projects)
-                  ListTile(
-                    key: ValueKey('in-app-project-$name'),
-                    leading: const Icon(AppIconography.folderOpen),
-                    title: Text(name),
-                    onTap: () => Navigator.of(context).pop(_OpenProject(name)),
-                  ),
-              const Divider(height: 24),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                child: Text(
-                  l10n.projectFolderNewProject,
-                  style: theme.textTheme.labelLarge,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        key: const ValueKey('in-app-new-project-name'),
-                        controller: _name,
-                        autocorrect: false,
-                        textInputAction: TextInputAction.done,
-                        onChanged: (_) {
-                          if (_problem != null) setState(() => _problem = null);
-                        },
-                        onSubmitted: (_) => _create(),
-                        decoration: InputDecoration(
-                          labelText: l10n.projectFolderProjectNameLabel,
-                          hintText: l10n.projectFolderNameHint,
-                          helperText: l10n.projectFolderNewProjectHelp(
-                            BuiltinLinux.projectsDir,
-                          ),
-                          helperMaxLines: 2,
-                          errorText: _problem,
-                          errorMaxLines: 3,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: FilledButton(
-                        key: const ValueKey('in-app-new-project-create'),
-                        onPressed: _create,
-                        child: Text(l10n.projectFolderCreateAction),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 32),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: TextButton(
-                    key: const ValueKey('in-app-enter-path'),
-                    onPressed: () =>
-                        Navigator.of(context).pop(const _EnterPath()),
-                    child: Text(l10n.projectFolderEnterPath),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
