@@ -9,13 +9,18 @@ import '../app_theme.dart';
 import '../widgets/confirm_sheet.dart';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:xterm/xterm.dart' as xterm;
 
 import '../../api/product_repository.dart';
+import '../../builtin/builtin_linux.dart';
+import '../../builtin/builtin_server.dart' show builtinLinuxProvider;
+import '../../builtin/local_terminal.dart';
 import '../../state/connection.dart';
 import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../widgets/product_states.dart';
+import 'local_terminal_screen.dart';
 
 /// Serialises terminal keystrokes into one ordered write per flush.
 ///
@@ -77,23 +82,158 @@ bool terminalKeyEventText(KeyEvent event) {
 /// [TerminalScreen] as its own pushed route. Every entry point that leaves
 /// the shell for the terminal — the More hub, the Workspace header, the
 /// desktop shortcut — pushes this one page so they all land identically.
-class TerminalPage extends StatelessWidget {
+///
+/// On Android it offers two sources (docs/design/local-terminal-2026-09-24.md
+/// §4): "This phone", a shell in the app's built-in Ubuntu that needs no
+/// OpenCode server, and "OpenCode server", the server's own terminals. This
+/// phone is the default once its Linux is installed.
+class TerminalPage extends ConsumerStatefulWidget {
   final ConnectionController controller;
 
-  const TerminalPage({super.key, required this.controller});
+  /// Where to start; null picks this phone when its Linux is installed.
+  final TerminalSource? initialSource;
+
+  /// Tests: whether the local terminal exists here (Android only), and the
+  /// fakes behind it.
+  final bool? localSupported;
+  final BuiltinLinux? linux;
+  final LocalTerminalSessions? sessions;
+
+  const TerminalPage({
+    super.key,
+    required this.controller,
+    this.initialSource,
+    this.localSupported,
+    this.linux,
+    this.sessions,
+  });
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    key: const ValueKey('terminal-page'),
-    appBar: AppBar(
-      title: Text(
-        lookupAppLocalizations(
-          Localizations.localeOf(context),
-        ).libraryTerminalTitle,
+  ConsumerState<TerminalPage> createState() => _TerminalPageState();
+}
+
+/// Where a terminal's shell runs.
+enum TerminalSource { phone, server }
+
+class _TerminalPageState extends ConsumerState<TerminalPage> {
+  TerminalSource? _source;
+
+  bool get _local => widget.localSupported ?? LocalTerminalSessions.supported;
+
+  @override
+  void initState() {
+    super.initState();
+    _source = _local ? widget.initialSource : TerminalSource.server;
+    if (_source == null) unawaited(_pickDefault());
+  }
+
+  Future<void> _pickDefault() async {
+    var installed = false;
+    try {
+      final BuiltinLinux linux = widget.linux ?? ref.read(builtinLinuxProvider);
+      installed = (await linux.status()).installed;
+    } catch (_) {}
+    if (!mounted || _source != null) return;
+    setState(
+      () => _source = installed ? TerminalSource.phone : TerminalSource.server,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final title = Text(l10n.libraryTerminalTitle);
+    if (!_local) {
+      return Scaffold(
+        key: const ValueKey('terminal-page'),
+        appBar: AppBar(title: title),
+        body: TerminalScreen(controller: widget.controller),
+      );
+    }
+    final choice = _SourceChoice(
+      source: _source,
+      onChanged: (source) => setState(() => _source = source),
+    );
+    return KeyedSubtree(
+      key: const ValueKey('terminal-page'),
+      child: switch (_source) {
+        TerminalSource.phone => LocalTerminalView(
+          header: choice,
+          linux: widget.linux,
+          sessions: widget.sessions,
+        ),
+        TerminalSource.server => Scaffold(
+          appBar: AppBar(
+            title: title,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(_SourceChoice.height),
+              child: choice,
+            ),
+          ),
+          body: TerminalScreen(controller: widget.controller),
+        ),
+        null => Scaffold(
+          appBar: AppBar(
+            title: title,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(_SourceChoice.height + 2),
+              child: Column(
+                children: [choice, const LinearProgressIndicator(minHeight: 2)],
+              ),
+            ),
+          ),
+        ),
+      },
+    );
+  }
+}
+
+class _SourceChoice extends StatelessWidget {
+  const _SourceChoice({required this.source, required this.onChanged});
+
+  static const height = 56.0;
+
+  final TerminalSource? source;
+  final ValueChanged<TerminalSource> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    return SizedBox(
+      height: height,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        child: SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<TerminalSource>(
+            key: const ValueKey('terminal-source'),
+            showSelectedIcon: false,
+            emptySelectionAllowed: true,
+            segments: [
+              ButtonSegment(
+                value: TerminalSource.phone,
+                label: Text(
+                  l10n.localTerminalSourcePhone,
+                  key: const ValueKey('terminal-source-phone'),
+                ),
+              ),
+              ButtonSegment(
+                value: TerminalSource.server,
+                label: Text(
+                  l10n.localTerminalSourceServer,
+                  key: const ValueKey('terminal-source-server'),
+                ),
+              ),
+            ],
+            selected: {?source},
+            onSelectionChanged: (selected) {
+              if (selected.isNotEmpty) onChanged(selected.first);
+            },
+          ),
+        ),
       ),
-    ),
-    body: TerminalScreen(controller: controller),
-  );
+    );
+  }
 }
 
 class TerminalScreen extends StatefulWidget {

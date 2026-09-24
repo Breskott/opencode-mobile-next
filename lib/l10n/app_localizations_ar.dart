@@ -18314,4 +18314,118 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get aiteamComponentChildProcesses =>
       'يوقف أندرويد البرامج الإضافية للتطبيق حين يشغّل كثيرًا منها معًا، والفريق يشغّل عدة برامج. إذا توقف الفريق أثناء العمل، فعّل خيارات المطوّرين › تعطيل قيود العمليات الفرعية.';
+
+  @override
+  String get localTerminalSourcePhone => 'هذا الهاتف';
+
+  @override
+  String get localTerminalSourceServer => 'خادم OpenCode';
+
+  @override
+  String localTerminalShellName(int number) {
+    return 'الطرفية $number';
+  }
+
+  @override
+  String localTerminalShellEnded(String name) {
+    return '$name · انتهت';
+  }
+
+  @override
+  String get localTerminalNewShell => 'طرفية جديدة';
+
+  @override
+  String get localTerminalPaste => 'لصق';
+
+  @override
+  String get localTerminalCopy => 'نسخ';
+
+  @override
+  String get localTerminalMenu => 'الطرفيات والمزيد';
+
+  @override
+  String get localTerminalStopShell => 'إيقاف هذه الطرفية';
+
+  @override
+  String get localTerminalCloseShell => 'إغلاق هذه الطرفية';
+
+  @override
+  String get localTerminalStopTitle => 'إيقاف هذه الطرفية؟';
+
+  @override
+  String get localTerminalStopBody => 'تتوقف البرامج التي تعمل فيها أيضًا.';
+
+  @override
+  String get localTerminalStop => 'إيقاف';
+
+  @override
+  String get localTerminalStarting => 'جارٍ بدء الطرفية';
+
+  @override
+  String get localTerminalNotSetUpTitle => 'لم يُجهَّز لينكس على هذا الهاتف';
+
+  @override
+  String get localTerminalNotSetUpBody =>
+      'تعمل الطرفية داخل لينكس الذي يثبّته إعداد الهاتف.';
+
+  @override
+  String get localTerminalSetUp => 'إعداد';
+
+  @override
+  String get localTerminalEndedTitle => 'انتهت الطرفية';
+
+  @override
+  String localTerminalEndedBody(int code) {
+    return 'خرجت بالرمز $code.';
+  }
+
+  @override
+  String get localTerminalRestart => 'إعادة التشغيل';
+
+  @override
+  String get localTerminalFailedTitle => 'لم تبدأ الطرفية';
+
+  @override
+  String get localTerminalFailedBody =>
+      'حاول مرة أخرى. إن تكرر الفشل، تجد السبب في التفاصيل.';
+
+  @override
+  String get localTerminalTryAgain => 'حاول مرة أخرى';
+
+  @override
+  String get localTerminalDetails => 'التفاصيل';
+
+  @override
+  String localTerminalCost(int perShell, int limit) {
+    return 'كل طرفية تشغّل $perShell برامج. مع تشغيل الفريق الذكي، قد يوقف أندرويد برامج التطبيق إذا تجاوزت $limit.';
+  }
+
+  @override
+  String localTerminalCostNow(int perShell, int count, int limit) {
+    return 'كل طرفية تشغّل $perShell برامج. مع تشغيل الفريق الذكي، يشغّل التطبيق $count الآن، وقد يوقفها أندرويد إذا تجاوزت $limit.';
+  }
+
+  @override
+  String get localTerminalKeysLabel => 'مفاتيح الطرفية';
+
+  @override
+  String get localTerminalKeyCtrl => 'Control';
+
+  @override
+  String get localTerminalKeyAlt => 'Alt';
+
+  @override
+  String get localTerminalKeyHome => 'Home';
+
+  @override
+  String get localTerminalKeyEnd => 'End';
+
+  @override
+  String get localTerminalKeyPageUp => 'صفحة لأعلى';
+
+  @override
+  String get localTerminalKeyPageDown => 'صفحة لأسفل';
+
+  @override
+  String get phoneServerCardTerminal => 'الطرفية';
 }

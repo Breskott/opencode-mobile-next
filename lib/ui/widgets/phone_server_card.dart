@@ -13,6 +13,7 @@ import '../../state/profiles.dart';
 import '../../termux/bridge.dart' show TermuxRuntime;
 import '../app_theme.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
+import '../screens/terminal_screen.dart' show TerminalPage, TerminalSource;
 import 'confirm_sheet.dart';
 import 'product_states.dart';
 import 'terminal_view.dart';
@@ -28,7 +29,7 @@ import 'terminal_view.dart';
 /// What the ⋯ menu can ask for. Each one either leaves for the setup
 /// progress screen or removes the server, so a host that is itself a sheet
 /// (the switcher) closes first and runs it with [runPhoneServerAction].
-enum PhoneServerAction { switchRuntime, addTools, update, remove }
+enum PhoneServerAction { terminal, switchRuntime, addTools, update, remove }
 
 /// The saved in-app profile the card stands for: the active one when it is
 /// in-app, else the newest. Setup may have saved one per OpenCode version;
@@ -160,6 +161,19 @@ Future<bool> runPhoneServerAction(
   }
 
   switch (action) {
+    case PhoneServerAction.terminal:
+      // A shell in this phone's Linux: it needs no running server, so it is
+      // the way in when the server is stopped or not answering.
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: 'local-terminal'),
+          builder: (_) => TerminalPage(
+            controller: connection,
+            initialSource: TerminalSource.phone,
+          ),
+        ),
+      );
+      return false;
     case PhoneServerAction.switchRuntime:
       // Re-running the one component with the other runtime; the engine
       // starts and connects the server it installed.
@@ -609,6 +623,12 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
         icon: const Icon(AppIconography.more),
         onSelected: (action) => unawaited(_menu(action)),
         itemBuilder: (context) => [
+          if (installed)
+            PopupMenuItem(
+              key: const ValueKey('phone-server-terminal'),
+              value: PhoneServerAction.terminal,
+              child: Text(l10n.phoneServerCardTerminal),
+            ),
           // Installing while a job runs would only queue behind it.
           if (hasEngine && installed && !settingUp) ...[
             PopupMenuItem(

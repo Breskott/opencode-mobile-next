@@ -79,4 +79,17 @@ dependencies {
     implementation("androidx.core:core:1.13.1")
     // Reads the Ubuntu Base tarball for the built-in Linux (BuiltinLinux.kt).
     implementation("org.apache.commons:commons-compress:1.27.1")
+    // The local terminal's PTY (LocalTerminal.kt): Termux's terminal-emulator
+    // library, Apache 2.0 (NOTICE). Only this module: termux-app itself and
+    // termux-shared are GPLv3 and must not be used.
+    implementation("com.github.termux.termux-app:terminal-emulator:v0.118.3")
+}
+
+repositories {
+    // JitPack builds the Termux terminal libraries from their release tags.
+    // Limited to that group so no other dependency can resolve from it.
+    exclusiveContent {
+        forRepository { maven("https://jitpack.io") }
+        filter { includeGroup("com.github.termux.termux-app") }
+    }
 }

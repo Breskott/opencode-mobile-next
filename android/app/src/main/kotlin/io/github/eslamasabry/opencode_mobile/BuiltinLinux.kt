@@ -116,41 +116,56 @@ class BuiltinLinux(private val context: Context) {
      * stops everything the script started.
      */
     fun start(script: String, log: File?): Process {
-        val tmp = File(context.cacheDir, "proot-tmp").apply { mkdirs() }
-        val command = listOf(
-            "$nativeDir/libproot.so",
-            "--root-id",
-            "--kill-on-exit",
-            // Android does not let apps make hard links; dpkg and git do.
-            "--link2symlink",
-            "-L",
-            "--sysvipc",
-            "--rootfs=${rootfs.absolutePath}",
-            "--bind=/dev",
-            "--bind=/proc",
-            "--bind=/sys",
-            "--bind=${File(rootfs, "tmp").absolutePath}:/dev/shm",
-            "--cwd=/root",
-            "/usr/bin/env", "-i",
-            "HOME=/root",
-            "LANG=C.UTF-8",
-            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-            "TERM=xterm-256color",
-            "TMPDIR=/tmp",
-            "/bin/sh", "-c", script,
-        )
-        return ProcessBuilder(command)
+        return ProcessBuilder(prootCommand(listOf("/bin/sh", "-c", script)))
             .redirectErrorStream(true)
             .apply {
-                environment()["PROOT_LOADER"] = "$nativeDir/libproot-loader.so"
-                environment()["PROOT_TMP_DIR"] = tmp.absolutePath
-                environment()["LD_LIBRARY_PATH"] = nativeDir
+                environment().putAll(prootEnvironment())
                 if (log != null) {
                     log.parentFile?.mkdirs()
                     redirectOutput(ProcessBuilder.Redirect.appendTo(log))
                 }
             }
             .start()
+    }
+
+    /** proot's own path: the program a terminal session (LocalTerminal.kt) starts. */
+    val prootPath: String get() = "$nativeDir/libproot.so"
+
+    /**
+     * The proot command line that runs [program] inside Ubuntu as root, with
+     * a clean environment. [start] and the local terminal (LocalTerminal.kt)
+     * both use it, so a shell sees exactly what the app's scripts see.
+     */
+    fun prootCommand(program: List<String>): List<String> = listOf(
+        prootPath,
+        "--root-id",
+        "--kill-on-exit",
+        // Android does not let apps make hard links; dpkg and git do.
+        "--link2symlink",
+        "-L",
+        "--sysvipc",
+        "--rootfs=${rootfs.absolutePath}",
+        "--bind=/dev",
+        "--bind=/proc",
+        "--bind=/sys",
+        "--bind=${File(rootfs, "tmp").absolutePath}:/dev/shm",
+        "--cwd=/root",
+        "/usr/bin/env", "-i",
+        "HOME=/root",
+        "LANG=C.UTF-8",
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "TERM=xterm-256color",
+        "TMPDIR=/tmp",
+    ) + program
+
+    /** What proot itself needs in its environment, on top of the app's own. */
+    fun prootEnvironment(): Map<String, String> {
+        val tmp = File(context.cacheDir, "proot-tmp").apply { mkdirs() }
+        return mapOf(
+            "PROOT_LOADER" to "$nativeDir/libproot-loader.so",
+            "PROOT_TMP_DIR" to tmp.absolutePath,
+            "LD_LIBRARY_PATH" to nativeDir,
+        )
     }
 
     // ---- long-running services ---------------------------------------------
@@ -530,6 +545,39 @@ class BuiltinLinux(private val context: Context) {
             for (pid in descendants(root)) signal(pid, OsConstants.SIGKILL)
             process.destroyForcibly()
             process.waitFor(graceMs, TimeUnit.MILLISECONDS)
+        }
+
+        /**
+         * [stopTree] for a process the app knows only by [root] pid (a
+         * terminal session started through a PTY). [exited] waits up to the
+         * given milliseconds for it to end and says whether it did.
+         *
+         * An interactive shell ignores SIGTERM, so the programs inside get
+         * SIGHUP too, as when a terminal closes; SIGKILL follows after
+         * [graceMs], proot last.
+         */
+        fun stopPidTree(root: Int, exited: (Long) -> Boolean, graceMs: Long = 2000) {
+            for (pid in descendants(root)) {
+                signal(pid, OsConstants.SIGHUP)
+                signal(pid, OsConstants.SIGTERM)
+            }
+            if (exited(graceMs)) return
+            for (pid in descendants(root)) signal(pid, OsConstants.SIGKILL)
+            signal(root, OsConstants.SIGKILL)
+            exited(graceMs)
+        }
+
+        /** How many processes run as this app's user now, the app itself included. */
+        fun appProcessCount(): Int {
+            val uid = android.os.Process.myUid()
+            return File("/proc").listFiles()?.count { dir ->
+                dir.name.toIntOrNull() != null &&
+                    try {
+                        Os.stat(dir.absolutePath).st_uid == uid
+                    } catch (_: Exception) {
+                        false
+                    }
+            } ?: 0
         }
 
         private fun signal(pid: Int, signal: Int) {

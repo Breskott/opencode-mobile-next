@@ -18052,4 +18052,118 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aiteamComponentChildProcesses =>
       'Android stops an app\'s extra programs when it runs many at once, and a team runs several. If the team stops while it works, turn on Developer options › Disable child process restrictions.';
+
+  @override
+  String get localTerminalSourcePhone => 'This phone';
+
+  @override
+  String get localTerminalSourceServer => 'OpenCode server';
+
+  @override
+  String localTerminalShellName(int number) {
+    return 'Shell $number';
+  }
+
+  @override
+  String localTerminalShellEnded(String name) {
+    return '$name · ended';
+  }
+
+  @override
+  String get localTerminalNewShell => 'New shell';
+
+  @override
+  String get localTerminalPaste => 'Paste';
+
+  @override
+  String get localTerminalCopy => 'Copy';
+
+  @override
+  String get localTerminalMenu => 'Shells and more';
+
+  @override
+  String get localTerminalStopShell => 'Stop this shell';
+
+  @override
+  String get localTerminalCloseShell => 'Close this shell';
+
+  @override
+  String get localTerminalStopTitle => 'Stop this shell?';
+
+  @override
+  String get localTerminalStopBody => 'Programs running in it stop too.';
+
+  @override
+  String get localTerminalStop => 'Stop';
+
+  @override
+  String get localTerminalStarting => 'Starting the shell';
+
+  @override
+  String get localTerminalNotSetUpTitle => 'Linux isn\'t set up on this phone';
+
+  @override
+  String get localTerminalNotSetUpBody =>
+      'The terminal runs in the Linux that phone setup installs.';
+
+  @override
+  String get localTerminalSetUp => 'Set up';
+
+  @override
+  String get localTerminalEndedTitle => 'The shell ended';
+
+  @override
+  String localTerminalEndedBody(int code) {
+    return 'It exited with code $code.';
+  }
+
+  @override
+  String get localTerminalRestart => 'Restart';
+
+  @override
+  String get localTerminalFailedTitle => 'The shell didn\'t start';
+
+  @override
+  String get localTerminalFailedBody =>
+      'Try again. If it keeps failing, Details says why.';
+
+  @override
+  String get localTerminalTryAgain => 'Try again';
+
+  @override
+  String get localTerminalDetails => 'Details';
+
+  @override
+  String localTerminalCost(int perShell, int limit) {
+    return 'Each shell runs $perShell programs. With AI Team on, Android may stop the app\'s programs past $limit.';
+  }
+
+  @override
+  String localTerminalCostNow(int perShell, int count, int limit) {
+    return 'Each shell runs $perShell programs. With AI Team on, the app runs $count; Android may stop them past $limit.';
+  }
+
+  @override
+  String get localTerminalKeysLabel => 'Terminal keys';
+
+  @override
+  String get localTerminalKeyCtrl => 'Control';
+
+  @override
+  String get localTerminalKeyAlt => 'Alt';
+
+  @override
+  String get localTerminalKeyHome => 'Home';
+
+  @override
+  String get localTerminalKeyEnd => 'End';
+
+  @override
+  String get localTerminalKeyPageUp => 'Page up';
+
+  @override
+  String get localTerminalKeyPageDown => 'Page down';
+
+  @override
+  String get phoneServerCardTerminal => 'Terminal';
 }
