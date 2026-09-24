@@ -12,8 +12,12 @@ import '../../../state/profiles.dart';
 import '../../../state/termux_running_server.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
+import '../../kit/scenes/setup_phone_scene.dart';
+import '../../kit/scenes/setup_unplugged_scene.dart';
 import '../../widgets/product_states.dart' show productErrorText;
+import '../../widgets/setup_progress_view.dart';
 import '../servers_screen.dart' show ServersRouteRequest;
+import 'phone_setup_hero.dart';
 import 'phone_setup_routes.dart';
 import 'phone_setup_selection.dart';
 
@@ -352,9 +356,16 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
                       child: AnimatedSwitcher(
                         duration: reduceMotion
                             ? Duration.zero
-                            : const Duration(milliseconds: 220),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeInCubic,
+                            : KitMotion.standard,
+                        switchInCurve: KitMotion.enter,
+                        switchOutCurve: KitMotion.exit,
+                        // Each state fills the body from the top: the
+                        // default centring would float it mid-screen
+                        // (design regressions ledger row 1).
+                        layoutBuilder: (current, previous) => Stack(
+                          fit: StackFit.expand,
+                          children: [...previous, ?current],
+                        ),
                         child: KeyedSubtree(
                           key: ValueKey(hero),
                           child: _state(context, l10n, hero, progress),
@@ -389,8 +400,10 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
     final String body;
     final String action;
     final VoidCallback onPressed;
-    var icon = AppIconography.phone;
-    var tone = AppStatusTone.progress;
+    // The drawing says where the phone stands; it moves only while setup
+    // runs or OpenCode starts (design standard §10).
+    KitScene scene = const SetupPhoneScene();
+    var ambient = false;
     KitProgress? meter;
     switch (hero) {
       case _Hero.loading:
@@ -417,10 +430,8 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
             : l10n.phoneSetupStartStoppedBody;
         action = l10n.phoneSetupStartContinue;
         onPressed = () => unawaited(_continue(progress));
-        if (!running) {
-          icon = AppIconography.pause;
-          tone = AppStatusTone.attention;
-        }
+        scene = SetupProgressView.sceneFor(l10n, progress);
+        ambient = running;
         meter = KitProgress.known(
           progress.overall.clamp(0, 1).toDouble(),
           key: const ValueKey('phone-setup-start-meter'),
@@ -432,22 +443,27 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
         body = l10n.phoneSetupStartReadyBody;
         action = l10n.phoneSetupStartOpen;
         onPressed = () => unawaited(_open(progress));
-        icon = AppIconography.check;
-        tone = AppStatusTone.ok;
+        scene = const SetupPhoneScene(mood: SetupPhoneMood.ready);
       case _Hero.termux:
         headline = l10n.phoneSetupStartTermuxHeadline;
         body = l10n.phoneSetupStartTermuxBody;
         action = l10n.phoneSetupStartConnect;
         onPressed = _connectTermux;
-        icon = AppIconography.terminal;
-        tone = AppStatusTone.ok;
+        scene = const SetupPhoneScene(mood: SetupPhoneMood.termux);
     }
     final failure = _failure;
     final fresh = hero == _Hero.fresh;
-    return KitStateView(
+    if (_opening) {
+      scene = const SetupPhoneScene(mood: SetupPhoneMood.starting);
+      ambient = true;
+    } else if (failure != null && hero == _Hero.ready) {
+      // Open could not start OpenCode or reach it.
+      scene = const SetupUnpluggedScene();
+    }
+    return PhoneSetupHero(
       key: ValueKey('phone-setup-start-hero-${hero.name}'),
-      icon: failure != null ? AppIconography.warning : icon,
-      tone: failure != null ? AppStatusTone.failure : tone,
+      scene: scene,
+      ambient: ambient,
       // While Open starts OpenCode the title says so, never the promise.
       title: _opening ? l10n.connectStartingPhone : headline,
       titleKey: const ValueKey('phone-setup-start-headline'),
@@ -455,6 +471,7 @@ class _PhoneSetupStartScreenState extends ConsumerState<PhoneSetupStartScreen> {
       bodyKey: failure != null && !_opening
           ? const ValueKey('phone-setup-start-failure')
           : const ValueKey('phone-setup-start-body'),
+      bodyTone: failure != null && !_opening ? AppStatusTone.failure : null,
       progress: _opening ? const KitProgress.waiting() : meter,
       // What Set up puts on the phone, next to the promise it counts.
       content: fresh && includesText != null
@@ -587,8 +604,8 @@ class _Entrance extends StatelessWidget {
     if (reduceMotion) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 360),
-      curve: Curves.easeOutCubic,
+      duration: KitMotion.standard,
+      curve: KitMotion.enter,
       child: child,
       builder: (context, value, child) => Opacity(
         opacity: value,

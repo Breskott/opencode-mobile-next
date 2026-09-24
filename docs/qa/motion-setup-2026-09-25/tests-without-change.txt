@@ -1,0 +1,44 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/agent-a5693db4843269f99/test/motion_setup_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: setup start leads with the phone drawing at the top of the page
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'phone-setup-hero-drawing'>]: []>
+00:00 +0 -1: setup start leads with the phone drawing at the top of the page [E]
+00:00 +0 -1: setup start a running setup draws its journey
+Expected: exactly one matching candidate
+  Actual: _WidgetPredicateWidgetFinder:<Found 0 widgets with widget matching predicate: []>
+00:01 +0 -2: setup start a running setup draws its journey [E]
+00:01 +0 -2: setup progress the log opens in view, under a title and bar that stay
+Expected: a value less than or equal to <915>
+  Actual: <2292.0>
+00:01 +0 -3: setup progress the log opens in view, under a title and bar that stay [E]
+00:01 +0 -3: setup progress each log line takes one line, in one box
+Expected: a numeric value within <2> of <40>
+  Actual: <78.62068965517243>
+00:01 +0 -4: setup progress each log line takes one line, in one box [E]
+00:01 +0 -4: setup progress Cancel sits with the steps, before the folded Details
+00:01 +0 -5: setup progress Cancel sits with the steps, before the folded Details [E]
+00:01 +0 -5: setup ready one step: the celebration, one name, no sheet on top
+Expected: exactly one matching candidate
+  Actual: _WidgetPredicateWidgetFinder:<Found 0 widgets with widget matching predicate: []>
+00:02 +0 -6: setup ready one step: the celebration, one name, no sheet on top [E]
+00:02 +0 -6: setup ready the celebration plays once and then rests
+00:02 +1 -6: connecting starting the phone server draws the phone, breathing
+Expected: exactly one matching candidate
+  Actual: _WidgetPredicateWidgetFinder:<Found 0 widgets with widget matching predicate: []>
+00:02 +1 -7: connecting starting the phone server draws the phone, breathing [E]
+00:02 +1 -7: connecting not answering draws the plug short of the portal
+Expected: exactly one matching candidate
+  Actual: _WidgetPredicateWidgetFinder:<Found 0 widgets with widget matching predicate: []>
+00:02 +1 -8: connecting not answering draws the plug short of the portal [E]
+00:02 +1 -8: connecting a stopped phone server rests: drawn, and still
+Expected: exactly one matching candidate
+  Actual: _WidgetPredicateWidgetFinder:<Found 0 widgets with widget matching predicate: []>
+00:02 +1 -9: connecting a stopped phone server rests: drawn, and still [E]
+00:02 +1 -9: connecting another server that failed keeps its icon
+00:02 +2 -9: connecting reduced motion shows the drawing finished and still
+Expected: exactly one matching candidate
+  Actual: _WidgetPredicateWidgetFinder:<Found 0 widgets with widget matching predicate: []>
+00:02 +2 -10: connecting reduced motion shows the drawing finished and still [E]
+00:02 +2 -10: (tearDownAll)
+00:02 +2 -10: Some tests failed.

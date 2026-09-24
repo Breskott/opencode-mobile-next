@@ -17704,6 +17704,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get phoneSetupReadyOpenExisting => 'فتح مجلد موجود';
 
   @override
+  String get phoneSetupReadyCreateOpen => 'إنشاء وفتح';
+
+  @override
+  String get phoneSetupReadyOpenFolderInstead => 'فتح مجلد بدلًا من ذلك';
+
+  @override
   String get phoneSetupReadyNameEmpty => 'اكتب اسمًا.';
 
   @override

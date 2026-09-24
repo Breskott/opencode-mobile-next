@@ -17446,6 +17446,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneSetupReadyOpenExisting => 'Open an existing folder';
 
   @override
+  String get phoneSetupReadyCreateOpen => 'Create and open';
+
+  @override
+  String get phoneSetupReadyOpenFolderInstead => 'Open a folder instead';
+
+  @override
   String get phoneSetupReadyNameEmpty => 'Enter a name.';
 
   @override

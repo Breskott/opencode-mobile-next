@@ -3586,7 +3586,7 @@ Reached from: `phone-setup-progress`
 
 **OpenCode is ready** · screen · `PhoneSetupReadyScreen` · `lib/ui/screens/phone_setup/phone_setup_ready_screen.dart:22`
 
-Phone setup v2 screen C: the agent is running, so the only thing left is a place to work. One name makes a project and lands in its first conversation with the keyboard up; Open an existing folder is the quiet alternative. Takes the progress screen's place (pushReplacement) so Back never returns to a finished setup.
+Phone setup v2 screen C: the agent is running, so the only thing left is a place to work. One step: a celebration drawing (SetupReadyScene, played once), 'OpenCode is ready', one name field whose primary 'Create and open' makes the project and lands in its first conversation, and the quiet 'Open a folder instead', which opens the folder sheet only when tapped (never on its own, so there is one name field on screen). Takes the progress screen's place (pushReplacement) so Back never returns to a finished setup.
 
 Reached from: `phone-setup-progress`, `system`
 
@@ -3594,8 +3594,8 @@ Reached from: `phone-setup-progress`, `system`
 |---|---|---|---|---|---|
 | Project name | text-field | other | Prefilled with 'my-app' and selected; onChanged clears the field error, onSubmitted triggers Create. |  | 191 |
 | Close | icon-button | navigate -> `home-shell` | _leave(): pushNamedAndRemoveUntil('/', (_) => false); PopScope also routes Back here. |  | 223 |
-| Create | button | submit -> `chat` | _create(): validates the name, creates the project folder (BuiltinProjectFolders), ensures the app is connected, selects it as the location, creates a session, then pushNamedAndRemoveUntil('/home') and pushNamed('/chat/<id>', ChatRouteArguments.firstRun()). |  | 250 |
-| Open an existing folder | button | open-sheet -> `project-folder-open-dialog` | _openExisting(): ensures the app is connected, then ProjectFolderActions.openFolder(context, connection) (the same folder sheet Work and the project picker use); on a chosen path, pushNamedAndRemoveUntil('/home'). |  | 257 |
+| Create and open | button | submit -> `chat` | _create(): validates the name, creates the project folder (BuiltinProjectFolders), ensures the app is connected, selects it as the location, creates a session, then pushNamedAndRemoveUntil('/home') and pushNamed('/chat/<id>', ChatRouteArguments.firstRun()). |  | 250 |
+| Open a folder instead | button | open-sheet -> `project-folder-open-dialog` | _openExisting(): ensures the app is connected, then ProjectFolderActions.openFolder(context, connection) (the same folder sheet Work and the project picker use); on a chosen path, pushNamedAndRemoveUntil('/home'). |  | 257 |
 
 ### phone-setup-start
 

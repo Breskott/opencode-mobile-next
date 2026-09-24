@@ -18874,6 +18874,14 @@
   "@phoneSetupReadyOpenExisting": {
     "description": "Link on screen C that opens the in-app folder sheet"
   },
+  "phoneSetupReadyCreateOpen": "Create and open",
+  "@phoneSetupReadyCreateOpen": {
+    "description": "Screen C's one primary button: makes the named project and opens its first conversation"
+  },
+  "phoneSetupReadyOpenFolderInstead": "Open a folder instead",
+  "@phoneSetupReadyOpenFolderInstead": {
+    "description": "Screen C's quiet alternative to naming a new project: opens the folder sheet (only when tapped)"
+  },
   "phoneSetupReadyNameEmpty": "Enter a name.",
   "@phoneSetupReadyNameEmpty": {
     "description": "Project name is empty"

@@ -2,17 +2,24 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../builtin/setup/components.dart' show SetupComponentIds;
 import '../../builtin/setup/setup_contract.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import '../kit/scenes/setup_steps_scene.dart';
 import 'terminal_view.dart';
 
-/// The progress of any setup job as one state (design standard §3, §4): an
-/// icon and a title that say where the job stands, one overall bar with one
-/// line under it, a checklist of the job's components, the one action that
-/// fits (Continue setup, or Cancel while it runs) and the live log under
-/// "Details" (docs/design/phone-setup-v2-2026-09-24.md, goal 3).
+/// The progress of any setup job as one state (design standard §3, §4,
+/// §10): a drawing of the journey (cloud, parcel, phone) lit as far as the
+/// job has come, a title that says where the job stands, one overall bar
+/// with one line under it, a checklist of the job's components, the one
+/// action that fits (Continue setup, or Cancel while it runs) and the live
+/// log under "Details" (docs/design/phone-setup-v2-2026-09-24.md, goal 3).
+///
+/// With room, the head (drawing, title, bar) stays put while the steps and
+/// the log scroll under it; the log is one box, one line per line (design
+/// regressions ledger row 16).
 ///
 /// It knows nothing about where it is shown: no Scaffold, no navigation, no
 /// engine. First setup hosts it on screen B; "Add tools" and updates host
@@ -90,6 +97,35 @@ class SetupProgressView extends StatefulWidget {
     );
   }
 
+  /// The drawing of [progress] (design standard §10): which part of the
+  /// journey is lit, how many components are in, and whether it stands
+  /// still. [rows] defaults to the job's own components; setup start draws
+  /// the same scene for a job that runs or stopped part way.
+  static SetupStepsScene sceneFor(
+    AppLocalizations l10n,
+    SetupProgress progress, [
+    List<ComponentProgress>? rows,
+  ]) {
+    final list = rows ?? progress.components;
+    return SetupStepsScene(
+      stage: _SetupProgressViewState._stageOf(l10n, progress, list),
+      done: list
+          .where(
+            (r) =>
+                r.state == ComponentState.done ||
+                r.state == ComponentState.skipped,
+          )
+          .length,
+      total: list.length,
+      fraction: _SetupProgressViewState._fractionOf(list),
+      halted: switch (progress.state) {
+        SetupState.failed => SetupSceneHalt.failed,
+        SetupState.interrupted || SetupState.cancelled => SetupSceneHalt.paused,
+        _ => null,
+      },
+    );
+  }
+
   @override
   State<SetupProgressView> createState() => _SetupProgressViewState();
 }
@@ -104,6 +140,10 @@ class _SetupProgressViewState extends State<SetupProgressView> {
   /// True for the one update in which a new job started: the bar takes the
   /// new job's value at once instead of easing backwards from the old end.
   bool _jump = false;
+
+  /// The live log under "Details", folded until asked for.
+  bool _detailsOpen = false;
+  final _logKey = GlobalKey();
 
   @override
   void initState() {
@@ -160,13 +200,9 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     final network = failed && _looksLikeNetwork(progress);
     final title = widget.title ?? l10n.phoneSetupProgressTitle;
 
-    final (icon, tone) = failed
-        ? (AppIconography.error, AppStatusTone.failure)
-        : stopped
-        ? (AppIconography.pause, AppStatusTone.attention)
-        : done
-        ? (AppIconography.check, AppStatusTone.ok)
-        : (AppIconography.download, AppStatusTone.progress);
+    // The drawing at the head says the same as the title and the rows, so
+    // it stays decorative (design standard §10).
+    final scene = SetupProgressView.sceneFor(l10n, progress, rows);
 
     // A job can fail between components (the server start after the last
     // install): the body says why even though no row carries it.
@@ -209,40 +245,77 @@ class _SetupProgressViewState extends State<SetupProgressView> {
       ],
     );
 
-    final log = progress.logTail.trimRight();
-    final details = log.isEmpty
-        ? Text(
-            l10n.setupProgressViewNoLog,
-            key: const Key('setup-progress-log'),
-            style: Theme.of(context).textTheme.bodySmall,
-          )
-        // Logs are left-to-right whatever the app's direction; flipping
-        // them would scramble paths and flags. Tail-first: each new poll
-        // re-renders the last lines, so the panel follows the output.
-        : Directionality(
-            key: const Key('setup-progress-log'),
-            textDirection: TextDirection.ltr,
-            child: TerminalView(output: log),
-          );
+    final theme = Theme.of(context);
+    final actions = KitActionBlock(
+      primary: progress.canContinue && widget.onContinue != null
+          ? KitAction(
+              key: const Key('setup-progress-continue'),
+              label: l10n.setupProgressViewContinue,
+              onPressed: widget.onContinue,
+            )
+          : null,
+      tertiary: [
+        if (running && widget.onCancel != null)
+          KitAction(
+            key: const Key('setup-progress-cancel'),
+            label: l10n.setupProgressViewCancel,
+            onPressed: widget.onCancel,
+            destructive: true,
+          ),
+      ],
+    );
+
+    // What the job is made of and what can be done about it; under a
+    // hairline, the technical Details, folded (design standard §3.6).
+    final steps = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        checklist,
+        if (!actions.isEmpty) ...[const SizedBox(height: 12), actions],
+        const SizedBox(height: 16),
+        Divider(height: 1, color: AppTheme.hairline(theme)),
+        const SizedBox(height: 8),
+        KitInset(
+          child: TextButton.icon(
+            key: const Key('setup-progress-details'),
+            onPressed: _toggleDetails,
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.mutedOf(theme),
+              minimumSize: const Size(48, 48),
+              padding: const EdgeInsets.symmetric(
+                horizontal: KitButton.tertiaryInset,
+              ),
+            ),
+            icon: Icon(
+              _detailsOpen
+                  ? AppIconography.chevronUp
+                  : AppIconography.chevronDown,
+              size: 18,
+            ),
+            label: Text(
+              _detailsOpen ? l10n.e7SetupHideDetails : l10n.e7SetupDetails,
+            ),
+          ),
+        ),
+        if (_detailsOpen) _logPanel(context, l10n, progress),
+      ],
+    );
 
     // The bar eases towards the furthest point; the first build and a new
     // job draw the value as is.
-    return TweenAnimationBuilder<double>(
+    final head = TweenAnimationBuilder<double>(
       tween: Tween<double>(end: _furthest),
       duration: reduceMotion || _jump
           ? Duration.zero
           : const Duration(milliseconds: 700),
       curve: Curves.easeOutCubic,
-      builder: (context, shown, _) => KitStateView(
-        icon: icon,
-        tone: tone,
+      builder: (context, shown, _) => _Head(
+        scene: scene,
+        ambient: running,
         title: failed || stopped ? l10n.setupProgressViewFailedTitle : title,
-        titleKey: const Key('setup-progress-title'),
         body: body,
         bodyKey: bodyKey,
-        // Each row speaks for itself when setup moves on (below); the whole
-        // page announcing every byte would drown that out.
-        liveRegion: false,
         progress: KitProgress.known(
           shown,
           key: const Key('setup-progress-overall'),
@@ -254,26 +327,175 @@ class _SetupProgressViewState extends State<SetupProgressView> {
           semanticsLabel: l10n.setupProgressViewOverallLabel,
           caption: running || done ? _timeLine(l10n, progress) : null,
         ),
-        content: checklist,
-        primary: progress.canContinue && widget.onContinue != null
-            ? KitAction(
-                key: const Key('setup-progress-continue'),
-                label: l10n.setupProgressViewContinue,
-                onPressed: widget.onContinue,
-              )
-            : null,
-        tertiary: [
-          if (running && widget.onCancel != null)
-            KitAction(
-              key: const Key('setup-progress-cancel'),
-              label: l10n.setupProgressViewCancel,
-              onPressed: widget.onCancel,
-              destructive: true,
-            ),
-        ],
-        detailsChild: details,
       ),
     );
+
+    final bottom = 16 + MediaQuery.paddingOf(context).bottom;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The title and the bar stay in view while the steps and the log
+        // scroll under them (ledger row 16), when there is room for that:
+        // on a short screen or at large text everything scrolls together,
+        // so the head never takes the screen.
+        final pinned =
+            constraints.hasBoundedHeight &&
+            constraints.maxHeight >= 560 &&
+            MediaQuery.textScalerOf(context).scale(14) <= 14 * 1.3;
+        if (!pinned) {
+          return SingleChildScrollView(
+            key: const Key('setup-progress-scroll'),
+            padding: EdgeInsets.fromLTRB(16, 8, 16, bottom),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [head, const SizedBox(height: 20), steps],
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              key: const Key('setup-progress-head'),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: head,
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                key: const Key('setup-progress-scroll'),
+                padding: EdgeInsets.fromLTRB(16, 4, 16, bottom),
+                child: steps,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _toggleDetails() {
+    setState(() => _detailsOpen = !_detailsOpen);
+    if (!_detailsOpen) return;
+    // Opening the log brings it into view, under the head that stays.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final panel = _logKey.currentContext;
+      if (panel == null || !panel.mounted) return;
+      Scrollable.ensureVisible(
+        panel,
+        alignment: 1,
+        duration: MediaQuery.disableAnimationsOf(panel)
+            ? Duration.zero
+            : KitMotion.standard,
+        curve: KitMotion.enter,
+      );
+    });
+  }
+
+  /// The live log as one box: the panel's tint and nothing inside drawing
+  /// another. Mono at the small size, one line per line (long apt lines
+  /// scroll sideways), newest at the bottom and followed as it grows.
+  Widget _logPanel(
+    BuildContext context,
+    AppLocalizations l10n,
+    SetupProgress progress,
+  ) {
+    final theme = Theme.of(context);
+    final log = progress.logTail.trimRight();
+    final height = MediaQuery.sizeOf(context).height;
+    return Container(
+      key: _logKey,
+      margin: const EdgeInsets.only(top: 4, bottom: 12),
+      constraints: BoxConstraints(maxHeight: math.max(200, height * .42)),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(AppTheme.radiusControl),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: log.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                l10n.setupProgressViewNoLog,
+                key: const Key('setup-progress-log'),
+                style: theme.textTheme.bodySmall,
+              ),
+            )
+          // Logs are left-to-right whatever the app's direction; flipping
+          // them would scramble paths and flags. Reversed, the view starts
+          // at the end and stays there as lines arrive.
+          : SingleChildScrollView(
+              reverse: true,
+              padding: const EdgeInsets.all(12),
+              child: Directionality(
+                key: const Key('setup-progress-log'),
+                textDirection: TextDirection.ltr,
+                child: TerminalView(output: log, framed: false, wrap: false),
+              ),
+            ),
+    );
+  }
+
+  /// Where the job is, as the drawing shows it: OpenCode starting, a
+  /// download (bytes still arriving), an unpack, or an install.
+  static SetupSceneStage _stageOf(
+    AppLocalizations l10n,
+    SetupProgress progress,
+    List<ComponentProgress> rows,
+  ) {
+    if (progress.state == SetupState.done) return SetupSceneStage.start;
+    ComponentProgress? current;
+    for (final row in rows) {
+      if (row.state == ComponentState.running ||
+          row.state == ComponentState.checking ||
+          row.state == ComponentState.failed ||
+          row.id == progress.current) {
+        current = row;
+        break;
+      }
+    }
+    if (current == null) {
+      final finished = rows.every(
+        (r) =>
+            r.state == ComponentState.done || r.state == ComponentState.skipped,
+      );
+      return finished && rows.isNotEmpty
+          ? SetupSceneStage.start
+          : SetupSceneStage.download;
+    }
+    if (current.id == SetupComponentIds.start) return SetupSceneStage.start;
+    final stage = current.stage ?? '';
+    if (stage == l10n.phoneSetupStageUnpackingLinux ||
+        _unpacking.hasMatch(stage)) {
+      return SetupSceneStage.unpack;
+    }
+    final total = current.bytesTotal ?? 0;
+    if ((total > 0 && (current.bytesDone ?? 0) < total) ||
+        stage == l10n.phoneSetupStageDownloadingLinux ||
+        _downloading.hasMatch(stage)) {
+      return SetupSceneStage.download;
+    }
+    return SetupSceneStage.install;
+  }
+
+  static final _unpacking = RegExp(r'unpack|extract', caseSensitive: false);
+  static final _downloading = RegExp(r'download|fetch', caseSensitive: false);
+
+  /// The current component's measured share, when it reports one.
+  static double? _fractionOf(List<ComponentProgress> rows) {
+    for (final row in rows) {
+      if (row.state != ComponentState.running &&
+          row.state != ComponentState.checking) {
+        continue;
+      }
+      final total = row.bytesTotal;
+      if (total != null && total > 0 && row.bytesDone != null) {
+        return (row.bytesDone! / total).clamp(0, 1).toDouble();
+      }
+      if (row.percent case final percent?) {
+        return (percent / 100).clamp(0, 1).toDouble();
+      }
+      return null;
+    }
+    return null;
   }
 
   String _titleOf(String id) {
@@ -323,6 +545,75 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     ];
     return texts.any(
       (text) => text != null && SetupProgressView.networkError.hasMatch(text),
+    );
+  }
+}
+
+/// The head of the progress: the drawing, the title, one line and the bar,
+/// in [KitStateView]'s order and type (design standard §3, §10), laid out
+/// so the host can keep it in view while the steps scroll.
+class _Head extends StatelessWidget {
+  const _Head({
+    required this.scene,
+    required this.ambient,
+    required this.title,
+    required this.body,
+    required this.bodyKey,
+    required this.progress,
+  });
+
+  final KitScene scene;
+  final bool ambient;
+  final String title;
+  final String? body;
+  final Key? bodyKey;
+  final KitProgress progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final body = this.body;
+    return Semantics(
+      container: true,
+      // Each row speaks for itself when setup moves on; the head announcing
+      // every byte would drown that out.
+      liveRegion: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: LayoutBuilder(
+              builder: (context, constraints) => KitIllustration(
+                key: const Key('setup-progress-scene'),
+                scene: scene,
+                width: math.min(constraints.maxWidth, 264),
+                ambient: ambient,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            key: const Key('setup-progress-title'),
+            style: theme.textTheme.titleLarge,
+          ),
+          if (body != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              body,
+              key: bodyKey,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppTheme.mutedOf(theme),
+                height: 1.4,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          KitProgressView(progress: progress),
+        ],
+      ),
     );
   }
 }

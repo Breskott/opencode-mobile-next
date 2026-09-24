@@ -88,6 +88,10 @@ Widget _card({String? error, bool starting = false, VoidCallback? onStart}) =>
       ),
     );
 
+/// Long enough for a state's drawing to finish drawing itself in
+/// (KitMotion.entrance), so the golden shows the finished frame.
+const _drawn = Duration(seconds: 1);
+
 const _refused =
     'Cannot reach http://127.0.0.1:4096: Connection refused (errno = 111)';
 
@@ -106,6 +110,7 @@ void main() {
         light: light,
         controller: await workController(status: StreamStatus.connecting),
         home: _card(onStart: () {}),
+        before: () => tester.pump(_drawn),
       );
     });
 
@@ -116,7 +121,10 @@ void main() {
         light: light,
         controller: await workController(status: StreamStatus.connecting),
         home: _card(onStart: () {}),
-        before: () => tester.pump(const Duration(seconds: 9)),
+        before: () async {
+          await tester.pump(const Duration(seconds: 9));
+          await tester.pump(_drawn);
+        },
       );
     });
 
@@ -127,6 +135,7 @@ void main() {
         light: light,
         controller: await workController(status: StreamStatus.disconnected),
         home: _card(error: _refused, onStart: () {}),
+        before: () => tester.pump(_drawn),
       );
     });
 
@@ -139,6 +148,7 @@ void main() {
         // The last attempt's error is still there while it starts: the
         // screen must say "Starting", not "stopped".
         home: _card(error: _refused, starting: true, onStart: () {}),
+        before: () => tester.pump(_drawn),
       );
     });
 
