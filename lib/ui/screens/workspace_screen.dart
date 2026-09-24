@@ -680,43 +680,25 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         // Still context, not management: the conversation is running
         // somewhere other than the project root.
         if (capabilities.projectManagement && _hasExternalSessionDirectory)
-          ListTile(
+          KitRow(
             key: const ValueKey('active-session-directory'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            minLeadingWidth: 32,
-            horizontalTitleGap: 12,
-            leading: const SizedBox.square(
-              dimension: 32,
-              child: Icon(AppIconography.nested, size: 24),
-            ),
-            title: Text(_basename(_selectedDirectory!)),
-            subtitle: Text(
-              _l10n(context).e7WorkspaceActiveDirectory(_selectedDirectory!),
-              style: Theme.of(context).textTheme.bodySmall,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            leading: KitRow.icon(context, AppIconography.nested),
+            title: _basename(_selectedDirectory!),
+            supporting: TextSpan(
+              text: _l10n(
+                context,
+              ).e7WorkspaceActiveDirectory(_selectedDirectory!),
             ),
             onTap: () => _showDirectoryDetails(_selectedDirectory!),
           ),
         if (!capabilities.projectManagement &&
             controller.directory?.isNotEmpty == true)
-          ListTile(
+          KitRow(
             key: const ValueKey('restricted-directory-context'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            minLeadingWidth: 32,
-            horizontalTitleGap: 12,
-            leading: const SizedBox.square(
-              dimension: 32,
-              child: Icon(AppIconography.files, size: 24),
-            ),
-            title: Text(_basename(controller.directory!)),
-            subtitle: Text(
-              controller.directory!,
-              textDirection: TextDirection.ltr,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+            leading: KitRow.icon(context, AppIconography.files),
+            title: _basename(controller.directory!),
+            // A path reads left to right in any interface: isolate it.
+            supporting: TextSpan(text: '\u2066${controller.directory!}\u2069'),
             onTap: () => _showDirectoryDetails(controller.directory!),
           ),
       ],
@@ -892,26 +874,23 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 ),
               if (archived.isNotEmpty)
                 SliverToBoxAdapter(
-                  child: ListTile(
+                  child: KitRow(
                     key: const ValueKey('workspace-archived'),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    minLeadingWidth: 32,
-                    horizontalTitleGap: 12,
-                    leading: const SizedBox.square(
-                      dimension: 32,
-                      child: Icon(AppIconography.archive, size: 24),
-                    ),
-                    title: Text(_l10n(context).e7WorkspaceArchivedSessions),
+                    leading: KitRow.icon(context, AppIconography.archive),
+                    title: _l10n(context).e7WorkspaceArchivedSessions,
                     // The footer owns partial-inventory truth. A count
                     // here would suggest every archived one was known.
-                    subtitle: partial
+                    supporting: partial
                         ? null
-                        : Text(
-                            _l10n(
+                        : TextSpan(
+                            text: _l10n(
                               context,
                             ).e7WorkspaceArchivedCount(archived.length),
                           ),
-                    trailing: const Icon(AppIconography.chevronRight),
+                    trailing: const SizedBox.square(
+                      dimension: 48,
+                      child: Icon(AppIconography.chevronRight, size: 20),
+                    ),
                     onTap: _showArchived,
                   ),
                 ),
@@ -1773,11 +1752,14 @@ class _SessionRow extends StatelessWidget {
       background: archiveAvailable
           ? const _SwipeArchiveBackground()
           : const SwipeDeleteBackground(),
-      child: ListTile(
-        minTileHeight: 64,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        minLeadingWidth: 32,
-        horizontalTitleGap: 12,
+      // A kit row (design standard §6) whose title and facts may wrap: a
+      // conversation title is the person's own words, and the facts line
+      // lost the time and diff at 390dp and even "Working" at 320dp/2.5x
+      // when cut to one line.
+      child: KitRow(
+        titleMaxLines: 2,
+        supportingMaxLines: largeText ? 3 : 2,
+        supportingKey: ValueKey('session-subtitle-${session.id}'),
         leading: SizedBox.square(
           dimension: 32,
           child: needsAttention
@@ -1792,20 +1774,16 @@ class _SessionRow extends StatelessWidget {
               : Icon(
                   pinned ? AppIconography.pin : AppIconography.chat,
                   size: 21,
+                  color: AppTheme.mutedOf(theme),
                   semanticLabel: pinned ? l10n.sessionPinned : null,
                 ),
         ),
-        title: Text(
-          presentedSessionTitle(
-            session,
-            fallback: _l10n(context).globalSessionsUntitled,
-            l10n: _l10n(context),
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+        title: presentedSessionTitle(
+          session,
+          fallback: _l10n(context).globalSessionsUntitled,
+          l10n: _l10n(context),
         ),
-        subtitle: _SessionRowSubtitle(
-          key: ValueKey('session-subtitle-${session.id}'),
+        supporting: _sessionFacts(
           // The blocker outranks "Working": a run waiting on an answer is
           // not making progress, and the colour says so. A finished result
           // nobody has looked at says Unreviewed.
@@ -1823,7 +1801,6 @@ class _SessionRow extends StatelessWidget {
               : isUnreviewed
               ? theme.colorScheme.primary
               : null,
-          maxLines: largeText ? 3 : 2,
           rest: [
             if (updated != null) relativeTimeLabel(updated, l10n: l10n),
             // The folder only earns its place when it differs from the open
@@ -1966,46 +1943,28 @@ class _SessionRow extends StatelessWidget {
   }
 }
 
-/// The row subtitle: an optional status word first (tinted when it asks for
-/// attention), then the usual dot-separated facts, wrapping to [maxLines].
-class _SessionRowSubtitle extends StatelessWidget {
-  const _SessionRowSubtitle({
-    super.key,
-    required this.status,
-    required this.statusColor,
-    required this.rest,
-    this.maxLines = 2,
-  });
-
-  final String? status;
-  final Color? statusColor;
-  final List<String> rest;
-  final int maxLines;
-
-  @override
-  Widget build(BuildContext context) {
-    final tail = rest.join(' · ');
-    return Text.rich(
-      TextSpan(
-        children: [
-          if (status case final status?)
-            TextSpan(
-              text: status,
-              style: statusColor == null
-                  ? null
-                  : TextStyle(color: statusColor, fontWeight: FontWeight.w600),
-            ),
-          if (status != null && tail.isNotEmpty) const TextSpan(text: ' · '),
-          if (tail.isNotEmpty) TextSpan(text: tail),
-        ],
-      ),
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
-      maxLines: maxLines,
-      overflow: TextOverflow.ellipsis,
-    );
-  }
+/// The row's facts: an optional status word first (tinted when it asks for
+/// attention), then the usual dot-separated facts. [KitRow] mutes the rest.
+InlineSpan? _sessionFacts({
+  required String? status,
+  required Color? statusColor,
+  required List<String> rest,
+}) {
+  final tail = rest.join(' · ');
+  if (status == null && tail.isEmpty) return null;
+  return TextSpan(
+    children: [
+      if (status != null)
+        TextSpan(
+          text: status,
+          style: statusColor == null
+              ? null
+              : TextStyle(color: statusColor, fontWeight: FontWeight.w600),
+        ),
+      if (status != null && tail.isNotEmpty) const TextSpan(text: ' · '),
+      if (tail.isNotEmpty) TextSpan(text: tail),
+    ],
+  );
 }
 
 /// One project entry opens the folder, workspace and management details.

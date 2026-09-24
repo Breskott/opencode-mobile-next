@@ -1,4 +1,4 @@
-/// The Workspace "AI Team" card (02-ux-flows-and-screens §2): one number,
+/// The Workspace "AI Team" section (02-ux-flows-and-screens §2): one number,
 /// one sentence, one action. Header with the provider named openly, the
 /// working-agent count, the host mode and the one-line performance
 /// disclaimer for the kind of host (03-onboarding §4); a hero percentage; a
@@ -8,6 +8,12 @@
 /// headline batch's row, while that batch is not done, the compact
 /// dispatch cycle strip (TEAM-116) says which step it is on and since
 /// when.
+///
+/// Design standard (docs/design/design-standard.md): a section of the Work
+/// list, not a card: its label, its rows on the list's own rails, and its
+/// actions in the one hierarchy. The Work tab's New conversation is the
+/// screen's one filled button, so Open is secondary and Refresh tertiary;
+/// empty and error are inline [KitStateView]s, loading is skeleton rows.
 ///
 /// States (§2.3): loading skeleton, empty, stale (dimmed, read-only except
 /// Refresh), error (honest copy from 03 §5) and normal. The card is never
@@ -26,6 +32,7 @@ import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import 'team_cycle_strip.dart';
 import 'team_discovery_card.dart' show teamHostDisclaimer, teamHostKindFor;
 import 'team_vocabulary.dart';
@@ -131,8 +138,6 @@ class TeamCardState extends State<TeamCard> with TickerProviderStateMixin {
 
   Widget _build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     final controller = widget.controller;
     final snapshot = controller.snapshot;
     // Each body carries its state key (`team-card-loading`, `-empty`,
@@ -172,24 +177,20 @@ class TeamCardState extends State<TeamCard> with TickerProviderStateMixin {
           );
         }
     }
-    return Card(
+    // A section, not a card (design standard §3, §6): the label, the
+    // host's line, then the state or the runs, on the list's own rails.
+    // A transparent ink surface of its own, as the card had, so its rows
+    // can splash wherever the section is placed.
+    return Material(
       key: const ValueKey('team-card'),
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      color: colors.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colors.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Header(controller: controller, l10n: l10n),
-            const SizedBox(height: 12),
-            body,
-          ],
-        ),
+      type: MaterialType.transparency,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Header(controller: controller, l10n: l10n),
+          body,
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
@@ -248,85 +249,76 @@ class _Header extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // A Wrap, not a Row: at large text the pill drops under the name
-        // instead of squeezing it.
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8,
-          runSpacing: 6,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(AppIconography.agent, size: 20, color: muted),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    l10n.teamUiCardTitle,
-                    key: const ValueKey('team-card-title'),
-                    style: theme.textTheme.titleSmall?.copyWith(color: muted),
-                  ),
-                ),
-              ],
-            ),
-            if (attention > 0)
-              _NeedsYouPill(
-                key: const ValueKey('team-card-needs-you'),
-                text: l10n.teamUiCardNeedsYou(attention),
-              ),
-          ],
+        // The section's label; what needs the person is a word in its
+        // corner, the way every section says its state (§6).
+        SectionLabel(
+          l10n.teamUiCardTitle,
+          key: const ValueKey('team-card-title'),
+          trailing: attention > 0
+              ? _NeedsYouPill(
+                  key: const ValueKey('team-card-needs-you'),
+                  text: l10n.teamUiCardNeedsYou(attention),
+                )
+              : null,
         ),
-        if (controller.phase == OrchestrationPhase.ready && snapshot.hasData)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(
-                  l10n.teamUiCardAgentsWorking(working),
-                  key: const ValueKey('team-card-agents-working'),
-                  style: small,
-                ),
-                dot,
-                Text(
-                  switch (hostMode) {
-                    OrchestrationHostMode.computer =>
-                      l10n.teamUiCardHostComputer,
-                    OrchestrationHostMode.phone => l10n.teamUiCardHostPhone,
-                  },
-                  key: const ValueKey('team-card-host-mode'),
-                  style: small,
-                ),
-                dot,
-                // The host's name is an identifier: LTR in every locale.
-                Text(
-                  hostName,
-                  key: const ValueKey('team-card-host-name'),
-                  style: small,
-                  textDirection: TextDirection.ltr,
-                ),
-                if (city.isNotEmpty) ...[
-                  dot,
-                  // The Gas City term is an identifier: LTR in every locale.
-                  Text(
-                    l10n.teamUiCardCity(city),
-                    key: const ValueKey('team-card-city'),
-                    style: small,
-                    textDirection: TextDirection.ltr,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        // The disclaimer follows the config, so it is there in every state:
-        // a sleeping laptop is exactly when the card is stale or failing.
         Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            teamHostDisclaimer(l10n, hostKind),
-            key: const ValueKey('team-card-disclaimer'),
-            style: small?.copyWith(height: 1.3),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (controller.phase == OrchestrationPhase.ready &&
+                  snapshot.hasData)
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      l10n.teamUiCardAgentsWorking(working),
+                      key: const ValueKey('team-card-agents-working'),
+                      style: small,
+                    ),
+                    dot,
+                    Text(
+                      switch (hostMode) {
+                        OrchestrationHostMode.computer =>
+                          l10n.teamUiCardHostComputer,
+                        OrchestrationHostMode.phone => l10n.teamUiCardHostPhone,
+                      },
+                      key: const ValueKey('team-card-host-mode'),
+                      style: small,
+                    ),
+                    dot,
+                    // The host's name is an identifier: LTR in every locale.
+                    Text(
+                      hostName,
+                      key: const ValueKey('team-card-host-name'),
+                      style: small,
+                      textDirection: TextDirection.ltr,
+                    ),
+                    if (city.isNotEmpty) ...[
+                      dot,
+                      // The Gas City term is an identifier: LTR in every
+                      // locale.
+                      Text(
+                        l10n.teamUiCardCity(city),
+                        key: const ValueKey('team-card-city'),
+                        style: small,
+                        textDirection: TextDirection.ltr,
+                      ),
+                    ],
+                  ],
+                ),
+              // The disclaimer follows the config, so it is there in every
+              // state: a sleeping laptop is exactly when the section is
+              // stale or failing.
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  teamHostDisclaimer(l10n, hostKind),
+                  key: const ValueKey('team-card-disclaimer'),
+                  style: small?.copyWith(height: 1.3),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -343,29 +335,21 @@ class _NeedsYouPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final amber = AppTheme.statusColor(theme, AppStatusTone.attention);
-    return Container(
-      constraints: const BoxConstraints(minHeight: 28),
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
-      decoration: BoxDecoration(
-        color: amber.withValues(alpha: .16),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(AppIconography.warning, size: 14, color: amber),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              text,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: amber,
-                fontWeight: FontWeight.w600,
-              ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(AppIconography.warning, size: 14, color: amber),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: amber,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -380,32 +364,11 @@ class _LoadingBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    final bone = theme.colorScheme.outlineVariant.withValues(alpha: .5);
-    Widget bar(double width, double height) => Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: bone,
-        borderRadius: BorderRadius.circular(height / 2),
-      ),
-    );
-    // A still skeleton: the header is real, the rest is shape only.
+    // The shape of the rows to come (§4); the label says what it waits on.
     return Semantics(
       key: const ValueKey('team-card-loading'),
       label: l10n.teamUiCardLoading,
-      child: ExcludeSemantics(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            bar(120, 28),
-            const SizedBox(height: 12),
-            bar(220, 14),
-            const SizedBox(height: 14),
-            bar(double.infinity, 6),
-          ],
-        ),
-      ),
+      child: const KitSkeletonRows(count: 2),
     );
   }
 }
@@ -419,22 +382,15 @@ class _EmptyBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    return Column(
+    return KitStateView(
       key: const ValueKey('team-card-empty'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(l10n.teamUiCardEmptyTitle, style: theme.textTheme.titleMedium),
-        const SizedBox(height: 4),
-        Text(
-          l10n.teamUiCardEmptyHint,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: AppTheme.mutedOf(theme),
-          ),
-        ),
-        const SizedBox(height: 14),
-        _Actions(onOpen: onOpen, onRefresh: onRefresh),
-      ],
+      size: KitStateSize.inline,
+      liveRegion: false,
+      icon: AppIconography.agent,
+      title: l10n.teamUiCardEmptyTitle,
+      body: l10n.teamUiCardEmptyHint,
+      secondary: _openAction(l10n, onOpen),
+      tertiary: [_refreshAction(l10n, onRefresh)],
     );
   }
 }
@@ -448,44 +404,38 @@ class _ErrorBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    final copy = teamErrorCopy(l10n, error?.kind);
-    return Column(
+    return KitStateView(
       key: const ValueKey('team-card-error'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              AppIconography.warning,
-              size: 20,
-              color: AppTheme.statusColor(theme, AppStatusTone.attention),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                copy,
-                key: const ValueKey('team-card-error-copy'),
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: FilledButton.tonalIcon(
-            key: const ValueKey('team-card-retry'),
-            onPressed: onRetry,
-            icon: const Icon(AppIcons.retry, size: 18),
-            label: Text(l10n.teamUiCardRetry),
-          ),
-        ),
-      ],
+      size: KitStateSize.inline,
+      liveRegion: false,
+      icon: AppIconography.warning,
+      tone: AppStatusTone.attention,
+      // The honest copy (03 §5) is the state itself.
+      title: teamErrorCopy(l10n, error?.kind),
+      titleKey: const ValueKey('team-card-error-copy'),
+      secondary: KitAction(
+        key: const ValueKey('team-card-retry'),
+        label: l10n.teamUiCardRetry,
+        icon: AppIcons.retry,
+        onPressed: onRetry,
+      ),
     );
   }
 }
+
+KitAction _openAction(AppLocalizations l10n, VoidCallback? onOpen) => KitAction(
+  key: const ValueKey('team-card-open'),
+  label: l10n.teamUiCardOpen,
+  onPressed: onOpen,
+);
+
+KitAction _refreshAction(AppLocalizations l10n, VoidCallback? onRefresh) =>
+    KitAction(
+      key: const ValueKey('team-card-refresh'),
+      label: l10n.teamUiCardRefresh,
+      icon: AppIconography.sync,
+      onPressed: onRefresh,
+    );
 
 // ---------------------------------------------------------------------------
 // Data: hero, sentence, bar, rows, constellation, actions
@@ -578,10 +528,7 @@ class _DataBody extends StatelessWidget {
         Text(
           hero,
           key: const ValueKey('team-card-hero'),
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            letterSpacing: -.5,
-          ),
+          style: theme.textTheme.titleLarge,
         ),
         const SizedBox(height: 4),
         Text(
@@ -639,34 +586,41 @@ class _DataBody extends StatelessWidget {
       ],
     );
 
-    return Column(
+    return Padding(
       key: const ValueKey('team-card-data'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (stale)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _Notice(
-              key: const ValueKey('team-card-stale'),
-              icon: AppIconography.cloudOff,
-              text: l10n.teamUiCardStale(time),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (stale)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _Notice(
+                key: const ValueKey('team-card-stale'),
+                icon: AppIconography.cloudOff,
+                text: l10n.teamUiCardStale(time),
+              ),
+            )
+          else if (controller.lastError?.kind ==
+              OrchestrationErrorKind.readFailed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _Notice(
+                key: const ValueKey('team-card-refresh-failed'),
+                icon: AppIconography.warning,
+                text: l10n.teamUiCardRefreshFailed(time),
+              ),
             ),
-          )
-        else if (controller.lastError?.kind ==
-            OrchestrationErrorKind.readFailed)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _Notice(
-              key: const ValueKey('team-card-refresh-failed'),
-              icon: AppIconography.warning,
-              text: l10n.teamUiCardRefreshFailed(time),
-            ),
+          // Stale numbers dim; they stay readable (never colour-only).
+          stale ? Opacity(opacity: .6, child: numbers) : numbers,
+          const SizedBox(height: 16),
+          // Open is disabled while stale; the notice above says why.
+          KitActionBlock(
+            secondary: _openAction(l10n, tapsAllowed ? onOpen : null),
+            tertiary: [_refreshAction(l10n, onRefresh)],
           ),
-        // Stale numbers dim; they stay readable (never colour-only).
-        stale ? Opacity(opacity: .6, child: numbers) : numbers,
-        const SizedBox(height: 14),
-        _Actions(onOpen: tapsAllowed ? onOpen : null, onRefresh: onRefresh),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -988,37 +942,6 @@ class _AgentDot extends StatelessWidget {
         end: 1.25,
       ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut)),
       child: dot,
-    );
-  }
-}
-
-class _Actions extends StatelessWidget {
-  const _Actions({required this.onOpen, required this.onRefresh});
-
-  final VoidCallback? onOpen;
-  final VoidCallback? onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        FilledButton.icon(
-          key: const ValueKey('team-card-open'),
-          onPressed: onOpen,
-          icon: const Icon(AppIconography.chevronRight, size: 18),
-          label: Text(l10n.teamUiCardOpen),
-        ),
-        TextButton.icon(
-          key: const ValueKey('team-card-refresh'),
-          onPressed: onRefresh,
-          icon: const Icon(AppIconography.sync, size: 18),
-          label: Text(l10n.teamUiCardRefresh),
-        ),
-      ],
     );
   }
 }

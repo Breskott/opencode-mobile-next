@@ -942,8 +942,15 @@ void main() {
         findsOneWidget,
       );
       expect(
+        // Open is a kit button (design standard §2): the Material button
+        // is inside it.
         tester
-            .widget<FilledButton>(find.byKey(const ValueKey('team-card-open')))
+            .widget<FilledButton>(
+              find.descendant(
+                of: find.byKey(const ValueKey('team-card-open')),
+                matching: find.byWidgetPredicate((w) => w is FilledButton),
+              ),
+            )
             .onPressed,
         isNull,
       );
@@ -969,7 +976,12 @@ void main() {
       expect(opened, 0);
       expect(
         tester
-            .widget<TextButton>(find.byKey(const ValueKey('team-card-refresh')))
+            .widget<TextButton>(
+              find.descendant(
+                of: find.byKey(const ValueKey('team-card-refresh')),
+                matching: find.byWidgetPredicate((w) => w is TextButton),
+              ),
+            )
             .onPressed,
         isNotNull,
       );

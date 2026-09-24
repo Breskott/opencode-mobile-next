@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/orchestration.dart';
+import 'package:opencode_mobile/state/profile_monitor.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -81,6 +83,22 @@ class WorkController extends CaptureController {
   final selected = <String?>[];
   int refreshes = 0;
 
+  /// The AI Team plugin's controller, when a test shows the team section.
+  OrchestrationController? team;
+
+  @override
+  OrchestrationController? get orchestration => team ?? super.orchestration;
+
+  /// A stand-in for the other servers' watcher, when a test shows them.
+  ProfileMonitor? monitor;
+
+  @override
+  ProfileMonitor get profileMonitor => monitor ?? super.profileMonitor;
+
+  @override
+  bool isProfileReadable(String id) =>
+      monitor != null || super.isProfileReadable(id);
+
   @override
   List<ProfileLocation> get recentLocations => recents;
 
@@ -124,12 +142,16 @@ Future<WorkController> workController({
   String name = 'This device (Termux)',
   WorkRepository? repository,
   bool otherProjects = false,
+  List<ServerProfile> otherServers = const [],
 }) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final store = SeededProfileStore(
     prefs: prefs,
-    seeded: [ServerProfile(id: 'phone', name: name, baseUrl: baseUrl)],
+    seeded: [
+      ServerProfile(id: 'phone', name: name, baseUrl: baseUrl),
+      ...otherServers,
+    ],
   );
   if (savedLocation) await store.setLocation('phone', directory: workCurrent);
   final controller = WorkController(store)
