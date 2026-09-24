@@ -481,7 +481,11 @@ void main() {
   });
 
   group('working button', () {
-    Widget button(ValueNotifier<bool> working, {IconData? icon}) => _app(
+    Widget button(
+      ValueNotifier<bool> working, {
+      IconData? icon,
+      bool reduced = false,
+    }) => _app(
       Scaffold(
         body: Center(
           child: ValueListenableBuilder<bool>(
@@ -496,7 +500,24 @@ void main() {
           ),
         ),
       ),
+      reduced: reduced,
     );
+
+    testWidgets('reduced motion: the spinner shows at once, without error', (
+      tester,
+    ) async {
+      final working = ValueNotifier(false);
+      addTearDown(working.dispose);
+      await tester.pumpWidget(button(working, reduced: true));
+      working.value = true;
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      working.value = false;
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
 
     testWidgets('the icon and the spinner crossfade in one slot', (
       tester,

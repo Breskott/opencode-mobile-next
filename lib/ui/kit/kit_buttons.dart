@@ -147,27 +147,35 @@ class KitButton extends StatelessWidget {
         ),
       );
     } else if (role != KitButtonRole.tertiary) {
-      // No icon: the spinner opens its own room before the words.
+      // No icon: the spinner opens its own room before the words. (Under
+      // reduced motion no AnimatedSize at all: at zero duration it would
+      // re-dirty itself during layout.)
+      final slot = AnimatedSwitcher(
+        duration: still ? Duration.zero : KitMotion.quick,
+        child: working
+            ? const Padding(
+                key: ValueKey('kit-button-working'),
+                padding: EdgeInsetsDirectional.only(end: 8),
+                child: _Spinner(),
+              )
+            : const SizedBox.shrink(),
+      );
       child = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AnimatedSize(
-            duration: still ? Duration.zero : KitMotion.quick,
-            curve: KitMotion.enter,
-            child: AnimatedSwitcher(
-              duration: still ? Duration.zero : KitMotion.quick,
-              child: working
-                  ? const Padding(
-                      key: ValueKey('kit-button-working'),
-                      padding: EdgeInsetsDirectional.only(end: 8),
-                      child: _Spinner(),
-                    )
-                  : const SizedBox.shrink(),
+          if (still)
+            slot
+          else
+            AnimatedSize(
+              duration: KitMotion.quick,
+              curve: KitMotion.enter,
+              child: slot,
             ),
-          ),
           Flexible(child: text),
         ],
       );
+    } else if (working) {
+      leading = const _Spinner();
     } else if (icon != null) {
       leading = Icon(icon, size: 19);
     }
@@ -229,11 +237,9 @@ class _Spinner extends StatelessWidget {
   const _Spinner({super.key});
 
   @override
-  Widget build(BuildContext context) => const Center(
-    child: SizedBox.square(
-      dimension: 18,
-      child: CircularProgressIndicator(strokeWidth: 2),
-    ),
+  Widget build(BuildContext context) => const SizedBox.square(
+    dimension: 18,
+    child: CircularProgressIndicator(strokeWidth: 2),
   );
 }
 
