@@ -522,7 +522,9 @@ void main() {
         await _settle(tester);
         expect(tester.getSize(cancel).height, greaterThanOrEqualTo(48));
         expect(
-          tester.getSize(find.byKey(const Key('kit-state-details'))).height,
+          tester
+              .getSize(find.byKey(const Key('setup-progress-details')))
+              .height,
           greaterThanOrEqualTo(48),
         );
 
@@ -540,7 +542,7 @@ void main() {
           ),
         );
         await _settle(tester);
-        final details = find.byKey(const Key('kit-state-details'));
+        final details = find.byKey(const Key('setup-progress-details'));
         await tester.ensureVisible(details);
         await _settle(tester);
         await tester.tap(details);

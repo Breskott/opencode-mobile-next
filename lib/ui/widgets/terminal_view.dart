@@ -15,11 +15,21 @@ class TerminalView extends StatefulWidget {
     this.command,
     required this.output,
     this.tailLines = 40,
+    this.framed = true,
+    this.wrap = true,
   });
 
   final String? command;
   final String output;
   final int tailLines;
+
+  /// Draws its own tinted box. Off where the host already frames the
+  /// output (setup's log panel), so there is one box, not a box in a box.
+  final bool framed;
+
+  /// Wraps long lines. Off keeps each line on one line and lets the output
+  /// scroll sideways, as a terminal does (setup's apt lines).
+  final bool wrap;
 
   /// Past this many lines the full output opens in the file viewer rather
   /// than inline: laying out tens of thousands of lines stalls a phone.
@@ -62,19 +72,22 @@ class _TerminalViewState extends State<TerminalView> {
         ..._outputLineSpans(shown[i], palette),
       ],
     ];
+    final text = SelectableText.rich(TextSpan(style: base, children: spans));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           key: const Key('terminal-view'),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: theme.brightness == Brightness.dark
-                ? Colors.black.withValues(alpha: .4)
-                : Colors.black.withValues(alpha: .04),
-            borderRadius: BorderRadius.circular(6),
-          ),
+          padding: widget.framed ? const EdgeInsets.all(8) : EdgeInsets.zero,
+          decoration: widget.framed
+              ? BoxDecoration(
+                  color: theme.brightness == Brightness.dark
+                      ? Colors.black.withValues(alpha: .4)
+                      : Colors.black.withValues(alpha: .04),
+                  borderRadius: BorderRadius.circular(6),
+                )
+              : null,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -88,7 +101,14 @@ class _TerminalViewState extends State<TerminalView> {
                   onPressed: () => setState(() => _all = true),
                   child: Text(l10n.terminalShowEarlier(hidden)),
                 ),
-              SelectableText.rich(TextSpan(style: base, children: spans)),
+              if (widget.wrap)
+                text
+              else
+                SingleChildScrollView(
+                  key: const Key('terminal-view-sideways'),
+                  scrollDirection: Axis.horizontal,
+                  child: text,
+                ),
               if (_all && tooLong)
                 TextButton(
                   key: const Key('terminal-open-full'),

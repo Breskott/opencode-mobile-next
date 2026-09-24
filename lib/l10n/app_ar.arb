@@ -4673,6 +4673,8 @@
   "phoneSetupReadyCreating": "جارٍ إنشاء المشروع",
   "phoneSetupReadyOr": "أو",
   "phoneSetupReadyOpenExisting": "فتح مجلد موجود",
+  "phoneSetupReadyCreateOpen": "إنشاء وفتح",
+  "phoneSetupReadyOpenFolderInstead": "فتح مجلد بدلًا من ذلك",
   "phoneSetupReadyNameEmpty": "اكتب اسمًا.",
   "phoneSetupReadyNameOneFolder": "استخدم اسمًا واحدًا بلا شرطات مائلة.",
   "phoneSetupReadyNameInvalid": "استخدم أحرفًا لاتينية وأرقامًا و - _ . وابدأ بحرف أو رقم (حتى 64).",

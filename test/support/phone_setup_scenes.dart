@@ -159,6 +159,44 @@ Future<void> _openCustomize(WidgetTester tester) async {
   }
 }
 
+/// Opens the progress screen's Details (the live log), found by its words
+/// so the same step works on the code before and after the redesign.
+Future<void> _openDetails(WidgetTester tester) async {
+  await tester.ensureVisible(find.text('Details'));
+  await tester.pump();
+  await tester.tap(find.text('Details'));
+  for (var i = 0; i < 12; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
+/// What apt prints while it installs Git: the lines the owner saw wrap in
+/// two (design regressions ledger row 16).
+final sceneAptLog = [
+  for (var i = 0; i < 33; i++)
+    'Get:${i + 1} http://ports.ubuntu.com/ubuntu-ports noble/main arm64',
+  'Selecting previously unselected package git.',
+  'Preparing to unpack .../26-git_1%3a2.43.0-1ubuntu7.3_arm64.deb ...',
+  'Unpacking git (1:2.43.0-1ubuntu7.3) ...',
+  'Setting up libexpat1:arm64 (2.6.1-2ubuntu0.6) ...',
+  'Setting up libkeyutils1:arm64 (1.6.3-3build1) ...',
+  'Setting up libgdbm6t64:arm64 (1.23-5.1build1) ...',
+  'Setting up libgdbm-compat4t64:arm64 (1.23-5.1build1) ...',
+  'Setting up libcbor0.10:arm64 (0.10.2-1.2ubuntu2) ...',
+  'Setting up libbrotli1:arm64 (1.1.0-2build2) ...',
+  'Setting up libpsl5t64:arm64 (0.21.2-1.1build1) ...',
+  'Setting up libnghttp2-14:arm64 (1.59.0-1ubuntu0.4) ...',
+  'Setting up libkrb5support0:arm64 (1.20.1-6ubuntu2.10) ...',
+  'Setting up libsasl2-modules-db:arm64 (2.1.28+dfsg1-5ubuntu3.1) ...',
+  'Setting up librtmp1:arm64 (2.4+20151223.gitfa8646d.1-2build7) ...',
+  'Setting up perl-modules-5.38 (5.38.2-3.2ubuntu0.6) ...',
+  'Setting up libk5crypto3:arm64 (1.20.1-6ubuntu2.10) ...',
+  'Setting up libsasl2-2:arm64 (2.1.28+dfsg1-5ubuntu3.1) ...',
+  'Setting up git-man (1:2.43.0-1ubuntu7.3) ...',
+  'Setting up git (1:2.43.0-1ubuntu7.3) ...',
+  'Processing triggers for libc-bin (2.39-0ubuntu8.4) ...',
+].join('\n');
+
 Widget _start({TermuxRunningServer? termux, bool inApp = false}) =>
     PhoneSetupStartScreen(
       termuxProbe: () async => termux ?? const TermuxRunningServer.absent(),
@@ -305,6 +343,18 @@ final setupScenes = <SetupScene>[
     ),
   ),
   SetupScene(
+    'setup_progress_log',
+    home: _progress,
+    push: true,
+    progress: sceneJob(
+      eta: 130,
+      done: {'linux', 'essentials', 'python'},
+      current: sceneNodeDownloading,
+      log: sceneAptLog,
+    ),
+    before: _openDetails,
+  ),
+  SetupScene(
     'setup_ready',
     home: () => PhoneSetupReadyScreen(linux: SceneLinux()),
   ),
@@ -397,7 +447,9 @@ Future<void> pumpSetupScene(
       MaterialPageRoute<void>(builder: (_) => scene.home()),
     );
   }
-  for (var i = 0; i < 8; i++) {
+  // Long enough for a drawing's entrance (KitMotion.entrance, 900 ms) to
+  // finish, so a render shows the finished frame.
+  for (var i = 0; i < 15; i++) {
     await tester.pump(const Duration(milliseconds: 100));
   }
   await scene.before?.call(tester);

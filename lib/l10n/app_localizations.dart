@@ -28187,6 +28187,18 @@ abstract class AppLocalizations {
   /// **'Open an existing folder'**
   String get phoneSetupReadyOpenExisting;
 
+  /// Screen C's one primary button: makes the named project and opens its first conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Create and open'**
+  String get phoneSetupReadyCreateOpen;
+
+  /// Screen C's quiet alternative to naming a new project: opens the folder sheet (only when tapped)
+  ///
+  /// In en, this message translates to:
+  /// **'Open a folder instead'**
+  String get phoneSetupReadyOpenFolderInstead;
+
   /// Project name is empty
   ///
   /// In en, this message translates to:

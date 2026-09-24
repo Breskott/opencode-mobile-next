@@ -12,13 +12,19 @@ import '../../../state/profiles.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../navigation/chat_route.dart';
+import '../../kit/scenes/setup_ready_scene.dart';
 import '../../widgets/product_states.dart';
 import '../project_folder_actions.dart';
+import 'phone_setup_hero.dart';
 
 /// Screen C of phone setup (docs/design/phone-setup-v2-2026-09-24.md): the
 /// agent is running, so the only thing left is a place to work. One name
 /// makes a project and lands in its first conversation with the keyboard up;
-/// the existing folder sheet is the quiet alternative.
+/// the existing folder sheet is the quiet alternative, opened only when the
+/// person taps it, so there is never a second name field on top.
+///
+/// It opens with a celebration ([SetupReadyScene], played once) at the top
+/// of the page, not a lone check floating mid-screen.
 class PhoneSetupReadyScreen extends ConsumerStatefulWidget {
   const PhoneSetupReadyScreen({super.key, this.linux});
 
@@ -186,7 +192,6 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = _l10n;
     final field = TextField(
       key: const ValueKey('phone-setup-ready-name'),
@@ -230,18 +235,11 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
         ),
         body: SafeArea(
           top: false,
-          // One state (design standard §3): the check, what is ready, the
-          // one thing left (a name, then Create) and the quiet other way.
-          child: KitStateView(
-            icon: AppIconography.check,
-            tone: AppStatusTone.ok,
-            iconChild: ExcludeSemantics(
-              child: ReadyCheck(
-                color: AppTheme.statusColor(theme, AppStatusTone.ok),
-                size: 26,
-                ring: false,
-              ),
-            ),
+          // One step: the celebration, what is ready, the one way on (a
+          // name, then Create and open) and the quiet other way, a folder
+          // that exists, which opens the folder sheet only when asked.
+          child: PhoneSetupHero(
+            scene: const SetupReadyScene(),
             title: l10n.phoneSetupReadyTitle,
             titleKey: const ValueKey('phone-setup-ready-title'),
             body: l10n.phoneSetupReadyNameTitle,
@@ -249,14 +247,14 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
             content: field,
             primary: KitAction(
               key: const ValueKey('phone-setup-ready-create'),
-              label: l10n.phoneSetupReadyCreate,
+              label: l10n.phoneSetupReadyCreateOpen,
               onPressed: _busy ? null : _create,
               working: _busy,
             ),
             tertiary: [
               KitAction(
                 key: const ValueKey('phone-setup-ready-open-existing'),
-                label: l10n.phoneSetupReadyOpenExisting,
+                label: l10n.phoneSetupReadyOpenFolderInstead,
                 onPressed: _busy ? null : _openExisting,
               ),
             ],
@@ -265,112 +263,4 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
       ),
     );
   }
-}
-
-/// The small success moment: a check that draws itself in once. No confetti,
-/// no loop; with reduced motion it is simply there.
-class ReadyCheck extends StatefulWidget {
-  const ReadyCheck({
-    super.key,
-    required this.color,
-    this.size = 32,
-    this.ring = true,
-  });
-
-  final Color color;
-  final double size;
-
-  /// Draws its own ring; off inside a state's tonal circle, which is one.
-  final bool ring;
-
-  static const duration = Duration(milliseconds: 420);
-
-  @override
-  State<ReadyCheck> createState() => _ReadyCheckState();
-}
-
-class _ReadyCheckState extends State<ReadyCheck>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _draw = AnimationController(
-    vsync: this,
-    duration: ReadyCheck.duration,
-  );
-  bool _started = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_started) return;
-    _started = true;
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _draw.value = 1;
-    } else {
-      unawaited(_draw.forward());
-    }
-  }
-
-  @override
-  void dispose() {
-    _draw.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => SizedBox.square(
-    key: const ValueKey('phone-setup-ready-check'),
-    dimension: widget.size,
-    child: AnimatedBuilder(
-      animation: _draw,
-      builder: (context, _) => CustomPaint(
-        painter: _CheckPainter(
-          progress: Curves.easeOutCubic.transform(_draw.value),
-          color: widget.color,
-          ring: widget.ring,
-        ),
-      ),
-    ),
-  );
-}
-
-class _CheckPainter extends CustomPainter {
-  const _CheckPainter({
-    required this.progress,
-    required this.color,
-    required this.ring,
-  });
-
-  final double progress;
-  final Color color;
-  final bool ring;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final stroke = size.width * .09;
-    if (ring) {
-      final paint = Paint()
-        ..color = color.withValues(alpha: .18 + .82 * progress)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke;
-      final center = size.center(Offset.zero);
-      canvas.drawCircle(center, size.width / 2 - stroke / 2, paint);
-    }
-    final check = Path()
-      ..moveTo(size.width * .28, size.height * .52)
-      ..lineTo(size.width * .44, size.height * .67)
-      ..lineTo(size.width * .73, size.height * .36);
-    final metric = check.computeMetrics().first;
-    canvas.drawPath(
-      metric.extractPath(0, metric.length * progress),
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..strokeWidth = stroke,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_CheckPainter old) =>
-      old.progress != progress || old.color != color || old.ring != ring;
 }

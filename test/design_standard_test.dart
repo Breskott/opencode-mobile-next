@@ -74,10 +74,18 @@ const _migrated = <String, List<String>>{
   'lib/ui/screens/phone_setup/phone_setup_progress_screen.dart': [
     'setup_progress_running',
     'setup_progress_failed',
+    'setup_progress_log',
   ],
   'lib/ui/widgets/setup_progress_view.dart': [
     'setup_progress_running',
     'setup_progress_failed',
+    'setup_progress_log',
+  ],
+  // Motion and illustration, slice A (docs/design/motion-and-illustration-
+  // 2026-09-25.md): the setup hero page (start and ready).
+  'lib/ui/screens/phone_setup/phone_setup_hero.dart': [
+    'setup_start',
+    'setup_ready',
   ],
   'lib/ui/screens/phone_setup/phone_setup_ready_screen.dart': ['setup_ready'],
   'lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart': [

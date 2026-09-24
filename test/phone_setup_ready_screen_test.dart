@@ -8,6 +8,8 @@ import 'package:opencode_mobile/builtin/builtin_server.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'package:opencode_mobile/ui/kit/scenes/setup_ready_scene.dart';
 import 'package:opencode_mobile/ui/navigation/chat_route.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_ready_screen.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_routes.dart';
@@ -195,7 +197,7 @@ void main() {
     expect(find.text('Name your first project'), findsOneWidget);
     expect(find.text('Letters, numbers, - _ .'), findsOneWidget);
     expect(tester.widget<TextField>(field()).controller!.text, 'my-app');
-    expect(find.text('Open an existing folder'), findsOneWidget);
+    expect(find.text('Open a folder instead'), findsOneWidget);
     // The words the design rules out.
     for (final banned in ['Ubuntu', '127.0.0.1', 'built-in', 'server']) {
       expect(find.textContaining(banned), findsNothing, reason: banned);
@@ -330,38 +332,26 @@ void main() {
     expect(linux.created, isEmpty);
   });
 
-  testWidgets('the check draws in once, and is still with reduced motion', (
+  testWidgets('the celebration plays once, and is still with reduced motion', (
     tester,
   ) async {
+    // Loops allowed, as in the app: a resting screen must still settle.
+    KitMotion.loops = true;
+    addTearDown(() => KitMotion.loops = false);
     await mount(tester, reduceMotion: false);
     // pumpAndSettle returned: the one animation is over and nothing loops.
     expect(tester.hasRunningAnimations, isFalse);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is KitIllustration && w.scene is SetupReadyScene,
+      ),
+      findsOneWidget,
+    );
     await tester.pumpWidget(const SizedBox());
 
-    await tester.pumpWidget(
-      MediaQuery(
-        data: const MediaQueryData(disableAnimations: true),
-        child: Directionality(
-          textDirection: TextDirection.ltr,
-          child: ReadyCheck(color: Colors.green),
-        ),
-      ),
-    );
+    await mount(tester);
+    // Reduced motion: the finished drawing at once, nothing to wait for.
     expect(tester.hasRunningAnimations, isFalse);
-
-    await tester.pumpWidget(const SizedBox());
-    await tester.pumpWidget(
-      const MediaQuery(
-        data: MediaQueryData(),
-        child: Directionality(
-          textDirection: TextDirection.ltr,
-          child: ReadyCheck(color: Colors.green),
-        ),
-      ),
-    );
-    expect(tester.hasRunningAnimations, isTrue);
-    // It finishes by itself, within a few frames: it never loops.
-    expect(await tester.pumpAndSettle(), lessThan(10));
   });
 
   for (final locale in const [Locale('en'), Locale('ar')]) {
