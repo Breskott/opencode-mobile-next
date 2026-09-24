@@ -104,7 +104,8 @@ Details, below the actions.
 ## Builds
 
 - Branch `fix/work-tab-cleanup`, from `feat/phone-setup-v2` @ `4699191e`, with
-  `4bd1748e` (design standard) cherry-picked. No APK built.
+  `4bd1748e` (design standard) cherry-picked as `4d5005ba`.
+- Code, tests, renders and goldens: commit `acdd5efc`. No APK built.
 
 ## Devices
 
