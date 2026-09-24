@@ -21254,10 +21254,10 @@ abstract class AppLocalizations {
   /// **'Start runs from the host for now.'**
   String get teamUiCardEmptyHint;
 
-  /// Workspace AI Team card empty state, first line
+  /// AI Team empty runs list, first line (Workspace card and home). 'Recent': a host lists finished runs for a bounded time, so the list can be empty after the team has worked
   ///
   /// In en, this message translates to:
-  /// **'No runs yet.'**
+  /// **'No recent runs.'**
   String get teamUiCardEmptyTitle;
 
   /// Workspace AI Team card error: the supervisor answered but the configured city is not running
@@ -21408,6 +21408,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for merge'**
   String get teamUiCardRunStateWaitingMerge;
+
+  /// Run state word (card row, home row) for a finished run whose work landed on its target branch
+  ///
+  /// In en, this message translates to:
+  /// **'Done · merged'**
+  String get teamUiCardRunStateMerged;
 
   /// Small secondary Gas City term beside a batch run title
   ///
@@ -21743,6 +21749,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needs you'**
   String get teamUiHomeRunNeedsYou;
+
+  /// AI Team home run row subtitle part for a finished run; when is a relative age such as '5h ago' or a date
+  ///
+  /// In en, this message translates to:
+  /// **'Finished {when}'**
+  String teamUiHomeRunFinished(String when);
 
   /// AI Team home run row progress from steps or work items
   ///

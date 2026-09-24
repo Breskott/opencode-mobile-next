@@ -13405,9 +13405,9 @@
   "@teamUiCardEmptyHint": {
     "description": "Workspace AI Team card empty state, second line (Sprint A: no start-a-run on the phone)"
   },
-  "teamUiCardEmptyTitle": "No runs yet.",
+  "teamUiCardEmptyTitle": "No recent runs.",
   "@teamUiCardEmptyTitle": {
-    "description": "Workspace AI Team card empty state, first line"
+    "description": "AI Team empty runs list, first line (Workspace card and home). 'Recent': a host lists finished runs for a bounded time, so the list can be empty after the team has worked"
   },
   "teamUiCardErrorCityNotRunning": "The team host is starting. Try again in a moment.",
   "@teamUiCardErrorCityNotRunning": {
@@ -13538,6 +13538,10 @@
   "teamUiCardRunStateWaitingMerge": "Waiting for merge",
   "@teamUiCardRunStateWaitingMerge": {
     "description": "Run state word (card row, home row, run detail) when every open work item of the batch is in the merge agent's hands (TEAM-117)"
+  },
+  "teamUiCardRunStateMerged": "Done · merged",
+  "@teamUiCardRunStateMerged": {
+    "description": "Run state word (card row, home row) for a finished run whose work landed on its target branch"
   },
   "teamUiCardRunTermBatch": "convoy",
   "@teamUiCardRunTermBatch": {
@@ -13868,6 +13872,15 @@
   "teamUiHomeRunNeedsYou": "Needs you",
   "@teamUiHomeRunNeedsYou": {
     "description": "AI Team home run row marker when a gate waits on the person for this run"
+  },
+  "teamUiHomeRunFinished": "Finished {when}",
+  "@teamUiHomeRunFinished": {
+    "description": "AI Team home run row subtitle part for a finished run; when is a relative age such as '5h ago' or a date",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
   },
   "teamUiHomeRunProgress": "{done} of {total} done",
   "@teamUiHomeRunProgress": {

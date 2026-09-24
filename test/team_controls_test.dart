@@ -775,7 +775,7 @@ void main() {
       );
       await pumpHome(tester, controller);
       expect(key('team-home-runs-empty'), findsOneWidget);
-      expect(find.text('No runs yet.'), findsOneWidget);
+      expect(find.text('No recent runs.'), findsOneWidget);
       expect(
         find.text(
           'A run is a job the team works through. Start one and its '

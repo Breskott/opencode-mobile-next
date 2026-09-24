@@ -17,6 +17,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/orchestration/adapters/fixture/fixture_gateway.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/dto/dto.dart';
+import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_gateway.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_mappers.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
@@ -27,6 +28,8 @@ import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/gascity_recorded_city.dart';
 
 Directory _findFixtureRoot() {
   var dir = Directory.current;
@@ -50,6 +53,9 @@ const _blockedPending = <String, Object?>{
   'options': ['replace', 'keep', 'stop'],
   'metadata': {'bead': 'oc-loy', 'fixture.scenario': 'blocked'},
 };
+
+/// Real sockets inside a widget test (the binding's default answers 400).
+class _RealHttp extends HttpOverrides {}
 
 /// The fixture with per-scope overrides, a read counter and an owned event
 /// stream so a test can drop the connection.
@@ -663,7 +669,9 @@ void main() {
         find.byKey(const ValueKey('team-home-runs-empty')),
         findsOneWidget,
       );
-      expect(find.text('No runs yet.'), findsOneWidget);
+      // Honest: a host lists finished runs for a bounded time only.
+      expect(find.text('No recent runs.'), findsOneWidget);
+      expect(find.text('No runs yet.'), findsNothing);
       expect(
         find.text(
           'A run is a job the team works through. Start one and its '
@@ -672,6 +680,75 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Runs (0)'), findsOneWidget);
+    });
+
+    testWidgets('a run that finished and merged stays under Completed: '
+        'read by the Gas City gateway from the recorded city', (tester) async {
+      // The live emulator city after the hello.py task merged: /convoys is
+      // empty, the convoy is closed. Read through the real gateway.
+      clock = recordedConvoyClosedAt.add(const Duration(hours: 5));
+      // Widget tests answer every HttpClient request with 400; this read
+      // goes over a real loopback socket.
+      final recorded = await tester.runAsync(
+        () => HttpOverrides.runWithHttpOverrides(() async {
+          final city = await RecordedCity.start();
+          final gateway = GasCityGateway(
+            url: city.url,
+            city: recordedCity,
+            clock: () => clock,
+          );
+          try {
+            return await gateway.runs();
+          } finally {
+            await gateway.close();
+            await city.close();
+          }
+        }, _RealHttp()),
+      );
+      final (controller, _) = await boot(
+        configure: (g) => g.runsOverride = recorded,
+      );
+      await pumpHome(tester, controller);
+
+      // All: no empty state, the run counted, done work in its group.
+      expect(find.byKey(const ValueKey('team-home-runs-empty')), findsNothing);
+      expect(find.text('No runs yet.'), findsNothing);
+      expect(find.text('No recent runs.'), findsNothing);
+      expect(find.text('Runs (1)'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('team-home-completed-group')),
+        findsOneWidget,
+      );
+
+      // Completed lists it with its outcome and when it finished.
+      await tester.tap(
+        find.byKey(const ValueKey('team-home-filter-completed')),
+      );
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('team-home-run-ma-lqw')),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Create hello.py that prints Hello from the AI Team'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<Text>(
+              find.byKey(const ValueKey('team-home-run-state-ma-lqw')),
+            )
+            .data,
+        'Done · merged',
+      );
+      expect(
+        find.text('Batch · convoy · 1 of 1 done · Finished 5h ago'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('team-home-runs-empty-filtered')),
+        findsNothing,
+      );
     });
 
     testWidgets('no runs, and this phone cannot start one: no button', (
@@ -1175,7 +1252,7 @@ void main() {
       // keeps "Try again" and never claims there are no runs.
       expect(find.text('Try again'), findsOneWidget);
       expect(find.byKey(const ValueKey('team-home-runs-empty')), findsNothing);
-      expect(find.text('No runs yet.'), findsNothing);
+      expect(find.text('No recent runs.'), findsNothing);
       expect(
         find.text(
           'The team host can’t be reached. AI Team works over your Tailscale '

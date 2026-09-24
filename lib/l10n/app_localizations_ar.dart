@@ -13337,7 +13337,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiCardEmptyHint => 'ابدأ التشغيلات من المضيف في الوقت الحالي.';
 
   @override
-  String get teamUiCardEmptyTitle => 'لا توجد تشغيلات بعد.';
+  String get teamUiCardEmptyTitle => 'لا توجد تشغيلات حديثة.';
 
   @override
   String get teamUiCardErrorCityNotRunning =>
@@ -13449,6 +13449,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiCardRunStateWaitingMerge => 'بانتظار الدمج';
+
+  @override
+  String get teamUiCardRunStateMerged => 'مكتمل · دُمج';
 
   @override
   String get teamUiCardRunTermBatch => 'convoy';
@@ -13661,6 +13664,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiHomeRunNeedsYou => 'يحتاجك';
+
+  @override
+  String teamUiHomeRunFinished(String when) {
+    return 'انتهى $when';
+  }
 
   @override
   String teamUiHomeRunProgress(int done, int total) {
