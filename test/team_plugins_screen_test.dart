@@ -227,9 +227,12 @@ void main() {
     }
   }
 
-  String subtitle(WidgetTester tester) => tester
-      .widget<Text>(find.byKey(const ValueKey('plugins-ai-team-subtitle')))
-      .data!;
+  String subtitle(WidgetTester tester) {
+    final text = tester.widget<Text>(
+      find.byKey(const ValueKey('plugins-ai-team-subtitle')),
+    );
+    return text.data ?? text.textSpan!.toPlainText();
+  }
 
   Set<String> dataKeys() => {
     for (final key in prefs.getKeys())
@@ -239,7 +242,7 @@ void main() {
   };
 
   group('row subtitles', () {
-    testWidgets('off while discovery runs, then "Off · Add manually"', (
+    testWidgets('off while discovery runs, and after it ("Off")', (
       tester,
     ) async {
       probe.gate = Completer<void>();
@@ -248,7 +251,7 @@ void main() {
       expect(subtitle(tester), l10n.teamUiRowOff);
       probe.gate!.complete();
       await settle(tester);
-      expect(subtitle(tester), l10n.teamUiRowOffAddManually);
+      expect(subtitle(tester), l10n.teamUiRowOff);
       // The front port first (controls), then the bare supervisor.
       expect(probe.calls, [
         ('http://100.100.1.2:8373', null),
@@ -296,7 +299,7 @@ void main() {
       await pump(tester, controller);
       await settle(tester);
       expect(probe.calls, isEmpty);
-      expect(subtitle(tester), l10n.teamUiRowOffAddManually);
+      expect(subtitle(tester), l10n.teamUiRowOff);
     });
 
     testWidgets('found on the server host', (tester) async {
@@ -304,7 +307,7 @@ void main() {
       final controller = await boot(profile());
       await pump(tester, controller);
       await settle(tester);
-      expect(subtitle(tester), l10n.teamUiRowFound('Workstation', '1.4.1'));
+      expect(subtitle(tester), l10n.pluginsTeamRowFound('Workstation'));
       expect(find.byKey(const ValueKey('team-discovery-card')), findsOneWidget);
     });
 
@@ -577,9 +580,20 @@ void main() {
           await stored.load();
           expect(stored.profiles.single.orchestration!.hostKind, kind);
           // The sheet now carries this kind's disclaimer and, for a laptop
-          // or WSL, names the kind on the Host row.
-          await tester.tap(find.byKey(const ValueKey('plugins-ai-team-row')));
+          // or WSL, names the kind on the Host row. The sheet the form was
+          // opened from is still up; close it and open a fresh one from the
+          // row, so what follows is read from a sheet the row really opened
+          // (the row sat under the old sheet, and a tap on it hit nothing).
+          final sheet = find.byKey(const ValueKey('team-plugin-sheet'));
+          expect(sheet, findsOneWidget);
+          Navigator.of(tester.element(sheet)).pop();
           await tester.pumpAndSettle();
+          expect(sheet, findsNothing);
+          await tester.tap(
+            find.byKey(const ValueKey('plugins-ai-team-row')).hitTestable(),
+          );
+          await tester.pumpAndSettle();
+          expect(sheet, findsOneWidget);
           expect(
             tester
                 .widget<Text>(
@@ -707,7 +721,7 @@ void main() {
         prefs.getString(OrchestrationStore.discoveryDismissedKey(_profileId)),
         isNotNull,
       );
-      expect(subtitle(tester), l10n.teamUiRowOffAddManually);
+      expect(subtitle(tester), l10n.teamUiRowOff);
 
       // A fresh screen remembers the dismissal and does not probe again.
       probe.calls.clear();
@@ -790,7 +804,7 @@ void main() {
         isTrue,
       );
       expect(find.byKey(const ValueKey('team-plugin-sheet')), findsNothing);
-      expect(subtitle(tester), l10n.teamUiRowOffAddManually);
+      expect(subtitle(tester), l10n.teamUiRowOff);
     });
 
     testWidgets('keep leaves everything in place', (tester) async {

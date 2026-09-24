@@ -190,7 +190,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(PopupMenuButton<String>).first);
+      // The saved server's row menu.
+      await tester.tap(
+        find.byKey(const ValueKey('server-menu-account-fixture')),
+      );
       await tester.pumpAndSettle();
       await _tap(tester, 'Codex account');
       expect(find.text('Ready to sign in'), findsOneWidget);

@@ -127,101 +127,95 @@ class ServerSwitcherSheet extends StatelessWidget {
             // A live server the app found on this phone outranks the saved
             // ones and is controlled where it is shown (plan 5.7). The entry
             // decides on its own whether there is anything to show.
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TermuxRunningServerEntry(
-                profiles: profiles,
-                busy: false,
-                revision: 0,
-                connectedProfileID: controller.api == null ? null : current?.id,
-                busyConversations: controller.busySessions.length,
-                actions: () {
-                  final controls = LocalServerControls(
-                    store: controller.store,
-                    connection: controller,
+            TermuxRunningServerEntry(
+              profiles: profiles,
+              busy: false,
+              revision: 0,
+              connectedProfileID: controller.api == null ? null : current?.id,
+              busyConversations: controller.busySessions.length,
+              actions: () {
+                final controls = LocalServerControls(
+                  store: controller.store,
+                  connection: controller,
+                );
+                return LocalServerCardActions(
+                  restart: () async => controls.restart(),
+                  stop: controls.stop,
+                );
+              }(),
+              onDisconnect: () async {
+                if (!await confirmDisconnectServer(context, controller)) {
+                  return;
+                }
+                await controller.disconnect(keepActive: true);
+                if (navigator.mounted) {
+                  navigator.pop(
+                    const ServerSwitcherLeave(alreadyDisconnected: true),
                   );
-                  return LocalServerCardActions(
-                    restart: () async => controls.restart(),
-                    stop: controls.stop,
-                  );
-                }(),
-                onDisconnect: () async {
-                  if (!await confirmDisconnectServer(context, controller)) {
-                    return;
-                  }
-                  await controller.disconnect(keepActive: true);
-                  if (navigator.mounted) {
-                    navigator.pop(
-                      const ServerSwitcherLeave(alreadyDisconnected: true),
-                    );
-                  }
-                },
-                onForget: (profile) => navigator.pop(
-                  ServerSwitcherOpenServers(
-                    ServersRouteRequest.forget(profile.id),
-                  ),
+                }
+              },
+              onForget: (profile) => navigator.pop(
+                ServerSwitcherOpenServers(
+                  ServersRouteRequest.forget(profile.id),
                 ),
-                onManage: () =>
-                    navigator.pop(const ServerSwitcherOpenPhoneSetup()),
-                // "Open" on the server already behind this shell has nowhere
-                // to go but back to it; reconnecting would drop live state.
-                onConnect: (profile) => navigator.pop(
-                  controller.api != null && profile.id == current?.id
-                      ? null
-                      : ServerSwitcherOpenServers(
-                          ServersRouteRequest.connect(
-                            profile.id,
-                            detectedRunning: true,
-                          ),
+              ),
+              onManage: () =>
+                  navigator.pop(const ServerSwitcherOpenPhoneSetup()),
+              // "Open" on the server already behind this shell has nowhere
+              // to go but back to it; reconnecting would drop live state.
+              onConnect: (profile) => navigator.pop(
+                controller.api != null && profile.id == current?.id
+                    ? null
+                    : ServerSwitcherOpenServers(
+                        ServersRouteRequest.connect(
+                          profile.id,
+                          detectedRunning: true,
                         ),
-                ),
-                onEnterCredentials: (server, existing) => navigator.pop(
-                  ServerSwitcherOpenServers(
-                    ServersRouteRequest.enterPhoneCredentials(
-                      profileID: existing?.id,
-                      openCode2: server.flavor == ServerFlavor.v2,
-                    ),
+                      ),
+              ),
+              onEnterCredentials: (server, existing) => navigator.pop(
+                ServerSwitcherOpenServers(
+                  ServersRouteRequest.enterPhoneCredentials(
+                    profileID: existing?.id,
+                    openCode2: server.flavor == ServerFlavor.v2,
                   ),
                 ),
               ),
             ),
             // The Claude Code daemon on this phone, under the same rule.
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: LocalAgentServerEntry(
-                profiles: profiles,
-                busy: false,
-                revision: 0,
-                connectedProfileID: controller.api == null ? null : current?.id,
-                busyConversations: controller.busySessions.length,
-                onDisconnect: () async {
-                  if (!await confirmDisconnectServer(context, controller)) {
-                    return;
-                  }
-                  await controller.disconnect(keepActive: true);
-                  if (navigator.mounted) {
-                    navigator.pop(
-                      const ServerSwitcherLeave(alreadyDisconnected: true),
-                    );
-                  }
-                },
-                onForget: (profile) => navigator.pop(
-                  ServerSwitcherOpenServers(
-                    ServersRouteRequest.forget(profile.id),
-                  ),
+            LocalAgentServerEntry(
+              profiles: profiles,
+              busy: false,
+              revision: 0,
+              connectedProfileID: controller.api == null ? null : current?.id,
+              busyConversations: controller.busySessions.length,
+              onDisconnect: () async {
+                if (!await confirmDisconnectServer(context, controller)) {
+                  return;
+                }
+                await controller.disconnect(keepActive: true);
+                if (navigator.mounted) {
+                  navigator.pop(
+                    const ServerSwitcherLeave(alreadyDisconnected: true),
+                  );
+                }
+              },
+              onForget: (profile) => navigator.pop(
+                ServerSwitcherOpenServers(
+                  ServersRouteRequest.forget(profile.id),
                 ),
-                onManage: () =>
-                    navigator.pop(const ServerSwitcherOpenPhoneSetup()),
-                onConnect: (profile) => navigator.pop(
-                  controller.api != null && profile.id == current?.id
-                      ? null
-                      : ServerSwitcherOpenServers(
-                          ServersRouteRequest.connect(
-                            profile.id,
-                            detectedRunning: true,
-                          ),
+              ),
+              onManage: () =>
+                  navigator.pop(const ServerSwitcherOpenPhoneSetup()),
+              onConnect: (profile) => navigator.pop(
+                controller.api != null && profile.id == current?.id
+                    ? null
+                    : ServerSwitcherOpenServers(
+                        ServersRouteRequest.connect(
+                          profile.id,
+                          detectedRunning: true,
                         ),
-                ),
+                      ),
               ),
             ),
             if (others.isNotEmpty)

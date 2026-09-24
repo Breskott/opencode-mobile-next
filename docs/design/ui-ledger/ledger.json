@@ -24957,6 +24957,33 @@
    ]
   },
   {
+   "id": "local-agent-page",
+   "title": "Claude Code",
+   "kind": "screen",
+   "area": "termux",
+   "file": "lib/ui/screens/local_agent_screen.dart",
+   "widget": "LocalAgentScreen",
+   "presentedBy": [],
+   "line": 14,
+   "purpose": "Claude Code on this phone on its own page (docs/design/phone-server-screens-cleanup-2026-09-24.md §2): hosts LocalAgentOnboardingBlock (offer, install, sign-in, project folder, start and stop). The On this phone page shows it as one optional row.",
+   "reachedFrom": [
+    {
+     "page": "termux-setup-installed",
+     "element": null,
+     "note": "\"Claude Code on this phone · Optional\" row (key local-agent-row)"
+    },
+    {
+     "page": "termux-setup-connected",
+     "element": null,
+     "note": "\"Claude Code on this phone · Optional\" row (key local-agent-row)"
+    }
+   ],
+   "gates": [
+    "not opened while the person chose Claude Code in setup: the block then stays inline on On this phone and installs by itself"
+   ],
+   "elements": []
+  },
+  {
    "id": "termux-setup-start-installed-sheet",
    "title": "Start installed OpenCode?",
    "kind": "sheet",

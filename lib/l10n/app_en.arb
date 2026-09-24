@@ -1951,7 +1951,7 @@
   "managedRecoveryOwnershipChanged": "The managed operation changed. Check the server before enabling recovery again.",
   "managedRecoveryUncertain": "Recovery paused because Termux did not confirm the result. Refresh to continue.",
   "managedRecoveryRetryDisable": "Try disabling recovery again",
-  "managedRecoveryStoppedWithCleanupError": "The local server is stopped. Recovery settings could not be fully cleared; retry disabling recovery in Servers before removing the server.",
+  "managedRecoveryStoppedWithCleanupError": "The local server is stopped. Recovery settings could not be fully cleared; turn off Restart after a crash again before removing the server.",
   "pluginMappingPersonal": "Your command links · not verified plugin ownership",
   "pluginMappingReview": "Review /{command}",
   "@pluginMappingReview": {
@@ -19917,5 +19917,152 @@
   "settingsAboutLoadFailed": "The notices didn't load",
   "@settingsAboutLoadFailed": {
     "description": "Title of the About screen state when its documents could not be read"
+  },
+  "serverRowConnected": "Connected",
+  "@serverRowConnected": {
+    "description": "Leads the supporting line of the server row the app is connected to (the current-server mark)"
+  },
+  "phoneServerRowStatus": "{runtime} · {state}",
+  "@phoneServerRowStatus": {
+    "description": "The phone server row's one line: what it runs and where it stands, e.g. 'OpenCode 2 · Running'",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneServerRowRestarting": "Restarting",
+  "@phoneServerRowRestarting": {
+    "description": "State of the server on this phone while it restarts"
+  },
+  "phoneServerRowNotAnswering": "Not answering",
+  "@phoneServerRowNotAnswering": {
+    "description": "State of a server on this phone when the app could not reach it"
+  },
+  "phoneServerRowNotRunning": "Not running",
+  "@phoneServerRowNotRunning": {
+    "description": "State of a saved server on this phone that is not set up or not ready"
+  },
+  "phoneServerRowDetails": "Details",
+  "@phoneServerRowDetails": {
+    "description": "Menu entry that opens a server's or plugin's details"
+  },
+  "termuxPhoneTitle": "OpenCode on this phone",
+  "@termuxPhoneTitle": {
+    "description": "Title of the running OpenCode server on the On this phone page"
+  },
+  "termuxPhoneStatus": "{state} · {detail}",
+  "@termuxPhoneStatus": {
+    "description": "One status line under the title, e.g. 'Running · OpenCode 2 · version 2.0.10'",
+    "placeholders": {
+      "state": {
+        "type": "String"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "termuxPhoneRuntimeVersion": "{runtime} · version {version}",
+  "@termuxPhoneRuntimeVersion": {
+    "description": "Which OpenCode and its version, e.g. 'OpenCode 2 · version 2.0.10'",
+    "placeholders": {
+      "runtime": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "termuxPhoneStoppedTitle": "OpenCode is stopped",
+  "@termuxPhoneStoppedTitle": {
+    "description": "Title of the On this phone page when the installed server is not running"
+  },
+  "termuxPhoneAttentionTitle": "OpenCode needs attention",
+  "@termuxPhoneAttentionTitle": {
+    "description": "Title of the On this phone page when setup failed or a version switch is half done"
+  },
+  "termuxPhoneOptions": "Options",
+  "@termuxPhoneOptions": {
+    "description": "Section of rarer settings on the On this phone page"
+  },
+  "localAgentRowOptional": "Optional",
+  "@localAgentRowOptional": {
+    "description": "Supporting line of the Claude Code row on the On this phone page"
+  },
+  "localAgentPageTitle": "Claude Code",
+  "@localAgentPageTitle": {
+    "description": "Title of the page for Claude Code on this phone"
+  },
+  "managedRecoveryRowTitle": "Restart after a crash",
+  "@managedRecoveryRowTitle": {
+    "description": "Switch that lets the app restart the phone server after it crashes"
+  },
+  "managedRecoveryRowDetail": "Up to 3 tries, only while this app is open. It never installs or updates.",
+  "@managedRecoveryRowDetail": {
+    "description": "What the restart-after-a-crash switch does"
+  },
+  "pluginsTeamRowTitle": "AI Team",
+  "@pluginsTeamRowTitle": {
+    "description": "The AI Team row in Settings › Plugins"
+  },
+  "pluginsTeamRowFound": "Found on {server}",
+  "@pluginsTeamRowFound": {
+    "description": "AI Team row line when a team was found on the server",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsSectionMore": "More plugin actions",
+  "@pluginsSectionMore": {
+    "description": "Tooltip of the On the server section menu"
+  },
+  "pluginsDescriptionShort": "Loaded by the server for this project.",
+  "@pluginsDescriptionShort": {
+    "description": "One line under On the server in Settings › Plugins"
+  },
+  "pluginsLoading": "Loading plugins",
+  "@pluginsLoading": {
+    "description": "Label of the loading bar while the plugin list loads"
+  },
+  "pluginsBuiltinGroup": "Built in",
+  "@pluginsBuiltinGroup": {
+    "description": "Row that folds the plugins the server ships with"
+  },
+  "pluginsBuiltinActive": "{count} active",
+  "@pluginsBuiltinActive": {
+    "description": "How many built-in plugins are active",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pluginsBuiltinFailed": "{count} failed to load",
+  "@pluginsBuiltinFailed": {
+    "description": "How many built-in plugins failed to load",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pluginsStatusFailedToLoad": "Failed to load",
+  "@pluginsStatusFailedToLoad": {
+    "description": "State of a plugin the server could not load"
+  },
+  "pluginsRowMore": "More actions for this plugin",
+  "@pluginsRowMore": {
+    "description": "Tooltip of a plugin row's menu"
+  },
+  "pluginsDetailsId": "ID",
+  "@pluginsDetailsId": {
+    "description": "Label above a plugin's raw id in its details"
   }
 }

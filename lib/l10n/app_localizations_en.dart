@@ -3416,7 +3416,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get managedRecoveryStoppedWithCleanupError =>
-      'The local server is stopped. Recovery settings could not be fully cleared; retry disabling recovery in Servers before removing the server.';
+      'The local server is stopped. Recovery settings could not be fully cleared; turn off Restart after a crash again before removing the server.';
 
   @override
   String get pluginMappingPersonal =>
@@ -18175,4 +18175,99 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAboutLoadFailed => 'The notices didn\'t load';
+
+  @override
+  String get serverRowConnected => 'Connected';
+
+  @override
+  String phoneServerRowStatus(String runtime, String state) {
+    return '$runtime · $state';
+  }
+
+  @override
+  String get phoneServerRowRestarting => 'Restarting';
+
+  @override
+  String get phoneServerRowNotAnswering => 'Not answering';
+
+  @override
+  String get phoneServerRowNotRunning => 'Not running';
+
+  @override
+  String get phoneServerRowDetails => 'Details';
+
+  @override
+  String get termuxPhoneTitle => 'OpenCode on this phone';
+
+  @override
+  String termuxPhoneStatus(String state, String detail) {
+    return '$state · $detail';
+  }
+
+  @override
+  String termuxPhoneRuntimeVersion(String runtime, String version) {
+    return '$runtime · version $version';
+  }
+
+  @override
+  String get termuxPhoneStoppedTitle => 'OpenCode is stopped';
+
+  @override
+  String get termuxPhoneAttentionTitle => 'OpenCode needs attention';
+
+  @override
+  String get termuxPhoneOptions => 'Options';
+
+  @override
+  String get localAgentRowOptional => 'Optional';
+
+  @override
+  String get localAgentPageTitle => 'Claude Code';
+
+  @override
+  String get managedRecoveryRowTitle => 'Restart after a crash';
+
+  @override
+  String get managedRecoveryRowDetail =>
+      'Up to 3 tries, only while this app is open. It never installs or updates.';
+
+  @override
+  String get pluginsTeamRowTitle => 'AI Team';
+
+  @override
+  String pluginsTeamRowFound(String server) {
+    return 'Found on $server';
+  }
+
+  @override
+  String get pluginsSectionMore => 'More plugin actions';
+
+  @override
+  String get pluginsDescriptionShort =>
+      'Loaded by the server for this project.';
+
+  @override
+  String get pluginsLoading => 'Loading plugins';
+
+  @override
+  String get pluginsBuiltinGroup => 'Built in';
+
+  @override
+  String pluginsBuiltinActive(int count) {
+    return '$count active';
+  }
+
+  @override
+  String pluginsBuiltinFailed(int count) {
+    return '$count failed to load';
+  }
+
+  @override
+  String get pluginsStatusFailedToLoad => 'Failed to load';
+
+  @override
+  String get pluginsRowMore => 'More actions for this plugin';
+
+  @override
+  String get pluginsDetailsId => 'ID';
 }
