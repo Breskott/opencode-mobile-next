@@ -29,6 +29,15 @@ class TeamDiscoveryResult {
   final ProbeFound found;
 }
 
+/// The addresses discovery probes for [profile]. None for the OpenCode
+/// inside this app: it has its own team (BuiltinTeamSection), and what
+/// answers on this phone's loopback ports is Termux's team, which is
+/// neither a computer nor this server's to adopt.
+List<String> teamDiscoveryUrlsForProfile(ServerProfile profile) =>
+    looksLikeInAppServer(profile)
+    ? const []
+    : teamDiscoveryUrlsFor(profile.baseUrl);
+
 /// Probes the profile's host once per (profile, config-null) and keeps the
 /// answer for the widgets on this screen. One per screen; the card and the
 /// row read it.
@@ -69,12 +78,7 @@ class TeamDiscovery extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    // The OpenCode inside this app has its own team (BuiltinTeamSection).
-    // What answers on this phone's loopback ports here is Termux's, not a
-    // computer's, and not this server's to adopt.
-    final urls = looksLikeInAppServer(profile)
-        ? const <String>[]
-        : teamDiscoveryUrlsFor(profile.baseUrl);
+    final urls = teamDiscoveryUrlsForProfile(profile);
     _probedProfileId = profile.id;
     _result = null;
     if (urls.isEmpty) {

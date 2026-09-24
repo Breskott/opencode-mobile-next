@@ -155,7 +155,10 @@ class BuiltinTeam {
       '"spawn-storm-detect", "cross-rig-deps", "jsonl-export", '
       '"dolt-remotes-patrol", "prune-branches", "wisp-compact"]\n'
       '[[orders.overrides]]\nname = "dolt-health"\ninterval = "2m"\n'
-      '[[orders.overrides]]\nname = "beads-health"\ninterval = "2m"\n'
+      // Three minutes, not two: dolt-health and beads-health firing on the
+      // same tick made the tallest spike (33 on the Android 15 emulator).
+      '[[orders.overrides]]\nname = "beads-health"\ninterval = "3m"\n'
+      '[[orders.overrides]]\nname = "gate-sweep"\ninterval = "1m"\n'
       '[[orders.overrides]]\nname = "order-tracking-sweep"\ninterval = "2m"\n'
       '[[orders.overrides]]\nname = "orphan-sweep"\ninterval = "10m"\n';
 
@@ -270,6 +273,15 @@ class BuiltinTeam {
         '    sleep 3\n'
         '  done\n'
         'fi\n'
+        // `gc rig add` commits the project's new bead settings; an origin
+        // on the phone gets that commit too, or the agents start from a
+        // master that lacks it and spend their first minutes working out
+        // why (seen on the emulator). Once the team has merged work, the
+        // origin is ahead of the project and the push is refused, which is
+        // fine.
+        'case "\$(git -C "\$project" remote get-url origin)" in\n'
+        '  $originsDir/*) git -C "\$project" push -q origin HEAD || true ;;\n'
+        'esac\n'
         'gc import install\n'
         'grep -q \'name = "gastown.mayor"\' city.toml || '
         "printf '\\n%s' ${_quote(_cityPatches)} >> city.toml\n"

@@ -142,11 +142,13 @@ void main() {
         AiTeamScripts.agentBin,
         agentBin.path,
       );
-      Future<String> run() async => (await Process.run(
-        'sh',
-        ['-c', script],
-        environment: {'PATH': '${bin.path}:/usr/bin:/bin'},
-      )).stdout as String;
+      Future<String> run() async =>
+          (await Process.run(
+                'sh',
+                ['-c', script],
+                environment: {'PATH': '${bin.path}:/usr/bin:/bin'},
+              )).stdout
+              as String;
 
       // Everything answers, but the agents' opencode is missing: a check
       // whose `set -e` were ignored would still say installed.
