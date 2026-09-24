@@ -22,6 +22,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_card.dart';
+import 'package:opencode_mobile/ui/widgets/team_technical_details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Directory _findFixtureRoot() {
@@ -414,6 +415,37 @@ void main() {
       );
   }
 
+  /// The card's header line: "AI Team · <where it runs>".
+  String titleOf(WidgetTester tester) => tester
+      .widget<Text>(find.byKey(const ValueKey('team-card-title')))
+      .textSpan!
+      .toPlainText();
+
+  /// A task row's one supporting line.
+  String? lineOf(WidgetTester tester, String id) {
+    final line = find.descendant(
+      of: find.byKey(ValueKey('team-card-run-line-$id')),
+      matching: find.byType(RichText),
+    );
+    return line.evaluate().isEmpty
+        ? null
+        : tester.widget<RichText>(line.first).text.toPlainText();
+  }
+
+  /// Engine words and numbers the card never shows (AI Team redesign).
+  void noEngineWords() {
+    for (final word in [
+      'Gas City',
+      'convoy',
+      'formula',
+      'bright-lights',
+      '%',
+      'sling-',
+    ]) {
+      expect(find.textContaining(word), findsNothing, reason: word);
+    }
+  }
+
   group('N: not available', () {
     testWidgets('config null: the card is not in the Workspace tree', (
       tester,
@@ -428,9 +460,7 @@ void main() {
       expect(find.byType(TeamCard), findsNothing);
     });
 
-    testWidgets('with a config the card sits above the sessions', (
-      tester,
-    ) async {
+    testWidgets('with a config the card sits in the Work tab', (tester) async {
       final (controller, _) = await boot();
       final connection = _Connection(ProfileStore(prefs: prefs))
         ..team = controller;
@@ -441,7 +471,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(TeamCard), findsOneWidget);
       expect(find.byKey(const ValueKey('team-card-data')), findsOneWidget);
-      expect(find.text('AI Team · Gas City'), findsOneWidget);
+      expect(titleOf(tester), startsWith('AI Team · '));
     });
   });
 
@@ -453,88 +483,63 @@ void main() {
       await pumpCard(tester, controller);
       expect(controller.phase, OrchestrationPhase.idle);
       expect(find.byKey(const ValueKey('team-card-loading')), findsOneWidget);
-      expect(find.text('AI Team · Gas City'), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-card-open')), findsNothing);
-      expect(find.byKey(const ValueKey('team-card-hero')), findsNothing);
+      expect(find.byKey(const ValueKey('team-card-data')), findsNothing);
     });
   });
 
   group('N: normal', () {
-    testWidgets('header counts and run rows match the fixture', (tester) async {
+    testWidgets('the header says where the team runs; a task is one row '
+        'with one plain line', (tester) async {
       var opened = 0;
-      final (controller, gateway) = await boot();
+      final (controller, _) = await boot();
       await pumpCard(tester, controller, onOpen: () => opened += 1);
 
       expect(find.byKey(const ValueKey('team-card-data')), findsOneWidget);
-      expect(find.text('AI Team · Gas City'), findsOneWidget);
-      // Two of the five live fixture agents (refinery, witness) are
-      // working; the three dog slots and the core helper are not agents.
-      expect(find.text('2 agents working'), findsOneWidget);
-      expect(find.text('On the computer'), findsOneWidget);
-      // The host is named by the team URL, never by the profile: a
-      // fixture path names no host, so the provider stands in.
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('team-card-host-name')))
-            .data,
-        'fixture',
-      );
-      expect(find.text('Workstation'), findsNothing);
-      expect(find.text('city bright-lights'), findsOneWidget);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('team-card-city')))
-            .textDirection,
-        TextDirection.ltr,
-      );
+      expect(titleOf(tester), startsWith('AI Team · On '));
+      // The host is named by the team URL, never by the profile.
+      expect(find.textContaining('Workstation'), findsNothing);
       expect(find.byKey(const ValueKey('team-card-needs-you')), findsNothing);
-      // One convoy, 0 of 1 tracked bead closed: named by its work and
-      // waiting for an agent (the bead is open, routed to a pool, unheld).
-      expect(find.text('0% done.'), findsOneWidget);
-      expect(
-        find.text('Add subtract function to calc.py is waiting for an agent.'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('sling-oc-loy'), findsNothing);
+      // One convoy, routed and waiting: named by its work, not its bead.
       expect(
         find.byKey(const ValueKey('team-card-run-oc-xru')),
         findsOneWidget,
       );
-      expect(find.text('Waiting for an agent'), findsOneWidget);
-      expect(find.text('Planning'), findsNothing);
-      expect(find.textContaining('convoy'), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-card-more-runs')), findsNothing);
-      expect(
-        find.byKey(const ValueKey('team-card-completed-runs')),
-        findsNothing,
-      );
-      expect(find.byKey(const ValueKey('team-card-bar-blocked')), findsNothing);
-      expect(find.byKey(const ValueKey('team-card-bar-done')), findsNothing);
-      expect(agentDots(), findsNWidgets(controller.snapshot.agents.length));
-      expect(agentDots(), findsNWidgets(5));
+      expect(find.text('Add subtract function to calc.py'), findsOneWidget);
+      expect(lineOf(tester, 'oc-xru'), 'Waiting for a worker');
+      noEngineWords();
       expect(find.byKey(const ValueKey('team-card-stale')), findsNothing);
+      // The card refreshes itself: no Refresh button.
+      expect(find.byKey(const ValueKey('team-card-refresh')), findsNothing);
 
+      // The header and a task row both open the team.
       await tester.tap(find.byKey(const ValueKey('team-card-open')));
       expect(opened, 1);
       await tester.tap(find.byKey(const ValueKey('team-card-run-oc-xru')));
       expect(opened, 2);
-
-      final before = gateway.count('runs');
-      await tester.tap(find.byKey(const ValueKey('team-card-refresh')));
-      await tester.pumpAndSettle();
-      expect(gateway.count('runs'), before + 1);
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('a phone host says so', (tester) async {
       final (controller, _) = await boot(hostMode: OrchestrationHostMode.phone);
       await pumpCard(tester, controller);
-      expect(find.text('On this phone'), findsOneWidget);
-      expect(find.text('On the computer'), findsNothing);
+      expect(titleOf(tester), 'AI Team · On this phone');
     });
 
-    // TEAM-206: the one-line disclaimer of 03-onboarding §4 per host kind.
-    group('disclaimer per host kind', () {
+    testWidgets('a named computer is named; an address is not', (tester) async {
+      final (named, _) = await boot(url: 'https://pop-os:7000');
+      await pumpCard(tester, named);
+      expect(titleOf(tester), 'AI Team · On pop-os');
+      expect(find.textContaining('Workstation'), findsNothing);
+
+      final (addressed, _) = await boot(url: 'http://100.126.15.6:7000/');
+      await pumpCard(tester, addressed);
+      expect(titleOf(tester), 'AI Team · On your computer');
+      expect(find.textContaining('100.126.15.6'), findsNothing);
+    });
+
+    // TEAM-206: the one-line disclaimer of 03-onboarding §4 per host kind,
+    // moved from the card to Technical details by the AI Team redesign.
+    group('disclaimer per host kind (Technical details)', () {
       const expected = {
         OrchestrationHostKind.pc:
             'Runs as fast as your computer; keep it awake',
@@ -546,32 +551,44 @@ void main() {
         OrchestrationHostKind.phone:
             'Android may stop it when the screen is off; slower than a computer',
       };
+
+      Future<String?> disclaimerIn(
+        WidgetTester tester,
+        OrchestrationController controller, {
+        Locale locale = const Locale('en'),
+      }) async {
+        await tester.pumpWidget(
+          app(
+            Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showTeamHostDetailsSheet(context, controller),
+                child: const Text('details'),
+              ),
+            ),
+            locale: locale,
+          ),
+        );
+        await tester.tap(find.text('details'));
+        await tester.pumpAndSettle();
+        final line = find.byKey(const ValueKey('team-host-disclaimer'));
+        return line.evaluate().isEmpty ? null : tester.widget<Text>(line).data;
+      }
+
       for (final entry in expected.entries) {
-        testWidgets('${entry.key.name} shows its line', (tester) async {
+        testWidgets('${entry.key.name} shows its line, and only its line', (
+          tester,
+        ) async {
           final (controller, _) = await boot(
             hostMode: entry.key.mode,
             hostKind: entry.key,
           );
-          await pumpCard(tester, controller);
-          final line = find.byKey(const ValueKey('team-card-disclaimer'));
-          expect(line, findsOneWidget);
-          expect(tester.widget<Text>(line).data, entry.value);
-          // Exactly one disclaimer: no other kind's line leaks in.
+          expect(await disclaimerIn(tester, controller), entry.value);
           for (final other in expected.values) {
             expect(
               find.text(other),
               other == entry.value ? findsOneWidget : findsNothing,
             );
           }
-          // Laptop and WSL are still "On the computer".
-          expect(
-            find.text(
-              entry.key.mode == OrchestrationHostMode.phone
-                  ? 'On this phone'
-                  : 'On the computer',
-            ),
-            findsOneWidget,
-          );
         });
       }
 
@@ -579,39 +596,21 @@ void main() {
         tester,
       ) async {
         final (controller, _) = await boot();
-        await pumpCard(tester, controller);
-        expect(find.text(expected[OrchestrationHostKind.pc]!), findsOneWidget);
-      });
-
-      testWidgets('the line is there while loading and in the empty state', (
-        tester,
-      ) async {
-        final (loading, _) = await boot(
-          started: false,
-          hostKind: OrchestrationHostKind.laptop,
-        );
-        await pumpCard(tester, loading);
-        expect(find.byKey(const ValueKey('team-card-loading')), findsOneWidget);
         expect(
-          find.text(expected[OrchestrationHostKind.laptop]!),
-          findsOneWidget,
+          await disclaimerIn(tester, controller),
+          expected[OrchestrationHostKind.pc],
         );
-        final (empty, _) = await boot(
-          configure: (g) => g.runsOverride = const [],
-          hostKind: OrchestrationHostKind.wsl,
-        );
-        await pumpCard(tester, empty);
-        expect(find.byKey(const ValueKey('team-card-empty')), findsOneWidget);
-        expect(find.text(expected[OrchestrationHostKind.wsl]!), findsOneWidget);
       });
 
       testWidgets('Arabic carries the laptop line', (tester) async {
         final (controller, _) = await boot(
           hostKind: OrchestrationHostKind.laptop,
         );
-        await pumpCard(tester, controller, locale: const Locale('ar'));
         final l10n = lookupAppLocalizations(const Locale('ar'));
-        expect(find.text(l10n.teamUiHostKindDisclaimerLaptop), findsOneWidget);
+        expect(
+          await disclaimerIn(tester, controller, locale: const Locale('ar')),
+          l10n.teamUiHostKindDisclaimerLaptop,
+        );
         expect(
           l10n.teamUiHostKindDisclaimerLaptop,
           isNot(expected[OrchestrationHostKind.laptop]),
@@ -619,9 +618,8 @@ void main() {
       });
     });
 
-    testWidgets('runs beyond three collapse; completed runs collapse', (
-      tester,
-    ) async {
+    testWidgets('at most two running tasks, active first; nothing counted '
+        'or collapsed', (tester) async {
       OrchestrationRun run(String id, RunState state, int minutesAgo) =>
           OrchestrationRun(
             id: id,
@@ -647,7 +645,7 @@ void main() {
           ],
       );
       await pumpCard(tester, controller);
-      // Active first (newest first), then blocked; waiting falls off.
+      // Active first, newest first; the rest waits on the team's home.
       expect(
         find.byKey(const ValueKey('team-card-run-work-new')),
         findsOneWidget,
@@ -656,65 +654,51 @@ void main() {
         find.byKey(const ValueKey('team-card-run-work-old')),
         findsOneWidget,
       );
-      expect(
-        find.byKey(const ValueKey('team-card-run-plan-1')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const ValueKey('team-card-run-blocked-1')),
-        findsNothing,
-      );
-      expect(find.byKey(const ValueKey('team-card-run-wait-1')), findsNothing);
-      expect(find.byKey(const ValueKey('team-card-run-done-1')), findsNothing);
-      expect(find.text('2 more runs'), findsOneWidget);
-      expect(find.text('2 completed runs'), findsOneWidget);
-      // The headline is the newest active run: 1 of 4 steps.
-      expect(find.text('25% done.'), findsOneWidget);
-      expect(find.text('Run work-new is being worked on.'), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-card-bar-done')), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('team-card-bar-working')),
-        findsOneWidget,
-      );
-      expect(find.byKey(const ValueKey('team-card-bar-blocked')), findsNothing);
+      for (final hidden in ['plan-1', 'blocked-1', 'wait-1', 'done-1']) {
+        expect(
+          find.byKey(ValueKey('team-card-run-$hidden')),
+          findsNothing,
+          reason: hidden,
+        );
+      }
+      expect(lineOf(tester, 'work-new'), 'Working · 1 of 4 steps done');
+      // No "N more", no completed count, no percentage or bar.
+      expect(find.textContaining('more'), findsNothing);
+      expect(find.textContaining('completed'), findsNothing);
+      noEngineWords();
       expect(tester.takeException(), isNull);
     });
   });
 
-  group('blocked', () {
-    testWidgets('a blocked run shows the amber segment and needs you', (
-      tester,
-    ) async {
+  group('needs you', () {
+    testWidgets('a question comes first, with Answer', (tester) async {
       final (controller, _) = await boot(configure: blockedShape);
-      expect(controller.snapshot.runs.single.state, RunState.blocked);
       expect(controller.attentionCount, 1);
       await pumpCard(tester, controller);
-
+      final question = controller.snapshot.gates.single;
       expect(find.byKey(const ValueKey('team-card-needs-you')), findsOneWidget);
-      expect(find.text('1 needs you'), findsOneWidget);
-      expect(find.text('50% done.'), findsOneWidget);
-      // The pending choice names a session the fixture has no agent for,
-      // so the sentence stays with the run's own state.
       expect(
-        find.text('Add subtract function to calc.py is blocked.'),
-        findsOneWidget,
+        tester
+            .widget<Text>(find.byKey(const ValueKey('team-card-question')))
+            .data,
+        question.title.split('\n').first,
       );
-      expect(find.byKey(const ValueKey('team-card-bar-done')), findsOneWidget);
-      final blocked = find.byKey(const ValueKey('team-card-bar-blocked'));
-      expect(blocked, findsOneWidget);
-      final theme = Theme.of(tester.element(blocked));
+      expect(find.text('Answer'), findsOneWidget);
+      // This choice names a session the fixture has no agent for, so it
+      // cannot be tied to a task: the task keeps its row, under it.
       expect(
-        tester.widget<ColoredBox>(blocked).color,
-        AppTheme.statusColor(theme, AppStatusTone.attention),
-        reason: 'blocked-by-dependency is amber, never red',
+        tester.getTopLeft(find.byKey(const ValueKey('team-card-needs-you'))).dy,
+        lessThan(
+          tester
+              .getTopLeft(find.byKey(const ValueKey('team-card-run-oc-xru')))
+              .dy,
+        ),
       );
-      expect(find.text('Blocked'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a gate on the run\'s work item names the decision', (
-      tester,
-    ) async {
+    testWidgets('a question tied to a task by its work item: the task is '
+        'not repeated under it', (tester) async {
       final (controller, _) = await boot(
         configure: (g) {
           blockedShape(g);
@@ -732,37 +716,20 @@ void main() {
         },
       );
       await pumpCard(tester, controller);
-      expect(
-        find.text(
-          'Add subtract function to calc.py is waiting for your decision.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('1 needs you'), findsOneWidget);
+      expect(find.byKey(const ValueKey('team-card-needs-you')), findsOneWidget);
+      expect(find.byKey(const ValueKey('team-card-run-oc-xru')), findsNothing);
     });
   });
 
-  // TEAM-115: the host's internals never leak into the card.
-  group('waiting for merge (TEAM-117)', () {
-    testWidgets('a batch whose work is in the refinery\'s hands waits for '
-        'the merge: word, sentence, no Working', (tester) async {
+  group('reviewing (TEAM-117)', () {
+    testWidgets('a task whose work is in the merge agent\'s hands reads '
+        'Reviewing, never Working', (tester) async {
       final (controller, _) = await boot(configure: handedToRefineryShape);
       await pumpCard(tester, controller);
-      expect(
-        find.text(
-          'Add subtract function to calc.py is waiting for the '
-          'merge agent.',
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('Waiting for merge'), findsOneWidget);
-      expect(find.text('Waiting for an agent'), findsNothing);
-      expect(find.text('Working'), findsNothing);
-      expect(find.textContaining('is being worked on'), findsNothing);
-      expect(find.text('0% done.'), findsOneWidget);
+      expect(lineOf(tester, 'oc-xru'), 'Reviewing');
+      expect(find.textContaining('Working'), findsNothing);
+      expect(find.textContaining('Waiting for a worker'), findsNothing);
       expect(find.byKey(const ValueKey('team-card-needs-you')), findsNothing);
-      // The strip under the row names the merge wait.
-      expect(find.byKey(const ValueKey('team-card-cycle')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -800,14 +767,9 @@ void main() {
           ],
       );
       await pumpCard(tester, controller);
-      // The person's run heads the card; no patrol is a row.
-      expect(find.text('Run mine is being worked on.'), findsOneWidget);
       expect(find.byKey(const ValueKey('team-card-run-mine')), findsOneWidget);
       expect(find.textContaining('mol-'), findsNothing);
       expect(find.textContaining('patrol'), findsNothing);
-      // Only the person's completed run is counted; nothing is "more".
-      expect(find.text('1 completed run'), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-card-more-runs')), findsNothing);
       // A failed patrol raises nothing.
       expect(find.byKey(const ValueKey('team-card-needs-you')), findsNothing);
       expect(tester.takeException(), isNull);
@@ -825,109 +787,31 @@ void main() {
       );
       await pumpCard(tester, controller);
       expect(find.byKey(const ValueKey('team-card-empty')), findsOneWidget);
-      expect(find.text('No recent runs.'), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-card-hero')), findsNothing);
-    });
-
-    testWidgets('dots are the live agents; red only when crashed', (
-      tester,
-    ) async {
-      final (controller, _) = await boot(
-        configure: (g) => g.agentsOverride = const [
-          OrchestrationAgent(id: 'w', name: 'w', state: AgentState.working),
-          OrchestrationAgent(id: 'i', name: 'i', state: AgentState.idle),
-          OrchestrationAgent(id: 'c', name: 'c', state: AgentState.crashed),
-          OrchestrationAgent(id: 'q', name: 'q', state: AgentState.waiting),
-          OrchestrationAgent(id: 's', name: 's', state: AgentState.stopped),
-          OrchestrationAgent(
-            id: 'boot',
-            name: 'gastown.boot',
-            state: AgentState.stopped,
-            suspended: true,
-          ),
-          OrchestrationAgent(
-            id: 'mayor',
-            name: 'gastown.mayor',
-            state: AgentState.stopped,
-            suspended: true,
-          ),
-        ],
-      );
-      await pumpCard(tester, controller);
-      expect(find.text('1 agent working'), findsOneWidget);
-      expect(agentDots(), findsNWidgets(4));
-      for (final off in ['s', 'boot', 'mayor']) {
-        expect(find.byKey(ValueKey('team-card-agent-$off')), findsNothing);
-      }
-      Color dotColor(String id) =>
-          (tester
-                      .widget<DecoratedBox>(
-                        find.descendant(
-                          of: find.byKey(ValueKey('team-card-agent-$id')),
-                          matching: find.byType(DecoratedBox),
-                        ),
-                      )
-                      .decoration
-                  as BoxDecoration)
-              .color!;
-      final colors = Theme.of(
-        tester.element(find.byType(TeamCard)),
-      ).colorScheme;
-      expect(dotColor('c'), colors.error);
-      expect(dotColor('w'), colors.primary);
-      expect(dotColor('i'), isNot(colors.error));
-      expect(dotColor('q'), isNot(colors.error));
-      final summary = tester.widget<Semantics>(
-        find.byKey(const ValueKey('team-card-constellation')),
-      );
-      expect(summary.properties.label, startsWith('4 agents:'));
-    });
-
-    testWidgets('the header names the host by the team URL', (tester) async {
-      final (named, _) = await boot(url: 'https://pop-os:7000');
-      await pumpCard(tester, named);
-      final name = find.byKey(const ValueKey('team-card-host-name'));
-      expect(tester.widget<Text>(name).data, 'pop-os');
-      expect(tester.widget<Text>(name).textDirection, TextDirection.ltr);
-      expect(find.text('Workstation'), findsNothing);
-      expect(find.text('On the computer'), findsOneWidget);
-      expect(find.text('city bright-lights'), findsOneWidget);
-
-      final (addressed, _) = await boot(url: 'http://100.126.15.6:7000/');
-      await pumpCard(tester, addressed);
-      expect(
-        tester
-            .widget<Text>(find.byKey(const ValueKey('team-card-host-name')))
-            .data,
-        '100.126.15.6',
-      );
-      expect(find.text('Workstation'), findsNothing);
+      expect(find.textContaining('Nothing running'), findsOneWidget);
     });
   });
 
   group('E: empty', () {
-    testWidgets('no runs: "No recent runs" with the host', (tester) async {
+    testWidgets('no tasks: one muted line that opens the team', (tester) async {
+      var opened = 0;
       final (controller, _) = await boot(
         configure: (g) => g.runsOverride = const [],
       );
-      await pumpCard(tester, controller);
-      expect(find.byKey(const ValueKey('team-card-empty')), findsOneWidget);
-      expect(find.text('No recent runs.'), findsOneWidget);
-      expect(find.text('Start runs from the host for now.'), findsOneWidget);
-      expect(find.text('On the computer'), findsOneWidget);
+      await pumpCard(tester, controller, onOpen: () => opened += 1);
+      final empty = find.byKey(const ValueKey('team-card-empty'));
+      expect(empty, findsOneWidget);
+      expect(find.textContaining('Nothing running'), findsOneWidget);
       expect(find.byKey(const ValueKey('team-card-open')), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-card-refresh')), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-card-hero')), findsNothing);
+      await tester.tap(empty);
+      expect(opened, 1);
     });
   });
 
   group('S: stale', () {
-    testWidgets('shows the time and disables taps except Refresh', (
-      tester,
-    ) async {
+    testWidgets('stale: the header says Not answering, rows dim and stop '
+        'opening; the header still opens the team', (tester) async {
       var opened = 0;
-      final (controller, gateway) = await boot();
-      final refreshedAt = controller.lastRefreshedAt!;
+      final (controller, _) = await boot();
       await pumpCard(tester, controller, onOpen: () => opened += 1);
       expect(find.byKey(const ValueKey('team-card-stale')), findsNothing);
 
@@ -936,64 +820,15 @@ void main() {
       await pumpCard(tester, controller, onOpen: () => opened += 1);
 
       expect(find.byKey(const ValueKey('team-card-stale')), findsOneWidget);
-      final time = clockLabel(tester, refreshedAt);
-      expect(
-        find.text('Showing data from $time · host unreachable'),
-        findsOneWidget,
-      );
-      expect(
-        // Open is a kit button (design standard §2): the Material button
-        // is inside it.
-        tester
-            .widget<FilledButton>(
-              find.descendant(
-                of: find.byKey(const ValueKey('team-card-open')),
-                matching: find.byWidgetPredicate((w) => w is FilledButton),
-              ),
-            )
-            .onPressed,
-        isNull,
-      );
-      expect(
-        tester
-            .widget<InkWell>(
-              find.descendant(
-                of: find.byKey(const ValueKey('team-card-run-oc-xru')),
-                matching: find.byType(InkWell),
-              ),
-            )
-            .onTap,
-        isNull,
-      );
-      await tester.tap(
-        find.byKey(const ValueKey('team-card-open')),
-        warnIfMissed: false,
-      );
+      expect(titleOf(tester), endsWith(' · Not answering'));
       await tester.tap(
         find.byKey(const ValueKey('team-card-run-oc-xru')),
         warnIfMissed: false,
       );
-      expect(opened, 0);
-      expect(
-        tester
-            .widget<TextButton>(
-              find.descendant(
-                of: find.byKey(const ValueKey('team-card-refresh')),
-                matching: find.byWidgetPredicate((w) => w is TextButton),
-              ),
-            )
-            .onPressed,
-        isNotNull,
-      );
-
-      // Refresh refetches and the banner goes.
-      final before = gateway.count('runs');
-      await tester.tap(find.byKey(const ValueKey('team-card-refresh')));
-      await tester.pumpAndSettle();
-      expect(gateway.count('runs'), before + 1);
-      expect(controller.isStale, isFalse);
-      expect(find.byKey(const ValueKey('team-card-stale')), findsNothing);
-      expect(find.byKey(const ValueKey('team-card-data')), findsOneWidget);
+      expect(opened, 0, reason: 'old rows do not open');
+      // The team's home is where the person refreshes.
+      await tester.tap(find.byKey(const ValueKey('team-card-open')));
+      expect(opened, 1);
       expect(tester.takeException(), isNull);
     });
 
@@ -1009,7 +844,6 @@ void main() {
 
     testWidgets('a failed read keeps the data and says so', (tester) async {
       final (controller, gateway) = await boot();
-      final refreshedAt = controller.lastRefreshedAt!;
       await pumpCard(tester, controller);
       gateway.failReads = true;
       await controller.refresh();
@@ -1017,13 +851,10 @@ void main() {
       expect(controller.lastError?.kind, OrchestrationErrorKind.readFailed);
       expect(find.byKey(const ValueKey('team-card-data')), findsOneWidget);
       expect(
-        find.text(
-          'Last refresh failed · showing data from '
-          '${clockLabel(tester, refreshedAt)}',
-        ),
+        find.byKey(const ValueKey('team-card-run-oc-xru')),
         findsOneWidget,
       );
-      expect(find.text('0% done.'), findsOneWidget);
+      expect(titleOf(tester), endsWith(' · Not answering'));
     });
   });
 
@@ -1051,9 +882,7 @@ void main() {
         await pumpCard(tester, controller);
         expect(find.byKey(const ValueKey('team-card-error')), findsOneWidget);
         expect(find.text(entry.value), findsOneWidget);
-        expect(find.text('AI Team · Gas City'), findsOneWidget);
-        expect(find.byKey(const ValueKey('team-card-open')), findsNothing);
-        expect(find.byKey(const ValueKey('team-card-hero')), findsNothing);
+        expect(find.byKey(const ValueKey('team-card-data')), findsNothing);
 
         // Retry probes again; once the host answers the card fills in.
         verdict = ProbeFound(host: gateway.host!, city: 'bright-lights');
@@ -1061,100 +890,24 @@ void main() {
         await tester.pumpAndSettle();
         expect(controller.phase, OrchestrationPhase.ready);
         expect(find.byKey(const ValueKey('team-card-data')), findsOneWidget);
-        expect(find.text('0% done.'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
     }
   });
 
   group('motion', () {
-    testWidgets('reduced motion: no animation controller, no ticker', (
-      tester,
-    ) async {
-      final (controller, _) = await boot();
-      await pumpCard(tester, controller, reduceMotion: true);
-      final state = tester.state<TeamCardState>(find.byType(TeamCard));
-      expect(state.debugHasAnimation, isFalse);
-      expect(tester.binding.transientCallbackCount, 0);
-      expect(tester.binding.hasScheduledFrame, isFalse);
-      expect(agentDots(), findsNWidgets(5));
-      expect(pulses(), findsNothing);
-    });
-
-    testWidgets('with motion allowed one controller pulses working dots', (
-      tester,
-    ) async {
-      final (controller, gateway) = await boot();
-      await pumpCard(tester, controller, reduceMotion: false);
-      final state = tester.state<TeamCardState>(find.byType(TeamCard));
-      expect(state.debugHasAnimation, isTrue);
-      expect(tester.binding.transientCallbackCount, 1);
-      // Two working agents share the one controller.
-      expect(pulses(), findsNWidgets(2));
-
-      // Going stale stops the pulse; nothing on the card breathes then.
-      gateway.stream.addError(StateError('dropped'));
-      await tester.pump();
-      expect(state.debugHasAnimation, isFalse);
-      // The buttons' own disabled-colour fades end; the pulse is gone.
-      await tester.pump(const Duration(seconds: 1));
-      expect(tester.binding.transientCallbackCount, 0);
-      expect(pulses(), findsNothing);
-      await tester.pumpWidget(const SizedBox());
-    });
-
-    testWidgets('no working agents and no moving batch: no controller '
-        'even with motion', (tester) async {
-      // A formula run heads the card: no dispatch cycle strip, and the
-      // one idle agent gives nothing to pulse.
-      final (controller, _) = await boot(
-        configure: (g) => g
-          ..agentsOverride = const [
-            OrchestrationAgent(id: 'a', name: 'a', state: AgentState.idle),
-          ]
-          ..runsOverride = [
-            OrchestrationRun(
-              id: 'ship-1',
-              title: 'Run ship-1',
-              state: RunState.working,
-              kind: RunKind.formula,
-              stepCount: 4,
-              completedSteps: 1,
-              updatedAt: clock,
-            ),
-          ],
-      );
-      await pumpCard(tester, controller, reduceMotion: false);
-      final state = tester.state<TeamCardState>(find.byType(TeamCard));
-      expect(state.debugHasAnimation, isFalse);
-      expect(tester.binding.transientCallbackCount, 0);
-      expect(find.text('No agents working'), findsOneWidget);
-      expect(agentDots(), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-card-cycle')), findsNothing);
-    });
-
-    testWidgets('no working agents but a moving batch: the one controller '
-        'pulses the cycle dot only', (tester) async {
-      // TEAM-116: the headline batch (the fixture convoy, routed and
-      // waiting for an agent) breathes with the card's single pulse.
-      final (controller, _) = await boot(
-        configure: (g) => g.agentsOverride = const [
-          OrchestrationAgent(id: 'a', name: 'a', state: AgentState.idle),
-        ],
-      );
-      await pumpCard(tester, controller, reduceMotion: false);
-      final state = tester.state<TeamCardState>(find.byType(TeamCard));
-      expect(state.debugHasAnimation, isTrue);
-      expect(tester.binding.transientCallbackCount, 1);
-      expect(pulses(), findsNothing);
-      expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('team-card-cycle')),
-          matching: find.byType(ScaleTransition),
-        ),
-        findsOneWidget,
-      );
-      await tester.pumpWidget(const SizedBox());
-    });
+    // The redesigned card shows state in words; nothing on it breathes, so
+    // it never holds a ticker, whether or not motion is reduced.
+    for (final reduce in [true, false]) {
+      testWidgets('reduced motion $reduce: no ticker, no scheduled frame', (
+        tester,
+      ) async {
+        final (controller, _) = await boot();
+        await pumpCard(tester, controller, reduceMotion: reduce);
+        await tester.pump(const Duration(seconds: 1));
+        expect(tester.binding.transientCallbackCount, 0);
+        expect(tester.binding.hasScheduledFrame, isFalse);
+      });
+    }
   });
 }
