@@ -80,6 +80,19 @@ void main() {
       expect(screenText(shell), isNot(contains('�')));
     });
 
+    test('a wide character at the last column wraps whole', () async {
+      final shell = sessions.startShell(rows: 5, cols: 10);
+      await pumpEventQueue();
+      // Nine columns, then CJK and emoji two columns each.
+      backend.output(1, '123456789中文😀');
+      await pumpEventQueue();
+      final lines = shell.terminal.buffer.lines;
+      expect(lines[0].getText().trimRight(), '123456789');
+      expect(lines[1].getText(), startsWith('中文😀'));
+      expect(lines[1].isWrapped, isTrue);
+      expect(shell.terminal.buffer.cursorX, 6);
+    });
+
     test(
       'output for a shell this side does not know is still answered',
       () async {

@@ -189,7 +189,7 @@ class LocalShell extends ChangeNotifier {
   LocalShell._(this._backend, this.number, {int? id, int pid = 0})
     : _id = id,
       _pid = pid {
-    terminal = xterm.Terminal(
+    terminal = _WideWrapTerminal(
       maxLines: scrollbackLines,
       onOutput: send,
       onResize: (cols, rows, _, _) => _resized(rows: rows, cols: cols),
@@ -292,6 +292,36 @@ class LocalShell extends ChangeNotifier {
   void dispose() {
     _resizeTimer?.cancel();
     super.dispose();
+  }
+}
+
+/// xterm 4.0.0 puts a double-width character (CJK, most emoji) that meets
+/// the last column into that column, half of it past the edge, and starts
+/// the next line with its empty second half. A terminal wraps the whole
+/// character to the next line instead, leaving the last column blank; this
+/// does that, after the fact, so every line keeps its width.
+class _WideWrapTerminal extends xterm.Terminal {
+  _WideWrapTerminal({super.maxLines, super.onOutput, super.onResize});
+
+  @override
+  void writeChar(int char) {
+    final lastColumn = viewWidth - 1;
+    final before = buffer.currentLine;
+    // The cursor reads as the last column both on it and just past it (a
+    // wrap pending); only the first can leave the character half outside.
+    final onLast = buffer.cursorX == lastColumn;
+    super.writeChar(char);
+    if (!onLast || !autoWrapMode) return;
+    final after = buffer.currentLine;
+    if (identical(after, before) ||
+        before.getWidth(lastColumn) != 2 ||
+        before.getCodePoint(lastColumn) != char) {
+      return;
+    }
+    before.resetCell(lastColumn);
+    after.setCell(0, char, 2, cursor);
+    after.setCell(1, 0, 0, cursor);
+    buffer.setCursorX(2);
   }
 }
 
