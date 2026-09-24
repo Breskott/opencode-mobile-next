@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/builtin/builtin_folders.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
-import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
@@ -259,7 +258,7 @@ void main() {
     expect(
       // The path is isolated left to right inside the sentence.
       find.text(
-        'The app makes the folder in ⁦/root/projects/work⁩ and '
+        'The app makes the folder in \u2066/root/projects/work\u2069 and '
         'opens it.',
       ),
       findsOneWidget,
@@ -310,6 +309,7 @@ void main() {
     expect(find.byKey(const ValueKey('folder-browser-open')), findsNothing);
     // /root is a git repository here (a stray one), and still only browses.
     await tapKey(tester, 'in-app-project-root');
+    expect(controller.opened, isEmpty, reason: 'the home folder never opens');
     expect(shownPath(tester), '/root');
     // A new project named after a home folder is refused too.
     await tapKey(tester, 'folder-browser-up');

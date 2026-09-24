@@ -384,7 +384,7 @@ class _FolderBrowserSheetState extends State<FolderBrowserSheet> {
         labelText: l10n.projectFolderProjectNameLabel,
         hintText: l10n.projectFolderNameHint,
         // The path isolated left to right inside the sentence (Arabic).
-        helperText: l10n.projectFolderNewProjectHelp('⁦$_path⁩'),
+        helperText: l10n.projectFolderNewProjectHelp('\u2066$_path\u2069'),
         helperMaxLines: 3,
         errorText: _problem,
         errorMaxLines: 3,
