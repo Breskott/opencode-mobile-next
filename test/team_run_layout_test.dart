@@ -1,5 +1,6 @@
 // TEAM-109: the run detail at 320dp × 2.5x text, LTR and RTL, English and
-// Arabic: the two-line app bar, the Overview's six elements, the Technical
+// Arabic: the two-line app bar, the redesigned Overview (status line,
+// stage line, needs you, steps, Details opened), the Technical
 // details sheet, the Timeline with its filter chips and the jump-to-latest
 // pill, and the missing-run state all fit, and nothing overflows or
 // scrolls sideways.
@@ -356,16 +357,31 @@ void main() {
         final (controller, _) = await boot(configure: busyShape);
         await pumpRun(tester, controller, 'oc-xru', direction, locale);
         expect(find.byKey(const ValueKey('team-run-data')), findsOneWidget);
-        expect(find.byKey(const ValueKey('team-run-term')), findsOneWidget);
+        final l10n = lookupAppLocalizations(locale);
 
+        // The redesigned Overview, top to bottom: the title and status
+        // line, the four-stage line, what needs the person, the steps
+        // (the blocked one first, with the host's reason), then Details.
         for (final name in const [
           'team-run-objective',
-          'team-run-progress',
-          'team-run-counts',
-          'team-run-blocked',
+          'team-run-stage-line',
           'team-run-needs-you',
-          'team-run-batch',
+          'team-run-blocked-w3',
         ]) {
+          await revealIn(
+            tester,
+            'team-run-overview',
+            find.byKey(ValueKey(name)),
+            tap: false,
+          );
+        }
+        final summary = find.byKey(const ValueKey('team-run-summary'));
+        await revealIn(tester, 'team-run-overview', summary);
+        expect(tester.takeException(), isNull);
+        // Details opens under its row: the counts and the team's usage.
+        await tester.tap(summary);
+        await tester.pumpAndSettle();
+        for (final name in const ['team-run-counts', 'team-run-usage']) {
           await revealIn(
             tester,
             'team-run-overview',
@@ -375,7 +391,12 @@ void main() {
         }
         expect(tester.takeException(), isNull);
 
-        // Details: the sheet scrolls; ids stay LTR.
+        // Technical details: the Gas City term is here, not on the page;
+        // the sheet scrolls; ids stay LTR.
+        expect(
+          find.text(l10n.teamUiRunTermBatch, findRichText: true),
+          findsNothing,
+        );
         await tester.tap(find.byKey(const ValueKey('team-run-more')));
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('team-run-details')));
@@ -383,6 +404,13 @@ void main() {
         expect(tester.takeException(), isNull);
         final sheet = find.byKey(const ValueKey('team-run-details-sheet'));
         expect(sheet, findsOneWidget);
+        expect(
+          find.descendant(
+            of: sheet,
+            matching: find.text(l10n.teamUiRunTermBatch, findRichText: true),
+          ),
+          findsOneWidget,
+        );
         final id = find.descendant(of: sheet, matching: find.text('oc-xru'));
         await tester.scrollUntilVisible(
           id,

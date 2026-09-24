@@ -3,9 +3,10 @@
 // City control adapter reads the route (with `?rig=`) and answers null
 // for a front without it or a bare supervisor; the controller caches the
 // policy with the projects scope and drops it on stop; the run Overview
-// shows the read-only "Supervision · …" line and boundary chips between
-// the state header and the progress bar; the Start-a-run sheet shows the
-// Boundaries row; both are absent (no widget) when the gateway has no
+// shows the read-only "Supervision · …" line and boundary chips under its
+// collapsed Details row, after the step counts (the 2026-09-24 redesign
+// moved them there from under the state header); the Start-a-run sheet
+// shows the Boundaries row; both are absent (no widget) when the gateway has no
 // policy side. Also 320 dp / 2.5× LTR + RTL.
 
 import 'dart:async';
@@ -553,16 +554,50 @@ void main() {
     });
   });
 
-  group('run Overview', () {
+  group('run Overview Details', () {
+    /// The redesigned Overview (2026-09-24) keeps the counts, the usage
+    /// and the host's policy under one collapsed "Details" row; open it.
+    Future<void> openDetails(
+      WidgetTester tester, {
+      String label = 'Details',
+    }) async {
+      final row = find.text(label);
+      await tester.scrollUntilVisible(
+        row,
+        120,
+        scrollable: find
+            .descendant(
+              of: key('team-run-overview'),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(key('team-run-summary-body'), findsOneWidget);
+    }
+
     testWidgets('shows the supervision line, the rig, the boundary chips '
-        'and the read-only helper between the header and the progress', (
+        'and the read-only helper under Details, after the step counts', (
       tester,
     ) async {
       await size(tester, const Size(800, 2400));
       final controller = await boot(_PolicyGateway());
       await pumpRun(tester, controller);
 
+      // Collapsed on open: the policy is one tap away, not dropped.
+      expect(key('team-run-policy'), findsNothing);
+      await openDetails(tester);
+
       expect(key('team-run-policy'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: key('team-run-summary-body'),
+          matching: key('team-run-policy'),
+        ),
+        findsOneWidget,
+      );
       expect(
         tester.widget<Text>(key('team-run-policy-supervision')).data,
         'Supervision · High',
@@ -609,24 +644,15 @@ void main() {
       expect(chips, hasLength(3));
       expect(chips.every((chip) => chip.onDeleted == null), isTrue);
 
-      // Order: objective (state header) → policy → progress.
-      final overview = tester.widget<ListView>(key('team-run-overview'));
-      final delegate = overview.childrenDelegate as SliverChildListDelegate;
-      final kinds = delegate.children
-          .where((w) => w.key != null)
-          .map((w) => (w.key! as ValueKey<Object?>).value)
-          .toList();
+      // Order: the objective (title and status line) → Details → its step
+      // counts → the policy.
       expect(
-        kinds.indexOf('team-run-objective'),
-        lessThan(delegate.children.indexWhere((w) => w is TeamPolicyBlock)),
+        tester.getTopLeft(key('team-run-objective')).dy,
+        lessThan(tester.getTopLeft(key('team-run-summary')).dy),
       );
       expect(
-        delegate.children.indexWhere((w) => w is TeamPolicyBlock),
-        lessThan(
-          delegate.children.indexWhere(
-            (w) => w.key == const ValueKey('team-run-progress'),
-          ),
-        ),
+        tester.getBottomLeft(key('team-run-counts')).dy,
+        lessThanOrEqualTo(tester.getTopLeft(block).dy),
       );
     });
 
@@ -640,6 +666,7 @@ void main() {
         );
       final controller = await boot(gateway);
       await pumpRun(tester, controller);
+      await openDetails(tester);
       expect(
         tester.widget<Text>(key('team-run-policy-supervision')).data,
         'Supervision · Autonomous',
@@ -655,17 +682,24 @@ void main() {
       await size(tester, const Size(800, 2400));
       final controller = await boot(_Gateway());
       await pumpRun(tester, controller);
+      await openDetails(tester);
       expect(key('team-run-policy'), findsNothing);
       expect(find.byType(TeamPolicyBlock), findsNothing);
       expect(find.textContaining('Supervision'), findsNothing);
-      expect(key('team-run-progress'), findsOneWidget);
+      // Details itself still opens with the step counts.
+      expect(key('team-run-counts'), findsOneWidget);
     });
 
-    testWidgets('Arabic, 320 dp at 2.5×, RTL: the line and every chip '
-        'render without overflow', (tester) async {
+    testWidgets('Arabic, 320 dp at 2.5×, RTL: the Overview, the line and '
+        'every chip render without overflow', (tester) async {
       await size(tester, const Size(320, 1600), ratio: 1);
       final controller = await boot(_PolicyGateway());
       await pumpRun(tester, controller, locale: const Locale('ar'), scale: 2.5);
+      expect(tester.takeException(), isNull);
+      await openDetails(
+        tester,
+        label: lookupAppLocalizations(const Locale('ar')).teamUiRunDetails,
+      );
       expect(tester.takeException(), isNull);
       expect(key('team-run-policy'), findsOneWidget);
       expect(
