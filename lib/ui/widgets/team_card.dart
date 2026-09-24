@@ -179,14 +179,19 @@ class TeamCardState extends State<TeamCard> with TickerProviderStateMixin {
     }
     // A section, not a card (design standard §3, §6): the label, the
     // host's line, then the state or the runs, on the list's own rails.
-    return Column(
+    // A transparent ink surface of its own, as the card had, so its rows
+    // can splash wherever the section is placed.
+    return Material(
       key: const ValueKey('team-card'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _Header(controller: controller, l10n: l10n),
-        body,
-        const SizedBox(height: 8),
-      ],
+      type: MaterialType.transparency,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Header(controller: controller, l10n: l10n),
+          body,
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 }
