@@ -189,7 +189,7 @@ Future<bool> runPhoneServerAction(
     case PhoneServerAction.addTools:
       final ids = await PhoneServerCardRoutes.addTools(context);
       if (ids == null || ids.isEmpty || !context.mounted) return false;
-      await install(ids);
+      await install(ids, params: SetupJobParams.adding(ids));
       return false;
     case PhoneServerAction.remove:
       return _removePhoneServer(

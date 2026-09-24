@@ -28983,6 +28983,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'in {parent}'**
   String perfTraceWithin(String parent);
+
+  /// The AI Team setup component, in the setup checklist and Add tools
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team'**
+  String get aiteamComponentTitle;
+
+  /// Setup stage while one of AI Team's three programs downloads
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading AI Team · {index} of {total}'**
+  String aiteamComponentStageDownloading(String index, String total);
+
+  /// Setup stage after the downloads: unpacking and checking the programs
+  ///
+  /// In en, this message translates to:
+  /// **'Getting AI Team ready'**
+  String get aiteamComponentStagePreparing;
+
+  /// Title of the setup progress screen and notification while tools are added to a phone that is set up
+  ///
+  /// In en, this message translates to:
+  /// **'Adding {names}'**
+  String aiteamComponentAddingTitle(String names);
+
+  /// Ongoing notification title while the in-app AI Team runs
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode and AI Team are running on this phone'**
+  String get aiteamComponentNotice;
+
+  /// Title of the in-app AI Team section in Settings > Plugins
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team on this phone'**
+  String get aiteamComponentSectionTitle;
+
+  /// Offer to add AI Team when it is not installed
+  ///
+  /// In en, this message translates to:
+  /// **'Several agents share the work on one project, right here. About {size} to download.'**
+  String aiteamComponentOfferBody(String size);
+
+  /// Button that opens Add tools with AI Team switched on
+  ///
+  /// In en, this message translates to:
+  /// **'Add AI Team'**
+  String get aiteamComponentAdd;
+
+  /// Button that turns the team on for the open project
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on AI Team for {project}'**
+  String aiteamComponentTurnOn(String project);
+
+  /// What turning the team on for a project does
+  ///
+  /// In en, this message translates to:
+  /// **'The team works on its own branches and keeps a copy of the project\'s history on this phone.'**
+  String get aiteamComponentTurnOnBody;
+
+  /// Shown when AI Team is installed but no project is open
+  ///
+  /// In en, this message translates to:
+  /// **'Open a project first, then turn AI Team on for it.'**
+  String get aiteamComponentNoProject;
+
+  /// Turn-on stage: the team's own store is made
+  ///
+  /// In en, this message translates to:
+  /// **'Getting the team ready'**
+  String get aiteamComponentStageTeam;
+
+  /// Turn-on stage: the project is added to the team
+  ///
+  /// In en, this message translates to:
+  /// **'Adding {project}'**
+  String aiteamComponentStageProject(String project);
+
+  /// Turn-on stage: the team starts
+  ///
+  /// In en, this message translates to:
+  /// **'Starting AI Team'**
+  String get aiteamComponentStageStarting;
+
+  /// Turn-on stage: waiting until the team answers
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for AI Team to answer'**
+  String get aiteamComponentStageWaiting;
+
+  /// Status line of a running in-app team
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team · Running'**
+  String get aiteamComponentRunning;
+
+  /// Status line of a stopped in-app team
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team · Stopped'**
+  String get aiteamComponentStopped;
+
+  /// The projects the in-app team works on
+  ///
+  /// In en, this message translates to:
+  /// **'Works on {projects}'**
+  String aiteamComponentProjects(String projects);
+
+  /// Button that starts the in-app team
+  ///
+  /// In en, this message translates to:
+  /// **'Start AI Team'**
+  String get aiteamComponentStart;
+
+  /// Button that stops the in-app team
+  ///
+  /// In en, this message translates to:
+  /// **'Stop AI Team'**
+  String get aiteamComponentStop;
+
+  /// A failed turn-on or start, with the reason
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team could not start: {reason}'**
+  String aiteamComponentFailed(String reason);
+
+  /// Reason: the team stopped by itself while starting
+  ///
+  /// In en, this message translates to:
+  /// **'it stopped on its own'**
+  String get aiteamComponentFailedExited;
+
+  /// Reason: the team did not answer in time
+  ///
+  /// In en, this message translates to:
+  /// **'it did not answer in time'**
+  String get aiteamComponentFailedTimeout;
+
+  /// Shows the technical reason of a failure
+  ///
+  /// In en, this message translates to:
+  /// **'Show details'**
+  String get aiteamComponentShowDetails;
+
+  /// Explains Android's child-process limit and the Developer options switch
+  ///
+  /// In en, this message translates to:
+  /// **'Android stops an app\'s extra programs when it runs many at once, and a team runs several. If the team stops while it works, turn on Developer options › Disable child process restrictions.'**
+  String get aiteamComponentChildProcesses;
 }
 
 class _AppLocalizationsDelegate

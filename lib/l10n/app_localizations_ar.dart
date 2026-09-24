@@ -18213,4 +18213,97 @@ class AppLocalizationsAr extends AppLocalizations {
   String perfTraceWithin(String parent) {
     return 'ضمن $parent';
   }
+
+  @override
+  String get aiteamComponentTitle => 'الفريق الذكي';
+
+  @override
+  String aiteamComponentStageDownloading(String index, String total) {
+    return 'تنزيل الفريق الذكي · $index من $total';
+  }
+
+  @override
+  String get aiteamComponentStagePreparing => 'تجهيز الفريق الذكي';
+
+  @override
+  String aiteamComponentAddingTitle(String names) {
+    return 'إضافة $names';
+  }
+
+  @override
+  String get aiteamComponentNotice =>
+      'OpenCode والفريق الذكي يعملان على هذا الهاتف';
+
+  @override
+  String get aiteamComponentSectionTitle => 'الفريق الذكي على هذا الهاتف';
+
+  @override
+  String aiteamComponentOfferBody(String size) {
+    return 'عدة وكلاء يتقاسمون العمل على مشروع واحد، هنا على الهاتف. التنزيل نحو $size.';
+  }
+
+  @override
+  String get aiteamComponentAdd => 'إضافة الفريق الذكي';
+
+  @override
+  String aiteamComponentTurnOn(String project) {
+    return 'تشغيل الفريق الذكي لـ $project';
+  }
+
+  @override
+  String get aiteamComponentTurnOnBody =>
+      'يعمل الفريق على فروعه الخاصة ويحتفظ بنسخة من سجل المشروع على هذا الهاتف.';
+
+  @override
+  String get aiteamComponentNoProject =>
+      'افتح مشروعًا أولًا، ثم شغّل الفريق الذكي له.';
+
+  @override
+  String get aiteamComponentStageTeam => 'تجهيز الفريق';
+
+  @override
+  String aiteamComponentStageProject(String project) {
+    return 'إضافة $project';
+  }
+
+  @override
+  String get aiteamComponentStageStarting => 'بدء الفريق الذكي';
+
+  @override
+  String get aiteamComponentStageWaiting => 'انتظار رد الفريق الذكي';
+
+  @override
+  String get aiteamComponentRunning => 'الفريق الذكي · يعمل';
+
+  @override
+  String get aiteamComponentStopped => 'الفريق الذكي · متوقف';
+
+  @override
+  String aiteamComponentProjects(String projects) {
+    return 'يعمل على $projects';
+  }
+
+  @override
+  String get aiteamComponentStart => 'بدء الفريق الذكي';
+
+  @override
+  String get aiteamComponentStop => 'إيقاف الفريق الذكي';
+
+  @override
+  String aiteamComponentFailed(String reason) {
+    return 'تعذّر بدء الفريق الذكي: $reason';
+  }
+
+  @override
+  String get aiteamComponentFailedExited => 'توقف من تلقاء نفسه';
+
+  @override
+  String get aiteamComponentFailedTimeout => 'لم يرد في الوقت المحدد';
+
+  @override
+  String get aiteamComponentShowDetails => 'عرض التفاصيل';
+
+  @override
+  String get aiteamComponentChildProcesses =>
+      'يوقف أندرويد البرامج الإضافية للتطبيق حين يشغّل كثيرًا منها معًا، والفريق يشغّل عدة برامج. إذا توقف الفريق أثناء العمل، فعّل خيارات المطوّرين › تعطيل قيود العمليات الفرعية.';
 }

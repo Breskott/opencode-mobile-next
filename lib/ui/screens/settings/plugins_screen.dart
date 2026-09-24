@@ -25,6 +25,7 @@ import '../../../termux/bridge.dart';
 import '../../../termux/team_runtime.dart';
 import '../../app_theme.dart';
 import '../../desktop/desktop_interaction.dart';
+import '../../widgets/builtin_team_section.dart';
 import '../../widgets/team_discovery_card.dart';
 import '../../widgets/team_host_form.dart';
 import '../../widgets/team_phone_section.dart';
@@ -128,6 +129,8 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
               discovery: _discovery,
               probe: widget.probe,
             ),
+            if (BuiltinTeamSection.appliesTo(profile))
+              BuiltinTeamSection(connection: controller, profile: profile!),
             if (teamPhoneProfile(profile))
               TeamPhoneReofferCard(
                 connection: controller,

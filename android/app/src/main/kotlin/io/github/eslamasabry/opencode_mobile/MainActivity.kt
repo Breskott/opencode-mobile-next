@@ -358,6 +358,7 @@ class MainActivity : FlutterActivity() {
                     "message" to linux.message,
                     "serverRunning" to linux.serverRunning,
                     "serverPort" to linux.port,
+                    "services" to linux.runningServices(),
                     "abi" to (Build.SUPPORTED_ABIS.firstOrNull() ?: ""),
                     "bytesUsed" to linux.bytesUsed(),
                 ),
@@ -397,6 +398,38 @@ class MainActivity : FlutterActivity() {
             "serverLog" -> {
                 val tail = call.argument<Int>("tailBytes") ?: 16_384
                 inBackground { linux.serverLogTail(tail) }
+            }
+            // Named long-running services beside the OpenCode server (the AI
+            // Team supervisor); the server itself is the service "server".
+            "startService" -> {
+                val name = call.argument<String>("name")
+                val script = call.argument<String>("script")
+                if (name == null || script == null) {
+                    result.error("builtin_linux", "A service needs a name and a script", null)
+                    return
+                }
+                val port = call.argument<Int>("port")
+                val notice = call.argument<String>("notice")
+                inBackground {
+                    linux.startService(name, script, port, notice)
+                    null
+                }
+            }
+            "stopService" -> {
+                val name = call.argument<String>("name")
+                if (name == null) {
+                    result.error("builtin_linux", "Which service?", null)
+                    return
+                }
+                inBackground {
+                    linux.stopService(name)
+                    null
+                }
+            }
+            "serviceLog" -> {
+                val name = call.argument<String>("name") ?: BuiltinLinux.SERVER
+                val tail = call.argument<Int>("tailBytes") ?: 16_384
+                inBackground { linux.serviceLogTail(name, tail) }
             }
             "uninstall" -> inBackground {
                 linux.uninstall()

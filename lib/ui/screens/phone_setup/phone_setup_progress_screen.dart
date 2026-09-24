@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../builtin/setup/phone_setup.dart';
 import '../../../builtin/setup/setup_contract.dart';
+import '../../../builtin/setup/setup_engine.dart' show setupAddingTitle;
 import '../../../l10n/app_localizations.dart';
 import '../../app_iconography.dart';
 import '../../widgets/confirm_sheet.dart';
@@ -149,7 +150,13 @@ class _PhoneSetupProgressScreenState extends State<PhoneSetupProgressScreen> {
                   Semantics(
                     header: true,
                     child: Text(
-                      l10n.phoneSetupProgressTitle,
+                      progress.adding.isEmpty
+                          ? l10n.phoneSetupProgressTitle
+                          : setupAddingTitle(
+                              l10n,
+                              _engine.registry,
+                              progress.adding,
+                            ),
                       style: theme.textTheme.headlineSmall,
                     ),
                   ),

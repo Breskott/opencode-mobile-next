@@ -13,6 +13,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
@@ -68,7 +69,12 @@ class TeamDiscovery extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    final urls = teamDiscoveryUrlsFor(profile.baseUrl);
+    // The OpenCode inside this app has its own team (BuiltinTeamSection).
+    // What answers on this phone's loopback ports here is Termux's, not a
+    // computer's, and not this server's to adopt.
+    final urls = looksLikeInAppServer(profile)
+        ? const <String>[]
+        : teamDiscoveryUrlsFor(profile.baseUrl);
     _probedProfileId = profile.id;
     _result = null;
     if (urls.isEmpty) {
