@@ -371,7 +371,7 @@ void main() {
     expect(find.text('+branch change'), findsOneWidget);
     expect(branchLoads, 1);
 
-    await tester.tap(find.text('This chat'));
+    await tester.tap(find.text('This conversation'));
     await tester.pumpAndSettle();
     expect(find.text('+session change'), findsOneWidget);
     expect(sessionLoads, 2);

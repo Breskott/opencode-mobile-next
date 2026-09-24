@@ -7533,7 +7533,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readerUiChanged => 'Changed';
 
   @override
-  String get readerUiSession => 'This chat';
+  String get readerUiSession => 'This conversation';
 
   @override
   String get readerUiBranch => 'Whole branch';

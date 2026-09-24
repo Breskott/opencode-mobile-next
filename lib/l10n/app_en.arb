@@ -6033,7 +6033,7 @@
     "description": "Reader display, status or accessible label. Technical placeholders remain original.",
     "placeholders": {}
   },
-  "readerUiSession": "This chat",
+  "readerUiSession": "This conversation",
   "@readerUiSession": {
     "description": "Reader display, status or accessible label. Technical placeholders remain original.",
     "placeholders": {}

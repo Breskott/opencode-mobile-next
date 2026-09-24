@@ -12395,7 +12395,7 @@ abstract class AppLocalizations {
   /// Reader display, status or accessible label. Technical placeholders remain original.
   ///
   /// In en, this message translates to:
-  /// **'This chat'**
+  /// **'This conversation'**
   String get readerUiSession;
 
   /// Reader display, status or accessible label. Technical placeholders remain original.
