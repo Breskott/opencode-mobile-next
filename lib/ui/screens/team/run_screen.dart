@@ -1005,11 +1005,15 @@ class _StageLine extends StatelessWidget {
         children: [
           SizedBox.square(dimension: 16, child: Center(child: glyph)),
           const SizedBox(width: 6),
-          Text(
-            teamStageWord(l10n, stage),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: current ? accent : (passed ? null : muted),
-              fontWeight: current ? FontWeight.w600 : null,
+          // Flexible: a stage word at 2.5× on a 320 dp phone (Arabic
+          // especially) wraps under its mark instead of overflowing.
+          Flexible(
+            child: Text(
+              teamStageWord(l10n, stage),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: current ? accent : (passed ? null : muted),
+                fontWeight: current ? FontWeight.w600 : null,
+              ),
             ),
           ),
         ],
