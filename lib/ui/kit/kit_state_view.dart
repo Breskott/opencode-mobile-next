@@ -5,6 +5,8 @@ import '../app_theme.dart';
 import 'kit_buttons.dart';
 import 'kit_illustration.dart';
 import 'kit_progress.dart';
+import 'motion/kit_haptics.dart';
+import 'motion/kit_reveal.dart';
 
 enum KitStateSize {
   /// Fills the body, centred vertically, with no card around it.
@@ -35,6 +37,13 @@ enum KitStateSize {
 /// that order: [content] sits between the progress and the actions (the
 /// steps a progress is made of, a name field), and [footer] after
 /// everything (the less common ways in, folded away).
+///
+/// Motion (§10): a state arrives with a short fade and rise when it first
+/// shows and again whenever it becomes a different state (its icon, tone or
+/// drawing changes); a new caption or progress inside the same state does
+/// not replay it. Details unfold and fold. When a working state turns into
+/// a finished one ([AppStatusTone.progress] to [AppStatusTone.ok]) while the
+/// person watches, the phone gives a soft confirmation ([KitHaptics.done]).
 class KitStateView extends StatefulWidget {
   const KitStateView({
     super.key,
@@ -109,6 +118,14 @@ class KitStateView extends StatefulWidget {
 
 class _KitStateViewState extends State<KitStateView> {
   bool _detailsOpen = false;
+
+  @override
+  void didUpdateWidget(KitStateView old) {
+    super.didUpdateWidget(old);
+    if (old.tone == AppStatusTone.progress && widget.tone == AppStatusTone.ok) {
+      KitHaptics.done(context);
+    }
+  }
 
   /// The icon's colour for [tone]; neutral is the muted text colour.
   static Color toneColor(ThemeData theme, AppStatusTone tone) =>
@@ -206,38 +223,45 @@ class _KitStateViewState extends State<KitStateView> {
               ),
             ),
           ),
-          if (_detailsOpen)
-            Container(
-              key: const ValueKey('kit-state-details-text'),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainer,
-                borderRadius: BorderRadius.circular(AppTheme.radiusControl),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final note in widget.detailNotes)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        note,
-                        style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
+          KitReveal(
+            child: !_detailsOpen
+                ? null
+                : Container(
+                    key: const ValueKey('kit-state-details-text'),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.radiusControl,
                       ),
                     ),
-                  if (widget.details case final details?)
-                    SelectableText(
-                      details,
-                      textDirection: TextDirection.ltr,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontFamily: AppTheme.monoFamily,
-                        color: AppTheme.mutedOf(theme),
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final note in widget.detailNotes)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              note,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        if (widget.details case final details?)
+                          SelectableText(
+                            details,
+                            textDirection: TextDirection.ltr,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontFamily: AppTheme.monoFamily,
+                              color: AppTheme.mutedOf(theme),
+                            ),
+                          ),
+                        ?widget.detailsChild,
+                      ],
                     ),
-                  ?widget.detailsChild,
-                ],
-              ),
-            ),
+                  ),
+          ),
         ],
         if (widget.footer case final footer?) ...[
           SizedBox(height: page ? 16 : 8),
@@ -248,7 +272,10 @@ class _KitStateViewState extends State<KitStateView> {
     final announced = Semantics(
       container: true,
       liveRegion: widget.liveRegion,
-      child: column,
+      child: KitEntrance(
+        trigger: (widget.icon, widget.tone, widget.illustration?.runtimeType),
+        child: column,
+      ),
     );
     if (!page) {
       return Padding(

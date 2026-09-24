@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import 'kit_buttons.dart';
+import 'motion/kit_reveal.dart';
 
 /// A message that belongs to one part of a form or a list (design standard
 /// §3, for a moment too small for a whole [KitStateView]): the verdict of a
@@ -14,6 +15,10 @@ import 'kit_buttons.dart';
 /// own rails with no filled block and no card around it (§3: "never a solid
 /// red block"; cards are for content, not for wrapping a message). It is
 /// one live region, so a new verdict is read out once.
+///
+/// Motion (§10): it fades and rises into place when it appears and again
+/// when its tone changes (a verdict that turned). To have it fold away when
+/// it goes, the host shows it through a [KitReveal].
 class KitNotice extends StatelessWidget {
   const KitNotice({
     super.key,
@@ -64,82 +69,85 @@ class KitNotice extends StatelessWidget {
     final title = this.title;
     final dismiss = onDismiss;
     final shown = actions.take(2).toList();
-    return Semantics(
-      container: true,
-      liveRegion: liveRegion,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 1),
-              child: Icon(icon ?? _iconFor(tone), size: 20, color: tint),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (title != null) ...[
-                    Text(
-                      title,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                  ],
-                  Text(
-                    message,
-                    key: messageKey,
-                    style:
-                        (title == null
-                                ? theme.textTheme.bodyMedium
-                                : theme.textTheme.bodySmall?.copyWith(
-                                    color: AppTheme.mutedOf(theme),
-                                  ))
-                            ?.copyWith(height: 1.4),
-                  ),
-                  for (final note in notes) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      note,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                  if (shown.isNotEmpty)
-                    KitInset(
-                      child: Wrap(
-                        spacing: 4,
-                        children: [
-                          for (final action in shown)
-                            KitButton.fromAction(
-                              action,
-                              role: KitButtonRole.tertiary,
-                            ),
-                        ],
-                      ),
-                    ),
-                ],
+    return KitEntrance(
+      trigger: (tone, icon),
+      child: Semantics(
+        container: true,
+        liveRegion: liveRegion,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: Icon(icon ?? _iconFor(tone), size: 20, color: tint),
               ),
-            ),
-            if (dismiss != null)
-              IconButton(
-                key: const ValueKey('kit-notice-dismiss'),
-                tooltip: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).workspaceDismissNotice,
-                onPressed: dismiss,
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(AppIconography.close, size: 18),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (title != null) ...[
+                      Text(
+                        title,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          height: 1.35,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                    ],
+                    Text(
+                      message,
+                      key: messageKey,
+                      style:
+                          (title == null
+                                  ? theme.textTheme.bodyMedium
+                                  : theme.textTheme.bodySmall?.copyWith(
+                                      color: AppTheme.mutedOf(theme),
+                                    ))
+                              ?.copyWith(height: 1.4),
+                    ),
+                    for (final note in notes) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        note,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTheme.mutedOf(theme),
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                    if (shown.isNotEmpty)
+                      KitInset(
+                        child: Wrap(
+                          spacing: 4,
+                          children: [
+                            for (final action in shown)
+                              KitButton.fromAction(
+                                action,
+                                role: KitButtonRole.tertiary,
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
-          ],
+              if (dismiss != null)
+                IconButton(
+                  key: const ValueKey('kit-notice-dismiss'),
+                  tooltip: lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).workspaceDismissNotice,
+                  onPressed: dismiss,
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(AppIconography.close, size: 18),
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
+import 'kit_motion.dart';
 
 /// One action a kit part can show: a label, what it does, and optionally an
 /// icon. Where it appears (primary, secondary, tertiary) is decided by the
@@ -40,8 +41,10 @@ enum KitButtonRole { primary, secondary, tertiary }
 /// (tonal) and tertiary (text), all at least 48 dp tall.
 ///
 /// [working] swaps the icon for a small spinner while the button's own tap
-/// is in flight (a second or two, e.g. creating a conversation). It is never
-/// a status display: a state that lasts, like "Starting the server…", is
+/// is in flight (a second or two, e.g. creating a conversation): the icon
+/// and the spinner crossfade over [KitMotion.quick], and a button without
+/// an icon makes room for the spinner smoothly instead of jumping (§10).
+/// It is never a status display: a state that lasts, like "Starting the server…", is
 /// progress in a [KitStateView], not a disabled button (§2).
 class KitButton extends StatelessWidget {
   const KitButton({
@@ -127,14 +130,47 @@ class KitButton extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.center,
     );
-    final Widget? leading = working
-        ? const SizedBox.square(
-            dimension: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-        : icon == null
-        ? null
-        : Icon(icon, size: 19);
+    final still = KitMotion.reduced(context);
+    Widget? leading;
+    Widget child = text;
+    if (role != KitButtonRole.tertiary && icon != null) {
+      // The icon and the spinner share one 19 dp slot and crossfade.
+      leading = SizedBox.square(
+        dimension: 19,
+        child: AnimatedSwitcher(
+          duration: still ? Duration.zero : KitMotion.quick,
+          switchInCurve: KitMotion.enter,
+          switchOutCurve: KitMotion.exit,
+          child: working
+              ? const _Spinner(key: ValueKey('kit-button-working'))
+              : Icon(icon, key: const ValueKey('kit-button-icon'), size: 19),
+        ),
+      );
+    } else if (role != KitButtonRole.tertiary) {
+      // No icon: the spinner opens its own room before the words.
+      child = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedSize(
+            duration: still ? Duration.zero : KitMotion.quick,
+            curve: KitMotion.enter,
+            child: AnimatedSwitcher(
+              duration: still ? Duration.zero : KitMotion.quick,
+              child: working
+                  ? const Padding(
+                      key: ValueKey('kit-button-working'),
+                      padding: EdgeInsetsDirectional.only(end: 8),
+                      child: _Spinner(),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+          Flexible(child: text),
+        ],
+      );
+    } else if (icon != null) {
+      leading = Icon(icon, size: 19);
+    }
     final minimum = expand ? const Size.fromHeight(48) : const Size(48, 48);
     switch (role) {
       case KitButtonRole.primary:
@@ -146,7 +182,7 @@ class KitButton extends StatelessWidget {
           foregroundColor: destructive ? theme.colorScheme.onError : null,
         );
         return leading == null
-            ? FilledButton(onPressed: onPressed, style: style, child: text)
+            ? FilledButton(onPressed: onPressed, style: style, child: child)
             : FilledButton.icon(
                 onPressed: onPressed,
                 style: style,
@@ -162,7 +198,7 @@ class KitButton extends StatelessWidget {
             ? FilledButton.tonal(
                 onPressed: onPressed,
                 style: style,
-                child: text,
+                child: child,
               )
             : FilledButton.tonalIcon(
                 onPressed: onPressed,
@@ -186,6 +222,19 @@ class KitButton extends StatelessWidget {
               );
     }
   }
+}
+
+/// The small spinner a working button shows.
+class _Spinner extends StatelessWidget {
+  const _Spinner({super.key});
+
+  @override
+  Widget build(BuildContext context) => const Center(
+    child: SizedBox.square(
+      dimension: 18,
+      child: CircularProgressIndicator(strokeWidth: 2),
+    ),
+  );
 }
 
 /// A block of actions in the one hierarchy (§2): primary, then secondary,

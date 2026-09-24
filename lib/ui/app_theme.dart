@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_iconography.dart';
+import 'kit/motion/kit_page_transitions.dart';
 import 'theme_packs.dart';
 
 export 'app_iconography.dart';
@@ -252,13 +253,16 @@ abstract final class AppTheme {
       canvasColor: backgroundColor,
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,
+      // One page transition everywhere (design standard §10): the M3 shared
+      // axis, timed by KitMotion, instant under reduced motion. iOS keeps
+      // its native back-swipe.
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          // The M3 horizontal fade-through keeps pushes light and fast and
-          // respects predictive back on current Android.
-          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
-          TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
-          TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.android: KitPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: KitPageTransitionsBuilder(),
+          TargetPlatform.linux: KitPageTransitionsBuilder(),
+          TargetPlatform.windows: KitPageTransitionsBuilder(),
+          TargetPlatform.macOS: KitPageTransitionsBuilder(),
         },
       ),
     );
