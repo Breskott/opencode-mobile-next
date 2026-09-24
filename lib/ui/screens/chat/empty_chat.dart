@@ -262,6 +262,16 @@ class _ChatStartHeaderState extends State<_ChatStartHeader> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              // A fresh folded sheet, its caret waiting like the one after
+              // the name: the drawing every "no conversations yet" shares
+              // (design standard §10). Only with room; the compact line
+              // keeps the space for the composer.
+              const KitIllustration(
+                key: ValueKey('chat-start-drawing'),
+                scene: StatesSheetScene(),
+                width: 88,
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Flexible(child: nameText),

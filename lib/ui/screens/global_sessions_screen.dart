@@ -9,6 +9,9 @@ import '../../state/connection.dart';
 import '../app_theme.dart';
 import '../desktop/context_menu.dart';
 import '../widgets/confirm_sheet.dart';
+import '../../feedback/bug_report.dart';
+import '../kit/kit.dart' show KitAction, KitStateView;
+import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart';
 import '../widgets/relative_time.dart';
 import '../widgets/session_read_state.dart';
@@ -661,31 +664,63 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
   Widget _content(List<_GlobalGroup> groups, AppLocalizations l10n) {
     if (_loading && _results.isEmpty) return const LoadingList(rows: 7);
     if (_error != null && _results.isEmpty) {
-      return ProductErrorState(
-        message: productErrorText(_error!),
-        onRetry: _hasMore && !_restartPagination ? _loadMore : _reload,
+      final retry = _hasMore && !_restartPagination ? _loadMore : _reload;
+      // Every load failure draws the unplugged cable (design standard §10).
+      return KitStateView(
+        key: const ValueKey('global-sessions-load-failed'),
+        icon: AppIconography.error,
+        tone: AppStatusTone.failure,
+        illustration: const StatesUnpluggedScene(),
+        title: l10n.globalSessionsLoadFailedTitle,
+        body: productErrorText(_error!, l10n: l10n),
+        primary: KitAction(
+          label: l10n.commonRetry,
+          onPressed: () => unawaited(retry()),
+        ),
+        tertiary: [
+          KitAction(
+            key: const ValueKey('product-error-report-bug'),
+            label: l10n.e7LibraryReportABug,
+            onPressed: () => unawaited(openBugReport(context)),
+          ),
+        ],
       );
     }
     if (_results.isEmpty && !_hasMore) {
       final query = _search.text.trim();
-      return ProductEmptyState(
+      // Nothing yet is the fresh sheet; a search that found nothing is the
+      // magnifier (one drawing per kind of state).
+      return KitStateView(
+        key: ValueKey(
+          query.isEmpty ? 'global-sessions-empty' : 'global-sessions-no-match',
+        ),
         icon: AppIconography.searchList,
+        illustration: query.isEmpty
+            ? const StatesSheetScene()
+            : const StatesSearchScene(),
         title: query.isEmpty
             ? l10n.globalSessionsEmptyTitle
             : l10n.globalSessionsNoMatchTitle,
-        message: query.isEmpty
+        body: query.isEmpty
             ? l10n.globalSessionsEmptyMessage
             : l10n.globalSessionsNoMatchMessage,
-        actionLabel: query.isEmpty
-            ? l10n.globalSessionsRefresh
-            : l10n.commonClearSearch,
-        onAction: query.isEmpty
-            ? _reload
-            : () {
-                _search.clear();
-                setState(() {});
-                unawaited(_reload());
-              },
+        secondary: query.isEmpty
+            ? null
+            : KitAction(
+                label: l10n.commonClearSearch,
+                onPressed: () {
+                  _search.clear();
+                  setState(() {});
+                  unawaited(_reload());
+                },
+              ),
+        tertiary: [
+          if (query.isEmpty)
+            KitAction(
+              label: l10n.globalSessionsRefresh,
+              onPressed: () => unawaited(_reload()),
+            ),
+        ],
       );
     }
 

@@ -18541,4 +18541,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneServerTermuxTitle => 'This phone · Termux';
+
+  @override
+  String get workNotAnsweringListTitle => 'Your conversations will be back';
+
+  @override
+  String get workNotAnsweringListBody =>
+      'They show here again as soon as the server answers.';
+
+  @override
+  String get globalSessionsLoadFailedTitle => 'Couldn\'t load conversations';
+
+  @override
+  String get filesLoadFailedTitle => 'Couldn\'t open this folder';
+
+  @override
+  String get filesSymbolsFailedTitle => 'Couldn\'t search symbols';
+
+  @override
+  String get terminalListFailedTitle => 'Couldn\'t list the terminals';
 }

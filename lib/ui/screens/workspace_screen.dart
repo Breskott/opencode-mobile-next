@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../api/product_repository.dart';
+import '../../api/sse.dart';
 import '../../domain/return_brief.dart';
 import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
@@ -15,11 +16,13 @@ import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../navigation/chat_route.dart';
 import '../widgets/confirm_sheet.dart';
+import '../widgets/grace_timer.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/nudge_card.dart';
 import '../widgets/other_servers_panel.dart';
 import '../widgets/other_projects_panel.dart';
 import '../kit/kit.dart';
+import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart' show productErrorText, showProductError;
 import '../widgets/relative_time.dart';
 import '../widgets/session_title.dart';
@@ -724,6 +727,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                     size: KitStateSize.inline,
                     liveRegion: false,
                     icon: AppIconography.folders,
+                    illustration: const StatesFolderScene(),
                     title: _l10n(context).e7WorkspaceNoProjects,
                     body: capabilities.globalSessionSearch
                         ? _l10n(context).e7WorkspaceNoProjectsSearch
@@ -821,7 +825,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 ),
               ),
               if (firstLoad)
-                const SliverToBoxAdapter(child: KitSkeletonRows())
+                SliverToBoxAdapter(child: _firstLoadRows(l10n))
               else if (showEmpty)
                 SliverToBoxAdapter(
                   child: KitStateView(
@@ -831,6 +835,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                     size: KitStateSize.inline,
                     liveRegion: false,
                     icon: AppIconography.chat,
+                    illustration: const StatesSheetScene(),
                     title: nothingYet
                         ? l10n.emptyTeachWorkTitle
                         : pinned.isNotEmpty
@@ -955,6 +960,35 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         ? null
         : WorkspaceScreen.projectForDirectory(projects, directory);
     return project?.name ?? _basename(directory);
+  }
+
+  /// Placeholder rows while the list loads the first time. Once the server
+  /// has not answered for [notAnsweringGrace] (the status line above says
+  /// so, with its way out), they give way to the unplugged drawing: rows
+  /// that never fill in would say "loading" forever.
+  Widget _firstLoadRows(AppLocalizations l10n) {
+    final controller = widget.controller;
+    final lost = WorkStatusLine.serverLost(controller);
+    return GraceTimer(
+      waiting: lost,
+      restartKey: controller.connectionAttemptRevision,
+      builder: (context, overdue) {
+        final failed =
+            controller.status == StreamStatus.disconnected &&
+            controller.connectionError != null &&
+            !controller.manualReconnectInProgress;
+        if (!lost || !(overdue || failed)) return const KitSkeletonRows();
+        return KitStateView(
+          key: const ValueKey('work-not-answering-list'),
+          size: KitStateSize.inline,
+          liveRegion: false,
+          icon: AppIconography.cloudOff,
+          illustration: const StatesUnpluggedScene(),
+          title: l10n.workNotAnsweringListTitle,
+          body: l10n.workNotAnsweringListBody,
+        );
+      },
+    );
   }
 
   /// The one status line, in priority order: server not answering (inside
@@ -2548,6 +2582,11 @@ class _WorkspaceFolderChooser extends StatelessWidget {
       key: const ValueKey('workspace-folder-chooser'),
       icon: error == null ? AppIconography.folders : AppIconography.warning,
       tone: error == null ? AppStatusTone.neutral : AppStatusTone.attention,
+      // A place with nothing in it yet; the project list that could not
+      // load is the unplugged drawing, like every other load failure.
+      illustration: error == null
+          ? const StatesFolderScene()
+          : const StatesUnpluggedScene(),
       title: l10n.projectFolderChooserTitle,
       body: notice ?? l10n.e7WorkspaceChooseFolderToStart,
       bodyKey: notice == null

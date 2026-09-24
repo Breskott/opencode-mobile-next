@@ -20,6 +20,9 @@ import '../../state/connection.dart';
 import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../kit/kit_progress.dart';
+import '../../feedback/bug_report.dart';
+import '../kit/kit.dart' show KitAction, KitStateView;
+import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart';
 import 'local_terminal_screen.dart';
 
@@ -532,13 +535,27 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
   Widget _body(BuildContext context) {
     if (_processes == null && _error == null) return const LoadingList();
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     if (_error != null && _processes == null) {
-      return ProductErrorState(
-        message: setupUiMessage(
-          lookupAppLocalizations(Localizations.localeOf(context)),
-          _error!,
+      // Every load failure draws the unplugged cable (design standard §10).
+      return KitStateView(
+        key: const ValueKey('terminal-list-failed'),
+        icon: AppIconography.error,
+        tone: AppStatusTone.failure,
+        illustration: const StatesUnpluggedScene(),
+        title: l10n.terminalListFailedTitle,
+        body: setupUiMessage(l10n, _error!),
+        primary: KitAction(
+          label: l10n.commonRetry,
+          onPressed: () => unawaited(_load()),
         ),
-        onRetry: _load,
+        tertiary: [
+          KitAction(
+            key: const ValueKey('product-error-report-bug'),
+            label: l10n.e7LibraryReportABug,
+            onPressed: () => unawaited(openBugReport(context)),
+          ),
+        ],
       );
     }
     return Stack(
@@ -546,18 +563,18 @@ class _TerminalScreenState extends State<TerminalScreen> {
         if (_processes!.isEmpty)
           RefreshIndicator(
             onRefresh: _load,
-            child: ProductEmptyState(
+            // The terminal window with its prompt: the same drawing as
+            // This phone's terminal before it is set up.
+            child: KitStateView(
+              key: const ValueKey('terminal-none'),
               icon: AppIconography.terminal,
-              title: lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7SetupNoTerminals,
-              message: lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7SetupNewTerminalDetail,
-              actionLabel: lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7SetupNewTerminal,
-              onAction: _create,
+              illustration: const StatesTerminalScene(),
+              title: l10n.e7SetupNoTerminals,
+              body: l10n.e7SetupNewTerminalDetail,
+              secondary: KitAction(
+                label: l10n.e7SetupNewTerminal,
+                onPressed: _create,
+              ),
             ),
           )
         else

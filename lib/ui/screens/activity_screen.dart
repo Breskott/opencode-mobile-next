@@ -12,6 +12,8 @@ import '../../state/orchestration.dart';
 import '../app_theme.dart';
 import '../desktop/desktop_interaction.dart';
 import '../permission_presentation.dart';
+import '../kit/kit_illustration.dart';
+import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart';
 import '../widgets/completion_digest.dart';
 import '../widgets/question_options.dart';
@@ -1368,14 +1370,16 @@ class _ActivityStatus extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            known ? AppIconography.checkCircle : Icons.sync_problem_rounded,
-            size: 32,
-            color: known
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurfaceVariant,
+          // All caught up: the last sheet settles into the tray. Not
+          // known yet: the unplugged drawing every load failure uses.
+          KitIllustration(
+            key: const ValueKey('activity-status-illustration'),
+            scene: known
+                ? const StatesTrayScene()
+                : const StatesUnpluggedScene(),
+            width: 140,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             known ? l10n.activityClearHere : l10n.activityStatusIncomplete,
             style: theme.textTheme.headlineSmall,

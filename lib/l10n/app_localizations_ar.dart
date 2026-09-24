@@ -18806,4 +18806,23 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get phoneServerTermuxTitle => 'هذا الهاتف · Termux';
+
+  @override
+  String get workNotAnsweringListTitle => 'ستعود محادثاتك';
+
+  @override
+  String get workNotAnsweringListBody =>
+      'تظهر هنا من جديد بمجرد أن يستجيب الخادم.';
+
+  @override
+  String get globalSessionsLoadFailedTitle => 'تعذّر تحميل المحادثات';
+
+  @override
+  String get filesLoadFailedTitle => 'تعذّر فتح هذا المجلد';
+
+  @override
+  String get filesSymbolsFailedTitle => 'تعذّر البحث في الرموز';
+
+  @override
+  String get terminalListFailedTitle => 'تعذّر عرض الطرفيات';
 }

@@ -20463,5 +20463,29 @@
   "phoneServerTermuxTitle": "This phone · Termux",
   "@phoneServerTermuxTitle": {
     "description": "Name of the OpenCode server this app runs in Termux (Servers row, switcher, Work tab header); the app's built-in server is plain \"This phone\""
+  },
+  "workNotAnsweringListTitle": "Your conversations will be back",
+  "@workNotAnsweringListTitle": {
+    "description": "Work tab: where the conversation list would be, once the server has not answered for 8 seconds and nothing is listed yet"
+  },
+  "workNotAnsweringListBody": "They show here again as soon as the server answers.",
+  "@workNotAnsweringListBody": {
+    "description": "Work tab: under workNotAnsweringListTitle; the status line above has the way out (Retry or Restart)"
+  },
+  "globalSessionsLoadFailedTitle": "Couldn't load conversations",
+  "@globalSessionsLoadFailedTitle": {
+    "description": "All conversations: title of the state when the list could not load; the reason is under it"
+  },
+  "filesLoadFailedTitle": "Couldn't open this folder",
+  "@filesLoadFailedTitle": {
+    "description": "Files: title of the state when the folder's listing could not load; the reason is under it"
+  },
+  "filesSymbolsFailedTitle": "Couldn't search symbols",
+  "@filesSymbolsFailedTitle": {
+    "description": "Files › Symbols: title of the state when the symbol search failed; the reason is under it"
+  },
+  "terminalListFailedTitle": "Couldn't list the terminals",
+  "@terminalListFailedTitle": {
+    "description": "Terminal (server): title of the state when the server's terminals could not be listed; the reason is under it"
   }
 }

@@ -1194,15 +1194,21 @@ class _ComposerSubmit extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     if (busy && !canSendWhileBusy) {
       // v1 semantics unchanged: sending is impossible while a turn runs.
-      return IconButton.filledTonal(
-        key: const Key('chat-send-button'),
-        tooltip: _chatL10n(context).voiceConversationStopReply,
-        onPressed: stopping ? null : _stop,
-        style: IconButton.styleFrom(
-          foregroundColor: scheme.error,
-          backgroundColor: scheme.errorContainer.withValues(alpha: .55),
-        ),
-        icon: const Icon(AppIcons.stop),
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const _WorkingMark(),
+          IconButton.filledTonal(
+            key: const Key('chat-send-button'),
+            tooltip: _chatL10n(context).voiceConversationStopReply,
+            onPressed: stopping ? null : _stop,
+            style: IconButton.styleFrom(
+              foregroundColor: scheme.error,
+              backgroundColor: scheme.errorContainer.withValues(alpha: .55),
+            ),
+            icon: const Icon(AppIcons.stop),
+          ),
+        ],
       );
     }
     final icon = sending
@@ -1233,6 +1239,7 @@ class _ComposerSubmit extends StatelessWidget {
       key: const Key('chat-busy-submit-row'),
       mainAxisSize: MainAxisSize.min,
       children: [
+        const _WorkingMark(),
         IconButton.filledTonal(
           key: const Key('chat-stop-button'),
           tooltip: _chatL10n(context).voiceConversationStopReply,
@@ -1254,6 +1261,27 @@ class _ComposerSubmit extends StatelessWidget {
       ],
     );
   }
+}
+
+/// The small drawn mark beside Stop while a reply is being written
+/// (design standard §10): the brand's brackets with a spark travelling
+/// inside, one calm breath per loop. It is the screen's one ambient loop
+/// (the composer's ring stays lit and still), it stops the moment the run
+/// ends, and it is decorative: the ring already announces "Assistant is
+/// working".
+class _WorkingMark extends StatelessWidget {
+  const _WorkingMark();
+
+  @override
+  Widget build(BuildContext context) => const Padding(
+    padding: EdgeInsetsDirectional.only(end: 8),
+    child: KitIllustration(
+      key: ValueKey('chat-working-mark'),
+      scene: StatesWorkingScene(),
+      width: 28,
+      ambient: true,
+    ),
+  );
 }
 
 /// The known context-window percentage shown beside the model.
@@ -1735,18 +1763,20 @@ class _ContextMeterLine extends StatelessWidget {
   }
 }
 
-/// The composer's "alive" treatment while a run is active. A primary-to-
-/// tertiary gradient sweeps slowly around the rounded border and a soft
-/// glow breathes underneath, so the surface that holds Stop is the one
-/// thing on screen saying the assistant is working — the transcript no
-/// longer carries a blinking row for it.
+/// The composer's "alive" treatment while a run is active: a lit primary
+/// ring on the rounded border with a soft glow underneath, so the surface
+/// that holds Stop is the one thing on screen saying the assistant is
+/// working — the transcript carries no row for it.
+///
+/// The ring is still. The movement is the drawn mark beside Stop
+/// ([_WorkingMark]), so the screen has one ambient loop (design standard
+/// §10), and it runs on [KitMotion]'s breath.
 ///
 /// The tree shape is identical whether or not [active] is set: the ring is
 /// an extra overlay in a [Stack] and the glow decoration is always present
 /// (empty when idle), so toggling busy never re-parents the prompt field
-/// and never drops the keyboard. Reduced motion gets a still primary ring
-/// and a steady glow instead of the sweep and the breathing.
-class _ComposerActivity extends StatefulWidget {
+/// and never drops the keyboard.
+class _ComposerActivity extends StatelessWidget {
   const _ComposerActivity({
     required this.active,
     required this.radius,
@@ -1757,158 +1787,71 @@ class _ComposerActivity extends StatefulWidget {
   final BorderRadius radius;
   final Widget child;
 
-  @override
-  State<_ComposerActivity> createState() => _ComposerActivityState();
-}
-
-class _ComposerActivityState extends State<_ComposerActivity>
-    with SingleTickerProviderStateMixin {
-  /// One cycle: the sweep turns once while the glow breathes twice, so the
-  /// breath sits at the 1.8 s the rest of the app uses for "working" motion.
-  static const _cycle = Duration(milliseconds: 3600);
-  static const _glowFloor = .15;
-  static const _glowCeiling = .35;
-
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: _cycle,
-  );
-  bool _running = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _sync();
-  }
-
-  @override
-  void didUpdateWidget(_ComposerActivity oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _sync();
-  }
-
-  void _sync() {
-    final run = widget.active && !MediaQuery.disableAnimationsOf(context);
-    if (run == _running) return;
-    _running = run;
-    if (run) {
-      _controller.repeat();
-    } else {
-      _controller.stop();
-      _controller.value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  /// The glow's strength while lit.
+  static const _glow = .25;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final active = widget.active;
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final t = _controller.value;
-        // Breath: floor → ceiling → floor twice per cycle. The still
-        // (reduced-motion) ring holds the midpoint so it reads as lit,
-        // not as a frozen frame of the animation.
-        final glow = !active
-            ? 0.0
-            : _running
-            ? (_glowFloor + _glowCeiling) / 2 -
-                  (_glowCeiling - _glowFloor) / 2 * math.cos(4 * math.pi * t)
-            : (_glowFloor + _glowCeiling) / 2;
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: widget.radius,
-            boxShadow: active
-                ? AppTheme.glow(scheme.primary, strength: glow)
-                : const [],
-          ),
-          child: Stack(
-            fit: StackFit.passthrough,
-            children: [
-              child!,
-              // The ring is its own semantics node so the announcement the
-              // transcript blip used to make survives, without merging into
-              // the prompt field's or the context meter's labels.
-              if (active)
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: Semantics(
-                      container: true,
-                      liveRegion: true,
-                      label: _chatL10n(context).chatUiAssistantIsWorking,
-                      child: CustomPaint(
-                        key: const ValueKey('composer-activity'),
-                        painter: _ActivityRingPainter(
-                          radius: widget.radius,
-                          primary: scheme.primary,
-                          tertiary: scheme.tertiary,
-                          sweep: _running ? t : null,
-                        ),
-                      ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: active
+            ? AppTheme.glow(scheme.primary, strength: _glow)
+            : const [],
+      ),
+      child: Stack(
+        fit: StackFit.passthrough,
+        children: [
+          child,
+          // The ring is its own semantics node so the announcement the
+          // transcript blip used to make survives, without merging into
+          // the prompt field's or the context meter's labels.
+          if (active)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Semantics(
+                  container: true,
+                  liveRegion: true,
+                  label: _chatL10n(context).chatUiAssistantIsWorking,
+                  child: CustomPaint(
+                    key: const ValueKey('composer-activity'),
+                    painter: _ActivityRingPainter(
+                      radius: radius,
+                      color: scheme.primary,
                     ),
                   ),
                 ),
-            ],
-          ),
-        );
-      },
-      child: widget.child,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
-/// Strokes the composer's rounded border with a gradient that carries one
-/// bright primary-to-tertiary highlight around the ring; [sweep] is the
-/// highlight's position around the loop, or null for a still primary ring.
+/// Strokes the composer's rounded border in [color].
 class _ActivityRingPainter extends CustomPainter {
-  const _ActivityRingPainter({
-    required this.radius,
-    required this.primary,
-    required this.tertiary,
-    required this.sweep,
-  });
+  const _ActivityRingPainter({required this.radius, required this.color});
 
   final BorderRadius radius;
-  final Color primary;
-  final Color tertiary;
-  final double? sweep;
+  final Color color;
 
   static const _strokeWidth = 1.6;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final ring = radius.toRRect(rect).deflate(_strokeWidth / 2);
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _strokeWidth;
-    final sweep = this.sweep;
-    if (sweep == null) {
-      paint.color = primary;
-    } else {
-      final base = primary.withValues(alpha: .28);
-      // A dim primary ring with one soft highlight: primary brightening
-      // into tertiary and fading back out over about a third of the loop.
-      paint.shader = SweepGradient(
-        colors: [base, primary, tertiary, primary, base, base],
-        stops: const [0, .1, .18, .26, .38, 1],
-        transform: GradientRotation(2 * math.pi * sweep),
-      ).createShader(rect);
-    }
-    canvas.drawRRect(ring, paint);
+    final ring = radius.toRRect(Offset.zero & size).deflate(_strokeWidth / 2);
+    canvas.drawRRect(
+      ring,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _strokeWidth
+        ..color = color,
+    );
   }
 
   @override
   bool shouldRepaint(_ActivityRingPainter old) =>
-      old.sweep != sweep ||
-      old.primary != primary ||
-      old.tertiary != tertiary ||
-      old.radius != radius;
+      old.color != color || old.radius != radius;
 }

@@ -172,6 +172,18 @@ const _migrated = <String, List<String>>{
   'lib/ui/widgets/managed_server_recovery_option.dart': ['phone_running'],
   'lib/ui/widgets/termux_phone_tools.dart': ['phone_running'],
   'lib/ui/screens/settings/server_plugins_section.dart': ['plugins_server'],
+  // §10 slice C: the empty, quiet and failure drawings, one per kind of
+  // state (test/kit_states_scenes_test.dart holds their goldens).
+  'lib/ui/kit/scenes/states_scenes.dart': [
+    'states_sheet',
+    'states_folder',
+    'states_tray',
+    'states_search',
+    'states_terminal',
+    'states_terminal_ended',
+    'states_unplugged',
+  ],
+  'lib/ui/kit/scenes/states_working_scene.dart': ['states_working'],
 };
 
 /// file -> classes migrated inside a file too mixed to list whole, with the
@@ -198,6 +210,18 @@ const _retired = <String, Map<String, String>>{
     'LoadingList(': 'first load is KitSkeletonTranscript + the loading bar',
     'ProductErrorState(': 'a conversation that could not load is KitStateView',
     'ConnectionStatusBanner(': 'the connection is the one KitStatusLine',
+  },
+  // §10 slice C: these screens' empty and failure states are KitStateView
+  // with the state drawings.
+  'lib/ui/screens/global_sessions_screen.dart': {
+    'ProductErrorState(':
+        'could not load is KitStateView + the unplugged cable',
+    'ProductEmptyState(': 'none yet / no match are KitStateView + a drawing',
+  },
+  'lib/ui/screens/terminal_screen.dart': {
+    'ProductErrorState(':
+        'could not list is KitStateView + the unplugged cable',
+    'ProductEmptyState(': 'no terminal is KitStateView + the terminal window',
   },
   'lib/ui/screens/chat/message_view.dart': {
     '_PromptErrorBanner': 'a prompt error is the one KitStatusLine',
@@ -313,6 +337,26 @@ void main() {
       }
     }
     expect(missing, isEmpty);
+  });
+
+  test('scenes take their time only from KitIllustration (§10)', () {
+    // A drawing paints one frame from the frame it is given; the widget
+    // owns the clock, so reduced motion and the test switch reach every
+    // scene. A scene with its own ticker or timer would escape both.
+    final problems = <String>[];
+    for (final file in Directory('lib/ui/kit/scenes').listSync()) {
+      if (file is! File || !file.path.endsWith('.dart')) continue;
+      final code = _code(file.path);
+      for (final pattern in [
+        'AnimationController',
+        'Ticker',
+        'Timer',
+        'flutter_animate',
+      ]) {
+        if (code.contains(pattern)) problems.add('${file.path}: $pattern');
+      }
+    }
+    expect(problems, isEmpty);
   });
 
   test('the kit is the one place raw progress and filled buttons live', () {

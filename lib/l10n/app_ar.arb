@@ -4963,5 +4963,11 @@
   "localTerminalKeyPageDown": "صفحة لأسفل",
   "phoneServerCardTerminal": "الطرفية",
   "localTerminalSemantics": "الطرفية على هذا الهاتف. انقر للكتابة، والمس مطولًا لتحديد النص.",
-  "phoneServerTermuxTitle": "هذا الهاتف · Termux"
+  "phoneServerTermuxTitle": "هذا الهاتف · Termux",
+  "workNotAnsweringListTitle": "ستعود محادثاتك",
+  "workNotAnsweringListBody": "تظهر هنا من جديد بمجرد أن يستجيب الخادم.",
+  "globalSessionsLoadFailedTitle": "تعذّر تحميل المحادثات",
+  "filesLoadFailedTitle": "تعذّر فتح هذا المجلد",
+  "filesSymbolsFailedTitle": "تعذّر البحث في الرموز",
+  "terminalListFailedTitle": "تعذّر عرض الطرفيات"
 }
