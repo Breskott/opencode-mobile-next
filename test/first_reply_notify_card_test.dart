@@ -149,7 +149,7 @@ void main() {
 
     await tester.pumpWidget(_host(controller, replyCompleted: true));
     expect(find.byKey(_card), findsOneWidget);
-    expect(find.text("Get told when it's done?"), findsOneWidget);
+    expect(find.text('Notify you when a reply is ready?'), findsOneWidget);
     expect(find.text('Notify me'), findsOneWidget);
     expect(find.text('Not now'), findsOneWidget);
     // Showing the question asks Android for nothing.
