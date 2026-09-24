@@ -192,6 +192,8 @@ AppErrorCaptureHandle installAppErrorCapture(
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     diagnostics.record(error, stack, source: 'platform');
+    // Also to the device log, so `adb logcat -s flutter` shows it.
+    debugPrintSynchronously('Uncaught error: $error\n$stack');
     previousPlatform?.call(error, stack);
     return true;
   };

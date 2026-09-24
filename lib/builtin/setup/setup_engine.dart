@@ -59,6 +59,7 @@ class ChannelSetupEngine implements SetupEngine {
     )?
     components,
     this.pollInterval = const Duration(milliseconds: 500),
+    this.readTimeout = const Duration(seconds: 10),
     DateTime Function()? clock,
   }) : _linux = linux ?? BuiltinLinux(),
        strings = strings ?? deviceStrings,
@@ -80,6 +81,10 @@ class ChannelSetupEngine implements SetupEngine {
   _components;
   final DateTime Function() _clock;
   final Duration pollInterval;
+
+  /// How long one read of the job may take before the poll gives up on it
+  /// and tries again; a reply lost on the way back must not stop polling.
+  final Duration readTimeout;
 
   /// Set by the app shell once it can start and connect (main.dart).
   SetupFinisher? finisher;
@@ -427,7 +432,13 @@ class ChannelSetupEngine implements SetupEngine {
   }
 
   Future<void> _tick() async {
-    await _refresh();
+    try {
+      await _refresh(timeout: readTimeout);
+    } catch (error, stack) {
+      // Polling is the only way the screens see the job, and the only way
+      // the app's own step gets run: one bad read must never end it.
+      debugPrint('setup: status poll failed: $error\n$stack');
+    }
     if (!_disposed && (_progress.watched || _jobRunning)) {
       _poll = Timer(pollInterval, _tick);
     } else {
@@ -436,8 +447,8 @@ class ChannelSetupEngine implements SetupEngine {
     }
   }
 
-  Future<void> _refresh() async {
-    final record = await _read();
+  Future<void> _refresh({Duration? timeout}) async {
+    final record = await _read(timeout: timeout);
     if (record == null) return;
     _show(record);
     if (record.state == 'running' &&
@@ -487,11 +498,15 @@ class ChannelSetupEngine implements SetupEngine {
     await _refresh();
   }
 
-  Future<SetupJobRecord?> _read() async {
+  Future<SetupJobRecord?> _read({Duration? timeout}) async {
     final String? text;
     try {
-      text = await _linux.setupStatus();
+      final read = _linux.setupStatus();
+      text = await (timeout == null ? read : read.timeout(timeout));
     } on BuiltinLinuxException {
+      return null;
+    } on TimeoutException {
+      debugPrint('setup: status read took over ${timeout!.inSeconds} s');
       return null;
     }
     final record = SetupJobRecord.parse(text);

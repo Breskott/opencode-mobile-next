@@ -31,6 +31,10 @@ class FakeLinux extends BuiltinLinux {
   final steps = <Map<String, Object?>>[];
   var statusReads = 0;
 
+  /// What the next status reads do instead of answering: 'throw' fails the
+  /// call, 'hang' never answers it (a reply lost on the way back).
+  final statusFaults = <String>[];
+
   @override
   Future<BuiltinLinuxStatus> status() async => BuiltinLinuxStatus(
     installed: installed,
@@ -100,6 +104,14 @@ class FakeLinux extends BuiltinLinux {
   @override
   Future<String?> setupStatus() async {
     statusReads++;
+    if (statusFaults.isNotEmpty) {
+      switch (statusFaults.removeAt(0)) {
+        case 'throw':
+          throw StateError('the channel failed');
+        case 'hang':
+          return Completer<String?>().future;
+      }
+    }
     return job == null ? null : jsonEncode(job);
   }
 
@@ -439,6 +451,27 @@ void main() {
       final after = linux.statusReads;
       await Future<void>.delayed(const Duration(milliseconds: 40));
       expect(linux.statusReads, after);
+    });
+    test('polling survives a status read that fails or never answers '
+        '(Android 15 run, 2026-09-24: the screen froze on the Linux base '
+        'while the job finished)', () async {
+      final watching = ChannelSetupEngine(
+        linux: linux,
+        strings: () => en,
+        pollInterval: const Duration(milliseconds: 5),
+        readTimeout: const Duration(milliseconds: 20),
+        finisher: (request) async => null,
+      );
+      addTearDown(watching.dispose);
+      await watching.run(const {});
+      void listener() {}
+      watching.progress.addListener(listener);
+      addTearDown(() => watching.progress.removeListener(listener));
+      linux.statusFaults.addAll(['throw', 'hang']);
+      linux.advance('start', {'stage': en.phoneSetupStageStarting});
+      await pumpUntil(() => watching.progress.value.state == SetupState.done);
+      expect(linux.statusFaults, isEmpty);
+      expect(linux.steps.single, containsPair('ok', true));
     });
   });
 
