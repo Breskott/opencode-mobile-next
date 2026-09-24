@@ -551,6 +551,35 @@ void main() {
       },
     );
 
+    testWidgets(
+      'Terminal stays in the menu while a server start does not answer',
+      (tester) async {
+        linux.running = false;
+        linux.startGate = Completer<void>();
+        await mountCard(tester);
+        await tester.tap(find.byKey(const ValueKey('phone-server-start')));
+        await tester.pump();
+        await tester.pump();
+        expect(status(tester), 'Starting');
+        await tester.tap(find.byKey(const ValueKey('phone-server-menu')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        // Only the way in: nothing that would change the server mid-start.
+        expect(
+          find.byKey(const ValueKey('phone-server-terminal')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('phone-server-remove')), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('phone-server-terminal')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(LocalTerminalView), findsOneWidget);
+        expect(terminalBackend.calls, contains(startsWith('start')));
+        linux.startGate!.complete();
+        await tester.pumpAndSettle();
+      },
+    );
+
     testWidgets('a host that must close first receives the action instead', (
       tester,
     ) async {

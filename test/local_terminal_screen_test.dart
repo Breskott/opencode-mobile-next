@@ -107,16 +107,10 @@ void main() {
       await tester.pump();
       await tester.pump();
       // One loading bar while the shell starts.
-      expect(
-        find.byKey(const ValueKey('kit-loading-bar')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const ValueKey('kit-loading-bar')), findsOneWidget);
       backend.startGate!.complete();
       await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey('kit-loading-bar')),
-        findsNothing,
-      );
+      expect(find.byKey(const ValueKey('kit-loading-bar')), findsNothing);
       expect(find.byType(xterm.TerminalView), findsOneWidget);
       expect(find.byType(TerminalKeyBar), findsOneWidget);
       expect(sessions.shells.single.running, isTrue);

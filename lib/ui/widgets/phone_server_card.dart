@@ -617,10 +617,14 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
           onPressed: _showLog,
         ),
     ];
+    // The terminal needs Ubuntu, not the server: it stays in the menu while
+    // the server starts or stops, which is when a server that does not
+    // answer leaves the person with no other way in.
+    final terminalOnly = locked && installed && !_removing;
     final menu = PopupMenuButton<PhoneServerAction>(
       key: const ValueKey('phone-server-menu'),
       tooltip: l10n.phoneServerCardMore,
-      enabled: !locked && state != _Status.checking,
+      enabled: terminalOnly || (!locked && state != _Status.checking),
       icon: const Icon(AppIconography.more),
       onSelected: (action) => unawaited(_menu(action)),
       itemBuilder: (context) => [
@@ -631,7 +635,7 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
             child: Text(l10n.phoneServerCardTerminal),
           ),
         // Installing while a job runs would only queue behind it.
-        if (hasEngine && installed && !settingUp) ...[
+        if (!terminalOnly && hasEngine && installed && !settingUp) ...[
           PopupMenuItem(
             key: const ValueKey('phone-server-switch'),
             value: PhoneServerAction.switchRuntime,
@@ -654,15 +658,16 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
             child: Text(l10n.phoneServerCardUpdate),
           ),
         ],
-        PopupMenuItem(
-          key: const ValueKey('phone-server-remove'),
-          value: PhoneServerAction.remove,
-          enabled: !settingUp,
-          child: Text(
-            l10n.phoneServerCardRemove,
-            style: TextStyle(color: theme.colorScheme.error),
+        if (!terminalOnly)
+          PopupMenuItem(
+            key: const ValueKey('phone-server-remove'),
+            value: PhoneServerAction.remove,
+            enabled: !settingUp,
+            child: Text(
+              l10n.phoneServerCardRemove,
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
           ),
-        ),
       ],
     );
 
