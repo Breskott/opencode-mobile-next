@@ -314,26 +314,6 @@ void main() {
     await tester.pump();
   }
 
-  Finder agentDots() => find.byWidgetPredicate(
-    (w) => switch (w.key) {
-      ValueKey<String>(:final value) => value.startsWith('team-card-agent-'),
-      _ => false,
-    },
-  );
-
-  Finder pulses() => find.descendant(
-    of: find.byKey(const ValueKey('team-card-constellation')),
-    matching: find.byType(ScaleTransition),
-  );
-
-  String clockLabel(WidgetTester tester, DateTime at) =>
-      MaterialLocalizations.of(
-        tester.element(find.byType(TeamCard)),
-      ).formatTimeOfDay(
-        TimeOfDay.fromDateTime(at.toLocal()),
-        alwaysUse24HourFormat: true,
-      );
-
   /// TEAM-117: the fixture convoy over the recorded `oc-loy` as the host
   /// last showed it — pushed and in the refinery's hands, no live agent,
   /// never closed. [updatedAt] is the bead's `updated_at` when given; the
