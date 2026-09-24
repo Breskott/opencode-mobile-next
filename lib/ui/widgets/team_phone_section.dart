@@ -20,6 +20,8 @@ import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
 import '../../termux/team_runtime.dart';
 import '../app_theme.dart';
+import '../kit/kit_illustration.dart';
+import '../kit/scenes/team_scenes.dart';
 import 'confirm_sheet.dart';
 import 'team_phone_onboarding.dart';
 
@@ -308,18 +310,28 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
           : killed || status.phase == TeamRuntimePhase.failed
           ? AppStatusTone.attention
           : AppStatusTone.neutral;
+      // Starting: the team wakes up while the person waits.
+      final starting = working && status?.phase == TeamRuntimePhase.starting;
       children.addAll([
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: Icon(
-                AppIconography.statusDot,
-                size: 14,
-                color: AppTheme.statusColor(theme, tone),
+            if (starting)
+              const KitIllustration(
+                key: ValueKey('team-phone-waking'),
+                scene: TeamWakingScene(),
+                width: 64,
+                ambient: true,
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Icon(
+                  AppIconography.statusDot,
+                  size: 14,
+                  color: AppTheme.statusColor(theme, tone),
+                ),
               ),
-            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

@@ -15,6 +15,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
+import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/team_agent_row.dart';
 import '../../widgets/team_vocabulary.dart';
 import 'agent_screen.dart';
@@ -157,6 +158,8 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
           size: KitStateSize.inline,
           liveRegion: false,
           icon: AppIconography.agent,
+          // Nobody at work: one agent dozing.
+          illustration: const TeamRestScene(),
           title: l10n.teamUiHomeAgentsEmpty,
           body: l10n.teamUiHomeAgentsEmptyHint,
         ),

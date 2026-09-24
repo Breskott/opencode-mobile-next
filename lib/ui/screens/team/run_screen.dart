@@ -59,6 +59,7 @@ import '../../widgets/team_agent_row.dart';
 import '../../widgets/team_controls.dart';
 import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_cycle_strip.dart';
+import '../../widgets/team_moments.dart';
 import '../../widgets/team_vocabulary.dart';
 import 'agent_screen.dart';
 import 'gate_sheet.dart';
@@ -729,6 +730,14 @@ class _Overview extends StatelessWidget {
         bottom: 24 + MediaQuery.paddingOf(context).bottom,
       ),
       children: [
+        // Merged: a celebration, once per task (it is remembered).
+        rails(
+          TeamMergedCelebration(
+            profileId: controller.profileId,
+            runId: run.id,
+            merged: run.state == RunState.completed && run.merged,
+          ),
+        ),
         rails(
           _Objective(
             key: const ValueKey('team-run-objective'),
@@ -776,7 +785,11 @@ class _Overview extends StatelessWidget {
             ),
           ),
         if (gates.isNotEmpty) ...[
-          SectionLabel(l10n.teamUiRunNeedsYou),
+          TeamNeedsYouLabel(
+            l10n.teamUiRunNeedsYou,
+            profileId: controller.profileId,
+            gateIds: [gates.first.id],
+          ),
           TeamNeedsYouCard(
             keyPrefix: 'team-run-needs-you',
             controller: controller,

@@ -28,6 +28,8 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../app_theme.dart';
+import '../kit/kit_illustration.dart';
+import '../kit/scenes/team_scenes.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/phone_setup/phone_setup_selection.dart' show setupSizeText;
 
@@ -317,14 +319,28 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
       children
         ..add(const SizedBox(height: 10))
         ..add(
-          Text(
-            builtinTeamStageText(
-              l10n,
-              _stage!,
-              builtinTeamProjectName(_project ?? ''),
-            ),
-            key: const ValueKey('builtin-team-stage'),
-            style: muted,
+          Row(
+            children: [
+              // The team waking up while it starts on this phone.
+              const KitIllustration(
+                key: ValueKey('builtin-team-waking'),
+                scene: TeamWakingScene(),
+                width: 72,
+                ambient: true,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  builtinTeamStageText(
+                    l10n,
+                    _stage!,
+                    builtinTeamProjectName(_project ?? ''),
+                  ),
+                  key: const ValueKey('builtin-team-stage'),
+                  style: muted,
+                ),
+              ),
+            ],
           ),
         )
         ..add(const SizedBox(height: 6))

@@ -35,6 +35,8 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
+import '../../kit/scenes/team_scenes.dart';
+import '../../widgets/team_moments.dart';
 import '../../widgets/team_controls.dart'
     show teamControlReceiptWord, teamControlWord;
 import '../../widgets/team_receipt.dart';
@@ -384,14 +386,18 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     // The first section sits close under the top bar; the rest keep the
     // list's section spacing.
     var first = true;
-    Widget label(String text, {Key? key}) {
+    EdgeInsets sectionPadding() {
       final padding = first
           ? const EdgeInsets.fromLTRB(16, 12, 16, 8)
           : const EdgeInsets.fromLTRB(16, 24, 16, 8);
       first = false;
-      return SectionLabel(text, key: key, padding: padding);
+      return padding;
     }
 
+    Widget label(String text, {Key? key}) =>
+        SectionLabel(text, key: key, padding: sectionPadding());
+
+    final planning = teamPendingPlanning(controller, _now);
     final lead = <Widget>[
       if (_searchOpen)
         _SearchBar(
@@ -399,13 +405,15 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           filter: _filter,
           onFilter: (f) => setState(() => _filter = f),
         ),
-      for (final request in teamPendingPlanning(controller, _now))
+      for (final (index, request) in planning.indexed)
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: TeamPlanningCard(
             controller: controller,
             request: request,
             now: widget.now,
+            // One moving drawing per screen (design standard §10).
+            ambient: index == 0,
           ),
         ),
     ];
@@ -413,9 +421,13 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
     final children = <Widget>[
       // 1. What needs the person, first, and only when something does.
       if (gates.isNotEmpty) ...[
-        label(
+        // The heading's agent peeks over the block and waves once.
+        TeamNeedsYouLabel(
           l10n.teamUiRunNeedsYou,
           key: const ValueKey('team-home-needs-you'),
+          profileId: controller.profileId,
+          gateIds: [for (final gate in gates) gate.id],
+          padding: sectionPadding(),
         ),
         if (gates.length == 1)
           TeamNeedsYouCard(
@@ -445,6 +457,9 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           size: KitStateSize.inline,
           liveRegion: false,
           icon: AppIconography.checklist,
+          // The team gathered at an empty board, its one slot waiting;
+          // not while a task is being planned, whose card has the drawing.
+          illustration: planning.isEmpty ? const TeamBoardScene() : null,
           title: l10n.teamUiCardEmptyTitle,
           // One sentence that teaches; the pinned button is the action, so
           // the state never repeats it.

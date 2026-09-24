@@ -55,6 +55,7 @@ const _migrated = <String, List<String>>{
     'work_team',
     'team_card',
     'team_card_phone',
+    'team_card_idle',
   ],
   'lib/ui/widgets/nudge_card.dart': ['work_nudge'],
   'lib/ui/widgets/other_servers_panel.dart': ['work_other_servers'],
@@ -104,12 +105,18 @@ const _migrated = <String, List<String>>{
     'team_home_empty',
     'team_home_error',
     'team_home_not_answering',
+    'team_home_starting',
   ],
   'lib/ui/screens/team/team_states.dart': [
     'team_home_error',
     'team_home_not_answering',
+    'team_home_starting',
   ],
-  'lib/ui/screens/team/run_screen.dart': ['team_run_overview', 'team_run_work'],
+  'lib/ui/screens/team/run_screen.dart': [
+    'team_run_overview',
+    'team_run_work',
+    'team_run_merged',
+  ],
   'lib/ui/screens/team/start_run_sheet.dart': ['team_start_run'],
   'lib/ui/screens/team/agent_screen.dart': [
     'team_agent',
@@ -127,6 +134,13 @@ const _migrated = <String, List<String>>{
     'team_run_overview',
   ],
   'lib/ui/widgets/team_agent_row.dart': ['team_agents'],
+  // Motion slice D (docs/design/motion-and-illustration-2026-09-25.md):
+  // the merged celebration and the Needs-you nudge.
+  'lib/ui/widgets/team_moments.dart': [
+    'team_run_merged',
+    'team_home_loaded',
+    'team_run_overview',
+  ],
   // §9 step 5: the chat's states and banners (not the transcript's
   // messages). Loading, could not load, the one status line (connection,
   // a message not sent, a prompt error, staged revert, subagent, sharing).

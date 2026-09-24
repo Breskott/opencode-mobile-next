@@ -2061,6 +2061,14 @@
     {
       "file": "lib/ui/screens/team/team_needs_you.dart",
       "reason": "Embedded blocks, not pages of their own: TeamNeedsYouCard (one question as a request block) is shown on team-home-needs-you-tab (team_home_screen.dart:421) and team-run-overview-tab (run_screen.dart:780); TeamGateRow (one of several questions as a row) is shown on team-home-needs-you-tab (team_home_screen.dart:432). Both open the Gate sheet."
+    },
+    {
+      "file": "lib/ui/widgets/team_moments.dart",
+      "reason": "Embedded moments, no surface and no interactive element (motion slice D, 2026-09-25): TeamMergedCelebration heads team-run-overview-tab (run_screen.dart), the first time a merged task is seen, remembered per profile under oc.orchestration.{profileId}.celebrated; TeamNeedsYouLabel is the 'Needs you' heading on team-home and team-run-overview-tab, with an agent that waves once. Both drawings are decorative (excluded from semantics)."
+    },
+    {
+      "file": "lib/ui/kit/scenes/team_scenes.dart",
+      "reason": "Drawings (KitScene, design standard §10), not pages: the AI Team's cast (board, planning, waking, merged, nudge, rest, idle) shown on team-home (no tasks, Needs you, the planning card, the host starting), team-run-overview-tab, team-agents (no agents), embedded-team-card (Nothing running) and the in-app and Termux AI Team sections while the team starts."
     }
   ],
   "notes": [
