@@ -682,7 +682,7 @@
           "action": "open-dialog",
           "target": "project-folder-open-dialog",
           "targetWidget": "ProjectFolderActions.openFolder",
-          "effect": "onOpen -> _openProjectFolder() -> ProjectFolderActions.openFolder() opens the path dialog, then controller.selectLocation(directory) and _load().",
+          "effect": "onOpen -> _openProjectFolder() -> ProjectFolderActions.openFolder(): the folder browser for OpenCode inside the app, the path dialog otherwise; then controller.selectLocation(directory) and _load().",
           "gates": [],
           "destructive": false
         },
@@ -1324,7 +1324,7 @@
           "action": "open-dialog",
           "target": "project-folder-open-dialog",
           "targetWidget": "ProjectFolderActions.openFolder",
-          "effect": "_openFolder() -> ProjectFolderActions.openFolder(); on success pops with true.",
+          "effect": "_openFolder() -> ProjectFolderActions.openFolder() (the folder browser for OpenCode inside the app, the path dialog otherwise); on success pops with true.",
           "gates": [],
           "destructive": false
         },
@@ -1565,7 +1565,7 @@
       "presentedBy": [
         "ProjectFolderActions.createFolder"
       ],
-      "line": 95,
+      "line": 215,
       "purpose": "Ask for a folder name to create under the managed projects directory on the app-managed Termux server.",
       "reachedFrom": [
         {
@@ -1586,7 +1586,7 @@
           "type": "text-field",
           "label": "Folder name",
           "key": "new-folder-name",
-          "line": 132,
+          "line": 253,
           "action": "submit",
           "target": null,
           "targetWidget": null,
@@ -1599,7 +1599,7 @@
           "type": "button",
           "label": "Cancel",
           "key": null,
-          "line": 152,
+          "line": 272,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
@@ -1612,7 +1612,7 @@
           "type": "button",
           "label": "Create",
           "key": "new-folder-create",
-          "line": 157,
+          "line": 276,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -1631,8 +1631,8 @@
       "presentedBy": [
         "ProjectFolderActions.openFolder"
       ],
-      "line": 165,
-      "purpose": "Ask for an absolute server path, probe it, and open it as the active project folder.",
+      "line": 285,
+      "purpose": "Ask for an absolute server path, check it (inside the app's Ubuntu for OpenCode inside the app, on the server otherwise) and open it as the active project folder. From the folder browser the path starts at the folder it showed, and a missing folder can be created.",
       "reachedFrom": [
         {
           "page": "workspace-folder-chooser",
@@ -1641,6 +1641,10 @@
         {
           "page": "projects",
           "element": "projects-open-folder"
+        },
+        {
+          "page": "project-folder-browser",
+          "element": "project-folder-browser-enter-path"
         }
       ],
       "gates": [],
@@ -1650,7 +1654,7 @@
           "type": "text-field",
           "label": "Folder path",
           "key": "open-folder-path",
-          "line": 220,
+          "line": 385,
           "action": "submit",
           "target": null,
           "targetWidget": null,
@@ -1665,7 +1669,7 @@
           "type": "button",
           "label": "Cancel",
           "key": null,
-          "line": 247,
+          "line": 416,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
@@ -1680,7 +1684,7 @@
           "type": "button",
           "label": "Open",
           "key": "open-folder-confirm",
-          "line": 252,
+          "line": 431,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -1688,6 +1692,147 @@
           "gates": [
             "disabled while _checking"
           ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "project-folder-browser",
+      "title": "Open a project",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/folder_browser.dart",
+      "widget": "FolderBrowserSheet",
+      "presentedBy": [
+        "ProjectFolderActions.openFolder"
+      ],
+      "line": 50,
+      "purpose": "OpenCode inside the app: browse the built-in Ubuntu's folders (read from its files on the phone, so it works with the server stopped) from /root/projects up to /. A project (git repository, a project OpenCode knows, or any folder straight in /root/projects) opens with a tap; other folders are gone into. One primary opens the folder shown (never the home folder, / or the projects folder itself); New project makes a folder inside the folder shown; Enter a path opens the path dialog. Other servers skip this sheet and go straight to the path dialog.",
+      "reachedFrom": [
+        {
+          "page": "workspace-folder-chooser",
+          "element": "workspace-folder-chooser-open"
+        },
+        {
+          "page": "projects",
+          "element": "projects-open-folder"
+        }
+      ],
+      "gates": [
+        "isInAppServer(controller.profile, linux)"
+      ],
+      "elements": [
+        {
+          "id": "project-folder-browser-up",
+          "type": "list-tile",
+          "label": "Up one folder / <parent path>",
+          "key": "folder-browser-up",
+          "file": "lib/ui/widgets/folder_browser.dart",
+          "line": 286,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Lists the folder above (stops at /).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "project-folder-browser-folder",
+          "type": "list-tile",
+          "label": "<folder name> / Git repository | OpenCode project",
+          "key": "in-app-project-<name>",
+          "file": "lib/ui/widgets/folder_browser.dart",
+          "line": 308,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "A project row pops FolderBrowserOpen(path): openFolder() then controller.selectLocation(directory: path). Any other folder (and the home folder even when it has .git) is listed instead.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "project-folder-browser-browse",
+          "type": "icon-button",
+          "label": "[Show the folders in <name>]",
+          "key": "folder-browse-<name>",
+          "file": "lib/ui/widgets/folder_browser.dart",
+          "line": 321,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "A project row's chevron: lists the folders inside it.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "project-folder-browser-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": "folder-browser-retry",
+          "file": "lib/ui/widgets/folder_browser.dart",
+          "line": 355,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "After \"This folder can’t be shown\": lists the folder again.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "project-folder-browser-open",
+          "type": "button",
+          "label": "Open <folder>",
+          "key": "folder-browser-open",
+          "file": "lib/ui/widgets/folder_browser.dart",
+          "line": 408,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops FolderBrowserOpen(folder shown); openFolder() selects it.",
+          "gates": [
+            "not the home folder, / or /root/projects; the folder listed"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-folder-browser-name",
+          "type": "text-field",
+          "label": "Project name",
+          "key": "in-app-new-project-name",
+          "file": "lib/ui/widgets/folder_browser.dart",
+          "line": 375,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSubmitted -> _create().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "project-folder-browser-create",
+          "type": "button",
+          "label": "Create",
+          "key": "in-app-new-project-create",
+          "file": "lib/ui/widgets/folder_browser.dart",
+          "line": 394,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_create(): projectFolderNameProblem and workspaceDirectoryProblem, then pops FolderBrowserCreate(<folder shown>/<name>) (or FolderBrowserOpen when it is already there); openFolder() makes it in Ubuntu (git init) and selects it.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "project-folder-browser-enter-path",
+          "type": "button",
+          "label": "Enter a path",
+          "key": "in-app-enter-path",
+          "file": "lib/ui/widgets/folder_browser.dart",
+          "line": 450,
+          "action": "open-dialog",
+          "target": "project-folder-open-dialog",
+          "targetWidget": "_OpenFolderDialog",
+          "effect": "Pops FolderBrowserEnterPath(folder shown); openFolder() opens the path dialog starting at that folder.",
+          "gates": [],
           "destructive": false
         }
       ]

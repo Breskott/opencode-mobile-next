@@ -172,6 +172,15 @@ const _migrated = <String, List<String>>{
   'lib/ui/widgets/managed_server_recovery_option.dart': ['phone_running'],
   'lib/ui/widgets/termux_phone_tools.dart': ['phone_running'],
   'lib/ui/screens/settings/server_plugins_section.dart': ['plugins_server'],
+  // Open a project for OpenCode inside the app: the folder browser
+  // (test/goldens/folder_browser_golden_test.dart).
+  'lib/ui/widgets/folder_browser.dart': [
+    'folder_browser_projects',
+    'folder_browser_inside',
+    'folder_browser_loading',
+    'folder_browser_empty',
+    'folder_browser_error',
+  ],
 };
 
 /// file -> classes migrated inside a file too mixed to list whole, with the
