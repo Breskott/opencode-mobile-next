@@ -13149,6 +13149,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'The team host can’t be reached. AI Team works over your Tailscale network or on this device.';
 
   @override
+  String get teamUiStateUnreachableTitle => 'Can’t reach the team host';
+
+  @override
+  String get teamUiStateNotGasCityTitle => 'No AI team on this server';
+
+  @override
+  String get teamUiStateStartingTitle => 'The team host is starting';
+
+  @override
+  String get teamUiStatePlainHttpTitle => 'AI Team can’t use this address';
+
+  @override
+  String get teamUiStateNotAnsweringTitle => 'The team host isn’t answering';
+
+  @override
   String get teamUiCardHostComputer => 'On the computer';
 
   @override

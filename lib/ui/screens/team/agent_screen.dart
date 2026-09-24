@@ -35,12 +35,13 @@ import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
-import '../../widgets/product_states.dart';
+import '../../kit/kit.dart';
 import '../../widgets/team_agent_row.dart';
 import '../../widgets/team_controls.dart';
 import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
 import 'agent_output_screen.dart';
+import 'team_states.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -201,12 +202,20 @@ class _AgentScreenState extends State<AgentScreen> {
               onPressed: _refreshing ? null : _refresh,
               icon: const Icon(AppIconography.sync),
             ),
+            // One icon action, then the overflow (design standard §1).
             if (agent != null)
-              IconButton(
-                key: const ValueKey('team-agent-details'),
-                tooltip: l10n.teamUiTechnicalDetails,
-                onPressed: () => _openDetails(agent),
-                icon: const Icon(AppIconography.info),
+              PopupMenuButton<String>(
+                key: const ValueKey('team-agent-more'),
+                tooltip: l10n.teamUiControlMoreActions,
+                icon: const Icon(AppIconography.more),
+                onSelected: (_) => _openDetails(agent),
+                itemBuilder: (context) => [
+                  PopupMenuItem<String>(
+                    key: const ValueKey('team-agent-details'),
+                    value: 'details',
+                    child: Text(l10n.teamUiTechnicalDetails),
+                  ),
+                ],
               ),
           ],
         ),
@@ -222,47 +231,55 @@ class _AgentScreenState extends State<AgentScreen> {
     return math.max(kToolbarHeight, needed);
   }
 
+  /// The screen on the kit (design standard §1, §3-§5): the one loading
+  /// bar under the app bar, the one status line when the data is old, and
+  /// the state page or the agent's sections.
   Widget _body(BuildContext context, OrchestrationAgent? agent) {
     final l10n = _copy(context);
     final controller = widget.controller;
-    final snapshot = controller.snapshot;
-    final ready =
-        controller.phase == OrchestrationPhase.ready && snapshot.hasData;
-    if (controller.phase == OrchestrationPhase.failed ||
-        (controller.phase == OrchestrationPhase.ready &&
-            !snapshot.hasData &&
-            controller.lastError != null)) {
-      return ProductErrorState(
-        key: const ValueKey('team-agent-error'),
-        message: teamErrorCopy(l10n, controller.lastError?.kind),
-        onRetry: _refresh,
-      );
-    }
-    if (!ready) {
-      return Center(
-        key: const ValueKey('team-agent-loading'),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 12),
-            Text(l10n.teamUiCardLoading),
-          ],
-        ),
-      );
-    }
-    if (agent == null) {
-      return ProductEmptyState(
+    final onRetry = _refreshing ? null : _refresh;
+    final state = teamScreenState(
+      context,
+      controller: controller,
+      keyPrefix: 'team-agent',
+      onRetry: onRetry,
+    );
+    final Widget body;
+    Widget? status;
+    if (state != null) {
+      body = state;
+    } else if (agent == null) {
+      body = KitStateView(
         key: const ValueKey('team-agent-missing'),
         icon: AppIconography.cloudOff,
         title: l10n.teamUiAgentMissingTitle,
-        message: l10n.teamUiAgentMissingHint,
-        actionLabel: l10n.teamUiRunBack,
-        onAction: () => Navigator.of(context).maybePop(),
+        body: l10n.teamUiAgentMissingHint,
+        primary: KitAction(
+          label: l10n.teamUiRunBack,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
       );
+    } else {
+      status = teamStatusLine(
+        context,
+        controller: controller,
+        keyPrefix: 'team-agent',
+        onRetry: onRetry,
+      );
+      body = _sections(context, agent);
     }
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
+    return KitScreen(
+      header: [?status],
+      loading: teamScreenLoading(controller),
+      loadingLabel: l10n.teamUiCardLoading,
+      body: body,
+    );
+  }
+
+  Widget _sections(BuildContext context, OrchestrationAgent agent) {
+    final l10n = _copy(context);
+    final controller = widget.controller;
+    final snapshot = controller.snapshot;
     WorkItem? work;
     for (final item in snapshot.work) {
       if (item.id == agent.currentWorkId) {
@@ -281,51 +298,33 @@ class _AgentScreenState extends State<AgentScreen> {
       }
     }
     final stale = controller.isStale;
+    // Rows (Live output) run edge to edge like every list; the rest sits on
+    // the 16 dp rails.
+    Widget pad(Widget child) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: child,
+    );
     final body = RefreshIndicator(
       key: const ValueKey('team-agent-pull'),
       onRefresh: _refresh,
       child: ListView(
         key: const ValueKey('team-agent-list'),
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(
-          16,
-          8,
-          16,
-          24 + MediaQuery.paddingOf(context).bottom,
+        padding: EdgeInsets.only(
+          top: 12,
+          bottom: KitScreen.endPadding(context),
         ),
         children: [
-          if (stale)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                key: const ValueKey('team-agent-stale'),
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(AppIconography.cloudOff, size: 16, color: muted),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.teamUiCardStale(
-                        controller.lastRefreshedAt == null
-                            ? ''
-                            : teamClockLabel(
-                                context,
-                                controller.lastRefreshedAt!,
-                              ),
-                      ),
-                      style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          _Header(agent: agent, now: _now),
+          pad(_Header(agent: agent, now: _now)),
           if (gate != null) ...[
             const SizedBox(height: 16),
-            _NeedsYou(
-              key: const ValueKey('team-agent-gate'),
-              gate: gate,
-              hostMode: controller.host?.hostMode ?? controller.config.hostMode,
+            pad(
+              _NeedsYou(
+                key: const ValueKey('team-agent-gate'),
+                gate: gate,
+                hostMode:
+                    controller.host?.hostMode ?? controller.config.hostMode,
+              ),
             ),
           ],
           const SizedBox(height: 16),
@@ -412,6 +411,7 @@ class _AgentScreenState extends State<AgentScreen> {
           _Section(
             key: const ValueKey('team-agent-output'),
             title: l10n.teamUiAgentSectionOutput,
+            flush: true,
             children: [_OutputRow(tail: _tail, onTap: _openOutput)],
           ),
           if (controller.capabilities.controlMessage ||
@@ -427,7 +427,7 @@ class _AgentScreenState extends State<AgentScreen> {
             ),
           ],
           const SizedBox(height: 8),
-          _TechnicalDetails(agent: agent),
+          pad(_TechnicalDetails(agent: agent)),
         ],
       ),
     );
@@ -553,29 +553,13 @@ class _NeedsYou extends StatelessWidget {
     final theme = Theme.of(context);
     final muted = AppTheme.mutedOf(theme);
     final (icon, tone) = teamGateGlyph(gate.kind);
-    final color = AppTheme.statusColor(theme, tone);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: .5)),
-      ),
+    return KitPanel(
+      tone: tone,
+      icon: icon,
+      title: l10n.teamUiAgentNeedsYou,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.teamUiAgentNeedsYou,
-                  style: theme.textTheme.labelLarge?.copyWith(color: color),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
           Text(
             teamGateKindWord(l10n, gate.kind),
             style: theme.textTheme.bodySmall?.copyWith(color: muted),
@@ -743,95 +727,93 @@ class _ControlsState extends State<_Controls> {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
     final caps = _controller.capabilities;
     final state = _agent.state;
     final stopped = state == AgentState.stopped || state == AgentState.crashed;
-    final errorStyle = OutlinedButton.styleFrom(
-      foregroundColor: theme.colorScheme.error,
-      side: BorderSide(color: theme.colorScheme.error.withValues(alpha: .6)),
-    );
     final receipt = _receipt;
     final assign = _assignReceipt;
+    // The one button hierarchy (design standard §2): Message is the likely
+    // next step (secondary, full width), the rest are text buttons, two
+    // shown and the others under More. Stop and Restart stay confirmed.
+    VoidCallback? idle(VoidCallback action) => _busy ? null : action;
+    final message = caps.controlMessage
+        ? KitAction(
+            key: const ValueKey('team-agent-control-message'),
+            label: l10n.teamUiControlMessage,
+            icon: AppIconography.chat,
+            onPressed: idle(_message),
+          )
+        : null;
+    final rest = <KitAction>[
+      if (caps.controlAgent) ...[
+        KitAction(
+          key: const ValueKey('team-agent-control-nudge'),
+          label: l10n.teamUiControlNudge,
+          onPressed: idle(_nudge),
+        ),
+        if (stopped)
+          KitAction(
+            key: const ValueKey('team-agent-control-resume'),
+            label: l10n.teamUiControlResume,
+            onPressed: idle(_resume),
+          )
+        else
+          KitAction(
+            key: const ValueKey('team-agent-control-pause'),
+            label: l10n.teamUiControlPause,
+            onPressed: idle(_pause),
+          ),
+        if (!stopped)
+          KitAction(
+            key: const ValueKey('team-agent-control-stop'),
+            label: l10n.teamUiControlStop,
+            destructive: true,
+            onPressed: idle(_stop),
+          ),
+        KitAction(
+          key: const ValueKey('team-agent-control-restart'),
+          label: l10n.teamUiControlRestart,
+          destructive: true,
+          onPressed: idle(_restart),
+        ),
+      ],
+      if (caps.controlAssign)
+        KitAction(
+          key: const ValueKey('team-agent-control-reassign'),
+          label: l10n.teamUiControlReassign,
+          onPressed: idle(_reassign),
+        ),
+    ];
+    final secondary = message ?? (rest.isEmpty ? null : rest.removeAt(0));
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (caps.controlMessage)
-                FilledButton.tonalIcon(
-                  key: const ValueKey('team-agent-control-message'),
-                  onPressed: _busy ? null : _message,
-                  icon: const Icon(AppIconography.chat, size: 18),
-                  label: Text(l10n.teamUiControlMessage),
-                ),
-              if (caps.controlAgent) ...[
-                FilledButton.tonalIcon(
-                  key: const ValueKey('team-agent-control-nudge'),
-                  onPressed: _busy ? null : _nudge,
-                  icon: const Icon(AppIconography.forward, size: 18),
-                  label: Text(l10n.teamUiControlNudge),
-                ),
-                if (stopped)
-                  OutlinedButton.icon(
-                    key: const ValueKey('team-agent-control-resume'),
-                    onPressed: _busy ? null : _resume,
-                    icon: const Icon(AppIconography.play, size: 18),
-                    label: Text(l10n.teamUiControlResume),
-                  )
-                else
-                  OutlinedButton.icon(
-                    key: const ValueKey('team-agent-control-pause'),
-                    onPressed: _busy ? null : _pause,
-                    icon: const Icon(AppIconography.pause, size: 18),
-                    label: Text(l10n.teamUiControlPause),
-                  ),
-                if (!stopped)
-                  OutlinedButton.icon(
-                    key: const ValueKey('team-agent-control-stop'),
-                    style: errorStyle,
-                    onPressed: _busy ? null : _stop,
-                    icon: const Icon(AppIconography.stop, size: 18),
-                    label: Text(l10n.teamUiControlStop),
-                  ),
-                OutlinedButton.icon(
-                  key: const ValueKey('team-agent-control-restart'),
-                  style: errorStyle,
-                  onPressed: _busy ? null : _restart,
-                  icon: const Icon(AppIconography.restart, size: 18),
-                  label: Text(l10n.teamUiControlRestart),
-                ),
-              ],
-              if (caps.controlAssign)
-                OutlinedButton.icon(
-                  key: const ValueKey('team-agent-control-reassign'),
-                  onPressed: _busy ? null : _reassign,
-                  icon: const Icon(AppIconography.swap, size: 18),
-                  label: Text(l10n.teamUiControlReassign),
-                ),
-            ],
-          ),
+          child: KitActionBlock(secondary: secondary, tertiary: rest),
         ),
         if (receipt != null)
           Padding(
             padding: const EdgeInsets.only(top: 10),
-            child: TeamReceiptChip(
-              key: const ValueKey('team-agent-receipt'),
-              record: receipt,
-              onRetry: () => _retry(receipt),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TeamReceiptChip(
+                key: const ValueKey('team-agent-receipt'),
+                record: receipt,
+                onRetry: () => _retry(receipt),
+              ),
             ),
           ),
         if (assign != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: TeamReceiptChip(
-              key: const ValueKey('team-agent-assign-receipt'),
-              record: assign,
-              onRetry: () => _retry(assign),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TeamReceiptChip(
+                key: const ValueKey('team-agent-assign-receipt'),
+                record: assign,
+                onRetry: () => _retry(assign),
+              ),
             ),
           ),
       ],
@@ -950,14 +932,11 @@ class _ReassignSheet extends StatelessWidget {
                 ),
                 children: [
                   for (final item in ready)
-                    ListTile(
+                    KitRow(
                       key: ValueKey('team-agent-reassign-${item.id}'),
-                      leading: const Icon(AppIconography.checklist),
-                      title: Text(item.title),
-                      subtitle: Text(
-                        l10n.teamUiWorkTerm(item.id),
-                        textDirection: TextDirection.ltr,
-                      ),
+                      leading: KitRow.icon(context, AppIconography.checklist),
+                      title: item.title,
+                      supporting: TextSpan(text: l10n.teamUiWorkTerm(item.id)),
                       onTap: () => Navigator.of(context).pop(item.id),
                     ),
                 ],
@@ -974,27 +953,36 @@ class _ReassignSheet extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _Section extends StatelessWidget {
-  const _Section({super.key, required this.title, required this.children});
+  const _Section({
+    super.key,
+    required this.title,
+    required this.children,
+    this.flush = false,
+  });
 
   final String title;
   final List<Widget> children;
 
+  /// The children are rows that run edge to edge ([KitRow]); only the
+  /// label sits on the rails.
+  final bool flush;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
+    const rails = EdgeInsets.symmetric(horizontal: 16);
+    final section = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
+        SectionLabel(
           title,
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: AppTheme.mutedOf(theme),
-          ),
+          padding: flush
+              ? const EdgeInsets.fromLTRB(16, 0, 16, 4)
+              : const EdgeInsets.only(bottom: 4),
         ),
-        const SizedBox(height: 4),
         ...children,
       ],
     );
+    return flush ? section : Padding(padding: rails, child: section);
   }
 }
 
@@ -1432,13 +1420,16 @@ class _OutputRow extends StatelessWidget {
         : tail.received
         ? l10n.teamUiAgentOutputLive
         : l10n.teamUiAgentOutputConnecting;
-    return ListTile(
+    return KitRow(
       key: const ValueKey('team-agent-open-output'),
-      contentPadding: EdgeInsets.zero,
-      leading: const Icon(AppIconography.terminal),
-      title: Text(l10n.teamUiAgentOutputTitle),
-      subtitle: Text(status, key: const ValueKey('team-agent-output-status')),
-      trailing: const Icon(AppIconography.chevronRight),
+      leading: KitRow.icon(context, AppIconography.terminal),
+      title: l10n.teamUiAgentOutputTitle,
+      supporting: TextSpan(text: status),
+      trailing: Icon(
+        AppIconography.chevronRight,
+        size: 18,
+        color: AppTheme.mutedOf(Theme.of(context)),
+      ),
       onTap: onTap,
     );
   }

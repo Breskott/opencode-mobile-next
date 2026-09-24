@@ -549,6 +549,8 @@ void main() {
       expect(cycle.reachedAt[DispatchStep.handedToMerge], handedAt);
       expect(cycle.stallReason, DispatchStall.mergeWaiting);
       // Technical details agree with the header.
+      await tester.tap(key('team-run-more'));
+      await tester.pumpAndSettle();
       await tester.tap(key('team-run-details'));
       await tester.pumpAndSettle();
       expect(find.text('Waiting for merge'), findsNWidgets(2));
@@ -705,6 +707,8 @@ void main() {
     ) async {
       final (controller, _) = await boot(configure: richShape);
       await pumpRun(tester, controller, 'oc-xru');
+      await tester.tap(key('team-run-more'));
+      await tester.pumpAndSettle();
       await tester.tap(key('team-run-details'));
       await tester.pumpAndSettle();
       final sheet = key('team-run-details-sheet');
@@ -1142,6 +1146,8 @@ void main() {
       expect(find.text('اكتمل 1 من 4'), findsOneWidget);
       expect(find.text('دفعة من 4 · اكتمل 1'), findsOneWidget);
       expect(find.text('wolf يحتاجك'), findsOneWidget);
+      await tester.tap(key('team-run-more'));
+      await tester.pumpAndSettle();
       await tester.tap(key('team-run-details'));
       await tester.pumpAndSettle();
       final id = find.descendant(

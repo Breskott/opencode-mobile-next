@@ -830,6 +830,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('metadata.rig'), findsOneWidget);
       expect(find.text('ocproof/gastown.polecat'), findsOneWidget);
+      // One icon action in the app bar; the details sit in its overflow
+      // (design standard §1).
+      await tester.tap(key('team-agent-more'));
+      await tester.pumpAndSettle();
       await tester.tap(key('team-agent-details'));
       await tester.pumpAndSettle();
       expect(key('team-agent-details-sheet'), findsOneWidget);

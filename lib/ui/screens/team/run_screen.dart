@@ -37,8 +37,9 @@
 /// with the host's boundaries as chips, from `controller.policy`; absent
 /// entirely when the host reports none (no front).
 ///
-/// **Run controls** (TEAM-204): the app bar's overflow holds Cancel run
-/// (a formula run) or Close batch (a convoy), each two-step in the error
+/// **Run controls** (TEAM-204): the app bar keeps one icon action
+/// (Refresh); its overflow holds Technical details and Cancel run (a
+/// formula run) or Close batch (a convoy), each two-step in the error
 /// tone and present only with `controlCancelRun` on a run that is still
 /// open; the receipt chip sits under the state header. The supervisor
 /// has no pause / resume for a run, so none is offered.
@@ -52,7 +53,7 @@ import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
-import '../../widgets/product_states.dart';
+import '../../kit/kit.dart';
 import '../../widgets/relative_time.dart';
 import '../../widgets/team_agent_row.dart';
 import '../../widgets/team_controls.dart';
@@ -62,6 +63,7 @@ import '../../widgets/team_vocabulary.dart';
 import 'agent_screen.dart';
 import 'merge_section.dart';
 import 'policy_block.dart';
+import 'team_states.dart';
 import 'work_graph.dart';
 import 'work_sheet.dart';
 
@@ -297,37 +299,53 @@ class _RunScreenState extends State<RunScreen>
               onPressed: _refreshing ? null : _refresh,
               icon: const Icon(AppIconography.sync),
             ),
+            // One icon action and the overflow (design standard §1):
+            // Technical details always, Stop run / Close batch only on an
+            // open run with the capability.
             if (run != null)
-              IconButton(
-                key: const ValueKey('team-run-details'),
-                tooltip: l10n.teamUiRunDetails,
-                onPressed: () => _openDetails(run),
-                icon: const Icon(AppIconography.info),
-              ),
-            if (run != null &&
-                widget.controller.capabilities.controlCancelRun &&
-                _open(run))
               PopupMenuButton<String>(
                 key: const ValueKey('team-run-more'),
                 tooltip: l10n.teamUiControlMoreActions,
                 icon: const Icon(AppIconography.more),
-                onSelected: (_) => _cancelRun(run),
+                onSelected: (value) =>
+                    value == 'cancel' ? _cancelRun(run) : _openDetails(run),
                 itemBuilder: (context) => [
                   PopupMenuItem<String>(
-                    key: const ValueKey('team-run-cancel'),
-                    value: 'cancel',
-                    child: Text(
-                      run.kind == RunKind.batch
-                          ? l10n.teamUiControlCloseBatch
-                          : l10n.teamUiControlCancelRun,
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
+                    key: const ValueKey('team-run-details'),
+                    value: 'details',
+                    child: Text(l10n.teamUiRunDetails),
                   ),
+                  if (widget.controller.capabilities.controlCancelRun &&
+                      _open(run))
+                    PopupMenuItem<String>(
+                      key: const ValueKey('team-run-cancel'),
+                      value: 'cancel',
+                      child: Text(
+                        run.kind == RunKind.batch
+                            ? l10n.teamUiControlCloseBatch
+                            : l10n.teamUiControlCancelRun,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ),
                 ],
               ),
           ],
         ),
-        body: _body(context, run),
+        body: KitScreen(
+          header: [
+            if (!teamScreenLoading(widget.controller) &&
+                !teamScreenFailed(widget.controller))
+              ?teamStatusLine(
+                context,
+                controller: widget.controller,
+                keyPrefix: 'team-run',
+                onRetry: _refreshing ? null : _refresh,
+              ),
+          ],
+          loading: teamScreenLoading(widget.controller) || _refreshing,
+          loadingLabel: l10n.teamUiCardLoading,
+          body: _body(context, run),
+        ),
       );
     },
   );
@@ -343,39 +361,25 @@ class _RunScreenState extends State<RunScreen>
     final l10n = _copy(context);
     final controller = widget.controller;
     final snapshot = controller.snapshot;
-    final ready =
-        controller.phase == OrchestrationPhase.ready && snapshot.hasData;
-    if (controller.phase == OrchestrationPhase.failed ||
-        (controller.phase == OrchestrationPhase.ready &&
-            !snapshot.hasData &&
-            controller.lastError != null)) {
-      return ProductErrorState(
-        key: const ValueKey('team-run-error'),
-        message: teamErrorCopy(l10n, controller.lastError?.kind),
-        onRetry: _refresh,
-      );
-    }
-    if (!ready) {
-      return Center(
-        key: const ValueKey('team-run-loading'),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 12),
-            Text(l10n.teamUiCardLoading),
-          ],
-        ),
-      );
+    if (teamScreenState(
+          context,
+          controller: controller,
+          keyPrefix: 'team-run',
+          onRetry: _refreshing ? null : _refresh,
+        )
+        case final state?) {
+      return state;
     }
     if (run == null) {
-      return ProductEmptyState(
+      return KitStateView(
         key: const ValueKey('team-run-missing'),
         icon: AppIconography.cloudOff,
         title: l10n.teamUiRunMissingTitle,
-        message: l10n.teamUiRunMissingHint,
-        actionLabel: l10n.teamUiRunBack,
-        onAction: () => Navigator.of(context).maybePop(),
+        body: l10n.teamUiRunMissingHint,
+        primary: KitAction(
+          label: l10n.teamUiRunBack,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
       );
     }
 
@@ -434,32 +438,6 @@ class _RunScreenState extends State<RunScreen>
       key: const ValueKey('team-run-data'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (stale)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: _Line(
-              key: const ValueKey('team-run-stale'),
-              icon: AppIconography.cloudOff,
-              text: l10n.teamUiCardStale(
-                controller.lastRefreshedAt == null
-                    ? ''
-                    : teamClockLabel(context, controller.lastRefreshedAt!),
-              ),
-            ),
-          )
-        else if (controller.lastError?.kind ==
-                OrchestrationErrorKind.readFailed &&
-            controller.lastRefreshedAt != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: _Line(
-              key: const ValueKey('team-run-refresh-failed'),
-              icon: AppIconography.warning,
-              text: l10n.teamUiCardRefreshFailed(
-                teamClockLabel(context, controller.lastRefreshedAt!),
-              ),
-            ),
-          ),
         TabBar(
           key: const ValueKey('team-run-tabs'),
           controller: _tabs,
@@ -493,32 +471,6 @@ String _term(AppLocalizations l10n, OrchestrationRun run) => switch (run.kind) {
   RunKind.unknown => l10n.teamUiRunTermUnknown,
 };
 
-class _Line extends StatelessWidget {
-  const _Line({super.key, required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: muted),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: theme.textTheme.bodySmall?.copyWith(color: muted),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// The Agents tab (§4.3): the fleet rows of §5.1 scoped to the agents
 /// working on this run's work items; a row opens [AgentScreen].
 class _AgentsTab extends StatelessWidget {
@@ -544,11 +496,12 @@ class _AgentsTab extends StatelessWidget {
     final workById = {for (final item in snapshot.work) item.id: item};
     final agents = teamAgentsOnRun(snapshot, runId);
     if (agents.isEmpty) {
-      return ProductEmptyState(
+      return KitStateView(
         key: const ValueKey('team-run-agents-empty'),
         icon: AppIconography.agent,
         title: l10n.teamUiAgentRunEmpty,
-        message: l10n.teamUiAgentRunEmptyHint,
+        body: l10n.teamUiAgentRunEmptyHint,
+        liveRegion: false,
       );
     }
     return ListView(
@@ -941,7 +894,11 @@ class _Progress extends StatelessWidget {
                 height: 8,
                 child: total <= 0
                     ? ColoredBox(color: scheme.surfaceContainerHighest)
+                    // Stretch: a childless ColoredBox takes the smallest
+                    // size it may, so without it the segments were 0 dp
+                    // tall and the bar never showed.
                     : Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           for (final (count, color) in segments)
                             if (count > 0)
@@ -1153,35 +1110,18 @@ class _NeedsYouCard extends StatelessWidget {
     final theme = Theme.of(context);
     final muted = AppTheme.mutedOf(theme);
     final (icon, tone) = teamGateGlyph(gate.kind);
-    final color = AppTheme.statusColor(theme, tone);
     final name = _agentName();
     final prompt = gate.prompt;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: color.withValues(alpha: .08),
-        border: Border.all(color: color.withValues(alpha: .5)),
-      ),
+    return KitPanel(
+      tone: tone,
+      icon: icon,
+      title: name == null
+          ? l10n.teamUiRunNeedsYou
+          : l10n.teamUiRunNeedsYouFrom(name),
+      titleKey: const ValueKey('team-run-needs-you-label'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  name == null
-                      ? l10n.teamUiRunNeedsYou
-                      : l10n.teamUiRunNeedsYouFrom(name),
-                  key: const ValueKey('team-run-needs-you-label'),
-                  style: theme.textTheme.labelLarge?.copyWith(color: color),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
           Text(
             gate.title,
             key: const ValueKey('team-run-needs-you-title'),
@@ -1385,10 +1325,12 @@ class _WorkTab extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           toggle,
-          ProductInlineEmpty(
+          KitStateView(
+            size: KitStateSize.inline,
+            liveRegion: false,
             icon: AppIconography.checklist,
             title: l10n.teamUiWorkEmpty,
-            message: l10n.teamUiWorkEmptyHint,
+            body: l10n.teamUiWorkEmptyHint,
           ),
         ],
       );
@@ -1455,16 +1397,11 @@ class _WorkList extends StatelessWidget {
     return ListView(
       key: const ValueKey('team-run-work-groups'),
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-        16,
-        4,
-        16,
-        24 + MediaQuery.paddingOf(context).bottom,
-      ),
+      padding: EdgeInsets.only(bottom: KitScreen.endPadding(context)),
       children: [
         for (final (state, members) in groups)
           Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(bottom: 4),
             child: _WorkGroup(
               key: ValueKey('team-run-work-group-${state.name}'),
               state: state,
@@ -1521,37 +1458,33 @@ class _WorkGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, tone) = teamWorkGlyph(state);
     final color = AppTheme.statusColor(theme, tone);
-    return Material(
-      color: theme.colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(14),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            constraints: const BoxConstraints(minHeight: 34),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            color: color.withValues(alpha: .14),
-            child: Row(
-              children: [
-                Icon(icon, size: 16, color: color),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    count,
-                    key: ValueKey('team-run-work-group-count-${state.name}'),
-                    style: theme.textTheme.labelLarge?.copyWith(color: color),
+    // A section heading (design standard §6) in the state's tone, then its
+    // rows; the state also lives in every row's glyph.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  count,
+                  key: ValueKey('team-run-work-group-count-${state.name}'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.1,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          for (final (index, child) in children.indexed) ...[
-            if (index > 0) const Divider(height: 1, indent: 14, endIndent: 14),
-            child,
-          ],
-        ],
-      ),
+        ),
+        ...children,
+      ],
     );
   }
 }
@@ -1588,80 +1521,52 @@ class _WorkRow extends StatelessWidget {
       ?age,
     ].join(' · ');
     final name = owner;
-    return InkWell(
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 56),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Icon(icon, size: 18, color: color),
+    return KitRow(
+      leading: KitRow.icon(context, icon, color: color),
+      title: item.title,
+      titleMaxLines: 2,
+      below: detail.isEmpty
+          ? null
+          : Text(
+              detail,
+              key: ValueKey('team-run-work-detail-${item.id}'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: waitsOn > 0
+                    ? AppTheme.statusColor(theme, AppStatusTone.attention)
+                    : muted,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (detail.isNotEmpty)
-                      Text(
-                        detail,
-                        key: ValueKey('team-run-work-detail-${item.id}'),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: waitsOn > 0
-                              ? AppTheme.statusColor(
-                                  theme,
-                                  AppStatusTone.attention,
-                                )
-                              : muted,
-                        ),
-                      ),
-                  ],
+            ),
+      trailing: Padding(
+        padding: const EdgeInsetsDirectional.only(start: 12, end: 12),
+        child: Semantics(
+          label: name == null
+              ? l10n.teamUiWorkOwnerNone
+              : l10n.teamUiWorkOwnerSemantics(name),
+          child: ExcludeSemantics(
+            child: Container(
+              key: ValueKey('team-run-work-owner-${item.id}'),
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Text(
+                name == null ? '—' : workOwnerInitial(name),
+                textDirection: TextDirection.ltr,
+                style: const TextStyle(
+                  fontFamily: AppTheme.monoFamily,
+                  fontSize: 12,
                 ),
               ),
-              const SizedBox(width: 12),
-              Semantics(
-                label: name == null
-                    ? l10n.teamUiWorkOwnerNone
-                    : l10n.teamUiWorkOwnerSemantics(name),
-                child: ExcludeSemantics(
-                  child: Container(
-                    key: ValueKey('team-run-work-owner-${item.id}'),
-                    width: 28,
-                    height: 28,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                    ),
-                    child: Text(
-                      name == null ? '—' : workOwnerInitial(name),
-                      textDirection: TextDirection.ltr,
-                      style: const TextStyle(
-                        fontFamily: AppTheme.monoFamily,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
+      onTap: onTap,
     );
   }
 }
@@ -1942,17 +1847,21 @@ class _Timeline extends StatelessWidget {
         if (index == 1) {
           if (visible.isNotEmpty) return const SizedBox.shrink();
           return events.isEmpty
-              ? ProductInlineEmpty(
+              ? KitStateView(
                   key: const ValueKey('team-run-timeline-empty'),
+                  size: KitStateSize.inline,
+                  liveRegion: false,
                   icon: AppIconography.timeline,
                   title: l10n.teamUiRunTimelineEmpty,
-                  message: l10n.teamUiRunTimelineEmptyHint,
+                  body: l10n.teamUiRunTimelineEmptyHint,
                 )
-              : ProductInlineEmpty(
+              : KitStateView(
                   key: const ValueKey('team-run-timeline-empty-filtered'),
+                  size: KitStateSize.inline,
+                  liveRegion: false,
                   icon: AppIconography.filterOff,
                   title: l10n.teamUiRunTimelineEmptyFiltered,
-                  message: l10n.teamUiRunTimelineEmptyFilteredHint,
+                  body: l10n.teamUiRunTimelineEmptyFilteredHint,
                 );
         }
         final (event, category) = visible[index - 2];

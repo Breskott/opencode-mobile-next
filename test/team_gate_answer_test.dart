@@ -524,8 +524,18 @@ void main() {
     expect(sheet, findsOneWidget);
   }
 
+  // The keys sit on the kit's buttons (design standard §2); the Material
+  // button inside carries the enabled state.
   bool enabled(WidgetTester tester, Finder finder) =>
-      tester.widget<ButtonStyleButton>(finder).onPressed != null;
+      tester
+          .widget<ButtonStyleButton>(
+            find.descendant(
+              of: finder,
+              matching: find.bySubtype<ButtonStyleButton>(),
+            ),
+          )
+          .onPressed !=
+      null;
 
   String receipt(WidgetTester tester) => tester.widget<Text>(receiptLine).data!;
 
@@ -657,9 +667,19 @@ void main() {
       final deny = find.byKey(const ValueKey('team-gate-deny'));
       final error = AppTheme.dark().colorScheme.error;
       // The safe approve is the plain primary; deny takes the error tone.
-      final approveStyle = tester.widget<FilledButton>(approve).style!;
+      // Design standard §2: approve is the kit's primary, deny its
+      // secondary (tonal, error-coloured), no longer an outlined button.
+      final approveStyle = tester
+          .widget<FilledButton>(
+            find.descendant(of: approve, matching: find.byType(FilledButton)),
+          )
+          .style!;
       expect(approveStyle.backgroundColor?.resolve({}), isNot(error));
-      final denyStyle = tester.widget<OutlinedButton>(deny).style!;
+      final denyStyle = tester
+          .widget<FilledButton>(
+            find.descendant(of: deny, matching: find.byType(FilledButton)),
+          )
+          .style!;
       expect(denyStyle.foregroundColor?.resolve({}), error);
 
       await tester.tap(deny);
@@ -698,7 +718,9 @@ void main() {
       final error = AppTheme.dark().colorScheme.error;
       expect(
         tester
-            .widget<FilledButton>(approve)
+            .widget<FilledButton>(
+              find.descendant(of: approve, matching: find.byType(FilledButton)),
+            )
             .style
             ?.backgroundColor
             ?.resolve({}),
@@ -773,16 +795,13 @@ void main() {
     ) async {
       final (team, gateway) = await boot(configure: runShape);
       await pumpSheet(tester, team, 'run:oc-loy');
+      // Design standard §2: at most two tertiary actions show (Restart or
+      // reassign, Close); Cancel work is a rare destructive path and sits
+      // under More, still two-step.
       final cancel = find.byKey(const ValueKey('team-gate-run-cancel'));
-      final error = AppTheme.dark().colorScheme.error;
-      expect(
-        tester
-            .widget<OutlinedButton>(cancel)
-            .style
-            ?.foregroundColor
-            ?.resolve({}),
-        error,
-      );
+      expect(cancel, findsNothing);
+      await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
+      await tester.pumpAndSettle();
       await tester.tap(cancel);
       await tester.pumpAndSettle();
       expect(confirmSheet, findsOneWidget);
@@ -801,6 +820,9 @@ void main() {
     ) async {
       final (team, gateway) = await boot(configure: runShape);
       await pumpSheet(tester, team, 'run:oc-loy');
+      // View logs is under More (design standard §2: two tertiary shown).
+      await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('team-gate-run-logs')));
       await tester.pumpAndSettle();
       expect(sheet, findsNothing);
@@ -1123,10 +1145,13 @@ void main() {
       }
       await pumpSheet(tester, team, 'run:oc-loy');
       expect(find.byKey(const ValueKey('team-gate-run-retry')), findsNothing);
-      expect(find.byKey(const ValueKey('team-gate-run-cancel')), findsNothing);
-      // Reads are on: the agent screens still open.
-      expect(find.byKey(const ValueKey('team-gate-run-logs')), findsOneWidget);
+      // Reads are on: the agent screens still open (View logs under More,
+      // design standard §2).
       expect(find.byKey(const ValueKey('team-gate-run-agent')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('team-gate-run-cancel')), findsNothing);
+      expect(find.byKey(const ValueKey('team-gate-run-logs')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -1637,11 +1662,18 @@ void main() {
           for (final key in [
             'team-gate-run-retry',
             'team-gate-run-agent',
-            'team-gate-run-logs',
-            'team-gate-run-cancel',
+            // View logs and Cancel work are under More (standard §2).
+            'kit-actions-more',
           ]) {
             await revealButton(tester, find.byKey(ValueKey(key)));
           }
+          await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
+          await tester.pumpAndSettle();
+          for (final key in ['team-gate-run-logs', 'team-gate-run-cancel']) {
+            expect(find.byKey(ValueKey(key)), findsOneWidget);
+          }
+          await tester.tapAt(Offset.zero);
+          await tester.pumpAndSettle();
           await close();
         });
 

@@ -376,6 +376,8 @@ void main() {
         expect(tester.takeException(), isNull);
 
         // Details: the sheet scrolls; ids stay LTR.
+        await tester.tap(find.byKey(const ValueKey('team-run-more')));
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('team-run-details')));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);

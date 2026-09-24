@@ -30,6 +30,7 @@ import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
 import '../../widgets/confirm_sheet.dart';
 import '../../widgets/team_vocabulary.dart';
 import 'work_sheet.dart';
@@ -290,14 +291,9 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
 
       return Padding(
         padding: const EdgeInsets.only(top: 20),
-        child: Container(
+        child: KitPanel(
           key: const ValueKey('team-merge-section'),
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: color.withValues(alpha: .06),
-            border: Border.all(color: color.withValues(alpha: .45)),
-          ),
+          tone: tone,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -332,33 +328,32 @@ class _TeamMergeSectionState extends State<TeamMergeSection> {
                   style: theme.textTheme.bodySmall?.copyWith(color: muted),
                 ),
               ],
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  OutlinedButton(
+              const SizedBox(height: 16),
+              // One block (§2): Merge is the primary (armed two-step),
+              // Approve the secondary, Review changes the tertiary. A
+              // button that is off has its reason in the notes under it.
+              KitActionBlock(
+                primary: KitAction(
+                  key: const ValueKey('team-merge-merge'),
+                  label: _armed
+                      ? l10n.teamUiMergeConfirmStep
+                      : l10n.teamUiMergeMerge,
+                  onPressed: canMerge
+                      ? () => unawaited(_onMergeTap(readiness))
+                      : null,
+                ),
+                secondary: KitAction(
+                  key: const ValueKey('team-merge-approve'),
+                  label: l10n.teamUiMergeApprove,
+                  onPressed: canApprove
+                      ? () => unawaited(_onApproveTap(request))
+                      : null,
+                ),
+                tertiary: [
+                  KitAction(
                     key: const ValueKey('team-merge-review'),
+                    label: l10n.teamUiMergeReviewChanges,
                     onPressed: () => _openChanges(readiness),
-                    child: Text(l10n.teamUiMergeReviewChanges),
-                  ),
-                  OutlinedButton(
-                    key: const ValueKey('team-merge-approve'),
-                    onPressed: canApprove
-                        ? () => unawaited(_onApproveTap(request))
-                        : null,
-                    child: Text(l10n.teamUiMergeApprove),
-                  ),
-                  FilledButton(
-                    key: const ValueKey('team-merge-merge'),
-                    onPressed: canMerge
-                        ? () => unawaited(_onMergeTap(readiness))
-                        : null,
-                    child: Text(
-                      _armed
-                          ? l10n.teamUiMergeConfirmStep
-                          : l10n.teamUiMergeMerge,
-                    ),
                   ),
                 ],
               ),
@@ -577,12 +572,9 @@ class _Header extends StatelessWidget {
             spacing: 6,
             children: [
               Text(
-                title.toUpperCase(),
+                title,
                 key: const ValueKey('team-merge-title'),
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: color,
-                  letterSpacing: .4,
-                ),
+                style: theme.textTheme.labelLarge?.copyWith(color: color),
               ),
               if (request != null)
                 Text(
@@ -713,84 +705,99 @@ class _ChangesSheet extends StatelessWidget {
       builder: (context, scroll) => ListView(
         key: const ValueKey('team-merge-changes'),
         controller: scroll,
+        // 16 dp rails (§1); the work rows carry their own.
         padding: EdgeInsets.fromLTRB(
-          20,
+          0,
           4,
-          20,
+          0,
           16 + MediaQuery.paddingOf(context).bottom,
         ),
         children: [
-          Text(l10n.teamUiMergeChangesTitle, style: theme.textTheme.titleLarge),
-          if (readiness != null) ...[
-            const SizedBox(height: 4),
+          for (final child in [
             Text(
-              l10n.teamUiMergeFiles(
-                readiness!.files,
-                readiness!.additions,
-                readiness!.deletions,
-              ),
-              style: theme.textTheme.bodySmall?.copyWith(color: muted),
+              l10n.teamUiMergeChangesTitle,
+              style: theme.textTheme.titleLarge,
             ),
-          ],
-          const SizedBox(height: 12),
-          if (changes.isEmpty)
-            Text(
-              l10n.teamUiMergeChangesEmpty,
-              key: const ValueKey('team-merge-changes-empty'),
-              style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-            )
-          else
-            for (final change in changes)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(AppIconography.file, size: 16, color: muted),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        change.path,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontFamily: 'monospace',
+            if (readiness != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                l10n.teamUiMergeFiles(
+                  readiness!.files,
+                  readiness!.additions,
+                  readiness!.deletions,
+                ),
+                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+              ),
+            ],
+            const SizedBox(height: 12),
+            if (changes.isEmpty)
+              Text(
+                l10n.teamUiMergeChangesEmpty,
+                key: const ValueKey('team-merge-changes-empty'),
+                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+              )
+            else
+              for (final change in changes)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(AppIconography.file, size: 16, color: muted),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          change.path,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontFamily: AppTheme.monoFamily,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: '+${change.additions}',
-                            style: TextStyle(color: ok),
-                          ),
-                          const TextSpan(text: ' / '),
-                          TextSpan(
-                            text: '−${change.deletions}',
-                            style: TextStyle(color: failure),
-                          ),
-                        ],
+                      const SizedBox(width: 8),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '+${change.additions}',
+                              style: TextStyle(color: ok),
+                            ),
+                            const TextSpan(text: ' / '),
+                            TextSpan(
+                              text: '−${change.deletions}',
+                              style: TextStyle(color: failure),
+                            ),
+                          ],
+                        ),
+                        style: theme.textTheme.bodySmall,
                       ),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-          if (work.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              l10n.teamUiMergeChangesWork,
-              style: theme.textTheme.labelLarge?.copyWith(color: muted),
+          ])
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: child,
             ),
-            const SizedBox(height: 4),
+          if (work.isNotEmpty) ...[
+            SectionLabel(l10n.teamUiMergeChangesWork),
             for (final item in work)
-              ListTile(
+              KitRow(
                 key: ValueKey('team-merge-work-${item.id}'),
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                title: Text(item.title),
-                subtitle: Text(teamWorkStateWord(l10n, item.state)),
-                trailing: const Icon(AppIconography.chevronRight, size: 18),
+                leading: KitRow.icon(
+                  context,
+                  teamWorkGlyph(item.state).$1,
+                  color: AppTheme.statusColor(
+                    theme,
+                    teamWorkGlyph(item.state).$2,
+                  ),
+                ),
+                title: item.title,
+                supporting: TextSpan(text: teamWorkStateWord(l10n, item.state)),
+                trailing: Icon(
+                  AppIconography.chevronRight,
+                  size: 18,
+                  color: muted,
+                ),
                 onTap: () => onOpenWork(item.id),
               ),
           ],

@@ -13425,6 +13425,26 @@
   "@teamUiCardErrorUnreachable": {
     "description": "Workspace AI Team card error: no answer from the host at all"
   },
+  "teamUiStateUnreachableTitle": "Can’t reach the team host",
+  "@teamUiStateUnreachableTitle": {
+    "description": "AI Team screens, whole-screen error title: the team host did not answer (the body says where AI Team works)"
+  },
+  "teamUiStateNotGasCityTitle": "No AI team on this server",
+  "@teamUiStateNotGasCityTitle": {
+    "description": "AI Team screens, whole-screen state title: the server runs no AI team yet"
+  },
+  "teamUiStateStartingTitle": "The team host is starting",
+  "@teamUiStateStartingTitle": {
+    "description": "AI Team screens, whole-screen state title: the team host is still starting up"
+  },
+  "teamUiStatePlainHttpTitle": "AI Team can’t use this address",
+  "@teamUiStatePlainHttpTitle": {
+    "description": "AI Team screens, whole-screen state title: the team address is plain http outside Tailscale or this device"
+  },
+  "teamUiStateNotAnsweringTitle": "The team host isn’t answering",
+  "@teamUiStateNotAnsweringTitle": {
+    "description": "AI Team screens: shown instead of 'Connecting to the team host…' once connecting has taken longer than 8 seconds (design standard 8 s rule)"
+  },
   "teamUiCardHostComputer": "On the computer",
   "@teamUiCardHostComputer": {
     "description": "Workspace AI Team card header: the team host runs on the computer"

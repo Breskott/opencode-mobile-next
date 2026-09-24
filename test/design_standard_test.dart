@@ -7,13 +7,14 @@
 // an entry in [_allowed] with its reason.
 //
 // Each migrated screen also has golden renders at 412x915, dark and light,
-// in test/goldens/ (made by test/goldens/work_tab_golden_test.dart).
+// in test/goldens/ (made by the *_golden_test.dart files there).
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
 /// Screen files built on the kit, with the golden renders that show them.
-/// Only grows (§9 migration order: connection states, then the Work tab).
+/// Only grows (§9 migration order: connection states, the Work tab, then the
+/// AI Team).
 const _migrated = <String, List<String>>{
   // §9 step 1: connecting, starting, not answering, stopped, failed.
   'lib/ui/widgets/saved_server_connection_card.dart': [
@@ -38,6 +39,29 @@ const _migrated = <String, List<String>>{
     'work_not_answering',
     'work_runaway',
   ],
+  // §9 step 4: AI Team home and run (test/goldens/team_golden_test.dart,
+  // team_agent_golden_test.dart, team_sheets_golden_test.dart).
+  'lib/ui/screens/team/team_home_screen.dart': [
+    'team_home_loaded',
+    'team_home_empty',
+    'team_home_error',
+    'team_home_not_answering',
+  ],
+  'lib/ui/screens/team/team_states.dart': [
+    'team_home_error',
+    'team_home_not_answering',
+  ],
+  'lib/ui/screens/team/run_screen.dart': ['team_run_overview', 'team_run_work'],
+  'lib/ui/screens/team/start_run_sheet.dart': ['team_start_run'],
+  'lib/ui/widgets/team_card.dart': ['team_card'],
+  'lib/ui/screens/team/agent_screen.dart': [
+    'team_agent',
+    'team_agent_controls',
+  ],
+  'lib/ui/screens/team/agent_output_screen.dart': ['team_agent_output'],
+  'lib/ui/screens/team/gate_sheet.dart': ['team_gate_sheet'],
+  'lib/ui/screens/team/work_sheet.dart': ['team_work_sheet'],
+  'lib/ui/screens/team/merge_section.dart': ['team_merge'],
 };
 
 /// file -> (pattern, reason) exceptions. Keep it short.
