@@ -34,6 +34,7 @@ import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import '../kit/scenes/team_scenes.dart';
 import '../screens/team/gate_sheet.dart';
 import '../screens/team/team_needs_you.dart';
 import 'team_vocabulary.dart';
@@ -334,15 +335,25 @@ class _DataBody extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 48),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  [
-                    l10n.teamUiCardNothingRunning,
-                    if (canGive) l10n.teamUiStartRunFab,
-                  ].join(teamUsageSeparator),
-                  style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-                ),
+              child: Row(
+                children: [
+                  // Two agents at ease: a small drawing, still.
+                  const KitIllustration(
+                    key: ValueKey('team-card-idle-drawing'),
+                    scene: TeamIdleScene(),
+                    width: 34,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      [
+                        l10n.teamUiCardNothingRunning,
+                        if (canGive) l10n.teamUiStartRunFab,
+                      ].join(teamUsageSeparator),
+                      style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

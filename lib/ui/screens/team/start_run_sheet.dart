@@ -32,6 +32,7 @@ import '../../../state/orchestration.dart';
 import '../../../state/team_planning.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
+import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/team_host_form.dart';
 import '../../widgets/team_vocabulary.dart';
 import 'agent_output_screen.dart';
@@ -672,11 +673,16 @@ class TeamPlanningCard extends StatelessWidget {
     required this.controller,
     required this.request,
     this.now,
+    this.ambient = true,
   });
 
   final OrchestrationController controller;
   final TeamPlanningRequest request;
   final DateTime Function()? now;
+
+  /// Whether the drawing keeps moving while the planner plans: only one
+  /// card on a screen moves (design standard §10).
+  final bool ambient;
 
   void _openPlannerOutput(BuildContext context) {
     Navigator.of(context).push(
@@ -694,6 +700,9 @@ class TeamPlanningCard extends StatelessWidget {
     final l10n = _copy(context);
     final theme = Theme.of(context);
     final muted = AppTheme.mutedOf(theme);
+    final waiting =
+        request.status == TeamPlanningStatus.planning ||
+        request.status == TeamPlanningStatus.stillPlanning;
     final (icon, tone, title) = switch (request.status) {
       TeamPlanningStatus.planning => (
         AppIconography.waiting,
@@ -731,22 +740,49 @@ class TeamPlanningCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            request.objective,
-            key: const ValueKey('team-planning-objective'),
-            style: theme.textTheme.bodyMedium,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          if (request.status == TeamPlanningStatus.planning)
-            Text(
-              l10n.teamUiStartRunPlanningHint,
-              style: theme.textTheme.bodySmall?.copyWith(color: muted),
-            ),
-          Text(
-            l10n.teamUiStartRunSentAt(teamClockLabel(context, request.sentAt)),
-            style: theme.textTheme.bodySmall?.copyWith(color: muted),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      request.objective,
+                      key: const ValueKey('team-planning-objective'),
+                      style: theme.textTheme.bodyMedium,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    if (request.status == TeamPlanningStatus.planning)
+                      Text(
+                        l10n.teamUiStartRunPlanningHint,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: muted,
+                        ),
+                      ),
+                    Text(
+                      l10n.teamUiStartRunSentAt(
+                        teamClockLabel(context, request.sentAt),
+                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                    ),
+                  ],
+                ),
+              ),
+              // While the planner plans: two agents pass the task's card
+              // between them (a wait, so it moves).
+              if (waiting) ...[
+                const SizedBox(width: 12),
+                KitIllustration(
+                  key: const ValueKey('team-planning-drawing'),
+                  scene: const TeamPlanningScene(),
+                  width: 84,
+                  ambient: ambient,
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 4),
           KitInset(

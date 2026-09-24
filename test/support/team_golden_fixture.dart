@@ -24,6 +24,7 @@ import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_card.dart';
+import 'package:opencode_mobile/ui/widgets/team_moments.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// The scenes' clock.
@@ -31,6 +32,9 @@ final teamSceneClock = DateTime.utc(2026, 9, 11, 9, 41);
 
 /// The run every run-screen scene opens.
 const teamSceneRunId = 'oc-xru';
+
+/// The finished, merged task of [TeamScene.loaded].
+const teamSceneMergedRunId = 'ma-lqw';
 
 enum TeamScene {
   /// A blocked batch that needs you, a working formula run, and a finished
@@ -50,6 +54,10 @@ enum TeamScene {
   /// [loaded] plus nine more open tasks: a list long enough (more than
   /// eight) for search and filters.
   busy,
+
+  /// The host answers that the team is not running yet: it is starting
+  /// (the team waking up).
+  starting,
 }
 
 class _SceneGateway extends FixtureOrchestrationGateway {
@@ -308,6 +316,9 @@ Future<OrchestrationController> teamSceneController(
         error: 'Connection refused (http://pop-os:7000)',
       ),
       TeamScene.connecting => (_) => Completer<ProbeVerdict>().future,
+      TeamScene.starting => (_) async => const ProbeCityNotRunning(
+        city: 'bright-lights',
+      ),
       // The fixture provider's own probe finds the recorded city.
       TeamScene.loaded || TeamScene.empty || TeamScene.busy => null,
     },
@@ -321,20 +332,33 @@ Future<OrchestrationController> teamSceneController(
   return controller;
 }
 
+/// Forgets which merged tasks celebrated and which questions waved, so
+/// each picture is a fresh start (the app after a restart, with no memory).
+void resetTeamMoments() {
+  TeamCelebrations.forgetSession();
+  TeamNeedsYouLabel.forgetSession();
+}
+
 /// One picture of the AI Team: the scene it needs and what to open.
 enum TeamShot {
   homeLoaded(TeamScene.loaded, 'team_home_loaded'),
   homeEmpty(TeamScene.empty, 'team_home_empty'),
   homeError(TeamScene.failed, 'team_home_error'),
   homeNotAnswering(TeamScene.connecting, 'team_home_not_answering'),
+  // The team host starting: the agents wake up (motion slice D).
+  homeStarting(TeamScene.starting, 'team_home_starting'),
   runOverview(TeamScene.loaded, 'team_run_overview'),
   runWork(TeamScene.loaded, 'team_run_work'),
+  // A merged task's Overview, the first time: its celebration (slice D).
+  runMerged(TeamScene.loaded, 'team_run_merged'),
   startRun(TeamScene.loaded, 'team_start_run'),
   card(TeamScene.loaded, 'team_card'),
   agentOutput(TeamScene.loaded, 'team_agent_output'),
   // The in-app AI Team: the same team hosted on this phone.
   homeLoadedPhone(TeamScene.loaded, 'team_home_loaded_phone', onPhone: true),
   cardPhone(TeamScene.loaded, 'team_card_phone', onPhone: true),
+  // Nothing running: the card's one line with its small drawing.
+  cardIdle(TeamScene.empty, 'team_card_idle'),
   // The agents list the home's one agents row opens.
   agents(TeamScene.loaded, 'team_agents');
 
@@ -360,6 +384,7 @@ Future<OrchestrationController> pumpTeamShot(
 }) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1;
+  resetTeamMoments();
   final controller = await teamSceneController(
     shot.scene,
     onPhone: shot.onPhone,
@@ -371,12 +396,17 @@ Future<OrchestrationController> pumpTeamShot(
       runId: teamSceneRunId,
       now: now,
     ),
+    TeamShot.runMerged => RunScreen(
+      controller: controller,
+      runId: teamSceneMergedRunId,
+      now: now,
+    ),
     TeamShot.agentOutput => AgentOutputScreen(
       controller: controller,
       agentId: 'fox',
     ),
     TeamShot.agents => TeamAgentsScreen(controller: controller, now: now),
-    TeamShot.card || TeamShot.cardPhone => Scaffold(
+    TeamShot.card || TeamShot.cardPhone || TeamShot.cardIdle => Scaffold(
       body: SafeArea(
         child: ListView(
           children: [TeamCard(controller: controller, onOpen: () {})],
@@ -412,6 +442,9 @@ Future<OrchestrationController> pumpTeamShot(
         TeamShot.homeLoadedPhone ||
         TeamShot.homeEmpty ||
         TeamShot.homeError ||
+        TeamShot.homeStarting ||
+        TeamShot.runMerged ||
+        TeamShot.cardIdle ||
         TeamShot.runOverview ||
         TeamShot.card ||
         TeamShot.cardPhone ||

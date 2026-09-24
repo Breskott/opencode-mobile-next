@@ -11,6 +11,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
+import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/grace_timer.dart';
 import '../../widgets/team_vocabulary.dart';
 
@@ -48,10 +49,14 @@ Widget? teamScreenState(
     final error = controller.lastError;
     final (icon, tone, title) = teamErrorState(l10n, error?.kind);
     final details = error?.message.trim();
+    // The host is starting: the team wakes up while the person waits.
+    final starting = error?.kind == OrchestrationErrorKind.cityNotRunning;
     return KitStateView(
       key: ValueKey('$keyPrefix-error'),
       icon: icon,
       tone: tone,
+      illustration: starting ? const TeamWakingScene() : null,
+      illustrationAmbient: starting,
       title: title,
       body: teamErrorCopy(l10n, error?.kind),
       primary: retry,
