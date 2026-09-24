@@ -15,6 +15,9 @@ class KitRow extends StatelessWidget {
     this.trailing,
     this.onTap,
     this.onLongPress,
+    this.titleMaxLines = 1,
+    this.supportingMaxLines = 1,
+    this.below,
   });
 
   final Widget? leading;
@@ -25,6 +28,18 @@ class KitRow extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+
+  /// One line by default (§6). A row whose title is the person's own long
+  /// words (a run's objective) may take two.
+  final int titleMaxLines;
+
+  /// One line by default (§6); two where the line's end carries the state
+  /// ("… · Finished 5h ago").
+  final int supportingMaxLines;
+
+  /// Shown under the supporting line: where a trailing state word moves at
+  /// large text instead of squeezing the title.
+  final Widget? below;
 
   /// A leading icon at the row's size, muted unless [color] is given.
   static Widget icon(BuildContext context, IconData icon, {Color? color}) =>
@@ -66,7 +81,7 @@ class KitRow extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      maxLines: 1,
+                      maxLines: titleMaxLines,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyLarge,
                     ),
@@ -74,12 +89,16 @@ class KitRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text.rich(
                         supporting,
-                        maxLines: 1,
+                        maxLines: supportingMaxLines,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppTheme.mutedOf(theme),
                         ),
                       ),
+                    ],
+                    if (below case final below?) ...[
+                      const SizedBox(height: 2),
+                      below,
                     ],
                   ],
                 ),

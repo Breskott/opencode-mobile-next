@@ -58,8 +58,8 @@ class KitButton extends StatelessWidget {
     this.working = false,
     this.expand = true,
     this.maxLines = 2,
-  }) : role = KitButtonRole.primary,
-       destructive = false;
+    this.destructive = false,
+  }) : role = KitButtonRole.primary;
 
   const KitButton.secondary({
     super.key,
@@ -131,7 +131,13 @@ class KitButton extends StatelessWidget {
     final minimum = expand ? const Size.fromHeight(48) : const Size(48, 48);
     switch (role) {
       case KitButtonRole.primary:
-        final style = FilledButton.styleFrom(minimumSize: minimum);
+        // Destructive is primary only where the whole sheet or screen is
+        // that one confirmed act (design standard §2).
+        final style = FilledButton.styleFrom(
+          minimumSize: minimum,
+          backgroundColor: destructive ? error : null,
+          foregroundColor: destructive ? theme.colorScheme.onError : null,
+        );
         return leading == null
             ? FilledButton(onPressed: onPressed, style: style, child: text)
             : FilledButton.icon(
@@ -213,7 +219,12 @@ class KitActionBlock extends StatelessWidget {
                   key: overflow[i].key,
                   value: i,
                   enabled: overflow[i].onPressed != null,
-                  child: Text(overflow[i].label),
+                  child: Text(
+                    overflow[i].label,
+                    style: overflow[i].destructive
+                        ? TextStyle(color: Theme.of(context).colorScheme.error)
+                        : null,
+                  ),
                 ),
             ],
           );

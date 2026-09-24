@@ -32,6 +32,7 @@ import '../../../domain/orchestration_gateway.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
 import '../../widgets/confirm_sheet.dart';
 import '../../widgets/markdown.dart';
 import '../../widgets/relative_time.dart';
@@ -45,6 +46,27 @@ import 'work_sheet.dart';
 
 /// How long "Answered" stays on screen before the sheet closes itself.
 const gateSheetAnsweredBeat = Duration(milliseconds: 900);
+
+/// A variant's actions in the design standard's one hierarchy (§2), plus
+/// the line that explains the secondary ([note]) when it needs one.
+class _GateActions {
+  const _GateActions({
+    this.primary,
+    this.secondary,
+    this.tertiary = const [],
+    this.note,
+    this.answers = false,
+  });
+
+  final KitAction? primary;
+  final KitAction? secondary;
+  final List<KitAction> tertiary;
+  final Widget? note;
+
+  /// Whether this phone can act on the gate at all (anything besides
+  /// Close); when not, the sheet says where to answer it.
+  final bool answers;
+}
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -121,7 +143,6 @@ class GateSheet extends StatelessWidget {
     listenable: controller,
     builder: (context, _) {
       final l10n = _copy(context);
-      final theme = Theme.of(context);
       final snapshot = controller.snapshot;
       OrchestrationGate? gate;
       for (final candidate in snapshot.gates) {
@@ -131,19 +152,19 @@ class GateSheet extends StatelessWidget {
         }
       }
       if (gate == null) {
+        // Answered or closed on the host meanwhile: a state, not a form.
         return Padding(
-          key: const ValueKey('team-gate-sheet-missing'),
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(l10n.teamUiGateGone, style: theme.textTheme.bodyMedium),
-              const SizedBox(height: 14),
-              FilledButton.tonal(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: KitStateView(
+            key: const ValueKey('team-gate-sheet-missing'),
+            size: KitStateSize.inline,
+            icon: AppIconography.checkCircle,
+            title: l10n.teamUiGateGone,
+            tertiary: [
+              KitAction(
                 key: const ValueKey('team-gate-close'),
+                label: l10n.teamUiHomeGateClose,
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text(l10n.teamUiHomeGateClose),
               ),
             ],
           ),
@@ -311,13 +332,8 @@ class _BodyState extends State<_Body> {
     final promptShown =
         prompt != null && prompt.isNotEmpty && prompt != gate.title;
 
-    Widget heading(String text) => Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 6),
-      child: Text(
-        text,
-        style: theme.textTheme.labelLarge?.copyWith(color: muted),
-      ),
-    );
+    Widget heading(String text) =>
+        SectionLabel(text, padding: const EdgeInsets.only(top: 16, bottom: 6));
 
     Widget workChips(String prefix, List<WorkItem> items) => Wrap(
       spacing: 8,
@@ -366,13 +382,18 @@ class _BodyState extends State<_Body> {
       ),
       GateKind.runFailed => _runFailed(context, heading, workChips),
     };
+    final close = KitAction(
+      key: const ValueKey('team-gate-close'),
+      label: l10n.teamUiHomeGateClose,
+      onPressed: () => Navigator.of(context).pop(),
+    );
     final actions = hideActions
-        ? const <Widget>[]
-        : _actions(context, caps, busy: busy);
+        ? _GateActions(tertiary: [close])
+        : _actions(context, caps, busy: busy, close: close);
 
     return SingleChildScrollView(
       key: const ValueKey('team-gate-sheet'),
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -417,28 +438,27 @@ class _BodyState extends State<_Body> {
               onRetry: () => _retry(record),
             ),
           ],
-          if (actions.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            for (final (index, action) in actions.indexed) ...[
-              if (index > 0) const SizedBox(height: 8),
-              action,
-            ],
-          ],
-          if (actions.isEmpty && !hideActions && record == null) ...[
+          if (!actions.answers && !hideActions && record == null) ...[
             const SizedBox(height: 16),
             _HostLine(
               key: const ValueKey('team-gate-answer-on-host'),
               text: _hostLine(l10n),
             ),
           ],
+          if (actions.note case final note?) ...[
+            const SizedBox(height: 16),
+            note,
+          ],
+          // One block in the §2 order; Close is its last way out.
+          const SizedBox(height: 16),
+          KitActionBlock(
+            primary: actions.primary,
+            secondary: actions.secondary,
+            tertiary: actions.tertiary,
+          ),
+          // Details close the sheet, never above the actions (§3).
           const SizedBox(height: 8),
           _TechnicalDetails(gate: gate),
-          const SizedBox(height: 8),
-          FilledButton.tonal(
-            key: const ValueKey('team-gate-close'),
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.teamUiHomeGateClose),
-          ),
         ],
       ),
     );
@@ -569,28 +589,27 @@ class _BodyState extends State<_Body> {
   // Actions (TEAM-203)
   // -------------------------------------------------------------------------
 
-  /// The variant's actions, each only behind its capability. Empty means
-  /// the sheet keeps its "Answer this on the host" line.
-  List<Widget> _actions(
+  /// The variant's actions in the one hierarchy (design standard §2), each
+  /// only behind its capability, with [close] as the last way out. When
+  /// nothing but [close] is left the sheet keeps its "Answer this on the
+  /// host" line.
+  _GateActions _actions(
     BuildContext context,
     OrchestrationCapabilities caps, {
     required bool busy,
+    required KitAction close,
   }) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final error = theme.colorScheme.error;
-    final fill = FilledButton.styleFrom(minimumSize: const Size.fromHeight(48));
-    final outline = OutlinedButton.styleFrom(
-      minimumSize: const Size.fromHeight(48),
-    );
     switch (gate.kind) {
       case GateKind.choice:
-        if (!caps.controlRespond) return const [];
+        if (!caps.controlRespond) return _GateActions(tertiary: [close]);
         final index = _selected;
-        return [
-          FilledButton(
+        return _GateActions(
+          answers: true,
+          // Off until an option is picked; the options hint above says so.
+          primary: KitAction(
             key: const ValueKey('team-gate-send'),
-            style: fill,
+            label: l10n.teamUiGateAnswerSend,
             onPressed: busy || index == null || index >= gate.choices.length
                 ? null
                 : () => _send(
@@ -599,27 +618,28 @@ class _BodyState extends State<_Body> {
                       GateResponse.choice(gate.choices[index]),
                     ),
                   ),
-            child: Text(l10n.teamUiGateAnswerSend),
           ),
-        ];
+          tertiary: [close],
+        );
       case GateKind.freeText:
-        if (!caps.controlRespond) return const [];
+        if (!caps.controlRespond) return _GateActions(tertiary: [close]);
         final text = _text.text.trim();
-        return [
-          FilledButton(
+        return _GateActions(
+          answers: true,
+          primary: KitAction(
             key: const ValueKey('team-gate-send'),
-            style: fill,
+            label: l10n.teamUiGateAnswerSend,
             onPressed: busy || text.isEmpty
                 ? null
                 : () => _send(
                     () =>
                         controller.answerGate(gate.id, GateResponse.text(text)),
                   ),
-            child: Text(l10n.teamUiGateAnswerSend),
           ),
-        ];
+          tertiary: [close],
+        );
       case GateKind.confirmation:
-        if (!caps.controlRespond) return const [];
+        if (!caps.controlRespond) return _GateActions(tertiary: [close]);
         final destructive = teamGateIsDestructive(gate);
         Future<void> answer(bool confirmed) => _send(
           () => controller.answerGate(
@@ -627,41 +647,31 @@ class _BodyState extends State<_Body> {
             GateResponse.confirmation(confirmed: confirmed),
           ),
         );
-        return [
-          if (destructive)
-            FilledButton(
-              key: const ValueKey('team-gate-approve'),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                backgroundColor: error,
-                foregroundColor: theme.colorScheme.onError,
-              ),
-              onPressed: busy
-                  ? null
-                  : () async {
-                      final ok = await _confirm(
-                        l10n.teamUiGateAnswerConfirmApproveTitle,
-                        l10n.teamUiGateAnswerConfirmApproveBody,
-                        l10n.teamUiGateAnswerApprove,
-                      );
-                      if (ok && mounted) await answer(true);
-                    },
-              child: Text(l10n.teamUiGateAnswerApprove),
-            )
-          else
-            FilledButton(
-              key: const ValueKey('team-gate-approve'),
-              style: fill,
-              onPressed: busy ? null : () => answer(true),
-              child: Text(l10n.teamUiGateAnswerApprove),
-            ),
-          OutlinedButton(
+        return _GateActions(
+          answers: true,
+          // The whole sheet is this one answer, so a destructive approve
+          // may be the (error-toned, two-step) primary.
+          primary: KitAction(
+            key: const ValueKey('team-gate-approve'),
+            label: l10n.teamUiGateAnswerApprove,
+            destructive: destructive,
+            onPressed: busy
+                ? null
+                : destructive
+                ? () async {
+                    final ok = await _confirm(
+                      l10n.teamUiGateAnswerConfirmApproveTitle,
+                      l10n.teamUiGateAnswerConfirmApproveBody,
+                      l10n.teamUiGateAnswerApprove,
+                    );
+                    if (ok && mounted) await answer(true);
+                  }
+                : () => answer(true),
+          ),
+          secondary: KitAction(
             key: const ValueKey('team-gate-deny'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              foregroundColor: error,
-              side: BorderSide(color: error),
-            ),
+            label: l10n.teamUiGateAnswerDeny,
+            destructive: true,
             onPressed: busy
                 ? null
                 : () async {
@@ -672,15 +682,16 @@ class _BodyState extends State<_Body> {
                     );
                     if (ok && mounted) await answer(false);
                   },
-            child: Text(l10n.teamUiGateAnswerDeny),
           ),
-        ];
+          tertiary: [close],
+        );
       case GateKind.gateBead:
-        if (!caps.controlRespond) return const [];
-        return [
-          FilledButton(
+        if (!caps.controlRespond) return _GateActions(tertiary: [close]);
+        return _GateActions(
+          answers: true,
+          primary: KitAction(
             key: const ValueKey('team-gate-mark-done'),
-            style: fill,
+            label: l10n.teamUiGateAnswerMarkDone,
             onPressed: busy
                 ? null
                 : () => _send(
@@ -689,36 +700,29 @@ class _BodyState extends State<_Body> {
                       const GateResponse.confirmation(confirmed: true),
                     ),
                   ),
-            child: Text(l10n.teamUiGateAnswerMarkDone),
           ),
-        ];
-      case GateKind.runFailed:
-        return _runActions(
-          context,
-          caps,
-          busy: busy,
-          fill: fill,
-          outline: outline,
+          tertiary: [close],
         );
+      case GateKind.runFailed:
+        return _runActions(context, caps, busy: busy, close: close);
       case GateKind.reviewReady:
       case GateKind.unknown:
-        return const [];
+        return _GateActions(tertiary: [close]);
     }
   }
 
-  /// Retry (re-sling the stuck work to its agent), Restart or reassign
-  /// and View logs (the agent screens), Cancel work (two-step).
-  List<Widget> _runActions(
+  /// Retry (re-sling the stuck work to its agent) as the secondary, with
+  /// the line saying what it sends; then Restart or reassign and Close,
+  /// and in More: View logs and Cancel work (two-step, error tone).
+  _GateActions _runActions(
     BuildContext context,
     OrchestrationCapabilities caps, {
     required bool busy,
-    required ButtonStyle fill,
-    required ButtonStyle outline,
+    required KitAction close,
   }) {
     final l10n = _copy(context);
     final theme = Theme.of(context);
     final muted = AppTheme.mutedOf(theme);
-    final error = theme.colorScheme.error;
     final runId = gate.runId;
     final open = _affectedWork();
     WorkItem? stuck;
@@ -740,79 +744,72 @@ class _BodyState extends State<_Body> {
     }
     final target = agentId ?? _runTarget();
     final agentName = agentId == null ? null : _agentName(agentId);
-    final actions = <Widget>[];
+    KitAction? retry;
+    Widget? note;
     if (caps.controlAssign && stuck != null && target != null) {
       final item = stuck;
-      actions.add(
-        FilledButton.tonal(
-          key: const ValueKey('team-gate-run-retry'),
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-          onPressed: busy
-              ? null
-              : () => _send(
-                  () => controller.assignWork(item.id, agentId: target),
-                ),
-          child: Text(l10n.teamUiGateAnswerRunRetry),
-        ),
+      retry = KitAction(
+        key: const ValueKey('team-gate-run-retry'),
+        label: l10n.teamUiGateAnswerRunRetry,
+        onPressed: busy
+            ? null
+            : () =>
+                  _send(() => controller.assignWork(item.id, agentId: target)),
       );
-      actions.add(
-        Text(
-          l10n.teamUiGateAnswerRunRetryDetail(item.title, agentName ?? target),
-          key: const ValueKey('team-gate-run-retry-detail'),
-          style: theme.textTheme.bodySmall?.copyWith(color: muted),
-        ),
+      note = Text(
+        l10n.teamUiGateAnswerRunRetryDetail(item.title, agentName ?? target),
+        key: const ValueKey('team-gate-run-retry-detail'),
+        style: theme.textTheme.bodySmall?.copyWith(color: muted),
       );
     }
+    KitAction? agent;
     final onOpenAgent = widget.onOpenAgent;
     if (onOpenAgent != null && agentId != null && caps.agents) {
       final id = agentId;
-      actions.add(
-        OutlinedButton(
-          key: const ValueKey('team-gate-run-agent'),
-          style: outline,
-          onPressed: () => onOpenAgent(id),
-          child: Text(l10n.teamUiGateAnswerRunAgent),
-        ),
+      agent = KitAction(
+        key: const ValueKey('team-gate-run-agent'),
+        label: l10n.teamUiGateAnswerRunAgent,
+        onPressed: () => onOpenAgent(id),
       );
     }
+    KitAction? logs;
     final onOpenLogs = widget.onOpenLogs;
     if (onOpenLogs != null && agentId != null && caps.agentOutput) {
       final id = agentId;
-      actions.add(
-        OutlinedButton(
-          key: const ValueKey('team-gate-run-logs'),
-          style: outline,
-          onPressed: () => onOpenLogs(id),
-          child: Text(l10n.teamUiGateAnswerRunLogs),
-        ),
+      logs = KitAction(
+        key: const ValueKey('team-gate-run-logs'),
+        label: l10n.teamUiGateAnswerRunLogs,
+        onPressed: () => onOpenLogs(id),
       );
     }
+    KitAction? cancel;
     if (caps.controlCancelRun && runId != null) {
-      actions.add(
-        OutlinedButton(
-          key: const ValueKey('team-gate-run-cancel'),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(48),
-            foregroundColor: error,
-            side: BorderSide(color: error),
-          ),
-          onPressed: busy
-              ? null
-              : () async {
-                  final ok = await _confirm(
-                    l10n.teamUiGateAnswerConfirmCancelRunTitle,
-                    l10n.teamUiGateAnswerConfirmCancelRunBody,
-                    l10n.teamUiGateAnswerRunCancel,
-                  );
-                  if (ok && mounted) {
-                    await _send(() => controller.cancelRun(runId));
-                  }
-                },
-          child: Text(l10n.teamUiGateAnswerRunCancel),
-        ),
+      cancel = KitAction(
+        key: const ValueKey('team-gate-run-cancel'),
+        label: l10n.teamUiGateAnswerRunCancel,
+        destructive: true,
+        onPressed: busy
+            ? null
+            : () async {
+                final ok = await _confirm(
+                  l10n.teamUiGateAnswerConfirmCancelRunTitle,
+                  l10n.teamUiGateAnswerConfirmCancelRunBody,
+                  l10n.teamUiGateAnswerRunCancel,
+                );
+                if (ok && mounted) {
+                  await _send(() => controller.cancelRun(runId));
+                }
+              },
       );
     }
-    return actions;
+    return _GateActions(
+      answers: retry != null || agent != null || logs != null || cancel != null,
+      secondary: retry,
+      note: note,
+      // Two tertiary actions show; the rest go under More (§2). Close
+      // stays visible so the sheet always has its way out.
+      tertiary: [?agent, close, ?logs, ?cancel],
+    );
   }
 
   /// The failed run's open work, stuck items first (as the sheet lists
@@ -1124,13 +1121,10 @@ class _Receipt extends StatelessWidget {
         ),
         if (retryLabel != null && record.canRetry) ...[
           const SizedBox(height: 8),
-          FilledButton.tonal(
+          KitButton.secondary(
             key: const ValueKey('team-gate-retry'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-            ),
+            label: retryLabel,
             onPressed: busy ? null : onRetry,
-            child: Text(retryLabel),
           ),
         ],
       ],
@@ -1169,10 +1163,10 @@ class _HostLine extends StatelessWidget {
                   height: 1.35,
                 ),
               ),
-              TextButton(
+              KitButton.tertiary(
                 key: const ValueKey('team-gate-how'),
+                label: l10n.teamUiHow,
                 onPressed: () => showTeamHostGuideSheet(context),
-                child: Text(l10n.teamUiHow),
               ),
             ],
           ),
@@ -1237,7 +1231,7 @@ class _TechnicalDetails extends StatelessWidget {
         childrenPadding: const EdgeInsets.only(bottom: 8),
         title: Text(
           l10n.teamUiTechnicalDetails,
-          style: theme.textTheme.titleMedium,
+          style: theme.textTheme.bodyMedium?.copyWith(color: muted),
         ),
         children: [
           Text(

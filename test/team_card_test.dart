@@ -20,6 +20,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitButton;
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -943,7 +944,7 @@ void main() {
       );
       expect(
         tester
-            .widget<FilledButton>(find.byKey(const ValueKey('team-card-open')))
+            .widget<KitButton>(find.byKey(const ValueKey('team-card-open')))
             .onPressed,
         isNull,
       );
@@ -969,7 +970,7 @@ void main() {
       expect(opened, 0);
       expect(
         tester
-            .widget<TextButton>(find.byKey(const ValueKey('team-card-refresh')))
+            .widget<KitButton>(find.byKey(const ValueKey('team-card-refresh')))
             .onPressed,
         isNotNull,
       );

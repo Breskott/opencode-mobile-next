@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -113,9 +114,6 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
         : tail.received
         ? (l10n.teamUiAgentOutputLive, AppStatusTone.progress)
         : (l10n.teamUiAgentOutputConnecting, AppStatusTone.neutral);
-    final statusColor = tone == AppStatusTone.neutral
-        ? muted
-        : AppTheme.statusColor(theme, tone);
     final canFollow = !tail.ended && tail.available;
     return Scaffold(
       key: const ValueKey('team-agent-output-page'),
@@ -165,37 +163,17 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Row(
-                key: const ValueKey('team-agent-output-status'),
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Icon(
-                      tail.ended
-                          ? AppIconography.cloudOff
-                          : !tail.available
-                          ? AppIconography.warning
-                          : AppIconography.statusDot,
-                      size: 16,
-                      color: statusColor,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      status,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: statusColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            // The one status line (design standard §5): live, connecting,
+            // unavailable or ended.
+            KitStatusLine(
+              key: const ValueKey('team-agent-output-status'),
+              icon: tail.ended
+                  ? AppIconography.cloudOff
+                  : !tail.available
+                  ? AppIconography.warning
+                  : AppIconography.statusDot,
+              tone: tone,
+              message: status,
             ),
             SwitchListTile.adaptive(
               key: const ValueKey('team-agent-output-follow'),
@@ -247,11 +225,12 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
                       start: 0,
                       end: 0,
                       child: Center(
-                        child: FilledButton.tonalIcon(
+                        child: KitButton.secondary(
                           key: const ValueKey('team-agent-output-jump'),
+                          expand: false,
                           onPressed: () => _setFollow(true),
-                          icon: const Icon(AppIconography.down, size: 18),
-                          label: Text(l10n.teamUiAgentOutputJump),
+                          icon: AppIconography.down,
+                          label: l10n.teamUiAgentOutputJump,
                         ),
                       ),
                     ),

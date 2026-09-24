@@ -13356,6 +13356,23 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر الوصول إلى مضيف الفريق. يعمل فريق الذكاء الاصطناعي عبر شبكة Tailscale لديك أو على هذا الجهاز.';
 
   @override
+  String get teamUiStateUnreachableTitle => 'تعذّر الوصول إلى مضيف الفريق';
+
+  @override
+  String get teamUiStateNotGasCityTitle =>
+      'لا يوجد فريق ذكاء اصطناعي على هذا الخادم';
+
+  @override
+  String get teamUiStateStartingTitle => 'مضيف الفريق قيد البدء';
+
+  @override
+  String get teamUiStatePlainHttpTitle =>
+      'لا يمكن لفريق الذكاء الاصطناعي استخدام هذا العنوان';
+
+  @override
+  String get teamUiStateNotAnsweringTitle => 'مضيف الفريق لا يستجيب';
+
+  @override
   String get teamUiCardHostComputer => 'على الحاسوب';
 
   @override

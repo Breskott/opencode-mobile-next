@@ -26,6 +26,7 @@ import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import 'team_cycle_strip.dart';
 import 'team_discovery_card.dart' show teamHostDisclaimer, teamHostKindFor;
 import 'team_vocabulary.dart';
@@ -131,8 +132,6 @@ class TeamCardState extends State<TeamCard> with TickerProviderStateMixin {
 
   Widget _build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     final controller = widget.controller;
     final snapshot = controller.snapshot;
     // Each body carries its state key (`team-card-loading`, `-empty`,
@@ -172,16 +171,12 @@ class TeamCardState extends State<TeamCard> with TickerProviderStateMixin {
           );
         }
     }
-    return Card(
-      key: const ValueKey('team-card'),
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      color: colors.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colors.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    // A block of content on the Work tab (design standard §3): the kit's
+    // panel, the list's 16 dp rails around it.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: KitPanel(
+        key: const ValueKey('team-card'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -473,13 +468,12 @@ class _ErrorBody extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: FilledButton.tonalIcon(
+        KitActionBlock(
+          secondary: KitAction(
             key: const ValueKey('team-card-retry'),
             onPressed: onRetry,
-            icon: const Icon(AppIcons.retry, size: 18),
-            label: Text(l10n.teamUiCardRetry),
+            icon: AppIcons.retry,
+            label: l10n.teamUiCardRetry,
           ),
         ),
       ],
@@ -1001,22 +995,21 @@ class _Actions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        FilledButton.icon(
-          key: const ValueKey('team-card-open'),
-          onPressed: onOpen,
-          icon: const Icon(AppIconography.chevronRight, size: 18),
-          label: Text(l10n.teamUiCardOpen),
-        ),
-        TextButton.icon(
+    // Secondary, not filled: the Work tab's one primary is New
+    // conversation (design standard §2). Refresh is the rare path.
+    return KitActionBlock(
+      secondary: KitAction(
+        key: const ValueKey('team-card-open'),
+        onPressed: onOpen,
+        icon: AppIconography.chevronRight,
+        label: l10n.teamUiCardOpen,
+      ),
+      tertiary: [
+        KitAction(
           key: const ValueKey('team-card-refresh'),
           onPressed: onRefresh,
-          icon: const Icon(AppIconography.sync, size: 18),
-          label: Text(l10n.teamUiCardRefresh),
+          icon: AppIconography.sync,
+          label: l10n.teamUiCardRefresh,
         ),
       ],
     );

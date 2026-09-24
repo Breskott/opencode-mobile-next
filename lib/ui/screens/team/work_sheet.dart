@@ -18,6 +18,7 @@ import '../../../orchestration/adapters/gascity/gascity_mappers.dart'
     show WorkItemGasCity;
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
 import '../../widgets/markdown.dart';
 import '../../widgets/relative_time.dart';
 import '../../widgets/team_cycle_strip.dart';
@@ -189,7 +190,6 @@ class WorkSheet extends StatelessWidget {
     listenable: controller,
     builder: (context, _) {
       final l10n = _copy(context);
-      final theme = Theme.of(context);
       final snapshot = controller.snapshot;
       WorkItem? item;
       for (final candidate in snapshot.work) {
@@ -199,12 +199,14 @@ class WorkSheet extends StatelessWidget {
         }
       }
       if (item == null) {
+        // Gone from the host meanwhile: a state, not an empty sheet.
         return Padding(
-          key: const ValueKey('team-work-sheet-missing'),
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-          child: Text(
-            l10n.teamUiWorkSheetMissing,
-            style: theme.textTheme.bodyMedium,
+          padding: const EdgeInsets.only(bottom: 16),
+          child: KitStateView(
+            key: const ValueKey('team-work-sheet-missing'),
+            size: KitStateSize.inline,
+            icon: AppIconography.cloudOff,
+            title: l10n.teamUiWorkSheetMissing,
           ),
         );
       }
@@ -266,13 +268,8 @@ class _Body extends StatelessWidget {
     final color = AppTheme.statusColor(theme, tone);
     final openSession = onOpenSession;
 
-    Widget heading(String text) => Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 6),
-      child: Text(
-        text,
-        style: theme.textTheme.labelLarge?.copyWith(color: muted),
-      ),
-    );
+    Widget heading(String text) =>
+        SectionLabel(text, padding: const EdgeInsets.only(top: 16, bottom: 6));
 
     Widget chips(String prefix, List<(String, WorkItem?)> items) => Wrap(
       spacing: 8,
@@ -303,7 +300,7 @@ class _Body extends StatelessWidget {
 
     return SingleChildScrollView(
       key: const ValueKey('team-work-sheet'),
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -398,14 +395,11 @@ class _Body extends StatelessWidget {
           ],
           if (sessionLink && link != null && openSession != null) ...[
             const SizedBox(height: 16),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: FilledButton.tonalIcon(
-                key: const ValueKey('team-work-sheet-open-session'),
-                onPressed: () => openSession(link),
-                icon: const Icon(AppIconography.chat),
-                label: Text(l10n.teamUiWorkSheetOpenSession),
-              ),
+            KitButton.secondary(
+              key: const ValueKey('team-work-sheet-open-session'),
+              onPressed: () => openSession(link),
+              icon: AppIconography.chat,
+              label: l10n.teamUiWorkSheetOpenSession,
             ),
           ],
           if (output != null) ...[
@@ -416,7 +410,7 @@ class _Body extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppTheme.radiusControl),
               ),
               child: Text(
                 output,
@@ -584,7 +578,7 @@ class _TechnicalDetails extends StatelessWidget {
         childrenPadding: const EdgeInsets.only(bottom: 8),
         title: Text(
           l10n.teamUiTechnicalDetails,
-          style: theme.textTheme.titleMedium,
+          style: theme.textTheme.bodyMedium?.copyWith(color: muted),
         ),
         children: [
           Text(

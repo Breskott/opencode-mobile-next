@@ -21284,6 +21284,36 @@ abstract class AppLocalizations {
   /// **'The team host can’t be reached. AI Team works over your Tailscale network or on this device.'**
   String get teamUiCardErrorUnreachable;
 
+  /// AI Team screens, whole-screen error title: the team host did not answer (the body says where AI Team works)
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t reach the team host'**
+  String get teamUiStateUnreachableTitle;
+
+  /// AI Team screens, whole-screen state title: the server runs no AI team yet
+  ///
+  /// In en, this message translates to:
+  /// **'No AI team on this server'**
+  String get teamUiStateNotGasCityTitle;
+
+  /// AI Team screens, whole-screen state title: the team host is still starting up
+  ///
+  /// In en, this message translates to:
+  /// **'The team host is starting'**
+  String get teamUiStateStartingTitle;
+
+  /// AI Team screens, whole-screen state title: the team address is plain http outside Tailscale or this device
+  ///
+  /// In en, this message translates to:
+  /// **'AI Team can’t use this address'**
+  String get teamUiStatePlainHttpTitle;
+
+  /// AI Team screens: shown instead of 'Connecting to the team host…' once connecting has taken longer than 8 seconds (design standard 8 s rule)
+  ///
+  /// In en, this message translates to:
+  /// **'The team host isn’t answering'**
+  String get teamUiStateNotAnsweringTitle;
+
   /// Workspace AI Team card header: the team host runs on the computer
   ///
   /// In en, this message translates to:

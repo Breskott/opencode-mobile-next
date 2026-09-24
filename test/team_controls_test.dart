@@ -369,6 +369,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
   }
 
+  /// The agent controls follow the one button hierarchy (design standard
+  /// §2): past two text buttons the rest sit under the block's More menu.
+  Future<void> openMore(WidgetTester tester) async {
+    await tester.tap(key('kit-actions-more'));
+    await tester.pumpAndSettle();
+  }
+
   Future<void> scrollToControls(WidgetTester tester) async {
     await tester.scrollUntilVisible(
       key('team-agent-controls'),
@@ -418,8 +425,12 @@ void main() {
         ),
       );
       await settle(tester);
-      expect(key('team-run-more'), findsNothing);
+      // Design standard §1: one icon action plus the overflow; Technical
+      // details lives in the overflow, and a read-only host adds nothing.
+      await tester.tap(key('team-run-more'));
+      await tester.pumpAndSettle();
       expect(key('team-run-details'), findsOneWidget);
+      expect(key('team-run-cancel'), findsNothing);
     });
 
     testWidgets('front host: every control, never Open session', (
@@ -429,6 +440,7 @@ void main() {
       final (controller, _) = await boot();
       await pumpAgent(tester, controller);
       await scrollToControls(tester);
+      await openMore(tester);
       for (final id in [
         'message',
         'nudge',
@@ -473,6 +485,7 @@ void main() {
       await scrollToControls(tester);
       expect(key('team-agent-control-resume'), findsOneWidget);
       expect(key('team-agent-control-pause'), findsNothing);
+      await openMore(tester);
       expect(key('team-agent-control-stop'), findsNothing);
       expect(key('team-agent-control-restart'), findsOneWidget);
     });
@@ -552,6 +565,7 @@ void main() {
       final (controller, gateway) = await boot();
       await pumpAgent(tester, controller);
       await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-stop'));
       await tester.pumpAndSettle();
       expect(key('team-agent-stop-confirm'), findsOneWidget);
@@ -569,6 +583,7 @@ void main() {
       final (controller, gateway) = await boot();
       await pumpAgent(tester, controller);
       await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-stop'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Keep going'));
@@ -585,6 +600,7 @@ void main() {
       final (controller, gateway) = await boot();
       await pumpAgent(tester, controller);
       await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-restart'));
       await tester.pumpAndSettle();
       expect(find.text('Restart fox?'), findsOneWidget);
@@ -675,7 +691,11 @@ void main() {
         ),
       );
       await settle(tester);
-      expect(key('team-run-more'), findsNothing);
+      // The overflow holds Technical details only: nothing to stop.
+      await tester.tap(key('team-run-more'));
+      await tester.pumpAndSettle();
+      expect(key('team-run-details'), findsOneWidget);
+      expect(key('team-run-cancel'), findsNothing);
     });
   });
 
@@ -715,6 +735,7 @@ void main() {
       final (controller, gateway) = await boot();
       await pumpAgent(tester, controller);
       await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-reassign'));
       await tester.pumpAndSettle();
       expect(key('team-agent-reassign-sheet'), findsOneWidget);
@@ -740,6 +761,7 @@ void main() {
       );
       await pumpAgent(tester, controller);
       await scrollToControls(tester);
+      await openMore(tester);
       await tester.tap(key('team-agent-control-reassign'));
       await tester.pumpAndSettle();
       expect(key('team-agent-reassign-empty'), findsOneWidget);
@@ -784,12 +806,17 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Start runs from the host for now.'), findsNothing);
-      await tester.tap(
+      // Design standard §2: one primary per screen. The empty state teaches;
+      // Start a run is the button pinned below the list, not a second one
+      // inside the empty state.
+      expect(
         find.descendant(
           of: key('team-home-runs-empty'),
           matching: find.text('Start a run'),
         ),
+        findsNothing,
       );
+      await tester.tap(key('team-home-start-run'));
       await tester.pumpAndSettle();
       expect(key('team-start-run-sheet'), findsOneWidget);
       expect(gateway.calls, isEmpty);

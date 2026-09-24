@@ -292,12 +292,6 @@ void main() {
         home: home,
       );
 
-  Future<void> reveal(WidgetTester tester, Finder target) async {
-    await Scrollable.ensureVisible(tester.element(target), alignment: .5);
-    await tester.pump();
-    expect(target.hitTestable(), findsOneWidget);
-  }
-
   /// Lists build lazily: scroll the segment's list until [target] exists
   /// and is tappable.
   Future<void> revealIn(
@@ -323,9 +317,22 @@ void main() {
 
   /// At 2.5x the three segments are one menu button (stable home,
   /// 2026-09-13): open it and pick the section; nothing scrolls sideways.
+  /// The menu scrolls with the list (design standard §1: one scroll view),
+  /// so it is scrolled back into view first.
   Future<void> segment(WidgetTester tester, String name) async {
     expect(find.byKey(const ValueKey('team-home-segments')), findsNothing);
     final menu = find.byKey(const ValueKey('team-home-segments-menu'));
+    await tester.scrollUntilVisible(
+      menu,
+      -120,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('team-home-data')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
     expect(menu.hitTestable(), findsOneWidget);
     await tester.tap(menu);
     await tester.pumpAndSettle();
@@ -413,8 +420,9 @@ void main() {
         expect(find.byKey(const ValueKey('team-home-run-r3')), findsNothing);
 
         // The host chip wraps its long line and opens Technical details.
+        // It scrolls with the list (design standard §1: one scroll view).
         final chip = find.byKey(const ValueKey('team-home-host-chip'));
-        await reveal(tester, chip);
+        await revealIn(tester, 'team-home-runs', chip, up: true);
         await tester.tap(chip);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
