@@ -1,0 +1,8 @@
+ff0d0e ActivityRecordInputSink io.github.eslamasabry.opencode_mobile/.MainActivity#141: no frames
+ActivityRecord{92edd3c u0 io.github.eslamasabry.opencode_mobile/.MainActivity#137: no frames
+b3a8582 io.github.eslamasabry.opencode_mobile/io.github.eslamasabry.opencode_mobile.MainActivity#144: no frames
+Background for SurfaceView[io.github.eslamasabry.opencode_mobile/io.github.eslamasabry.opencode_mobile.MainActivity]#151: no frames
+SurfaceView[io.github.eslamasabry.opencode_mobile/io.github.eslamasabry.opencode_mobile.MainActivity]#149: no frames
+SurfaceView[io.github.eslamasabry.opencode_mobile/io.github.eslamasabry.opencode_mobile.MainActivity](BLAST)#150: 12 frames, frame gap ms p50 577.7 p90 1588.1 p99 2095.7 max 2095.7, >33ms 11
+io.github.eslamasabry.opencode_mobile/io.github.eslamasabry.opencode_mobile.MainActivity#145: no frames
+Bounds for - io.github.eslamasabry.opencode_mobile/io.github.eslamasabry.opencode_mobile.MainActivity#148: no frames

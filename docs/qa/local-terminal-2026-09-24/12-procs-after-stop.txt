@@ -1,0 +1,3 @@
+1 processes of u0_a193 (the app itself included)
+   PID   PPID USER            RSS NAME                     ARGS (cut at 150)
+ 11726    366 u0_a193      212660 io.github.eslamasabry.opencode_mobile io.github.eslamasabry.opencode_mobile
