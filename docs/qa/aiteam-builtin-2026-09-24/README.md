@@ -76,6 +76,58 @@ refuses. The store and project scripts now retry from clean (a new city, or
 the project under a new bead prefix = a new database); the final run did not
 need the retry.
 
+## Run 2: fresh install with video (Android 15, emulator-5556, afternoon)
+
+A second fresh install, recorded, on the merged branch. It includes the
+follow-up commit above, so this is that commit's first run in the app.
+
+| | |
+|---|---|
+| Build | `feat/phone-setup-v2` @ `b17c67c7` (merge of this branch, plus the setup poll fix below) |
+| APK | `app-x86_64-release.apk`, SHA-256 `e16b85bbdcaed14a0c500f94cd1e4e4e7d7366e8b9185d58e1b5d2cc4c567552` |
+| Device | emulator-5556, Android 15, x86_64; app uninstalled first; host load 11–15 (the emulator at ~790% CPU) |
+| Video (Tailscale only) | `http://100.126.15.6:8765/aiteam-fresh-install-guide.mp4` (7.5 min, captions, waits at 8× and 40×) and `aiteam-fresh-install-full.mp4` (78 min unedited, 10 fps, from host screenshots about once a second) |
+
+**The first attempt failed, and it was an app bug.** On `d16ee762` the
+progress screen stayed on "Unpacking Linux base · 29 of 30 MB" for over 20
+minutes. Meanwhile `setup.json` showed every component done. The app's own
+step, "Start OpenCode", failed after 10 minutes with "The app did not finish
+this step".
+- **Cause:** a status read that threw or never answered ended the engine's
+  poll loop for good. No one polled, so no one ran the app's step. The
+  exception went only to the in-memory diagnostics.
+- **Fix (`b17c67c7`):**
+  - the poll catches the error, logs it and carries on;
+  - a read on the polling path times out after 10 s;
+  - uncaught async errors also reach logcat.
+- **Test:** `setup_engine_test` › "polling survives a status read that fails
+  or never answers". It fails without the fix.
+- The fixed run below logged no poll faults, so what broke the one read is
+  still unknown.
+
+| # | Step | Expected | Actual | Result |
+|---|---|---|---|---|
+| 1 | Install, open, "On this phone", Customize → AI Team → Done → Set up | Totals include AI Team | "About 6 minutes · ~333 MB"; "Includes Git and SSH, Python, Node.js and AI Team" | PASS |
+| 2 | Setup with progress | Every part advances to Ready | Linux 13.1 s, Git and SSH 130.8 s, Python 61.3 s, Node.js 34.2 s, OpenCode 54.2 s, AI Team 58.8 s, Start 12.2 s; job **364.7 s** (`run2-octrace.txt`, `run2-01-ready.png`) | PASS |
+| 3 | Create "my-app" | Straight into a new conversation | Done; the folder open took **7.6 s**, 6.8 s of it the one-time provider refresh (fixed afterwards in `5afcfaee`, not re-measured) | PASS (slow) |
+| 4 | Settings › Plugins › Turn on AI Team for my-app | Running | 12:28:43 → 12:38:00 (**9.3 min**): getting ready ~3 min, adding my-app ~2.6 min, starting ~1.2 min, waiting for health ~2.5 min (`run2-02-team-running.png`) | PASS |
+| 5 | Work → AI Team → Open → Start a run → "Create hello.py that prints Hello from the AI Team" → Send to an agent | Run listed | 12:39:16 "Task sent to an agent · Confirmed"; "Waiting for an agent" (`run2-03-task-sent.png`) | PASS |
+| 6 | The team works | An agent takes it; a commit on a branch | Claimed 12:45 by `gastown__polecat`; `hello.py` written 12:56; branch `polecat/ma-7mr` pushed to the phone-side origin; "Waiting for merge" 13:09:52 (`run2-team-watch.log`, `run2-04-waiting-for-merge.png`) | PASS |
+| 7 | The merge | Commit on master | Refinery merged by 13:33: `86759b9 feat: add hello.py greeting (ma-7mr)`, 1 file (+1), body "Verified with python3 hello.py" (`run2-origin-git-log.txt`) | PASS |
+| 8 | The run in the app after the merge | Shows as completed | "Runs (0) · No runs yet" (same as step 12 above) | FAIL (pre-existing) |
+| 9 | New conversation in my-app: "Pull the latest master from origin, then run python3 hello.py and show the git log" | The team's work reaches the project | "Pulled (fast-forwarded to 86759b9), python3 hello.py prints Hello from the AI Team", and the log (`run2-05-pulled-and-ran.png`) | PASS |
+| 10 | Process count, 12:38–13:41 (every 20 s) | Under 32, nothing killed | min 7, median 16, max **37** at 13:10:35, during the hand-off to the refinery; 33 at 12:45 when the polecat started. **No** `Killing PhantomProcess` and no SIGSYS in logcat (`run2-process-samples.log`; this count includes the app's own process) | PASS, over the limit for moments |
+
+Found on the way and fixed on the branch afterwards (not in this APK):
+- Settings › "On this phone" still said "Run OpenCode here with Termux" and
+  opened the old Termux screen. It now opens the phone setup (`dc5a7afb`).
+- Opening a new folder waited for the one-time provider refresh (`5afcfaee`).
+  The same refresh still runs inside the first connect: 7.5 s of the 12.2 s
+  "Start OpenCode" step.
+
+Also seen, not fixed: the team's own agent conversations show on the Work tab
+under "In other projects". One of their titles shows raw `<tool_call>` text.
+
 ## Android 14 (emulator-5554): the phantom-process kill, before tuning
 
 With Gas City's defaults (patrol every 30 s, 8 store probes at once, a
@@ -244,8 +296,9 @@ emulators' 1080×2400 screen.
   `gc`/`bd` (with `/system`, `/apex`, `/linkerconfig` bound into proot) are the
   fallback the review lists; not implemented, because `dolt`'s Android build
   also needs Termux's ICU.
-- **The 32-process margin.** Peak 33 twice with no kill on Android 15; 40 was
-  killed on Android 14. Other apps' child processes (Termux, for one) count
+- **The 32-process margin.** Peak 33 twice with no kill on Android 15 in the
+  first proof, and 37 for a moment in Run 2, also with no kill; 40 was killed
+  on Android 14. Other apps' child processes (Termux, for one) count
   too. The staggered intervals in the follow-up commit aim lower but were not
   measured in the app. "Developer options › Disable child process
   restrictions" is explained in the section; the owner asked to test with the
@@ -262,5 +315,7 @@ emulators' 1080×2400 screen.
 - Remove AI Team alone (no screen), Arabic layout (strings added, not viewed),
   a second project on the same team (script tested in the replica only).
 - The follow-up commit's script changes (push after adding a project,
-  gate-sweep 1 min, beads-health 3 min) ran in the adb-shell replica and in
-  tests only.
+  gate-sweep 1 min, beads-health 3 min) now ran in the app too (Run 2); the
+  staggered intervals did not keep the peak under 32.
+- The cause of the one status read that froze the first Run 2 attempt is
+  unknown; the engine now survives it (Run 2, `b17c67c7`).

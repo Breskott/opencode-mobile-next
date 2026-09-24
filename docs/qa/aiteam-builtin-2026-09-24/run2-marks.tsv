@@ -1,0 +1,25 @@
+1790237926.322776484	show	Android 15 — a clean phone: no Termux, no server
+1790237929.328881370	wait	Install OpenCode Mobile
+1790237930.783844498	brisk	Open the app
+1790237944.443574405	brisk	Where does the agent run? On this phone
+1790237961.226927005	show	One button — Customize to add AI Team
+1790237976.669385170	show	Switch on AI Team — the totals update
+1790237986.062565322	show	Now it includes AI Team — Set up
+1790238002.462911990	wait	Setting up with real progress: Linux, Git, Python, Node.js, OpenCode, AI Team
+1790238400.821522888	show	OpenCode is ready — about 6½ minutes, AI Team included
+1790238410.023201506	brisk	Create the first project: my-app
+1790238442.621855220	show	Straight into a new conversation in my-app
+1790238468.005557653	brisk	Settings → Plugins: turn on AI Team for this project
+1790238514.775436677	wait	Turning on AI Team: it starts the team for my-app
+1790239091.008105306	show	AI Team · Running — works on my-app (about 9 minutes to turn on)
+1790239110.272740956	show	Work tab → the AI Team card → Open
+1790239125.879713686	show	Start a run: give the team one task
+1790239151.535585534	show	Task: Create hello.py that prints Hello from the AI Team
+1790239170.388203561	long	Sent. Waiting for an agent to take it
+1790239510.0	long	An agent took the task (6 min after sending) and works on its own branch
+1790240160.0	long	hello.py written on its branch (polecat/ma-7mr); handing off to the merge
+1790240992.0	long	Waiting for merge: the refinery agent reviews and merges
+1790242417.0	wait	Merged into master: feat: add hello.py greeting. (Finished runs leave this list: known issue)
+1790242471.591853102	wait	See it in the project: ask the agent to pull and run it
+1790242532.957465875	wait	The agent pulls the team's merge and runs hello.py
+1790242590.587713048	show	Done: the team's commit is in my-app and runs — Hello from the AI Team

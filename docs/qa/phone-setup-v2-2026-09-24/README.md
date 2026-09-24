@@ -104,6 +104,17 @@ emulator with the fixed build.** Do that with `OCTRACE` (below).
 - Measured on a fast network: Linux base 8.5 s, essentials 29 s, Python 17 s, OpenCode 26 s, start 2–7 s.
 - Bug found and fixed: a force-killed proot left OpenCode running and holding port 4097. Stop now kills the whole process tree.
 
+### R7: Android 15 fresh setup, with AI Team (2026-09-24 afternoon)
+Recorded as Run 2 of `../aiteam-builtin-2026-09-24/README.md`, which has the
+steps and evidence.
+- On `d16ee762`: the screen froze on "Unpacking Linux base" while the job
+  finished. **FAIL.** The cause was a poll loop that one bad status read could
+  end.
+- Fixed in `b17c67c7`, with a test that fails without the fix.
+- On `b17c67c7`: all seven parts in 364.7 s, then Ready. **PASS.**
+- Create took 7.6 s, 6.8 s of it the one-time provider refresh. Fixed in
+  `5afcfaee`, with a test that fails without it; not yet re-measured on a device.
+
 ## How to reproduce
 
 ```bash
@@ -125,7 +136,7 @@ In the app, Settings → App diagnostics → Performance shows the same spans, w
 ## NOT proven
 
 - **A real arm64 phone.** Every run above is on x86_64 emulators. The owner's phone has not been used.
-- **Android 15.** R1–R5 ran on Android 14. The Android 15 emulator is reserved for the AI Team proof.
-- **The Create timing after the catalog fix.** It is proven by a unit test only; it still needs an `OCTRACE` measurement on the emulator.
+- **Android 15 on a phone.** R7 ran setup on the Android 15 emulator only.
+- **The Create timing after both fixes** (`3b16f306`, `5afcfaee`). Unit tests only. R7 measured 7.6 s before the second fix.
 - **Behaviour under a slow or metered network.** Every download ran on a fast connection.
 - **Long background runs** (more than 10 minutes) and Android's phantom-process limit with the OpenCode server alone.
