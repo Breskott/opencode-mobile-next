@@ -6,6 +6,7 @@ import 'package:dio/dio.dart' show CancelToken, Response, ResponseBody;
 
 import '../domain/server_gateway.dart';
 import 'models.dart';
+import '../diagnostics/perf_trace.dart';
 
 export '../domain/server_gateway.dart' show LiveEventChannel, StreamStatus;
 
@@ -108,6 +109,11 @@ class EventStream implements LiveEventChannel {
     CancelToken? requestCancelToken;
     StreamSubscription<Uint8List>? subscription;
     var subscriptionTerminated = false;
+    // Time from (re)connect to the first event: how long the live view
+    // waits before anything can move.
+    final connectStarted = PerfTrace.nowMicros;
+    final attempt = _attempt;
+    var sawEvent = false;
     try {
       final cancelToken = CancelToken();
       requestCancelToken = cancelToken;
@@ -148,7 +154,17 @@ class EventStream implements LiveEventChannel {
             final event = global
                 ? EventEnvelope.fromGlobalJson(json)
                 : EventEnvelope.fromJson(json);
-            if (event.type.isNotEmpty) onEvent(event);
+            if (event.type.isNotEmpty) {
+              if (!sawEvent) {
+                sawEvent = true;
+                PerfTrace.recordSince(
+                  global ? 'events.first.global' : 'events.first',
+                  connectStarted,
+                  attrs: {'api': 'oc1', 'attempt': attempt},
+                );
+              }
+              onEvent(event);
+            }
           }
         } catch (_) {
           // Malformed frame - skip it rather than killing the stream.

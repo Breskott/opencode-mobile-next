@@ -6,6 +6,7 @@ import 'package:dio/dio.dart' show CancelToken;
 
 import 'events.dart';
 import 'transport.dart';
+import '../diagnostics/perf_trace.dart';
 
 /// Connection lifecycle surfaced to the UI.
 enum Api2StreamStatus { connecting, connected, reconnecting, disconnected }
@@ -211,6 +212,11 @@ class Api2EventStream {
     CancelToken? requestCancelToken;
     StreamSubscription<Uint8List>? subscription;
     var subscriptionTerminated = false;
+    // Time from (re)connect to the first event: how long the live view
+    // waits before anything can move.
+    final connectStarted = PerfTrace.nowMicros;
+    final attempt = _attempt;
+    var sawEvent = false;
     try {
       final cancelToken = CancelToken();
       requestCancelToken = cancelToken;
@@ -244,7 +250,19 @@ class Api2EventStream {
           final json = jsonDecode(frame.data);
           if (json is Map<String, dynamic>) {
             final envelope = Api2EventEnvelope.fromJson(json);
-            if (envelope.type.isNotEmpty) handleEvent(envelope, frame);
+            if (envelope.type.isNotEmpty) {
+              if (!sawEvent) {
+                sawEvent = true;
+                PerfTrace.recordSince(
+                  this is Api2SessionLogStream
+                      ? 'events.first.session_log'
+                      : 'events.first',
+                  connectStarted,
+                  attrs: {'api': 'oc2', 'attempt': attempt},
+                );
+              }
+              handleEvent(envelope, frame);
+            }
           }
         } catch (_) {
           // Malformed frame - skip it rather than killing the stream.

@@ -19525,5 +19525,82 @@
   "chatStartSuggestionsLabel": "Ways to start",
   "@chatStartSuggestionsLabel": {
     "description": "Screen reader label for the row of starter chips above the composer"
+  },
+  "perfTraceTitle": "Performance",
+  "@perfTraceTitle": {
+    "description": "Title of the performance section on the diagnostics screen"
+  },
+  "perfTraceBody": "How long each step took while the app has been open: connecting, loading, every request to the server. Kept in memory only and cleared when the app closes. The report holds names and timings, never messages or passwords.",
+  "@perfTraceBody": {
+    "description": "Explains the performance section"
+  },
+  "perfTraceCopy": "Copy report",
+  "@perfTraceCopy": {
+    "description": "Copies the plain-text performance report"
+  },
+  "perfTraceClear": "Clear",
+  "@perfTraceClear": {
+    "description": "Empties the performance trace"
+  },
+  "perfTraceCopied": "Performance report copied",
+  "@perfTraceCopied": {
+    "description": "Snackbar after copying the performance report"
+  },
+  "perfTraceEmpty": "Nothing measured yet.",
+  "@perfTraceEmpty": {
+    "description": "Performance section with no timings"
+  },
+  "perfTraceSlowest": "Slowest steps",
+  "@perfTraceSlowest": {
+    "description": "Heading over steps grouped by name, slowest first"
+  },
+  "perfTraceRecent": "Latest steps",
+  "@perfTraceRecent": {
+    "description": "Heading over the most recent timed steps"
+  },
+  "perfTraceStatLine": "{count}× · typical {p50} · slow {p95} · longest {max}",
+  "@perfTraceStatLine": {
+    "description": "One step's statistics: how many times, median, 95th percentile, maximum",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "p50": {
+        "type": "String"
+      },
+      "p95": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "perfTraceFailed": "{count, plural, =1{1 failed} other{{count} failed}}",
+  "@perfTraceFailed": {
+    "description": "How many runs of a step failed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "perfTraceAt": "at {time}",
+  "@perfTraceAt": {
+    "description": "When an instant happened, as time since the app started",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "perfTraceWithin": "in {parent}",
+  "@perfTraceWithin": {
+    "description": "The step this one ran inside",
+    "placeholders": {
+      "parent": {
+        "type": "String"
+      }
+    }
   }
 }

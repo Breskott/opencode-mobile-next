@@ -28911,6 +28911,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ways to start'**
   String get chatStartSuggestionsLabel;
+
+  /// Title of the performance section on the diagnostics screen
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get perfTraceTitle;
+
+  /// Explains the performance section
+  ///
+  /// In en, this message translates to:
+  /// **'How long each step took while the app has been open: connecting, loading, every request to the server. Kept in memory only and cleared when the app closes. The report holds names and timings, never messages or passwords.'**
+  String get perfTraceBody;
+
+  /// Copies the plain-text performance report
+  ///
+  /// In en, this message translates to:
+  /// **'Copy report'**
+  String get perfTraceCopy;
+
+  /// Empties the performance trace
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get perfTraceClear;
+
+  /// Snackbar after copying the performance report
+  ///
+  /// In en, this message translates to:
+  /// **'Performance report copied'**
+  String get perfTraceCopied;
+
+  /// Performance section with no timings
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing measured yet.'**
+  String get perfTraceEmpty;
+
+  /// Heading over steps grouped by name, slowest first
+  ///
+  /// In en, this message translates to:
+  /// **'Slowest steps'**
+  String get perfTraceSlowest;
+
+  /// Heading over the most recent timed steps
+  ///
+  /// In en, this message translates to:
+  /// **'Latest steps'**
+  String get perfTraceRecent;
+
+  /// One step's statistics: how many times, median, 95th percentile, maximum
+  ///
+  /// In en, this message translates to:
+  /// **'{count}× · typical {p50} · slow {p95} · longest {max}'**
+  String perfTraceStatLine(int count, String p50, String p95, String max);
+
+  /// How many runs of a step failed
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 failed} other{{count} failed}}'**
+  String perfTraceFailed(int count);
+
+  /// When an instant happened, as time since the app started
+  ///
+  /// In en, this message translates to:
+  /// **'at {time}'**
+  String perfTraceAt(String time);
+
+  /// The step this one ran inside
+  ///
+  /// In en, this message translates to:
+  /// **'in {parent}'**
+  String perfTraceWithin(String parent);
 }
 
 class _AppLocalizationsDelegate

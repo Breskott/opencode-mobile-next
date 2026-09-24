@@ -8,6 +8,7 @@ import '../api2/models.dart' show Api2FormInfo, Api2FormState, Api2InboxItem;
 import '../domain/server_gateway.dart';
 import 'models.dart';
 import 'sse.dart';
+import '../diagnostics/perf_trace.dart';
 
 export 'models.dart' show ApiException;
 
@@ -84,6 +85,7 @@ class OpenCodeApi
       validateStatus: (s) => s != null && s >= 200 && s < 300,
     );
     _dio = Dio(options);
+    PerfTraceInterceptor.attach(_dio, 'oc1');
     if (password != null && password!.isNotEmpty) {
       final user = (username == null || username!.isEmpty)
           ? 'opencode'
@@ -517,6 +519,16 @@ class OpenCodeApi
     String id, {
     String? cursor,
     int limit = 100,
+  }) => PerfTrace.span(
+    'messages.page',
+    () => _messagePage(id, cursor: cursor, limit: limit),
+    attrs: {'older': cursor != null, 'limit': limit},
+  );
+
+  Future<ServerPage<MessageWithParts>> _messagePage(
+    String id, {
+    String? cursor,
+    required int limit,
   }) async {
     try {
       final response = await sdkClient.getSessionApi().sessionMessages(
@@ -594,14 +606,17 @@ class OpenCodeApi
     List<PromptAttachment> attachments = const [],
     List<PromptAgentMention> agentMentions = const [],
     PromptDelivery? delivery,
-  }) => _promptAsync(
+  }) => PromptTrace.track(
     sessionID,
-    text: text,
-    model: model,
-    agent: agent,
-    variant: variant,
-    attachments: attachments,
-    agentMentions: agentMentions,
+    () => _promptAsync(
+      sessionID,
+      text: text,
+      model: model,
+      agent: agent,
+      variant: variant,
+      attachments: attachments,
+      agentMentions: agentMentions,
+    ),
   );
 
   static final _messageRandom = Random.secure();
@@ -640,15 +655,18 @@ class OpenCodeApi
     List<PromptAttachment> attachments = const [],
     List<PromptAgentMention> agentMentions = const [],
     PromptDelivery? delivery,
-  }) => _promptAsync(
+  }) => PromptTrace.track(
     sessionID,
-    messageID: messageID,
-    text: text,
-    model: model,
-    agent: agent,
-    variant: variant,
-    attachments: attachments,
-    agentMentions: agentMentions,
+    () => _promptAsync(
+      sessionID,
+      messageID: messageID,
+      text: text,
+      model: model,
+      agent: agent,
+      variant: variant,
+      attachments: attachments,
+      agentMentions: agentMentions,
+    ),
   );
 
   Future<void> _promptAsync(

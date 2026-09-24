@@ -4,6 +4,7 @@ import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'package:flutter/foundation.dart';
 
+import '../../diagnostics/perf_trace.dart';
 import '../../l10n/app_localizations.dart';
 import '../../termux/bridge.dart' show TermuxRuntime;
 import '../builtin_linux.dart';
@@ -293,7 +294,16 @@ class ChannelSetupEngine implements SetupEngine {
   /// Checks [job]'s components: the Linux base by asking Android whether
   /// it is installed, the rest in one proot run. Nothing inside Ubuntu can
   /// pass before Ubuntu is there.
-  Future<Map<String, SetupCheckResult>> _check(List<SetupComponent> job) async {
+  Future<Map<String, SetupCheckResult>> _check(List<SetupComponent> job) =>
+      PerfTrace.span(
+        'setup.check',
+        () => _checkUntraced(job),
+        attrs: {'components': job.length},
+      );
+
+  Future<Map<String, SetupCheckResult>> _checkUntraced(
+    List<SetupComponent> job,
+  ) async {
     final status = await _linux.status();
     if (!status.installed) return const {};
     final scripts = <String, String>{
@@ -442,11 +452,14 @@ class ChannelSetupEngine implements SetupEngine {
       error = strings().phoneSetupErrorCannotStart;
     } else {
       try {
-        error = await finish(
-          SetupFinishRequest(
-            runtime: TermuxRuntime.parse(step.data['runtime']),
-            openCodeChanged: step.data['openCodeChanged'] == 'true',
-            version: version,
+        error = await PerfTrace.span(
+          'setup.finish',
+          () => finish(
+            SetupFinishRequest(
+              runtime: TermuxRuntime.parse(step.data['runtime']),
+              openCodeChanged: step.data['openCodeChanged'] == 'true',
+              version: version,
+            ),
           ),
         );
       } catch (e) {
@@ -500,6 +513,7 @@ class ChannelSetupEngine implements SetupEngine {
       ];
     }
     _resetFloors(record.jobId);
+    _traceFinished(record);
     _progress.value = progressFromRecord(
       record,
       _jobComponents,
@@ -507,6 +521,42 @@ class ChannelSetupEngine implements SetupEngine {
       now: _clock(),
       floors: _floors,
     );
+  }
+
+  /// What the trace already holds, as `job/component`, so each finished
+  /// step is recorded once however often it is polled.
+  final _traced = <String>{};
+
+  /// Records each finished component, and the finished job, as spans timed
+  /// by the native runner's own clock (setup.json's startedAt/endedAt).
+  void _traceFinished(SetupJobRecord record) {
+    for (final component in record.components) {
+      final started = component.startedAt;
+      final ended = component.endedAt;
+      if (started == null ||
+          ended == null ||
+          (component.state != 'done' && component.state != 'failed') ||
+          !_traced.add('${record.jobId}/${component.id}')) {
+        continue;
+      }
+      PerfTrace.recordDuration(
+        'setup.component',
+        Duration(milliseconds: ended - started),
+        attrs: {'id': component.id},
+        error: component.state == 'failed' ? component.state : null,
+      );
+    }
+    if (record.state != 'running' &&
+        record.startedAt > 0 &&
+        record.updatedAt >= record.startedAt &&
+        _traced.add('${record.jobId}/')) {
+      PerfTrace.recordDuration(
+        'setup.job',
+        Duration(milliseconds: record.updatedAt - record.startedAt),
+        attrs: {'state': record.state},
+        error: record.state == 'done' ? null : record.state,
+      );
+    }
   }
 
   void _resetFloors(String jobId) {

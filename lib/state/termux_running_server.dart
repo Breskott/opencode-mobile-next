@@ -8,6 +8,7 @@ import '../api/server_probe.dart';
 import '../platform/platform_capabilities.dart';
 import '../termux/bridge.dart';
 import 'profiles.dart';
+import '../diagnostics/perf_trace.dart';
 
 /// Test seam for this scoped, non-redirecting loopback health check.
 @visibleForTesting
@@ -108,6 +109,7 @@ Future<ServerProbeResult> _probeLoopback({
       },
     ),
   );
+  PerfTraceInterceptor.attach(dio, 'discovery');
   final cancelToken = CancelToken();
   void cancelRequest() {
     cancelToken.cancel('Discovery disposed');

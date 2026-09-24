@@ -18162,4 +18162,55 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chatStartSuggestionsLabel => 'طرق للبدء';
+
+  @override
+  String get perfTraceTitle => 'الأداء';
+
+  @override
+  String get perfTraceBody =>
+      'كم استغرقت كل خطوة منذ فتح التطبيق: الاتصال والتحميل وكل طلب إلى الخادم. يُحفظ في الذاكرة فقط ويُمسح عند إغلاق التطبيق. يحتوي التقرير على الأسماء والأوقات فقط، ولا يحتوي أبدًا على الرسائل أو كلمات المرور.';
+
+  @override
+  String get perfTraceCopy => 'نسخ التقرير';
+
+  @override
+  String get perfTraceClear => 'مسح';
+
+  @override
+  String get perfTraceCopied => 'تم نسخ تقرير الأداء';
+
+  @override
+  String get perfTraceEmpty => 'لم يُقَس شيء بعد.';
+
+  @override
+  String get perfTraceSlowest => 'أبطأ الخطوات';
+
+  @override
+  String get perfTraceRecent => 'أحدث الخطوات';
+
+  @override
+  String perfTraceStatLine(int count, String p50, String p95, String max) {
+    return '$count× · المعتاد $p50 · البطيء $p95 · الأطول $max';
+  }
+
+  @override
+  String perfTraceFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'فشلت $count مرات',
+      one: 'فشلت مرة واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String perfTraceAt(String time) {
+    return 'عند $time';
+  }
+
+  @override
+  String perfTraceWithin(String parent) {
+    return 'ضمن $parent';
+  }
 }

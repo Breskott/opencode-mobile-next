@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../platform/platform_capabilities.dart';
 import '../ui/widgets/external_link.dart';
+import '../diagnostics/perf_trace.dart';
 
 /// Desktop builds cannot receive Shorebird patches, so Linux and Windows
 /// check the project's GitHub releases instead and point at the release
@@ -51,7 +52,7 @@ class DesktopReleaseChecker {
   DesktopReleaseChecker({
     Dio? dio,
     Duration timeout = desktopReleaseNetworkTimeout,
-  }) : _dio = dio ?? Dio(),
+  }) : _dio = dio ?? PerfTraceInterceptor.traced(Dio(), 'release'),
        _timeout = timeout;
 
   final Dio _dio;

@@ -8,6 +8,7 @@ import 'package:opencode_mobile/builtin/setup/components.dart';
 import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
 import 'package:opencode_mobile/builtin/setup/setup_engine.dart';
 import 'package:opencode_mobile/builtin/setup/setup_scripts.dart';
+import 'package:opencode_mobile/diagnostics/perf_trace.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/termux/bridge.dart' show TermuxRuntime;
 
@@ -838,6 +839,35 @@ void main() {
       expect(results['a'], (ok: true, version: '1.2.3'));
       expect(results['b'], (ok: false, version: null));
       expect(results.containsKey('c'), isFalse);
+    });
+  });
+
+  group('trace', () {
+    setUp(PerfTrace.resetForTesting);
+
+    test('each finished component is a span timed by the runner\'s own '
+        'clock, recorded once however often it is read', () async {
+      linux.job = jsonDecode(recordedInterrupted) as Map<String, Object?>;
+      await engine.restore();
+      await engine.restore();
+
+      final components = PerfTrace.spans
+          .where((span) => span.name == 'setup.component')
+          .toList();
+      expect(
+        {for (final s in components) s.attrs['id']: s.durationMs},
+        {'linux': 8451, 'essentials': 28963, 'python': 16683},
+      );
+      final job = PerfTrace.spans.singleWhere((s) => s.name == 'setup.job');
+      expect(job.durationMs, 55783);
+      expect(job.attrs['state'], 'interrupted');
+      expect(job.failed, isTrue);
+    });
+
+    test('the checks are one span', () async {
+      await engine.run({'python'});
+      final check = PerfTrace.spans.singleWhere((s) => s.name == 'setup.check');
+      expect(check.attrs['components'], '6');
     });
   });
 }

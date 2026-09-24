@@ -37,6 +37,7 @@ import '../background/widget_snapshot.dart';
 import '../l10n/app_localizations.dart';
 import '../platform/platform_capabilities.dart';
 import '../diagnostics/app_diagnostics.dart';
+import '../diagnostics/perf_trace.dart';
 import '../termux/bridge.dart';
 import '../builtin/builtin_linux.dart';
 import 'isolated_task_launch.dart';
@@ -1753,6 +1754,21 @@ class ConnectionController extends ChangeNotifier {
     ServerOperationsGateway currentRepository,
     int generation,
     ServerGateway currentApi,
+  ) => PerfTrace.span(
+    'connect.saved_location',
+    () => _validatedSavedLocationUntraced(
+      profile,
+      currentRepository,
+      generation,
+      currentApi,
+    ),
+  );
+
+  Future<ProfileLocation?> _validatedSavedLocationUntraced(
+    ServerProfile profile,
+    ServerOperationsGateway currentRepository,
+    int generation,
+    ServerGateway currentApi,
   ) async {
     final saved = store.locationFor(profile.id);
     if (saved == null) return null;
@@ -1886,9 +1902,10 @@ class ConnectionController extends ChangeNotifier {
   /// `opencode serve` generations) before giving up; the corrected retry runs
   /// with it false so detection can never loop.
   Future<void> connect(ServerProfile profile, {bool redetectOnFailure = true}) {
-    return _connectProfile(
-      profile,
-      redetectOnFailure: redetectOnFailure,
+    return PerfTrace.span(
+      'connect',
+      () => _connectProfile(profile, redetectOnFailure: redetectOnFailure),
+      attrs: {'backend': profile.backend.name, 'flavor': profile.flavor.name},
     ).whenComplete(() {
       // A server saved since the monitor last looked (a second agent on
       // this phone) is watched from now, and the one just left is read
@@ -1982,7 +1999,7 @@ class ConnectionController extends ChangeNotifier {
 
     try {
       _ensureLocalServerWakeLock();
-      final health = await currentApi.health();
+      final health = await PerfTrace.span('connect.health', currentApi.health);
       if (!_isCurrent(generation, currentApi)) return;
       if (!health.healthy) {
         throw ApiException('Server health check reported unhealthy');
@@ -2062,7 +2079,10 @@ class ConnectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _loadCatalog() async {
+  Future<void> _loadCatalog() =>
+      PerfTrace.span('catalog.load', _loadCatalogUntraced);
+
+  Future<void> _loadCatalogUntraced() async {
     final currentApi = api;
     final currentRepository = repository;
     final generation = _generation;
@@ -2415,6 +2435,8 @@ class ConnectionController extends ChangeNotifier {
       final previousStatus = status;
       status = s;
       if (s == StreamStatus.connected) {
+        PerfTrace.mark('events.connected');
+        PerfTrace.markOnce('app.first_connected');
         lastError = null;
         passwordRejected = false;
         unawaited(refreshPendingPermissions());
@@ -2726,6 +2748,7 @@ class ConnectionController extends ChangeNotifier {
   void _onEvent(EventEnvelope env) {
     if (_disposed) return;
     final props = env.properties;
+    PromptTrace.observe(env.type, props);
     switch (env.type) {
       case 'server.connected':
         final v = props['version']?.toString();
@@ -3380,7 +3403,10 @@ class ConnectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refreshPendingPermissions() async {
+  Future<void> refreshPendingPermissions() =>
+      PerfTrace.span('permissions.refresh', _refreshPendingPermissions);
+
+  Future<void> _refreshPendingPermissions() async {
     final currentApi = api;
     final connectionGeneration = _generation;
     if (currentApi == null) return;
@@ -3756,7 +3782,10 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
-  Future<void> refreshPendingQuestions() async {
+  Future<void> refreshPendingQuestions() =>
+      PerfTrace.span('questions.refresh', _refreshPendingQuestions);
+
+  Future<void> _refreshPendingQuestions() async {
     final current = repository;
     final currentApi = api;
     final generation = _generation;
@@ -4707,7 +4736,10 @@ class ConnectionController extends ChangeNotifier {
 
   // ---------------- Sessions ----------------
 
-  Future<void> refreshSessions() async {
+  Future<void> refreshSessions() =>
+      PerfTrace.span('sessions.refresh', _refreshSessions);
+
+  Future<void> _refreshSessions() async {
     final currentApi = api;
     final generation = _generation;
     if (currentApi == null) return;
@@ -7166,7 +7198,8 @@ class ConnectionController extends ChangeNotifier {
     );
   }
 
-  Future<Session> createSession() => _createSession();
+  Future<Session> createSession() =>
+      PerfTrace.span('session.create', _createSession);
 
   Future<Session> _createSession({bool Function()? scopeIsCurrent}) async {
     final currentApi = await _requireActionTransport();
@@ -7219,7 +7252,15 @@ class ConnectionController extends ChangeNotifier {
     if (_isCurrent(generation, currentApi)) _removeSession(sessionID);
   }
 
-  Future<void> _reconcileAfterBackground({
+  Future<void> _reconcileAfterBackground({void Function()? onTransportReady}) =>
+      PerfTrace.span(
+        'lifecycle.reconcile',
+        () => _reconcileAfterBackgroundUntraced(
+          onTransportReady: onTransportReady,
+        ),
+      );
+
+  Future<void> _reconcileAfterBackgroundUntraced({
     void Function()? onTransportReady,
   }) async {
     final currentApi = api;
@@ -7266,6 +7307,21 @@ class ConnectionController extends ChangeNotifier {
   }
 
   Future<void> _resumeLifecycleTransport(
+    ServerProfile profile, {
+    String? directory,
+    String? workspace,
+    void Function()? onTransportReady,
+  }) => PerfTrace.span(
+    'lifecycle.resume',
+    () => _resumeLifecycleTransportUntraced(
+      profile,
+      directory: directory,
+      workspace: workspace,
+      onTransportReady: onTransportReady,
+    ),
+  );
+
+  Future<void> _resumeLifecycleTransportUntraced(
     ServerProfile profile, {
     String? directory,
     String? workspace,
@@ -7874,6 +7930,23 @@ class ConnectionController extends ChangeNotifier {
   }
 
   Future<void> _selectLocation({
+    String? directory,
+    String? workspace,
+    bool preserveNotice = false,
+    bool allowProtectedDirectory = false,
+    bool preserveConnectionAttempt = false,
+  }) => PerfTrace.span(
+    'location.select',
+    () => _selectLocationUntraced(
+      directory: directory,
+      workspace: workspace,
+      preserveNotice: preserveNotice,
+      allowProtectedDirectory: allowProtectedDirectory,
+      preserveConnectionAttempt: preserveConnectionAttempt,
+    ),
+  );
+
+  Future<void> _selectLocationUntraced({
     String? directory,
     String? workspace,
     bool preserveNotice = false,
@@ -8738,6 +8811,21 @@ class ConnectionController extends ChangeNotifier {
   }
 
   Future<void> _refreshPreexistingProviderRuntime({
+    required int generation,
+    required ServerGateway currentApi,
+    required ServerOperationsGateway currentRepository,
+    required ServerProfile profile,
+  }) => PerfTrace.span(
+    'provider_runtime.refresh',
+    () => _refreshPreexistingProviderRuntimeUntraced(
+      generation: generation,
+      currentApi: currentApi,
+      currentRepository: currentRepository,
+      profile: profile,
+    ),
+  );
+
+  Future<void> _refreshPreexistingProviderRuntimeUntraced({
     required int generation,
     required ServerGateway currentApi,
     required ServerOperationsGateway currentRepository,
