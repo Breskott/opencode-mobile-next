@@ -9,6 +9,7 @@
 /// | [KitLoadingBar], [KitSkeletonRows], [KitProgress] | §4 progress |
 /// | [KitStatusLine] | §5 one status line |
 /// | [KitRow], [SectionLabel] | §6 rows and sections |
+/// | [KitNotice] | §3 a message inside one part of a form or list |
 ///
 /// The older shared states in `product_states.dart` are re-exported here so
 /// a screen imports one library; new screens use [KitStateView] for them.
@@ -23,6 +24,7 @@ export '../widgets/product_states.dart'
         ProductInlineEmpty,
         SectionLabel;
 export 'kit_buttons.dart';
+export 'kit_notice.dart';
 export 'kit_progress.dart';
 export 'kit_row.dart';
 export 'kit_screen.dart';
