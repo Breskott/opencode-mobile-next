@@ -228,8 +228,9 @@ String teamRunStateWord(AppLocalizations l10n, RunState state) =>
       RunState.unknown => l10n.teamUiCardRunStateUnknown,
     };
 
-/// The run's state word with the merge wait named (TEAM-117): "Waiting
-/// for merge" when [teamRunAwaitsMerge], else [teamRunStateWord].
+/// The run's state word with the merge named: "Waiting for merge" when
+/// [teamRunAwaitsMerge] (TEAM-117), "Done · merged" for a completed run
+/// whose work landed ([OrchestrationRun.merged]), else [teamRunStateWord].
 String teamRunStateWordFor(
   AppLocalizations l10n,
   OrchestrationRun run,
@@ -237,6 +238,8 @@ String teamRunStateWordFor(
   DispatchCycle? Function(String workId)? cycleOf,
 }) => teamRunAwaitsMerge(run, work, cycleOf: cycleOf)
     ? l10n.teamUiCardRunStateWaitingMerge
+    : run.state == RunState.completed && run.merged
+    ? l10n.teamUiCardRunStateMerged
     : teamRunStateWord(l10n, run.state);
 
 /// True when [item] is open and waits for the merge agent rather than

@@ -233,6 +233,13 @@ extension WorkItemGasCity on WorkItem {
   /// `metadata.gc.routed_to`: the pool or agent the bead was slung at.
   String? get routedTo => _meta('gc.routed_to');
   String? get issueType => readText(raw, 'issue_type');
+
+  /// `metadata.merge_result`: what the refinery did with the branch
+  /// (`merged` once it landed on [target]).
+  String? get mergeResult => _meta('merge_result');
+
+  /// `metadata.merged_sha`: the commit the merge produced.
+  String? get mergedSha => _meta('merged_sha');
 }
 
 // ---------------------------------------------------------------------------
@@ -261,10 +268,16 @@ extension WorkItemGasCity on WorkItem {
 /// with several; the raw convoy title stays in `raw['title']`.
 /// `stepCount` is the number of tracked beads, `completedSteps` how many
 /// are closed (`progress.closed`/`progress.total` when the host sends them).
+///
+/// A closed convoy is a finished run: `finishedAt` is [closedAt] (the
+/// `convoy.closed` event time, see [convoyClosedTimes]), else the bead's
+/// `updated_at`; an open convoy has none. `merged` is true when the run
+/// is completed and every tracked item reports `merge_result=merged`.
 OrchestrationRun mapConvoy(
   GcConvoy convoy, {
   Map<String, WorkItem> work = const {},
   GcWorkContext context = const GcWorkContext(),
+  DateTime? closedAt,
 }) {
   final bead = convoy.bead;
   final tracked = <WorkItem>[];
@@ -293,6 +306,11 @@ OrchestrationRun mapConvoy(
     state = _runStateFromWork(tracked);
   }
   final failure = tracked.where((w) => w.state == WorkState.failed).firstOrNull;
+  final finishedAt = bead.isClosed ? closedAt ?? bead.updatedAt : null;
+  final merged =
+      state == RunState.completed &&
+      tracked.isNotEmpty &&
+      tracked.every((w) => w.mergeResult == 'merged');
   return OrchestrationRun(
     id: bead.id,
     title: batchTitle(bead.title, tracked) ?? bead.id,
@@ -304,19 +322,71 @@ OrchestrationRun mapConvoy(
     completedSteps: convoy.progressClosed ?? completed,
     lastError: failure == null ? null : _workError(failure),
     startedAt: bead.createdAt,
-    updatedAt: bead.updatedAt,
+    updatedAt: bead.updatedAt ?? finishedAt,
+    finishedAt: finishedAt,
+    merged: merged,
     raw: bead.raw,
   );
 }
 
-/// Every convoy through [mapConvoy]; [work] is looked up by bead id.
+/// Every convoy through [mapConvoy]; [work] is looked up by bead id and
+/// [closedAt] (convoy id → close time) dates the finished ones.
 List<OrchestrationRun> mapConvoys(
   Iterable<GcConvoy> convoys, {
   Iterable<WorkItem> work = const [],
   GcWorkContext context = const GcWorkContext(),
+  Map<String, DateTime> closedAt = const {},
 }) {
   final byId = {for (final w in work) w.id: w};
-  return [for (final c in convoys) mapConvoy(c, work: byId, context: context)];
+  return [
+    for (final c in convoys)
+      mapConvoy(c, work: byId, context: context, closedAt: closedAt[c.id]),
+  ];
+}
+
+/// Convoy id → when it closed, from `GET /events?type=convoy.closed`
+/// (the event `subject` is the convoy id, `ts` the time). The newest
+/// event wins when a convoy closed more than once.
+Map<String, DateTime> convoyClosedTimes(Iterable<GcEvent> events) {
+  final times = <String, DateTime>{};
+  for (final event in events) {
+    final id = event.subject;
+    final ts = event.ts;
+    if (event.type != 'convoy.closed' || id == null || ts == null) continue;
+    final seen = times[id];
+    if (seen == null || ts.isAfter(seen)) times[id] = ts;
+  }
+  return times;
+}
+
+/// The finished convoys worth showing, newest first: closed ones (from
+/// `GET /beads?status=closed&type=convoy`) that are not also open in
+/// [openIds] (a reopened convoy is shown open), that finished within
+/// [window] of [now] — by [closedAt], else `updated_at`, else
+/// `created_at` — at most [limit] of them. Gas City's `/convoys` lists
+/// open convoys only, so this is what keeps a run visible once it is done.
+List<GcBead> selectFinishedConvoys(
+  Iterable<GcBead> closed, {
+  required DateTime now,
+  required Duration window,
+  required int limit,
+  Map<String, DateTime> closedAt = const {},
+  Set<String> openIds = const {},
+}) {
+  final since = now.subtract(window);
+  DateTime? when(GcBead bead) =>
+      closedAt[bead.id] ?? bead.updatedAt ?? bead.createdAt;
+  final picked = [
+    for (final bead in closed)
+      if (bead.isConvoy &&
+          bead.isClosed &&
+          bead.id.isNotEmpty &&
+          !openIds.contains(bead.id) &&
+          !(when(bead)?.isBefore(since) ?? true))
+        bead,
+  ];
+  picked.sort((a, b) => when(b)!.compareTo(when(a)!));
+  return picked.take(limit < 0 ? 0 : limit).toList();
 }
 
 /// The product title of a batch: the tracked work's title when the convoy

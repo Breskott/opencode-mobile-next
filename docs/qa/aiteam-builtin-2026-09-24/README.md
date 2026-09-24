@@ -309,7 +309,8 @@ emulators' 1080×2400 screen.
 - **The merge lands on the phone-side origin** (`/root/aiteam/origins/my-app.git`),
   not in the project folder the person's conversations use; that folder needs a
   `git pull`. Not addressed.
-- **Finished runs vanish** from the team home (step 12).
+- **Finished runs vanish** from the team home (step 12): fixed on
+  `fix/aiteam-finished-runs`, see "Finished runs" below.
 - **No supervisor token / unix socket** (Security above).
 - **No wake lock**: a phone with the screen off may slow the team; not added.
 - Remove AI Team alone (no screen), Arabic layout (strings added, not viewed),
@@ -319,3 +320,101 @@ emulators' 1080×2400 screen.
   staggered intervals did not keep the peak under 32.
 - The cause of the one status read that froze the first Run 2 attempt is
   unknown; the engine now survives it (Run 2, `b17c67c7`).
+
+## Finished runs (branch `fix/aiteam-finished-runs`, 2026-09-24)
+
+**Problem** (step 12, Run 2 step 8): once the hello.py task merged, the home
+showed "Runs (0)" and "No runs yet", and Completed was empty. The gateway
+built runs from `/runs` plus `/convoys`, and Gas City's `/convoys` lists
+open convoys only.
+
+**What Gas City 1.4.1 offers.** Checked against the live supervisor, not
+guessed. `GET /health` reports `version 1.4.1`, build `58ef17e3`, and
+`GET /openapi.json` returns the supervisor's own spec (700 kB):
+
+- `GET /v0/city/{city}/convoys` takes `index`, `wait`, `cursor` and `limit`.
+  It has no status filter, so it cannot list closed convoys.
+- `GET /v0/city/{city}/beads` takes `status`, `type`, `label`, `assignee`,
+  `rig`, `all`, `limit` (default 100, max 1000) and `cursor`. It returns
+  the newest first (`created_at DESC`).
+- `GET /v0/city/{city}/events` takes `type`, `actor`, `since` (a Go
+  duration), `limit` and `cursor`. It returns the newest first.
+- The `Bead` schema has `created_at` and `updated_at`, but no `closed_at`.
+
+**Live reads.** All were read-only GETs against the Android 15 emulator
+city `phone`, after
+`adb -s emulator-5556 forward tcp:18474 tcp:8472`, as
+`curl -s http://127.0.0.1:18474/v0/city/phone/...`. Nothing was posted,
+tapped or installed, because another agent was using the emulator.
+
+| Request | Answer |
+|---|---|
+| `GET /convoys` | `{"items":[],"total":0}`: the finished convoy is missing |
+| `GET /beads?type=convoy` | empty: closed beads are hidden by default |
+| `GET /beads?status=closed&type=convoy&limit=20` | one item: `ma-lqw`, titled `sling-ma-7mr`, `status: closed`, `close_reason: convoy autoclose: all children closed`, tracking `ma-7mr`, `created_at 08:39:16Z`, with no `updated_at` |
+| `GET /events?type=convoy.closed&since=10080m&limit=20` | seq 546, `ts 2026-09-24T09:33:03.458Z`, `subject ma-lqw` |
+| `GET /events?type=convoy.closed&since=1m&limit=20` | empty: `since` does filter |
+| `GET /convoy/ma-lqw` | the convoy, plus child `ma-7mr` "Create hello.py that prints Hello from the AI Team", `closed`, `merge_result: merged`, `merged_sha: 86759b90…`, `merged_target: master`, with `progress 1/1` |
+| `GET /convoy/ma-7mr` | 404 `convoy-not-found`: "bead ma-7mr is not a convoy" |
+| `GET /beads?status=closed&limit=2` | `total: 628` closed beads after about 5 h. This is why the history is filtered by type and bounded |
+
+**What the app does now.** The change is in the gateway and mappers only;
+the UI reads the new fields from the provider-neutral run model.
+
+- `GasCityGateway._runs()` also reads
+  `/beads?status=closed&type=convoy&limit=20` and
+  `/events?type=convoy.closed&since=10080m&limit=20`.
+- `selectFinishedConvoys` keeps at most 20 convoys that finished within
+  7 days. It dates each one by the `convoy.closed` time, else `updated_at`,
+  else `created_at`. A convoy that is open again is shown as open.
+- For each convoy it keeps, the gateway reads `GET /convoy/{id}` once and
+  caches it, since a closed convoy does not change.
+- Both history reads are optional. A host without them, or an error,
+  leaves the open runs as they were.
+- `OrchestrationRun` gains `finishedAt` and `merged`. `merged` is set when
+  every tracked item reports `merge_result=merged`.
+- A completed row now reads "Done · merged", with "Finished 5h ago" in its
+  subtitle.
+- The empty title (card and home) now reads "No recent runs.", because the
+  list only covers recent history.
+
+**Fixtures.** Saved in `test/fixtures/gascity/finished_runs/` from the reads
+above. To keep them small and free of internals, long descriptions are cut
+to their first line, session and chore metadata to 5 keys, and `/runs` and
+`/beads` to 4 items. Every field the gateway reads is unchanged.
+`test/support/gascity_recorded_city.dart` serves them on a loopback socket.
+
+**Tests.**
+
+- `test/team_finished_runs_test.dart` has 14 tests: the mapping, close
+  times, window/limit/open selection, and the real gateway over the
+  recorded city. They check the exact history queries, the detail cache, a
+  host without the routes, and an unreadable detail.
+- `test/team_home_test.dart`, "a run that finished and merged stays under
+  Completed…", reads the recorded city through the real gateway and renders
+  the home. It checks that there is no empty state, "Runs (1)", the
+  Completed group, and under Completed the task title, "Done · merged" and
+  "Batch · convoy · 1 of 1 done · Finished 5h ago".
+- With the fix disabled (`_runs()` without the finished convoys), both the
+  gateway test ("the merged task stays listed…") and the widget test fail.
+  The widget test fails at the empty-state check.
+- 750 tests pass across `test/team_*`, `l10n_coverage`, `builtin_team` and
+  `aiteam_component`.
+
+**Not proven.**
+
+- **The UI on a device.** No APK was built or installed, and the
+  emulator's screen was neither viewed nor tapped. The widget test renders
+  the home in the test harness, not on Android.
+- **The app's gateway against the live city.** The live reads were made
+  with `curl`. The gateway only ran against the recorded copies.
+- **Other outcomes.** A convoy closed without a merge, a cancelled one, one
+  with several items, or an `mr`/`pr` merge strategy (shown as "Done", not
+  "merged") are covered only by unit tests over edited recordings. None
+  existed live.
+- **A long-lived city.** More than 20 closed convoys, or pruned
+  `convoy.closed` events (the gateway then falls back to `created_at`), are
+  unit-tested only.
+- **The run detail of a finished run.** Its work list comes from the open
+  `/beads`, so the merged task is not listed under the run there (found by
+  reading `run_screen.dart`). Not changed.

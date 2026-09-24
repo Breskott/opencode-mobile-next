@@ -13130,7 +13130,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get teamUiCardEmptyHint => 'Start runs from the host for now.';
 
   @override
-  String get teamUiCardEmptyTitle => 'No runs yet.';
+  String get teamUiCardEmptyTitle => 'No recent runs.';
 
   @override
   String get teamUiCardErrorCityNotRunning =>
@@ -13234,6 +13234,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiCardRunStateWaitingMerge => 'Waiting for merge';
+
+  @override
+  String get teamUiCardRunStateMerged => 'Done · merged';
 
   @override
   String get teamUiCardRunTermBatch => 'convoy';
@@ -13446,6 +13449,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiHomeRunNeedsYou => 'Needs you';
+
+  @override
+  String teamUiHomeRunFinished(String when) {
+    return 'Finished $when';
+  }
 
   @override
   String teamUiHomeRunProgress(int done, int total) {

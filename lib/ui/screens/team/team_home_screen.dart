@@ -740,6 +740,7 @@ class _RunsSegment extends StatelessWidget {
     Widget row(OrchestrationRun run) => _RunRow(
       key: ValueKey('team-home-run-${run.id}'),
       run: run,
+      now: now,
       progress: TeamRunProgress.of(run, snapshot.work),
       stateWord: teamRunStateWordFor(
         l10n,
@@ -916,6 +917,7 @@ class _RunRow extends StatelessWidget {
   const _RunRow({
     super.key,
     required this.run,
+    required this.now,
     required this.progress,
     required this.stateWord,
     required this.needsYou,
@@ -923,6 +925,9 @@ class _RunRow extends StatelessWidget {
   });
 
   final OrchestrationRun run;
+
+  /// Clock for the "Finished 5h ago" age of a finished run.
+  final DateTime now;
   final TeamRunProgress progress;
 
   /// The run's state word, with the merge wait named (TEAM-117).
@@ -950,7 +955,19 @@ class _RunRow extends StatelessWidget {
     final steps = progress.total > 0
         ? l10n.teamUiHomeRunProgress(progress.done, progress.total)
         : null;
-    final subtitle = [?kind, ?steps].join(' · ');
+    final finishedAt = run.finishedAt;
+    final finished =
+        finishedAt != null &&
+            (run.state == RunState.completed || run.state == RunState.cancelled)
+        ? l10n.teamUiHomeRunFinished(
+            relativeTimeLabel(
+              finishedAt.millisecondsSinceEpoch,
+              now: now,
+              l10n: l10n,
+            ),
+          )
+        : null;
+    final subtitle = [?kind, ?steps, ?finished].join(' · ');
     final stacked = AppTheme.stackedActions(context);
     final state = Column(
       crossAxisAlignment: stacked

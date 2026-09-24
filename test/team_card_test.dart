@@ -825,7 +825,7 @@ void main() {
       );
       await pumpCard(tester, controller);
       expect(find.byKey(const ValueKey('team-card-empty')), findsOneWidget);
-      expect(find.text('No runs yet.'), findsOneWidget);
+      expect(find.text('No recent runs.'), findsOneWidget);
       expect(find.byKey(const ValueKey('team-card-hero')), findsNothing);
     });
 
@@ -906,13 +906,13 @@ void main() {
   });
 
   group('E: empty', () {
-    testWidgets('no runs: "No runs yet" with the host', (tester) async {
+    testWidgets('no runs: "No recent runs" with the host', (tester) async {
       final (controller, _) = await boot(
         configure: (g) => g.runsOverride = const [],
       );
       await pumpCard(tester, controller);
       expect(find.byKey(const ValueKey('team-card-empty')), findsOneWidget);
-      expect(find.text('No runs yet.'), findsOneWidget);
+      expect(find.text('No recent runs.'), findsOneWidget);
       expect(find.text('Start runs from the host for now.'), findsOneWidget);
       expect(find.text('On the computer'), findsOneWidget);
       expect(find.byKey(const ValueKey('team-card-open')), findsOneWidget);
