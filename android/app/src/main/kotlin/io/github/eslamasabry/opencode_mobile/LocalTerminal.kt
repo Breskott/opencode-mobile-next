@@ -121,8 +121,12 @@ class LocalTerminal private constructor(private val context: Context) {
                 flushPosted = false
                 if (inFlight) return
                 if (pending.size() > 0) {
-                    chunk = pending.toByteArray()
+                    val all = pending.toByteArray()
+                    // Small chunks: the screen draws between them instead of
+                    // parsing a quarter megabyte in one go.
+                    chunk = if (all.size <= MAX_CHUNK) all else all.copyOf(MAX_CHUNK)
                     pending.reset()
+                    if (all.size > MAX_CHUNK) pending.write(all, MAX_CHUNK, all.size - MAX_CHUNK)
                     inFlight = events != null
                     lock.notifyAll()
                 } else {
@@ -195,6 +199,7 @@ class LocalTerminal private constructor(private val context: Context) {
     fun start(rows: Int, cols: Int): Session {
         val linux = BuiltinLinux.get(context)
         check(linux.installed) { "Ubuntu is not installed in the app yet" }
+        linux.nameAndroidGroups()
         val argv = linux.prootCommand(listOf("/bin/bash", "-l"))
         val env = (System.getenv() + linux.prootEnvironment())
             .map { (key, value) -> "$key=$value" }
@@ -328,6 +333,9 @@ class LocalTerminal private constructor(private val context: Context) {
 
         /** Output held for a slow screen before the shell itself is made to wait. */
         private const val MAX_PENDING = 256 * 1024
+
+        /** The most output one event carries. */
+        private const val MAX_CHUNK = 32 * 1024
 
         /** Output kept for a screen that starts over. */
         private const val RECENT_BYTES = 512 * 1024

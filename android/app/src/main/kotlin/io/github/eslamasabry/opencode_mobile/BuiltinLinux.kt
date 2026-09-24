@@ -492,6 +492,31 @@ class BuiltinLinux(private val context: Context) {
         }
     }
 
+    /**
+     * Gives the app's Android groups (inet, everybody, its cache group…) a
+     * name in Ubuntu's /etc/group. A login shell runs `groups`, which
+     * otherwise prints "cannot find name for group ID 3003" once per group;
+     * proot-distro adds the same lines. The group ids are per install, so
+     * this is checked each time a terminal starts and costs one read.
+     */
+    fun nameAndroidGroups() {
+        val file = File(rootfs, "etc/group")
+        if (!file.isFile) return
+        val gids = try {
+            File("/proc/self/status").readLines()
+                .firstOrNull { it.startsWith("Groups:") }
+                ?.substringAfter(':')?.trim()?.split(Regex("\\s+"))
+                ?.mapNotNull { it.toIntOrNull() }
+                .orEmpty()
+        } catch (_: Exception) {
+            return
+        }
+        val existing = file.readLines().mapNotNull { it.split(':').getOrNull(2)?.toIntOrNull() }.toSet()
+        val missing = gids.filter { it !in existing }.distinct()
+        if (missing.isEmpty()) return
+        file.appendText(missing.joinToString("") { "aid_$it:x:$it:\n" })
+    }
+
     /** What proot-distro does after unpacking, trimmed to what Ubuntu needs. */
     private fun configure() {
         val etc = File(rootfs, "etc")
