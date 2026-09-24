@@ -14,6 +14,7 @@ import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 
 import 'support/fake_setup_engine.dart';
+import 'support/server_editor.dart';
 import 'support/setup_capture_preferences.dart';
 
 class _Store extends ProfileStore {
@@ -172,13 +173,15 @@ void main() {
       await tester.tap(entry);
       await tester.pumpAndSettle();
       expect(find.text('OpenCode 2'), findsOneWidget);
-      expect(find.text('OpenCode 1 or 2'), findsOneWidget);
+      // The same autodetecting editor: OpenCode, 1 or 2, chosen.
+      expect(find.text('OpenCode on a computer'), findsOneWidget);
       // The check after the address says which one it found; no line
       // promising it up front.
       expect(
         find.byKey(const ValueKey('opencode-autodetect-help')),
         findsNothing,
       );
+      await openServerManualAddress(tester);
       final url = find.byKey(const ValueKey('server-url-field'));
       await _reveal(tester, url);
       await tester.enterText(url, 'https://existing.example');

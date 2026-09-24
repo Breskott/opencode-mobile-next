@@ -17,6 +17,7 @@ import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
 import 'package:opencode_mobile/ui/widgets/setup_terminal.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 import '../tool/capture/fixtures.dart'
     show loadCaptureFonts, captureTheme, capturePng, writePng;
@@ -194,6 +195,7 @@ void main() {
           }
           if (page == 'servers') {
             await openFirstRunConnect(tester);
+            await openServerManualAddress(tester);
             final address = find.byKey(const ValueKey('server-url-field'));
             await tester.ensureVisible(address);
             expect(

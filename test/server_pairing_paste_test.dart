@@ -75,6 +75,8 @@ Future<void> pumpEditor(WidgetTester tester) async {
   // Open the editor from the first-run welcome card.
   await openFirstRunConnect(tester);
   expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
+  // The fields these tests read sit under "Enter the address instead".
+  await openServerManualAddress(tester);
 }
 
 String fieldText(WidgetTester tester, String key) =>

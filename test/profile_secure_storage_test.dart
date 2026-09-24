@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -10,6 +11,7 @@ import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 /// What flutter_secure_storage throws on a Linux desktop with no Secret
 /// Service (no GNOME Keyring or KWallet, or no desktop session).
@@ -339,6 +341,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       await openFirstRunConnect(tester);
+      await openServerManualAddress(tester);
 
       // The probe ran when the editor opened: the notice sits above the form.
       final notice = find.byKey(const ValueKey('server-secure-storage-notice'));
@@ -355,6 +358,11 @@ void main() {
         find.byKey(const ValueKey('server-url-field')),
         'https://server.example:4096',
       );
+      // Save & connect checks the connection first; here it answers, so
+      // what fails is the keyring.
+      serverProbe = ({required baseUrl, username, password}) async =>
+          const ServerProbeResult.success('1.0.0');
+      addTearDown(() => serverProbe = probeServerConnection);
       // Saving touches the keyring even for an empty password (the stale
       // secret is deleted), so the failure surfaces without typing one.
       await tester.tap(find.byKey(const ValueKey('save-server-profile')));

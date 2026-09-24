@@ -9454,7 +9454,7 @@ abstract class AppLocalizations {
   /// Shared app interface: Servers started with `opencode serve` do not print a pairing code. Start them on loopback with a password:
   ///
   /// In en, this message translates to:
-  /// **'Servers started with `opencode serve` do not print a pairing code. Start them on loopback with a password:'**
+  /// **'Servers started with “opencode serve” do not print a pairing code. Start them on loopback with a password:'**
   String get e7SharedServersStartedWithOpencodeServeDoNot;
 
   /// Shared app interface: Then add the server manually with username opencode and that password.
@@ -18366,7 +18366,7 @@ abstract class AppLocalizations {
   /// Setup journey: pairing phone hint.
   ///
   /// In en, this message translates to:
-  /// **'A server bound to its own 127.0.0.1 is not reachable from this phone until you bridge it — `adb reverse tcp:PORT tcp:PORT` over USB, or an SSH forward. To reach it over the network instead, put it behind HTTPS.'**
+  /// **'A server bound to its own 127.0.0.1 is not reachable from this phone until you bridge it — “adb reverse tcp:PORT tcp:PORT” over USB, or an SSH forward. To reach it over the network instead, put it behind HTTPS.'**
   String get e7SetupPairingPhoneHint;
 
   /// Setup journey: output copied.
@@ -18426,7 +18426,7 @@ abstract class AppLocalizations {
   /// Setup journey: empty pair clipboard.
   ///
   /// In en, this message translates to:
-  /// **'The clipboard is empty. Run `opencode2 pair` on the server and copy the code it prints.'**
+  /// **'The clipboard is empty. Run “opencode2 pair” on the server and copy the code it prints.'**
   String get e7SetupEmptyPairClipboard;
 
   /// Setup journey: restart active changed.
@@ -18444,7 +18444,7 @@ abstract class AppLocalizations {
   /// Setup journey: pairing instructions.
   ///
   /// In en, this message translates to:
-  /// **'On your computer run `opencode2 pair`, then paste or scan the code it prints.'**
+  /// **'On your computer run “opencode2 pair”, then paste or scan the code it prints.'**
   String get e7SetupPairingInstructions;
 
   /// Setup journey: host daily.
@@ -18762,37 +18762,37 @@ abstract class AppLocalizations {
   /// Setup journey: pair none.
   ///
   /// In en, this message translates to:
-  /// **'There is no pairing code here. Run `opencode2 pair` on the server and scan or copy what it prints.'**
+  /// **'There is no pairing code here. Run “opencode2 pair” on the server and scan or copy what it prints.'**
   String get e7SetupPairNone;
 
   /// Setup journey: pair long.
   ///
   /// In en, this message translates to:
-  /// **'That is far too long to be a pairing code. Copy only the line `opencode2 pair` prints, or scan its QR code.'**
+  /// **'That is far too long to be a pairing code. Copy only the line “opencode2 pair” prints, or scan its QR code.'**
   String get e7SetupPairLong;
 
   /// Setup journey: pair invalid.
   ///
   /// In en, this message translates to:
-  /// **'That is not a pairing code. Run `opencode2 pair` on the server and scan or copy what it prints.'**
+  /// **'That is not a pairing code. Run “opencode2 pair” on the server and scan or copy what it prints.'**
   String get e7SetupPairInvalid;
 
   /// Setup journey: pair shape.
   ///
   /// In en, this message translates to:
-  /// **'That pairing code is the wrong shape — it should be a JSON object with `urls`, `username`, and `password`.'**
+  /// **'That pairing code is the wrong shape — it should be a JSON object with “urls”, “username”, and “password”.'**
   String get e7SetupPairShape;
 
   /// Setup journey: pair no urls.
   ///
   /// In en, this message translates to:
-  /// **'That pairing code has no `urls` field, so there is no address to connect to.'**
+  /// **'That pairing code has no “urls” field, so there is no address to connect to.'**
   String get e7SetupPairNoUrls;
 
   /// Setup journey: pair urls type.
   ///
   /// In en, this message translates to:
-  /// **'That pairing code\'s `urls` field is not a list of addresses.'**
+  /// **'That pairing code\'s “urls” field is not a list of addresses.'**
   String get e7SetupPairUrlsType;
 
   /// Setup journey: pair too many.
@@ -18816,25 +18816,25 @@ abstract class AppLocalizations {
   /// Setup journey: pair address missing.
   ///
   /// In en, this message translates to:
-  /// **'That pairing code carries no server address. Check that the server is actually listening, then run `opencode2 pair` again.'**
+  /// **'That pairing code carries no server address. Check that the server is actually listening, then run “opencode2 pair” again.'**
   String get e7SetupPairAddressMissing;
 
   /// Setup journey: pair username type.
   ///
   /// In en, this message translates to:
-  /// **'That pairing code\'s `username` field is not text.'**
+  /// **'That pairing code\'s “username” field is not text.'**
   String get e7SetupPairUsernameType;
 
   /// Setup journey: pair password missing.
   ///
   /// In en, this message translates to:
-  /// **'That pairing code has no `password` field. It may have been truncated — scan or copy the whole code.'**
+  /// **'That pairing code has no “password” field. It may have been truncated — scan or copy the whole code.'**
   String get e7SetupPairPasswordMissing;
 
   /// Setup journey: pair password type.
   ///
   /// In en, this message translates to:
-  /// **'That pairing code\'s `password` field is not text.'**
+  /// **'That pairing code\'s “password” field is not text.'**
   String get e7SetupPairPasswordType;
 
   /// Setup journey: pair test failed.
@@ -26702,7 +26702,7 @@ abstract class AppLocalizations {
   /// Connect screen, OpenCode: what to do after running the command, where a camera exists.
   ///
   /// In en, this message translates to:
-  /// **'Then paste or scan the code it prints.'**
+  /// **'It shows a code. Scan it, or copy it and paste it here.'**
   String get firstRunPairingNextScan;
 
   /// Connect screen, OpenCode: what to do after running the command, where there is no camera path.
@@ -30100,6 +30100,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t list the terminals'**
   String get terminalListFailedTitle;
+
+  /// Add server: label over the choice of what kind of server this is.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to'**
+  String get addServerConnectTo;
+
+  /// Add server choice: an OpenCode (1 or 2) server on another computer.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode on a computer'**
+  String get addServerTypeOpenCode;
+
+  /// Add server choice: supporting line under OpenCode on a computer.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair with a code, or enter its address'**
+  String get addServerTypeOpenCodeDetail;
+
+  /// Add server choice: the Codex app-server.
+  ///
+  /// In en, this message translates to:
+  /// **'Codex'**
+  String get addServerTypeCodex;
+
+  /// Add server choice: supporting line under Codex.
+  ///
+  /// In en, this message translates to:
+  /// **'The Codex app-server on your computer'**
+  String get addServerTypeCodexDetail;
+
+  /// Add server choice: Claude Code or Pi, reached through the Paseo daemon.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Code or Pi'**
+  String get addServerTypePaseo;
+
+  /// Add server choice: supporting line under Claude Code or Pi.
+  ///
+  /// In en, this message translates to:
+  /// **'Through Paseo on your computer'**
+  String get addServerTypePaseoDetail;
+
+  /// Add server: button that opens the camera to scan the pairing QR code.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan code'**
+  String get addServerScan;
+
+  /// Add server: button that pastes a copied pairing code (beside Scan code).
+  ///
+  /// In en, this message translates to:
+  /// **'Paste code'**
+  String get addServerPaste;
+
+  /// Add server: folded row holding the server address and password, for people who do not pair.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the address instead'**
+  String get addServerManual;
+
+  /// Add server: the Save & connect button while it checks the server before saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the connection…'**
+  String get addServerChecking;
+
+  /// Add server: line under the drawing while the connection is checked.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking {host}…'**
+  String addServerCheckingHost(String host);
+
+  /// Add server: line under the drawing while the saved server connects.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to {host}…'**
+  String addServerConnectingHost(String host);
+
+  /// Add server: action on a failed connection check that saves the server even though it did not answer now.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get addServerSaveAnyway;
 }
 
 class _AppLocalizationsDelegate

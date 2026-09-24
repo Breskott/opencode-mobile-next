@@ -1,0 +1,41 @@
+00:00 +0: loading test/add_server_flow_test.dart
+00:00 +0: the type is one choice of three rows, without jargon
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'server-backend-opencode'>]: []>
+   Which: means none were found but one was expected
+00:01 +0 -1: the type is one choice of three rows, without jargon [E]
+00:01 +0 -1: pairing comes first; the address waits folded
+The following TestFailure was thrown running a test:
+Expected: <320.0>
+  Actual: <368.0>
+00:02 +0 -2: pairing comes first; the address waits folded [E]
+00:02 +0 -2: Save & connect checks first, and a failure is explained, not saved
+The following StateError was thrown running a test:
+00:02 +0 -3: Save & connect checks first, and a failure is explained, not saved [E]
+00:02 +0 -3: Save & connect saves what the check found and connects
+The following StateError was thrown running a test:
+00:03 +0 -4: Save & connect saves what the check found and connects [E]
+00:03 +0 -4: a pairing code that answers shows the spark, and Save does not check again
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'server-link-linked'>]: []>
+   Which: means none were found but one was expected
+00:04 +0 -5: a pairing code that answers shows the spark, and Save does not check again [E]
+00:04 +0 -5: an empty address on save opens the fold at the error
+00:04 +1 -5: choosing codex shows its own fields, not pairing
+The following assertion was thrown running a test:
+00:04 +1 -6: choosing codex shows its own fields, not pairing [E]
+00:04 +1 -6: choosing paseo shows its own fields, not pairing
+The following TestFailure was thrown running a test:
+Expected: [ServerBackend:ServerBackend.paseo]
+  Actual: []
+   Which: at location [0] is [] which shorter than expected
+00:05 +1 -7: choosing paseo shows its own fields, not pairing [E]
+00:05 +1 -7: the Servers welcome has its hero drawing
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'servers-welcome-hero'>]: []>
+   Which: means none were found but one was expected
+00:05 +1 -8: the Servers welcome has its hero drawing [E]
+00:05 +1 -8: Some tests failed.

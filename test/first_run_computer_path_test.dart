@@ -14,6 +14,7 @@ import 'package:opencode_mobile/ui/widgets/first_run_choice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 /// Saved profiles without the secure-storage channel, which is unmocked in
 /// widget tests and would hang a real load.
@@ -147,6 +148,7 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(store, controller));
       await openFirstRunConnect(tester, agent: agent);
+      await openServerManualAddress(tester);
 
       expect(
         find.byKey(const ValueKey('server-profile-editor')),
@@ -238,6 +240,7 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(store, controller));
       await openFirstRunConnect(tester, agent: agent);
+      await openServerManualAddress(tester);
 
       final link = find.byKey(const ValueKey('connect-not-same-network'));
       await tester.scrollUntilVisible(
@@ -274,6 +277,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     expect(
       find.byKey(const ValueKey('connect-not-same-network')),
@@ -304,13 +308,30 @@ void main() {
       find.byKey(const ValueKey('server-backend-selector')),
       findsOneWidget,
     );
-    expect(find.widgetWithText(ChoiceChip, 'OpenCode 1 or 2'), findsOneWidget);
+    // One row per type (ledger row 15), OpenCode chosen.
     expect(
-      find.widgetWithText(ChoiceChip, 'Codex (experimental)'),
+      find.byKey(const ValueKey('server-backend-opencode')),
       findsOneWidget,
     );
+    expect(find.byKey(const ValueKey('server-backend-codex')), findsOneWidget);
     expect(find.byKey(const ValueKey('server-backend-paseo')), findsOneWidget);
-    expect(find.byKey(const ValueKey('connect-command')), findsNothing);
+    expect(find.text('OpenCode on a computer'), findsOneWidget);
+    // The chosen type's command leads, as on the first-run path; choosing
+    // another type shows its own.
+    final command = find.byKey(const ValueKey('connect-command'));
+    expect(
+      find.descendant(of: command, matching: find.text(SetupCommands.pair)),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('server-backend-paseo')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: command,
+        matching: find.text(SetupCommands.paseoStart),
+      ),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const ValueKey('connect-not-same-network')),
       findsNothing,
@@ -385,6 +406,14 @@ void main() {
             ),
             findsAtLeast(2),
           );
+          // OpenCode keeps the address (and this link) under "Enter the
+          // address instead".
+          final manual = find.byKey(const ValueKey('server-manual-address'));
+          if (manual.evaluate().isNotEmpty) {
+            await tester.scrollUntilVisible(manual, 160, scrollable: list);
+            await tester.tap(manual);
+            await tester.pumpAndSettle();
+          }
           final link = find.byKey(const ValueKey('connect-not-same-network'));
           await tester.scrollUntilVisible(link, 160, scrollable: list);
           final rect = tester.getRect(link);

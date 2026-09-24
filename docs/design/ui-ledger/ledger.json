@@ -1,5 +1,5 @@
 {
- "generatedFrom": "7bfea57ba04e096b730b4c1f703f8a0a9cfa8aa0",
+ "generatedFrom": "ca3951e0cfcb78b9e8d290e506945c0e62f48d8b",
  "pages": [
   {
    "id": "system",
@@ -21978,7 +21978,7 @@
     "_edit"
    ],
    "line": 1110,
-   "purpose": "Full-screen server profile editor and, on the first-run computer path, the one connect screen for the chosen agent: the command to run, pairing, address and credentials, a connection test that runs by itself after a pause, an optional AI Team host, then save (and connect).",
+   "purpose": "Full-screen server editor and, on the first-run computer path, the one connect screen for the chosen agent (rebuilt for ledger row 15, motion slice B 2026-09-25): a drawing of this phone and the computer linking up (with the verdicts under it), the type as one choice of three rows (new servers off the first-run path), the command to run for that type, then for OpenCode pairing first (Scan code / Paste code) with the address and password folded under 'Enter the address instead'. Save & connect checks the connection by itself and explains what failed (with 'Save anyway'); Test connection is a tertiary text button.",
    "reachedFrom": [
     {
      "page": "servers",
@@ -22042,6 +22042,58 @@
      "effect": "Cmd copy button: Clipboard.setData(SetupCommands.startFor(backend)) and a 'Copied' snackbar. The same button sits on each command inside 'Show the commands'.",
      "gates": [
       "widget.presetBackend != null (first-run computer path)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-manual-address",
+     "type": "button",
+     "label": "Enter the address instead",
+     "key": "server-manual-address",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": null,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "KitExpandRow folding Server URL, 'Not on the same network?', Server password and Test connection for a new OpenCode server (pairing is the main path). Opens by itself when a check or a save needs one of its fields (empty address, a password to paste).",
+     "gates": [
+      "!_isCodex",
+      "widget.existing == null",
+      "!widget.tailscale",
+      "widget.initialUrl == null",
+      "!widget.focusPassword"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-save-anyway",
+     "type": "link",
+     "label": "Save anyway",
+     "key": "server-save-anyway",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": null,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "On a failed check that Save & connect ran: _save(anyway: true) saves (and connects) without checking again.",
+     "gates": [
+      "the last failed check came from Save & connect"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "profile-editor-link-drawing",
+     "type": "button",
+     "label": "Phone and computer linking (decorative)",
+     "key": "server-link-moment",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": null,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "KitIllustration(ServersLinkScene) at 240 dp with one line under it: idle (dotted gap), linking while pairing, checking or connecting (ambient: a dot travels the link; 'Checking <host>…' / 'Connecting to <host>…' / 'Pairing…'), linked with a spark when the server answered, broken when it did not. The verdicts sit under it; every check and save scrolls back to it.",
+     "gates": [
+      "widget.existing == null"
      ],
      "destructive": false
     },
@@ -22182,14 +22234,14 @@
     {
      "id": "profile-editor-save",
      "type": "button",
-     "label": "Save & connect | Save changes | Saving…",
+     "label": "Save & connect | Save changes | Checking the connection… | Saving…",
      "key": "save-server-profile",
      "file": "lib/ui/screens/servers_screen.dart",
      "line": 1880,
      "action": "submit",
      "target": null,
      "targetWidget": null,
-     "effect": "_save() (or _saveCodex()): normalizes/validates URL (+ Tailscale address when widget.tailscale; Codex: ws/wss URL, project directory, token), builds a ServerProfile caching the probed flavor/version and _orchestration, then widget.onSubmit -> ServersScreen._saveAndConnect: store.upsert(profile), sets pref 'oc.tailscale.<id>' for Tailscale profiles and conn.connect(profile) when new, active, forceConnect or Codex. Pops with the profile on success; otherwise shows the inline failure card (server-save-failure). Label is 'Save & connect' when _isCodex || existing == null || reconnectOnSave, else 'Save changes'.",
+     "effect": "_save(): on 'Save & connect' (new server, any Codex/Paseo server, or the server in use) it first checks the connection (serverProbe / socketAgentProbe) unless a check since the last edit already answered; a failed check shows its verdict under the drawing with 'Save anyway' and stores nothing. Then it normalizes and validates, builds the ServerProfile with the probed flavor/version, and widget.onSubmit -> ServersScreen._saveAndConnect (store.upsert, 'oc.tailscale.<id>' for Tailscale, conn.connect when new, active, forced or Codex). Pops on success; otherwise the inline failure (server-save-failure) under the drawing. The button follows the form and stays in view above the keyboard.",
      "gates": [
       "disabled while _submitting"
      ],
@@ -22313,9 +22365,9 @@
     },
     {
      "id": "profile-editor-backend-opencode",
-     "type": "chip",
-     "label": "OpenCode 1 or 2",
-     "key": "server-backend-selector",
+     "type": "button",
+     "label": "OpenCode on a computer — Pair with a code, or enter its address",
+     "key": "server-backend-opencode",
      "file": "lib/ui/screens/servers_screen.dart",
      "line": 2236,
      "action": "other",
@@ -22325,15 +22377,16 @@
      "gates": [
       "widget.existing == null",
       "!widget.tailscale",
-      "widget.presetBackend == null"
+      "widget.presetBackend == null",
+      "disabled while _submitting"
      ],
      "destructive": false
     },
     {
      "id": "profile-editor-backend-codex",
-     "type": "chip",
-     "label": "Codex (experimental)",
-     "key": "server-backend-selector",
+     "type": "button",
+     "label": "Codex — The Codex app-server on your computer",
+     "key": "server-backend-codex",
      "file": "lib/ui/screens/servers_screen.dart",
      "line": 2248,
      "action": "other",
@@ -22343,14 +22396,15 @@
      "gates": [
       "widget.existing == null",
       "!widget.tailscale",
-      "widget.presetBackend == null"
+      "widget.presetBackend == null",
+      "disabled while _submitting"
      ],
      "destructive": false
     },
     {
      "id": "profile-editor-backend-paseo",
-     "type": "chip",
-     "label": "Paseo: Claude Code, Pi (experimental)",
+     "type": "button",
+     "label": "Claude Code or Pi — Through Paseo on your computer",
      "key": "server-backend-paseo",
      "file": "lib/ui/screens/servers_screen.dart",
      "line": 2260,
@@ -22418,7 +22472,7 @@
     {
      "id": "profile-editor-pairing-paste",
      "type": "button",
-     "label": "Paste pairing code | Pairing…",
+     "label": "Paste code | Paste pairing code (no camera; editing a saved server) | Pairing…",
      "key": "server-pairing-paste",
      "file": "lib/ui/screens/servers_screen.dart",
      "line": 2478,
@@ -22436,7 +22490,7 @@
     {
      "id": "profile-editor-pairing-scan",
      "type": "button",
-     "label": "Scan",
+     "label": "Scan code",
      "key": "server-pairing-scan",
      "file": "lib/ui/screens/servers_screen.dart",
      "line": 2498,
@@ -22455,7 +22509,7 @@
     {
      "id": "profile-editor-test-connection",
      "type": "button",
-     "label": "Test connection | Testing…",
+     "label": "Test connection | Testing… (tertiary text button)",
      "key": "test-server-connection",
      "file": "lib/ui/screens/servers_screen.dart",
      "line": 2515,
@@ -22485,25 +22539,31 @@
     }
    ],
    "fieldsByBackend": {
-    "OpenCode 1 or 2 (ServerBackend.openCode, default)": [
-     "pairing actions: Paste pairing code, Scan (QR; only when platformCapabilities.supportsQrPairing); hidden in Tailscale mode",
-     "Server URL",
-     "Display name (optional)",
-     "AUTHENTICATION: Username (optional), Server password (show/hide, paste)",
-     "Test connection + probe verdict (OpenCode 1/2 + version)",
-     "AI Team (optional): Learn how, Add manually/Change"
+    "OpenCode (ServerBackend.openCode, default)": [
+     "command to run: opencode2 pair (copy), Show the commands",
+     "pairing: Scan code (only when platformCapabilities.supportsQrPairing), Paste code",
+     "Enter the address instead (folded for a new server): Server URL, Not on the same network? (first run), Server password (show/hide, paste), Test connection",
+     "More options (folded): Display name, Username, AI Team (Learn how, Add manually/Change)"
     ],
-    "Codex (experimental) (ServerBackend.codex)": [
-     "Display name (optional)",
+    "Codex (ServerBackend.codex)": [
+     "command to run (copy), Show the commands",
      "Server address (ws:// or wss://)",
      "Project folder on server",
      "Connection token (show/hide, paste)",
+     "Display name (optional)",
      "approval recovery notice",
-     "Test connection + codex probe verdict"
+     "Test connection"
     ],
-    "Backend selector (CONNECTION TYPE chips)": "only for a new profile outside Tailscale mode and off the first-run path (widget.presetBackend == null); existing profiles keep their backend",
-    "Tailscale mode (widget.tailscale)": "intro text + 'Tailscale setup and recovery' button, no backend selector, no pairing actions, URL must pass isValidTailscaleAddress",
-    "First-run connect screen (widget.presetBackend != null)": "titled with the chosen agent; backend selector hidden; leads with _ComputerCommand (the one start command + copy, 'Show the commands' disclosure); 'Not on the same network?' under the address; the test runs by itself 800 ms after the required fields become valid (autoTestPause), a change restarts the wait and retires the probe in flight"
+    "Claude Code or Pi (ServerBackend.paseo)": [
+     "command to run: paseo start --no-relay (copy), Show the commands",
+     "Server address",
+     "Project folder on server",
+     "Daemon password (optional)",
+     "Display name (optional)",
+     "Paseo setup notice",
+     "Test connection"
+    ],
+    "Type choice (Connect to: three rows)": "only for a new profile outside Tailscale mode and off the first-run path (widget.presetBackend == null)"
    },
    "states": [
     "inline save/connect failure card (server-save-failure)",
@@ -37670,7 +37730,7 @@
    "widget": "_WelcomeView",
    "presentedBy": [],
    "line": 896,
-   "purpose": "First-run body of ServersScreen (UX plan 5.6 step 1): the value sentence, then one question, 'Where does your coding agent run?', with three plain choices. No product names; Tailscale, the setup guide and External agents are reached from Settings.",
+   "purpose": "First-run body of ServersScreen (UX plan 5.6 step 1): the value sentence, then one question, 'Where does your coding agent run?', with three plain choices. No product names; Tailscale, the setup guide and External agents are reached from Settings. Headed by a line drawing (motion slice B, 2026-09-25).",
    "reachedFrom": [
     {
      "page": "system",
@@ -37695,6 +37755,20 @@
     "store.profiles.isEmpty (servers_screen.dart:432)"
    ],
    "elements": [
+    {
+     "id": "servers-welcome-hero",
+     "type": "button",
+     "label": "Hero drawing (decorative)",
+     "key": "servers-welcome-hero",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": null,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "KitIllustration(ServersWelcomeScene) at 220 dp: the computer with the portal on its screen, this phone in front, a dotted path between them. Draws itself in once; the welcome is a resting screen, so it never loops. Excluded from semantics.",
+     "gates": [],
+     "destructive": false
+    },
     {
      "id": "servers-welcome-about",
      "type": "icon-button",

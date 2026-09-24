@@ -1,0 +1,23 @@
+00:00 +0: loading test/add_server_flow_test.dart
+00:00 +0: the type is one choice of three rows, without jargon
+00:01 +1: pairing comes first; the address waits folded
+00:01 +2: Save & connect checks first, and a failure is explained, not saved
+Expected: ['https://build.example.net']
+  Actual: []
+00:02 +2 -1: Save & connect checks first, and a failure is explained, not saved [E]
+00:02 +2 -1: Save & connect saves what the check found and connects
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Checking build.example.net…": []>
+00:02 +2 -2: Save & connect saves what the check found and connects [E]
+00:02 +2 -2: a pairing code that answers shows the spark, and Save does not check again
+00:03 +3 -2: an empty address on save opens the fold at the error
+00:03 +4 -2: choosing codex shows its own fields, not pairing
+Expected: [ServerBackend:ServerBackend.codex]
+  Actual: []
+00:03 +4 -3: choosing codex shows its own fields, not pairing [E]
+00:03 +4 -3: choosing paseo shows its own fields, not pairing
+Expected: [ServerBackend:ServerBackend.paseo]
+  Actual: []
+00:04 +4 -4: choosing paseo shows its own fields, not pairing [E]
+00:04 +4 -4: the Servers welcome has its hero drawing
+00:04 +5 -4: Some tests failed.

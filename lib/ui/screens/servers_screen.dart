@@ -21,6 +21,8 @@ import '../../state/first_run.dart';
 import '../../termux/bridge.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import '../kit/scenes/servers_link_scene.dart';
+import '../kit/scenes/servers_welcome_scene.dart';
 import '../setup_commands.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/first_run_choice.dart';
@@ -1023,6 +1025,18 @@ class _WelcomeView extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // The hero (design standard §10): this phone and the
+                      // computer the agent runs on. Drawn in once; the
+                      // welcome is a resting screen, so it never loops.
+                      const Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: KitIllustration(
+                          key: ValueKey('servers-welcome-hero'),
+                          scene: ServersWelcomeScene(),
+                          width: 220,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       Text(
                         copy.onboardingValueTitle,
                         style: theme.textTheme.headlineMedium,
@@ -1275,7 +1289,7 @@ class _ProfileEditorScreen extends StatefulWidget {
 class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// "More options" starts open only when something in it was already set:
   /// a username other than the default, or an AI Team host.
-  late bool _moreOptionsOpen =
+  late final bool _moreOptionsOpen =
       (widget.existing?.username.isNotEmpty == true &&
           widget.existing?.username != 'opencode') ||
       widget.existing?.orchestration != null;
@@ -1350,6 +1364,94 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// are the only thing that tells the user whether to bridge a port or to
   /// put the server behind TLS.
   String? _pairingFailure;
+
+  /// Where the verdicts (the check's, a failed save's) are shown, so a save
+  /// that failed can bring them into view.
+  final _statusKey = GlobalKey();
+
+  /// "Enter the address instead" was opened by the editor itself (a check
+  /// that needs a field, an empty address on save). Bumping [_manualFold]
+  /// rebuilds the fold open.
+  bool _manualForcedOpen = false;
+  int _manualFold = 0;
+
+  /// The last failed check came from Save & connect, so its verdict offers
+  /// "Save anyway".
+  bool _verdictFromSave = false;
+
+  /// Save & connect is checking the connection before it stores anything.
+  bool _checkingForSave = false;
+
+  /// The link drawing has left its first, idle picture: coming back to idle
+  /// keeps the devices drawn instead of drawing them in again.
+  bool _linkMoved = false;
+
+  /// A new OpenCode server is paired first; its address and password wait
+  /// under "Enter the address instead". Everywhere else (editing a saved
+  /// server, a password to re-enter, the phone's own server, a Tailscale
+  /// address) the fields are what the person came for and show at once.
+  bool get _foldsManualAddress =>
+      !_isCodex &&
+      widget.existing == null &&
+      !widget.tailscale &&
+      widget.initialUrl == null &&
+      !widget.focusPassword;
+
+  /// Save & connect (a new server, any Codex or Paseo server, the server in
+  /// use): the save checks the connection first, so a server that does not
+  /// answer is explained before anything is stored.
+  bool get _connectsOnSave =>
+      _isCodex || widget.existing == null || widget.reconnectOnSave;
+
+  /// A check since the fields last changed found the server answering.
+  bool get _checkedOk =>
+      _isCodex ? _codexTestResult?.ok == true : _testResult?.ok == true;
+
+  /// What the link drawing shows: linking while pairing, checking or
+  /// connecting; linked once the server answered; broken when it did not.
+  ServersLinkState get _linkState {
+    if (_pairing || _testing || _submitting) return ServersLinkState.linking;
+    final ok = _isCodex ? _codexTestResult?.ok : _testResult?.ok;
+    if (ok == true) return ServersLinkState.linked;
+    if (ok == false || _pairingFailure != null || _submitFailure != null) {
+      return ServersLinkState.failed;
+    }
+    return ServersLinkState.idle;
+  }
+
+  /// Opens "Enter the address instead" (when folded and closed) and then
+  /// focuses [node], once the field it belongs to is built.
+  void _focusField(FocusNode node) {
+    if (_foldsManualAddress && node.context == null) {
+      setState(() {
+        _manualForcedOpen = true;
+        _manualFold++;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) node.requestFocus();
+      });
+      return;
+    }
+    node.requestFocus();
+  }
+
+  /// Brings the drawing and the verdicts into view: when a check or a
+  /// connect starts from a button further down, and when it answered.
+  void _revealStatus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _statusKey.currentContext;
+      if (!mounted || context == null) return;
+      unawaited(
+        Scrollable.ensureVisible(
+          context,
+          duration: KitMotion.standard,
+          curve: KitMotion.enter,
+          // The head of the form, where the drawing and the verdict are.
+          alignment: 0,
+        ),
+      );
+    });
+  }
 
   /// True for both socket-style backends (Codex app-server and the Paseo
   /// daemon): they share the address, project folder and secret fields.
@@ -1494,6 +1596,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     _autoTestTimer = null;
     _probeGeneration += 1;
     _testing = false;
+    _verdictFromSave = false;
     _submitFailure = null;
     _pairing = false;
     _error = null;
@@ -1503,15 +1606,22 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     _pairingFailure = null;
   }
 
+  /// Checks the connection and shows the verdict; completes with whether the
+  /// server answered.
+  ///
   /// [auto] is the first-run test that runs by itself. It reports the same
   /// verdict but never moves focus: the person is still typing somewhere.
-  Future<void> _testConnection({bool auto = false}) async {
-    if (_testing) return;
+  /// [forSave] is Save & connect checking before it stores anything: the
+  /// verdict then offers "Save anyway".
+  Future<bool> _testConnection({
+    bool auto = false,
+    bool forSave = false,
+  }) async {
+    if (_testing) return false;
     _autoTestTimer?.cancel();
     _autoTestTimer = null;
     if (_isCodex) {
-      await _testCodexConnection(auto: auto);
-      return;
+      return _testCodexConnection(auto: auto, forSave: forSave);
     }
     final url = normalizeServerProfileUrl(_url.text);
     if (widget.tailscale && !isValidTailscaleAddress(url)) {
@@ -1519,7 +1629,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         _error = _connectionL10n(context).tailscaleAddressError;
         _testResult = null;
       });
-      return;
+      return false;
     }
     if (url != _url.text.trim()) {
       _urlLength = url.length;
@@ -1538,8 +1648,8 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         _error = error;
         _testResult = null;
       });
-      _urlFocus.requestFocus();
-      return;
+      _focusField(_urlFocus);
+      return false;
     }
     final generation = ++_probeGeneration;
     setState(() {
@@ -1547,16 +1657,24 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _testResult = null;
       _error = null;
     });
+    if (!auto) {
+      // The keyboard goes, and the form scrolls back to the drawing that
+      // shows the check (a focused field would pull the scroll back to
+      // itself).
+      FocusScope.of(context).unfocus();
+      _revealStatus();
+    }
     final result = await serverProbe(
       baseUrl: url,
       username: _user.text.trim(),
       password: _pass.text,
     );
-    if (!mounted || generation != _probeGeneration) return;
+    if (!mounted || generation != _probeGeneration) return false;
     setState(() {
       _testing = false;
       _submitFailure = null;
       _testResult = result;
+      _verdictFromSave = forSave && !result.ok;
     });
     // Per the v2 auth taxonomy: a 401 without a password sends the user to
     // the password field; a rejected password selects it for a clean repaste.
@@ -1567,8 +1685,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
           extentOffset: _pass.text.length,
         );
       }
-      _passFocus.requestFocus();
+      _focusField(_passFocus);
     }
+    if (!auto) _revealStatus();
+    return result.ok;
   }
 
   String? _validateSocketFields(String url) => _isPaseo
@@ -1579,7 +1699,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
             validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
             validateCodexConnectionToken(_codexToken.text);
 
-  Future<void> _testCodexConnection({bool auto = false}) async {
+  Future<bool> _testCodexConnection({
+    bool auto = false,
+    bool forSave = false,
+  }) async {
     var url = _isPaseo
         ? normalizePaseoServerUrl(_url.text)
         : normalizeCodexServerUrl(_url.text);
@@ -1607,7 +1730,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       } else {
         _codexTokenFocus.requestFocus();
       }
-      return;
+      return false;
     }
     final generation = ++_probeGeneration;
     setState(() {
@@ -1615,6 +1738,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _codexTestResult = null;
       _error = null;
     });
+    if (!auto) {
+      FocusScope.of(context).unfocus();
+      _revealStatus();
+    }
     try {
       final result = await socketAgentProbe(
         backend: _backend,
@@ -1622,19 +1749,23 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         secret: _codexToken.text,
         directory: _codexDirectory.text.trim(),
       );
-      if (!mounted || generation != _probeGeneration) return;
+      if (!mounted || generation != _probeGeneration) return false;
       setState(() {
         _testing = false;
         _submitFailure = null;
         _codexTestResult = result;
+        _verdictFromSave = forSave && !result.ok;
       });
       if (!result.ok && !auto) _codexTokenFocus.requestFocus();
+      if (!auto) _revealStatus();
+      return result.ok;
     } catch (error) {
-      if (!mounted || generation != _probeGeneration) return;
+      if (!mounted || generation != _probeGeneration) return false;
       setState(() {
         _testing = false;
         _error = productErrorText(error);
       });
+      return false;
     }
   }
 
@@ -1772,7 +1903,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       }
     });
     if (!selection.connected && (result?.needsPassword ?? false)) {
-      _passFocus.requestFocus();
+      _focusField(_passFocus);
     }
   }
 
@@ -1950,8 +2081,24 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     setState(() => _orchestration = config);
   }
 
-  Future<void> _save() async {
-    if (_submitting) return;
+  /// Save & connect checks the connection first (unless a check since the
+  /// last edit already found it answering), so a server that does not
+  /// answer is explained — refused, timed out, wrong password — before it is
+  /// stored. [anyway] is the verdict's "Save anyway": the person keeps a
+  /// server that is not running right now.
+  Future<void> _save({bool anyway = false}) async {
+    if (_submitting || _testing) return;
+    if (!anyway && _connectsOnSave && !_checkedOk) {
+      FocusScope.of(context).unfocus();
+      _checkingForSave = true;
+      final bool answered;
+      try {
+        answered = await _testConnection(forSave: true);
+      } finally {
+        _checkingForSave = false;
+      }
+      if (!answered || !mounted) return;
+    }
     if (_isCodex) {
       await _saveCodex();
       return;
@@ -1968,7 +2115,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     );
     if (error != null) {
       setState(() => _error = error);
-      _urlFocus.requestFocus();
+      _focusField(_urlFocus);
       return;
     }
     final uri = Uri.parse(url);
@@ -2015,6 +2162,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _submitting = true;
       _submitFailure = null;
     });
+    _revealStatus();
     final outcome = await widget.onSubmit(profile);
     if (!mounted) return;
     if (outcome.saved) _savedProfile = profile;
@@ -2026,6 +2174,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _submitting = false;
       _submitFailure = outcome.failure;
     });
+    _revealStatus();
   }
 
   Future<void> _saveCodex() async {
@@ -2058,6 +2207,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _submitting = true;
       _submitFailure = null;
     });
+    _revealStatus();
     final outcome = await widget.onSubmit(profile);
     if (!mounted) return;
     if (outcome.saved) _savedProfile = profile;
@@ -2069,6 +2219,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _submitting = false;
       _submitFailure = outcome.failure;
     });
+    _revealStatus();
   }
 
   Future<void> _pasteCodexToken() async {
@@ -2084,20 +2235,6 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
 
   List<Widget> _buildCodexFields(ThemeData theme) => [
     const SizedBox(height: 12),
-    TextField(
-      enabled: !_submitting,
-      key: const ValueKey('codex-server-name-field'),
-      controller: _name,
-      focusNode: _nameFocus,
-      textInputAction: TextInputAction.next,
-      onSubmitted: (_) => _urlFocus.requestFocus(),
-      onChanged: (_) => _fieldChanged(),
-      decoration: InputDecoration(
-        labelText: _connectionL10n(context).connectionDisplayName,
-        hintText: _connectionL10n(context).connectionDisplayNameHint,
-      ),
-    ),
-    const SizedBox(height: 20),
     TextField(
       enabled: !_submitting,
       key: const ValueKey('codex-server-address-field'),
@@ -2192,7 +2329,22 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         ),
       ),
     ),
-    const SizedBox(height: 24),
+    // What most people never change, after what they must fill in.
+    const SizedBox(height: 20),
+    TextField(
+      enabled: !_submitting,
+      key: const ValueKey('codex-server-name-field'),
+      controller: _name,
+      focusNode: _nameFocus,
+      textInputAction: TextInputAction.done,
+      onSubmitted: (_) => _save(),
+      onChanged: (_) => _fieldChanged(),
+      decoration: InputDecoration(
+        labelText: _connectionL10n(context).connectionDisplayName,
+        hintText: _connectionL10n(context).connectionDisplayNameHint,
+      ),
+    ),
+    const SizedBox(height: 16),
   ];
 
   Widget _buildCodexProbeVerdict(ThemeData theme) {
@@ -2207,36 +2359,355 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         message: result.ok
             ? copy.codexConnectionVerified
             : setupUiMessage(copy, result.message),
+        actions: [if (!result.ok && _verdictFromSave) _saveAnywayAction(copy)],
       ),
     );
   }
 
+  KitAction _saveAnywayAction(AppLocalizations copy) => KitAction(
+    key: const ValueKey('server-save-anyway'),
+    label: copy.addServerSaveAnyway,
+    onPressed: _submitting ? null : () => unawaited(_save(anyway: true)),
+  );
+
+  /// The host the person is connecting to, for the drawing's caption.
+  String get _host {
+    final url = _isCodex
+        ? (_isPaseo
+              ? normalizePaseoServerUrl(_url.text)
+              : normalizeCodexServerUrl(_url.text))
+        : normalizeServerProfileUrl(_url.text);
+    final host = Uri.tryParse(url)?.host ?? '';
+    return host.isEmpty ? _url.text.trim() : host;
+  }
+
+  /// The phone and the computer linking up (design standard §10): at the
+  /// head of a new server's form, moving only while it pairs, checks or
+  /// connects, with one line saying what it is doing then.
+  Widget _linkMoment(AppLocalizations copy) {
+    final state = _linkState;
+    if (state != ServersLinkState.idle) _linkMoved = true;
+    final caption = switch (state) {
+      ServersLinkState.linking when _pairing => copy.e7SetupPairing,
+      ServersLinkState.linking when _submitting => copy.addServerConnectingHost(
+        _host,
+      ),
+      ServersLinkState.linking => copy.addServerCheckingHost(_host),
+      _ => null,
+    };
+    final theme = Theme.of(context);
+    return Column(
+      key: const ValueKey('server-link-moment'),
+      children: [
+        Center(
+          child: KitIllustration(
+            // Each state plays its own entrance: the link drawing across,
+            // the spark landing, the link breaking.
+            key: ValueKey('server-link-${state.name}'),
+            scene: ServersLinkScene(state, intro: !_linkMoved),
+            width: 240,
+            ambient: state == ServersLinkState.linking,
+          ),
+        ),
+        SizedBox(
+          height: 24,
+          child: Semantics(
+            liveRegion: true,
+            child: Text(
+              caption ?? '',
+              key: const ValueKey('server-link-caption'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppTheme.mutedOf(theme),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The address and password of an OpenCode server, and the check. Folded
+  /// under "Enter the address instead" for a new server (pairing is the
+  /// main path); shown at once where the fields are what the person came
+  /// to change.
+  Widget _manualAddress(AppLocalizations copy) {
+    final fields = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: _foldsManualAddress ? 4 : 12),
+          TextField(
+            enabled: !_submitting,
+            key: const ValueKey('server-url-field'),
+            textDirection: TextDirection.ltr,
+            controller: _url,
+            focusNode: _urlFocus,
+            autofocus: false,
+            keyboardType: TextInputType.url,
+            textInputAction: TextInputAction.next,
+            // Straight to the password: the name and username are under
+            // More options and rarely needed.
+            onSubmitted: (_) => _passFocus.requestFocus(),
+            onChanged: _urlChanged,
+            scrollPadding: const EdgeInsets.only(bottom: 160),
+            decoration: InputDecoration(
+              labelText: copy.e7SetupServerUrl,
+              hintText: 'https://server.example',
+              errorText: _error,
+              errorMaxLines: 3,
+              helperText: widget.tailscale
+                  ? copy.tailscaleAddressDetail
+                  : copy.e7SetupHttpsHint,
+              helperMaxLines: 3,
+            ),
+          ),
+          ?_notSameNetworkLink(),
+          const SizedBox(height: 16),
+          TextField(
+            enabled: !_submitting,
+            key: const ValueKey('server-password-field'),
+            textDirection: TextDirection.ltr,
+            controller: _pass,
+            focusNode: _passFocus,
+            autofocus: _needsPassword || widget.focusPassword,
+            onChanged: (_) => _fieldChanged(),
+            obscureText: _obscurePassword,
+            autocorrect: false,
+            enableSuggestions: false,
+            keyboardType: TextInputType.visiblePassword,
+            // Room for the Save button above the keyboard, so the field
+            // being typed in is never hidden behind it.
+            scrollPadding: const EdgeInsets.only(bottom: 160),
+            style: _obscurePassword
+                ? null
+                : const TextStyle(fontFamily: AppTheme.monoFamily),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _save(),
+            decoration: InputDecoration(
+              labelText: _needsPassword
+                  ? copy.e7SetupReenterPassword
+                  : copy.e7SetupServerPassword,
+              helperText: _needsPassword
+                  ? copy.e7SetupEmptyPasswordHint
+                  : copy.e7SetupPasswordStartupHint,
+              helperMaxLines: 3,
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    key: const ValueKey('server-password-visibility'),
+                    tooltip: _obscurePassword
+                        ? copy.e7SetupShowPassword
+                        : copy.e7SetupHidePassword,
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword
+                          ? AppIconography.visible
+                          : AppIconography.hidden,
+                    ),
+                  ),
+                  // Paste is the primary affordance for the per-run random
+                  // serve password, so it sits closest to the field edge.
+                  IconButton(
+                    key: const ValueKey('server-password-paste'),
+                    tooltip: copy.e7SetupPastePassword,
+                    onPressed: () => unawaited(_pastePassword()),
+                    icon: const Icon(AppIconography.paste),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          _testAction(copy),
+        ],
+      ),
+    );
+    if (!_foldsManualAddress) return fields;
+    return KitExpandRow(
+      key: ValueKey('server-manual-address-$_manualFold'),
+      headerKey: const ValueKey('server-manual-address'),
+      title: copy.addServerManual,
+      initiallyExpanded: _manualForcedOpen,
+      children: [fields, const SizedBox(height: 8)],
+    );
+  }
+
+  /// Test connection, a tertiary at most (§2): Save & connect checks by
+  /// itself, this is for checking before deciding.
+  Widget _testAction(AppLocalizations copy) => KitInset(
+    child: KitButton.tertiary(
+      key: const ValueKey('test-server-connection'),
+      onPressed: _testing || _submitting ? null : _testConnection,
+      icon: AppIconography.networkCheck,
+      label: _testing ? copy.e7SetupTesting : copy.e7SetupTestConnection,
+    ),
+  );
+
+  /// The verdicts, in one place near the action that produced them: a save
+  /// that failed, and what the check found.
+  Widget _status(AppLocalizations copy) {
+    final failure = _submitFailure;
+    final result = _isCodex ? null : _testResult;
+    final codex = _isCodex ? _codexTestResult : null;
+    if (failure == null && result == null && codex == null) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (failure != null) ...[
+            const SizedBox(height: 8),
+            KitNotice(
+              key: const ValueKey('server-save-failure'),
+              tone: AppStatusTone.failure,
+              message: failure,
+            ),
+          ],
+          if (codex != null) ...[
+            const SizedBox(height: 8),
+            _buildCodexProbeVerdict(Theme.of(context)),
+          ],
+          if (result != null) ...[
+            const SizedBox(height: 8),
+            KeyedSubtree(
+              key: const ValueKey('server-probe-verdict'),
+              child: _ProbeVerdict(
+                result: result,
+                saveAnyway: !result.ok && _verdictFromSave
+                    ? _saveAnywayAction(copy)
+                    : null,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Name, username and the AI Team host: what most people never change,
+  /// out of the way. The name comes from the address and the username is
+  /// "opencode" unless the server was started with another.
+  Widget _moreOptions(ThemeData theme, AppLocalizations copy) => KitExpandRow(
+    key: const ValueKey('server-editor-more-options'),
+    headerKey: const ValueKey('server-editor-more-options-header'),
+    title: copy.serverEditorMoreOptions,
+    initiallyExpanded: _moreOptionsOpen,
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              enabled: !_submitting,
+              key: const ValueKey('server-name-field'),
+              controller: _name,
+              focusNode: _nameFocus,
+              textInputAction: TextInputAction.next,
+              onSubmitted: (_) => _userFocus.requestFocus(),
+              onChanged: (_) => _fieldChanged(),
+              decoration: InputDecoration(
+                labelText: copy.connectionDisplayName,
+                hintText: copy.connectionDisplayNameHint,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              enabled: !_submitting,
+              key: const ValueKey('server-username-field'),
+              textDirection: TextDirection.ltr,
+              controller: _user,
+              focusNode: _userFocus,
+              textInputAction: TextInputAction.next,
+              onSubmitted: (_) => _passFocus.requestFocus(),
+              onChanged: (_) => _fieldChanged(),
+              decoration: InputDecoration(
+                labelText: copy.e7SetupUsername,
+                hintText: 'opencode',
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              copy.teamUiEditorTitle,
+              key: const ValueKey('server-editor-team-section'),
+              style: theme.textTheme.titleSmall,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _orchestration == null
+                  ? copy.teamUiEditorBody
+                  : copy.teamUiEditorConfigured(_orchestration!.url),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.35,
+              ),
+            ),
+            KitInset(
+              child: Wrap(
+                spacing: 4,
+                children: [
+                  KitButton.tertiary(
+                    key: const ValueKey('server-editor-team-learn'),
+                    onPressed: _submitting
+                        ? null
+                        : () => showTeamHostGuideSheet(context),
+                    label: copy.teamUiLearnHow,
+                  ),
+                  KitButton.tertiary(
+                    key: const ValueKey('server-editor-team-add'),
+                    onPressed: _submitting ? null : _addTeamHost,
+                    label: _orchestration == null
+                        ? copy.teamUiAddManually
+                        : copy.teamUiChange,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
+    final copy = _connectionL10n(context);
     final title = widget.presetBackend != null
         ? switch (widget.presetBackend!) {
-            ServerBackend.openCode => _connectionL10n(
-              context,
-            ).firstRunAgentOpenCode,
-            ServerBackend.paseo => _connectionL10n(context).firstRunPaseoTitle,
-            ServerBackend.codex => _connectionL10n(context).firstRunAgentCodex,
+            ServerBackend.openCode => copy.firstRunAgentOpenCode,
+            ServerBackend.paseo => copy.firstRunPaseoTitle,
+            ServerBackend.codex => copy.firstRunAgentCodex,
           }
         : widget.existing == null
         ? widget.openCode2Intent && !_isCodex
-              ? _connectionL10n(context).oc2DiscoveryEditorTitle
-              : lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7SetupAddServer
+              ? copy.oc2DiscoveryEditorTitle
+              : copy.e7SetupAddServer
         : _needsCodexToken
-        ? _connectionL10n(context).codexTokenReentry
+        ? copy.codexTokenReentry
         : _needsPassword
-        ? lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupReenterPassword
-        : lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupEditServer;
+        ? copy.e7SetupReenterPassword
+        : copy.e7SetupEditServer;
     final theme = Theme.of(context);
+    final isNew = widget.existing == null;
+    // The person who came through "Which agent?" already chose; asking
+    // again would be a second, harder copy of the same question.
+    final asksType = isNew && !widget.tailscale && widget.presetBackend == null;
+    // A new server starts from the command to run on the computer, for the
+    // type chosen (the phone's own server and Tailscale have their own).
+    final showsCommand =
+        isNew && !widget.tailscale && widget.initialUrl == null;
+    Widget rails(Widget child) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: child,
+    );
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -2246,434 +2717,205 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         key: const ValueKey('server-profile-editor'),
         appBar: AppBar(
           leading: IconButton(
-            tooltip: _connectionL10n(context).connectionCloseEditor,
+            tooltip: copy.connectionCloseEditor,
             onPressed: _submitting ? null : _close,
             icon: const Icon(AppIconography.close),
           ),
           title: Text(title),
         ),
-        bottomNavigationBar: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              8,
-              16,
-              12 + MediaQuery.viewInsetsOf(context).bottom,
-            ),
-            // The one primary (§2), pinned under the form. Its tap runs the
-            // save and the connect; the spinner is that tap in flight.
-            child: KitButton.primary(
-              key: const ValueKey('save-server-profile'),
-              onPressed: _submitting ? null : _save,
-              working: _submitting,
-              label: _submitting
-                  ? lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7SetupSaving
-                  : _isCodex ||
-                        widget.existing == null ||
-                        widget.reconnectOnSave
-                  ? _connectionL10n(context).onboardingSaveConnect
-                  : _connectionL10n(context).onboardingSaveChanges,
-            ),
-          ),
-        ),
         body: AbsorbPointer(
           absorbing: _submitting,
           child: SafeArea(
             top: false,
-            child: SingleChildScrollView(
-              key: const ValueKey('server-profile-fields'),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (widget.tailscale) ...[
-                    Text(_connectionL10n(context).tailscaleEditorDetail),
-                    KitInset(
-                      child: KitButton.tertiary(
-                        onPressed: _tailscaleHelp,
-                        icon: AppIconography.secureNetwork,
-                        label: _connectionL10n(context).tailscaleHelp,
-                      ),
-                    ),
-                    if (_testResult?.ok == false || _submitFailure != null)
-                      Text(_connectionL10n(context).tailscaleRecovery),
-                    const SizedBox(height: 12),
-                  ],
-                  if (widget.presetBackend case final preset?) ...[
-                    _ComputerCommand(backend: preset),
-                    const SizedBox(height: 12),
-                  ],
-                  // The person who came through "Which agent?" already chose;
-                  // asking again would be a second, harder copy of the same
-                  // question.
-                  if (widget.existing == null &&
-                      !widget.tailscale &&
-                      widget.presetBackend == null) ...[
-                    SectionLabel.inline(
-                      _connectionL10n(context).connectionTypeLabel,
-                    ),
-                    Wrap(
-                      key: const ValueKey('server-backend-selector'),
-                      spacing: 8,
-                      runSpacing: 8,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // The form scrolls; the primary follows it, so a short form has
+                // no gap above the button, and a long one (or the keyboard) keeps
+                // the button pinned in view below it.
+                Flexible(
+                  child: SingleChildScrollView(
+                    key: const ValueKey('server-profile-fields'),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.only(top: 4, bottom: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        ChoiceChip(
-                          label: Text(
-                            _connectionL10n(context).oc2DiscoveryTypes,
-                          ),
-                          selected: !_isCodex,
-                          onSelected: _submitting
-                              ? null
-                              : (_) => setState(() {
-                                  _backend = ServerBackend.openCode;
-                                  _invalidateProbe();
-                                }),
-                        ),
-                        ChoiceChip(
-                          label: Text(
-                            _connectionL10n(context).codexExperimentalLabel,
-                          ),
-                          selected: _isCodex && !_isPaseo,
-                          onSelected: _submitting
-                              ? null
-                              : (_) => setState(() {
-                                  _backend = ServerBackend.codex;
-                                  _invalidateProbe();
-                                }),
-                        ),
-                        ChoiceChip(
-                          key: const ValueKey('server-backend-paseo'),
-                          label: Text(
-                            _connectionL10n(context).paseoExperimentalLabel,
-                          ),
-                          selected: _isPaseo,
-                          onSelected: _submitting
-                              ? null
-                              : (_) => setState(() {
-                                  _backend = ServerBackend.paseo;
-                                  _invalidateProbe();
-                                }),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  // No "detects OpenCode 1 or 2" line: the check after the
-                  // address says which one it found, when it matters.
-                  // A save or connect that failed is shown first, where it is
-                  // seen without scrolling, in the same verdict style as Test
-                  // connection.
-                  if (_submitFailure case final failure?) ...[
-                    KitNotice(
-                      key: const ValueKey('server-save-failure'),
-                      tone: AppStatusTone.failure,
-                      message: failure,
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (_secureStorageNotice case final notice?) ...[
-                    KitNotice(
-                      key: const ValueKey('server-secure-storage-notice'),
-                      tone: AppStatusTone.attention,
-                      message: notice,
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (_needsPassword) ...[
-                    const SizedBox(height: 4),
-                    Semantics(
-                      container: true,
-                      liveRegion: true,
-                      excludeSemantics: true,
-                      label: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupMissingPasswordLong,
-                      child: KitNotice(
-                        tone: AppStatusTone.attention,
-                        icon: Icons.lock_reset_rounded,
-                        liveRegion: false,
-                        message: lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7SetupMissingPasswordShort,
-                      ),
-                    ),
-                  ],
-                  if (_isCodex) ...[
-                    ..._buildCodexFields(theme),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        _isPaseo
-                            ? _connectionL10n(context).paseoSetupNotice
-                            : lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).codexApprovalRecoveryNotice,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (!_isCodex) ...[
-                    const SizedBox(height: 12),
-                    if (!widget.tailscale)
-                      _PairingActions(
-                        // The command is already on screen above, with its
-                        // copy button; only the next move is left to say.
-                        instructions: widget.presetBackend == null
-                            ? null
-                            : platformCapabilities.supportsQrPairing
-                            ? _connectionL10n(context).firstRunPairingNextScan
-                            : _connectionL10n(context).firstRunPairingNextPaste,
-                        busy: _pairing,
-                        notice: _pairingNotice,
-                        failure: _pairingFailure,
-                        onPaste: _pairing
-                            ? null
-                            : () => unawaited(_pastePairing()),
-                        // Rendered only where a camera path exists. Desktop gets no
-                        // affordance at all rather than one that opens and fails.
-                        onScan: platformCapabilities.supportsQrPairing
-                            ? () => unawaited(_scanPairing())
-                            : null,
-                      ),
-                    const SizedBox(height: 20),
-                    TextField(
-                      enabled: !_submitting,
-                      key: const ValueKey('server-url-field'),
-                      textDirection: TextDirection.ltr,
-                      controller: _url,
-                      focusNode: _urlFocus,
-                      autofocus: false,
-                      keyboardType: TextInputType.url,
-                      textInputAction: TextInputAction.next,
-                      // Straight to the password: the name and username
-                      // are under More options and rarely needed.
-                      onSubmitted: (_) => _passFocus.requestFocus(),
-                      onChanged: _urlChanged,
-                      scrollPadding: const EdgeInsets.only(bottom: 160),
-                      decoration: InputDecoration(
-                        labelText: lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7SetupServerUrl,
-                        hintText: 'https://server.example',
-                        errorText: _error,
-                        errorMaxLines: 3,
-                        helperText: widget.tailscale
-                            ? _connectionL10n(context).tailscaleAddressDetail
-                            : lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupHttpsHint,
-                        helperMaxLines: 3,
-                      ),
-                    ),
-                    ?_notSameNetworkLink(),
-                    const SizedBox(height: 16),
-                    TextField(
-                      enabled: !_submitting,
-                      key: const ValueKey('server-password-field'),
-                      textDirection: TextDirection.ltr,
-                      controller: _pass,
-                      focusNode: _passFocus,
-                      autofocus: _needsPassword || widget.focusPassword,
-                      onChanged: (_) => _fieldChanged(),
-                      obscureText: _obscurePassword,
-                      autocorrect: false,
-                      enableSuggestions: false,
-                      keyboardType: TextInputType.visiblePassword,
-                      // Room for the Save button above the keyboard, so the
-                      // field being typed in is never hidden behind it.
-                      scrollPadding: const EdgeInsets.only(bottom: 160),
-                      style: _obscurePassword
-                          ? null
-                          : const TextStyle(fontFamily: AppTheme.monoFamily),
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _save(),
-                      decoration: InputDecoration(
-                        labelText: _needsPassword
-                            ? lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupReenterPassword
-                            : lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupServerPassword,
-                        helperText: _needsPassword
-                            ? lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupEmptyPasswordHint
-                            : lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupPasswordStartupHint,
-                        helperMaxLines: 3,
-                        suffixIcon: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              key: const ValueKey('server-password-visibility'),
-                              tooltip: _obscurePassword
-                                  ? lookupAppLocalizations(
-                                      Localizations.localeOf(context),
-                                    ).e7SetupShowPassword
-                                  : lookupAppLocalizations(
-                                      Localizations.localeOf(context),
-                                    ).e7SetupHidePassword,
-                              onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              ),
-                              icon: Icon(
-                                _obscurePassword
-                                    ? AppIconography.visible
-                                    : AppIconography.hidden,
-                              ),
-                            ),
-                            // Paste is the primary affordance for the per-run
-                            // random serve password, so it sits closest to the
-                            // field edge.
-                            IconButton(
-                              key: const ValueKey('server-password-paste'),
-                              tooltip: lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupPastePassword,
-                              onPressed: () => unawaited(_pastePassword()),
-                              icon: const Icon(AppIconography.paste),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                  // The form's one secondary (§2); its spinner is only the
-                  // test in flight, the verdict below says what it found.
-                  KitButton.secondary(
-                    key: const ValueKey('test-server-connection'),
-                    onPressed: _testing ? null : _testConnection,
-                    working: _testing,
-                    icon: AppIconography.networkCheck,
-                    label: _testing
-                        ? lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7SetupTesting
-                        : lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7SetupTestConnection,
-                  ),
-                  if (_isCodex && _codexTestResult != null) ...[
-                    const SizedBox(height: 12),
-                    _buildCodexProbeVerdict(theme),
-                  ],
-                  if (_testResult case final result?) ...[
-                    const SizedBox(height: 12),
-                    KeyedSubtree(
-                      key: const ValueKey('server-probe-verdict'),
-                      child: _ProbeVerdict(result: result),
-                    ),
-                  ],
-                  if (!_isCodex) ...[
-                    const SizedBox(height: 8),
-                    // What most people never change, out of the way: the name
-                    // comes from the address and the username is "opencode"
-                    // unless the server was started with another.
-                    Theme(
-                      data: theme.copyWith(dividerColor: Colors.transparent),
-                      child: ExpansionTile(
-                        key: const ValueKey('server-editor-more-options'),
-                        tilePadding: EdgeInsets.zero,
-                        childrenPadding: const EdgeInsets.only(bottom: 8),
-                        initiallyExpanded: _moreOptionsOpen,
-                        onExpansionChanged: (open) => _moreOptionsOpen = open,
-                        title: Text(
-                          _connectionL10n(context).serverEditorMoreOptions,
-                        ),
-                        children: [
-                          TextField(
-                            enabled: !_submitting,
-                            key: const ValueKey('server-name-field'),
-                            controller: _name,
-                            focusNode: _nameFocus,
-                            textInputAction: TextInputAction.next,
-                            onSubmitted: (_) => _userFocus.requestFocus(),
-                            onChanged: (_) => _fieldChanged(),
-                            decoration: InputDecoration(
-                              labelText: _connectionL10n(
-                                context,
-                              ).connectionDisplayName,
-                              hintText: _connectionL10n(
-                                context,
-                              ).connectionDisplayNameHint,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            enabled: !_submitting,
-                            key: const ValueKey('server-username-field'),
-                            textDirection: TextDirection.ltr,
-                            controller: _user,
-                            focusNode: _userFocus,
-                            textInputAction: TextInputAction.next,
-                            onSubmitted: (_) => _passFocus.requestFocus(),
-                            onChanged: (_) => _fieldChanged(),
-                            decoration: InputDecoration(
-                              labelText: lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupUsername,
-                              hintText: 'opencode',
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            _connectionL10n(context).teamUiEditorTitle,
-                            key: const ValueKey('server-editor-team-section'),
-                            style: theme.textTheme.titleSmall,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _orchestration == null
-                                ? _connectionL10n(context).teamUiEditorBody
-                                : _connectionL10n(
-                                    context,
-                                  ).teamUiEditorConfigured(_orchestration!.url),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              height: 1.35,
-                            ),
-                          ),
-                          KitInset(
-                            child: Wrap(
-                              spacing: 4,
+                        if (widget.tailscale)
+                          rails(
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                KitButton.tertiary(
-                                  key: const ValueKey(
-                                    'server-editor-team-learn',
+                                const SizedBox(height: 8),
+                                Text(copy.tailscaleEditorDetail),
+                                KitInset(
+                                  child: KitButton.tertiary(
+                                    onPressed: _tailscaleHelp,
+                                    icon: AppIconography.secureNetwork,
+                                    label: copy.tailscaleHelp,
                                   ),
-                                  onPressed: _submitting
-                                      ? null
-                                      : () => showTeamHostGuideSheet(context),
-                                  label: _connectionL10n(
-                                    context,
-                                  ).teamUiLearnHow,
                                 ),
-                                KitButton.tertiary(
-                                  key: const ValueKey('server-editor-team-add'),
-                                  onPressed: _submitting ? null : _addTeamHost,
-                                  label: _orchestration == null
-                                      ? _connectionL10n(
-                                          context,
-                                        ).teamUiAddManually
-                                      : _connectionL10n(context).teamUiChange,
-                                ),
+                                if (_testResult?.ok == false ||
+                                    _submitFailure != null)
+                                  Text(copy.tailscaleRecovery),
                               ],
                             ),
                           ),
+                        // The connection's moment and what it found, together at
+                        // the head of the form: the drawing, its line, then the
+                        // verdict. Every check and save scrolls back to it.
+                        Column(
+                          key: _statusKey,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (isNew) _linkMoment(copy),
+                            _status(copy),
+                          ],
+                        ),
+                        if (asksType)
+                          _BackendChoice(
+                            selected: _backend,
+                            onSelected: _submitting
+                                ? null
+                                : (backend) => setState(() {
+                                    _backend = backend;
+                                    _invalidateProbe();
+                                  }),
+                          ),
+                        if (showsCommand) ...[
+                          SizedBox(height: asksType ? 12 : 4),
+                          rails(
+                            _ComputerCommand(
+                              key: ValueKey(
+                                'connect-computer-command-${_backend.name}',
+                              ),
+                              backend: _backend,
+                              // Pairing, the main path, right under the command
+                              // that prints the code.
+                              below: _isCodex
+                                  ? null
+                                  : _PairingActions(
+                                      // The command is on screen above, with its copy
+                                      // button; only the next move is left to say.
+                                      instructions:
+                                          platformCapabilities.supportsQrPairing
+                                          ? copy.firstRunPairingNextScan
+                                          : copy.firstRunPairingNextPaste,
+                                      busy: _pairing,
+                                      notice: _pairingNotice,
+                                      failure: _pairingFailure,
+                                      onPaste: _pairing || _submitting
+                                          ? null
+                                          : () => unawaited(_pastePairing()),
+                                      // Rendered only where a camera path exists. Desktop
+                                      // gets no affordance at all rather than one that
+                                      // opens and fails.
+                                      onScan:
+                                          platformCapabilities.supportsQrPairing
+                                          ? () => unawaited(_scanPairing())
+                                          : null,
+                                    ),
+                            ),
+                          ),
                         ],
-                      ),
+                        if (_secureStorageNotice case final notice?)
+                          rails(
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: KitNotice(
+                                key: const ValueKey(
+                                  'server-secure-storage-notice',
+                                ),
+                                tone: AppStatusTone.attention,
+                                message: notice,
+                              ),
+                            ),
+                          ),
+                        if (_needsPassword)
+                          rails(
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Semantics(
+                                container: true,
+                                liveRegion: true,
+                                excludeSemantics: true,
+                                label: copy.e7SetupMissingPasswordLong,
+                                child: KitNotice(
+                                  tone: AppStatusTone.attention,
+                                  icon: Icons.lock_reset_rounded,
+                                  liveRegion: false,
+                                  message: copy.e7SetupMissingPasswordShort,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (_isCodex) ...[
+                          rails(
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: _buildCodexFields(theme),
+                            ),
+                          ),
+                          rails(
+                            Text(
+                              _isPaseo
+                                  ? copy.paseoSetupNotice
+                                  : copy.codexApprovalRecoveryNotice,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          rails(_testAction(copy)),
+                        ] else ...[
+                          if (_foldsManualAddress) const SizedBox(height: 8),
+                          _manualAddress(copy),
+                          if (!widget.tailscale && !showsCommand)
+                            // Editing a saved server: pairing again (a rotated
+                            // password) stays one tap away, under the fields
+                            // the person came to change.
+                            rails(
+                              _PairingActions(
+                                compact: true,
+                                busy: _pairing,
+                                notice: _pairingNotice,
+                                failure: _pairingFailure,
+                                onPaste: _pairing || _submitting
+                                    ? null
+                                    : () => unawaited(_pastePairing()),
+                                onScan: platformCapabilities.supportsQrPairing
+                                    ? () => unawaited(_scanPairing())
+                                    : null,
+                              ),
+                            ),
+                          const SizedBox(height: 4),
+                          _moreOptions(theme, copy),
+                        ],
+                      ],
                     ),
-                  ],
-                ],
-              ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  // The one primary (§2). Its tap checks the connection, saves
+                  // and connects; the spinner is that tap in flight, the
+                  // drawing and its line say which step.
+                  child: KitButton.primary(
+                    key: const ValueKey('save-server-profile'),
+                    onPressed: _submitting || _testing ? null : _save,
+                    working: _submitting || (_testing && _checkingForSave),
+                    label: _testing && _checkingForSave
+                        ? copy.addServerChecking
+                        : _submitting
+                        ? copy.e7SetupSaving
+                        : _connectsOnSave
+                        ? copy.onboardingSaveConnect
+                        : copy.onboardingSaveChanges,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -2687,9 +2929,13 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
 /// 5.9). First run is the moment the person is at their computer with a
 /// terminal open; the guide screen stays in Settings → Help for later.
 class _ComputerCommand extends StatelessWidget {
-  const _ComputerCommand({required this.backend});
+  const _ComputerCommand({super.key, required this.backend, this.below});
 
   final ServerBackend backend;
+
+  /// What to do with what the command prints (OpenCode's pairing buttons),
+  /// between the command and the rarer commands.
+  final Widget? below;
 
   @override
   Widget build(BuildContext context) {
@@ -2708,6 +2954,7 @@ class _ComputerCommand extends StatelessWidget {
           SetupCommands.startFor(backend),
           key: const ValueKey('connect-command'),
         ),
+        if (below case final below?) ...[const SizedBox(height: 4), below],
         Theme(
           data: theme.copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
@@ -2748,23 +2995,19 @@ class _ComputerCommand extends StatelessWidget {
   }
 }
 
-/// The one-step pairing affordance at the top of the server editor.
+/// Pairing, the main way to add an OpenCode server: the command on the
+/// computer prints a code (a QR and a line to copy) carrying the address,
+/// the username and the per-run password together, so scanning or pasting
+/// it is strictly less work than typing them.
 ///
-/// `opencode2 pair` prints the address, the username, and the per-run
-/// password together, so pairing is strictly less work than copying a
-/// password by hand — which is why it leads the editor rather than hiding
-/// below the fields.
-///
-/// Deliberately lean: one helper line naming the command, then the buttons.
-/// The editor is already a long form on a short screen: a titled card and a
-/// paragraph of intro pushed the URL and password fields below the fold at
-/// 2× text scale — the users least able to afford it. The rest of the
-/// explaining is done where it costs nothing: the empty-clipboard and
-/// failure messages name `opencode2 pair` outright, and the guide leads
-/// with it.
+/// On a new server it is two equal buttons, Scan code and Paste code (just
+/// Paste pairing code where there is no camera), under the line that says
+/// the next move. Editing a saved server, it is two text buttons under the
+/// fields ([compact]): pairing again after the password rotated.
 class _PairingActions extends StatelessWidget {
   const _PairingActions({
     this.instructions,
+    this.compact = false,
     required this.busy,
     required this.notice,
     required this.failure,
@@ -2772,9 +3015,9 @@ class _PairingActions extends StatelessWidget {
     required this.onScan,
   });
 
-  /// Replaces the line that names the command, where the command is already
-  /// shown above with a copy button.
+  /// The next move, under the command shown above with its copy button.
   final String? instructions;
+  final bool compact;
   final bool busy;
   final String? notice;
   final String? failure;
@@ -2788,58 +3031,78 @@ class _PairingActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
     final notice = this.notice;
     final failure = this.failure;
+    final scan = onScan;
+    final Widget buttons;
+    if (compact) {
+      buttons = KitInset(
+        child: Wrap(
+          spacing: 4,
+          children: [
+            KitButton.tertiary(
+              key: const ValueKey('server-pairing-paste'),
+              onPressed: busy ? null : onPaste,
+              icon: AppIconography.paste,
+              label: busy ? copy.e7SetupPairing : copy.e7SetupPastePairing,
+            ),
+            if (scan != null)
+              KitButton.tertiary(
+                key: const ValueKey('server-pairing-scan'),
+                onPressed: busy ? null : scan,
+                icon: AppIconography.qrCode,
+                label: copy.addServerScan,
+              ),
+          ],
+        ),
+      );
+    } else {
+      // The spinner is only the code being checked; the drawing above and
+      // the notice below say what was found.
+      final paste = KitButton.secondary(
+        key: const ValueKey('server-pairing-paste'),
+        onPressed: onPaste,
+        working: busy,
+        icon: AppIconography.paste,
+        maxLines: 1,
+        label: scan == null ? copy.e7SetupPastePairing : copy.addServerPaste,
+      );
+      buttons = scan == null
+          ? paste
+          : Row(
+              children: [
+                Expanded(
+                  child: KitButton.secondary(
+                    key: const ValueKey('server-pairing-scan'),
+                    onPressed: busy ? null : scan,
+                    icon: AppIconography.qrCode,
+                    maxLines: 1,
+                    label: copy.addServerScan,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: paste),
+              ],
+            );
+    }
     return Column(
       key: const ValueKey('server-pairing-actions'),
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          instructions ??
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).e7SetupPairingInstructions,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            height: 1.35,
+        if (instructions case final line?) ...[
+          Text(
+            line,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.35,
+            ),
           ),
-        ),
-        // Two text buttons (§2 tertiary): pairing is a shortcut into the
-        // fields below, not the form's action. The spinner is only the paste
-        // being checked; the notice under them says what was found.
-        KitInset(
-          child: Wrap(
-            spacing: 4,
-            children: [
-              KitButton(
-                key: const ValueKey('server-pairing-paste'),
-                role: KitButtonRole.tertiary,
-                expand: false,
-                onPressed: onPaste,
-                working: busy,
-                icon: AppIconography.paste,
-                label: busy
-                    ? lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupPairing
-                    : lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupPastePairing,
-              ),
-              if (onScan case final scan?)
-                KitButton.tertiary(
-                  key: const ValueKey('server-pairing-scan'),
-                  onPressed: busy ? null : scan,
-                  icon: AppIconography.qrCode,
-                  label: lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7SetupScan,
-                ),
-            ],
-          ),
-        ),
+          const SizedBox(height: 12),
+        ],
+        buttons,
         if (notice != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           KitNotice(
             key: const ValueKey('server-pairing-notice'),
             tone: AppStatusTone.ok,
@@ -2847,14 +3110,11 @@ class _PairingActions extends StatelessWidget {
           ),
         ],
         if (failure != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           KitNotice(
             key: const ValueKey('server-pairing-failure'),
             tone: AppStatusTone.failure,
-            message: setupUiMessage(
-              lookupAppLocalizations(Localizations.localeOf(context)),
-              failure,
-            ),
+            message: setupUiMessage(copy, failure),
           ),
         ],
       ],
@@ -2862,13 +3122,15 @@ class _PairingActions extends StatelessWidget {
   }
 }
 
-/// What Test connection found (design standard §3, a notice on the form's
+/// What a connection check found (design standard §3, a notice on the form's
 /// rails, never a filled block): which OpenCode answered and what to do next,
-/// or why it did not, with the setup guide when nothing seems to be there.
+/// or why it did not, with the setup guide when nothing seems to be there
+/// and, after Save & connect, "Save anyway".
 class _ProbeVerdict extends StatelessWidget {
-  const _ProbeVerdict({required this.result});
+  const _ProbeVerdict({required this.result, this.saveAnyway});
 
   final ServerProbeResult result;
+  final KitAction? saveAnyway;
 
   @override
   Widget build(BuildContext context) {
@@ -2902,6 +3164,86 @@ class _ProbeVerdict extends StatelessWidget {
             label: copy.e7SetupOpenSetupGuide,
             onPressed: () => Navigator.pushNamed(context, '/guide'),
           ),
+        ?saveAnyway,
+      ],
+    );
+  }
+}
+
+/// What a new server is, as one clear choice (ledger row 15): a row each,
+/// with a line saying what it is, and the chosen one marked.
+class _BackendChoice extends StatelessWidget {
+  const _BackendChoice({required this.selected, required this.onSelected});
+
+  final ServerBackend selected;
+
+  /// Null while a save is in flight: the choice is frozen with the fields.
+  final ValueChanged<ServerBackend>? onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
+    Widget row(
+      ServerBackend backend,
+      String key,
+      IconData icon,
+      String title,
+      String detail,
+    ) {
+      final chosen = backend == selected;
+      final accent = theme.colorScheme.primary;
+      return Semantics(
+        inMutuallyExclusiveGroup: true,
+        checked: chosen,
+        child: KitRow(
+          key: ValueKey(key),
+          leading: KitRow.icon(context, icon, color: chosen ? accent : null),
+          title: title,
+          supporting: TextSpan(text: detail),
+          enabled: onSelected != null,
+          onTap: () => onSelected?.call(backend),
+          trailing: SizedBox.square(
+            dimension: 48,
+            child: Icon(
+              chosen ? AppIconography.radioSelected : AppIconography.radioEmpty,
+              size: 22,
+              color: chosen ? accent : AppTheme.mutedOf(theme),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      key: const ValueKey('server-backend-selector'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionLabel(
+          copy.addServerConnectTo,
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+        ),
+        row(
+          ServerBackend.openCode,
+          'server-backend-opencode',
+          AppIconography.computer,
+          copy.addServerTypeOpenCode,
+          copy.addServerTypeOpenCodeDetail,
+        ),
+        row(
+          ServerBackend.codex,
+          'server-backend-codex',
+          AppIconography.code,
+          copy.addServerTypeCodex,
+          copy.addServerTypeCodexDetail,
+        ),
+        row(
+          ServerBackend.paseo,
+          'server-backend-paseo',
+          AppIconography.agent,
+          copy.addServerTypePaseo,
+          copy.addServerTypePaseoDetail,
+        ),
       ],
     );
   }

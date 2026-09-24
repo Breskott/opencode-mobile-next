@@ -5724,7 +5724,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SharedServersStartedWithOpencodeServeDoNot =>
-      'الخوادم التي تُشغَّل بالأمر `opencode serve` لا تطبع رمز اقتران. شغّلها على loopback مع كلمة مرور:';
+      'الخوادم التي تُشغَّل بالأمر «opencode serve» لا تطبع رمز اقتران. شغّلها على loopback مع كلمة مرور:';
 
   @override
   String get e7SharedThenAddTheServerManuallyWithUsername =>
@@ -11514,7 +11514,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SetupPairingPhoneHint =>
-      'لا يمكن لهذا الهاتف الوصول إلى خادم يستمع على 127.0.0.1 فقط دون توجيه الاتصال: استخدم `adb reverse tcp:PORT tcp:PORT` عبر USB أو نفق SSH. وللوصول عبر الشبكة، استخدم HTTPS.';
+      'لا يمكن لهذا الهاتف الوصول إلى خادم يستمع على 127.0.0.1 فقط دون توجيه الاتصال: استخدم «adb reverse tcp:PORT tcp:PORT» عبر USB أو نفق SSH. وللوصول عبر الشبكة، استخدم HTTPS.';
 
   @override
   String get e7SetupOutputCopied => 'تم نسخ مخرجات الإعداد.';
@@ -11549,7 +11549,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SetupEmptyPairClipboard =>
-      'الحافظة فارغة. شغّل `opencode2 pair` على الخادم وانسخ الرمز الذي يعرضه.';
+      'الحافظة فارغة. شغّل «opencode2 pair» على الخادم وانسخ الرمز الذي يعرضه.';
 
   @override
   String get e7SetupRestartActiveChanged =>
@@ -11560,7 +11560,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SetupPairingInstructions =>
-      'شغّل `opencode2 pair` على الكمبيوتر، ثم الصق الرمز الذي يعرضه أو امسحه بالكاميرا.';
+      'شغّل «opencode2 pair» على الكمبيوتر، ثم الصق الرمز الذي يعرضه أو امسحه بالكاميرا.';
 
   @override
   String get e7SetupHostDaily => 'الاستخدام اليومي — نفّذ على الكمبيوتر';
@@ -11806,27 +11806,27 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SetupPairNone =>
-      'لا يوجد رمز اقتران هنا. شغّل `opencode2 pair` على الخادم وامسح الرمز الذي يعرضه أو انسخه.';
+      'لا يوجد رمز اقتران هنا. شغّل «opencode2 pair» على الخادم وامسح الرمز الذي يعرضه أو انسخه.';
 
   @override
   String get e7SetupPairLong =>
-      'هذا النص أطول من رمز اقتران. انسخ فقط السطر الذي يعرضه `opencode2 pair` أو امسح رمز QR الخاص به.';
+      'هذا النص أطول من رمز اقتران. انسخ فقط السطر الذي يعرضه «opencode2 pair» أو امسح رمز QR الخاص به.';
 
   @override
   String get e7SetupPairInvalid =>
-      'هذا ليس رمز اقتران. شغّل `opencode2 pair` على الخادم وامسح الرمز الذي يعرضه أو انسخه.';
+      'هذا ليس رمز اقتران. شغّل «opencode2 pair» على الخادم وامسح الرمز الذي يعرضه أو انسخه.';
 
   @override
   String get e7SetupPairShape =>
-      'بنية رمز الاقتران غير صحيحة؛ يجب أن يكون كائن JSON يحتوي على `urls` و`username` و`password`.';
+      'بنية رمز الاقتران غير صحيحة؛ يجب أن يكون كائن JSON يحتوي على «urls» و«username» و«password».';
 
   @override
   String get e7SetupPairNoUrls =>
-      'رمز الاقتران لا يحتوي على حقل `urls`، لذا لا يوجد عنوان للاتصال به.';
+      'رمز الاقتران لا يحتوي على حقل «urls»، لذا لا يوجد عنوان للاتصال به.';
 
   @override
   String get e7SetupPairUrlsType =>
-      'حقل `urls` في رمز الاقتران ليس قائمة عناوين.';
+      'حقل «urls» في رمز الاقتران ليس قائمة عناوين.';
 
   @override
   String get e7SetupPairTooMany =>
@@ -11841,19 +11841,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SetupPairAddressMissing =>
-      'رمز الاقتران لا يحتوي على عنوان خادم. تحقّق من أن الخادم يستقبل الاتصالات، ثم شغّل `opencode2 pair` مجددًا.';
+      'رمز الاقتران لا يحتوي على عنوان خادم. تحقّق من أن الخادم يستقبل الاتصالات، ثم شغّل «opencode2 pair» مجددًا.';
 
   @override
   String get e7SetupPairUsernameType =>
-      'حقل `username` في رمز الاقتران ليس نصًا.';
+      'حقل «username» في رمز الاقتران ليس نصًا.';
 
   @override
   String get e7SetupPairPasswordMissing =>
-      'رمز الاقتران لا يحتوي على حقل `password`. ربما لم يُنسخ كاملًا؛ امسح الرمز أو انسخه بالكامل.';
+      'رمز الاقتران لا يحتوي على حقل «password». ربما لم يُنسخ كاملًا؛ امسح الرمز أو انسخه بالكامل.';
 
   @override
   String get e7SetupPairPasswordType =>
-      'حقل `password` في رمز الاقتران ليس نصًا.';
+      'حقل «password» في رمز الاقتران ليس نصًا.';
 
   @override
   String get e7SetupPairTestFailed =>
@@ -16778,7 +16778,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get firstRunPairingNextScan =>
-      'ثم الصق الرمز الذي يعرضه أو امسحه بالكاميرا.';
+      'سيعرض رمزًا. امسحه، أو انسخه والصقه هنا.';
 
   @override
   String get firstRunPairingNextPaste => 'ثم الصق الرمز الذي يعرضه.';
@@ -18904,4 +18904,50 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get terminalListFailedTitle => 'تعذّر عرض الطرفيات';
+
+  @override
+  String get addServerConnectTo => 'الاتصال بـ';
+
+  @override
+  String get addServerTypeOpenCode => 'OpenCode على كمبيوتر';
+
+  @override
+  String get addServerTypeOpenCodeDetail => 'اقترن برمز، أو أدخل عنوانه';
+
+  @override
+  String get addServerTypeCodex => 'Codex';
+
+  @override
+  String get addServerTypeCodexDetail => 'خادم تطبيق Codex على الكمبيوتر';
+
+  @override
+  String get addServerTypePaseo => 'Claude Code أو Pi';
+
+  @override
+  String get addServerTypePaseoDetail => 'عبر Paseo على الكمبيوتر';
+
+  @override
+  String get addServerScan => 'امسح الرمز';
+
+  @override
+  String get addServerPaste => 'الصق الرمز';
+
+  @override
+  String get addServerManual => 'أدخل العنوان بدلًا من ذلك';
+
+  @override
+  String get addServerChecking => 'جارٍ فحص الاتصال…';
+
+  @override
+  String addServerCheckingHost(String host) {
+    return 'جارٍ فحص $host…';
+  }
+
+  @override
+  String addServerConnectingHost(String host) {
+    return 'جارٍ الاتصال بـ $host…';
+  }
+
+  @override
+  String get addServerSaveAnyway => 'احفظ على أي حال';
 }

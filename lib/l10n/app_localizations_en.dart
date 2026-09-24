@@ -5680,7 +5680,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SharedServersStartedWithOpencodeServeDoNot =>
-      'Servers started with `opencode serve` do not print a pairing code. Start them on loopback with a password:';
+      'Servers started with “opencode serve” do not print a pairing code. Start them on loopback with a password:';
 
   @override
   String get e7SharedThenAddTheServerManuallyWithUsername =>
@@ -11309,7 +11309,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupPairingPhoneHint =>
-      'A server bound to its own 127.0.0.1 is not reachable from this phone until you bridge it — `adb reverse tcp:PORT tcp:PORT` over USB, or an SSH forward. To reach it over the network instead, put it behind HTTPS.';
+      'A server bound to its own 127.0.0.1 is not reachable from this phone until you bridge it — “adb reverse tcp:PORT tcp:PORT” over USB, or an SSH forward. To reach it over the network instead, put it behind HTTPS.';
 
   @override
   String get e7SetupOutputCopied => 'Setup output copied.';
@@ -11344,7 +11344,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupEmptyPairClipboard =>
-      'The clipboard is empty. Run `opencode2 pair` on the server and copy the code it prints.';
+      'The clipboard is empty. Run “opencode2 pair” on the server and copy the code it prints.';
 
   @override
   String get e7SetupRestartActiveChanged =>
@@ -11355,7 +11355,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupPairingInstructions =>
-      'On your computer run `opencode2 pair`, then paste or scan the code it prints.';
+      'On your computer run “opencode2 pair”, then paste or scan the code it prints.';
 
   @override
   String get e7SetupHostDaily => 'Day-to-day — run on your computer';
@@ -11596,27 +11596,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupPairNone =>
-      'There is no pairing code here. Run `opencode2 pair` on the server and scan or copy what it prints.';
+      'There is no pairing code here. Run “opencode2 pair” on the server and scan or copy what it prints.';
 
   @override
   String get e7SetupPairLong =>
-      'That is far too long to be a pairing code. Copy only the line `opencode2 pair` prints, or scan its QR code.';
+      'That is far too long to be a pairing code. Copy only the line “opencode2 pair” prints, or scan its QR code.';
 
   @override
   String get e7SetupPairInvalid =>
-      'That is not a pairing code. Run `opencode2 pair` on the server and scan or copy what it prints.';
+      'That is not a pairing code. Run “opencode2 pair” on the server and scan or copy what it prints.';
 
   @override
   String get e7SetupPairShape =>
-      'That pairing code is the wrong shape — it should be a JSON object with `urls`, `username`, and `password`.';
+      'That pairing code is the wrong shape — it should be a JSON object with “urls”, “username”, and “password”.';
 
   @override
   String get e7SetupPairNoUrls =>
-      'That pairing code has no `urls` field, so there is no address to connect to.';
+      'That pairing code has no “urls” field, so there is no address to connect to.';
 
   @override
   String get e7SetupPairUrlsType =>
-      'That pairing code\'s `urls` field is not a list of addresses.';
+      'That pairing code\'s “urls” field is not a list of addresses.';
 
   @override
   String get e7SetupPairTooMany =>
@@ -11632,19 +11632,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SetupPairAddressMissing =>
-      'That pairing code carries no server address. Check that the server is actually listening, then run `opencode2 pair` again.';
+      'That pairing code carries no server address. Check that the server is actually listening, then run “opencode2 pair” again.';
 
   @override
   String get e7SetupPairUsernameType =>
-      'That pairing code\'s `username` field is not text.';
+      'That pairing code\'s “username” field is not text.';
 
   @override
   String get e7SetupPairPasswordMissing =>
-      'That pairing code has no `password` field. It may have been truncated — scan or copy the whole code.';
+      'That pairing code has no “password” field. It may have been truncated — scan or copy the whole code.';
 
   @override
   String get e7SetupPairPasswordType =>
-      'That pairing code\'s `password` field is not text.';
+      'That pairing code\'s “password” field is not text.';
 
   @override
   String get e7SetupPairTestFailed =>
@@ -16517,7 +16517,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get firstRunPairingNextScan =>
-      'Then paste or scan the code it prints.';
+      'It shows a code. Scan it, or copy it and paste it here.';
 
   @override
   String get firstRunPairingNextPaste => 'Then paste the code it prints.';
@@ -18639,4 +18639,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get terminalListFailedTitle => 'Couldn\'t list the terminals';
+
+  @override
+  String get addServerConnectTo => 'Connect to';
+
+  @override
+  String get addServerTypeOpenCode => 'OpenCode on a computer';
+
+  @override
+  String get addServerTypeOpenCodeDetail =>
+      'Pair with a code, or enter its address';
+
+  @override
+  String get addServerTypeCodex => 'Codex';
+
+  @override
+  String get addServerTypeCodexDetail =>
+      'The Codex app-server on your computer';
+
+  @override
+  String get addServerTypePaseo => 'Claude Code or Pi';
+
+  @override
+  String get addServerTypePaseoDetail => 'Through Paseo on your computer';
+
+  @override
+  String get addServerScan => 'Scan code';
+
+  @override
+  String get addServerPaste => 'Paste code';
+
+  @override
+  String get addServerManual => 'Enter the address instead';
+
+  @override
+  String get addServerChecking => 'Checking the connection…';
+
+  @override
+  String addServerCheckingHost(String host) {
+    return 'Checking $host…';
+  }
+
+  @override
+  String addServerConnectingHost(String host) {
+    return 'Connecting to $host…';
+  }
+
+  @override
+  String get addServerSaveAnyway => 'Save anyway';
 }

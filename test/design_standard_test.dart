@@ -179,6 +179,17 @@ const _migrated = <String, List<String>>{
     'servers_add',
     'servers_add_failed',
     'servers_phone',
+    // The motion pass, slice B (test/goldens/servers_motion_golden_test.dart):
+    // the welcome's hero, Add server rebuilt (ledger row 15) and its
+    // connection moments.
+    'servers_welcome',
+    'add_server_manual',
+    'add_server_codex',
+    'add_server_paseo',
+    'add_server_testing',
+    'add_server_paired',
+    'add_server_failed',
+    'first_run_connect',
   ],
   'lib/ui/screens/termux_setup_screen.dart': [
     'termux_setup',

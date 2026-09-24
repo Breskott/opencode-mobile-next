@@ -19,6 +19,7 @@ import 'package:opencode_mobile/ui/widgets/termux_running_server_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../tool/capture/fixtures.dart' show loadCaptureFonts;
+import 'support/server_editor.dart';
 
 // UX plan 5.1: the server name in the app bar is the server switcher, the
 // single door to servers while connected. It only chooses; the Servers screen
@@ -425,6 +426,8 @@ void main() {
     await openSwitcher(tester);
     await tester.tap(find.byKey(const ValueKey('server-switcher-add')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
+    await openServerManualAddress(tester);
     expect(find.byKey(const ValueKey('server-url-field')), findsOneWidget);
     expect(
       tester

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
@@ -236,6 +237,11 @@ void main() {
   ) async {
     final (store, connection) = await _memoryState(failUpsert: true);
     addTearDown(connection.dispose);
+    // Save & connect checks the server first; it answers, so what fails is
+    // the save itself.
+    serverProbe = ({required baseUrl, username, password}) async =>
+        const ServerProbeResult.success('1.0.0');
+    addTearDown(() => serverProbe = probeServerConnection);
     await tester.pumpWidget(_serversApp(store, connection));
 
     await tester.tap(find.byType(KitRowMenu));

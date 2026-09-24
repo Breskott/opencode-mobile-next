@@ -16,6 +16,7 @@ import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 class _RecordingProfileStore extends ProfileStore {
   _RecordingProfileStore({required super.prefs});
@@ -120,6 +121,22 @@ class _ProbeSocket implements CodexSocket {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  final previousSocketProbe = socketAgentProbe;
+  // Save & connect checks the connection first; here the check answers, so
+  // what these tests watch is the save and the connect after it.
+  setUp(
+    () => socketAgentProbe =
+        ({
+          required backend,
+          required baseUrl,
+          required secret,
+          required directory,
+        }) async => const CodexConnectionProbeResult(
+          ok: true,
+          message: 'Codex connection verified.',
+        ),
+  );
+  tearDown(() => socketAgentProbe = previousSocketProbe);
 
   testWidgets('Codex add flow uses dedicated fields and saves its scope', (
     tester,
@@ -264,6 +281,7 @@ void main() {
 
       await tester.pumpWidget(_app(store, controller));
       await openFirstRunConnect(tester);
+      await openServerManualAddress(tester);
       await tester.enterText(
         find.byKey(const ValueKey('server-url-field')),
         'https://box.example:4097',
@@ -363,7 +381,7 @@ void main() {
       await tester.pumpWidget(_app(store, controller));
       await tester.tap(find.text('Add server'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Codex (experimental)'));
+      await tester.tap(find.byKey(const ValueKey('server-backend-codex')));
       await tester.pump();
       await tester.enterText(
         find.byKey(const ValueKey('codex-server-name-field')),
@@ -407,11 +425,11 @@ void main() {
       );
       expect(
         tester
-            .widget<ChoiceChip>(
-              find.widgetWithText(ChoiceChip, 'OpenCode 1 or 2'),
+            .widget<KitRow>(
+              find.byKey(const ValueKey('server-backend-opencode')),
             )
-            .onSelected,
-        isNull,
+            .enabled,
+        isFalse,
       );
 
       // A test attempt against disabled controls must leave both the submitted
@@ -430,7 +448,7 @@ void main() {
         isFalse,
       );
       await tester.tap(
-        find.widgetWithText(ChoiceChip, 'OpenCode 1 or 2'),
+        find.byKey(const ValueKey('server-backend-opencode')),
         warnIfMissed: false,
       );
       await tester.pump();

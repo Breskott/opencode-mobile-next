@@ -93,12 +93,18 @@ Future<void> _openEditor(WidgetTester tester) async {
   // its connect card is the path into the editor. Large text scales can push
   // the card below the fold, so bring it fully on screen before tapping.
   await openFirstRunConnect(tester);
+  // Pairing leads; the address is under "Enter the address instead".
+  await openServerManualAddress(tester);
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const termuxChannel = MethodChannel('oc/termux');
   setUp(() {
+    // Save & connect checks the connection first; here it answers, so the
+    // save and connect behaviour below is what is under test.
+    serverProbe = ({required baseUrl, username, password}) async =>
+        const ServerProbeResult.success('1.0.0');
     // These editor tests have no local Termux installation. Discovery must
     // receive a concrete platform answer instead of an unanswered channel.
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -108,6 +114,7 @@ void main() {
         });
   });
   tearDown(() {
+    serverProbe = probeServerConnection;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(termuxChannel, null);
   });
