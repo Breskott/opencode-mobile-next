@@ -24,7 +24,34 @@ void main() {
 
   test('the manifest publishes the static shortcuts resource', () {
     expect(manifest, contains('android:name="android.app.shortcuts"'));
-    expect(manifest, contains('android:resource="@xml/shortcuts"'));
+    // The resource is chosen per build: the preview variant, installed
+    // beside the stable app, needs shortcuts that open its own package.
+    expect(manifest, contains(r'android:resource="${appShortcuts}"'));
+    final gradle = File('android/app/build.gradle.kts').readAsStringSync();
+    expect(
+      gradle,
+      contains(
+        'manifestPlaceholders["appShortcuts"] =\n'
+        '            if (ocPreview) "@xml/shortcuts_preview" else '
+        '"@xml/shortcuts"',
+      ),
+    );
+  });
+
+  test('the preview shortcuts differ only in the package they open', () {
+    final preview = File(
+      '$androidMain/res/xml/shortcuts_preview.xml',
+    ).readAsStringSync();
+    expect(
+      preview,
+      contains(
+        'android:targetPackage="io.github.eslamasabry.opencode_mobile.preview"',
+      ),
+    );
+    expect(
+      preview.replaceAll('opencode_mobile.preview"', 'opencode_mobile"'),
+      shortcuts,
+    );
   });
 
   test(
