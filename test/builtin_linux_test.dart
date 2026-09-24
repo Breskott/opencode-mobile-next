@@ -303,12 +303,15 @@ void main() {
     // it to the exact text it had before the split (48944 characters), so the
     // refactor provably changed nothing for Termux. A deliberate edit to the
     // manager script or the shared setup text updates this hash with it.
-    test('the Termux manager script is byte-identical to before the split', () {
+    // Pinned so the manager on people's phones never changes by accident.
+    // Last deliberate change: the phone context written before each start
+    // (lib/domain/phone_agent_context.dart, 2026-09-24).
+    test('the Termux manager script changes only on purpose', () {
       final script = TermuxBridge.managerScriptForTesting();
-      expect(script.length, 48944);
+      expect(script.length, 51360);
       expect(
         sha256.convert(utf8.encode(script)).toString(),
-        '7c177314a52758823bec33bcd7dac70df7add00fe2af5f551748fbefabac9fa4',
+        'b629299fcab94ee634e95bcae8afe291a24c4f1da76845aea416912a68e870d3',
       );
     });
 

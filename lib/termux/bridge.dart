@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 
+import '../domain/phone_agent_context.dart';
 import '../domain/workspace_paths.dart';
 import '../platform/platform_capabilities.dart';
 import 'opencode_ubuntu_setup.dart';
@@ -1045,6 +1046,12 @@ if [ "$runtime" = opencode2 ] && [ "$data_mode" = isolated ]; then
     OPENCODE_DB=/root/.oc-opencode2/data/opencode/opencode.db
   )
 fi
+# Tell the agent where it runs: the Android phone, through the app
+# (lib/domain/phone_agent_context.dart). Never blocks the start.
+proot-distro login opencode-ubuntu -- sh -s >/dev/null 2>&1 <<'OC_PHONE_CONTEXT' || true
+''' +
+      PhoneAgentContext.termuxScript +
+      r'''OC_PHONE_CONTEXT
 "$manager" rotate-log server
 # The server never runs from the container's home folder: OpenCode would watch
 # and scan every dotfile and cache under it. Projects live in /root/projects,

@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 
 import '../api/server_probe.dart' show ServerFlavor;
 import '../diagnostics/perf_trace.dart';
+import '../domain/phone_agent_context.dart';
 import '../platform/platform_capabilities.dart';
 import '../termux/bridge.dart' show TermuxBridge, TermuxRuntime;
 import '../termux/opencode_ubuntu_setup.dart';
@@ -487,6 +488,9 @@ fi
         'cd $projectsDir\n'
         '[ -s $passwordFile ] || { echo "[oc] The server password is missing" >&2; exit 78; }\n'
         '$isolated'
+        // Tell the agent where it runs (lib/domain/phone_agent_context.dart);
+        // never blocks the start.
+        '(\n${PhoneAgentContext.builtinScript}) >/dev/null 2>&1 || true\n'
         'password=\$(cat $passwordFile)\n'
         'export OPENCODE_SERVER_USERNAME=$serverUsername\n'
         'export OPENCODE_SERVER_PASSWORD="\$password"\n'
