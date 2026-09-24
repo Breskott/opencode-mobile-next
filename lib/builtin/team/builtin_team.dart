@@ -58,6 +58,11 @@ class BuiltinTeam {
   /// projects themselves.
   static const originsDir = '$home/origins';
 
+  /// What the phone-side origins' hook did with each merge, one line per
+  /// push to a project's branch (see [originHook]); the Plugins section
+  /// reads the newest line per project.
+  static const pullLog = '$home/pull.log';
+
   /// True for the plugin config [config] writes: the team inside this app.
   static bool isBuiltinConfig(OrchestrationConfig? config) =>
       config != null &&
@@ -279,15 +284,159 @@ class BuiltinTeam {
         // why (seen on the emulator). Once the team has merged work, the
         // origin is ahead of the project and the push is refused, which is
         // fine.
+        //
+        // An origin made here also gets the hook that brings the team's
+        // merged work into the project folder (rewritten on every run, so
+        // a project added by an older version gets it too), and the work
+        // merged before it existed is brought in once now.
         'case "\$(git -C "\$project" remote get-url origin)" in\n'
         '  $originsDir/*) git -C "\$project" push -q origin HEAD || true ;;\n'
         'esac\n'
+        '$_hookFunctions'
+        'oc_install_hook "\$project" "\$rig" || true\n'
         'gc import install\n'
         'grep -q \'name = "gastown.mayor"\' city.toml || '
         "printf '\\n%s' ${_quote(_cityPatches)} >> city.toml\n"
         'grep -qx "dir = \\"\$rig\\"" city.toml || '
         "printf '\\n%s' ${_quote(_rigPatches(rig))} >> city.toml\n"
         'echo rig-ready\n';
+  }
+
+  /// The `post-receive` hook of a phone-side origin (only the ones
+  /// [rigScript] makes): the refinery merges into the origin, and this
+  /// brings that merge into the project folder the person's own
+  /// conversations work in, so nobody has to `git pull`.
+  ///
+  /// It only ever fast-forwards the branch the project has checked out,
+  /// and leaves the project alone when that is not safe:
+  /// - `dirty`: the project has changes of its own to tracked files (the
+  ///   team's own bookkeeping, `.beads/` and the lines Gas City adds to
+  ///   `.gitignore`, does not count; git itself still refuses to overwrite
+  ///   any of it);
+  /// - `diverged`: the project has commits the origin does not;
+  /// - `skipped`: the project is not on a branch;
+  /// - `failed`: git refused (the reason is logged).
+  /// Otherwise `brought-in`, or `up-to-date`. Every outcome is one line in
+  /// [pullLog]: time, project, outcome, commit, detail (tab-separated).
+  ///
+  /// It never fails the push: the refs are in already when it runs, and it
+  /// always exits 0. The project and its team name come from the origin's
+  /// own settings (`oc-mobile.project`, `oc-mobile.rig`, written with the
+  /// hook) or from `OC_PROJECT` / `OC_RIG`. Run with `--now` (the app's
+  /// "Bring the team's work in", [bringInScript]) it acts without a push
+  /// and prints the line.
+  static const originHook =
+      '#!/bin/sh\n'
+      '# Written by OpenCode Mobile (AI Team) on every team start: brings\n'
+      '# the work merged here into the project folder.\n'
+      'log=$pullLog\n'
+      r'''project=${OC_PROJECT:-$(git config --get oc-mobile.project 2>/dev/null)}
+rig=${OC_RIG:-$(git config --get oc-mobile.rig 2>/dev/null)}
+[ -n "$project" ] && [ -n "$rig" ] || exit 0
+now=
+[ "${1:-}" = --now ] && now=1
+refs=
+[ -n "$now" ] || refs=$(cat)
+# A hook runs with the origin's GIT_DIR and friends set; the project is
+# another repository.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_QUARANTINE_PATH \
+  GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_PREFIX \
+  GIT_COMMON_DIR GIT_NAMESPACE 2>/dev/null || true
+oc_log() {
+  line=$(printf '%s\t%s\t%s\t%s\t%s' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    "$rig" "$1" "$2" "$(printf '%s' "$3" | tr '\t\n' '  ' | cut -c1-200)")
+  mkdir -p "$(dirname "$log")"
+  printf '%s\n' "$line" >> "$log"
+  if [ "$(wc -l < "$log")" -gt 400 ]; then
+    tail -n 200 "$log" > "$log.tmp" && mv "$log.tmp" "$log"
+  fi
+  [ -z "$now" ] || printf '%s\n' "$line"
+}
+g() { git -C "$project" "$@"; }
+if ! branch=$(g symbolic-ref -q --short HEAD 2>/dev/null); then
+  [ -n "$now" ] && oc_log skipped - "the project is not on a branch"
+  exit 0
+fi
+if [ -z "$now" ]; then
+  printf '%s\n' "$refs" | grep -q " refs/heads/$branch\$" || exit 0
+fi
+if ! out=$(g fetch -q origin "+refs/heads/$branch:refs/remotes/origin/$branch" 2>&1); then
+  oc_log failed - "could not read the team's copy: $out"
+  exit 0
+fi
+new=$(g rev-parse -q --verify "refs/remotes/origin/$branch^{commit}") || exit 0
+short=$(g rev-parse --short "$new")
+subject=$(g log -1 --format=%s "$new")
+if g merge-base --is-ancestor "$new" HEAD; then
+  oc_log up-to-date "$short" "$subject"
+  exit 0
+fi
+if ! g merge-base --is-ancestor HEAD "$new"; then
+  oc_log diverged "$short" "$branch has commits the team's copy does not"
+  exit 0
+fi
+changes=$(g status --porcelain --untracked-files=no -- . ':(exclude).beads' ':(exclude).gitignore' | cut -c4- | head -n 5 | tr '\n' ' ')
+if [ -n "$changes" ]; then
+  oc_log dirty "$short" "$changes"
+  exit 0
+fi
+if out=$(g merge -q --ff-only "$new" 2>&1); then
+  oc_log brought-in "$short" "$subject"
+else
+  oc_log failed "$short" "$out"
+fi
+exit 0
+''';
+
+  /// `oc_install_hook PROJECT RIG`: gives the project's origin [originHook]
+  /// when that origin is one of this phone's ([originsDir]; an origin of
+  /// the project's own is never touched), then brings in once whatever the
+  /// team merged before the hook was there. Idempotent.
+  static const _hookFunctions =
+      'oc_install_hook() {\n'
+      '  oc_origin=\$(git -C "\$1" remote get-url origin 2>/dev/null) '
+      '|| return 0\n'
+      '  case "\$oc_origin" in $originsDir/*) ;; *) return 0 ;; esac\n'
+      '  git -C "\$oc_origin" config oc-mobile.project "\$1" &&\n'
+      '  git -C "\$oc_origin" config oc-mobile.rig "\$2" &&\n'
+      '  mkdir -p "\$oc_origin/hooks" &&\n'
+      "  cat > \"\$oc_origin/hooks/post-receive\" <<'OC_HOOK' &&\n"
+      '${originHook}OC_HOOK\n'
+      '  chmod 755 "\$oc_origin/hooks/post-receive" || return 1\n'
+      '  OC_PROJECT="\$1" OC_RIG="\$2" '
+      'sh "\$oc_origin/hooks/post-receive" --now </dev/null >/dev/null 2>&1 '
+      '|| true\n'
+      '}\n';
+
+  /// Gives every project of the team its origin hook (a team made by an
+  /// older version has none); part of every start, from the projects Gas
+  /// City lists in `.gc/site.toml`.
+  static const hooksScript =
+      '$_hookFunctions'
+      'if [ -f $cityDir/.gc/site.toml ]; then\n'
+      "  awk '/^name = / { n = \$0; sub(/^name = \"/, \"\", n); "
+      'sub(/"\$/, "", n) } '
+      '/^path = / { p = \$0; sub(/^path = "/, "", p); sub(/"\$/, "", p); '
+      "if (n != \"\") print n \"\\t\" p; n = \"\" }' "
+      '$cityDir/.gc/site.toml |\n'
+      "  while IFS='\t' read -r oc_rig oc_project; do\n"
+      '    oc_install_hook "\$oc_project" "\$oc_rig" || true\n'
+      '  done\n'
+      'fi\n';
+
+  /// Brings the team's merged work into the project at [path] now, as the
+  /// origin's hook does after every merge; prints the outcome line.
+  static String bringInScript(String path, String rig) {
+    if (!path.startsWith('/') || path.contains('\n')) {
+      throw ArgumentError.value(path, 'path', 'Must be an absolute path.');
+    }
+    if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(rig)) {
+      throw ArgumentError.value(rig, 'rig', 'Letters, digits, - and _ only.');
+    }
+    return 'OC_PROJECT=${_quote(path)} OC_RIG=$rig\n'
+        'export OC_PROJECT OC_RIG\n'
+        'set -- --now\n'
+        '$originHook';
   }
 
   /// The supervisor, as the long-running service. `exec`, so stopping the
@@ -302,6 +451,7 @@ class BuiltinTeam {
       'mkdir -p /root/.gc\n'
       "cat > /root/.gc/supervisor.toml <<'OC_EOF'\n"
       '${supervisorConfig}OC_EOF\n'
+      '$hooksScript'
       'exec gc supervisor run\n';
 
   /// Registers the team with the running supervisor; a team registered
@@ -337,6 +487,10 @@ class BuiltinTeam {
       "awk '/^\\[\\[rigs\\]\\]/ { r = 1; next } "
       "r && /^name = / { gsub(/\"/, \"\", \$3); print \"rig \" \$3; r = 0 }' "
       '$cityDir/city.toml\n'
+      // The newest bring-in outcome per project (originHook).
+      '[ -f $pullLog ] && '
+      "awk -F '\\t' 'NF >= 3 { last[\$2] = \$0 } "
+      "END { for (r in last) print \"pull\\t\" last[r] }' $pullLog\n"
       'exit 0\n';
 
   static BuiltinTeamState parseStatus(String output, {bool running = false}) {
@@ -348,6 +502,14 @@ class BuiltinTeam {
         for (final line in lines)
           if (line.startsWith('rig ')) line.substring(4).trim(),
       ],
+      bringIns: {
+        for (final pull in [
+          for (final line in lines)
+            if (line.startsWith('pull\t'))
+              ?BuiltinTeamBringIn.parse(line.substring(5)),
+        ])
+          pull.rig: pull,
+      },
       running: running,
     );
   }
@@ -442,6 +604,21 @@ class BuiltinTeam {
   }
 
   Future<void> stop() => _linux.stopService(serviceName);
+
+  /// Brings the team's merged work into the project at [path] now, on the
+  /// same terms as the origin's hook ([originHook]); null when the script
+  /// said nothing (the project has no phone-side origin).
+  Future<BuiltinTeamBringIn?> bringIn(String path) async {
+    final result = await _linux.run(
+      bringInScript(path, rigName(path)),
+      timeout: const Duration(minutes: 2),
+    );
+    BuiltinTeamBringIn? last;
+    for (final line in result.output.split('\n')) {
+      last = BuiltinTeamBringIn.parse(line.trim()) ?? last;
+    }
+    return last;
+  }
 
   Future<bool> supervisorAnswers() => _answersOk(Uri.parse('$url/health'));
 
@@ -544,6 +721,7 @@ class BuiltinTeamState {
     this.installed = false,
     this.hasCity = false,
     this.rigs = const [],
+    this.bringIns = const {},
     this.running = false,
   });
 
@@ -556,10 +734,79 @@ class BuiltinTeamState {
   /// The projects the team works on, by team name ([BuiltinTeam.rigName]).
   final List<String> rigs;
 
+  /// The newest bring-in outcome per project, by team name.
+  final Map<String, BuiltinTeamBringIn> bringIns;
+
   /// The supervisor runs as the app's service.
   final bool running;
 
   bool hasProject(String path) => rigs.contains(BuiltinTeam.rigName(path));
+
+  BuiltinTeamBringIn? bringInFor(String path) =>
+      bringIns[BuiltinTeam.rigName(path)];
+}
+
+/// What [BuiltinTeam.originHook] did with the team's merged work.
+enum BuiltinTeamBringInOutcome {
+  broughtIn('brought-in'),
+  upToDate('up-to-date'),
+  dirty('dirty'),
+  diverged('diverged'),
+  skipped('skipped'),
+  failed('failed');
+
+  const BuiltinTeamBringInOutcome(this.word);
+
+  /// The word in the log.
+  final String word;
+}
+
+/// One line of [BuiltinTeam.pullLog].
+class BuiltinTeamBringIn {
+  const BuiltinTeamBringIn({
+    required this.time,
+    required this.rig,
+    required this.outcome,
+    this.commit,
+    this.detail = '',
+  });
+
+  final DateTime? time;
+  final String rig;
+  final BuiltinTeamBringInOutcome outcome;
+
+  /// The short hash of the team's newest commit, when known.
+  final String? commit;
+
+  /// The commit's subject, the changes that kept it out, or git's reason.
+  final String detail;
+
+  /// The project was left behind the team's work.
+  bool get leftBehind => switch (outcome) {
+    BuiltinTeamBringInOutcome.dirty ||
+    BuiltinTeamBringInOutcome.diverged ||
+    BuiltinTeamBringInOutcome.failed => true,
+    _ => false,
+  };
+
+  /// A log line (time, project, outcome, commit, detail; tab-separated), or
+  /// null for anything else.
+  static BuiltinTeamBringIn? parse(String line) {
+    final parts = line.split('\t');
+    if (parts.length < 3) return null;
+    final outcome = BuiltinTeamBringInOutcome.values
+        .where((value) => value.word == parts[2].trim())
+        .firstOrNull;
+    if (outcome == null) return null;
+    final commit = parts.length > 3 ? parts[3].trim() : '';
+    return BuiltinTeamBringIn(
+      time: DateTime.tryParse(parts[0].trim()),
+      rig: parts[1].trim(),
+      outcome: outcome,
+      commit: commit.isEmpty || commit == '-' ? null : commit,
+      detail: parts.length > 4 ? parts.sublist(4).join(' ').trim() : '',
+    );
+  }
 }
 
 class BuiltinTeamException implements Exception {

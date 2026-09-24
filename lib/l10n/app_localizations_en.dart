@@ -18044,4 +18044,29 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aiteamComponentChildProcesses =>
       'Android stops an app\'s extra programs when it runs many at once, and a team runs several. If the team stops while it works, turn on Developer options › Disable child process restrictions.';
+
+  @override
+  String aiteamBringInDone(String project, String commit) {
+    return '$project has the team\'s latest work ($commit).';
+  }
+
+  @override
+  String aiteamBringInDirty(String commit, String project, String files) {
+    return 'The team\'s work ($commit) is not in $project yet: $project has changes of its own ($files), so it was left as it is.';
+  }
+
+  @override
+  String aiteamBringInDiverged(String commit, String project) {
+    return 'The team\'s work ($commit) is not in $project: $project has commits of its own. Merge the two with git.';
+  }
+
+  @override
+  String aiteamBringInFailed(String project, String reason) {
+    return 'The team\'s work could not be brought into $project: $reason';
+  }
+
+  @override
+  String aiteamBringInAction(String project) {
+    return 'Bring the team\'s work into $project';
+  }
 }

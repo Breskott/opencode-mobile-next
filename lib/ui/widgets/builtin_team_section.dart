@@ -84,6 +84,34 @@ String builtinTeamStageText(
   BuiltinTeamStage.waiting => l10n.aiteamComponentStageWaiting,
 };
 
+/// What happened to the team's latest merge in [project]'s folder
+/// ([BuiltinTeam.originHook]).
+String builtinTeamBringInText(
+  AppLocalizations l10n,
+  BuiltinTeamBringIn bringIn,
+  String project,
+) {
+  final commit = bringIn.commit ?? '';
+  return switch (bringIn.outcome) {
+    BuiltinTeamBringInOutcome.broughtIn ||
+    BuiltinTeamBringInOutcome.upToDate => l10n.aiteamBringInDone(
+      project,
+      [commit, bringIn.detail].where((part) => part.isNotEmpty).join(' '),
+    ),
+    BuiltinTeamBringInOutcome.dirty => l10n.aiteamBringInDirty(
+      commit,
+      project,
+      bringIn.detail,
+    ),
+    BuiltinTeamBringInOutcome.diverged => l10n.aiteamBringInDiverged(
+      commit,
+      project,
+    ),
+    BuiltinTeamBringInOutcome.skipped || BuiltinTeamBringInOutcome.failed =>
+      l10n.aiteamBringInFailed(project, bringIn.detail),
+  };
+}
+
 /// The project's folder name, as the person named it.
 String builtinTeamProjectName(String path) {
   final trimmed = path.endsWith('/')
@@ -213,6 +241,10 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
   });
 
   Future<void> _stop() => _run(_team.stop);
+
+  /// Tries again what the origin's hook does after every merge; the section
+  /// then shows the new outcome (still left alone when it is not safe).
+  Future<void> _bringIn(String project) => _run(() => _team.bringIn(project));
 
   /// Gives the in-app profile the team's plugin config and lets the
   /// connection build its controller: the Team card, Inbox gates and the
@@ -385,7 +417,32 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
         ),
       );
     }
+    final bringIn = on && projectOn ? state.bringInFor(project) : null;
+    if (bringIn != null) {
+      final name = builtinTeamProjectName(project!);
+      widgets
+        ..add(const SizedBox(height: 8))
+        ..add(
+          Text(
+            builtinTeamBringInText(l10n, bringIn, name),
+            key: const ValueKey('builtin-team-bring-in'),
+            style: bringIn.leftBehind
+                ? Theme.of(context).textTheme.bodyMedium
+                : muted,
+          ),
+        );
+    }
     final actions = <Widget>[
+      if (bringIn != null &&
+          (bringIn.outcome == BuiltinTeamBringInOutcome.dirty ||
+              bringIn.outcome == BuiltinTeamBringInOutcome.failed))
+        TextButton(
+          key: const ValueKey('builtin-team-bring-in-action'),
+          onPressed: _busy ? null : () => _bringIn(project!),
+          child: Text(
+            l10n.aiteamBringInAction(builtinTeamProjectName(project!)),
+          ),
+        ),
       if (on && state.running)
         TextButton(
           key: const ValueKey('builtin-team-stop'),

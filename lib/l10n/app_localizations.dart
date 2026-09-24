@@ -29133,6 +29133,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Android stops an app\'s extra programs when it runs many at once, and a team runs several. If the team stops while it works, turn on Developer options › Disable child process restrictions.'**
   String get aiteamComponentChildProcesses;
+
+  /// The team's merged work is in the project folder
+  ///
+  /// In en, this message translates to:
+  /// **'{project} has the team\'s latest work ({commit}).'**
+  String aiteamBringInDone(String project, String commit);
+
+  /// The team's merge was not brought into a project with uncommitted changes
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s work ({commit}) is not in {project} yet: {project} has changes of its own ({files}), so it was left as it is.'**
+  String aiteamBringInDirty(String commit, String project, String files);
+
+  /// The team's merge was not brought into a project that has its own commits
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s work ({commit}) is not in {project}: {project} has commits of its own. Merge the two with git.'**
+  String aiteamBringInDiverged(String commit, String project);
+
+  /// Bringing the team's merge into the project failed
+  ///
+  /// In en, this message translates to:
+  /// **'The team\'s work could not be brought into {project}: {reason}'**
+  String aiteamBringInFailed(String project, String reason);
+
+  /// Button that fast-forwards the project folder to the team's merged work
+  ///
+  /// In en, this message translates to:
+  /// **'Bring the team\'s work into {project}'**
+  String aiteamBringInAction(String project);
 }
 
 class _AppLocalizationsDelegate

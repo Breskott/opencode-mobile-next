@@ -4829,5 +4829,10 @@
   "aiteamComponentFailedExited": "توقف من تلقاء نفسه",
   "aiteamComponentFailedTimeout": "لم يرد في الوقت المحدد",
   "aiteamComponentShowDetails": "عرض التفاصيل",
-  "aiteamComponentChildProcesses": "يوقف أندرويد البرامج الإضافية للتطبيق حين يشغّل كثيرًا منها معًا، والفريق يشغّل عدة برامج. إذا توقف الفريق أثناء العمل، فعّل خيارات المطوّرين › تعطيل قيود العمليات الفرعية."
+  "aiteamComponentChildProcesses": "يوقف أندرويد البرامج الإضافية للتطبيق حين يشغّل كثيرًا منها معًا، والفريق يشغّل عدة برامج. إذا توقف الفريق أثناء العمل، فعّل خيارات المطوّرين › تعطيل قيود العمليات الفرعية.",
+  "aiteamBringInDone": "لدى {project} أحدث عمل للفريق ({commit}).",
+  "aiteamBringInDirty": "عمل الفريق ({commit}) ليس في {project} بعد: في {project} تغييرات خاصة به ({files})، فتُرك كما هو.",
+  "aiteamBringInDiverged": "عمل الفريق ({commit}) ليس في {project}: في {project} إيداعات خاصة به. ادمج الاثنين باستخدام git.",
+  "aiteamBringInFailed": "تعذّر إدخال عمل الفريق إلى {project}: {reason}",
+  "aiteamBringInAction": "أدخل عمل الفريق إلى {project}"
 }
