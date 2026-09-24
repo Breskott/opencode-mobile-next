@@ -22,6 +22,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xterm/xterm.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 class _TestApi extends OpenCodeApi {
   _TestApi({this.files, this.findFiles, this.contents = const {}})
@@ -1647,6 +1648,7 @@ void main() {
       ),
     );
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     // The connect screen is titled with the agent the person chose.
     expect(find.widgetWithText(AppBar, 'OpenCode'), findsOneWidget);

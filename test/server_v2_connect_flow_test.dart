@@ -14,6 +14,7 @@ import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 class _RecordingProfileStore extends ProfileStore {
   _RecordingProfileStore({required super.prefs});
@@ -88,6 +89,7 @@ Widget _app(ProfileStore store, ConnectionController controller) =>
 
 Future<void> _openEditor(WidgetTester tester) async {
   await openFirstRunConnect(tester);
+  await openServerManualAddress(tester);
 }
 
 /// The editor's own field list. `.first` because every text field carries its
@@ -150,16 +152,21 @@ void main() {
       await _reveal(tester, testButton);
       await tester.tap(testButton);
       await tester.pump();
+      // The check scrolls the form back to its head, where the drawing and
+      // the verdict are; let that scroll run and finish.
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 300));
       // Avoid settling while the pending probe animates. The fields are
       // mounted in the same editor list and can be scrolled directly.
       if (fieldKey == 'server-username-field') {
         // Opening "More options" animates; settling would wait on the
         // pending probe's spinner, so pump the expansion through instead.
-        final tile = find.byKey(const ValueKey('server-editor-more-options'));
-        await tester.ensureVisible(tile);
-        await tester.tap(
-          find.descendant(of: tile, matching: find.byType(ListTile)).first,
+        final header = find.byKey(
+          const ValueKey('server-editor-more-options-header'),
         );
+        await tester.ensureVisible(header);
+        await tester.pump();
+        await tester.tap(header);
         await tester.pump(const Duration(milliseconds: 400));
       }
       final field = find.byKey(ValueKey(fieldKey));
@@ -176,7 +183,10 @@ void main() {
           needsPassword: true,
         ),
       );
-      await tester.pumpAndSettle();
+      // Look as the stale answer lands, before the first-run screen's own
+      // pause-then-test (autoTestPause) could run a fresh check.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       expect(find.byKey(const ValueKey('server-probe-verdict')), findsNothing);
       expect(find.text('Stale password failure'), findsNothing);
       serverProbe = ({required baseUrl, username, password}) async =>

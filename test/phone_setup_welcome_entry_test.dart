@@ -186,6 +186,12 @@ void main() {
       findsNothing,
     );
 
+    // The welcome opens with its drawing; on this short surface the choice
+    // is below the fold.
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('welcome-choice-phone')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('welcome-choice-phone')));
     await tester.pumpAndSettle();
     // Set up was tapped there, and the person came straight back.

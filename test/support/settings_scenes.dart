@@ -298,12 +298,19 @@ Future<Future<void> Function()> mountSettingsScene(
           'and the phone is on the same network.',
           suggestsMissingServer: true,
         );
+    // The address waits under "Enter the address instead"; Save & connect
+    // checks it and explains the failure (ledger row 15).
+    final manual = find.byKey(const ValueKey('server-manual-address'));
+    if (manual.evaluate().isNotEmpty) {
+      await tester.tap(manual);
+      await tester.pumpAndSettle();
+    }
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
       'https://build.example.net',
     );
     await tester.pump(const Duration(seconds: 1));
-    await tester.tap(find.byKey(const ValueKey('test-server-connection')));
+    await tester.tap(find.byKey(const ValueKey('save-server-profile')));
     await tester.pumpAndSettle();
   }
   if (scene == SettingsScene.termuxSetup) {

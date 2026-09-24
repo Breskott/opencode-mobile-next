@@ -3531,7 +3531,7 @@
   "@e7SharedOlderServersWithoutPairing": {
     "description": "Shared app interface: Older servers without pairing"
   },
-  "e7SharedServersStartedWithOpencodeServeDoNot": "Servers started with `opencode serve` do not print a pairing code. Start them on loopback with a password:",
+  "e7SharedServersStartedWithOpencodeServeDoNot": "Servers started with “opencode serve” do not print a pairing code. Start them on loopback with a password:",
   "@e7SharedServersStartedWithOpencodeServeDoNot": {
     "description": "Shared app interface: Servers started with `opencode serve` do not print a pairing code. Start them on loopback with a password:"
   },
@@ -10939,7 +10939,7 @@
   "@e7SetupFullWalkthrough": {
     "description": "Setup journey: full walkthrough."
   },
-  "e7SetupPairingPhoneHint": "A server bound to its own 127.0.0.1 is not reachable from this phone until you bridge it — `adb reverse tcp:PORT tcp:PORT` over USB, or an SSH forward. To reach it over the network instead, put it behind HTTPS.",
+  "e7SetupPairingPhoneHint": "A server bound to its own 127.0.0.1 is not reachable from this phone until you bridge it — “adb reverse tcp:PORT tcp:PORT” over USB, or an SSH forward. To reach it over the network instead, put it behind HTTPS.",
   "@e7SetupPairingPhoneHint": {
     "description": "Setup journey: pairing phone hint."
   },
@@ -10979,7 +10979,7 @@
   "@e7SetupPasswordBanner": {
     "description": "Setup journey: password banner."
   },
-  "e7SetupEmptyPairClipboard": "The clipboard is empty. Run `opencode2 pair` on the server and copy the code it prints.",
+  "e7SetupEmptyPairClipboard": "The clipboard is empty. Run “opencode2 pair” on the server and copy the code it prints.",
   "@e7SetupEmptyPairClipboard": {
     "description": "Setup journey: empty pair clipboard."
   },
@@ -10991,7 +10991,7 @@
   "@e7SetupTokenRequired": {
     "description": "Setup journey: token required."
   },
-  "e7SetupPairingInstructions": "On your computer run `opencode2 pair`, then paste or scan the code it prints.",
+  "e7SetupPairingInstructions": "On your computer run “opencode2 pair”, then paste or scan the code it prints.",
   "@e7SetupPairingInstructions": {
     "description": "Setup journey: pairing instructions."
   },
@@ -11400,27 +11400,27 @@
       }
     }
   },
-  "e7SetupPairNone": "There is no pairing code here. Run `opencode2 pair` on the server and scan or copy what it prints.",
+  "e7SetupPairNone": "There is no pairing code here. Run “opencode2 pair” on the server and scan or copy what it prints.",
   "@e7SetupPairNone": {
     "description": "Setup journey: pair none."
   },
-  "e7SetupPairLong": "That is far too long to be a pairing code. Copy only the line `opencode2 pair` prints, or scan its QR code.",
+  "e7SetupPairLong": "That is far too long to be a pairing code. Copy only the line “opencode2 pair” prints, or scan its QR code.",
   "@e7SetupPairLong": {
     "description": "Setup journey: pair long."
   },
-  "e7SetupPairInvalid": "That is not a pairing code. Run `opencode2 pair` on the server and scan or copy what it prints.",
+  "e7SetupPairInvalid": "That is not a pairing code. Run “opencode2 pair” on the server and scan or copy what it prints.",
   "@e7SetupPairInvalid": {
     "description": "Setup journey: pair invalid."
   },
-  "e7SetupPairShape": "That pairing code is the wrong shape — it should be a JSON object with `urls`, `username`, and `password`.",
+  "e7SetupPairShape": "That pairing code is the wrong shape — it should be a JSON object with “urls”, “username”, and “password”.",
   "@e7SetupPairShape": {
     "description": "Setup journey: pair shape."
   },
-  "e7SetupPairNoUrls": "That pairing code has no `urls` field, so there is no address to connect to.",
+  "e7SetupPairNoUrls": "That pairing code has no “urls” field, so there is no address to connect to.",
   "@e7SetupPairNoUrls": {
     "description": "Setup journey: pair no urls."
   },
-  "e7SetupPairUrlsType": "That pairing code's `urls` field is not a list of addresses.",
+  "e7SetupPairUrlsType": "That pairing code's “urls” field is not a list of addresses.",
   "@e7SetupPairUrlsType": {
     "description": "Setup journey: pair urls type."
   },
@@ -11436,19 +11436,19 @@
   "@e7SetupPairAddressLong": {
     "description": "Setup journey: pair address long."
   },
-  "e7SetupPairAddressMissing": "That pairing code carries no server address. Check that the server is actually listening, then run `opencode2 pair` again.",
+  "e7SetupPairAddressMissing": "That pairing code carries no server address. Check that the server is actually listening, then run “opencode2 pair” again.",
   "@e7SetupPairAddressMissing": {
     "description": "Setup journey: pair address missing."
   },
-  "e7SetupPairUsernameType": "That pairing code's `username` field is not text.",
+  "e7SetupPairUsernameType": "That pairing code's “username” field is not text.",
   "@e7SetupPairUsernameType": {
     "description": "Setup journey: pair username type."
   },
-  "e7SetupPairPasswordMissing": "That pairing code has no `password` field. It may have been truncated — scan or copy the whole code.",
+  "e7SetupPairPasswordMissing": "That pairing code has no “password” field. It may have been truncated — scan or copy the whole code.",
   "@e7SetupPairPasswordMissing": {
     "description": "Setup journey: pair password missing."
   },
-  "e7SetupPairPasswordType": "That pairing code's `password` field is not text.",
+  "e7SetupPairPasswordType": "That pairing code's “password” field is not text.",
   "@e7SetupPairPasswordType": {
     "description": "Setup journey: pair password type."
   },
@@ -17646,7 +17646,7 @@
   "@firstRunRunOnComputer": {
     "description": "Connect screen on the first-run computer path: caption above the one command to run."
   },
-  "firstRunPairingNextScan": "Then paste or scan the code it prints.",
+  "firstRunPairingNextScan": "It shows a code. Scan it, or copy it and paste it here.",
   "@firstRunPairingNextScan": {
     "description": "Connect screen, OpenCode: what to do after running the command, where a camera exists."
   },
@@ -20463,5 +20463,71 @@
   "phoneServerTermuxTitle": "This phone · Termux",
   "@phoneServerTermuxTitle": {
     "description": "Name of the OpenCode server this app runs in Termux (Servers row, switcher, Work tab header); the app's built-in server is plain \"This phone\""
+  },
+  "addServerConnectTo": "Connect to",
+  "@addServerConnectTo": {
+    "description": "Add server: label over the choice of what kind of server this is."
+  },
+  "addServerTypeOpenCode": "OpenCode on a computer",
+  "@addServerTypeOpenCode": {
+    "description": "Add server choice: an OpenCode (1 or 2) server on another computer."
+  },
+  "addServerTypeOpenCodeDetail": "Pair with a code, or enter its address",
+  "@addServerTypeOpenCodeDetail": {
+    "description": "Add server choice: supporting line under OpenCode on a computer."
+  },
+  "addServerTypeCodex": "Codex",
+  "@addServerTypeCodex": {
+    "description": "Add server choice: the Codex app-server."
+  },
+  "addServerTypeCodexDetail": "The Codex app-server on your computer",
+  "@addServerTypeCodexDetail": {
+    "description": "Add server choice: supporting line under Codex."
+  },
+  "addServerTypePaseo": "Claude Code or Pi",
+  "@addServerTypePaseo": {
+    "description": "Add server choice: Claude Code or Pi, reached through the Paseo daemon."
+  },
+  "addServerTypePaseoDetail": "Through Paseo on your computer",
+  "@addServerTypePaseoDetail": {
+    "description": "Add server choice: supporting line under Claude Code or Pi."
+  },
+  "addServerScan": "Scan code",
+  "@addServerScan": {
+    "description": "Add server: button that opens the camera to scan the pairing QR code."
+  },
+  "addServerPaste": "Paste code",
+  "@addServerPaste": {
+    "description": "Add server: button that pastes a copied pairing code (beside Scan code)."
+  },
+  "addServerManual": "Enter the address instead",
+  "@addServerManual": {
+    "description": "Add server: folded row holding the server address and password, for people who do not pair."
+  },
+  "addServerChecking": "Checking the connection…",
+  "@addServerChecking": {
+    "description": "Add server: the Save & connect button while it checks the server before saving."
+  },
+  "addServerCheckingHost": "Checking {host}…",
+  "@addServerCheckingHost": {
+    "description": "Add server: line under the drawing while the connection is checked.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "addServerConnectingHost": "Connecting to {host}…",
+  "@addServerConnectingHost": {
+    "description": "Add server: line under the drawing while the saved server connects.",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "addServerSaveAnyway": "Save anyway",
+  "@addServerSaveAnyway": {
+    "description": "Add server: action on a failed connection check that saves the server even though it did not answer now."
   }
 }

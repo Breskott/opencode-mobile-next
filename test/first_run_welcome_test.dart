@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_setup_engine.dart';
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 Future<(ProfileStore, ConnectionController)> _state() async {
   SharedPreferences.setMockInitialValues({});
@@ -202,6 +203,10 @@ void main() {
 
     // Phone setup v2: "On this phone" opens its own screen (A), where the
     // in-app setup leads; Termux moved behind it, under Other ways.
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('welcome-choice-phone')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('welcome-choice-phone')));
     await tester.pumpAndSettle();
     expect(find.byType(PhoneSetupStartScreen), findsOneWidget);
@@ -323,6 +328,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -354,6 +360,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -392,6 +399,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -447,6 +455,7 @@ void main() {
       ),
     );
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -493,6 +502,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),
@@ -527,6 +537,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(
       find.byKey(const ValueKey('server-url-field')),

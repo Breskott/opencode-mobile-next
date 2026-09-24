@@ -13,6 +13,7 @@ import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/first_run_path.dart';
+import 'support/server_editor.dart';
 
 /// The first-run connect screen tests by itself once the required fields are
 /// valid and the person pauses (UX plan 5.6 step 3).
@@ -85,6 +86,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     // Every prefix from "https://b" on is a valid address. Typing faster
     // than the pause must not probe any of them.
@@ -117,6 +119,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(find.byKey(_url), 'ftp://box.example');
     await tester.pump(const Duration(seconds: 3));
@@ -142,6 +145,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(find.byKey(_url), 'https://old.example');
     await tester.pump(autoTestPause + const Duration(milliseconds: 50));
@@ -182,6 +186,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(find.byKey(_url), 'https://box.example:4096');
     await tester.pump(autoTestPause + const Duration(milliseconds: 50));
@@ -289,6 +294,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add server'));
     await tester.pumpAndSettle();
+    await openServerManualAddress(tester);
     await tester.enterText(find.byKey(_url), 'https://another.example');
     await tester.pump(const Duration(seconds: 5));
     expect(probed, isEmpty);
@@ -299,6 +305,7 @@ void main() {
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(store, controller));
     await openFirstRunConnect(tester);
+    await openServerManualAddress(tester);
 
     await tester.enterText(find.byKey(_url), 'https://box.example');
     await tester.tap(find.byTooltip('Close server editor'));
