@@ -423,7 +423,7 @@ void main() {
         app(TeamHomeScreen(controller: controller, now: () => clock)),
       );
       await tester.pumpAndSettle();
-      await tester.tap(key('team-home-segment-agents'));
+      await tester.tap(key('team-home-agents-row'));
       await tester.pumpAndSettle();
       // The stopped one sits under the collapsed "Suspended on the host"
       // group (TEAM-115); open it so every word is on screen.
@@ -435,7 +435,7 @@ void main() {
       // the crashed exception, then working, idle, stopped.
       final expected = {
         'e-blocked': ('Blocked', AppIconography.blocked),
-        'f-waiting': ('Waiting (needs input)', AppIconography.question),
+        'f-waiting': ('Waiting for you', AppIconography.question),
         'd-crashed': ('Crashed', AppIconography.error),
         'c-working': ('Working', AppIconography.play),
         'b-idle': ('Idle', AppIconography.statusDot),
@@ -443,8 +443,9 @@ void main() {
       };
       for (final MapEntry(key: id, value: (word, glyph)) in expected.entries) {
         final row = key('team-home-agent-$id');
+        // The state leads the row's line; the title names the role.
         expect(
-          find.descendant(of: row, matching: find.text(word)),
+          find.descendant(of: row, matching: find.textContaining(word)),
           findsOneWidget,
           reason: '$id says $word',
         );
@@ -465,7 +466,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('the second line is current work · ctx N% · age', (
+    testWidgets('the line is the state, the current work and when', (
       tester,
     ) async {
       final (controller, _) = await boot(configure: runShape);
@@ -474,36 +475,26 @@ void main() {
         app(TeamHomeScreen(controller: controller, now: () => clock)),
       );
       await tester.pumpAndSettle();
-      await tester.tap(key('team-home-segment-agents'));
+      await tester.tap(key('team-home-agents-row'));
       await tester.pumpAndSettle();
       final row = key('team-home-agent-fox');
-      expect(
-        find.descendant(of: row, matching: find.text('Sync engine')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: row, matching: find.text('ctx 63%')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: row, matching: find.text('12m ago')),
-        findsOneWidget,
-      );
+      // Named by role; the pool, provider, model and context use are
+      // engine details, left to the agent's own page.
+      expect(find.descendant(of: row, matching: find.text('Worker')), findsOne);
       expect(
         find.descendant(
           of: row,
-          matching: find.text('gastown.polecat · opencode / openai/gpt-x'),
+          matching: find.text('Working · Sync engine · 12m ago'),
         ),
         findsOneWidget,
       );
-      // Owl has neither work, context nor activity: just the fallback.
-      expect(
-        find.descendant(
-          of: key('team-home-agent-owl'),
-          matching: find.text('No current work'),
-        ),
-        findsOneWidget,
-      );
+      for (final engine in ['gastown.polecat', 'opencode /', 'ctx ']) {
+        expect(
+          find.descendant(of: row, matching: find.textContaining(engine)),
+          findsNothing,
+          reason: engine,
+        );
+      }
 
       // The row opens the Agent detail by default.
       await tester.tap(row);

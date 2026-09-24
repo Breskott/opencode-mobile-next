@@ -49,6 +49,39 @@ const _allowedNounKeys = <String>{
   'teamUiGateLabelSessionId',
 };
 
+/// The AI Team's list rows, card and run Overview speak the person's words
+/// (docs/design/aiteam-redesign-2026-09-24.md): a run is a "task", agents
+/// are named by role, the host is "this phone" or the computer's name.
+/// Gas City's insides, its loopback address and version numbers stay under
+/// Technical details. Every string of these surfaces is scanned, labels and
+/// sentences alike.
+const _teamSurfacePrefixes = <String>[
+  'teamUiCard',
+  'teamUiHome',
+  'teamUiRun',
+  'teamUiTask',
+  'teamUiAgentRole',
+  'teamUiAgentsList',
+  'teamUiHostPhrase',
+];
+
+final _engineWords = RegExp(
+  r'\b(convoys?|formulas?|beads?|rigs?|city|polecats?|refinery|sling|'
+  r'wisps?|mayor|gastown)\b|127\.0\.0\.1|\{version\}|\b\d+\.\d+\.\d+\b',
+  caseSensitive: false,
+);
+
+/// Strings of those surfaces shown only under Technical details, where the
+/// engine's own words belong. Every entry names where it is shown.
+const _allowedEngineKeys = <String>{
+  // The run's Technical details sheet: the formula id's label.
+  'teamUiRunLabelFormula',
+  // The run's Technical details sheet: the product word beside the Gas
+  // City term ("Task · convoy").
+  'teamUiRunTermBatch',
+  'teamUiRunTermFormula',
+};
+
 /// At most this many words makes a value a label rather than a sentence.
 const _maxLabelWords = 4;
 
@@ -175,6 +208,56 @@ void main() {
           'the visible label does not.\n'
           '${offenders.join('\n')}',
     );
+  });
+
+  test('the engine-word rule catches Gas City terms, not plain words', () {
+    expect(_engineWords.hasMatch('Batch · convoy · 1 of 5 done'), isTrue);
+    expect(_engineWords.hasMatch('Run · formula mol-upgrade'), isTrue);
+    expect(_engineWords.hasMatch('city phone'), isTrue);
+    expect(_engineWords.hasMatch('127.0.0.1 · This phone'), isTrue);
+    expect(_engineWords.hasMatch('Gas City {version}'), isTrue);
+    expect(_engineWords.hasMatch('Gas City 1.4.1'), isTrue);
+    expect(_engineWords.hasMatch('gastown.polecat'), isTrue);
+    expect(_engineWords.hasMatch('Working · 3 of 5 steps done'), isFalse);
+    expect(_engineWords.hasMatch('On this phone · Not answering'), isFalse);
+    expect(_engineWords.hasMatch('Reviewer (merges)'), isFalse);
+    expect(_engineWords.hasMatch('Electricity'), isFalse);
+  });
+
+  test('AI Team rows and cards use the person\'s words, not the engine\'s', () {
+    final offenders = <String>[];
+    for (final entry in _englishStrings().entries) {
+      if (!_teamSurfacePrefixes.any(entry.key.startsWith)) continue;
+      if (_allowedEngineKeys.contains(entry.key)) continue;
+      if (_engineWords.firstMatch(entry.value) case final match?) {
+        offenders.add(
+          '${entry.key}: "${entry.value}" contains "${match.group(0)}"',
+        );
+      }
+    }
+    expect(
+      offenders,
+      isEmpty,
+      reason:
+          'A task row, the Work tab card and a task\'s Overview never show '
+          'Gas City\'s insides (convoy, formula, bead, rig, city, polecat, '
+          'refinery, sling, wisp), 127.0.0.1 or a version; those go under '
+          'Technical details (docs/design/aiteam-redesign-2026-09-24.md).\n'
+          '${offenders.join('\n')}',
+    );
+  });
+
+  test('every allow-listed engine key is still there and still needs it', () {
+    final strings = _englishStrings();
+    for (final key in _allowedEngineKeys) {
+      final value = strings[key];
+      expect(value, isNotNull, reason: '$key is allow-listed but gone');
+      expect(
+        _engineWords.hasMatch(value!),
+        isTrue,
+        reason: '$key no longer uses an engine word; drop it from the list',
+      );
+    }
   });
 
   test('every allow-listed noun key still needs its exemption', () {

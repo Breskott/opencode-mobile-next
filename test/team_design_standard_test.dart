@@ -112,24 +112,23 @@ void main() {
     );
   });
 
-  testWidgets('§6: a finished run keeps "Done · merged" and its whole '
-      '"Finished 5h ago" line', (tester) async {
-    // 600 dp: with the test font the line needs two lines beside the
-    // state word, so a one-line row would cut "Finished 5h ago" off.
+  testWidgets('§6: a finished task keeps its whole "Done · merged 5h ago" '
+      'line', (tester) async {
     await _pump(tester, TeamScene.loaded, width: 600);
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(_key('team-home-completed-group'));
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(
-      tester.widget<Text>(_key('team-home-run-state-ma-lqw')).data,
-      'Done · merged',
+    final line = find.descendant(
+      of: _key('team-home-run-state-ma-lqw'),
+      matching: find.byType(RichText),
     );
-    final line = find.text('Batch · convoy · 1 of 1 done · Finished 5h ago');
     expect(line, findsOneWidget);
-    final paragraph = tester.renderObject<RenderParagraph>(
-      find.descendant(of: line, matching: find.byType(RichText)),
+    expect(
+      tester.widget<RichText>(line).text.toPlainText(),
+      'Done · merged 5h ago',
     );
-    expect(paragraph.didExceedMaxLines, isFalse);
+    expect(
+      tester.renderObject<RenderParagraph>(line).didExceedMaxLines,
+      isFalse,
+    );
   });
 
   testWidgets('§1: the run keeps one icon action; Technical details and '
@@ -148,18 +147,17 @@ void main() {
     expect(_key('team-run-cancel'), findsOneWidget);
   });
 
-  testWidgets('the run progress bar is drawn: its segments are 8 dp tall', (
+  testWidgets('the run\'s four stages are drawn, not zero-sized', (
     tester,
   ) async {
+    // The old progress bar was once laid out 0 dp tall and never seen;
+    // its replacement, the stage line, must take real space.
     await _pump(tester, TeamScene.loaded, run: true);
     await tester.pump(const Duration(milliseconds: 300));
-    final segments = find.descendant(
-      of: _key('team-run-progress'),
-      matching: find.byType(ColoredBox),
-    );
-    expect(segments, findsWidgets);
-    for (final element in segments.evaluate()) {
-      expect((element.renderObject! as RenderBox).size.height, 8);
-    }
+    final stages = _key('team-run-stage-line');
+    expect(stages, findsOneWidget);
+    final size = tester.getSize(stages);
+    expect(size.height, greaterThan(16));
+    expect(size.width, greaterThan(100));
   });
 }

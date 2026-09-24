@@ -21236,12 +21236,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No agents working} =1{1 agent working} other{{count} agents working}}'**
   String teamUiCardAgentsWorking(int count);
 
-  /// Small secondary Gas City term on the Workspace AI Team card header, naming the city
-  ///
-  /// In en, this message translates to:
-  /// **'city {city}'**
-  String teamUiCardCity(String city);
-
   /// Collapsed row on the Workspace AI Team card for runs that finished
   ///
   /// In en, this message translates to:
@@ -21251,13 +21245,13 @@ abstract class AppLocalizations {
   /// Workspace AI Team card empty state, second line (Sprint A: no start-a-run on the phone)
   ///
   /// In en, this message translates to:
-  /// **'Start runs from the host for now.'**
+  /// **'Start tasks on the computer for now.'**
   String get teamUiCardEmptyHint;
 
   /// AI Team empty runs list, first line (Workspace card and home). 'Recent': a host lists finished runs for a bounded time, so the list can be empty after the team has worked
   ///
   /// In en, this message translates to:
-  /// **'No recent runs.'**
+  /// **'No recent tasks'**
   String get teamUiCardEmptyTitle;
 
   /// Workspace AI Team card error: the supervisor answered but the configured city is not running
@@ -21424,7 +21418,7 @@ abstract class AppLocalizations {
   /// Run state word on a Workspace AI Team card run row
   ///
   /// In en, this message translates to:
-  /// **'Waiting for an agent'**
+  /// **'Waiting for a worker'**
   String get teamUiCardRunStateWaiting;
 
   /// Run state word on a Workspace AI Team card run row
@@ -21436,7 +21430,7 @@ abstract class AppLocalizations {
   /// Run state word (card row, home row, run detail) when every open work item of the batch is in the merge agent's hands (TEAM-117)
   ///
   /// In en, this message translates to:
-  /// **'Waiting for merge'**
+  /// **'Reviewing'**
   String get teamUiCardRunStateWaitingMerge;
 
   /// Run state word (card row, home row) for a finished run whose work landed on its target branch
@@ -21444,18 +21438,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done · merged'**
   String get teamUiCardRunStateMerged;
-
-  /// Small secondary Gas City term beside a batch run title
-  ///
-  /// In en, this message translates to:
-  /// **'convoy'**
-  String get teamUiCardRunTermBatch;
-
-  /// Small secondary Gas City term beside a formula run title
-  ///
-  /// In en, this message translates to:
-  /// **'formula'**
-  String get teamUiCardRunTermFormula;
 
   /// Workspace AI Team card one-sentence status for a blocked headline run
   ///
@@ -21523,12 +21505,6 @@ abstract class AppLocalizations {
   /// **'Showing data from {time} · host unreachable'**
   String teamUiCardStale(String time);
 
-  /// Workspace AI Team card header name; the provider is named openly
-  ///
-  /// In en, this message translates to:
-  /// **'AI Team · Gas City'**
-  String get teamUiCardTitle;
-
   /// AI Team home fleet row when the agent has no work item
   ///
   /// In en, this message translates to:
@@ -21568,7 +21544,7 @@ abstract class AppLocalizations {
   /// AI Team home fleet row agent state when the agent waits on the person
   ///
   /// In en, this message translates to:
-  /// **'Waiting (needs input)'**
+  /// **'Waiting for you'**
   String get teamUiHomeAgentStateWaiting;
 
   /// AI Team home fleet row agent state
@@ -21634,7 +21610,7 @@ abstract class AppLocalizations {
   /// AI Team home Runs filter chip: completed and cancelled runs
   ///
   /// In en, this message translates to:
-  /// **'Completed'**
+  /// **'Done'**
   String get teamUiHomeFilterCompleted;
 
   /// AI Team home read-only gate sheet line when the host runs on a computer
@@ -21721,23 +21697,6 @@ abstract class AppLocalizations {
   /// **'Options'**
   String get teamUiHomeGateOptions;
 
-  /// AI Team home host identity chip; host is the host name from the team URL with its kind word (teamUiHomeHostChipHost), city the Gas City name, access the read-only or controls word
-  ///
-  /// In en, this message translates to:
-  /// **'{host} · Gas City {version} · city {city} · {access}'**
-  String teamUiHomeHostChip(
-    String host,
-    String version,
-    String city,
-    String access,
-  );
-
-  /// AI Team home host identity chip when the host reported no city
-  ///
-  /// In en, this message translates to:
-  /// **'{host} · Gas City {version} · {access}'**
-  String teamUiHomeHostChipNoCity(String host, String version, String access);
-
   /// AI Team home Technical details sheet heading over the copyable provider values
   ///
   /// In en, this message translates to:
@@ -21755,24 +21714,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Decisions, failed runs and blocked agents show up here.'**
   String get teamUiHomeNeedsYouEmptyHint;
-
-  /// AI Team home run row subtitle for a batch run; the Gas City term follows the product term
-  ///
-  /// In en, this message translates to:
-  /// **'Batch · convoy'**
-  String get teamUiHomeRunKindBatch;
-
-  /// AI Team home run row subtitle for a formula run without a formula name
-  ///
-  /// In en, this message translates to:
-  /// **'Run · formula'**
-  String get teamUiHomeRunKindFormula;
-
-  /// AI Team home run row subtitle for a formula run; formula is the server-side formula name
-  ///
-  /// In en, this message translates to:
-  /// **'Run · formula {formula}'**
-  String teamUiHomeRunKindFormulaNamed(String formula);
 
   /// AI Team home run row marker when a gate waits on the person for this run
   ///
@@ -21795,7 +21736,7 @@ abstract class AppLocalizations {
   /// AI Team home Runs segment empty title when a filter or search hides every run
   ///
   /// In en, this message translates to:
-  /// **'No runs match.'**
+  /// **'No tasks match.'**
   String get teamUiHomeRunsEmptyFiltered;
 
   /// AI Team home Runs segment empty hint when a filter or search hides every run
@@ -21813,7 +21754,7 @@ abstract class AppLocalizations {
   /// AI Team home Runs search field hint
   ///
   /// In en, this message translates to:
-  /// **'Search runs by title'**
+  /// **'Search tasks'**
   String get teamUiHomeSearchHint;
 
   /// AI Team home segment label with the fleet size
@@ -21855,7 +21796,7 @@ abstract class AppLocalizations {
   /// Run detail blocked cause derived from open dependencies
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{waiting on one other item} other{waiting on {count} other items}}'**
+  /// **'{count, plural, =1{waiting on one other step} other{waiting on {count} other steps}}'**
   String teamUiRunBlockedByDeps(int count);
 
   /// Run detail blocked line; title is the work item, cause is the server text
@@ -21975,7 +21916,7 @@ abstract class AppLocalizations {
   /// Run detail state when the run id is not in the host’s list
   ///
   /// In en, this message translates to:
-  /// **'This run is no longer on the host'**
+  /// **'This task is no longer on the host'**
   String get teamUiRunMissingTitle;
 
   /// Run detail inline card label when no agent is named
@@ -22040,25 +21981,25 @@ abstract class AppLocalizations {
   /// Run detail tab
   ///
   /// In en, this message translates to:
-  /// **'Work'**
+  /// **'Steps'**
   String get teamUiRunTabWork;
 
   /// Run detail app bar term for a batch run; convoy is the Gas City term
   ///
   /// In en, this message translates to:
-  /// **'Run · convoy'**
+  /// **'Task · convoy'**
   String get teamUiRunTermBatch;
 
   /// Run detail app bar term for a formula run; formula is the Gas City term
   ///
   /// In en, this message translates to:
-  /// **'Run · formula'**
+  /// **'Task · formula'**
   String get teamUiRunTermFormula;
 
   /// Run detail app bar term when the kind is unknown
   ///
   /// In en, this message translates to:
-  /// **'Run'**
+  /// **'Task'**
   String get teamUiRunTermUnknown;
 
   /// Run timeline row for an agent session that stopped
@@ -22094,7 +22035,7 @@ abstract class AppLocalizations {
   /// Run timeline empty state hint
   ///
   /// In en, this message translates to:
-  /// **'Events appear here as the team works on this run.'**
+  /// **'Events appear here as the team works on this task.'**
   String get teamUiRunTimelineEmptyHint;
 
   /// Run timeline filter chip
@@ -22796,7 +22737,7 @@ abstract class AppLocalizations {
   /// Work row detail: how many open items this one still needs
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Waits on 1 item} other{Waits on {count} items}}'**
+  /// **'{count, plural, =1{Waits on 1 step} other{Waits on {count} steps}}'**
   String teamUiWorkWaitsOn(int count);
 
   /// Run Overview usage chip: Gas City usage is city-level (today), never per run; {usage} is the est. cost and compact tokens
@@ -23564,13 +23505,13 @@ abstract class AppLocalizations {
   /// Label of the floating action button on the AI Team home (02-ux §3, §7)
   ///
   /// In en, this message translates to:
-  /// **'Start a run'**
+  /// **'Give the team a task'**
   String get teamUiStartRunFab;
 
   /// Title of the Start-a-run sheet
   ///
   /// In en, this message translates to:
-  /// **'Start a run'**
+  /// **'Give the team a task'**
   String get teamUiStartRunTitle;
 
   /// Label of the objective field
@@ -23750,13 +23691,13 @@ abstract class AppLocalizations {
   /// Title of the pending card on the AI Team home after the objective was sent, until a run appears
   ///
   /// In en, this message translates to:
-  /// **'Planning… (Mayor)'**
+  /// **'Planning the steps…'**
   String get teamUiStartRunPlanning;
 
   /// Body of the pending Planning card
   ///
   /// In en, this message translates to:
-  /// **'The planner is turning the objective into work. The run appears in this list once it has.'**
+  /// **'The planner is turning it into steps. The task shows in this list once it has.'**
   String get teamUiStartRunPlanningHint;
 
   /// Title of the pending card after 30 minutes without a run
@@ -26203,7 +26144,7 @@ abstract class AppLocalizations {
   /// AI Team home, Runs: body of the empty list when this phone can start a run.
   ///
   /// In en, this message translates to:
-  /// **'A run is a job the team works through. Start one and its progress shows here.'**
+  /// **'Say what you need, and the team splits it into steps and shows its progress here.'**
   String get emptyTeachTeamRunsMessage;
 
   /// Skills: body of the empty list.
@@ -29379,6 +29320,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bring the team\'s work into {project}'**
   String aiteamBringInAction(String project);
+
+  /// AI Team host phrase (home subtitle, Work tab section) when the team runs on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'On this phone'**
+  String get teamUiHostPhrasePhone;
+
+  /// AI Team host phrase when the team runs on a computer with a name, e.g. "On pop-os"
+  ///
+  /// In en, this message translates to:
+  /// **'On {name}'**
+  String teamUiHostPhraseComputerNamed(String name);
+
+  /// AI Team host phrase when the computer has no name, only an address
+  ///
+  /// In en, this message translates to:
+  /// **'On your computer'**
+  String get teamUiHostPhraseComputer;
+
+  /// Added to the AI Team host phrase after " · " when every agent is switched off on the host
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get teamUiHostPhrasePaused;
+
+  /// Added to the AI Team host phrase after " · " when the shown data is old or the host stopped answering
+  ///
+  /// In en, this message translates to:
+  /// **'Not answering'**
+  String get teamUiHostPhraseNotAnswering;
+
+  /// How far an AI Team task is, on its row and its Overview
+  ///
+  /// In en, this message translates to:
+  /// **'{total, plural, =1{{done} of 1 step done} other{{done} of {total} steps done}}'**
+  String teamUiTaskSteps(int done, int total);
+
+  /// Supporting line of a finished AI Team task, e.g. "Done 5h ago"
+  ///
+  /// In en, this message translates to:
+  /// **'Done {when}'**
+  String teamUiTaskDoneAgo(String when);
+
+  /// Supporting line of a finished AI Team task whose work was merged, e.g. "Done · merged 5h ago"
+  ///
+  /// In en, this message translates to:
+  /// **'Done · merged {when}'**
+  String teamUiTaskMergedAgo(String when);
+
+  /// Supporting line of a cancelled AI Team task, e.g. "Cancelled 5h ago"
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled {when}'**
+  String teamUiTaskCancelledAgo(String when);
+
+  /// Section heading of the open tasks on the AI Team home
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get teamUiHomeTasksHeading;
+
+  /// Section heading of the tasks finished today on the AI Team home
+  ///
+  /// In en, this message translates to:
+  /// **'Done today'**
+  String get teamUiHomeDoneToday;
+
+  /// Section heading of finished tasks on the AI Team home when some finished before today
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get teamUiHomeDoneEarlier;
+
+  /// Row under the first three finished tasks that shows the rest
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Show 1 more} other{Show {count} more}}'**
+  String teamUiHomeDoneMore(int count);
+
+  /// The AI Team home row that opens the agents list: how many agents are on
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No agents} =1{1 agent} other{{count} agents}}'**
+  String teamUiHomeAgentsRowCount(int count);
+
+  /// Added after " · " to the agents row: how many agents are working now
+  ///
+  /// In en, this message translates to:
+  /// **'{count} working'**
+  String teamUiHomeAgentsRowWorking(int count);
+
+  /// Top bar button that hides the task search on the AI Team home
+  ///
+  /// In en, this message translates to:
+  /// **'Close search'**
+  String get teamUiHomeSearchClose;
+
+  /// Opens the full question to answer it (AI Team home, run Overview and the Work tab section)
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get teamUiHomeNeedsYouAnswer;
+
+  /// Opens the full question sheet from the inline question block
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get teamUiHomeNeedsYouMore;
+
+  /// Title of the inline question block when the question belongs to no known task
+  ///
+  /// In en, this message translates to:
+  /// **'The team has a question'**
+  String get teamUiHomeNeedsYouFallbackTitle;
+
+  /// Screen-reader announcement of an inline AI Team question
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you: {question}'**
+  String teamUiHomeNeedsYouAnnouncement(String question);
+
+  /// Screen-reader hint of the agents row on the AI Team home
+  ///
+  /// In en, this message translates to:
+  /// **'Open the agents list'**
+  String get teamUiHomeAgentsRowHint;
+
+  /// The Work tab AI Team section when no task is running or waiting
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing running'**
+  String get teamUiCardNothingRunning;
+
+  /// Screen-reader hint of the Work tab AI Team section header, which opens the AI Team home
+  ///
+  /// In en, this message translates to:
+  /// **'Open AI Team'**
+  String get teamUiCardOpenHint;
+
+  /// An AI Team agent that does the steps of tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Worker'**
+  String get teamUiAgentRoleWorker;
+
+  /// An AI Team agent that reviews finished work and merges it
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewer (merges)'**
+  String get teamUiAgentRoleReviewer;
+
+  /// The AI Team agent that turns a task into steps
+  ///
+  /// In en, this message translates to:
+  /// **'Planner'**
+  String get teamUiAgentRolePlanner;
+
+  /// An AI Team agent that watches the others and restarts stuck ones
+  ///
+  /// In en, this message translates to:
+  /// **'Supervisor'**
+  String get teamUiAgentRoleSupervisor;
+
+  /// An AI Team agent that does chores for the team
+  ///
+  /// In en, this message translates to:
+  /// **'Helper'**
+  String get teamUiAgentRoleHelper;
+
+  /// An AI Team agent whose role the app does not know
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get teamUiAgentRoleOther;
+
+  /// First of the four stages of an AI Team task
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get teamUiRunStageWaiting;
+
+  /// Second of the four stages of an AI Team task
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get teamUiRunStageWorking;
+
+  /// Third of the four stages of an AI Team task: handed to the reviewer, who merges
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewing'**
+  String get teamUiRunStageReviewing;
+
+  /// Last of the four stages of an AI Team task: merged
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get teamUiRunStageDone;
+
+  /// Screen-reader label of the four-stage line on an AI Team task
+  ///
+  /// In en, this message translates to:
+  /// **'Stage {position} of 4: {stage}'**
+  String teamUiRunStageSemantics(int position, String stage);
+
+  /// Section heading of the steps on an AI Team task Overview
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get teamUiRunStepsHeading;
+
+  /// Row under the first steps on the Overview that opens the Steps tab
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, other{See all {count} steps}}'**
+  String teamUiRunStepsAll(int count);
+
+  /// The step counts under the Details row of an AI Team task
+  ///
+  /// In en, this message translates to:
+  /// **'{done} done · {working} working · {blocked} held up'**
+  String teamUiRunDetailsCounts(int done, int working, int blocked);
+
+  /// Label of the cost and tokens under the Details row of an AI Team task
+  ///
+  /// In en, this message translates to:
+  /// **'Usage'**
+  String get teamUiRunDetailsUsage;
+
+  /// Label of the step counts under the Details row of an AI Team task
+  ///
+  /// In en, this message translates to:
+  /// **'Steps'**
+  String get teamUiRunDetailsStepsLabel;
+
+  /// Label of how long the task has run, under the Details row
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get teamUiRunDetailsElapsed;
 }
 
 class _AppLocalizationsDelegate

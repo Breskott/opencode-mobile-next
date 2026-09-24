@@ -4,8 +4,10 @@
 // the recorded Gas City fixture with its runs, work, agents and questions
 // replaced by a small believable team, and a pinned clock.
 //
-// Only APIs that already existed before the design-standard migration are
-// used here, so the same scenes render the old screens for "before".
+// The scenes and the controller use only APIs that existed before the
+// design-standard migration and the redesign, so the same scenes render the
+// old screens for "before" (tool/capture/aiteam_redesign_test.dart);
+// [TeamShot.agents] is the redesign's own agents list.
 import 'dart:async';
 import 'dart:io';
 
@@ -19,6 +21,7 @@ import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_agents_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,6 +46,10 @@ enum TeamScene {
 
   /// The probe never answers: connecting, then after 8 s not answering.
   connecting,
+
+  /// [loaded] plus nine more open tasks: a list long enough (more than
+  /// eight) for search and filters.
+  busy,
 }
 
 class _SceneGateway extends FixtureOrchestrationGateway {
@@ -113,6 +120,19 @@ class _SceneGateway extends FixtureOrchestrationGateway {
             updatedAt: _ago(const Duration(hours: 5)),
             finishedAt: _ago(const Duration(hours: 5)),
           ),
+          if (scene == TeamScene.busy)
+            for (var i = 1; i <= 9; i++)
+              OrchestrationRun(
+                id: 'busy-$i',
+                title: 'Follow-up task $i',
+                state: i.isEven ? RunState.waiting : RunState.working,
+                kind: RunKind.formula,
+                formula: 'mol-follow-up',
+                stepCount: 3,
+                completedSteps: i % 3,
+                startedAt: _ago(Duration(minutes: 20 + i)),
+                updatedAt: _ago(Duration(minutes: 10 + i)),
+              ),
         ];
 
   @override
@@ -289,7 +309,7 @@ Future<OrchestrationController> teamSceneController(
       ),
       TeamScene.connecting => (_) => Completer<ProbeVerdict>().future,
       // The fixture provider's own probe finds the recorded city.
-      TeamScene.loaded || TeamScene.empty => null,
+      TeamScene.loaded || TeamScene.empty || TeamScene.busy => null,
     },
     now: () => teamSceneClock,
   );
@@ -314,7 +334,9 @@ enum TeamShot {
   agentOutput(TeamScene.loaded, 'team_agent_output'),
   // The in-app AI Team: the same team hosted on this phone.
   homeLoadedPhone(TeamScene.loaded, 'team_home_loaded_phone', onPhone: true),
-  cardPhone(TeamScene.loaded, 'team_card_phone', onPhone: true);
+  cardPhone(TeamScene.loaded, 'team_card_phone', onPhone: true),
+  // The agents list the home's one agents row opens.
+  agents(TeamScene.loaded, 'team_agents');
 
   const TeamShot(this.scene, this.fileName, {this.onPhone = false});
 
@@ -353,6 +375,7 @@ Future<OrchestrationController> pumpTeamShot(
       controller: controller,
       agentId: 'fox',
     ),
+    TeamShot.agents => TeamAgentsScreen(controller: controller, now: now),
     TeamShot.card || TeamShot.cardPhone => Scaffold(
       body: SafeArea(
         child: ListView(
@@ -378,9 +401,6 @@ Future<OrchestrationController> pumpTeamShot(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   switch (shot) {
-    case TeamShot.homeLoaded || TeamShot.homeLoadedPhone:
-      // The finished run: "Done · merged · Finished 5h ago" under Completed.
-      await tester.tap(find.byKey(const ValueKey('team-home-completed-group')));
     case TeamShot.homeNotAnswering:
       // Past the 8 s rule (design standard §4).
       await tester.pump(const Duration(seconds: 9));
@@ -388,12 +408,15 @@ Future<OrchestrationController> pumpTeamShot(
       await tester.tap(find.byKey(const ValueKey('team-run-tab-work')));
     case TeamShot.startRun:
       await tester.tap(find.byKey(const ValueKey('team-home-start-run')));
-    case TeamShot.homeEmpty ||
+    case TeamShot.homeLoaded ||
+        TeamShot.homeLoadedPhone ||
+        TeamShot.homeEmpty ||
         TeamShot.homeError ||
         TeamShot.runOverview ||
         TeamShot.card ||
         TeamShot.cardPhone ||
-        TeamShot.agentOutput:
+        TeamShot.agentOutput ||
+        TeamShot.agents:
       break;
   }
   await tester.pump();

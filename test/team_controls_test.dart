@@ -636,10 +636,10 @@ void main() {
       expect(gateway.calls.single.target, 'oc-xru');
       expect(key('team-run-receipt'), findsOneWidget);
       expect(find.text('Stop run · Sent'), findsOneWidget);
-      // The chip sits under the state header, before the progress bar.
+      // The chip sits under the status, before the four stages.
       final chipY = tester.getTopLeft(key('team-run-receipt')).dy;
       expect(chipY, greaterThan(tester.getTopLeft(key('team-run-state')).dy));
-      expect(chipY, lessThan(tester.getTopLeft(key('team-run-progress')).dy));
+      expect(chipY, lessThan(tester.getTopLeft(key('team-run-stage-line')).dy));
       await drain(tester);
     });
 
@@ -797,22 +797,22 @@ void main() {
       );
       await pumpHome(tester, controller);
       expect(key('team-home-runs-empty'), findsOneWidget);
-      expect(find.text('No recent runs.'), findsOneWidget);
+      expect(find.text('No recent tasks'), findsOneWidget);
       expect(
         find.text(
-          'A run is a job the team works through. Start one and its '
-          'progress shows here.',
+          'Say what you need, and the team splits it into steps and shows '
+          'its progress here.',
         ),
         findsOneWidget,
       );
-      expect(find.text('Start runs from the host for now.'), findsNothing);
+      expect(find.text('Start tasks on the computer for now.'), findsNothing);
       // Design standard §2: one primary per screen. The empty state teaches;
       // Start a run is the button pinned below the list, not a second one
       // inside the empty state.
       expect(
         find.descendant(
           of: key('team-home-runs-empty'),
-          matching: find.text('Start a run'),
+          matching: find.text('Give the team a task'),
         ),
         findsNothing,
       );
@@ -872,7 +872,7 @@ void main() {
         // The home shows the pending card with the planner's output a tap
         // away.
         expect(key('team-start-run-sheet'), findsNothing);
-        expect(find.text('Planning… (Mayor)'), findsOneWidget);
+        expect(find.text('Planning the steps…'), findsOneWidget);
         expect(
           find.text('Ship offline-first sessions with conflict resolution'),
           findsOneWidget,
@@ -895,7 +895,7 @@ void main() {
         ];
         await controller.refresh();
         await settle(tester);
-        expect(find.text('Planning… (Mayor)'), findsNothing);
+        expect(find.text('Planning the steps…'), findsNothing);
         expect(key('team-planning-key-1'), findsNothing);
         expect(
           find.text('Ship offline-first sessions with conflict resolution'),
@@ -1019,7 +1019,7 @@ void main() {
 
         // The sheet closed; the home says the task went out.
         expect(key('team-start-run-sheet'), findsNothing);
-        expect(find.text('Planning… (Mayor)'), findsNothing);
+        expect(find.text('Planning the steps…'), findsNothing);
         expect(find.text('Task sent to an agent · Confirmed'), findsOneWidget);
         final record = controller.latestMutation(
           kind: MutationKind.createWork,
@@ -1125,7 +1125,7 @@ void main() {
       await tester.enterText(key('team-start-run-objective'), 'Add dark mode');
       await tester.tap(key('team-start-run-send'));
       await tester.pumpAndSettle();
-      expect(find.text('Planning… (Mayor)'), findsOneWidget);
+      expect(find.text('Planning the steps…'), findsOneWidget);
 
       clock = clock.add(const Duration(minutes: 31));
       await pumpHome(tester, controller);

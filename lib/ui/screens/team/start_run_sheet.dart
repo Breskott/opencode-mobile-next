@@ -227,8 +227,10 @@ class _StartRunSheetState extends State<StartRunSheet> {
       final inset = MediaQuery.viewInsetsOf(context).bottom;
       final planner = teamPlannerAgent(widget.controller.snapshot.agents);
       final Widget body;
+      Widget? action;
       if (_direct) {
         body = _directForm(context);
+        action = _directAction(context);
       } else if (planner == null) {
         body = _PlannerOff(
           key: const ValueKey('team-start-run-planner-missing'),
@@ -243,30 +245,48 @@ class _StartRunSheetState extends State<StartRunSheet> {
         );
       } else {
         body = _form(context, planner);
+        action = _formAction(context, planner);
       }
+      final bottom = 16 + MediaQuery.paddingOf(context).bottom;
+      // The form scrolls; its action stays pinned under it, so Send is on
+      // screen however long the form or large the text (design standard
+      // §1: the primary is pinned, never scrolled away).
       return Padding(
         key: const ValueKey('team-start-run-sheet'),
         padding: EdgeInsets.only(bottom: inset),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            0,
-            16,
-            16 + MediaQuery.paddingOf(context).bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                l10n.teamUiStartRunTitle,
-                key: const ValueKey('team-start-run-title'),
-                style: theme.textTheme.titleLarge,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  0,
+                  16,
+                  action == null ? bottom : 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      l10n.teamUiStartRunTitle,
+                      key: const ValueKey('team-start-run-title'),
+                      style: theme.textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 12),
+                    body,
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              body,
-            ],
-          ),
+            ),
+            if (action != null)
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, bottom),
+                child: action,
+              ),
+          ],
         ),
       );
     },
@@ -398,16 +418,19 @@ class _StartRunSheetState extends State<StartRunSheet> {
               ],
             ),
           ),
-        KitButton.primary(
-          key: const ValueKey('team-start-run-send'),
-          onPressed: _sending ? null : () => _send(planner),
-          working: _sending,
-          icon: AppIconography.send,
-          label: l10n.teamUiStartRunSend,
-        ),
       ],
     );
   }
+
+  /// The planner form's action, pinned under the scrolling form.
+  Widget _formAction(BuildContext context, OrchestrationAgent planner) =>
+      KitButton.primary(
+        key: const ValueKey('team-start-run-send'),
+        onPressed: _sending ? null : () => _send(planner),
+        working: _sending,
+        icon: AppIconography.send,
+        label: _copy(context).teamUiStartRunSend,
+      );
 
   /// The direct task (TEAM-306): intro, project, title, details, Send to
   /// an agent, the host's refusal when any, and the host guide below for
@@ -506,9 +529,19 @@ class _StartRunSheetState extends State<StartRunSheet> {
             ],
           ),
         ],
-        const SizedBox(height: 20),
-        // Send is the sheet's one primary; the host guide is the rare
-        // other path (design standard §2).
+      ],
+    );
+  }
+
+  /// The direct task's actions, pinned under the scrolling form: Send is
+  /// the sheet's one primary; the host guide is the rare other path
+  /// (design standard §2).
+  Widget _directAction(BuildContext context) {
+    final l10n = _copy(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         KitButton.primary(
           key: const ValueKey('team-start-run-direct-send'),
           onPressed: _sending ? null : _sendDirect,

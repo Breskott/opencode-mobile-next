@@ -1083,10 +1083,7 @@ void main() {
         app(TeamHomeScreen(controller: team, now: () => clock)),
       );
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.byKey(const ValueKey('team-home-segment-needs-you')),
-      );
-      await tester.pumpAndSettle();
+      // One question: shown first on the home, in full, no tab to open.
       final row = find.byKey(const ValueKey('team-home-gate-req-1'));
       final chip = find.byKey(const ValueKey('team-home-gate-req-1-receipt'));
       expect(row, findsOneWidget);

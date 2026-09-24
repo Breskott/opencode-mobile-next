@@ -13314,11 +13314,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String teamUiCardCity(String city) {
-    return 'المدينة $city';
-  }
-
-  @override
   String teamUiCardCompletedRuns(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -13334,10 +13329,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamUiCardEmptyHint => 'ابدأ التشغيلات من المضيف في الوقت الحالي.';
+  String get teamUiCardEmptyHint => 'ابدأ المهام من الحاسوب في الوقت الحالي.';
 
   @override
-  String get teamUiCardEmptyTitle => 'لا توجد تشغيلات حديثة.';
+  String get teamUiCardEmptyTitle => 'لا توجد مهام حديثة';
 
   @override
   String get teamUiCardErrorCityNotRunning =>
@@ -13459,22 +13454,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiCardRunStateUnknown => 'غير معروف';
 
   @override
-  String get teamUiCardRunStateWaiting => 'بانتظار وكيل';
+  String get teamUiCardRunStateWaiting => 'بانتظار عامل';
 
   @override
   String get teamUiCardRunStateWorking => 'قيد العمل';
 
   @override
-  String get teamUiCardRunStateWaitingMerge => 'بانتظار الدمج';
+  String get teamUiCardRunStateWaitingMerge => 'قيد المراجعة';
 
   @override
   String get teamUiCardRunStateMerged => 'مكتمل · دُمج';
-
-  @override
-  String get teamUiCardRunTermBatch => 'convoy';
-
-  @override
-  String get teamUiCardRunTermFormula => 'formula';
 
   @override
   String teamUiCardSentenceBlocked(String title) {
@@ -13532,9 +13521,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamUiCardTitle => 'فريق الذكاء الاصطناعي · Gas City';
-
-  @override
   String get teamUiHomeAgentNoWork => 'لا عمل حالي';
 
   @override
@@ -13553,7 +13539,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiHomeAgentStateUnknown => 'غير معروف';
 
   @override
-  String get teamUiHomeAgentStateWaiting => 'في الانتظار (يحتاج إدخالًا)';
+  String get teamUiHomeAgentStateWaiting => 'بانتظارك';
 
   @override
   String get teamUiHomeAgentStateWorking => 'قيد العمل';
@@ -13644,21 +13630,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiHomeGateOptions => 'الخيارات';
 
   @override
-  String teamUiHomeHostChip(
-    String host,
-    String version,
-    String city,
-    String access,
-  ) {
-    return '$host · Gas City $version · المدينة $city · $access';
-  }
-
-  @override
-  String teamUiHomeHostChipNoCity(String host, String version, String access) {
-    return '$host · Gas City $version · $access';
-  }
-
-  @override
   String get teamUiHomeHostRawHeading => 'القيم الخام';
 
   @override
@@ -13667,17 +13638,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamUiHomeNeedsYouEmptyHint =>
       'تظهر هنا القرارات والتشغيلات الفاشلة والوكلاء المعطّلون.';
-
-  @override
-  String get teamUiHomeRunKindBatch => 'دفعة · convoy';
-
-  @override
-  String get teamUiHomeRunKindFormula => 'تشغيل · formula';
-
-  @override
-  String teamUiHomeRunKindFormulaNamed(String formula) {
-    return 'تشغيل · formula $formula';
-  }
 
   @override
   String get teamUiHomeRunNeedsYou => 'يحتاجك';
@@ -13693,7 +13653,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamUiHomeRunsEmptyFiltered => 'لا توجد تشغيلات مطابقة.';
+  String get teamUiHomeRunsEmptyFiltered => 'لا توجد مهام مطابقة.';
 
   @override
   String get teamUiHomeRunsEmptyHint => 'جرّب عامل تصفية آخر أو امسح البحث.';
@@ -13702,7 +13662,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiHomeSearchClear => 'مسح البحث';
 
   @override
-  String get teamUiHomeSearchHint => 'ابحث في التشغيلات بالعنوان';
+  String get teamUiHomeSearchHint => 'ابحث في المهام';
 
   @override
   String teamUiHomeSegmentAgents(int count) {
@@ -13735,11 +13695,11 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'ينتظر $count عنصر آخر',
-      many: 'ينتظر $count عنصرًا آخر',
-      few: 'ينتظر $count عناصر أخرى',
-      two: 'ينتظر عنصرين آخرين',
-      one: 'ينتظر عنصرًا آخر',
+      other: 'ينتظر $count خطوة أخرى',
+      many: 'ينتظر $count خطوة أخرى',
+      few: 'ينتظر $count خطوات أخرى',
+      two: 'ينتظر خطوتين أخريين',
+      one: 'ينتظر خطوة أخرى',
       zero: 'لا ينتظر شيئًا',
     );
     return '$_temp0';
@@ -13818,7 +13778,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'ربما أُغلق أو أُزيل. حدّث للتحقق مرة أخرى.';
 
   @override
-  String get teamUiRunMissingTitle => 'لم يعد هذا التشغيل موجودًا على المضيف';
+  String get teamUiRunMissingTitle => 'لم تعد هذه المهمة موجودة على المضيف';
 
   @override
   String get teamUiRunNeedsYou => 'يحتاجك';
@@ -13857,16 +13817,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiRunTabTimeline => 'الخط الزمني';
 
   @override
-  String get teamUiRunTabWork => 'العمل';
+  String get teamUiRunTabWork => 'الخطوات';
 
   @override
-  String get teamUiRunTermBatch => 'تشغيل · convoy';
+  String get teamUiRunTermBatch => 'مهمة · convoy';
 
   @override
-  String get teamUiRunTermFormula => 'تشغيل · formula';
+  String get teamUiRunTermFormula => 'مهمة · formula';
 
   @override
-  String get teamUiRunTermUnknown => 'تشغيل';
+  String get teamUiRunTermUnknown => 'مهمة';
 
   @override
   String teamUiRunTimelineAgentStopped(String name) {
@@ -13889,7 +13849,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiRunTimelineEmptyHint =>
-      'تظهر الأحداث هنا بينما يعمل الفريق على هذا التشغيل.';
+      'تظهر الأحداث هنا بينما يعمل الفريق على هذه المهمة.';
 
   @override
   String get teamUiRunTimelineFilterAgents => 'الوكلاء';
@@ -14399,11 +14359,11 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'ينتظر $count عنصر',
-      many: 'ينتظر $count عنصرًا',
-      few: 'ينتظر $count عناصر',
-      two: 'ينتظر عنصرين',
-      one: 'ينتظر عنصرًا واحدًا',
+      other: 'ينتظر $count خطوة',
+      many: 'ينتظر $count خطوة',
+      few: 'ينتظر $count خطوات',
+      two: 'ينتظر خطوتين',
+      one: 'ينتظر خطوة واحدة',
       zero: 'لا ينتظر شيئًا',
     );
     return '$_temp0';
@@ -14851,10 +14811,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تُغلق الدفعة على المضيف. تبقى عناصر عملها المفتوحة مفتوحة لدفعة أخرى.';
 
   @override
-  String get teamUiStartRunFab => 'بدء تشغيل';
+  String get teamUiStartRunFab => 'أعطِ الفريق مهمة';
 
   @override
-  String get teamUiStartRunTitle => 'بدء تشغيل';
+  String get teamUiStartRunTitle => 'أعطِ الفريق مهمة';
 
   @override
   String get teamUiStartRunObjectiveLabel => 'الهدف';
@@ -14956,11 +14916,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get teamUiStartRunPlanning => 'جارٍ التخطيط… (Mayor)';
+  String get teamUiStartRunPlanning => 'جارٍ تخطيط الخطوات…';
 
   @override
   String get teamUiStartRunPlanningHint =>
-      'يحوّل المخطِّط الهدف إلى عمل. يظهر التشغيل في هذه القائمة بمجرد أن يفعل.';
+      'يحوّل المخطِّط المهمة إلى خطوات. تظهر المهمة في هذه القائمة بمجرد أن يفعل.';
 
   @override
   String get teamUiStartRunStillPlanning =>
@@ -16515,7 +16475,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get emptyTeachTeamRunsMessage =>
-      'التشغيل مهمة يعمل عليها الفريق حتى تكتمل. ابدأ تشغيلًا ليظهر تقدّمه هنا.';
+      'قل ما تحتاجه، وسيقسّمه الفريق إلى خطوات ويعرض تقدّمه هنا.';
 
   @override
   String get emptyTeachSkillsMessage =>
@@ -18463,4 +18423,175 @@ class AppLocalizationsAr extends AppLocalizations {
   String aiteamBringInAction(String project) {
     return 'أدخل عمل الفريق إلى $project';
   }
+
+  @override
+  String get teamUiHostPhrasePhone => 'على هذا الهاتف';
+
+  @override
+  String teamUiHostPhraseComputerNamed(String name) {
+    return 'على $name';
+  }
+
+  @override
+  String get teamUiHostPhraseComputer => 'على حاسوبك';
+
+  @override
+  String get teamUiHostPhrasePaused => 'متوقف مؤقتًا';
+
+  @override
+  String get teamUiHostPhraseNotAnswering => 'لا يستجيب';
+
+  @override
+  String teamUiTaskSteps(int done, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$done من $total خطوات مكتملة',
+      one: '$done من خطوة واحدة مكتملة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamUiTaskDoneAgo(String when) {
+    return 'اكتملت $when';
+  }
+
+  @override
+  String teamUiTaskMergedAgo(String when) {
+    return 'اكتملت · دُمجت $when';
+  }
+
+  @override
+  String teamUiTaskCancelledAgo(String when) {
+    return 'أُلغيت $when';
+  }
+
+  @override
+  String get teamUiHomeTasksHeading => 'المهام';
+
+  @override
+  String get teamUiHomeDoneToday => 'اكتملت اليوم';
+
+  @override
+  String get teamUiHomeDoneEarlier => 'المكتملة';
+
+  @override
+  String teamUiHomeDoneMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'عرض $count أخرى',
+      one: 'عرض مهمة أخرى',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamUiHomeAgentsRowCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count وكيل',
+      many: '$count وكيلًا',
+      few: '$count وكلاء',
+      two: 'وكيلان',
+      one: 'وكيل واحد',
+      zero: 'لا يوجد وكلاء',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamUiHomeAgentsRowWorking(int count) {
+    return '$count قيد العمل';
+  }
+
+  @override
+  String get teamUiHomeSearchClose => 'إغلاق البحث';
+
+  @override
+  String get teamUiHomeNeedsYouAnswer => 'أجب';
+
+  @override
+  String get teamUiHomeNeedsYouMore => 'المزيد';
+
+  @override
+  String get teamUiHomeNeedsYouFallbackTitle => 'لدى الفريق سؤال';
+
+  @override
+  String teamUiHomeNeedsYouAnnouncement(String question) {
+    return 'يحتاجك: $question';
+  }
+
+  @override
+  String get teamUiHomeAgentsRowHint => 'فتح قائمة الوكلاء';
+
+  @override
+  String get teamUiCardNothingRunning => 'لا شيء قيد التشغيل';
+
+  @override
+  String get teamUiCardOpenHint => 'فتح فريق الذكاء الاصطناعي';
+
+  @override
+  String get teamUiAgentRoleWorker => 'عامل';
+
+  @override
+  String get teamUiAgentRoleReviewer => 'مراجع (يدمج)';
+
+  @override
+  String get teamUiAgentRolePlanner => 'المخطِّط';
+
+  @override
+  String get teamUiAgentRoleSupervisor => 'مشرف';
+
+  @override
+  String get teamUiAgentRoleHelper => 'مساعد';
+
+  @override
+  String get teamUiAgentRoleOther => 'وكيل';
+
+  @override
+  String get teamUiRunStageWaiting => 'في الانتظار';
+
+  @override
+  String get teamUiRunStageWorking => 'قيد العمل';
+
+  @override
+  String get teamUiRunStageReviewing => 'قيد المراجعة';
+
+  @override
+  String get teamUiRunStageDone => 'اكتملت';
+
+  @override
+  String teamUiRunStageSemantics(int position, String stage) {
+    return 'المرحلة $position من 4: $stage';
+  }
+
+  @override
+  String get teamUiRunStepsHeading => 'الخطوات';
+
+  @override
+  String teamUiRunStepsAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'عرض كل الخطوات ($count)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamUiRunDetailsCounts(int done, int working, int blocked) {
+    return '$done مكتملة · $working قيد العمل · $blocked متوقفة';
+  }
+
+  @override
+  String get teamUiRunDetailsUsage => 'الاستهلاك';
+
+  @override
+  String get teamUiRunDetailsStepsLabel => 'الخطوات';
+
+  @override
+  String get teamUiRunDetailsElapsed => 'الوقت';
 }

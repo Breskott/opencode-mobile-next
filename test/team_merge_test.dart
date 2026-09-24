@@ -410,16 +410,28 @@ void main() {
       );
     });
 
-    testWidgets('present once every item is done or review-ready, at the '
-        'end of the Overview', (tester) async {
+    testWidgets('present once every item is done or review-ready, in the '
+        'Overview before the steps and Details', (tester) async {
       final (controller, gateway) = await boot();
       await pumpRun(tester, controller);
       expect(key('team-merge-section'), findsOneWidget);
       expect(gateway.readinessReads, 1);
+      // The redesigned Overview: what needs the person, then the merge,
+      // then the steps; the numbers stay last, under Details.
       final overview = find.byKey(const ValueKey('team-run-overview'));
       final list = tester.widget<ListView>(overview);
-      final delegate = list.childrenDelegate as SliverChildListDelegate;
-      expect(delegate.children.last, isA<TeamMergeSection>());
+      final children =
+          (list.childrenDelegate as SliverChildListDelegate).children;
+      bool holdsMerge(Widget w) =>
+          w is TeamMergeSection ||
+          (w is Padding && w.child is TeamMergeSection);
+      final merge = children.indexWhere(holdsMerge);
+      final details = children.indexWhere(
+        (c) => c.key == const ValueKey('team-run-summary'),
+      );
+      expect(merge, isNonNegative);
+      expect(details, children.length - 1, reason: 'Details stays last');
+      expect(merge, lessThan(details));
     });
 
     testWidgets('Refresh reads the readiness again', (tester) async {
