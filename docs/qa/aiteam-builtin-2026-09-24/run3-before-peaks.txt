@@ -1,0 +1,77 @@
+337 samples 18:10:00..19:06:00: min 10, median 15, max 37
+samples at or over 29: 24: 18:10:20=32, 18:10:30=33, 18:10:40=31, 18:13:10=31, 18:13:20=37, 18:13:30=36, 18:13:40=30, 18:16:20=32, 18:16:30=31, 18:18:10=33, 18:18:20=33, 18:18:30=33, 18:18:40=30, 18:22:10=30, 18:24:50=30, 18:25:00=30, 18:45:10=30, 18:49:10=32, 18:49:30=31, 18:50:30=30, 18:50:40=29, 18:53:00=32, 18:53:10=30, 18:56:30=31
+
+--- 18:13:20 total=37 (children=36)
+by command: sh run.sh×4, libproot.so×2, sh -c opencode acp×2, opencode acp×2, gc dolt×2, bash cascade-nudge-on-blocker-close.sh×2, jq×2, sh -c for id in "$GC_SESSION_ID" "$GC_SESSI×2, gc supervisor×1, gc __gc-managed-dolt-scope-watchdog×1, dolt×1, io.github.eslamasabry.opencode_mobile×1, opencode serve×1, sh nudge-on-route.sh×1, bash nudge-on-route.sh×1, gc session×1, sh -c gc dolt health --json | gc dolt healt×1, sh cascade-nudge-on-blocker-close.sh×1, bash -c SEQ=$(gc events --seq 2>/dev/null); e×1, gc events×1, timeout×1, gc rig×1, cat×1, gc bd×1, gc hook×1, sh -c sh -c 'for id in "$GC_SESSION_ID" "$G×1, bd query×1
+  6700 26787 05:39:07 libproot.so --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=/data/user/0/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu --bind
+  6703 6700 05:39:07 gc supervisor run
+  7191 1 05:38:08 gc __gc-managed-dolt-scope-watchdog /root/aiteam/city/.gc/runtime/packs/dolt/dolt-config.yaml /root/aiteam/city/.gc/runtime/packs/dolt/dolt.log /root/aite
+  7199 7191 05:38:08 dolt sql-server --config /root/aiteam/city/.gc/runtime/packs/dolt/dolt-config.yaml
+  16979 6703 02:30:26 sh -c opencode acp
+  16980 16979 02:30:26 opencode acp
+  26787 397 05:54:30 io.github.eslamasabry.opencode_mobile
+  27508 26787 04:46 libproot.so --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=/data/user/0/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu --bind=/
+  27511 27508 04:46 opencode serve --hostname 127.0.0.1 --port 4097
+  28417 6703 02:33 sh -c opencode acp
+  28418 28417 02:33 opencode acp
+  28794 6703 01:52 sh -c $PACK_DIR/assets/scripts/nudge-on-route.sh
+  28795 28794 01:52 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/nudge-on-route.
+  28971 28795 01:24 gc session nudge my-app/gastown.furiosa check for assigned work
+  29121 6703 01:02 sh -c gc dolt health --json | gc dolt health-check
+  29122 29121 01:02 gc dolt health --json
+  29123 29121 01:02 gc dolt health-check
+  29134 6703 01:02 sh -c $PACK_DIR/assets/scripts/cascade-nudge-on-blocker-close.sh
+  29135 29134 01:02 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/cascade-nudge-o
+  29157 16980 01:01 bash -c SEQ=$(gc events --seq 2>/dev/null); echo "SEQ=$SEQ"; gc events --watch --type=bead.updated --payload-match bead.assignee=my-app/gastown.refinery
+  29171 29157 00:55 gc events --watch --type=bead.updated --payload-match bead.assignee=my-app/gastown.refinery --after=2263 --timeout 7m
+  29320 29122 00:15 sh /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/examples/bd/dolt/commands/health/run.sh --json
+  29380 29320 00:14 sh /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/examples/bd/dolt/commands/health/run.sh --json
+  29381 29380 00:14 sh /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/examples/bd/dolt/commands/health/run.sh --json
+  29382 29380 00:14 jq -r .rigs[].path
+  29383 29381 00:14 timeout --kill-after=2 30 gc rig list --json
+  29384 29383 00:14 gc rig list --json
+  29401 29123 00:12 sh /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/examples/bd/dolt/commands/health-check/run.sh
+  29402 29401 00:12 cat
+  29413 29135 00:11 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/cascade-nudge-o
+  29416 29413 00:11 gc bd dep list ph-wisp-1z64 --direction=up --type=blocks --json
+  29428 28418 00:09 gc hook --claim --json
+  29456 29428 00:01 sh -c sh -c 'for id in "$GC_SESSION_ID" "$GC_SESSION_NAME" "$GC_ALIAS"; do [ -z "$id" ] && continue; r=$(bd list --status in_progress --assignee="$id" -
+  29457 29456 00:01 sh -c for id in "$GC_SESSION_ID" "$GC_SESSION_NAME" "$GC_ALIAS"; do [ -z "$id" ] && continue; r=$(bd list --status in_progress --assignee="$id" --json -
+  29470 29457 00:00 sh -c for id in "$GC_SESSION_ID" "$GC_SESSION_NAME" "$GC_ALIAS"; do [ -z "$id" ] && continue; r=$(bd list --status in_progress --assignee="$id" --json -
+  29471 29470 00:00 bd query --json ephemeral=true AND status=in_progress --limit=0
+  29472 29470 00:00 jq --arg id ph-3xa [.[] | select((.assignee // "") == $id)] | .[:1]
+
+--- 18:56:30 total=31 (children=30)
+by command: libproot.so×2, dolt×2, bash cascade-nudge-on-blocker-close.sh×2, bash nudge-on-route.sh×2, gc order×2, gc dolt×2, sh -c opencode acp×2, opencode acp×2, gc supervisor×1, gc __gc-managed-dolt-scope-watchdog×1, sh cascade-nudge-on-blocker-close.sh×1, gc nudge×1, gc mail×1, gc bd×1, sh nudge-on-route.sh×1, gc events×1, sh -c gc order sweep-nudge-mail --quiet×1, sh -c gc dolt health --json | gc dolt healt×1, sh -c gc order sweep-tracking --stale-after×1, sh run.sh×1, timeout×1, io.github.eslamasabry.opencode_mobile×1, opencode serve×1
+  6700 26787 06:22:17 libproot.so --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=/data/user/0/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu --bind
+  6703 6700 06:22:17 gc supervisor run
+  7191 1 06:21:18 gc __gc-managed-dolt-scope-watchdog /root/aiteam/city/.gc/runtime/packs/dolt/dolt-config.yaml /root/aiteam/city/.gc/runtime/packs/dolt/dolt.log /root/aite
+  7199 7191 06:21:18 dolt sql-server --config /root/aiteam/city/.gc/runtime/packs/dolt/dolt-config.yaml
+  14232 6703 01:35 sh -c $PACK_DIR/assets/scripts/cascade-nudge-on-blocker-close.sh
+  14233 14232 01:35 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/cascade-nudge-o
+  14730 28418 00:20 gc nudge drain --inject
+  14742 16980 00:18 gc mail check --inject
+  14795 14233 00:10 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/cascade-nudge-o
+  14798 14795 00:10 gc bd dep list ph-wisp-faps --direction=up --type=blocks --json
+  14803 6703 00:10 sh -c $PACK_DIR/assets/scripts/nudge-on-route.sh
+  14804 14803 00:10 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/nudge-on-route.
+  14809 14804 00:10 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/nudge-on-route.
+  14812 14809 00:10 gc events --type bead.updated --since 2m
+  14823 6703 00:09 sh -c gc order sweep-nudge-mail --quiet
+  14824 14823 00:08 gc order sweep-nudge-mail --quiet
+  14837 6703 00:08 sh -c gc dolt health --json | gc dolt health-check
+  14838 14837 00:08 gc dolt health --json
+  14839 14837 00:08 gc dolt health-check
+  14851 6703 00:08 sh -c gc order sweep-tracking --stale-after 10m --quiet
+  14852 14851 00:08 gc order sweep-tracking --stale-after 10m --quiet
+  14864 14838 00:01 sh /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/examples/bd/dolt/commands/health/run.sh --json
+  14903 14864 00:01 timeout --kill-after=2 5 dolt --host 127.0.0.1 --port 41168 --user root --no-tls sql -q SELECT 1
+  14904 14903 00:01 dolt --host 127.0.0.1 --port 41168 --user root --no-tls sql -q SELECT 1
+  16979 6703 03:13:36 sh -c opencode acp
+  16980 16979 03:13:36 opencode acp
+  26787 397 06:37:40 io.github.eslamasabry.opencode_mobile
+  27508 26787 47:56 libproot.so --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=/data/user/0/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu --bind=/
+  27511 27508 47:56 opencode serve --hostname 127.0.0.1 --port 4097
+  28417 6703 45:43 sh -c opencode acp
+  28418 28417 45:43 opencode acp
+

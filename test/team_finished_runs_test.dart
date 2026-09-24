@@ -10,7 +10,6 @@ import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/dto/dto.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_gateway.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_mappers.dart';
-import 'package:opencode_mobile/orchestration/models/work.dart';
 
 import 'support/gascity_recorded_city.dart';
 

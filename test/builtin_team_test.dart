@@ -192,6 +192,213 @@ dir = "demo"
     });
   });
 
+  group('phone tuning', () {
+    // The store Run 2 made (Android 15 emulator, 2026-09-24), as gc wrote it.
+    const run2City = '''
+[workspace]
+provider = "opencode"
+install_agent_hooks = ["opencode"]
+
+[providers]
+[providers.opencode]
+base = "builtin:opencode"
+ready_delay_ms = 0
+
+[defaults]
+[defaults.rig]
+[defaults.rig.imports]
+[defaults.rig.imports.gastown]
+source = "https://github.com/gastownhall/gascity-packs/tree/main/gastown"
+version = "sha:33d3a430a67d1782ad364556cb566bdb01d0afe3"
+
+[daemon]
+patrol_interval = "60s"
+max_restarts = 5
+restart_window = "1h"
+shutdown_timeout = "5s"
+probe_concurrency = 1
+max_wakes_per_tick = 1
+nudge_dispatcher = "supervisor"
+
+[orders]
+skip = ["digest-generate", "mol-dog-stale-db", "mol-dog-backup", "mol-dog-compactor", "mol-dog-phantom-db", "mol-dog-doctor", "spawn-storm-detect", "cross-rig-deps", "jsonl-export", "dolt-remotes-patrol", "prune-branches", "wisp-compact"]
+
+[[orders.overrides]]
+name = "dolt-health"
+interval = "2m"
+
+[[orders.overrides]]
+name = "beads-health"
+interval = "3m"
+
+[[rigs]]
+name = "my-app"
+default_branch = "master"
+[rigs.imports]
+[rigs.imports.gastown]
+source = "https://github.com/gastownhall/gascity-packs/tree/main/gastown"
+version = "sha:33d3a430a67d1782ad364556cb566bdb01d0afe3"
+
+[[patches.agent]]
+name = "gastown.mayor"
+suspended = true
+
+[[patches.agent]]
+name = "gastown.polecat"
+dir = "my-app"
+max_active_sessions = 1
+''';
+
+    test('the orders that made the peaks are off, the rest run in turn', () {
+      final tuning = BuiltinTeam.phoneTuning;
+      for (final order in [
+        'dolt-health',
+        'nudge-on-route',
+        'cascade-nudge-on-blocker-close',
+        'nudge-mail-sweep',
+      ]) {
+        expect(tuning, contains('"$order"'));
+      }
+      for (final order in [
+        'beads-health',
+        'order-tracking-sweep',
+        'gate-sweep',
+        'orphan-sweep',
+        'reaper',
+      ]) {
+        expect(
+          tuning,
+          contains('name = "$order"\ntrigger = "manual"'),
+          reason: '$order runs only inside phone-upkeep',
+        );
+        expect(BuiltinTeam.upkeepScript, contains('gc order run $order'));
+      }
+      expect(
+        BuiltinTeam.cityScript,
+        contains('base = "builtin:opencode"\nacp_command = "exec opencode"\n'),
+      );
+      expect(BuiltinTeam.upkeepOrder, contains('trigger = "cooldown"'));
+      expect(BuiltinTeam.cityScript, contains(tuning));
+      expect(BuiltinTeam.serviceScript, contains('phone-upkeep.toml'));
+      // The tuning comes before the supervisor starts.
+      expect(
+        BuiltinTeam.serviceScript.indexOf('phone-upkeep'),
+        lessThan(BuiltinTeam.serviceScript.indexOf('exec gc supervisor run')),
+      );
+    });
+
+    test(
+      'phone upkeep runs its sweeps one after another, one run at a time',
+      () async {
+        final dir = await Directory.systemTemp.createTemp('oc-upkeep');
+        addTearDown(() => dir.delete(recursive: true));
+        final bin = Directory('${dir.path}/bin')..createSync();
+        final calls = File('${dir.path}/calls.log');
+        // A `gc` that takes a while, like a sweep under proot.
+        final gc = File('${bin.path}/gc')
+          ..writeAsStringSync(
+            '#!/bin/sh\necho "start \$*" >> ${calls.path}\n'
+            'sleep 1\necho "end \$*" >> ${calls.path}\n',
+          );
+        Process.runSync('chmod', ['755', gc.path]);
+        final city = Directory('${dir.path}/city')..createSync();
+        final script = File('${dir.path}/upkeep.sh')
+          ..writeAsStringSync(
+            BuiltinTeam.upkeepScript.replaceAll(BuiltinTeam.cityDir, city.path),
+          );
+        final env = {'PATH': '${bin.path}:/usr/bin:/bin'};
+        // Gas City starts the next run while the first is still going.
+        final first = await Process.start('sh', [
+          script.path,
+        ], environment: env);
+        while (!calls.existsSync()) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        }
+        final watch = Stopwatch()..start();
+        final second = Process.runSync('sh', [script.path], environment: env);
+        expect(second.exitCode, 0);
+        expect(watch.elapsed, lessThan(const Duration(seconds: 1)));
+        expect(await first.exitCode, 0);
+        // One run's sweeps, strictly one after another.
+        expect(calls.readAsLinesSync(), [
+          'start order run beads-health',
+          'end order run beads-health',
+          'start order run order-tracking-sweep',
+          'end order run order-tracking-sweep',
+          'start order run gate-sweep',
+          'end order run gate-sweep',
+        ]);
+      },
+      skip: Process.runSync('sh', ['-c', 'command -v flock']).exitCode == 0
+          ? false
+          : 'no flock here',
+    );
+
+    test('an older team gets the tuning once, the rest of it kept', () async {
+      final dir = await Directory.systemTemp.createTemp('oc-tune');
+      addTearDown(() => dir.delete(recursive: true));
+      final city = File('${dir.path}/city.toml')..writeAsStringSync(run2City);
+      final script = BuiltinTeam.tuneScript.replaceAll(
+        BuiltinTeam.cityDir,
+        dir.path,
+      );
+      final first = Process.runSync('sh', ['-c', 'set -eu\n$script']);
+      expect(first.exitCode, 0, reason: '${first.stderr}');
+      final tuned = city.readAsStringSync();
+      expect('\n'.allMatches(tuned).length, greaterThan(20));
+      expect(
+        RegExp(r'^\[daemon\]$', multiLine: true).allMatches(tuned),
+        hasLength(1),
+      );
+      expect(
+        RegExp(r'^\[orders\]$', multiLine: true).allMatches(tuned),
+        hasLength(1),
+      );
+      expect(tuned, contains('"nudge-on-route"'));
+      expect(tuned, isNot(contains('name = "dolt-health"')));
+      // The agents' command sits in the provider's own table, once.
+      expect(
+        tuned,
+        contains('[providers.opencode]\nacp_command = "exec opencode"\n'),
+      );
+      expect('acp_command'.allMatches(tuned), hasLength(1));
+      expect(tuned, isNot(contains('[[patches.provider]]')));
+      // Everything else is kept.
+      for (final kept in [
+        '[workspace]',
+        'base = "builtin:opencode"',
+        '[[rigs]]',
+        'name = "my-app"',
+        '[rigs.imports.gastown]',
+        'name = "gastown.mayor"',
+        'max_active_sessions = 1',
+      ]) {
+        expect(tuned, contains(kept));
+      }
+      expect(
+        File('${dir.path}/orders/phone-upkeep.toml').readAsStringSync(),
+        BuiltinTeam.upkeepOrder.replaceAll(BuiltinTeam.cityDir, dir.path),
+      );
+      expect(
+        File('${dir.path}/assets/phone-upkeep.sh').readAsStringSync(),
+        BuiltinTeam.upkeepScript.replaceAll(BuiltinTeam.cityDir, dir.path),
+      );
+      // A second start changes nothing.
+      final second = Process.runSync('sh', ['-c', 'set -eu\n$script']);
+      expect(second.exitCode, 0, reason: '${second.stderr}');
+      expect(city.readAsStringSync(), tuned);
+      // And the result is still TOML (checked where Python can say).
+      final toml = Process.runSync('python3', [
+        '-c',
+        'import sys, tomllib; tomllib.load(open(sys.argv[1], "rb"))',
+        city.path,
+      ]);
+      if (toml.exitCode != 127 && !'${toml.stderr}'.contains('No module')) {
+        expect(toml.exitCode, 0, reason: '${toml.stderr}');
+      }
+    });
+  });
+
   test('project names become safe team names', () {
     expect(BuiltinTeam.rigName('/root/projects/my app'), 'my-app');
     expect(BuiltinTeam.rigName('/root/projects/demo/'), 'demo');

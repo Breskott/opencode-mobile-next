@@ -1,0 +1,12 @@
+# logcat -d, filtered: phantom-process kills on emulator-5556 (build b17c67c7 team, before this fix)
+09-24 17:16:32.465 I/ActivityManager(  592): Killing PhantomProcessRecord {e195b97 1597:26787:libproot.so/u0a212}: Trimming phantom processes
+09-24 18:56:33.073 I/ActivityManager(  592): Killing PhantomProcessRecord {a40705d 6700:26787:libproot.so/u0a212}: Trimming phantom processes
+09-24 18:56:33.077 I/ActivityManager(  592): Killing PhantomProcessRecord {49a5dd2 6703:26787:gc/u0a212}: Trimming phantom processes
+09-24 18:56:33.078 I/ActivityManager(  592): Killing PhantomProcessRecord {bc1ea3 7191:26787:gc/u0a212}: Trimming phantom processes
+
+# around the 18:56:33 kill
+09-24 18:56:33.073 I/ActivityManager(  592): Killing PhantomProcessRecord {a40705d 6700:26787:libproot.so/u0a212}: Trimming phantom processes
+09-24 18:56:33.077 I/ActivityManager(  592): Killing PhantomProcessRecord {49a5dd2 6703:26787:gc/u0a212}: Trimming phantom processes
+09-24 18:56:33.078 I/ActivityManager(  592): Killing PhantomProcessRecord {bc1ea3 7191:26787:gc/u0a212}: Trimming phantom processes
+09-24 18:56:33.182 I/init    (    0): Untracked pid 7191 received signal 9
+09-24 18:56:33.208 I/init    (    0): Untracked pid 6703 received signal 9

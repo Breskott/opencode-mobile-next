@@ -4865,5 +4865,10 @@
   "connectStartingPhone": "جارٍ تشغيل OpenCode على هذا الهاتف…",
   "connectStartingBody": "تبقى محادثاتك محفوظة. قد يستغرق هذا دقيقة.",
   "settingsAboutLoading": "جارٍ تحميل الإشعارات…",
-  "settingsAboutLoadFailed": "لم تُحمَّل الإشعارات"
+  "settingsAboutLoadFailed": "لم تُحمَّل الإشعارات",
+  "aiteamBringInDone": "لدى {project} أحدث عمل للفريق ({commit}).",
+  "aiteamBringInDirty": "عمل الفريق ({commit}) ليس في {project} بعد: في {project} تغييرات خاصة به ({files})، فتُرك كما هو.",
+  "aiteamBringInDiverged": "عمل الفريق ({commit}) ليس في {project}: في {project} إيداعات خاصة به. ادمج الاثنين باستخدام git.",
+  "aiteamBringInFailed": "تعذّر إدخال عمل الفريق إلى {project}: {reason}",
+  "aiteamBringInAction": "أدخل عمل الفريق إلى {project}"
 }

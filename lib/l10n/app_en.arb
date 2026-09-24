@@ -19917,5 +19917,65 @@
   "settingsAboutLoadFailed": "The notices didn't load",
   "@settingsAboutLoadFailed": {
     "description": "Title of the About screen state when its documents could not be read"
+  },
+  "aiteamBringInDone": "{project} has the team's latest work ({commit}).",
+  "@aiteamBringInDone": {
+    "description": "The team's merged work is in the project folder",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      },
+      "commit": {
+        "type": "String"
+      }
+    }
+  },
+  "aiteamBringInDirty": "The team's work ({commit}) is not in {project} yet: {project} has changes of its own ({files}), so it was left as it is.",
+  "@aiteamBringInDirty": {
+    "description": "The team's merge was not brought into a project with uncommitted changes",
+    "placeholders": {
+      "commit": {
+        "type": "String"
+      },
+      "project": {
+        "type": "String"
+      },
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "aiteamBringInDiverged": "The team's work ({commit}) is not in {project}: {project} has commits of its own. Merge the two with git.",
+  "@aiteamBringInDiverged": {
+    "description": "The team's merge was not brought into a project that has its own commits",
+    "placeholders": {
+      "commit": {
+        "type": "String"
+      },
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "aiteamBringInFailed": "The team's work could not be brought into {project}: {reason}",
+  "@aiteamBringInFailed": {
+    "description": "Bringing the team's merge into the project failed",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "aiteamBringInAction": "Bring the team's work into {project}",
+  "@aiteamBringInAction": {
+    "description": "Button that fast-forwards the project folder to the team's merged work",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
   }
 }

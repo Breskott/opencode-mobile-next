@@ -18438,4 +18438,29 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsAboutLoadFailed => 'لم تُحمَّل الإشعارات';
+
+  @override
+  String aiteamBringInDone(String project, String commit) {
+    return 'لدى $project أحدث عمل للفريق ($commit).';
+  }
+
+  @override
+  String aiteamBringInDirty(String commit, String project, String files) {
+    return 'عمل الفريق ($commit) ليس في $project بعد: في $project تغييرات خاصة به ($files)، فتُرك كما هو.';
+  }
+
+  @override
+  String aiteamBringInDiverged(String commit, String project) {
+    return 'عمل الفريق ($commit) ليس في $project: في $project إيداعات خاصة به. ادمج الاثنين باستخدام git.';
+  }
+
+  @override
+  String aiteamBringInFailed(String project, String reason) {
+    return 'تعذّر إدخال عمل الفريق إلى $project: $reason';
+  }
+
+  @override
+  String aiteamBringInAction(String project) {
+    return 'أدخل عمل الفريق إلى $project';
+  }
 }
