@@ -13,6 +13,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
@@ -27,6 +28,15 @@ class TeamDiscoveryResult {
   final String url;
   final ProbeFound found;
 }
+
+/// The addresses discovery probes for [profile]. None for the OpenCode
+/// inside this app: it has its own team (BuiltinTeamSection), and what
+/// answers on this phone's loopback ports is Termux's team, which is
+/// neither a computer nor this server's to adopt.
+List<String> teamDiscoveryUrlsForProfile(ServerProfile profile) =>
+    looksLikeInAppServer(profile)
+    ? const []
+    : teamDiscoveryUrlsFor(profile.baseUrl);
 
 /// Probes the profile's host once per (profile, config-null) and keeps the
 /// answer for the widgets on this screen. One per screen; the card and the
@@ -68,7 +78,7 @@ class TeamDiscovery extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    final urls = teamDiscoveryUrlsFor(profile.baseUrl);
+    final urls = teamDiscoveryUrlsForProfile(profile);
     _probedProfileId = profile.id;
     _result = null;
     if (urls.isEmpty) {

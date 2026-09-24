@@ -1,0 +1,1 @@
+# emulator-5556: logcat buffer --------- beginnin .. 09-24 11:28:38.904; lines matching 'Killing PhantomProcess|Trimming phantom|SIGSYS|seccomp|signal 31|Bad system call': 0

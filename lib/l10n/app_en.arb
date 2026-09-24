@@ -19602,5 +19602,143 @@
         "type": "String"
       }
     }
+  },
+  "aiteamComponentTitle": "AI Team",
+  "@aiteamComponentTitle": {
+    "description": "The AI Team setup component, in the setup checklist and Add tools"
+  },
+  "aiteamComponentStageDownloading": "Downloading AI Team · {index} of {total}",
+  "@aiteamComponentStageDownloading": {
+    "description": "Setup stage while one of AI Team's three programs downloads",
+    "placeholders": {
+      "index": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "aiteamComponentStagePreparing": "Getting AI Team ready",
+  "@aiteamComponentStagePreparing": {
+    "description": "Setup stage after the downloads: unpacking and checking the programs"
+  },
+  "aiteamComponentAddingTitle": "Adding {names}",
+  "@aiteamComponentAddingTitle": {
+    "description": "Title of the setup progress screen and notification while tools are added to a phone that is set up",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "aiteamComponentNotice": "OpenCode and AI Team are running on this phone",
+  "@aiteamComponentNotice": {
+    "description": "Ongoing notification title while the in-app AI Team runs"
+  },
+  "aiteamComponentSectionTitle": "AI Team on this phone",
+  "@aiteamComponentSectionTitle": {
+    "description": "Title of the in-app AI Team section in Settings > Plugins"
+  },
+  "aiteamComponentOfferBody": "Several agents share the work on one project, right here. About {size} to download.",
+  "@aiteamComponentOfferBody": {
+    "description": "Offer to add AI Team when it is not installed",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "aiteamComponentAdd": "Add AI Team",
+  "@aiteamComponentAdd": {
+    "description": "Button that opens Add tools with AI Team switched on"
+  },
+  "aiteamComponentTurnOn": "Turn on AI Team for {project}",
+  "@aiteamComponentTurnOn": {
+    "description": "Button that turns the team on for the open project",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "aiteamComponentTurnOnBody": "The team works on its own branches and keeps a copy of the project's history on this phone.",
+  "@aiteamComponentTurnOnBody": {
+    "description": "What turning the team on for a project does"
+  },
+  "aiteamComponentNoProject": "Open a project first, then turn AI Team on for it.",
+  "@aiteamComponentNoProject": {
+    "description": "Shown when AI Team is installed but no project is open"
+  },
+  "aiteamComponentStageTeam": "Getting the team ready",
+  "@aiteamComponentStageTeam": {
+    "description": "Turn-on stage: the team's own store is made"
+  },
+  "aiteamComponentStageProject": "Adding {project}",
+  "@aiteamComponentStageProject": {
+    "description": "Turn-on stage: the project is added to the team",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      }
+    }
+  },
+  "aiteamComponentStageStarting": "Starting AI Team",
+  "@aiteamComponentStageStarting": {
+    "description": "Turn-on stage: the team starts"
+  },
+  "aiteamComponentStageWaiting": "Waiting for AI Team to answer",
+  "@aiteamComponentStageWaiting": {
+    "description": "Turn-on stage: waiting until the team answers"
+  },
+  "aiteamComponentRunning": "AI Team · Running",
+  "@aiteamComponentRunning": {
+    "description": "Status line of a running in-app team"
+  },
+  "aiteamComponentStopped": "AI Team · Stopped",
+  "@aiteamComponentStopped": {
+    "description": "Status line of a stopped in-app team"
+  },
+  "aiteamComponentProjects": "Works on {projects}",
+  "@aiteamComponentProjects": {
+    "description": "The projects the in-app team works on",
+    "placeholders": {
+      "projects": {
+        "type": "String"
+      }
+    }
+  },
+  "aiteamComponentStart": "Start AI Team",
+  "@aiteamComponentStart": {
+    "description": "Button that starts the in-app team"
+  },
+  "aiteamComponentStop": "Stop AI Team",
+  "@aiteamComponentStop": {
+    "description": "Button that stops the in-app team"
+  },
+  "aiteamComponentFailed": "AI Team could not start: {reason}",
+  "@aiteamComponentFailed": {
+    "description": "A failed turn-on or start, with the reason",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "aiteamComponentFailedExited": "it stopped on its own",
+  "@aiteamComponentFailedExited": {
+    "description": "Reason: the team stopped by itself while starting"
+  },
+  "aiteamComponentFailedTimeout": "it did not answer in time",
+  "@aiteamComponentFailedTimeout": {
+    "description": "Reason: the team did not answer in time"
+  },
+  "aiteamComponentShowDetails": "Show details",
+  "@aiteamComponentShowDetails": {
+    "description": "Shows the technical reason of a failure"
+  },
+  "aiteamComponentChildProcesses": "Android stops an app's extra programs when it runs many at once, and a team runs several. If the team stops while it works, turn on Developer options › Disable child process restrictions.",
+  "@aiteamComponentChildProcesses": {
+    "description": "Explains Android's child-process limit and the Developer options switch"
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -8,6 +9,8 @@ import '../api/server_probe.dart';
 import '../l10n/app_localizations.dart';
 import '../state/profiles.dart';
 import 'builtin_linux.dart';
+import 'setup/setup_engine.dart' show ChannelSetupEngine;
+import 'team/builtin_team.dart';
 
 /// The bridge the whole app uses; tests override it.
 final builtinLinuxProvider = Provider<BuiltinLinux>((ref) => BuiltinLinux());
@@ -271,6 +274,15 @@ class BuiltinServerStarter extends ChangeNotifier {
     if (failure == null) {
       _installed = true;
       _readyCount++;
+      // A team the person turned on comes back with OpenCode: Android
+      // stops both when it reclaims the app.
+      if (BuiltinTeam.isBuiltinConfig(profile.orchestration)) {
+        unawaited(
+          BuiltinTeam(linux: linux).ensureRunning(
+            notice: ChannelSetupEngine.deviceStrings().aiteamComponentNotice,
+          ),
+        );
+      }
     } else {
       _failure = failure;
       _failedProfileID = profile.id;

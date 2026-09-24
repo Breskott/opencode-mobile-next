@@ -31,6 +31,7 @@ class BuiltinLinuxStatus {
     this.serverPort,
     this.abi = '',
     this.bytesUsed,
+    this.services = const [],
   });
 
   /// Nothing installed and nothing running: what a runner without the
@@ -42,7 +43,8 @@ class BuiltinLinuxStatus {
       serverRunning = false,
       serverPort = null,
       abi = '',
-      bytesUsed = null;
+      bytesUsed = null,
+      services = const [];
 
   factory BuiltinLinuxStatus.fromMap(Map<Object?, Object?> map) {
     int? asInt(Object? value) => value is num ? value.toInt() : null;
@@ -55,6 +57,11 @@ class BuiltinLinuxStatus {
       serverPort: asInt(map['serverPort']),
       abi: (map['abi'] ?? '').toString(),
       bytesUsed: asInt(map['bytesUsed']),
+      services: [
+        for (final name
+            in map['services'] is List ? map['services'] as List : const [])
+          if (name is String) name,
+      ],
     );
   }
 
@@ -65,6 +72,12 @@ class BuiltinLinuxStatus {
   final int? serverPort;
   final String abi;
   final int? bytesUsed;
+
+  /// The long-running services that run now, by name: `server` (OpenCode)
+  /// and, when it is on, AI Team ([BuiltinLinux.startService]).
+  final List<String> services;
+
+  bool serviceRunning(String name) => services.contains(name);
 }
 
 /// The answer of one `run`.
@@ -91,11 +104,11 @@ class BuiltinLinuxException implements Exception {
 
 /// Ubuntu shipped inside the app, with no Termux (GitHub issue #87).
 ///
-/// The Android side (BuiltinLinux.kt) owns the download, proot and the one
-/// long-running server process; this class only speaks its method channel and
-/// writes the shell scripts that run inside Ubuntu. Instances are cheap and
-/// hold no state, so a screen can take one as a parameter and a test can pass
-/// a subclass or a mocked channel.
+/// The Android side (BuiltinLinux.kt) owns the download, proot and the
+/// long-running services (the OpenCode server, AI Team); this class only
+/// speaks its method channel and writes the shell scripts that run inside
+/// Ubuntu. Instances are cheap and hold no state, so a screen can take one
+/// as a parameter and a test can pass a subclass or a mocked channel.
 class BuiltinLinux {
   BuiltinLinux({MethodChannel? channel})
     : _channel = channel ?? const MethodChannel(channelName);
@@ -162,6 +175,36 @@ class BuiltinLinux {
 
   Future<String> serverLog({int tailBytes = 32768}) async =>
       await _invoke<String>('serverLog', {'tailBytes': tailBytes}) ?? '';
+
+  /// Starts [script] as the long-running service [name] in its own proot,
+  /// owned by the app like the OpenCode server (which is the service
+  /// `server`). A service that runs already is restarted. [notice] is what
+  /// the ongoing notification says while it runs.
+  ///
+  /// Never start a long-running program from [run] instead: its proot ends
+  /// with the script and takes everything the script started with it.
+  Future<void> startService(
+    String name,
+    String script, {
+    int? port,
+    String? notice,
+  }) => _invoke<void>('startService', {
+    'name': name,
+    'script': script,
+    'port': ?port,
+    'notice': ?notice,
+  });
+
+  Future<void> stopService(String name) =>
+      _invoke<void>('stopService', {'name': name});
+
+  /// The end of the service [name]'s log, for a failure's details.
+  Future<String> serviceLog(String name, {int tailBytes = 16384}) async =>
+      await _invoke<String>('serviceLog', {
+        'name': name,
+        'tailBytes': tailBytes,
+      }) ??
+      '';
 
   /// Stops the server and deletes Ubuntu with everything inside it.
   Future<void> uninstall() => _invoke<void>('uninstall');

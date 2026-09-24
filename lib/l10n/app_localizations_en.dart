@@ -17951,4 +17951,97 @@ class AppLocalizationsEn extends AppLocalizations {
   String perfTraceWithin(String parent) {
     return 'in $parent';
   }
+
+  @override
+  String get aiteamComponentTitle => 'AI Team';
+
+  @override
+  String aiteamComponentStageDownloading(String index, String total) {
+    return 'Downloading AI Team · $index of $total';
+  }
+
+  @override
+  String get aiteamComponentStagePreparing => 'Getting AI Team ready';
+
+  @override
+  String aiteamComponentAddingTitle(String names) {
+    return 'Adding $names';
+  }
+
+  @override
+  String get aiteamComponentNotice =>
+      'OpenCode and AI Team are running on this phone';
+
+  @override
+  String get aiteamComponentSectionTitle => 'AI Team on this phone';
+
+  @override
+  String aiteamComponentOfferBody(String size) {
+    return 'Several agents share the work on one project, right here. About $size to download.';
+  }
+
+  @override
+  String get aiteamComponentAdd => 'Add AI Team';
+
+  @override
+  String aiteamComponentTurnOn(String project) {
+    return 'Turn on AI Team for $project';
+  }
+
+  @override
+  String get aiteamComponentTurnOnBody =>
+      'The team works on its own branches and keeps a copy of the project\'s history on this phone.';
+
+  @override
+  String get aiteamComponentNoProject =>
+      'Open a project first, then turn AI Team on for it.';
+
+  @override
+  String get aiteamComponentStageTeam => 'Getting the team ready';
+
+  @override
+  String aiteamComponentStageProject(String project) {
+    return 'Adding $project';
+  }
+
+  @override
+  String get aiteamComponentStageStarting => 'Starting AI Team';
+
+  @override
+  String get aiteamComponentStageWaiting => 'Waiting for AI Team to answer';
+
+  @override
+  String get aiteamComponentRunning => 'AI Team · Running';
+
+  @override
+  String get aiteamComponentStopped => 'AI Team · Stopped';
+
+  @override
+  String aiteamComponentProjects(String projects) {
+    return 'Works on $projects';
+  }
+
+  @override
+  String get aiteamComponentStart => 'Start AI Team';
+
+  @override
+  String get aiteamComponentStop => 'Stop AI Team';
+
+  @override
+  String aiteamComponentFailed(String reason) {
+    return 'AI Team could not start: $reason';
+  }
+
+  @override
+  String get aiteamComponentFailedExited => 'it stopped on its own';
+
+  @override
+  String get aiteamComponentFailedTimeout => 'it did not answer in time';
+
+  @override
+  String get aiteamComponentShowDetails => 'Show details';
+
+  @override
+  String get aiteamComponentChildProcesses =>
+      'Android stops an app\'s extra programs when it runs many at once, and a team runs several. If the team stops while it works, turn on Developer options › Disable child process restrictions.';
 }

@@ -1,0 +1,266 @@
+# AI Team inside the app (no Termux): emulator proof, 2026-09-24
+
+Branch `feat/aiteam-component` (from `feat/phone-setup-v2` @ `ed85171f`).
+
+## Scope
+
+- AI Team (Gas City) as a reusable, resumable setup component of the in-app
+  Ubuntu, added through the existing "Add tools" / Customize screens.
+- The team run as a second long-running service owned by the app.
+- The in-app server's one AI Team path: Settings › Plugins › "AI Team on
+  this phone" → Add → Turn on for a project → Work tab Team card → give a
+  task.
+- End-to-end proof on an Android 15 emulator with one real task, counting
+  processes against Android's 32 child-process limit.
+
+## Build under test
+
+| | |
+|---|---|
+| Proof build commit | `ef18cd99` (the first commit on the branch) |
+| APK | `app-x86_64-release.apk`, 33.4 MB, SHA-256 `70cdf92db64bccd9f8c610f54023f2531b1d18b338a321a4bd13d73ebf544207` |
+| Built with | pinned Flutter 3.47.1 (`~/.shorebird/bin/cache/flutter/91f8bd75…/bin/flutter build apk --release --target-platform android-x64 --split-per-abi`) |
+| Follow-up commit | the commit after it: a push to the phone-side origin after a project is added, staggered order intervals, the discovery rule as a function, tests, these docs. Checked with unit tests and in the adb-shell proot replica, **not re-run in the app** (see "Not proven"). |
+
+Programs downloaded (pinned in `lib/builtin/setup/aiteam_scripts.dart`, the
+upstream projects' own releases):
+
+| Program | Version | x86_64 archive SHA-256 | arm64 archive SHA-256 |
+|---|---|---|---|
+| Gas City `gc` | 1.4.1 | `8d8c8b51…d33e42` | `6620ef51…407e29` |
+| Beads `bd` | 1.2.2 | `8140098a…d321e8` | `501f38a1…fd83a` |
+| Dolt `dolt` | 2.3.3 | `4acd730a…a43d9d` | `850a880a…aed3` |
+
+Gas City and Beads hashes come from their `checksums.txt`; Dolt ships none, so
+its hash is the asset digest GitHub reports, checked against a download.
+
+## Devices
+
+| | emulator-5554 | emulator-5556 |
+|---|---|---|
+| Android | 14 (API 34), `sdk_gphone64_x86_64/emu64xa:14/UE1A.230829.050` | 15 (API 35), `sdk_gphone64_x86_64/emu64xa:15/AE3A.240806.043` |
+| Kernel / RAM | Android 14 goldfish / 2 GB | `6.6.50-android15-8` / 4 GB |
+| Phantom settings | `settings_enable_monitor_phantom_procs` = null (default: on) | same; `max_phantom_processes` = null (default 32) |
+| Role | iteration, first team run with Gas City's defaults | **final proof**: fresh install, set up, turn on, task |
+
+Both emulators ran at the same time on one PC (8 cores, 15 GB), so every
+duration below is slow; a phone does not share its CPU with a second phone.
+
+## Steps and results (Android 15, emulator-5556, final run)
+
+| # | Step | Expected | Actual | Result |
+|---|---|---|---|---|
+| 1 | `adb uninstall`, `adb install` the APK, open, "On this phone" | Screen A still promises "About 4 minutes and ~208 MB" | Same promise (`api35-run1-02-screen-a-promise.png`) | PASS |
+| 2 | Customize → switch **AI Team** on → Done | Row "AI Team ~125 MB"; totals include it | "About 6 minutes · ~333 MB"; hero "Includes Git and SSH, Python, Node.js and AI Team" (`api35-run1-03-customize-aiteam-on.png`) | PASS |
+| 3 | Set up | Every component with real progress; AI Team downloads as three stages with bytes | 09:56:42 → 10:04:12 (7.5 min). AI Team row: "Installing packages 97%", "Downloading AI Team · 3 of 3 · 28 of 44 MB", "Getting AI Team ready" (`api35-final-01..03`) | PASS |
+| 4 | The install runs each program once (SIGSYS check) | `gc`, `bd`, `dolt` answer under proot on Android 15 | Component finished, so all three ran; no SIGSYS in logcat (`api35-logcat-kills-and-sigsys.txt`: 0 matches over 09:56–11:28) | PASS |
+| 5 | Name the first project: `my-app` → Create | Project and conversation | Done | PASS |
+| 6 | Settings › Plugins | "AI Team on this phone" with "Turn on AI Team for my-app" | As expected (`api35-final-04-turn-on-offer.png`) | PASS |
+| 7 | Turn on AI Team for my-app | Stages, then "AI Team · Running · Works on my-app"; plugin row "On · This phone" | 10:05:34 → 10:14:45 (9.2 min): store 2.1 min, project 2.9 min (first try), start + register 1.2 min, waiting for health 2.9 min (`api35-setup-and-turn-on.log`, `api35-final-05-team-running.png`) | PASS |
+| 8 | Work tab → AI Team card → Open → Start a run | Direct-task form (planner off, loopback controls) | "Give one task straight to the project's agent", project my-app (`api35-final-06..08`) | PASS |
+| 9 | Task "Create hello.txt containing the word hi" → Send to an agent | Bead made and slung to the project's worker | Sent 10:15:27; "Waiting for an agent" | PASS |
+| 10 | Let it run, sampling processes every 20–30 s | Real work to a commit, never past 32 processes, nothing killed | Working from 10:19:47; branch `polecat/ma-2xs` pushed; "Waiting for merge" 10:46:56; refinery fast-forwarded `8d4304a Add hello.txt greeting` (1 file, `hello.txt`, +1 line) into `master`, pushed it to the phone-side origin and closed the bead by 11:20 (`api35-final-09-waiting-for-merge.png`, `api35-refinery-transcript.txt`, `api35-final-bead.json`, `api35-team-state.json`) | PASS |
+| 11 | Process count during steps 9–10 (65 min, 133 samples) | Under 32 | min 7, median 15, max **33** (twice, at order-patrol spikes, e.g. 10:51:13: sh×10, gc×9, bash×5, opencode×2, proot×2, dolt, cat, timeout); **no** `Killing PhantomProcess` in logcat (`api35-process-samples.log`) | PASS, with a thin margin (see below) |
+| 12 | The finished run in the app | Shows as completed | Gas City's `/convoys` lists open convoys only, so the run leaves the list (Runs (0)) instead of moving to Completed (`api35-final-10-completed.png`). Existing gateway behaviour, not changed here | FAIL (pre-existing) |
+| 13 | Plugins → Stop AI Team | The team and everything it started stop; OpenCode keeps running | "AI Team · Stopped"; the app's processes 3 (OpenCode's proot + `opencode` + the app), no strays (`api35-final-11-stopped.png`, `api35-stop-start.log`) | PASS |
+| 14 | Start AI Team | The same team comes back | 11:33:10 → "AI Team · Running" by 11:37:20 (store reused, register, health), peak 24 processes, no kills (`api35-final-12-started-again.png`); stopped again afterwards | PASS |
+
+First Android 15 attempt (`api35-run1-*`, same day, earlier build): setup
+passed; "Turn on" failed at "Adding my-app": `bd init` → `pending ignored
+schema migrations alter pre-existing dirty tables: child_counters`. The same
+error hit `gc init` once on Android 14. Likely cause (read from the script, not
+traced on the device): Gas City's bridge
+(`gc-beads-bd.sh`) waits ~4.5 s for the new store's schema, times out under a
+slow proot, re-runs `bd init --force` over a half-made database, and Beads
+refuses. The store and project scripts now retry from clean (a new city, or
+the project under a new bead prefix = a new database); the final run did not
+need the retry.
+
+## Android 14 (emulator-5554): the phantom-process kill, before tuning
+
+With Gas City's defaults (patrol every 30 s, 8 store probes at once, a
+nudge-poll process per session, every maintenance order) the team ran at a
+median of 23 and a **peak of 40** processes (`api34-process-samples.log`). At
+09:38:28, 36 minutes in, Android killed the **OpenCode server's** proot, the
+`opencode` server itself and the team's proot:
+
+```
+ActivityManager: Killing PhantomProcessRecord {… 9168:9076:libproot.so/u0a197}: Trimming phantom processes
+ActivityManager: Killing PhantomProcessRecord {… 9171:9076:opencode/u0a197}: Trimming phantom processes
+ActivityManager: Killing PhantomProcessRecord {… 11988:9076:libproot.so/u0a197}: Trimming phantom processes
+```
+
+The task had reached its branch, not the merge. This is the failure the owner
+saw on his Android 15 phone after ~9 minutes. `BuiltinTeam.phoneTuning` came
+out of it: patrol every 60 s, health orders every 2–3 min, one probe and one
+session start at a time, nudges delivered in the supervisor, and the
+maintenance orders a single phone project does not need left out (two of them
+wake an AI "dog", a whole extra OpenCode session). Median fell from 23 to 15;
+the peak from 40 to 33.
+
+Also on Android 14: the Linux builds of `gc`, `bd` and `dolt` ran under the
+app's proot, and the team did real work (polecat branch `polecat/ma-vov`)
+until the kill. `gc register` blocks until the city is up (over 2 min under
+proot); it is now cut at 60 s and left to the health check.
+
+## Review must-fix items (docs/reviews/aiteam-builtin-review-2026-09-24.md)
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Opt-in, install only; screen A still "About 4 minutes and ~208 MB"; a test pins it | Done (step 1; `aiteam_component_test`) |
+| 2 | No team start in the setup job; "Turn on AI Team for this project" afterwards | Done (Plugins section, steps 6–7) |
+| 3 | A second long-lived managed process; one notification for both; Remove stops the team first | Done (named services; uninstall stops all; steps 13–14) |
+| 4 | One working in-app path; Add opens Add tools with AI Team selected; discovery no longer calls a phone team "a computer" | Done for Plugins and discovery. The Termux onboarding and re-offer card stay Termux-only; the in-app path is the Plugins section |
+| 5 | Loopback only, own port, allowed hosts; token or unix socket | Loopback, port 8472, allowed hosts: done. Token / socket: **not done** (Security below) |
+| 6 | "Adding AI Team" for add jobs | Done (screen B title and notification). Already-installed rows are not folded into one line |
+| 7 | Count processes; keep them low; explain the Developer options switch | Done: measured (40 → killed on Android 14; peak 33, no kill on Android 15), tuned, and the section explains "Disable child process restrictions" |
+
+## Architecture
+
+**Modules** (AI Team code lives in its own files; the engine, contract and
+screens have no AI Team special case):
+
+| File | What |
+|---|---|
+| `lib/builtin/setup/aiteam_scripts.dart` | Pins (versions, URLs, SHA-256, sizes per CPU), the component's check / install / remove scripts, the agents' `opencode` wrapper. `AITEAM_BASE_URL` dart-define = a local mirror for testing (same checksums). |
+| `lib/builtin/setup/components.dart` | One registry entry `aiteam`: optional, `defaultOn: false`, depends on `essentials` + `opencode`, size per CPU. |
+| `lib/builtin/team/builtin_team.dart` | The team per project: store (`gc init`, retried clean), project (`gc rig add` with a phone-side origin, retried), supervisor as a service, register, health; `phoneTuning`; the plugin config. |
+| `lib/ui/widgets/builtin_team_section.dart` | Settings › Plugins "AI Team on this phone": Add (opens Add tools with AI Team switched on), Turn on for {project} with its stages, Running/Stopped with Start/Stop, the child-process note. |
+| `BuiltinLinux.kt` / `BuiltinServerService.kt` / `MainActivity.kt` | **Generic** named services (see below). |
+
+**Generic capabilities added** (usable by any future tool):
+
+- *Named services*: `startService {name, script, port?, notice?}`,
+  `stopService {name}`, `serviceLog {name, tailBytes}`, and `status.services`.
+  Each service is its own proot owned by the app; the OpenCode server is the
+  service `server` (its old methods still work). The foreground notification
+  lives while any service runs, shows the newest service's text ("OpenCode and
+  AI Team are running on this phone", localised), and its Stop stops all.
+  Uninstall stops every service before deleting.
+- *Add-tools label*: `SetupJobParams.adding(ids)` → `SetupProgress.adding`;
+  screen B and the notification say "Adding AI Team" (or "Adding Python and AI
+  Team") for an add job, and a continued job keeps it.
+
+**Contracts touched**: the `builtin_linux` method channel (new methods above,
+`services` in `status`); `SetupProgress` (+`adding`); `SetupJobParams`
+(+`adding`/`addingIds`). No change to the job runner or setup.json schema.
+
+**Processes and ports**: the supervisor listens on `127.0.0.1:8472` (Termux's
+team uses 8372; both can exist). Dolt listens on a random loopback port chosen
+by Gas City. Agents are `opencode acp` children of the supervisor, through
+`/opt/aiteam/agent-bin/opencode` (first on the supervisor's PATH only), which
+makes each agent's folder a git worktree of the project before starting
+OpenCode.
+
+**App wiring**: turning on writes the in-app profile's `OrchestrationConfig`
+(gascity, `http://127.0.0.1:8472`, city `phone`, host mode phone, no front),
+which gives the loopback controls (create task, give it to the project's
+worker). When the app later starts the in-app OpenCode server, it also starts
+the team's service if that profile has the team on. Discovery no longer probes
+loopback ports for the in-app profile (a team there is Termux's, and it was
+labelled "a computer").
+
+**Security**:
+- Loopback only, explicitly: `bind = "127.0.0.1"`, `allowed_hosts =
+  ["127.0.0.1", "localhost"]`, rewritten on every start.
+- Its own port, so it never attaches to Termux's team.
+- Usage metrics of all three programs off (`DO_NOT_TRACK`,
+  `GC_DISABLE_USAGE_METRICS`, `BD_DISABLE_METRICS`, `bd metrics off`, Dolt
+  `metrics.disabled`).
+- **No token and no unix socket.** Gas City 1.4.1's supervisor keeps its TCP
+  port open (port 0 means the default). Its only write gate is ed25519-signed
+  per-request grants, which its own `gc` CLI inside the agents does not mint.
+  Dolt also listens on loopback without a password. So any app on the phone
+  that talks to 127.0.0.1:8472 can create and assign work while the team runs.
+  The Termux team has the same exposure. See "Not proven / open".
+
+**Remove**: "This phone" ⋯ → Remove stops every service (team included), then
+deletes Ubuntu with AI Team in it. `AiTeamScripts.removeScript` (programs +
+`/root/aiteam` + `/root/.gc`, projects kept) exists, but no screen offers
+"Remove AI Team" alone yet.
+
+## How to reproduce
+
+```sh
+# Build (from the worktree; android/key.properties copied from the main checkout)
+~/.shorebird/bin/cache/flutter/91f8bd75076e9c740aa13cf67eb9ec1a093f68f5/bin/flutter pub get
+~/.shorebird/bin/cache/flutter/91f8bd75076e9c740aa13cf67eb9ec1a093f68f5/bin/flutter build apk \
+  --release --target-platform android-x64 --split-per-abi
+# Optional, for a local mirror of the three archives (flat folder, same names):
+#   python3 -m http.server 8876 --bind 127.0.0.1   (in that folder, detached)
+#   adb reverse tcp:8876 tcp:8876
+#   … flutter build apk … --dart-define=AITEAM_BASE_URL=http://127.0.0.1:8876/aiteam/
+
+D=emulator-5556; Q=tool/qa/aiteam_builtin
+adb -s $D uninstall io.github.eslamasabry.opencode_mobile
+adb -s $D install build/app/outputs/flutter-apk/app-x86_64-release.apk
+adb -s $D shell settings get global settings_enable_monitor_phantom_procs   # null = default
+python3 $Q/flow.py $D launch tap:"On this phone" tap:Customize tap:"AI Team ~" tap:Done tap:"Set up"
+python3 $Q/monitor.py $D 540 10 setup.log "progress|Name your" "Name your first project"
+python3 $Q/flow.py $D tap:Create wait:"New conversation" back   # then Back to the Work tab
+python3 $Q/flow.py $D plugins tap:"Turn on AI Team for"
+python3 $Q/monitor.py $D 540 10 turnon.log "Getting|Adding|Starting|Waiting|Running|could not" "Running|could not"
+python3 $Q/flow.py $D back tap:"Work Tab" tap:Open tap:"Start a run"
+adb -s $D shell input tap 540 830     # the Task field
+python3 $Q/flow.py $D type:"Create hello.txt containing the word hi" tap:"Send to an agent"
+python3 $Q/monitor.py $D 540 30 task.log "Create hello|Agents \(" "Merged|1 of 1 done"   # repeat
+# The team's own view, from the PC:
+adb -s $D forward tcp:18473 tcp:8472
+curl -s http://127.0.0.1:18473/v0/city/phone/beads | jq '.items[] | {id,status,assignee,title}'
+adb -s $D logcat -d | grep -E 'Killing PhantomProcess|SIGSYS|seccomp'
+```
+
+`tool/qa/aiteam_builtin/` holds the scripts: `ui.py` (labels and taps via
+uiautomator), `flow.py` (the steps), `procs.py` (the app's process count),
+`monitor.py` (samples + the kill/SIGSYS check). Coordinates assume the
+emulators' 1080×2400 screen.
+
+## Tests
+
+- `test/aiteam_component_test.dart` — default selection and screen A totals
+  without AI Team (208 MB, about 4 minutes); the component is optional,
+  depends on OpenCode, install only; job order; per-CPU pins and checksums in
+  the script; the mirror override keeps the checksums; the check asks for the
+  pinned versions; "Adding AI Team" (params, continue, setup.json); the service
+  channel calls; discovery skips the in-app server only.
+- `test/builtin_team_test.dart` — every team script parses in dash and bash;
+  loopback/port/allowed hosts; the lean team and argument checks; "installed"
+  means every line of the component check passes (a `set -e` inside a subshell
+  on the left of `&&` is ignored — the test fails on that version); the status
+  script reads projects from a real `city.toml`; turn-on order against a fake
+  channel (store → project → service → register → health), a failing step
+  says which, a dying supervisor is reported, `ensureRunning`.
+- `test/setup_scripts_test.dart` (existing) now also parses the AI Team
+  scripts in dash and bash.
+
+## Not proven / open
+
+- **A real phone.** Nothing ran on arm64; the arm64 pins are checksummed but
+  never executed. Android 15's seccomp on a vendor kernel may still differ from
+  the emulator's: in Termux without proot the owner's phone killed these Go
+  Linux builds with SIGSYS (`faccessat2`); under the app's proot on the
+  Android 15 emulator they ran about 75 minutes without it. The install fails with a
+  plain "Android stopped gc … (SIGSYS)" if it happens. The Android builds of
+  `gc`/`bd` (with `/system`, `/apex`, `/linkerconfig` bound into proot) are the
+  fallback the review lists; not implemented, because `dolt`'s Android build
+  also needs Termux's ICU.
+- **The 32-process margin.** Peak 33 twice with no kill on Android 15; 40 was
+  killed on Android 14. Other apps' child processes (Termux, for one) count
+  too. The staggered intervals in the follow-up commit aim lower but were not
+  measured in the app. "Developer options › Disable child process
+  restrictions" is explained in the section; the owner asked to test with the
+  default, so it was not switched.
+- **Restart after Android or a reboot stops the app**: `ensureRunning` on the
+  OpenCode start is unit-tested, not exercised on a device (Stop and Start
+  from the Plugins section were, steps 13–14).
+- **The merge lands on the phone-side origin** (`/root/aiteam/origins/my-app.git`),
+  not in the project folder the person's conversations use; that folder needs a
+  `git pull`. Not addressed.
+- **Finished runs vanish** from the team home (step 12).
+- **No supervisor token / unix socket** (Security above).
+- **No wake lock**: a phone with the screen off may slow the team; not added.
+- Remove AI Team alone (no screen), Arabic layout (strings added, not viewed),
+  a second project on the same team (script tested in the replica only).
+- The follow-up commit's script changes (push after adding a project,
+  gate-sweep 1 min, beads-health 3 min) ran in the adb-shell replica and in
+  tests only.

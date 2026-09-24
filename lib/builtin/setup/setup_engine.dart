@@ -116,6 +116,9 @@ class ChannelSetupEngine implements SetupEngine {
   /// setup, for the progress published while its checks run.
   bool _localFirstSetup = false;
 
+  /// What the job being started adds ([SetupProgress.adding]), likewise.
+  List<String> _localAdding = const [];
+
   /// The last job given to the native runner by this engine.
   String? _handedOver;
   String? _finishing;
@@ -161,6 +164,7 @@ class ChannelSetupEngine implements SetupEngine {
     final jobId = 'setup-${_clock().microsecondsSinceEpoch}';
     _jobComponents = job;
     _localFirstSetup = SetupJobParams.isFirstSetup(params);
+    _localAdding = SetupJobParams.addingIds(params);
     _resetFloors(jobId);
     final startedAt = _clock().millisecondsSinceEpoch;
     final checking = <String, ComponentProgress>{
@@ -224,7 +228,9 @@ class ChannelSetupEngine implements SetupEngine {
         params: params,
         texts: {
           'channel': l10n.phoneSetupNotificationChannel,
-          'title': l10n.phoneSetupNotificationTitle,
+          'title': _localAdding.isEmpty
+              ? l10n.phoneSetupNotificationTitle
+              : setupAddingTitle(l10n, all, _localAdding),
           'progress': l10n.phoneSetupNotificationProgress('{percent}'),
           'done': l10n.phoneSetupNotificationDone,
           'stopped': l10n.phoneSetupNotificationStopped,
@@ -361,6 +367,7 @@ class ChannelSetupEngine implements SetupEngine {
       overall: overallFraction(_jobComponents, list, floors: _floors),
       error: error,
       firstSetup: _localFirstSetup,
+      adding: _localAdding,
     );
   }
 
@@ -971,7 +978,34 @@ SetupProgress progressFromRecord(
         : null,
     logTail: record.logTail,
     firstSetup: SetupJobParams.isFirstSetup(record.params),
+    adding: SetupJobParams.addingIds(record.params),
   );
+}
+
+/// "Adding AI Team" (or "Adding Python and AI Team") for an "Add tools" job
+/// that adds [ids], named by their titles in [registry].
+String setupAddingTitle(
+  AppLocalizations l10n,
+  List<SetupComponent> registry,
+  List<String> ids,
+) {
+  final names = [
+    for (final id in ids)
+      for (final component in registry)
+        if (component.id == id) component.shortTitle,
+  ];
+  final String joined;
+  if (names.length <= 1) {
+    joined = names.join();
+  } else {
+    joined = l10n.phoneSetupStartListPair(
+      names
+          .sublist(0, names.length - 1)
+          .join(l10n.phoneSetupStartListSeparator),
+      names.last,
+    );
+  }
+  return l10n.aiteamComponentAddingTitle(joined);
 }
 
 final _offline = RegExp(

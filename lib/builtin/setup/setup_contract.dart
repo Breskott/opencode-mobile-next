@@ -116,6 +116,7 @@ class SetupProgress {
     this.logTail = '',
     this.jobId,
     this.firstSetup = false,
+    this.adding = const [],
   });
 
   static const idle = SetupProgress(
@@ -149,6 +150,12 @@ class SetupProgress {
   /// job should end.
   final bool firstSetup;
 
+  /// The tools an "Add tools" job adds, by component id; empty for a first
+  /// setup or an update. The screen and the notification then say "Adding
+  /// AI Team" instead of "Setting up OpenCode on this phone". Kept in the
+  /// job's params like [firstSetup].
+  final List<String> adding;
+
   bool get canContinue =>
       state == SetupState.failed ||
       state == SetupState.interrupted ||
@@ -169,6 +176,17 @@ abstract final class SetupJobParams {
 
   static bool isFirstSetup(Map<String, Map<String, String>> params) =>
       params[key]?['first'] == '1';
+
+  /// Marks a job as adding [ids] to a phone that is set up
+  /// ([SetupProgress.adding]).
+  static Map<String, Map<String, String>> adding(Iterable<String> ids) => {
+    key: {'adding': ids.join(',')},
+  };
+
+  static List<String> addingIds(Map<String, Map<String, String>> params) => [
+    for (final id in (params[key]?['adding'] ?? '').split(','))
+      if (id.trim().isNotEmpty) id.trim(),
+  ];
 }
 
 /// Runs any set of components; first setup, "Add tools" and updates are all

@@ -12,22 +12,24 @@ import android.os.Build
 import android.os.IBinder
 
 /**
- * Keeps the app alive while the OpenCode server runs inside it.
+ * Keeps the app alive while the OpenCode server (and, when it is on, AI Team)
+ * runs inside it.
  *
- * The server is a child of the app's process, so when Android reclaims the
- * process the server goes with it, mid-task. While it runs, this service holds
- * the app in the foreground state with an ongoing notification that says so
- * and offers Stop. It starts with the server and ends with it.
+ * The services are children of the app's process, so when Android reclaims
+ * the process they go with it, mid-task. While any of them runs, this service
+ * holds the app in the foreground state with an ongoing notification that
+ * says so and offers Stop, which stops them all. It starts with the first
+ * service and ends with the last (BuiltinLinux.startService/stopService).
  */
 class BuiltinServerService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
-            BuiltinLinux.get(applicationContext).stopServer()
+            BuiltinLinux.get(applicationContext).stopAllServices()
             stopSelf()
             return START_NOT_STICKY
         }
         createChannel()
-        val notification = buildNotification()
+        val notification = buildNotification(intent?.getStringExtra(EXTRA_TITLE))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 NOTIFICATION_ID,
@@ -57,7 +59,7 @@ class BuiltinServerService : Service() {
         )
     }
 
-    private fun buildNotification(): Notification {
+    private fun buildNotification(title: String?): Notification {
         val open = PendingIntent.getActivity(
             this,
             0,
@@ -79,7 +81,7 @@ class BuiltinServerService : Service() {
         }
         return builder
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("OpenCode is running on this phone")
+            .setContentTitle(title ?: "OpenCode is running on this phone")
             .setContentText("Your agent keeps working while you use other apps.")
             .setOngoing(true)
             .setContentIntent(open)
@@ -91,9 +93,12 @@ class BuiltinServerService : Service() {
         private const val CHANNEL_ID = "opencode_builtin_server"
         private const val NOTIFICATION_ID = 4097
         private const val ACTION_STOP = "stop"
+        private const val EXTRA_TITLE = "title"
 
-        fun start(context: Context) {
+        /** Starts the service, or updates its notification to [title]. */
+        fun start(context: Context, title: String? = null) {
             val intent = Intent(context, BuiltinServerService::class.java)
+                .putExtra(EXTRA_TITLE, title)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {

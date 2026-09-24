@@ -1,0 +1,4 @@
+# emulator-5554: logcat buffer --------- beginnin .. 09-24 11:28:38.592; lines matching 'Killing PhantomProcess|Trimming phantom|SIGSYS|seccomp|signal 31|Bad system call': 3
+09-24 09:38:28.722   555   591 I ActivityManager: Killing PhantomProcessRecord {3610984 9168:9076:libproot.so/u0a197}: Trimming phantom processes
+09-24 09:38:28.744   555   591 I ActivityManager: Killing PhantomProcessRecord {3ea65a2 9171:9076:opencode/u0a197}: Trimming phantom processes
+09-24 09:38:28.744   555   591 I ActivityManager: Killing PhantomProcessRecord {310d233 11988:9076:libproot.so/u0a197}: Trimming phantom processes

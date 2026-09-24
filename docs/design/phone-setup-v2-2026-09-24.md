@@ -100,7 +100,7 @@ The initial set, in dependency order:
 | `python` | Python | no, on by default | `python3 python3-venv python3-pip` via apt. Agents expect Python; Ubuntu Base has none (seen in the recorded run). |
 | `node` | Node.js | yes | Official pinned tarball (`TermuxBridge.localAgentsPins`). Byte progress, SHA-256. `npm config set prefix /usr/local`. |
 | `opencode` | OpenCode | yes | Pinned `TermuxRuntime.openCode1.pinnedVersion` by default, via the shared `openCodeUbuntuSetupScript` path. Stage progress. |
-| `aiteam` (tomorrow) | AI Team | no | Added later as a component. No engine change should be needed. |
+| `aiteam` | AI Team | no, off by default | Install only: upstream Gas City, Beads and Dolt Linux releases, pinned by SHA-256. The team is turned on later, per project, from Settings › Plugins, and runs as the app's second service (docs/qa/aiteam-builtin-2026-09-24/README.md). No engine change was needed. |
 
 Which OpenCode: the engine installs the recommended runtime (OpenCode 1 today) without
 asking. Switching to OpenCode 2 is a setting on the "This phone" card (screen D). It is

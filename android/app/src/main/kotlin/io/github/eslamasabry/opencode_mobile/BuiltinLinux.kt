@@ -153,54 +153,115 @@ class BuiltinLinux(private val context: Context) {
             .start()
     }
 
-    // ---- server ------------------------------------------------------------
+    // ---- long-running services ---------------------------------------------
 
-    private var server: Process? = null
-    private var serverPort: Int? = null
+    /**
+     * A long-running program inside Ubuntu that the app owns: the OpenCode
+     * server ([SERVER]) and, when it is on, the AI Team supervisor. Each runs
+     * in its own proot, started and stopped here and nowhere else, because a
+     * program a script leaves running in the background dies with that
+     * script's proot (`--kill-on-exit`).
+     */
+    private class Service(val process: Process, val port: Int?, val notice: String?)
+
+    private val services = LinkedHashMap<String, Service>()
+
     val serverLog = File(home, "server.log")
 
-    val serverRunning: Boolean
-        get() = server?.isAlive == true
+    val serverRunning: Boolean get() = serviceRunning(SERVER)
 
-    val port: Int? get() = if (serverRunning) serverPort else null
+    val port: Int? get() = servicePort(SERVER)
 
     @Synchronized
-    fun startServer(script: String, port: Int) {
+    fun serviceRunning(name: String): Boolean = services[name]?.process?.isAlive == true
+
+    @Synchronized
+    fun servicePort(name: String): Int? =
+        services[name]?.takeIf { it.process.isAlive }?.port
+
+    /** The names of the services that run now. */
+    @Synchronized
+    fun runningServices(): List<String> =
+        services.filterValues { it.process.isAlive }.keys.toList()
+
+    fun startServer(script: String, port: Int) = startService(SERVER, script, port, null)
+
+    fun stopServer() = stopService(SERVER)
+
+    /**
+     * Starts [script] as the service [name], stopping an earlier run of the
+     * same service first. [notice] is what the ongoing notification says
+     * while this service runs (the app sends it in its own language); the
+     * newest service with one wins, so "OpenCode and AI Team are running"
+     * replaces "OpenCode is running" when the team starts.
+     */
+    @Synchronized
+    fun startService(name: String, script: String, port: Int?, notice: String?) {
         check(installed) { "Ubuntu is not installed in the app yet" }
-        stopServer()
+        require(NAME.matches(name)) { "Invalid service name: $name" }
+        stopService(name)
+        val log = serviceLogFile(name)
         // One log per run; the previous one stays for a look after a crash.
-        if (serverLog.isFile) serverLog.renameTo(File(home, "server.previous.log"))
-        val process = start(script, serverLog).also { it.outputStream.close() }
-        server = process
-        serverPort = port
-        BuiltinServerService.start(context)
-        // A server that exits on its own (a crash, a bad config) takes its
-        // "running" notification with it.
+        if (log.isFile) log.renameTo(File(home, "$name.previous.log"))
+        val process = start(script, log).also { it.outputStream.close() }
+        services[name] = Service(process, port, notice)
+        BuiltinServerService.start(context, currentNotice())
+        // A service that exits on its own (a crash, a bad config) takes its
+        // share of the "running" notification with it.
         Thread {
             process.waitFor()
             synchronized(this) {
-                if (server === process) {
-                    server = null
-                    serverPort = null
-                    BuiltinServerService.stop(context)
+                if (services[name]?.process === process) {
+                    services.remove(name)
+                    serviceSetChanged()
                 }
             }
         }.start()
     }
 
     @Synchronized
-    fun stopServer() {
-        val process = server ?: return
-        server = null
-        serverPort = null
-        stopTree(process)
-        BuiltinServerService.stop(context)
+    fun stopService(name: String) {
+        val service = services.remove(name) ?: return
+        stopTree(service.process)
+        serviceSetChanged()
     }
 
-    fun serverLogTail(tailBytes: Int): String {
-        if (!serverLog.isFile) return ""
-        val skip = (serverLog.length() - tailBytes).coerceAtLeast(0)
-        serverLog.inputStream().use { input ->
+    /** Stops every service; Stop in the notification and uninstall use it. */
+    @Synchronized
+    fun stopAllServices() {
+        for (name in services.keys.toList()) stopService(name)
+    }
+
+    /** Keeps the foreground service exactly as long as any service runs. */
+    private fun serviceSetChanged() {
+        if (services.values.none { it.process.isAlive }) {
+            BuiltinServerService.stop(context)
+            return
+        }
+        // Only the words change here. Android refuses to (re)start a
+        // foreground service from the background, and a service can end
+        // while the app is away; the notification then keeps its old text.
+        try {
+            BuiltinServerService.start(context, currentNotice())
+        } catch (error: Exception) {
+            Log.w(TAG, "notification not updated", error)
+        }
+    }
+
+    private fun currentNotice(): String? =
+        services.values.lastOrNull { it.process.isAlive && it.notice != null }?.notice
+
+    private fun serviceLogFile(name: String): File =
+        if (name == SERVER) serverLog else File(home, "$name.log")
+
+    fun serverLogTail(tailBytes: Int): String = serviceLogTail(SERVER, tailBytes)
+
+    fun serviceLogTail(name: String, tailBytes: Int): String {
+        if (!NAME.matches(name)) return ""
+        val log = serviceLogFile(name)
+        if (!log.isFile) return ""
+        val skip = (log.length() - tailBytes).coerceAtLeast(0)
+        log.inputStream().use { input ->
             input.skip(skip)
             return input.readBytes().toString(Charsets.UTF_8)
         }
@@ -238,10 +299,14 @@ class BuiltinLinux(private val context: Context) {
     }
 
     fun uninstall() {
-        stopServer()
+        // Every service first (OpenCode, AI Team with its store and agents):
+        // deleting files under a running program leaves it spinning on
+        // nothing.
+        stopAllServices()
         ready.delete()
         rootfs.deleteRecursively()
         serverLog.delete()
+        home.listFiles()?.filter { it.name.endsWith(".log") }?.forEach { it.delete() }
         // A finished setup job would otherwise still read as "done".
         File(home, "setup.json").delete()
         File(home, "setup.log").delete()
@@ -513,6 +578,12 @@ class BuiltinLinux(private val context: Context) {
 
         const val TAG = "OcLinux"
         private const val OUTPUT_CAP = 64 * 1024
+
+        /** The OpenCode server's service name. */
+        const val SERVER = "server"
+
+        /** Service names double as log file names. */
+        private val NAME = Regex("[a-z][a-z0-9-]{0,31}")
 
         @Volatile private var instance: BuiltinLinux? = null
 

@@ -2,6 +2,7 @@ import '../../l10n/app_localizations.dart';
 import '../../termux/bridge.dart' show TermuxBridge, TermuxRuntime;
 import '../../termux/opencode_ubuntu_setup.dart';
 import '../builtin_linux.dart';
+import 'aiteam_scripts.dart';
 import 'setup_contract.dart';
 
 /// Every component the phone setup can install, in dependency order
@@ -90,6 +91,28 @@ List<SetupComponent> setupComponents(
       checkScript: SetupScripts.openCodeCheck(runtime, version: version),
       installScript: SetupScripts.openCodeInstall(runtime, version: version),
     ),
+    // Several agents sharing the work on one project. Opt-in and install
+    // only: a team belongs to a project, which the first setup does not
+    // have yet, so it is turned on later, per project (BuiltinTeam).
+    SetupComponent(
+      id: SetupComponentIds.aiTeam,
+      title: l10n.aiteamComponentTitle,
+      shortTitle: l10n.aiteamComponentTitle,
+      // Its agents are OpenCode, and it needs Git and curl.
+      dependsOn: const [
+        SetupComponentIds.essentials,
+        SetupComponentIds.openCode,
+      ],
+      // Mostly the three downloads; the ETA's pace scaling corrects it.
+      estimatedSeconds: 150,
+      downloadBytes: AiTeamPins.deviceDownloadBytes,
+      checkScript: AiTeamScripts.checkScript,
+      installScript: AiTeamScripts.installScript(
+        downloading: l10n.aiteamComponentStageDownloading('{index}', '{total}'),
+        preparing: l10n.aiteamComponentStagePreparing,
+      ),
+      removeScript: AiTeamScripts.removeScript,
+    ),
     SetupComponent(
       id: SetupComponentIds.start,
       title: l10n.phoneSetupStartTitle,
@@ -113,6 +136,7 @@ abstract final class SetupComponentIds {
   static const python = 'python';
   static const node = 'node';
   static const openCode = 'opencode';
+  static const aiTeam = 'aiteam';
 
   /// Not installed: starting the server and connecting to it, the last step
   /// of every job (see [SetupComponent.jobStep]).
