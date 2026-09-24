@@ -718,7 +718,12 @@ AgentState _agentState({
   if (a == AgentState.crashed || s == AgentState.crashed || unavailable) {
     return AgentState.crashed;
   }
-  if (suspended || a == AgentState.stopped || s == AgentState.stopped) {
+  if (suspended || s == AgentState.stopped) return AgentState.stopped;
+  // The agent list can say "stopped" while the session list shows the
+  // same agent's session active and running: Gas City derives the agent
+  // state through its tmux backend, which a phone (no tmux server) never
+  // has. A running session is the fact; the agent word yields to it.
+  if (a == AgentState.stopped && !(running && s == AgentState.working)) {
     return AgentState.stopped;
   }
   if (!running && agentState != null && a != AgentState.working) {

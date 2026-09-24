@@ -116,7 +116,8 @@ Future<ServerProbeResult> _probeLoopback({
 
   cancellation?._add(cancelRequest);
   try {
-    for (final path in ['/api/info', '/api/health', '/global/health']) {
+    // /api/info is where OpenCode 2.0.4 and later report themselves.
+    for (final path in ['/api/health', '/api/info', '/global/health']) {
       final response = await dio.get<Object?>(path, cancelToken: cancelToken);
       if (response.statusCode == 401) {
         return const ServerProbeResult.failure(
@@ -125,13 +126,13 @@ Future<ServerProbeResult> _probeLoopback({
         );
       }
       final body = response.data;
-      if (response.statusCode == 200 && body is Map) {
-        // opencode 2.0.5+ answers `/api/info` with `{version, pid, urls,
-        // paths}` — no `healthy` key at all — so a reported version is the
-        // readiness signal there; the health shapes carry `healthy`.
-        if (body['healthy'] == true || body['version'] != null) {
-          return ServerProbeResult.success(body['version']?.toString());
-        }
+      if (response.statusCode == 200 &&
+          body is Map &&
+          (body['healthy'] == true ||
+              (path == '/api/info' &&
+                  body['version'] is String &&
+                  (body['pid'] is num || body['urls'] is List)))) {
+        return ServerProbeResult.success(body['version']?.toString());
       }
     }
     return const ServerProbeResult.failure('No healthy OpenCode response');
@@ -162,6 +163,10 @@ enum TermuxRunningServerState {
   /// The bridge answered with an error or timed out. Nothing is known.
   unavailable,
 
+  /// The app-managed server is set up on this phone and was stopped. It can
+  /// be started again in place.
+  stopped,
+
   /// A live OpenCode response confirms the ready managed process.
   running,
 }
@@ -189,6 +194,13 @@ class TermuxRunningServer {
   const TermuxRunningServer.unavailable()
     : this._(state: TermuxRunningServerState.unavailable);
 
+  const TermuxRunningServer.stopped({required TermuxRuntime runtime})
+    : this._(
+        state: TermuxRunningServerState.stopped,
+        runtime: runtime,
+        phase: 'stopped',
+      );
+
   const TermuxRunningServer.running({
     required TermuxRuntime runtime,
     required String version,
@@ -205,7 +217,8 @@ class TermuxRunningServer {
 
   final TermuxRunningServerState state;
 
-  /// The runtime the manager reports; only meaningful when [isRunning].
+  /// The runtime the manager reports; only meaningful when [isRunning] or
+  /// [isStopped].
   final TermuxRuntime? runtime;
 
   /// The server version the manager reports; may be empty.
@@ -221,6 +234,7 @@ class TermuxRunningServer {
   final bool needsCredentials;
 
   bool get isRunning => state == TermuxRunningServerState.running;
+  bool get isStopped => state == TermuxRunningServerState.stopped;
 
   /// The profile generation that speaks to [runtime].
   ServerFlavor get flavor =>
@@ -314,6 +328,14 @@ Future<TermuxRunningServer> detectTermuxRunningServer({
       }
       return const TermuxRunningServer.unavailable();
     }
+    // A deliberate stop leaves a selected runtime behind; a phone that was
+    // never set up reports `idle` with none. Only the former can be started
+    // in place.
+    if (status.phase == 'stopped' &&
+        status.runtimeSelected &&
+        !status.switchPending) {
+      return TermuxRunningServer.stopped(runtime: status.runtime);
+    }
     return TermuxRunningServer.absent(phase: status.phase);
   } finally {
     observation.cancel();
@@ -332,7 +354,7 @@ ServerProfile? savedProfileForTermuxServer(
   Iterable<ServerProfile> profiles,
   TermuxRunningServer server,
 ) {
-  if (!server.isRunning) return null;
+  if (!server.isRunning && !server.isStopped) return null;
   for (final profile in profiles) {
     if (profile.backend == ServerBackend.openCode &&
         TermuxBridge.managesServerUrl(profile.baseUrl) &&

@@ -395,6 +395,15 @@ class ToolCard extends StatefulWidget {
   final ToolState state;
   final bool embedded;
 
+  /// The agent's own one-line name for this step ("Setting up persistence
+  /// check"), said right before the call. It becomes the row's title and the
+  /// tool's name moves into the detail, so the step is one line, not two.
+  final String? heading;
+
+  /// The rest of the thought [heading] was the first line of. Shown first
+  /// when the row is opened: why, then what.
+  final String? note;
+
   /// Optional longer-lived store (e.g. session-scoped) keyed by
   /// [expansionKey], so expansion survives list recycling in a virtualized
   /// transcript instead of resetting when the item State is rebuilt.
@@ -412,6 +421,8 @@ class ToolCard extends StatefulWidget {
     required this.toolName,
     required this.state,
     this.embedded = false,
+    this.heading,
+    this.note,
     this.expansionStore,
     this.expansionKey,
     this.filePreviewLoader,
@@ -605,6 +616,7 @@ class _ToolCardState extends State<ToolCard> {
       l10n: strings,
     );
     final hasBody =
+        (widget.note?.isNotEmpty ?? false) ||
         (widget.state.output?.isNotEmpty ?? false) ||
         (widget.state.inputJson?.isNotEmpty ?? false) ||
         widget.state.input.isNotEmpty ||
@@ -614,18 +626,8 @@ class _ToolCardState extends State<ToolCard> {
 
     return Container(
       key: widget.embedded ? const Key('embedded-tool-row') : null,
-      margin: widget.embedded
-          ? EdgeInsets.zero
-          : const EdgeInsets.symmetric(vertical: 3),
-      decoration: widget.embedded
-          ? null
-          : BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(
-                alpha: .35,
-              ),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.hairline(theme)),
-            ),
+      // A tool call is a line of the reply, in a group or on its own: no
+      // frame and no fill. What it printed, once opened, is the only block.
       child: _runningAccent(
         theme,
         reduceMotion,
@@ -635,7 +637,7 @@ class _ToolCardState extends State<ToolCard> {
               button: hasBody,
               expanded: hasBody ? _expanded : null,
               label:
-                  '${contract.title}, ${!widget.state.executed
+                  '${widget.heading == null ? '' : '${widget.heading}, '}${contract.title}, ${!widget.state.executed
                       ? strings.chatUiNotRun
                       : _backgroundLaunch
                       ? strings.workStartedInBackground
@@ -648,7 +650,15 @@ class _ToolCardState extends State<ToolCard> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 48),
                   child: Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 8),
+                    // On its own a call shares the prose's left edge; inside
+                    // a group it sits in from the group's rule.
+                    padding: EdgeInsetsDirectional.fromSTEB(
+                      // 2 + the running rule's 2 = the prose's inset of 4.
+                      widget.embedded ? 10 : 2,
+                      8,
+                      widget.embedded ? 8 : 4,
+                      8,
+                    ),
                     child: Row(
                       children: [
                         Icon(
@@ -660,29 +670,33 @@ class _ToolCardState extends State<ToolCard> {
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Row(
-                            children: [
-                              Text(
-                                contract.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall!.copyWith(
-                                  // A call the server never ran greys out
-                                  // rather than striking through: the title
-                                  // stays legible, the state carries the news.
-                                  color: widget.state.executed
-                                      ? theme.colorScheme.onSurface.withValues(
-                                          alpha: .9,
-                                        )
-                                      : AppTheme.mutedOf(theme),
-                                  fontWeight: FontWeight.w600,
-                                ),
+                          child: TitleWithDetail(
+                            title: Text(
+                              widget.heading ?? contract.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall!.copyWith(
+                                // A call the server never ran greys out
+                                // rather than striking through: the title
+                                // stays legible, the state carries the news.
+                                color: widget.state.executed
+                                    ? theme.colorScheme.onSurface.withValues(
+                                        alpha: .9,
+                                      )
+                                    : AppTheme.mutedOf(theme),
+                                fontWeight: FontWeight.w600,
                               ),
-                              if (contract.subtitle?.isNotEmpty == true) ...[
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    contract.subtitle!,
+                            ),
+                            detail:
+                                widget.heading != null ||
+                                    contract.subtitle?.isNotEmpty == true
+                                ? Text(
+                                    widget.heading == null
+                                        ? contract.subtitle!
+                                        : [
+                                            contract.title,
+                                            ?contract.subtitle,
+                                          ].join(' '),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.labelSmall?.copyWith(
@@ -692,11 +706,8 @@ class _ToolCardState extends State<ToolCard> {
                                           ? AppTheme.monoFamily
                                           : null,
                                     ),
-                                  ),
-                                ),
-                              ] else
-                                const Spacer(),
-                            ],
+                                  )
+                                : null,
                           ),
                         ),
                         if (contract.details.isNotEmpty) ...[
@@ -786,6 +797,8 @@ class _ToolCardState extends State<ToolCard> {
                 ),
               ),
             ),
+            if (_expanded && (widget.note?.isNotEmpty ?? false))
+              StepNote(widget.note!),
             if (widget.state.pruned) _PrunedNote(embedded: widget.embedded),
             if (_interleavedSegments case final segments?)
               Padding(
@@ -873,6 +886,73 @@ class _ToolCardState extends State<ToolCard> {
     if (widget.embedded) return accent;
     // Straight rule inside a rounded card: clip so the corners stay round.
     return ClipRRect(borderRadius: BorderRadius.circular(8), child: accent);
+  }
+}
+
+/// A row's title and the detail after it, in whatever room the row really
+/// has. The title keeps its natural width up to two thirds of that room and
+/// the detail takes the rest, so neither can run over the other however
+/// deeply the row is nested. (A cap taken from the screen's width let a long
+/// title paint across the detail inside a nested group.)
+class TitleWithDetail extends StatelessWidget {
+  const TitleWithDetail({
+    super.key,
+    required this.title,
+    this.detail,
+    this.gap = 6,
+  });
+
+  final Widget title;
+  final Widget? detail;
+  final double gap;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final room = constraints.maxWidth;
+      final detail = this.detail;
+      if (detail == null || !room.isFinite) {
+        return Align(alignment: AlignmentDirectional.centerStart, child: title);
+      }
+      return Row(
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: room * .66),
+            child: title,
+          ),
+          SizedBox(width: gap),
+          Expanded(child: detail),
+        ],
+      );
+    },
+  );
+}
+
+/// The agent's reasoning for a step, shown inside the opened step.
+class StepNote extends StatelessWidget {
+  const StepNote(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // Full width, so the text starts at the leading edge whatever the
+    // parent column's alignment is (a tool row's column centres by default).
+    return Container(
+      key: const Key('step-note'),
+      width: double.infinity,
+      alignment: AlignmentDirectional.centerStart,
+      padding: const EdgeInsetsDirectional.fromSTEB(28, 0, 10, 8),
+      child: MarkdownText(
+        text,
+        baseStyle: theme.textTheme.bodySmall!.copyWith(
+          fontStyle: FontStyle.italic,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        selectable: false,
+      ),
+    );
   }
 }
 

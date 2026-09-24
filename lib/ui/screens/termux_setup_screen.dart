@@ -16,7 +16,9 @@ import '../../termux/bridge.dart';
 import '../../termux/managed_server_recovery.dart';
 import '../app_theme.dart';
 import '../widgets/confirm_sheet.dart';
+import '../widgets/safety_confirms.dart';
 import '../widgets/setup_terminal.dart';
+import '../widgets/local_agent_onboarding.dart';
 import '../widgets/team_phone_onboarding.dart';
 import '../widgets/termux_phone_tools.dart';
 
@@ -41,6 +43,12 @@ enum _Phase {
   failed,
 }
 
+/// What the runtime step offers. Claude Code is not an OpenCode runtime: it
+/// rides on the same Ubuntu, so choosing it installs the default OpenCode
+/// runtime as usual and then continues into the Claude Code block.
+@visibleForTesting
+enum TermuxRuntimeChoice { openCode1, openCode2, claudeCode }
+
 class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     with WidgetsBindingObserver {
   static const port = TermuxBridge.managedServerPort;
@@ -50,6 +58,18 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   TermuxSetupStatus? _status;
   TermuxInstallation? _installation;
   TermuxRuntime _selectedRuntime = TermuxRuntime.openCode1;
+
+  /// The person picked "Claude Code" in the runtime step. The manager has no
+  /// clean Ubuntu-only path (its setup always ends by starting a server and
+  /// the wizard's progress is built on that), so the default OpenCode runtime
+  /// is installed as today and the Claude Code block then starts by itself.
+  bool _claudeAfterSetup = false;
+
+  TermuxRuntimeChoice get _runtimeChoice => _claudeAfterSetup
+      ? TermuxRuntimeChoice.claudeCode
+      : _selectedRuntime == TermuxRuntime.openCode2
+      ? TermuxRuntimeChoice.openCode2
+      : TermuxRuntimeChoice.openCode1;
   TermuxRuntime? _committedRuntime;
 
   TermuxRuntime? get _knownRuntime {
@@ -371,6 +391,46 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     }
     await store.upsert(profile);
     return profile;
+  }
+
+  /// The server is installed on this phone but the app holds no password for
+  /// it (a reinstall, cleared app data, an unreadable keystore). The app wrote
+  /// that password into Termux at setup, so it takes it back from there rather
+  /// than telling the person to run setup again or type a secret they were
+  /// never shown.
+  Future<void> _restoreLocalProfileIfMissing(TermuxRuntime runtime) async {
+    if (_localProfile(runtime: runtime) != null) return;
+    final password = await TermuxBridge.managedServerPassword();
+    if (password == null || !mounted) return;
+    final store = ref.read(bootstrapProvider).store;
+    final flavor = runtime == TermuxRuntime.openCode2
+        ? ServerFlavor.v2
+        : ServerFlavor.v1;
+    ServerProfile? existing;
+    for (final profile in store.profiles) {
+      if (profile.backend == ServerBackend.openCode &&
+          profile.baseUrl == localUrl &&
+          profile.flavor == flavor) {
+        existing = profile;
+        break;
+      }
+    }
+    final profile =
+        existing ??
+        ServerProfile(
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          name: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupThisDevice,
+          baseUrl: localUrl,
+          flavor: flavor,
+        );
+    profile
+      ..username = 'opencode'
+      ..password = password
+      ..requiresPasswordReentry = false;
+    await store.upsert(profile);
+    if (mounted) setState(() {});
   }
 
   ServerProfile? _localProfile({TermuxRuntime? runtime}) {
@@ -717,6 +777,8 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
   }
 
   Future<void> _confirmRestart() async {
+    await _restoreLocalProfileIfMissing(_runtime);
+    if (!mounted) return;
     final profile = _localProfile();
     if (profile == null) {
       setState(() {
@@ -1448,6 +1510,17 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
     Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
   }
 
+  /// "Claude Code on this phone": the one door to installing and running the
+  /// Paseo daemon and Claude Code in the Ubuntu this wizard set up.
+  Widget _localAgentBlock() {
+    return LocalAgentOnboardingBlock(
+      key: const ValueKey('local-agent-block'),
+      connection: ref.read(connProvider),
+      autoStart: _claudeAfterSetup,
+      onConnected: _continueToApp,
+    );
+  }
+
   /// The optional on-device AI Team block (TEAM-302) under a running
   /// managed server: absent unless the runtime supports it. Open Workspace
   /// connects to [profile] first when the app is on another server.
@@ -1476,6 +1549,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
 
   Future<void> _stopServer() async {
     if (_busy || _connecting) return;
+    if (!await confirmStopLocalServer(context)) return;
+    // The screen kept polling while the sheet was open; re-check the guards.
+    if (!mounted || _busy || _connecting) return;
     final runtime = _runtime;
     _stopPolling();
     setState(() {
@@ -2013,6 +2089,8 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                           ),
                         ],
                       ),
+                      const SizedBox(height: 16),
+                      _localAgentBlock(),
                       if (_localProfile() case final profile?) ...[
                         const SizedBox(height: 16),
                         _teamPhoneBlock(profile),
@@ -2261,6 +2339,10 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
               // in it, with live summaries; both open their own screens.
               const SizedBox(height: 16),
               const TermuxPhoneToolsRows(),
+              // Ubuntu is installed here whether or not OpenCode is running,
+              // which is all Claude Code needs.
+              const SizedBox(height: 16),
+              _localAgentBlock(),
               if (running && profile != null) ...[
                 const SizedBox(height: 16),
                 _teamPhoneBlock(profile),
@@ -2321,6 +2403,9 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
           _committedRuntime = null;
         }
       });
+      if (installation.openCodeVersion != null) {
+        await _restoreLocalProfileIfMissing(installation.runtime);
+      }
     } on TermuxBridgeException {
       if (!mounted || epoch != _statusEpoch) return;
       setState(() {
@@ -2422,8 +2507,8 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
               _knownRuntime == null) ...[
             Text(l10n.setupRuntimeTitle, style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
-            RadioGroup<TermuxRuntime>(
-              groupValue: _selectedRuntime,
+            RadioGroup<TermuxRuntimeChoice>(
+              groupValue: _runtimeChoice,
               onChanged: (value) {
                 if (_busy ||
                     _connecting ||
@@ -2431,24 +2516,37 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                     value == null) {
                   return;
                 }
-                setState(() => _selectedRuntime = value);
+                setState(() {
+                  _claudeAfterSetup = value == TermuxRuntimeChoice.claudeCode;
+                  _selectedRuntime = value == TermuxRuntimeChoice.openCode2
+                      ? TermuxRuntime.openCode2
+                      : TermuxRuntime.openCode1;
+                });
               },
               child: Column(
                 children: [
-                  RadioListTile<TermuxRuntime>(
+                  RadioListTile<TermuxRuntimeChoice>(
                     key: const Key('setup-runtime-opencode1'),
-                    value: TermuxRuntime.openCode1,
+                    value: TermuxRuntimeChoice.openCode1,
                     enabled: !_busy && !_checkingInstallation,
                     title: Text(l10n.setupRuntimeOne),
                     subtitle: Text(l10n.setupRuntimeOneDetail),
                     contentPadding: EdgeInsets.zero,
                   ),
-                  RadioListTile<TermuxRuntime>(
+                  RadioListTile<TermuxRuntimeChoice>(
                     key: const Key('setup-runtime-opencode2'),
-                    value: TermuxRuntime.openCode2,
+                    value: TermuxRuntimeChoice.openCode2,
                     enabled: !_busy && !_checkingInstallation,
                     title: Text(l10n.setupRuntimeTwo),
                     subtitle: Text(l10n.setupRuntimeTwoDetail),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  RadioListTile<TermuxRuntimeChoice>(
+                    key: const Key('setup-runtime-claude'),
+                    value: TermuxRuntimeChoice.claudeCode,
+                    enabled: !_busy && !_checkingInstallation,
+                    title: Text(l10n.localAgentStepClaude),
+                    subtitle: Text(l10n.localAgentRuntimeChoiceDetail),
                     contentPadding: EdgeInsets.zero,
                   ),
                 ],

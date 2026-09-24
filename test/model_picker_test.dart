@@ -347,7 +347,7 @@ void main() {
     expect(find.text('Choose a model'), findsNothing);
   });
 
-  testWidgets('"Use for this session" leaves every other session alone', (
+  testWidgets('"Use for this conversation" leaves every other session alone', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(411, 891));
@@ -375,9 +375,9 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Nemotron Ultra'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Use for this session'));
+    await tester.ensureVisible(find.text('Use for this conversation'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Use for this session'));
+    await tester.tap(find.text('Use for this conversation'));
     await tester.pumpAndSettle();
 
     expect(
@@ -664,7 +664,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Use for this session'));
+    await tester.tap(find.text('Use for this conversation'));
     await tester.pumpAndSettle();
     expect(controller.agentForSession('chat'), 'plan');
     expect(controller.agentForSession('other'), 'build');
@@ -837,8 +837,8 @@ void main() {
       controller.modelForSession('chat')?.modelID,
       'nemotron-3.5-lightning-free',
     );
-    await tester.ensureVisible(find.text('Use for this session'));
-    await tester.tap(find.text('Use for this session'));
+    await tester.ensureVisible(find.text('Use for this conversation'));
+    await tester.tap(find.text('Use for this conversation'));
     await tester.pumpAndSettle();
     expect(
       controller.modelForSession('chat')?.modelID,

@@ -157,13 +157,15 @@ class VoiceModelManager extends ChangeNotifier {
         reason: 'No bundled voice runtime supports this device ABI.',
       );
     }
-    final memory = deviceInfo.memoryClassMb;
+    // Physical memory, never the Java heap class (see VoiceDeviceInfo). An
+    // unknown amount does not block a pack: the person can try it.
+    final memory = deviceInfo.totalMemoryMb;
     if (memory != null && memory < pack.minimumMemoryMb) {
       return VoicePackSupport(
         supported: false,
         kind: VoicePackUnsupported.memory,
         reason:
-            '${pack.label} needs at least ${pack.minimumMemoryMb} MB of app memory; this device reports $memory MB.',
+            '${pack.label} needs a phone with about ${pack.minimumMemoryMb} MB of memory; this one has $memory MB.',
       );
     }
     final available = deviceInfo.availableStorageBytes;
@@ -242,7 +244,7 @@ class VoiceModelManager extends ChangeNotifier {
         support.reason!,
         support: support,
         pack: pack,
-        memoryMb: deviceInfo.memoryClassMb,
+        memoryMb: deviceInfo.totalMemoryMb,
         requiredBytes: requiredStorageBytes(pack),
       );
       state = VoiceModelState.error;

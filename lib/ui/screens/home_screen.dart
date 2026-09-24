@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,24 +7,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/sse.dart';
 import '../../domain/server_gateway.dart' show ServerCapabilities;
 import '../../state/connection.dart';
+import '../../state/first_run.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../desktop/shortcuts.dart';
+import '../navigation/chat_route.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/glass_surface.dart';
-import '../widgets/pickers.dart';
 import '../widgets/retained_tab_view.dart';
+import '../widgets/server_switcher_sheet.dart';
 import 'activity_screen.dart';
-import 'files_screen.dart';
-import 'library_screen.dart';
+import 'servers_screen.dart' show ServersRouteRequest;
+import 'project_hub_screen.dart';
+import 'settings_screen.dart';
 import 'terminal_screen.dart';
 import 'workspace_screen.dart';
 
 /// Main mobile product shell for a connected OpenCode server.
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key, this.initialTab = 0});
+  const HomeScreen({super.key, this.initialTab});
 
-  final int initialTab;
+  /// The destination to open on, by visible position. Null is a cold start:
+  /// open on Inbox when something is waiting on the person, otherwise Work
+  /// (UX plan 5.6, "Returning").
+  final int? initialTab;
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -30,19 +38,58 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with AppShortcutSurface {
+  // Tab ids follow the visible order, so Ctrl/Cmd+1..4 and `initialTab` mean
+  // "the nth destination" and never drift from what the dock shows.
+  static const _workTab = 0;
+  static const _inboxTab = 1;
+  static const _projectTab = 2;
+  static const _settingsTab = 3;
+
   late int _tab;
 
-  /// Bumped by Ctrl+F while the Files destination is showing. Files listens
-  /// and focuses its search field. Desktop-only in practice — nothing
+  /// True from a cold start until the first read of what is waiting settles
+  /// or the person picks a tab. Anything that arrives later belongs to the
+  /// badge: moving someone who is already reading would be a hijack.
+  bool _choosingColdStartTab = false;
+
+  /// Bumped by Ctrl+F while the Project destination is showing. The hub opens
+  /// Files and focuses its search field. Desktop-only in practice — nothing
   /// dispatches shortcuts off desktop.
   final _findInFiles = ValueNotifier<int>(0);
-  final _filesBack = FilesBackController();
+  final _openFiles = ValueNotifier<int>(0);
+  final _projectBack = ProjectHubBackController();
+
+  /// True from the first connect of a new device until its first
+  /// conversation opens (UX plan 5.6 steps 4-5). The shell stays on Work,
+  /// where the project chooser shows when one is needed, and opens a new
+  /// conversation the moment a project is usable.
+  bool _firstRunLanding = false;
+  bool _firstRunCreating = false;
+
+  /// Re-checks while a project sheet or screen is still on top of the shell:
+  /// a conversation pushed under it would be closed along with it.
+  Timer? _firstRunRetry;
 
   @override
   void initState() {
     super.initState();
     final conn = ref.read(connProvider);
-    _tab = _safeTab(widget.initialTab, conn.capabilities);
+    _tab = _safeTab(widget.initialTab ?? _workTab, conn.capabilities);
+    final firstRun = FirstRun(conn.store.prefs);
+    if (widget.initialTab == null &&
+        !conn.isIsolated &&
+        firstRun.landingPending) {
+      // First run ends in a conversation, not on a tab chosen by what is
+      // waiting: nothing can be waiting on a server connected seconds ago.
+      _firstRunLanding = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _continueFirstRun());
+    } else {
+      unawaited(firstRun.markReturning());
+      if (widget.initialTab == null) {
+        _choosingColdStartTab = true;
+        _chooseColdStartTab(conn);
+      }
+    }
     conn.addListener(_onConnChanged);
     // If the SSE stream cannot connect at all, fall back to polling.
     if (conn.status == StreamStatus.disconnected) {
@@ -61,8 +108,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         _selectTab(next);
         return true;
       case FindInSurfaceIntent()
-          when _tab == 1 && ref.read(connProvider).capabilities.fileBrowsing:
+          when _tab == _projectTab &&
+              ref.read(connProvider).capabilities.fileBrowsing:
         _findInFiles.value++;
+        return true;
+      // A search result that means Files or its search: both live inside the
+      // Project tab, so the tab is selected first.
+      case OpenProjectToolIntent(:final tool)
+          when ref.read(connProvider).capabilities.fileBrowsing &&
+              (tool == ProjectTool.files || tool == ProjectTool.search):
+        _selectTab(_projectTab);
+        (tool == ProjectTool.files ? _openFiles : _findInFiles).value++;
         return true;
       case OpenTerminalIntent()
           when ref.read(connProvider).capabilities.terminal:
@@ -77,7 +133,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     }
   }
 
+  /// Connect starts the pending-request reads before this shell mounts, so
+  /// "nothing waiting" is only known once none of them is still loading.
+  void _chooseColdStartTab(ConnectionController conn) {
+    if (!_choosingColdStartTab) return;
+    if (conn.unifiedAttentionCount > 0) {
+      _choosingColdStartTab = false;
+      // A notification may already have opened its conversation over the
+      // shell; the tab underneath still changes, the conversation does not.
+      _tab = _inboxTab;
+      return;
+    }
+    final reading =
+        conn.permissionsLoading ||
+        conn.questionsLoading ||
+        (conn.capabilities.forms && conn.formsLoading);
+    if (!reading) _choosingColdStartTab = false;
+  }
+
+  /// Step 4 then step 5: wait on Work while the person picks a project (the
+  /// chooser is already what Work shows then), and as soon as a project is
+  /// usable open a new conversation with the keyboard up. Back from it
+  /// returns here, to Work.
+  void _continueFirstRun() {
+    if (!mounted || !_firstRunLanding || _firstRunCreating) return;
+    final conn = ref.read(connProvider);
+    if (conn.api == null || conn.workspaceChoiceRequired) return;
+    if (!(ModalRoute.of(context)?.isCurrent ?? true)) {
+      _firstRunRetry ??= Timer.periodic(
+        const Duration(milliseconds: 300),
+        (_) => _continueFirstRun(),
+      );
+      return;
+    }
+    _firstRunRetry?.cancel();
+    _firstRunRetry = null;
+    _firstRunCreating = true;
+    unawaited(_openFirstConversation(conn));
+  }
+
+  Future<void> _openFirstConversation(ConnectionController conn) async {
+    final navigator = Navigator.of(context);
+    try {
+      final session = await conn.createSession();
+      await FirstRun(conn.store.prefs).markLanded();
+      if (!mounted) return;
+      _firstRunLanding = false;
+      await navigator.pushNamed(
+        '/chat/${session.id}',
+        arguments: const ChatRouteArguments.firstRun(),
+      );
+      if (mounted) unawaited(conn.refreshSessions());
+    } catch (_) {
+      // Work is a complete screen with its own New conversation button and
+      // its own error reporting; a failed shortcut is not worth a dialog.
+      // First run stays pending, so the next connect tries again.
+      _firstRunLanding = false;
+    } finally {
+      _firstRunCreating = false;
+    }
+  }
+
   void _selectTab(int next) {
+    // Choosing a tab is the person taking over; first run stops steering.
+    if (_firstRunLanding && !_firstRunCreating && next != _workTab) {
+      _firstRunLanding = false;
+      _firstRunRetry?.cancel();
+      _firstRunRetry = null;
+    }
+    _choosingColdStartTab = false;
     if (_tab == next) return;
     _lastBackAt = null;
     setState(() => _tab = next);
@@ -85,13 +209,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   void _onConnChanged() {
     if (!mounted) return;
-    final next = _safeTab(_tab, ref.read(connProvider).capabilities);
+    final conn = ref.read(connProvider);
+    _chooseColdStartTab(conn);
+    _continueFirstRun();
+    final next = _safeTab(_tab, conn.capabilities);
     setState(() => _tab = next);
   }
 
   static int _safeTab(int requested, ServerCapabilities capabilities) {
-    final tab = requested.clamp(0, 3);
-    return tab == 1 && !capabilities.fileBrowsing ? 0 : tab;
+    final tab = requested.clamp(_workTab, _settingsTab);
+    return tab == _projectTab && !ProjectHub.isAvailable(capabilities)
+        ? _workTab
+        : tab;
   }
 
   @override
@@ -99,70 +228,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     try {
       ref.read(connProvider).removeListener(_onConnChanged);
     } catch (_) {}
+    _firstRunRetry?.cancel();
     _findInFiles.dispose();
+    _openFiles.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final conn = ref.watch(connProvider);
-    final navigator = Navigator.of(context);
     final activeTab = _safeTab(_tab, conn.capabilities);
     final showDock =
         MediaQuery.sizeOf(context).width < 760 &&
         MediaQuery.viewInsetsOf(context).bottom == 0;
 
-    // Audit §5: Activity replaces Terminal in primary navigation; Terminal is
-    // reachable from Session and the More hub. One destination, one badge.
+    // One tab per noun (UX plan 5.1): Work, Inbox, Project, Settings. The
+    // Inbox carries the product's single pending badge. Project is absent
+    // only when the server offers none of its tools (Codex, Paseo today).
+    final hasProjectTools = ProjectHub.isAvailable(conn.capabilities);
     final tabs = <Widget>[
       WorkspaceScreen(controller: conn),
-      if (conn.capabilities.fileBrowsing)
-        FilesScreen(
+      ActivityScreen(controller: conn, embedded: true),
+      if (hasProjectTools)
+        ProjectHub(
           controller: conn,
           focusSearchSignal: _findInFiles,
-          backController: _filesBack,
+          openFilesSignal: _openFiles,
+          backController: _projectBack,
         )
       else
         const SizedBox.shrink(),
-      ActivityScreen(controller: conn, embedded: true),
-      LibraryScreen(controller: conn),
+      SettingsScreen(controller: conn, embedded: true),
     ];
     final pending = conn.unifiedAttentionCount;
     final destinations = <({int id, NavigationDestination destination})>[
       (
-        id: 0,
+        id: _workTab,
         destination: NavigationDestination(
           icon: AppGlyph(AppIconography.workspace),
           selectedIcon: AppGlyph(AppIconography.workspaceSelected),
-          label: _l10n(context).e7WorkspaceWorkspace,
+          label: _l10n(context).shellTabWork,
         ),
       ),
-      if (conn.capabilities.fileBrowsing)
-        (
-          id: 1,
-          destination: NavigationDestination(
-            icon: AppGlyph(AppIconography.files),
-            selectedIcon: AppGlyph(AppIconography.filesSelected),
-            label: _l10n(context).e7WorkspaceFiles,
-          ),
-        ),
       (
-        id: 2,
+        id: _inboxTab,
         destination: NavigationDestination(
           icon: _ActivityIcon(pending: pending, icon: AppIconography.activity),
           selectedIcon: _ActivityIcon(
             pending: pending,
             icon: AppIconography.activitySelected,
           ),
-          label: _l10n(context).e7WorkspaceActivity,
+          label: _l10n(context).shellTabInbox,
         ),
       ),
+      if (hasProjectTools)
+        (
+          id: _projectTab,
+          destination: NavigationDestination(
+            icon: AppGlyph(AppIconography.files),
+            selectedIcon: AppGlyph(AppIconography.filesSelected),
+            label: _l10n(context).shellTabProject,
+          ),
+        ),
       (
-        id: 3,
+        id: _settingsTab,
         destination: NavigationDestination(
-          icon: Icon(AppIconography.more),
-          selectedIcon: Icon(AppIconography.more),
-          label: _l10n(context).e7WorkspaceMore,
+          icon: Icon(AppIconography.settings),
+          selectedIcon: Icon(AppIconography.settings),
+          label: _l10n(context).librarySettingsTitle,
         ),
       ),
     ];
@@ -180,42 +313,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         extendBody: showDock,
         appBar: AppBar(
           title: _WorkspaceAppBarTitle(
+            onOpenSwitcher: () => unawaited(_openServerSwitcher(conn)),
             profileName: conn.profile?.name ?? 'OpenCode',
             tabTitle: _titles[activeTab],
             status: conn.status,
             compact: MediaQuery.sizeOf(context).width < 600,
           ),
-          actions: [
-            // §5 Root app bar: one contextual action plus overflow. The
-            // pending badge lives on the Activity destination alone.
-            // Settings and the shortcuts list have one entry point each, on
-            // the More tab; this overflow holds only connection-level acts.
-            PopupMenuButton<String>(
-              onSelected: (v) {
-                if (v == 'model') showModelPicker(context);
-                if (v == 'refresh') conn.refreshSessions();
-                if (v == 'disconnect') {
-                  conn.disconnect().then((_) {
-                    navigator.pushNamedAndRemoveUntil('/servers', (_) => false);
-                  });
-                }
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'model',
-                  child: Text(_l10n(context).e7WorkspaceModelAgent),
-                ),
-                PopupMenuItem(
-                  value: 'refresh',
-                  child: Text(_l10n(context).globalSessionsRefresh),
-                ),
-                PopupMenuItem(
-                  value: 'disconnect',
-                  child: Text(_l10n(context).e7WorkspaceDisconnect),
-                ),
-              ],
-            ),
-          ],
+          // No overflow menu: Disconnect moved into the server switcher
+          // (and stays in Settings), the model lives on the composer, and
+          // pull-to-refresh covers the two tabs that list conversations.
         ),
         body: LayoutBuilder(
           builder: (context, constraints) {
@@ -277,18 +383,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  /// Files first unwinds its local navigation, then destinations return home.
-  /// Only Workspace uses the double-back exit guard.
+  /// The switcher only chooses. Connecting, credentials, adding and
+  /// forgetting all run on the Servers screen, which already owns the
+  /// runtime-choice detour and shows a failed connect next to its fix.
+  Future<void> _openServerSwitcher(ConnectionController conn) async {
+    final navigator = Navigator.of(context);
+    final choice = await showServerSwitcher(context, conn);
+    if (choice == null || !navigator.mounted) return;
+    switch (choice) {
+      case ServerSwitcherOpenServers(:final ServersRouteRequest? request):
+        unawaited(navigator.pushNamed('/servers', arguments: request));
+      case ServerSwitcherOpenPhoneSetup():
+        unawaited(navigator.pushNamed('/termux-setup'));
+      case ServerSwitcherLeave(:final alreadyDisconnected):
+        if (!alreadyDisconnected) await conn.disconnect();
+        if (!navigator.mounted) return;
+        unawaited(navigator.pushNamedAndRemoveUntil('/servers', (_) => false));
+    }
+  }
+
+  /// Project first unwinds Files and returns to its hub, then destinations
+  /// return home.
+  /// Only Work uses the double-back exit guard.
   void _onRootPop(bool didPop, Object? result) {
     if (didPop) return;
-    if (_tab == 1 &&
-        ref.read(connProvider).capabilities.fileBrowsing &&
-        _filesBack.handleBack()) {
+    if (_tab == _projectTab && _projectBack.handleBack()) {
       _lastBackAt = null;
       return;
     }
-    if (_tab != 0) {
-      _selectTab(0);
+    if (_tab != _workTab) {
+      _selectTab(_workTab);
       return;
     }
     final now = DateTime.now();
@@ -311,10 +435,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   DateTime? _lastBackAt;
 
   List<String> get _titles => [
-    _l10n(context).e7WorkspaceWorkspace,
-    _l10n(context).e7WorkspaceFiles,
-    _l10n(context).e7WorkspaceActivity,
-    _l10n(context).e7WorkspaceMore,
+    _l10n(context).shellTabWork,
+    _l10n(context).shellTabInbox,
+    _l10n(context).shellTabProject,
+    _l10n(context).librarySettingsTitle,
   ];
 }
 
@@ -443,12 +567,14 @@ class _ActivityIcon extends StatelessWidget {
 }
 
 class _WorkspaceAppBarTitle extends StatelessWidget {
+  final VoidCallback onOpenSwitcher;
   final String profileName;
   final String tabTitle;
   final StreamStatus status;
   final bool compact;
 
   const _WorkspaceAppBarTitle({
+    required this.onOpenSwitcher,
     required this.profileName,
     required this.tabTitle,
     required this.status,
@@ -485,28 +611,51 @@ class _WorkspaceAppBarTitle extends StatelessWidget {
       children: [
         _StatusDot(status: status),
         const SizedBox(width: 8),
-        Expanded(child: profile),
+        Flexible(child: profile),
+        // The visible handle: the name is a control, not a caption.
+        Icon(
+          AppIconography.chevronDown,
+          size: 18,
+          color: AppTheme.mutedOf(theme),
+        ),
       ],
+    );
+    // The whole block is the target so it clears 48dp in the app bar; the
+    // name alone would be a 20dp strip.
+    Widget switcher(Widget child) => Semantics(
+      button: true,
+      hint: _l10n(context).serverSwitcherOpen,
+      child: InkWell(
+        key: const ValueKey('server-switcher-button'),
+        borderRadius: BorderRadius.circular(8),
+        onTap: onOpenSwitcher,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: child,
+        ),
+      ),
     );
 
     if (compact) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          server,
-          const SizedBox(height: 1),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(start: 18),
-            child: page,
-          ),
-        ],
+      return switcher(
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            server,
+            const SizedBox(height: 1),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 18),
+              child: page,
+            ),
+          ],
+        ),
       );
     }
 
     return Row(
       children: [
-        Expanded(child: server),
+        Expanded(child: switcher(server)),
         const SizedBox(width: 12),
         page,
       ],

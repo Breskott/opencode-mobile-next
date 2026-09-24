@@ -17,7 +17,6 @@ import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/chat/permission_sheet.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
-import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -198,12 +197,15 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('the More hub lays out at 2.5x', (tester) async {
+  testWidgets('the Settings tab lays out at 2.5x', (tester) async {
     final conn = await _controller();
     addTearDown(conn.dispose);
     await _pumpScaled(
       tester,
-      _scoped(conn, Scaffold(body: LibraryScreen(controller: conn))),
+      _scoped(
+        conn,
+        Scaffold(body: SettingsScreen(controller: conn, embedded: true)),
+      ),
     );
 
     expect(tester.takeException(), isNull);

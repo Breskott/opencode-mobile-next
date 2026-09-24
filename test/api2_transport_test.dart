@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api2/dialect.dart';
 import 'package:opencode_mobile/api2/transport.dart';
 
 class _RealHttpOverrides extends HttpOverrides {}
@@ -160,6 +161,91 @@ void main() {
     }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
   });
 
+  test('connecting to OpenCode 2.0.4+ settles the stable generation and '
+      'translates later requests', () async {
+    await HttpOverrides.runZoned(() async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final seen = <String>[];
+      server.listen((request) async {
+        final path = request.uri.path;
+        seen.add('${request.method} $path');
+        final response = request.response
+          ..headers.contentType = ContentType.json;
+        if (path == '/api/info') {
+          response.write(
+            jsonEncode({
+              'version': '2.0.10',
+              'pid': 7,
+              'urls': ['http://127.0.0.1:4096'],
+            }),
+          );
+        } else if (path == '/api/session/ses_1' && request.method == 'PATCH') {
+          response.statusCode = 204;
+        } else {
+          // The stable line has no /api/health and no /rename.
+          response.statusCode = 404;
+          response.write('{}');
+        }
+        await response.close();
+      });
+      final transport = Api2Transport(
+        baseUrl: 'http://${server.address.host}:${server.port}',
+        password: 'pw',
+      );
+      try {
+        expect(transport.dialect, isNull);
+        final health = await transport.checkServer();
+        expect(health.healthy, isTrue);
+        expect(health.version, '2.0.10');
+        expect(transport.dialect, Api2Dialect.stable);
+        await transport.postJson('/session/ses_1/rename', body: {'title': 'T'});
+        expect(seen, [
+          'GET /api/health',
+          'GET /api/info',
+          'GET /api/info',
+          'PATCH /api/session/ses_1',
+        ]);
+      } finally {
+        transport.close();
+        await server.close(force: true);
+      }
+    }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
+  });
+
+  test(
+    'a beta server is settled by its health answer with no extra request',
+    () async {
+      await HttpOverrides.runZoned(() async {
+        final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        final seen = <String>[];
+        server.listen((request) async {
+          seen.add('${request.method} ${request.uri.path}');
+          request.response.headers.contentType = ContentType.json;
+          request.response.write(
+            jsonEncode({'healthy': true, 'version': '0.0.0-beta-18600'}),
+          );
+          await request.response.close();
+        });
+        final transport = Api2Transport(
+          baseUrl: 'http://${server.address.host}:${server.port}',
+          password: 'pw',
+        );
+        try {
+          await transport.checkServer();
+          expect(transport.dialect, Api2Dialect.beta);
+          await transport.postJson(
+            '/session/ses_1/rename',
+            body: {'title': 'T'},
+          );
+          expect(seen, ['GET /api/health', 'POST /api/session/ses_1/rename']);
+        } finally {
+          transport.close();
+          await server.close(force: true);
+        }
+      }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
+    },
+  );
+
   test('health sends Basic auth and parses the payload', () async {
     await HttpOverrides.runZoned(() async {
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -189,46 +275,6 @@ void main() {
         expect(health.pid, 4242);
         expect(path, '/api/health');
         expect(authHeader, 'Basic ${base64Encode(utf8.encode('opencode:pw'))}');
-      } finally {
-        transport.close();
-        await server.close(force: true);
-      }
-    }, createHttpClient: (_) => _RealHttpOverrides().createHttpClient(null));
-  });
-
-  test('2.0.x readiness falls back from /api/health to /api/info', () async {
-    await HttpOverrides.runZoned(() async {
-      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      final paths = <String>[];
-      server.listen((request) async {
-        paths.add(request.uri.path);
-        // opencode 2.0.5+ no longer serves /api/health at all.
-        if (request.uri.path == '/api/health') {
-          request.response.statusCode = HttpStatus.notFound;
-          await request.response.close();
-          return;
-        }
-        request.response.headers.contentType = ContentType.json;
-        request.response.write(
-          jsonEncode({
-            'version': '2.0.7',
-            'pid': 5150,
-            'urls': ['http://127.0.0.1:4096'],
-            'paths': {'tmp': '/tmp'},
-          }),
-        );
-        await request.response.close();
-      });
-      final transport = Api2Transport(
-        baseUrl: 'http://${server.address.host}:${server.port}',
-        password: 'pw',
-      );
-      try {
-        final health = await transport.checkServer();
-        expect(health.healthy, isTrue);
-        expect(health.version, '2.0.7');
-        expect(health.pid, 5150);
-        expect(paths, ['/api/health', '/api/info']);
       } finally {
         transport.close();
         await server.close(force: true);

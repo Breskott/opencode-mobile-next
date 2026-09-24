@@ -22,32 +22,52 @@ String quotaProviderLabel(AppLocalizations l10n, QuotaProvider provider) =>
       QuotaProvider.glm => l10n.quotaGlm,
     };
 
-/// Review collector observations without connecting or switching OpenCode servers.
-class QuotaMonitorScreen extends StatelessWidget {
+/// Quota monitoring inside Usage → Remaining: every monitored source, on any
+/// saved server, with its latest reading, its alert threshold, Refresh and
+/// Disable. It never connects to or switches the active server.
+///
+/// How an alert notifies (device alerts, quiet hours, Wi-Fi only) is shared
+/// with the rest of the app and lives in Notifications; [onOpenNotifications]
+/// is the link to it.
+class QuotaMonitorSection extends StatelessWidget {
   final ConnectionController controller;
-  const QuotaMonitorScreen({super.key, required this.controller});
+  final VoidCallback onOpenNotifications;
+  const QuotaMonitorSection({
+    super.key,
+    required this.controller,
+    required this.onOpenNotifications,
+  });
+
   @override
   Widget build(BuildContext context) {
     final monitor = controller.quotaMonitor;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.quotaMonitorTitle)),
-      body: SafeArea(
-        child: ListenableBuilder(
-          listenable: monitor,
-          builder: (context, _) => ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Text(l10n.quotaMonitorRuntime),
-              const SizedBox(height: 12),
-              if (monitor.sources.isEmpty) Text(l10n.quotaMonitorEmpty),
-              for (final target in monitor.sources) ...[
-                const Divider(height: 32),
-                _Source(controller: controller, target: target),
-              ],
-            ],
+    return ListenableBuilder(
+      listenable: monitor,
+      builder: (context, _) => Column(
+        key: const ValueKey('quota-monitor-section'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.quotaMonitorTitle,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(l10n.quotaMonitorRuntime),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton(
+              key: const ValueKey('quota-monitor-notification-settings'),
+              onPressed: onOpenNotifications,
+              child: Text(l10n.monitorNotificationSettings),
+            ),
+          ),
+          if (monitor.sources.isEmpty) Text(l10n.quotaMonitorEmpty),
+          for (final target in monitor.sources) ...[
+            const Divider(height: 32),
+            _Source(controller: controller, target: target),
+          ],
+        ],
       ),
     );
   }
@@ -99,20 +119,17 @@ class _SourceState extends State<_Source> {
       target.provider,
     );
     final snapshot = observation.snapshot;
-    final quiet = rules.quietStart != null;
-    Future<bool> policy({
-      bool? notifications,
-      bool? wifiOnly,
-      bool? quietHours,
-      double? threshold,
-    }) => monitor.setPolicy(
+    // Only the threshold is this source's own. Alerts, Wi-Fi only and quiet
+    // hours are shared and set in Notifications; the record's copies of them
+    // are carried over untouched for a build that has not migrated.
+    Future<bool> policy({required double threshold}) => monitor.setPolicy(
       target.profileID,
       target.provider,
-      notifications: notifications ?? rules.notifications,
-      threshold: threshold ?? rules.threshold,
-      wifiOnly: wifiOnly ?? rules.wifiOnly,
-      quietStart: (quietHours ?? quiet) ? 22 * 60 : null,
-      quietEnd: (quietHours ?? quiet) ? 8 * 60 : null,
+      notifications: rules.notifications,
+      threshold: threshold,
+      wifiOnly: rules.wifiOnly,
+      quietStart: rules.quietStart,
+      quietEnd: rules.quietEnd,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -175,15 +192,10 @@ class _SourceState extends State<_Source> {
             ),
           ],
         ],
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.quotaMonitorNotifications),
-          value: rules.notifications,
-          onChanged: saving
-              ? null
-              : (value) => _change(() => policy(notifications: value)),
-        ),
         DropdownButton<double>(
+          key: ValueKey(
+            'quota-threshold-${target.profileID}-${target.provider.name}',
+          ),
           value: rules.threshold,
           isExpanded: true,
           items: [
@@ -195,23 +207,9 @@ class _SourceState extends State<_Source> {
           ],
           onChanged: saving
               ? null
-              : (value) => _change(() => policy(threshold: value)),
-        ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.quotaMonitorWifi),
-          value: rules.wifiOnly,
-          onChanged: saving
-              ? null
-              : (value) => _change(() => policy(wifiOnly: value)),
-        ),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l10n.quotaMonitorQuiet),
-          value: quiet,
-          onChanged: saving
-              ? null
-              : (value) => _change(() => policy(quietHours: value)),
+              : (value) {
+                  if (value != null) _change(() => policy(threshold: value));
+                },
         ),
         Wrap(
           spacing: 12,

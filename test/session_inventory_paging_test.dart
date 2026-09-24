@@ -88,7 +88,7 @@ void main() {
           home: Scaffold(body: SessionInventoryFooter(controller: controller)),
         ),
       );
-      expect(find.text('Loading sessions…'), findsOneWidget);
+      expect(find.text('Loading conversations…'), findsOneWidget);
       expect(find.textContaining('Showing loaded sessions.'), findsNothing);
       expect(
         tester
@@ -118,7 +118,7 @@ void main() {
         home: Scaffold(body: SessionInventoryFooter(controller: controller)),
       ),
     );
-    expect(find.text('Load more sessions'), findsOneWidget);
+    expect(find.text('Load more conversations'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('session-inventory-more')));
     await tester.pumpAndSettle();
     expect(api.cursors, [null, 'older']);

@@ -28,6 +28,9 @@ case "${1:-}" in
   version|--version) echo 'gc version 1.4.1'; exit 0 ;;
   init)
     echo "$*" >> "$calls"
+    printf 'GC_BIN=%s\nLINKER_EXEC=%s\nLD_PRELOAD=%s\n' "${GC_BIN:-}" \
+      "${TERMUX_EXEC__SYSTEM_LINKER_EXEC__MODE:-}" "${LD_PRELOAD:-}" \
+      > "$HOME/.oc/gc-init-env.log"
     mkdir -p city
     cp ./city.toml city/city.toml
     exit 0 ;;
@@ -412,7 +415,7 @@ void main() {
           'beads.role',
         ], environment: fx.environment);
         expect((gitRole.stdout as String).trim(), 'maintainer');
-        expect(Directory('${fx.prefix}/tmp/aiteam').existsSync(), isFalse);
+        expect(Directory('${fx.aiteamDir}/tmp').existsSync(), isFalse);
         expect(fx.read('${fx.aiteamDir}/config'), contains('gascity=1.4.1'));
         expect(fx.log, contains('verified gc-1.4.1-android-arm64'));
       },
@@ -435,7 +438,7 @@ void main() {
       expect(File('${fx.bin}/bd').existsSync(), isFalse);
       expect(
         Directory(
-          '${fx.prefix}/tmp/aiteam',
+          '${fx.aiteamDir}/tmp',
         ).listSync().where((e) => e.path.endsWith('.part')),
         isEmpty,
       );
@@ -528,6 +531,14 @@ void main() {
           cityToml.indexOf('[[patches.agent]]'),
           greaterThan(cityToml.indexOf('[daemon]')),
         );
+        // The pack's `#!/bin/sh` scripts must run under Termux's shell with
+        // the gc helper pinned (spike-phone §3h): termux-exec's system-linker
+        // exec mode off and GC_BIN explicit. The LD_PRELOAD branch only runs
+        // on Android, so it stays untouched on this Linux runner.
+        expect(
+          fx.read('${fx.ocDir}/gc-init-env.log'),
+          'GC_BIN=${fx.prefix}/bin/gc\nLINKER_EXEC=disable\nLD_PRELOAD=\n',
+        );
         // The env-bash shebang the Termux shim cannot run is rewritten.
         expect(
           fx.read(
@@ -537,6 +548,32 @@ void main() {
         );
       },
     );
+
+    test('init moves the bead store of an earlier city aside', () async {
+      // A team removed and set up again: the project's .beads belongs to
+      // the old city (gc refuses to initialise over it and cannot adopt
+      // it), so it is kept next to the project and the rig starts fresh.
+      await fx.install();
+      Directory('${fx.project}/.beads').createSync();
+      File('${fx.project}/.beads/config.yaml').writeAsStringSync(
+        'issue_prefix: sp\nissue-prefix: sp\ndolt.auto-start: false\n',
+      );
+      await fx.init();
+      expect((await fx.status()).phase, TeamRuntimePhase.cityReady);
+      expect(fx.gcCalls, contains('rig add ${fx.project} --name calc\n'));
+      expect(fx.log, contains('bead store from an earlier city'));
+      expect(Directory('${fx.project}/.beads').existsSync(), isFalse);
+      final kept = Directory(fx.project)
+          .listSync()
+          .map((e) => e.path.split('/').last)
+          .where((n) => n.startsWith('.beads.before-aiteam-'))
+          .toList();
+      expect(kept, hasLength(1));
+      expect(
+        File('${fx.project}/${kept.single}/config.yaml').readAsStringSync(),
+        contains('issue_prefix: sp'),
+      );
+    });
 
     test('init keeps an existing origin', () async {
       await fx.install();
@@ -804,7 +841,11 @@ void main() {
         expect(busy.exitCode, 75);
         expect(busy.stderr, contains('aiteam-busy:install:'));
         final done = await fx.waitIdle();
-        expect(done.phase, TeamRuntimePhase.installed, reason: '$done\n${fx.log}');
+        expect(
+          done.phase,
+          TeamRuntimePhase.installed,
+          reason: '$done\n${fx.log}',
+        );
         expect(done.verb, 'install');
         // The inline verbs run through the same dispatch.
         final status = await Process.run('bash', [
@@ -824,7 +865,11 @@ void main() {
         expect(ready.isReady, isTrue, reason: fx.log);
         final stop = await fx.dispatch('stop');
         expect(stop.exitCode, 0);
-        expect((await fx.waitIdle()).phase, TeamRuntimePhase.stopped, reason: fx.log);
+        expect(
+          (await fx.waitIdle()).phase,
+          TeamRuntimePhase.stopped,
+          reason: fx.log,
+        );
       },
     );
   });
@@ -1226,21 +1271,22 @@ void main() {
       expect(tailnet.capabilities.anyControl, isFalse);
     });
 
-    test(
-      'gascityLoopback is gascityRead plus the control switches and phoneHost',
-      () {
-        final read = OrchestrationCapabilities.gascityRead.asMap();
-        final loopback = OrchestrationCapabilities.gascityLoopback.asMap();
-        final front = OrchestrationCapabilities.gascityFront.asMap();
-        for (final entry in loopback.entries) {
-          final expected = entry.key == 'phoneHost'
-              ? true
-              : entry.key.startsWith('control')
-              ? front[entry.key]
-              : read[entry.key];
-          expect(entry.value, expected, reason: entry.key);
-        }
-      },
-    );
+    test('gascityLoopback is gascityRead plus the control switches, '
+        'controlCreateWork (TEAM-306) and phoneHost', () {
+      final read = OrchestrationCapabilities.gascityRead.asMap();
+      final loopback = OrchestrationCapabilities.gascityLoopback.asMap();
+      final front = OrchestrationCapabilities.gascityFront.asMap();
+      for (final entry in loopback.entries) {
+        final expected = switch (entry.key) {
+          // The direct task path exists only where the planner can be
+          // off and the supervisor is reachable: the phone's loopback.
+          'phoneHost' || 'controlCreateWork' => true,
+          final key when key.startsWith('control') => front[key],
+          final key => read[key],
+        };
+        expect(entry.value, expected, reason: entry.key);
+      }
+      expect(front['controlCreateWork'], isFalse);
+    });
   });
 }

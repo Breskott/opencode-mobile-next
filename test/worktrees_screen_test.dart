@@ -283,7 +283,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Worktree actions'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Remove'));
+    await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.byKey(const ValueKey('remove-worktree-confirmation')),

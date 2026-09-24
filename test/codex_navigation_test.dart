@@ -9,7 +9,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
-import 'package:opencode_mobile/ui/screens/library_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _CodexApi extends OpenCodeApi {
@@ -108,7 +108,7 @@ Widget _app(ConnectionController controller) => ProviderScope(
   child: const MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    home: HomeScreen(initialTab: 1),
+    home: HomeScreen(initialTab: 2),
   ),
 );
 
@@ -136,19 +136,19 @@ void main() {
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
 
-      // Files is logical destination 1, so an initial Files selection falls
-      // back to Workspace rather than shifting Activity or More left.
+      // Project is logical destination 2, so an initial Project selection
+      // falls back to Work rather than shifting Settings left.
       expect(find.byKey(const ValueKey('current-tab-title')), findsOneWidget);
       expect(
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Workspace',
+        'Work',
       );
-      expect(find.text('Files'), findsNothing);
-      expect(find.text('Workspace'), findsWidgets);
-      expect(find.text('Activity'), findsOneWidget);
-      expect(find.text('More'), findsOneWidget);
+      expect(find.text('Project'), findsNothing);
+      expect(find.text('Work'), findsWidgets);
+      expect(find.text('Inbox'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('location-recovery-notice')),
         findsOneWidget,
@@ -167,11 +167,11 @@ void main() {
       // something with the menu open.
       await tester.tap(find.byKey(const ValueKey('workspace-section-menu')));
       await tester.pumpAndSettle();
-      expect(find.text('Reload recent sessions'), findsOneWidget);
+      expect(find.text('Refresh recent conversations'), findsOneWidget);
       expect(find.byKey(const ValueKey('workspace-terminal')), findsNothing);
       await tester.tapAt(const Offset(4, 4));
       await tester.pumpAndSettle();
-      expect(find.text('Reload recent sessions'), findsNothing);
+      expect(find.text('Refresh recent conversations'), findsNothing);
       // The menu route is gone: only the shell's navigator page remains.
       expect(
         find.byWidgetPredicate((widget) => widget is PopupMenuItem),
@@ -181,29 +181,29 @@ void main() {
       // At the 800px test surface the shell uses a NavigationRail, whose
       // labels are zero-size semantics-only boxes; tap the destination's
       // ink well, which is what a pointer actually reaches.
-      await tester.tap(_railDestination('Activity'));
+      await tester.tap(_railDestination('Inbox'));
       await tester.pumpAndSettle();
       expect(
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'Activity',
+        'Inbox',
       );
       expect(
         tester
             .widget<NavigationRail>(find.byType(NavigationRail))
             .selectedIndex,
         1,
-        reason: 'Files is hidden, so Activity is the second rail destination',
+        reason: 'Inbox is the second rail destination',
       );
 
-      await tester.tap(_railDestination('More'));
+      await tester.tap(_railDestination('Settings'));
       await tester.pumpAndSettle();
       expect(
         tester
             .widget<Text>(find.byKey(const ValueKey('current-tab-title')))
             .data,
-        'More',
+        'Settings',
       );
       expect(
         tester
@@ -211,7 +211,16 @@ void main() {
             .selectedIndex,
         2,
       );
-      expect(find.text('Settings'), findsOneWidget);
+      // The tab is the hub itself; what is about the app survives a Codex
+      // connection, what needs the server catalog is absent.
+      expect(
+        find.byKey(const ValueKey('settings-group-connection')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('settings-category-appearance')),
+        findsOneWidget,
+      );
       expect(find.text('Models & agents'), findsNothing);
       expect(find.text('Providers'), findsNothing);
       expect(find.text('MCP'), findsNothing);
@@ -240,15 +249,14 @@ void main() {
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: LibraryScreen(controller: controller)),
+        home: Scaffold(
+          body: SettingsScreen(controller: controller, embedded: true),
+        ),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('Models & agents'), findsOneWidget);
-    expect(find.text('Providers'), findsNothing);
-    await tester.tap(find.text('Tools & help'));
-    await tester.pumpAndSettle();
     expect(find.text('Providers'), findsOneWidget);
     expect(find.text('MCP'), findsOneWidget);
     expect(find.text('Commands & tools'), findsOneWidget);

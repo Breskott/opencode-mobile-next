@@ -7,7 +7,6 @@ import 'package:opencode_mobile/api/sse.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/screens/chat_screen.dart' show SessionsTab;
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -127,7 +126,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('session-dismiss-session-1')),
-        matching: find.text('New session'),
+        matching: find.text('New conversation'),
       ),
       findsOneWidget,
     );
@@ -139,7 +138,7 @@ void main() {
     expect(find.textContaining('Working'), findsNothing);
     // The section says "Needs you"; the row says what it needs.
     expect(find.byKey(const ValueKey('workspace-needs-you')), findsOneWidget);
-    expect(find.text('Active sessions'), findsNothing);
+    expect(find.text('Active conversations'), findsNothing);
     final subtitle = find.textContaining('Permission needed');
     expect(subtitle, findsOneWidget);
     final theme = Theme.of(tester.element(subtitle));
@@ -149,35 +148,6 @@ void main() {
     expect(
       status.style?.color,
       AppTheme.statusColor(theme, AppStatusTone.attention),
-    );
-    expect(
-      find.byKey(const ValueKey('session-attention-icon-session-1')),
-      findsOneWidget,
-    );
-  });
-
-  testWidgets('sessions tab row carries a Needs you chip while a permission '
-      'is pending', (tester) async {
-    final controller = await _controller();
-    addTearDown(controller.dispose);
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: SessionsTab(controller: controller)),
-      ),
-    );
-    await _pumpFrames(tester);
-    expect(find.byKey(const Key('session-needs-you-session-1')), findsNothing);
-    expect(find.text('New session'), findsOneWidget);
-
-    controller.handleEventForTesting(_permission());
-    await _pumpFrames(tester);
-
-    final chip = find.byKey(const Key('session-needs-you-session-1'));
-    expect(chip, findsOneWidget);
-    expect(
-      find.descendant(of: chip, matching: find.text('Needs you')),
-      findsOneWidget,
     );
     expect(
       find.byKey(const ValueKey('session-attention-icon-session-1')),

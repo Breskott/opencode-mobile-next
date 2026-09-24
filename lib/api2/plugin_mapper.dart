@@ -4,10 +4,18 @@ import '../domain/plugin_inventory.dart';
 /// Retain only bounded display IDs, source kinds and npm package identifiers.
 PluginInfo mapPluginInfo(Map<dynamic, dynamic> value) {
   final source = value['source'];
+  // The beta reported `status` and `tui` on the row. The stable line (2.0.4
+  // and later) nests them: `state.status`, and `features.tui` beside
+  // `features.server`, with an absent feature meaning false.
+  final state = value['state'];
+  final features = value['features'];
+  final status = value['status'] ?? (state is Map ? state['status'] : null);
+  final tui =
+      value['tui'] ?? (features is Map ? features['tui'] ?? false : null);
   if (source is! Map ||
       source['type'] is! String ||
-      value['status'] is! String ||
-      value['tui'] is! bool) {
+      status is! String ||
+      tui is! bool) {
     throw const FormatException('Invalid plugin metadata');
   }
   final rawID = value['id'];
@@ -35,13 +43,13 @@ PluginInfo mapPluginInfo(Map<dynamic, dynamic> value) {
   };
   return PluginInfo(
     id: id,
-    status: switch (value['status']) {
+    status: switch (status) {
       'active' => PluginStatus.active,
       'failed' => PluginStatus.failed,
       _ => PluginStatus.unknown,
     },
     source: kind,
     packageName: kind == PluginSourceKind.package ? packageName : null,
-    terminalUi: value['tui'] as bool,
+    terminalUi: tui,
   );
 }

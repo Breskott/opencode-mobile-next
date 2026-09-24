@@ -367,9 +367,9 @@ Future<void> _demoBody(WidgetTester tester, String framesDir) async {
     ),
   );
   await run(1.5);
-  // Press the Connect card (ripple), then cut to the connected workspace.
+  // Press "On my computer" (ripple), then cut to the connected workspace.
   final press = await tester.startGesture(
-    tester.getCenter(find.byKey(const ValueKey('welcome-connect-card'))),
+    tester.getCenter(find.byKey(const ValueKey('welcome-choice-computer'))),
   );
   await run(0.35);
   await press.cancel();

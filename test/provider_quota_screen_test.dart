@@ -15,6 +15,7 @@ import 'package:opencode_mobile/state/provider_quota_overview.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/provider_quota_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
+import 'package:opencode_mobile/ui/screens/usage_hub_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
 
@@ -224,6 +225,12 @@ Future<void> _reveal(
   Finder target, {
   double alignment = 0,
 }) async {
+  if (target.evaluate().isEmpty) {
+    // The list is lazy and, with the monitoring section at its end, long: a
+    // row above the current position is not built. Search from the top.
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 100000));
+    await tester.pump();
+  }
   if (target.evaluate().isEmpty) {
     await tester.scrollUntilVisible(
       target,
@@ -438,7 +445,12 @@ void main() {
     addTearDown(h.disposeOverview);
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
-      expect(connection.repositoryCalls, 0);
+      // The quota screens never read the repository. The Settings hub does,
+      // exactly once, for its own Default shell row; that read is not quota's.
+      expect(
+        connection.repositoryCalls,
+        connection.allowSettingsHealth ? 1 : 0,
+      );
       expect(connection.wakeCalls, 0);
       expect(connection.transportCalls, connection.allowSettingsHealth ? 1 : 0);
     });
@@ -1163,7 +1175,7 @@ void main() {
   }
 
   testWidgets(
-    'Settings opens Remaining usage for a saved v1 profile without quota probing',
+    'Settings opens Usage at Remaining for a saved v1 profile without quota probing',
     (tester) async {
       final h = await harness(tester);
       h.connection.allowSettingsHealth = true;
@@ -1171,7 +1183,13 @@ void main() {
       expect(h.connection.supportsUsageStatistics, isFalse);
       await _pumpHome(tester, SettingsScreen(controller: h.connection));
       expect(h.connection.healthGateway.healthCalls, 1);
-      final quotaRow = find.byKey(const ValueKey('settings-category-quota'));
+      // One Usage row; a v1 server has no "Spent", so the screen is the
+      // Remaining section alone, with no tab bar.
+      expect(
+        find.byKey(const ValueKey('settings-category-quota')),
+        findsNothing,
+      );
+      final quotaRow = find.byKey(const ValueKey('settings-category-usage'));
       final quotaPageIncludingTransition = find.byType(
         ProviderQuotaScreen,
         skipOffstage: false,
@@ -1189,6 +1207,13 @@ void main() {
         AnimationStatus.completed,
       );
       expect(find.byType(ProviderQuotaScreen), findsOneWidget);
+      expect(find.byType(UsageHubScreen), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('usage-section-remaining')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('usage-section-spent')), findsNothing);
+      expect(find.byType(TabBar), findsNothing);
       expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
       expect(tester.widget<FilledButton>(_readButton).onPressed, isNull);
       expect(h.gateways, isEmpty);
@@ -1246,7 +1271,7 @@ void main() {
   );
 
   testWidgets(
-    'monitoring requires separate consent and can be disabled from its review page',
+    'monitoring requires separate consent and is reviewed and disabled in place',
     (tester) async {
       final h = await harness(tester);
       h.now = DateTime.now();
@@ -1286,6 +1311,17 @@ void main() {
         QuotaProvider.codex,
       )!;
       expect(rules.notifications, isFalse);
+      // Alerts, Wi-Fi only and quiet hours are not asked here, nor offered on
+      // the source: they are shared and live in Notifications.
+      expect(find.byType(Switch), findsNothing);
+      // The threshold stays with the source.
+      expect(
+        find.byKey(
+          const ValueKey('quota-threshold-quota-profile-a-codex'),
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
       expect(h.connection.store.activeId, 'quota-profile-a');
       final disable = find.widgetWithText(
         TextButton,

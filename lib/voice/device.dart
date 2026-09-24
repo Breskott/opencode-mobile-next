@@ -18,6 +18,8 @@ class VoiceDeviceInfo {
   const VoiceDeviceInfo({
     required this.availableStorageBytes,
     required this.memoryClassMb,
+    this.totalMemoryMb,
+    this.lowRamDevice = false,
     required this.supportedAbis,
     required this.hasMicrophone,
     this.captureSupported = true,
@@ -29,6 +31,8 @@ class VoiceDeviceInfo {
   const VoiceDeviceInfo.unknown()
     : availableStorageBytes = null,
       memoryClassMb = null,
+      totalMemoryMb = null,
+      lowRamDevice = false,
       supportedAbis = const [],
       hasMicrophone = true,
       captureSupported = true;
@@ -43,12 +47,25 @@ class VoiceDeviceInfo {
   const VoiceDeviceInfo.unsupported()
     : availableStorageBytes = null,
       memoryClassMb = null,
+      totalMemoryMb = null,
+      lowRamDevice = false,
       supportedAbis = const [],
       hasMicrophone = false,
       captureSupported = false;
 
   final int? availableStorageBytes;
+
+  /// Android's per-app Java heap class. Kept for diagnostics only: it is
+  /// 256-512 MB even on a 16 GB phone, and the speech models do not live in
+  /// the Java heap, so it must never decide which model a phone can run.
   final int? memoryClassMb;
+
+  /// Physical memory of the device in MB; null when it could not be read.
+  /// Model packs are gated on this.
+  final int? totalMemoryMb;
+
+  /// Android Go-class devices, which the system itself marks as low on RAM.
+  final bool lowRamDevice;
   final List<String> supportedAbis;
   final bool hasMicrophone;
 
@@ -80,6 +97,8 @@ class AndroidVoiceDevicePlatform implements VoiceDevicePlatform {
         availableStorageBytes: (result?['availableStorageBytes'] as num?)
             ?.toInt(),
         memoryClassMb: (result?['memoryClassMb'] as num?)?.toInt(),
+        totalMemoryMb: (result?['totalMemoryMb'] as num?)?.toInt(),
+        lowRamDevice: result?['lowRamDevice'] == true,
         supportedAbis:
             (result?['supportedAbis'] as List?)?.cast<String>().toList(
               growable: false,

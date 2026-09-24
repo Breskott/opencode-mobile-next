@@ -6,7 +6,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/library_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -52,7 +52,9 @@ Widget _app(
     routes: {'/termux-setup': (_) => const TermuxSetupScreen()},
     home: servers
         ? const ServersScreen()
-        : Scaffold(body: LibraryScreen(controller: controller)),
+        : Scaffold(
+            body: SettingsScreen(controller: controller, embedded: true),
+          ),
   ),
 );
 
@@ -66,31 +68,54 @@ void main() {
   });
 
   for (final scale in [1.0, 2.5]) {
-    testWidgets('More exposes phone Termux above server tools at ${scale}x', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      final controller = await _state();
-      addTearDown(controller.dispose);
-      await tester.pumpWidget(_app(controller, scale: scale));
-      await tester.pumpAndSettle();
-      expect(find.text('Termux setup').hitTestable(), findsOneWidget);
-      expect(find.text('Run OpenCode on this phone'), findsOneWidget);
-      expect(
-        tester.getTopLeft(find.text('Termux setup')).dy,
-        lessThan(tester.getTopLeft(find.text('Browse')).dy),
-      );
-      await tester.enterText(
-        find.byKey(const Key('library-search')),
-        'local termux',
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Termux setup'), findsOneWidget);
-      expect(find.text('Models & agents'), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+    testWidgets(
+      'Settings exposes phone Termux above server tools at ${scale}x',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final controller = await _state();
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(_app(controller, scale: scale));
+        await tester.pumpAndSettle();
+        final phone = find.byKey(const ValueKey('settings-on-this-phone'));
+        expect(
+          find.descendant(of: phone, matching: find.text('On this phone')),
+          findsOneWidget,
+        );
+        expect(find.text('Run OpenCode here with Termux'), findsOneWidget);
+        // A Connection row: above everything that depends on the server.
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('settings-group-connection')),
+            matching: phone,
+          ),
+          findsOneWidget,
+        );
+        expect(
+          tester.getTopLeft(phone).dy,
+          lessThan(
+            tester
+                .getTopLeft(
+                  find.byKey(const ValueKey('settings-group-agent-setup')),
+                )
+                .dy,
+          ),
+        );
+        // Reachable by scrolling alone: no search, no expander to open first.
+        await tester.ensureVisible(phone);
+        await tester.pumpAndSettle();
+        expect(phone.hitTestable(), findsOneWidget);
+        await tester.enterText(
+          find.byKey(const Key('library-search')),
+          'local termux',
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('On this phone'), findsOneWidget);
+        expect(find.text('Models & agents'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
   for (final state in [
@@ -117,7 +142,7 @@ void main() {
         addTearDown(controller.dispose);
         await tester.pumpWidget(_app(controller));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Termux setup'));
+        await tester.tap(find.text('On this phone'));
         await tester.pumpAndSettle();
         expect(find.byType(TermuxSetupScreen), findsOneWidget);
         if (state == 'not installed') {
@@ -140,7 +165,7 @@ void main() {
         expect(calls, ['getCapabilities']);
         await tester.pageBack();
         await tester.pumpAndSettle();
-        expect(find.text('Termux setup'), findsOneWidget);
+        expect(find.text('On this phone'), findsOneWidget);
       },
     );
   }
@@ -152,7 +177,7 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller, servers: true));
       await tester.pumpAndSettle();
-      expect(find.text('Termux setup').hitTestable(), findsOneWidget);
+      expect(find.text('On this phone').hitTestable(), findsOneWidget);
       expect(
         find.byKey(const ValueKey('quick-add-termux-card')),
         findsOneWidget,
@@ -170,10 +195,10 @@ void main() {
       addTearDown(controller.dispose);
       await tester.pumpWidget(_app(controller));
       await tester.pumpAndSettle();
-      expect(find.text('Termux setup'), findsNothing);
+      expect(find.text('On this phone'), findsNothing);
       await tester.pumpWidget(_app(controller, servers: true));
       await tester.pumpAndSettle();
-      expect(find.text('Termux setup'), findsNothing);
+      expect(find.text('On this phone'), findsNothing);
     });
   }
 }

@@ -1,0 +1,3911 @@
+{
+  "area": "e-workspace",
+  "pages": [
+    {
+      "id": "workspace",
+      "title": "Work",
+      "kind": "tab",
+      "file": "lib/ui/screens/workspace_screen.dart",
+      "widget": "WorkspaceScreen",
+      "presentedBy": [],
+      "line": 35,
+      "purpose": "Root tab 0 (Work). The current project is a fixed header that opens the project sheet; below it one scroll in the order every list uses (UX plan 5.7): notices and the return brief, Needs you, Running, Pinned, Recent, the AI Team card, Archived. New conversation and Isolated task stay docked in thumb reach. A conversation appears once, in the first section that fits, so a blocked or running pin returns to Pinned when it is answered or finishes.",
+      "reachedFrom": [
+        {
+          "page": "home-shell",
+          "element": "home-shell-tab-workspace"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "workspace-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": "workspace-scroll",
+          "line": 495,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refreshWorkspace(): reloads the project catalog and workspaces via _load(), then controller.refreshSessions().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-location-notice-dismiss",
+          "type": "icon-button",
+          "label": "Dismiss",
+          "key": "location-recovery-dismiss",
+          "line": 519,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.dismissLocationNotice() hides the location-recovery notice row.",
+          "gates": [
+            "widget.controller.locationNotice != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-retry-projects",
+          "type": "button",
+          "label": "Retry projects",
+          "key": null,
+          "line": 490,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load(): re-fetches repository.listProjects() and workspaces after a catalog failure.",
+          "gates": [
+            "widget.controller.capabilities.projectManagement && _projectError != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-error-search-all",
+          "type": "button",
+          "label": "Search all sessions",
+          "key": null,
+          "line": 496,
+          "action": "navigate",
+          "target": "global-sessions",
+          "targetWidget": "GlobalSessionsScreen",
+          "effect": "_openAllSessions() pushes GlobalSessionsScreen.",
+          "gates": [
+            "widget.controller.capabilities.projectManagement && _projectError != null",
+            "capabilities.globalSessionSearch"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-no-projects-search-all",
+          "type": "button",
+          "label": "Search all sessions",
+          "key": null,
+          "line": 523,
+          "action": "navigate",
+          "target": "global-sessions",
+          "targetWidget": "GlobalSessionsScreen",
+          "effect": "ProductInlineEmpty action: _openAllSessions() pushes GlobalSessionsScreen.",
+          "gates": [
+            "widget.controller.capabilities.projectManagement && _projects?.isEmpty == true && _selectedDirectory == null",
+            "capabilities.globalSessionSearch"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-project-header",
+          "type": "card",
+          "label": "<project name> | Choose a project | <folder basename> (tooltip: Switch project, worktrees, and project health)",
+          "key": "current-project-context",
+          "line": 1756,
+          "action": "open-sheet",
+          "target": "workspace-context-sheet",
+          "targetWidget": "_openContextSheet",
+          "effect": "_openContextSheet() opens the project sheet. The header sits above the scroll view, so it stays in place while the list scrolls.",
+          "gates": [
+            "_hasProjectDetails: capabilities.projectManagement && (_projects?.isNotEmpty == true || _selectedDirectory != null)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-active-session-directory",
+          "type": "list-tile",
+          "label": "<directory basename> / Active session directory · {directory}",
+          "key": "active-session-directory",
+          "line": 449,
+          "action": "open-dialog",
+          "target": "workspace-directory-details-dialog",
+          "targetWidget": "_showDirectoryDetails",
+          "effect": "_showDirectoryDetails(_selectedDirectory) shows the full path in a dialog.",
+          "gates": [
+            "widget.controller.capabilities.projectManagement && _hasExternalSessionDirectory (selected directory is neither the project root nor a listed worktree)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-restricted-directory",
+          "type": "list-tile",
+          "label": "<directory basename> / <directory>",
+          "key": "restricted-directory-context",
+          "line": 469,
+          "action": "open-dialog",
+          "target": "workspace-directory-details-dialog",
+          "targetWidget": "_showDirectoryDetails",
+          "effect": "_showDirectoryDetails(controller.directory) shows the full path in a dialog.",
+          "gates": [
+            "!capabilities.projectManagement && widget.controller.directory?.isNotEmpty == true"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-return-brief-panel",
+          "type": "card",
+          "label": "[Return brief panel]",
+          "key": null,
+          "file": "lib/ui/widgets/return_brief_panel.dart",
+          "line": 610,
+          "action": "other",
+          "target": null,
+          "targetWidget": "ReturnBriefPanel",
+          "effect": "Embeds ReturnBriefPanel(controller, inventoryStatusInParent: true, unknownStatusInParent: _hasProjectDetails); its own buttons (permission/question sheets, open chat) belong to the widget's owner.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-team-card",
+          "type": "card",
+          "label": "[AI Team card]",
+          "key": null,
+          "file": "lib/ui/widgets/team_card.dart",
+          "line": 794,
+          "action": "navigate",
+          "target": "team-home",
+          "targetWidget": "TeamHomeScreen",
+          "effect": "Embeds TeamCard(controller: team, onOpen: () => _openTeamHome(team)) after Recent and its load-more footer and before Archived; onOpen pushes TeamHomeScreen(controller: team). What the team needs from the person reaches Inbox; the card's other controls belong to the widget's owner.",
+          "gates": [
+            "widget.controller.orchestration != null (AI Team plugin configured on the profile)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-termux-attention-line",
+          "type": "banner",
+          "label": "[Termux attention line]",
+          "key": null,
+          "file": "lib/ui/widgets/termux_phone_tools.dart",
+          "line": 632,
+          "action": "other",
+          "target": null,
+          "targetWidget": "TermuxAttentionLine",
+          "effect": "Embeds const TermuxAttentionLine(); its tap behaviour (links to Running now) is defined by the widget's owner.",
+          "gates": [
+            "platformCapabilities.supportsTermux && TermuxBridge.managesServerUrl(widget.controller.profile?.baseUrl)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-row",
+          "type": "list-tile",
+          "label": "<conversation title> (sections: Needs you, Running, Pinned, Recent conversations)",
+          "key": null,
+          "line": 1563,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionId>",
+          "effect": "_openSession(session): Navigator.pushNamed('/chat/<session.id>').",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-row-swipe",
+          "type": "gesture",
+          "label": "[swipe end-to-start: Archive (or Delete)]",
+          "key": "session-dismiss-<session.id>",
+          "line": 1448,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Dismissible.confirmDismiss calls onAction('swipe-archive') when archiveAvailable -> _archiveWithUndo(): hides the row, shows a 5 s Undo snackbar, then archiveRepository.archiveSession(id) + controller.refreshSessions(); when archive is unavailable it calls onAction('delete') which opens the delete confirm sheet first.",
+          "gates": [
+            "archive path: widget.controller.capabilities.sessionArchive; otherwise swipe = delete (confirm sheet workspace-delete-session-sheet)"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "workspace-archive-undo",
+          "type": "button",
+          "label": "Undo (snackbar: Archived “{title}”)",
+          "key": "archive-undo-<session.id>",
+          "line": 1151,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "messenger.hideCurrentSnackBar(reason: action); _archiveWithUndo then removes the id from _pendingArchive so the row returns and no server call is made.",
+          "gates": [
+            "shown for 5 s after a swipe-archive"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-menu",
+          "type": "icon-button",
+          "label": "Session actions",
+          "key": null,
+          "line": 1525,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "opens overflow menu (PopupMenuButton<String>)",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-menu-details",
+          "type": "menu-item",
+          "label": "Details",
+          "key": null,
+          "line": 1530,
+          "action": "open-sheet",
+          "target": "workspace-session-details-sheet",
+          "targetWidget": "_sessionAction",
+          "effect": "_sessionAction('details') opens the session details sheet.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-menu-pin",
+          "type": "menu-item",
+          "label": "Pin on this device | Unpin",
+          "key": null,
+          "line": 1533,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "togglePin(): controller.setSessionPinned(session.id, !pinned, locationRevision: ...); failure shows sessionPinFailed.",
+          "gates": [
+            "controller.canPinSessions"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-menu-rename",
+          "type": "menu-item",
+          "label": "Rename",
+          "key": null,
+          "line": 1537,
+          "action": "open-dialog",
+          "target": "workspace-rename-session-dialog",
+          "targetWidget": "_rename",
+          "effect": "_sessionAction('rename') -> _rename(session) opens the rename dialog.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-menu-share",
+          "type": "menu-item",
+          "label": "Share",
+          "key": null,
+          "line": 1542,
+          "action": "open-sheet",
+          "target": "workspace-share-session-sheet",
+          "targetWidget": "_confirmShare",
+          "effect": "_sessionAction('share') -> _confirmShare() confirm sheet; on confirm shareSession + copy link.",
+          "gates": [
+            "widget.controller.capabilities.sessionShare",
+            "session.shareUrl == null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-menu-unshare",
+          "type": "menu-item",
+          "label": "Stop sharing",
+          "key": null,
+          "line": 1542,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_sessionAction('unshare'): repository.unshareSession(session.id) with no confirmation, snackbar, then controller.refreshSessions().",
+          "gates": [
+            "widget.controller.capabilities.sessionShare",
+            "session.shareUrl != null"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "workspace-session-menu-archive",
+          "type": "menu-item",
+          "label": "Archive",
+          "key": null,
+          "line": 1551,
+          "action": "open-sheet",
+          "target": "workspace-archive-session-sheet",
+          "targetWidget": "_confirmArchive",
+          "effect": "_sessionAction('archive') -> _confirmArchive() confirm sheet.",
+          "gates": [
+            "widget.controller.capabilities.sessionArchive"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-menu-delete",
+          "type": "menu-item",
+          "label": "Delete",
+          "key": null,
+          "line": 1555,
+          "action": "open-sheet",
+          "target": "workspace-delete-session-sheet",
+          "targetWidget": "_confirmDelete",
+          "effect": "_sessionAction('delete') -> _confirmDelete() confirm sheet.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "workspace-session-context-menu",
+          "type": "gesture",
+          "label": "[right-click / secondary click on a session row]",
+          "key": null,
+          "line": 1568,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ContextMenuRegion opens a desktop context menu mirroring the overflow menu plus Open.",
+          "gates": [
+            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-context-details",
+          "type": "menu-item",
+          "label": "Details",
+          "key": null,
+          "line": 1573,
+          "action": "open-sheet",
+          "target": "workspace-session-details-sheet",
+          "targetWidget": "_sessionAction",
+          "effect": "onAction('details', session).",
+          "gates": [
+            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-context-pin",
+          "type": "menu-item",
+          "label": "Pin on this device | Unpin",
+          "key": null,
+          "line": 1579,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "togglePin() -> controller.setSessionPinned(...).",
+          "gates": [
+            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop",
+            "controller.canPinSessions"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-context-open",
+          "type": "menu-item",
+          "label": "Open",
+          "key": "session-menu-open",
+          "line": 1614,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionId>",
+          "effect": "onOpen(session) -> pushNamed('/chat/<id>').",
+          "gates": [
+            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-context-rename",
+          "type": "menu-item",
+          "label": "Rename",
+          "key": "session-menu-rename",
+          "line": 1620,
+          "action": "open-dialog",
+          "target": "workspace-rename-session-dialog",
+          "targetWidget": "_rename",
+          "effect": "onAction('rename', session).",
+          "gates": [
+            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-context-share",
+          "type": "menu-item",
+          "label": "Share | Stop sharing",
+          "key": "session-menu-share",
+          "line": 1627,
+          "action": "open-sheet",
+          "target": "workspace-share-session-sheet",
+          "targetWidget": "_confirmShare",
+          "effect": "onAction('share' or 'unshare'): share opens the confirm sheet; unshare calls repository.unshareSession directly.",
+          "gates": [
+            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop",
+            "widget.controller.capabilities.sessionShare"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-context-archive",
+          "type": "menu-item",
+          "label": "Archive",
+          "key": "session-menu-archive",
+          "line": 1638,
+          "action": "open-sheet",
+          "target": "workspace-archive-session-sheet",
+          "targetWidget": "_confirmArchive",
+          "effect": "onAction('archive', session).",
+          "gates": [
+            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop",
+            "widget.controller.capabilities.sessionArchive"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-session-context-delete",
+          "type": "menu-item",
+          "label": "Delete",
+          "key": "session-menu-delete",
+          "line": 1644,
+          "action": "open-sheet",
+          "target": "workspace-delete-session-sheet",
+          "targetWidget": "_confirmDelete",
+          "effect": "onAction('delete', session).",
+          "gates": [
+            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "workspace-session-unread-badge",
+          "type": "banner",
+          "label": "[unread / review state badge on the row]",
+          "key": null,
+          "file": "lib/ui/widgets/session_read_state.dart",
+          "line": 1495,
+          "action": "other",
+          "target": null,
+          "targetWidget": "SessionUnreadBadge",
+          "effect": "SessionUnreadBadge(controller, session) is display-only (no callbacks).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-search-all-sessions",
+          "type": "button",
+          "label": "All sessions (icon-only at large text; tooltip: Search session titles across every project on this server)",
+          "key": "search-all-sessions",
+          "line": 1795,
+          "action": "navigate",
+          "target": "global-sessions",
+          "targetWidget": "GlobalSessionsScreen",
+          "effect": "onSearch -> _openAllSessions() pushes GlobalSessionsScreen (IconButton at 1795 when text scale > 18/14, TextButton.icon at 1803 otherwise).",
+          "gates": [
+            "capabilities.globalSessionSearch"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-section-menu",
+          "type": "icon-button",
+          "label": "[Recent sessions overflow menu]",
+          "key": "workspace-section-menu",
+          "line": 1850,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "opens overflow menu (PopupMenuButton<_SectionAction>)",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-section-menu-reload",
+          "type": "menu-item",
+          "label": "Reload recent sessions",
+          "key": "workspace-refresh-sessions",
+          "line": 1861,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.refreshSessions().",
+          "gates": [
+            "enabled: !controller.sessionsLoading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-section-menu-background",
+          "type": "menu-item",
+          "label": "Stays connected in the background | Background updates off",
+          "key": "workspace-background-toggle",
+          "line": 1874,
+          "action": "navigate",
+          "target": "notifications-settings",
+          "targetWidget": "NotificationsSettingsScreen",
+          "effect": "onOpenBackgroundSettings -> _openBackgroundSettings() pushes NotificationsSettingsScreen(controller); the label reflects controller.keepLiveInBackground.",
+          "gates": [
+            "platformCapabilities.supportsBackgroundService"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-archived-sessions",
+          "type": "list-tile",
+          "label": "Archived sessions / {count} archived sessions",
+          "key": null,
+          "line": 790,
+          "action": "open-sheet",
+          "target": "workspace-archived-sheet",
+          "targetWidget": "_showArchived",
+          "effect": "_showArchived() opens the archived sessions sheet.",
+          "gates": [
+            "archived.isNotEmpty || partial (controller.hasMoreSessions || sessionsLoading || sessionsError != null)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-new-session",
+          "type": "fab",
+          "label": "New session",
+          "key": "workspace-quick-ask",
+          "line": 2157,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionId>",
+          "effect": "_createSession(): controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()), then refreshSessions(); docked quick-ask pill replacing a FAB.",
+          "gates": [
+            "disabled while _creating"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-isolated-task",
+          "type": "button",
+          "label": "Isolated task (tooltip: Start a task in a fresh worktree)",
+          "key": "workspace-isolated-task",
+          "line": 2156,
+          "action": "open-sheet",
+          "target": "isolated-task-sheet",
+          "targetWidget": "showIsolatedTaskSheet",
+          "effect": "_startIsolatedTask(): showIsolatedTaskSheet(context, controller, project); a returned session is opened with pushNamed('/chat/<id>', newlyCreated). Three layout variants (lines 2156, 2182, 2190) share the key.",
+          "gates": [
+            "_isolatedTaskProject != null: capabilities.projectManagement && capabilities.worktreeCreate && _selectedWorkspaceID == null && selected project has a directory",
+            "disabled while _creating"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-inventory-footer",
+          "type": "banner",
+          "label": "[session inventory footer: Load more sessions / Retry / Reload]",
+          "key": null,
+          "file": "lib/ui/widgets/session_inventory_footer.dart",
+          "line": 765,
+          "action": "other",
+          "target": null,
+          "targetWidget": "SessionInventoryFooter",
+          "effect": "Embeds SessionInventoryFooter(controller) under Recent sessions (and at line 1286 in the archived sheet); its buttons are listed on page embedded-session-inventory-footer.",
+          "gates": [
+            "renders only when controller.hasMoreSessions || a sessions error || loading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-nudge-pin-got-it",
+          "type": "button",
+          "label": "Got it",
+          "key": "nudge-pin-action",
+          "file": "lib/ui/widgets/nudge_card.dart",
+          "line": 93,
+          "action": "dismiss",
+          "target": null,
+          "effect": "One-time tip above Recent (workspace_screen.dart:793): 'Pin conversations you return to from their menu; they stay at the top of Work.' -> controller.nudges.dismiss(NudgeId.pinConversations).",
+          "gates": [
+            "second distinct project directory used on this server (NudgeRegistry.noteProjectUsed)",
+            "registry.firstReplySeen (never during first run before the first reply)",
+            "Work visible and its route current",
+            "controller.canPinSessions, nothing pinned in this scope, Recent not empty",
+            "offered once ever; never while another nudge is showing"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-nudge-pin-dismiss",
+          "type": "icon-button",
+          "label": "Hide tip",
+          "key": "nudge-pin-dismiss",
+          "file": "lib/ui/widgets/nudge_card.dart",
+          "line": 99,
+          "action": "dismiss",
+          "target": null,
+          "effect": "controller.nudges.dismiss(NudgeId.pinConversations).",
+          "gates": [
+            "same as workspace-nudge-pin-got-it"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "workspace-folder-chooser",
+      "title": "Choose a project folder",
+      "kind": "tab",
+      "file": "lib/ui/screens/workspace_screen.dart",
+      "widget": "_WorkspaceFolderChooser",
+      "presentedBy": [],
+      "line": 2233,
+      "purpose": "Blocking state of the Workspace tab while the connection has no usable project folder: create, open or browse a folder, or search all sessions.",
+      "reachedFrom": [
+        {
+          "page": "home-shell",
+          "element": "home-shell-tab-workspace"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "automatic: replaces the Workspace tab body while controller.workspaceChoiceRequired"
+        }
+      ],
+      "gates": [
+        "capabilities.projectManagement && widget.controller.workspaceChoiceRequired && (_projects != null || _projectError != null)"
+      ],
+      "elements": [
+        {
+          "id": "workspace-folder-chooser-create",
+          "type": "button",
+          "label": "Create a new folder",
+          "key": "workspace-create-folder",
+          "line": 2281,
+          "action": "open-dialog",
+          "target": "project-folder-new-dialog",
+          "targetWidget": "ProjectFolderActions.createFolder",
+          "effect": "onCreate -> _createProjectFolder() -> ProjectFolderActions.createFolder() opens the new-folder dialog, creates the folder via TermuxBridge.createProjectFolder and selects it, then _load().",
+          "gates": [
+            "ProjectFolderActions.canCreate(controller): profile != null && TermuxBridge.supported && TermuxBridge.managesServerUrl(profile.baseUrl)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-folder-chooser-open",
+          "type": "button",
+          "label": "Open a project folder",
+          "key": "workspace-open-folder",
+          "line": 2288,
+          "action": "open-dialog",
+          "target": "project-folder-open-dialog",
+          "targetWidget": "ProjectFolderActions.openFolder",
+          "effect": "onOpen -> _openProjectFolder() -> ProjectFolderActions.openFolder() opens the path dialog, then controller.selectLocation(directory) and _load().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-folder-chooser-browse",
+          "type": "button",
+          "label": "Choose from opened projects",
+          "key": "workspace-browse-projects",
+          "line": 2295,
+          "action": "navigate",
+          "target": "projects",
+          "targetWidget": "ProjectsScreen",
+          "effect": "onBrowse -> _openProjects() pushes ProjectsScreen(selectedProjectID) and reloads on return.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-folder-chooser-details",
+          "type": "list-tile",
+          "label": "Details",
+          "key": null,
+          "line": 2300,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ExpansionTile expands the projectFolderNoCreateHint explanation.",
+          "gates": [
+            "!canCreate"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-folder-chooser-retry",
+          "type": "button",
+          "label": "Retry projects",
+          "key": null,
+          "line": 2317,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onRetry -> _load().",
+          "gates": [
+            "projectError != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-folder-chooser-search-all",
+          "type": "button",
+          "label": "Search all sessions",
+          "key": "workspace-chooser-search-all",
+          "line": 2326,
+          "action": "navigate",
+          "target": "global-sessions",
+          "targetWidget": "GlobalSessionsScreen",
+          "effect": "onSearchAll -> _openAllSessions() pushes GlobalSessionsScreen.",
+          "gates": [
+            "capabilities.globalSessionSearch"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "workspace-directory-details-dialog",
+      "title": "<directory basename>",
+      "kind": "dialog",
+      "file": "lib/ui/screens/workspace_screen.dart",
+      "widget": "_showDirectoryDetails",
+      "presentedBy": [],
+      "line": 834,
+      "purpose": "Shows the full selectable path of the active directory.",
+      "reachedFrom": [
+        {
+          "page": "workspace",
+          "element": "workspace-active-session-directory"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-restricted-directory"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "workspace-directory-details-dialog-close",
+          "type": "button",
+          "label": "Close",
+          "key": null,
+          "line": 843,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop().",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "workspace-context-sheet",
+      "title": "[Project and workspace context]",
+      "kind": "sheet",
+      "file": "lib/ui/screens/workspace_screen.dart",
+      "widget": "_openContextSheet",
+      "presentedBy": [
+        "_openContextSheet"
+      ],
+      "line": 912,
+      "purpose": "Project context sheet: full folder path, switch project, manage project and managed-workspace selection.",
+      "reachedFrom": [
+        {
+          "page": "workspace",
+          "element": "workspace-project-header"
+        }
+      ],
+      "gates": [
+        "_hasProjectDetails"
+      ],
+      "elements": [
+        {
+          "id": "workspace-context-sheet-switch-project",
+          "type": "list-tile",
+          "label": "Switch project / {count} open on this server",
+          "key": "context-switch-project",
+          "line": 955,
+          "action": "navigate",
+          "target": "projects",
+          "targetWidget": "ProjectsScreen",
+          "effect": "Pops the sheet with _ContextChoice.switchProject(); _openContextSheet then calls _openProjects() which pushes ProjectsScreen.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-context-sheet-manage-project",
+          "type": "list-tile",
+          "label": "Manage project",
+          "key": "manage-project-entry",
+          "line": 967,
+          "action": "navigate",
+          "target": "manage-project",
+          "targetWidget": "ManageProjectScreen",
+          "effect": "Pops with _ContextChoice.manageProject(); _openManageProject() pushes ManageProjectScreen(project: _selectedProject) and reloads on return.",
+          "gates": [
+            "ManageProjectScreen.isAvailable(capabilities) (always true)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-context-sheet-local",
+          "type": "list-tile",
+          "label": "This computer",
+          "key": "workspace-option-local",
+          "line": 981,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops with _ContextChoice.workspace(null); _selectWorkspace(null) -> controller.selectLocation(directory: _selectedDirectory, workspace: null).",
+          "gates": [
+            "_workspaces.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-context-sheet-workspace",
+          "type": "list-tile",
+          "label": "<workspace branch or name> / <directory>",
+          "key": "workspace-option-<workspace.id>",
+          "line": 1004,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops with _ContextChoice.workspace(workspace); _selectWorkspace -> controller.selectLocation(directory: workspace.directory, workspace: workspace.id); shows controller.locationError on failure.",
+          "gates": [
+            "_workspaces.isNotEmpty"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "workspace-session-details-sheet",
+      "title": "<session title>",
+      "kind": "sheet",
+      "file": "lib/ui/screens/workspace_screen.dart",
+      "widget": "_sessionAction",
+      "presentedBy": [],
+      "line": 1044,
+      "purpose": "Read-only session details: title, directory, cost/diff usage labels and shared URL (selectable text only).",
+      "reachedFrom": [
+        {
+          "page": "workspace",
+          "element": "workspace-session-menu-details"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-session-context-details"
+        }
+      ],
+      "gates": [],
+      "elements": []
+    },
+    {
+      "id": "workspace-rename-session-dialog",
+      "title": "Rename session",
+      "kind": "dialog",
+      "file": "lib/ui/screens/workspace_screen.dart",
+      "widget": "_rename",
+      "presentedBy": [],
+      "line": 1183,
+      "purpose": "Edit a session title.",
+      "reachedFrom": [
+        {
+          "page": "workspace",
+          "element": "workspace-session-menu-rename"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-session-context-rename"
+        },
+        {
+          "page": "workspace-archived-sheet",
+          "element": "workspace-archived-sheet-menu-rename"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "workspace-rename-session-dialog-title",
+          "type": "text-field",
+          "label": "Title",
+          "key": null,
+          "line": 1187,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Edits the new title (prefilled with session.title).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-rename-session-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 1196,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop() with no result.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-rename-session-dialog-save",
+          "type": "button",
+          "label": "Save",
+          "key": null,
+          "line": 1200,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops with the trimmed text; _rename calls controller.renameSession(session.id, title) when non-empty, then refreshSessions().",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "workspace-archive-session-sheet",
+      "title": "Archive session?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/workspace_screen.dart",
+      "widget": "_confirmArchive",
+      "presentedBy": [],
+      "line": 1212,
+      "purpose": "Confirm archiving a session.",
+      "reachedFrom": [
+        {
+          "page": "workspace",
+          "element": "workspace-session-menu-archive"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-session-context-archive"
+        }
+      ],
+      "gates": [
+        "widget.controller.capabilities.sessionArchive"
+      ],
+      "elements": [
+        {
+          "id": "workspace-archive-session-sheet-confirm",
+          "type": "button",
+          "label": "Archive",
+          "key": null,
+          "line": 1212,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Returns true; _sessionAction calls repository.archiveSession(session.id) then controller.refreshSessions().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-archive-session-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 1212,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops the confirm sheet with false (showConfirmSheet in lib/ui/widgets/confirm_sheet.dart:86); nothing changes.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "workspace-share-session-sheet",
+      "title": "Share this session?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/workspace_screen.dart",
+      "widget": "_confirmShare",
+      "presentedBy": [],
+      "line": 1226,
+      "purpose": "Confirm creating a public share link.",
+      "reachedFrom": [
+        {
+          "page": "workspace",
+          "element": "workspace-session-menu-share"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-session-context-share"
+        }
+      ],
+      "gates": [
+        "widget.controller.capabilities.sessionShare"
+      ],
+      "elements": [
+        {
+          "id": "workspace-share-session-sheet-confirm",
+          "type": "button",
+          "label": "Share session",
+          "key": null,
+          "line": 1226,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Returns true; _sessionAction calls repository.shareSession(session.id), copies the URL with Clipboard.setData (line 1103), shows a snackbar and refreshes sessions.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-share-session-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 1226,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops the confirm sheet with false (showConfirmSheet in lib/ui/widgets/confirm_sheet.dart:86); nothing changes.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "workspace-delete-session-sheet",
+      "title": "Delete session?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/workspace_screen.dart",
+      "widget": "_confirmDelete",
+      "presentedBy": [],
+      "line": 1240,
+      "purpose": "Confirm deleting a session.",
+      "reachedFrom": [
+        {
+          "page": "workspace",
+          "element": "workspace-session-menu-delete"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-session-context-delete"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-session-row-swipe"
+        },
+        {
+          "page": "workspace-archived-sheet",
+          "element": "workspace-archived-sheet-menu-delete"
+        },
+        {
+          "page": "workspace-archived-sheet",
+          "element": "workspace-archived-sheet-context-delete"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "workspace-delete-session-sheet-confirm",
+          "type": "button",
+          "label": "Delete",
+          "key": null,
+          "line": 1240,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Returns true; _sessionAction calls controller.deleteSession(session.id) then refreshSessions().",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "workspace-delete-session-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 1240,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops the confirm sheet with false (showConfirmSheet in lib/ui/widgets/confirm_sheet.dart:86); nothing changes.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "workspace-archived-sheet",
+      "title": "[Archived sessions]",
+      "kind": "sheet",
+      "file": "lib/ui/screens/workspace_screen.dart",
+      "widget": "_showArchived",
+      "presentedBy": [
+        "_showArchived"
+      ],
+      "line": 1260,
+      "purpose": "Lists archived sessions with open, rename and delete; no unarchive exists.",
+      "reachedFrom": [
+        {
+          "page": "workspace",
+          "element": "workspace-archived-sessions"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "workspace-archived-sheet-row",
+          "type": "list-tile",
+          "label": "<session title> / <directory>",
+          "key": "archived-session-<session.id>",
+          "line": 1348,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionId>",
+          "effect": "Pops the sheet and _openSession(session) -> pushNamed('/chat/<id>').",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-archived-sheet-menu",
+          "type": "icon-button",
+          "label": "Archived session actions",
+          "key": "archived-session-actions-<session.id>",
+          "line": 1330,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "opens overflow menu",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-archived-sheet-menu-rename",
+          "type": "menu-item",
+          "label": "Rename",
+          "key": null,
+          "line": 1335,
+          "action": "open-dialog",
+          "target": "workspace-rename-session-dialog",
+          "targetWidget": "_rename",
+          "effect": "run('rename'): pops the sheet then _sessionAction('rename').",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "workspace-archived-sheet-menu-delete",
+          "type": "menu-item",
+          "label": "Delete",
+          "key": null,
+          "line": 1339,
+          "action": "open-sheet",
+          "target": "workspace-delete-session-sheet",
+          "targetWidget": "_confirmDelete",
+          "effect": "run('delete'): pops the sheet then _sessionAction('delete') -> confirm sheet.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "workspace-archived-sheet-context-open",
+          "type": "menu-item",
+          "label": "Open",
+          "key": null,
+          "line": 1304,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionId>",
+          "effect": "Desktop context menu: pops the sheet and opens the chat.",
+          "gates": [
+            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-archived-sheet-context-delete",
+          "type": "menu-item",
+          "label": "Delete",
+          "key": null,
+          "line": 1313,
+          "action": "open-sheet",
+          "target": "workspace-delete-session-sheet",
+          "targetWidget": "_confirmDelete",
+          "effect": "run('delete').",
+          "gates": [
+            "desktop only: ContextMenuRegion (lib/ui/desktop/context_menu.dart) is a pass-through off desktop"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "title": "Projects",
+      "kind": "screen",
+      "file": "lib/ui/screens/projects_screen.dart",
+      "widget": "ProjectsScreen",
+      "presentedBy": [],
+      "line": 13,
+      "purpose": "Pick, search, rename or add the project folder the connection works in; read-only 'Project context' variant when the backend cannot manage projects.",
+      "reachedFrom": [
+        {
+          "page": "workspace-folder-chooser",
+          "element": "workspace-folder-chooser-browse"
+        },
+        {
+          "page": "workspace-context-sheet",
+          "element": "workspace-context-sheet-switch-project"
+        },
+        {
+          "page": "manage-project",
+          "element": "manage-project-switch-project"
+        }
+      ],
+      "gates": [
+        "interactive list only when widget.controller.capabilities.projectManagement; otherwise a read-only 'Project context' page with no controls"
+      ],
+      "elements": [
+        {
+          "id": "projects-refresh",
+          "type": "icon-button",
+          "label": "Refresh projects",
+          "key": null,
+          "line": 259,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load(): repository.listProjects().",
+          "gates": [
+            "disabled while _loading || _busyProjectID != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "projects-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": null,
+          "line": 265,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "projects-search",
+          "type": "text-field",
+          "label": "Search projects or paths",
+          "key": "project-search",
+          "line": 273,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Filters _visibleProjects by name/directory through the _search listener.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "projects-search-clear",
+          "type": "icon-button",
+          "label": "Clear project search",
+          "key": null,
+          "line": 284,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_search.clear().",
+          "gates": [
+            "_search.text.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "projects-create-folder",
+          "type": "list-tile",
+          "label": "Create a new folder / In {directory} on this device",
+          "key": "projects-create-folder",
+          "line": 298,
+          "action": "open-dialog",
+          "target": "project-folder-new-dialog",
+          "targetWidget": "ProjectFolderActions.createFolder",
+          "effect": "_createFolder() -> ProjectFolderActions.createFolder(); on success pops the screen with true.",
+          "gates": [
+            "ProjectFolderActions.canCreate(widget.controller)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "projects-open-folder",
+          "type": "list-tile",
+          "label": "Open a project folder / Enter the full path of a folder on the server",
+          "key": "projects-open-folder",
+          "line": 305,
+          "action": "open-dialog",
+          "target": "project-folder-open-dialog",
+          "targetWidget": "ProjectFolderActions.openFolder",
+          "effect": "_openFolder() -> ProjectFolderActions.openFolder(); on success pops with true.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "projects-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "file": "lib/ui/widgets/product_states.dart",
+          "line": 319,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductErrorState(onRetry: _load); the state's 'Report a bug' button belongs to product_states.dart's owner.",
+          "gates": [
+            "_error != null && projects == null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "projects-project-tile",
+          "type": "list-tile",
+          "label": "<project name> / <directory>",
+          "key": "project-<project.id>",
+          "line": 428,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_select(project): controller.selectLocation(directory: project.directory) then pops with true; pops with false when it is already the active project.",
+          "gates": [
+            "disabled while busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "projects-project-rename",
+          "type": "icon-button",
+          "label": "Rename {name}",
+          "key": "rename-project-<project.id>",
+          "line": 420,
+          "action": "open-dialog",
+          "target": "projects-rename-dialog",
+          "targetWidget": "_RenameProjectDialog",
+          "effect": "_rename(project) opens _RenameProjectDialog.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "projects-refresh-error-retry",
+          "type": "icon-button",
+          "label": "Retry projects",
+          "key": "project-refresh-error",
+          "line": 352,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load().",
+          "gates": [
+            "_error != null && projects != null"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "projects-rename-dialog",
+      "title": "Rename project",
+      "kind": "dialog",
+      "file": "lib/ui/screens/projects_screen.dart",
+      "widget": "_RenameProjectDialog",
+      "presentedBy": [],
+      "line": 433,
+      "purpose": "Rename a project's display name on the server.",
+      "reachedFrom": [
+        {
+          "page": "projects",
+          "element": "projects-project-rename"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "projects-rename-dialog-name",
+          "type": "text-field",
+          "label": "Project name",
+          "key": "project-name-input",
+          "line": 457,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSubmitted -> _submit() pops with the text.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "projects-rename-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 482,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "projects-rename-dialog-save",
+          "type": "button",
+          "label": "Save",
+          "key": "confirm-rename-project",
+          "line": 487,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_submit() pops with the text; ProjectsScreen._rename calls repository.renameProject(projectID, projectDirectory, name) (empty name resets to the folder name).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "manage-project",
+      "title": "Manage project",
+      "kind": "screen",
+      "file": "lib/ui/screens/manage_project_screen.dart",
+      "widget": "ManageProjectScreen",
+      "presentedBy": [],
+      "line": 18,
+      "purpose": "Hub for low-frequency project surfaces: development services, switch project, worktrees, managed workspaces and project health.",
+      "reachedFrom": [
+        {
+          "page": "workspace-context-sheet",
+          "element": "workspace-context-sheet-manage-project"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "manage-project-back",
+          "type": "gesture",
+          "label": "[system back]",
+          "key": null,
+          "line": 47,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "PopScope pops with _changed so Workspace reloads.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "manage-project-services",
+          "type": "list-tile",
+          "label": "Development services",
+          "key": null,
+          "line": 92,
+          "action": "navigate",
+          "target": "development-services",
+          "targetWidget": "DevelopmentServicesScreen",
+          "effect": "Pushes DevelopmentServicesScreen(controller).",
+          "gates": [
+            "enabled only when widget.controller.directory?.isNotEmpty == true"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "manage-project-switch-project",
+          "type": "list-tile",
+          "label": "Switch project",
+          "key": "switch-project-entry",
+          "line": 117,
+          "action": "navigate",
+          "target": "projects",
+          "targetWidget": "ProjectsScreen",
+          "effect": "_switchProject() pushes ProjectsScreen; when it returns true this screen pops(true).",
+          "gates": [
+            "capabilities.projectManagement"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "manage-project-worktrees",
+          "type": "list-tile",
+          "label": "Worktrees",
+          "key": "worktrees-entry",
+          "line": 142,
+          "action": "navigate",
+          "target": "worktrees",
+          "targetWidget": "WorktreesScreen",
+          "effect": "_openWorktrees() pushes WorktreesScreen(controller, project).",
+          "gates": [
+            "capabilities.projectManagement",
+            "enabled only when project != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "manage-project-managed-workspaces",
+          "type": "list-tile",
+          "label": "Managed workspaces",
+          "key": "managed-workspaces-entry",
+          "line": 166,
+          "action": "navigate",
+          "target": "managed-workspaces",
+          "targetWidget": "ManagedWorkspacesScreen",
+          "effect": "_openManagedWorkspaces() pushes ManagedWorkspacesScreen(controller, project).",
+          "gates": [
+            "capabilities.managedWorkspaces",
+            "enabled only when project != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "manage-project-health",
+          "type": "list-tile",
+          "label": "Project health",
+          "key": "project-health-entry",
+          "line": 183,
+          "action": "navigate",
+          "target": "project-health",
+          "targetWidget": "ProjectHealthScreen",
+          "effect": "_openProjectHealth(): controller.prepareActionRepository() then pushes ProjectHealthScreen(repository, repositoryResolver, capabilities).",
+          "gates": [
+            "capabilities.projectManagement"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "project-folder-new-dialog",
+      "title": "Create a new folder",
+      "kind": "dialog",
+      "file": "lib/ui/screens/project_folder_actions.dart",
+      "widget": "_NewFolderDialog",
+      "presentedBy": [
+        "ProjectFolderActions.createFolder"
+      ],
+      "line": 95,
+      "purpose": "Ask for a folder name to create under the managed projects directory on the app-managed Termux server.",
+      "reachedFrom": [
+        {
+          "page": "workspace-folder-chooser",
+          "element": "workspace-folder-chooser-create"
+        },
+        {
+          "page": "projects",
+          "element": "projects-create-folder"
+        }
+      ],
+      "gates": [
+        "ProjectFolderActions.canCreate(controller)"
+      ],
+      "elements": [
+        {
+          "id": "project-folder-new-dialog-name",
+          "type": "text-field",
+          "label": "Folder name",
+          "key": "new-folder-name",
+          "line": 132,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onChanged clears the validation problem; onSubmitted -> _submit().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "project-folder-new-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 152,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "project-folder-new-dialog-create",
+          "type": "button",
+          "label": "Create",
+          "key": "new-folder-create",
+          "line": 157,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_submit(): validates with projectFolderNameProblem, pops with the name; createFolder() then runs TermuxBridge.createProjectFolder(name) and controller.selectLocation(directory: path).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "project-folder-open-dialog",
+      "title": "Open a project folder",
+      "kind": "dialog",
+      "file": "lib/ui/screens/project_folder_actions.dart",
+      "widget": "_OpenFolderDialog",
+      "presentedBy": [
+        "ProjectFolderActions.openFolder"
+      ],
+      "line": 165,
+      "purpose": "Ask for an absolute server path, probe it, and open it as the active project folder.",
+      "reachedFrom": [
+        {
+          "page": "workspace-folder-chooser",
+          "element": "workspace-folder-chooser-open"
+        },
+        {
+          "page": "projects",
+          "element": "projects-open-folder"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "project-folder-open-dialog-path",
+          "type": "text-field",
+          "label": "Folder path",
+          "key": "open-folder-path",
+          "line": 220,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onChanged clears the problem; onSubmitted -> _submit().",
+          "gates": [
+            "disabled while _checking"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-folder-open-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 247,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop().",
+          "gates": [
+            "disabled while _checking"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-folder-open-dialog-open",
+          "type": "button",
+          "label": "Open",
+          "key": "open-folder-confirm",
+          "line": 252,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_submit(): workspaceDirectoryProblem(path) then controller.probeProjectFolder(path); pops with the path and openFolder() calls controller.selectLocation(directory: path).",
+          "gates": [
+            "disabled while _checking"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "project-health",
+      "title": "Project health",
+      "kind": "screen",
+      "file": "lib/ui/screens/project_health_screen.dart",
+      "widget": "ProjectHealthScreen",
+      "presentedBy": [],
+      "line": 11,
+      "purpose": "Read-only health of the open project: version control branch and changed files, language services and formatters, with Git initialization.",
+      "reachedFrom": [
+        {
+          "page": "manage-project",
+          "element": "manage-project-health"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ChatScreen",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5163
+        }
+      ],
+      "gates": [
+        "from Manage project: capabilities.projectManagement and a prepared repository"
+      ],
+      "elements": [
+        {
+          "id": "project-health-refresh",
+          "type": "icon-button",
+          "label": "Refresh project health",
+          "key": null,
+          "line": 199,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load(): reloads version control, language services (if capabilities.languageServiceStatus) and formatters (if capabilities.formatterStatus).",
+          "gates": [
+            "disabled while _refreshing || _initializingGit"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-health-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": "project-health-list",
+          "line": 210,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "project-health-section-retry",
+          "type": "button",
+          "label": "Try again (on a 'Status unavailable' row)",
+          "key": null,
+          "line": 596,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_HealthErrorTile.onRetry -> _load(); used by the version control (268), language services (402) and formatters (458) sections.",
+          "gates": [
+            "section error != null",
+            "disabled while _refreshing"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-health-git-init-gated",
+          "type": "list-tile",
+          "label": "Initialize Git (gated row)",
+          "key": null,
+          "file": "lib/ui/widgets/product_states.dart",
+          "line": 304,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "GatedRowTile(feature: 'git-init'): tapping shows the snackbar 'Requires an OpenCode {n} server' (GestureDetector at product_states.dart:405).",
+          "gates": [
+            "vcs.setupState == VersionControlSetupState.absent",
+            "!widget.capabilities.gitInit"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-health-git-init",
+          "type": "button",
+          "label": "Initialize Git",
+          "key": "initialize-git-repository",
+          "line": 316,
+          "action": "open-dialog",
+          "target": "project-health-git-init-dialog",
+          "targetWidget": "_initializeGit",
+          "effect": "_initializeGit() opens the confirmation dialog.",
+          "gates": [
+            "vcs.setupState == VersionControlSetupState.absent",
+            "widget.capabilities.gitInit",
+            "disabled while _initializingGit"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-health-git-init-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 343,
+          "action": "open-dialog",
+          "target": "project-health-git-init-dialog",
+          "targetWidget": "_initializeGit",
+          "effect": "_initializeGit() again after a failed initialization.",
+          "gates": [
+            "_gitInitializationError != null"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "project-health-git-init-dialog",
+      "title": "Initialize Git repository?",
+      "kind": "dialog",
+      "file": "lib/ui/screens/project_health_screen.dart",
+      "widget": "_initializeGit",
+      "presentedBy": [],
+      "line": 92,
+      "purpose": "Confirm running git init in the project folder.",
+      "reachedFrom": [
+        {
+          "page": "project-health",
+          "element": "project-health-git-init"
+        },
+        {
+          "page": "project-health",
+          "element": "project-health-git-init-retry"
+        }
+      ],
+      "gates": [
+        "widget.capabilities.gitInit"
+      ],
+      "elements": [
+        {
+          "id": "project-health-git-init-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 99,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, false).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "project-health-git-init-dialog-confirm",
+          "type": "button",
+          "label": "Initialize Git",
+          "key": "confirm-git-initialization",
+          "line": 104,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops true; _initializeGit calls repository.initializeGitRepository() then _load() and shows a snackbar.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "managed-workspaces",
+      "title": "Cloud environments",
+      "kind": "screen",
+      "file": "lib/ui/screens/managed_workspaces_screen.dart",
+      "widget": "ManagedWorkspacesScreen",
+      "presentedBy": [],
+      "line": 13,
+      "purpose": "List, discover, create, open and remove adapter-backed managed workspaces (cloud environments) for the project.",
+      "reachedFrom": [
+        {
+          "page": "manage-project",
+          "element": "manage-project-managed-workspaces"
+        }
+      ],
+      "gates": [
+        "widget.controller.capabilities.managedWorkspaces",
+        "project != null"
+      ],
+      "elements": [
+        {
+          "id": "managed-workspaces-sync",
+          "type": "icon-button",
+          "label": "Discover existing environments",
+          "key": "sync-managed-workspaces",
+          "line": 236,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_sync(): repository.syncWorkspaceList(projectDirectory) then _load() and a snackbar.",
+          "gates": [
+            "disabled while busy (_syncing || _creating || _busyWorkspaceID != null)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-refresh",
+          "type": "icon-button",
+          "label": "Refresh cloud environments",
+          "key": null,
+          "line": 248,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load().",
+          "gates": [
+            "disabled while busy || _loading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-create",
+          "type": "fab",
+          "label": "New environment",
+          "key": "create-managed-workspace",
+          "line": 258,
+          "action": "open-dialog",
+          "target": "managed-workspaces-create-dialog",
+          "targetWidget": "_CreateWorkspaceDialog",
+          "effect": "_create() opens _CreateWorkspaceDialog; FAB at normal text scale, bottom FilledButton (line 279, same key) when text scale > 20/14.",
+          "gates": [
+            "adapters?.isNotEmpty == true",
+            "disabled while busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": "managed-workspaces-list",
+          "line": 295,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "file": "lib/ui/widgets/product_states.dart",
+          "line": 304,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductErrorState(onRetry: _load).",
+          "gates": [
+            "_workspaceError != null && workspaces == null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-tile",
+          "type": "list-tile",
+          "label": "<workspace name> / <branch · type · status · directory>",
+          "key": "managed-workspace-<workspace.id>",
+          "line": 524,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onOpen -> _open(workspace): controller.selectLocation(directory, workspace: id) then pops the screen with true.",
+          "gates": [
+            "disabled while busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-tile-menu",
+          "type": "icon-button",
+          "label": "Environment actions",
+          "key": null,
+          "line": 491,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "opens overflow menu",
+          "gates": [
+            "enabled: !busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-tile-menu-open",
+          "type": "menu-item",
+          "label": "Open | Open again",
+          "key": null,
+          "line": 501,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onOpen -> _open(workspace).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-tile-menu-remove",
+          "type": "menu-item",
+          "label": "Remove",
+          "key": null,
+          "line": 513,
+          "action": "open-dialog",
+          "target": "managed-workspaces-remove-dialog",
+          "targetWidget": "_RemoveWorkspaceDialog",
+          "effect": "onRemove -> _remove(workspace) opens _RemoveWorkspaceDialog.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "managed-workspaces-tile-context-open",
+          "type": "menu-item",
+          "label": "Open | Open again",
+          "key": "environment-menu-open",
+          "line": 542,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onOpen.",
+          "gates": [
+            "desktop only: ContextMenuRegion is a pass-through off desktop",
+            "!busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-tile-context-remove",
+          "type": "menu-item",
+          "label": "Remove",
+          "key": "environment-menu-remove",
+          "line": 551,
+          "action": "open-dialog",
+          "target": "managed-workspaces-remove-dialog",
+          "targetWidget": "_RemoveWorkspaceDialog",
+          "effect": "onRemove.",
+          "gates": [
+            "desktop only: ContextMenuRegion is a pass-through off desktop",
+            "!busy"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "managed-workspaces-refresh-error-retry",
+          "type": "icon-button",
+          "label": "Retry cloud environments",
+          "key": null,
+          "line": 347,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load().",
+          "gates": [
+            "_workspaceError != null && workspaces != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-adapter-error-retry",
+          "type": "icon-button",
+          "label": "Retry workspace adapters",
+          "key": "workspace-adapter-error",
+          "line": 371,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load(); same control at line 410 when adapters are already loaded.",
+          "gates": [
+            "_adapterError != null"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "managed-workspaces-create-dialog",
+      "title": "New managed workspace",
+      "kind": "dialog",
+      "file": "lib/ui/screens/managed_workspaces_screen.dart",
+      "widget": "_CreateWorkspaceDialog",
+      "presentedBy": [],
+      "line": 566,
+      "purpose": "Pick an adapter and optional branch for a new managed workspace.",
+      "reachedFrom": [
+        {
+          "page": "managed-workspaces",
+          "element": "managed-workspaces-create"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "managed-workspaces-create-dialog-adapter",
+          "type": "dropdown",
+          "label": "Adapter",
+          "key": "workspace-adapter-picker",
+          "line": 597,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "setState(_type = value).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-create-dialog-branch",
+          "type": "text-field",
+          "label": "Branch (optional)",
+          "key": "workspace-branch-input",
+          "line": 620,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Optional branch name.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-create-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 644,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-create-dialog-confirm",
+          "type": "button",
+          "label": "Create and open",
+          "key": "confirm-create-managed-workspace",
+          "line": 653,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops a _WorkspaceDraft; _create calls repository.createManagedWorkspace(projectDirectory, type, branch), controller.selectLocation(...) and pops the screen with true.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "managed-workspaces-remove-dialog",
+      "title": "Remove {name}?",
+      "kind": "dialog",
+      "file": "lib/ui/screens/managed_workspaces_screen.dart",
+      "widget": "_RemoveWorkspaceDialog",
+      "presentedBy": [],
+      "line": 679,
+      "purpose": "Type-to-confirm permanent removal of a managed workspace.",
+      "reachedFrom": [
+        {
+          "page": "managed-workspaces",
+          "element": "managed-workspaces-tile-menu-remove"
+        },
+        {
+          "page": "managed-workspaces",
+          "element": "managed-workspaces-tile-context-remove"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "managed-workspaces-remove-dialog-confirm-text",
+          "type": "text-field",
+          "label": "Type {name} to confirm",
+          "key": "remove-managed-workspace-confirmation",
+          "line": 709,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "setState to enable the confirm button when the text equals workspace.name.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-remove-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 724,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, false).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "managed-workspaces-remove-dialog-confirm",
+          "type": "button",
+          "label": "Remove permanently",
+          "key": "confirm-remove-managed-workspace",
+          "line": 736,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops true; _remove moves the controller back to the project directory if this workspace is active, then repository.removeManagedWorkspace(projectDirectory, id) and _load().",
+          "gates": [
+            "enabled only when the typed text == workspace.name"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "worktrees",
+      "title": "Worktrees",
+      "kind": "screen",
+      "file": "lib/ui/screens/worktrees_screen.dart",
+      "widget": "WorktreesScreen",
+      "presentedBy": [],
+      "line": 15,
+      "purpose": "List the project's primary checkout and isolated git worktrees; open, create, reset and remove them.",
+      "reachedFrom": [
+        {
+          "page": "manage-project",
+          "element": "manage-project-worktrees"
+        }
+      ],
+      "gates": [
+        "widget.controller.capabilities.projectManagement",
+        "project != null"
+      ],
+      "elements": [
+        {
+          "id": "worktrees-refresh",
+          "type": "icon-button",
+          "label": "Refresh worktrees",
+          "key": null,
+          "line": 421,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load().",
+          "gates": [
+            "enabled when _busyDirectory == null && !_creating"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-create",
+          "type": "fab",
+          "label": "New worktree",
+          "key": "create-worktree",
+          "line": 433,
+          "action": "open-dialog",
+          "target": "worktrees-create-dialog",
+          "targetWidget": "_CreateWorktreeDialog",
+          "effect": "_create() opens _CreateWorktreeDialog; FAB at normal text scale, bottom FilledButton (line 454, same key) when text scale > 20/14.",
+          "gates": [
+            "widget.controller.capabilities.worktreeCreate",
+            "disabled while _creating"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-empty-create",
+          "type": "button",
+          "label": "New worktree",
+          "key": null,
+          "line": 497,
+          "action": "open-dialog",
+          "target": "worktrees-create-dialog",
+          "targetWidget": "_CreateWorktreeDialog",
+          "effect": "Action of the teaching empty state (key no-worktrees): _create(), the same as worktrees-create.",
+          "gates": [
+            "the worktree list is empty (not failed)",
+            "widget.controller.capabilities.worktreeCreate"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": "worktrees-list",
+          "line": 470,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_load().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-primary-tile",
+          "type": "list-tile",
+          "label": "<project folder> / Default project · {directory}",
+          "key": "primary-worktree",
+          "line": 596,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_open(project.directory): controller.selectLocation(directory) then pops the screen with true.",
+          "gates": [
+            "disabled when busy or already current"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-glossary-label",
+          "type": "link",
+          "label": "Worktrees (info label)",
+          "key": "worktrees-section-label",
+          "file": "lib/ui/widgets/info_label.dart",
+          "line": 623,
+          "action": "open-sheet",
+          "target": "info-label-sheet",
+          "targetWidget": "InfoLabel.show",
+          "effect": "InfoLabel with Glossary.worktree.explanation opens the explanation sheet (InfoLabel.show).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "file": "lib/ui/widgets/product_states.dart",
+          "line": 494,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductErrorState(onRetry: _load).",
+          "gates": [
+            "_loadError != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-tile",
+          "type": "list-tile",
+          "label": "<worktree name> / <branch | directory | Preparing… | Setup failed>",
+          "key": "worktree-<worktree.directory>",
+          "line": 697,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onOpen -> _open(worktree.directory): controller.selectLocation(directory) then pops with true; a preparing worktree only shows a snackbar.",
+          "gates": [
+            "disabled when busy || preparing || current"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-tile-menu",
+          "type": "icon-button",
+          "label": "Worktree actions",
+          "key": null,
+          "line": 706,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "opens overflow menu",
+          "gates": [
+            "enabled: !busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-tile-menu-open",
+          "type": "menu-item",
+          "label": "Open",
+          "key": null,
+          "line": 718,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onOpen -> _open(directory).",
+          "gates": [
+            "!current && !preparing && failure == null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-tile-menu-reset",
+          "type": "menu-item",
+          "label": "Reset",
+          "key": null,
+          "line": 727,
+          "action": "open-dialog",
+          "target": "worktrees-reset-dialog",
+          "targetWidget": "_confirmReset",
+          "effect": "onReset -> _reset(worktree): inspects changes with repository.listWorktreeFileStatuses, then opens the reset confirmation.",
+          "gates": [
+            "widget.controller.capabilities.worktreeReset",
+            "!preparing && failure == null"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "worktrees-tile-menu-remove",
+          "type": "menu-item",
+          "label": "Remove",
+          "key": null,
+          "line": 735,
+          "action": "open-dialog",
+          "target": "worktrees-remove-dialog",
+          "targetWidget": "_RemoveWorktreeDialog",
+          "effect": "onRemove -> _remove(worktree): inspects changes, then opens _RemoveWorktreeDialog.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "worktrees-tile-context-open",
+          "type": "menu-item",
+          "label": "Open",
+          "key": "worktree-menu-open",
+          "line": 761,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onOpen.",
+          "gates": [
+            "desktop only: ContextMenuRegion is a pass-through off desktop",
+            "!busy",
+            "!current && !preparing && failure == null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-tile-context-reset",
+          "type": "menu-item",
+          "label": "Reset",
+          "key": "worktree-menu-reset",
+          "line": 770,
+          "action": "open-dialog",
+          "target": "worktrees-reset-dialog",
+          "targetWidget": "_confirmReset",
+          "effect": "onReset.",
+          "gates": [
+            "desktop only: ContextMenuRegion is a pass-through off desktop",
+            "!busy",
+            "capabilities.worktreeReset && !preparing && failure == null"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "worktrees-tile-context-remove",
+          "type": "menu-item",
+          "label": "Remove",
+          "key": "worktree-menu-remove",
+          "line": 779,
+          "action": "open-dialog",
+          "target": "worktrees-remove-dialog",
+          "targetWidget": "_RemoveWorktreeDialog",
+          "effect": "onRemove.",
+          "gates": [
+            "desktop only: ContextMenuRegion is a pass-through off desktop",
+            "!busy"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "worktrees-create-dialog",
+      "title": "New worktree",
+      "kind": "dialog",
+      "file": "lib/ui/screens/worktrees_screen.dart",
+      "widget": "_CreateWorktreeDialog",
+      "presentedBy": [],
+      "line": 819,
+      "purpose": "Optional name for a new isolated worktree.",
+      "reachedFrom": [
+        {
+          "page": "worktrees",
+          "element": "worktrees-create"
+        }
+      ],
+      "gates": [
+        "capabilities.worktreeCreate"
+      ],
+      "elements": [
+        {
+          "id": "worktrees-create-dialog-name",
+          "type": "text-field",
+          "label": "Name (optional)",
+          "key": "worktree-name-field",
+          "line": 851,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSubmitted pops with the trimmed value.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-create-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 871,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-create-dialog-create",
+          "type": "button",
+          "label": "Create",
+          "key": "confirm-create-worktree",
+          "line": 880,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops with the trimmed name; _create calls repository.createWorktree(projectDirectory, name) and tracks preparation for 45 s.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "worktrees-reset-dialog",
+      "title": "Reset {name}?",
+      "kind": "dialog",
+      "file": "lib/ui/screens/worktrees_screen.dart",
+      "widget": "_confirmReset",
+      "presentedBy": [],
+      "line": 346,
+      "purpose": "Confirm discarding all changes in a worktree and resetting it to the default branch.",
+      "reachedFrom": [
+        {
+          "page": "worktrees",
+          "element": "worktrees-tile-menu-reset"
+        },
+        {
+          "page": "worktrees",
+          "element": "worktrees-tile-context-reset"
+        }
+      ],
+      "gates": [
+        "capabilities.worktreeReset"
+      ],
+      "elements": [
+        {
+          "id": "worktrees-reset-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 371,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, false).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-reset-dialog-confirm",
+          "type": "button",
+          "label": "Reset worktree",
+          "key": "confirm-reset-worktree",
+          "line": 383,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops true; _reset calls repository.resetWorktree(projectDirectory, directory), re-selects the location when it is current, then _load().",
+          "gates": [],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "worktrees-remove-dialog",
+      "title": "Remove {name}?",
+      "kind": "dialog",
+      "file": "lib/ui/screens/worktrees_screen.dart",
+      "widget": "_RemoveWorktreeDialog",
+      "presentedBy": [],
+      "line": 897,
+      "purpose": "Type-to-confirm permanent removal of a worktree and its branch, with a changed-files warning.",
+      "reachedFrom": [
+        {
+          "page": "worktrees",
+          "element": "worktrees-tile-menu-remove"
+        },
+        {
+          "page": "worktrees",
+          "element": "worktrees-tile-context-remove"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "worktrees-remove-dialog-confirm-text",
+          "type": "text-field",
+          "label": "Type {name} to confirm",
+          "key": "remove-worktree-confirmation",
+          "line": 931,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "setState to enable the confirm button when the text equals worktree.name.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-remove-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 945,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(context, false).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "worktrees-remove-dialog-confirm",
+          "type": "button",
+          "label": "Remove permanently",
+          "key": "confirm-remove-worktree",
+          "line": 957,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops true; _remove switches the controller to the project directory when this worktree is current, then repository.removeWorktree(projectDirectory, directory) and _load().",
+          "gates": [
+            "enabled only when the typed text == worktree.name"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "global-sessions",
+      "title": "All sessions",
+      "kind": "screen",
+      "file": "lib/ui/screens/global_sessions_screen.dart",
+      "widget": "GlobalSessionsScreen",
+      "presentedBy": [],
+      "line": 17,
+      "purpose": "Server-wide session finder: search titles across every folder, filter by archived/folder, open, open related, copy handoff or continue a session here.",
+      "reachedFrom": [
+        {
+          "page": "workspace",
+          "element": "workspace-search-all-sessions"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-error-search-all"
+        },
+        {
+          "page": "workspace",
+          "element": "workspace-no-projects-search-all"
+        },
+        {
+          "page": "workspace-folder-chooser",
+          "element": "workspace-folder-chooser-search-all"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ChatScreen",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5124
+        }
+      ],
+      "gates": [
+        "from Workspace: capabilities.globalSessionSearch"
+      ],
+      "elements": [
+        {
+          "id": "global-sessions-search",
+          "type": "text-field",
+          "label": "Search session titles (hint: Across every folder on this server)",
+          "key": "global-session-search",
+          "line": 541,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_searchChanged: invalidates in-flight pages and, after a 300 ms debounce, _reload() -> repository.listGlobalSessions(search, includeArchived, limit: 50).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-search-clear",
+          "type": "icon-button",
+          "label": "Clear search",
+          "key": null,
+          "line": 554,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_search.clear() and _reload().",
+          "gates": [
+            "_search.text.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-include-archived",
+          "type": "chip",
+          "label": "Include archived (Archived at large text)",
+          "key": "include-archived-sessions",
+          "line": 576,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "FilterChip: setState(_includeArchived) and _reload().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-folder-all",
+          "type": "chip",
+          "label": "All folders | Loaded folders",
+          "key": "global-session-folder-all",
+          "line": 600,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ChoiceChip: _folderFilter = null.",
+          "gates": [
+            "groups.length > 1"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-folder-chip",
+          "type": "chip",
+          "label": "<folder label>",
+          "key": "global-session-folder-<directory>",
+          "line": 615,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ChoiceChip: toggles _folderFilter to this group's directory (local filter, no request).",
+          "gates": [
+            "groups.length > 1"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "file": "lib/ui/widgets/product_states.dart",
+          "line": 656,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductErrorState.onRetry -> _loadMore when more pages remain and pagination is sane, else _reload.",
+          "gates": [
+            "_error != null && _results.isEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-empty-action",
+          "type": "button",
+          "label": "Refresh | Clear search",
+          "key": null,
+          "file": "lib/ui/widgets/product_states.dart",
+          "line": 674,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductEmptyState.onAction: _reload() when the query is empty, otherwise clears the search and reloads.",
+          "gates": [
+            "_results.isEmpty && !_hasMore"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": "global-sessions-list",
+          "line": 700,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_reload().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-scroll-load-more",
+          "type": "gesture",
+          "label": "[scroll near end]",
+          "key": null,
+          "line": 218,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_scrollChanged -> _loadMore() when extentAfter <= 280, more pages exist and no error.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-row",
+          "type": "list-tile",
+          "label": "<session title> / Working · <relative time> · <path>",
+          "key": "global-session-<session.id>",
+          "line": 988,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionId>",
+          "effect": "onTap -> guarded(_open(result)): controller.selectLocationForExistingSession(directory, workspace), verifies with repository.getSessionDetails, then pushNamed('/chat/<id>').",
+          "gates": [
+            "disabled while opening/stealing",
+            "guarded(): refuses with e7WorkspaceLocationChangedReturn when SessionNavigationScope no longer matches the controller"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-row-menu",
+          "type": "icon-button",
+          "label": "Session actions",
+          "key": "global-session-actions-<session.id>",
+          "line": 1058,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "opens overflow menu",
+          "gates": [
+            "hidden (spinner) while busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-row-menu-open",
+          "type": "menu-item",
+          "label": "Open",
+          "key": null,
+          "line": 1069,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionId>",
+          "effect": "onTap -> _open(result).",
+          "gates": [
+            "guarded(): refuses with e7WorkspaceLocationChangedReturn when SessionNavigationScope no longer matches the controller"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-row-menu-related",
+          "type": "menu-item",
+          "label": "Open related",
+          "key": null,
+          "line": 1073,
+          "action": "navigate",
+          "target": "session-relations",
+          "targetWidget": "SessionRelationsScreen",
+          "effect": "onRelated -> _open(result, related: true): switches location, then pushes SessionRelationsScreen(controller, sessionID); a session picked there is opened with pushNamed('/chat/<id>'). Also a CustomSemanticsAction (978).",
+          "gates": [
+            "guarded(): refuses with e7WorkspaceLocationChangedReturn when SessionNavigationScope no longer matches the controller"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-row-menu-handoff",
+          "type": "menu-item",
+          "label": "Copy handoff",
+          "key": null,
+          "line": 1077,
+          "action": "open-sheet",
+          "target": "session-handoff",
+          "targetWidget": "showSessionHandoff",
+          "effect": "onHandoff -> _open(result, handoff: true): switches location, then showSessionHandoff(context, controller, sessionID, projectID). Also a CustomSemanticsAction (979).",
+          "gates": [
+            "guarded(): refuses with e7WorkspaceLocationChangedReturn when SessionNavigationScope no longer matches the controller"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-row-menu-steal",
+          "type": "menu-item",
+          "label": "Continue here",
+          "key": "steal-session-<session.id>",
+          "line": 1082,
+          "action": "open-sheet",
+          "target": "global-sessions-continue-here-sheet",
+          "targetWidget": "_steal",
+          "effect": "onSteal -> _steal(result) opens the confirm sheet. Also a CustomSemanticsAction (982).",
+          "gates": [
+            "widget.controller.capabilities.sessionSteal && _isElsewhere(result) (a workspace is involved on either side and the session is elsewhere)",
+            "guarded(): refuses with e7WorkspaceLocationChangedReturn when SessionNavigationScope no longer matches the controller"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-row-context-open",
+          "type": "menu-item",
+          "label": "Open",
+          "key": "global-session-menu-open",
+          "line": 1100,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionId>",
+          "effect": "onTap.",
+          "gates": [
+            "desktop only: ContextMenuRegion is a pass-through off desktop",
+            "!busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-row-context-steal",
+          "type": "menu-item",
+          "label": "Continue here",
+          "key": "global-session-menu-steal",
+          "line": 1107,
+          "action": "open-sheet",
+          "target": "global-sessions-continue-here-sheet",
+          "targetWidget": "_steal",
+          "effect": "onSteal.",
+          "gates": [
+            "desktop only: ContextMenuRegion is a pass-through off desktop",
+            "onSteal != null && !busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-row-unread-badge",
+          "type": "banner",
+          "label": "[unread / review state badge]",
+          "key": null,
+          "file": "lib/ui/widgets/session_read_state.dart",
+          "line": 1030,
+          "action": "other",
+          "target": null,
+          "targetWidget": "SessionUnreadBadge",
+          "effect": "SessionUnreadBadge is display-only.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-footer-retry",
+          "type": "button",
+          "label": "Retry",
+          "key": null,
+          "line": 763,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_reload when the failure was a refresh or pagination must restart, else _loadMore.",
+          "gates": [
+            "_error != null with rows loaded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-load-more",
+          "type": "button",
+          "label": "Load more sessions",
+          "key": "global-sessions-load-more",
+          "line": 786,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_loadMore(): repository.listGlobalSessions(cursor: _nextCursor).",
+          "gates": [
+            "_hasMore"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "global-sessions-continue-here-sheet",
+      "title": "Continue this session here?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/global_sessions_screen.dart",
+      "widget": "_steal",
+      "presentedBy": [],
+      "line": 473,
+      "purpose": "Confirm moving (stealing) a session into the active workspace.",
+      "reachedFrom": [
+        {
+          "page": "global-sessions",
+          "element": "global-sessions-row-menu-steal"
+        },
+        {
+          "page": "global-sessions",
+          "element": "global-sessions-row-context-steal"
+        }
+      ],
+      "gates": [
+        "widget.controller.capabilities.sessionSteal && _isElsewhere(result)"
+      ],
+      "elements": [
+        {
+          "id": "global-sessions-continue-here-sheet-confirm",
+          "type": "button",
+          "label": "Continue here",
+          "key": null,
+          "line": 473,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Returns true; _steal calls repository.stealSessionIntoWorkspace(session.id), shows a snackbar and pushNamed('/chat/<stolenID>').",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-continue-here-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 473,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops the confirm sheet with false (showConfirmSheet in lib/ui/widgets/confirm_sheet.dart:86); nothing changes.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "session-destination-sheet",
+      "title": "Move session",
+      "kind": "sheet",
+      "file": "lib/ui/screens/session_destination_sheet.dart",
+      "widget": "_SessionDestinationSheet",
+      "presentedBy": [
+        "showSessionDestinationSheet"
+      ],
+      "line": 65,
+      "purpose": "Pick a destination for the session: another directory of the project (mode move) or a connected managed workspace / the local project (mode warp).",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ChatScreen (_ChatCommandAction.move)",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5174
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ChatScreen (_ChatCommandAction.warp)",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5184
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "session-destination-sheet-close",
+          "type": "icon-button",
+          "label": "Close",
+          "key": null,
+          "line": 378,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop().",
+          "gates": [
+            "disabled while _working"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-destination-sheet-filter",
+          "type": "text-field",
+          "label": "Filter destinations",
+          "key": "session-destination-search",
+          "line": 410,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "setState(_query) filters the list locally.",
+          "gates": [
+            "(destinations?.length ?? 0) > 6"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-destination-sheet-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "file": "lib/ui/widgets/product_states.dart",
+          "line": 428,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductErrorState.onRetry -> _load().",
+          "gates": [
+            "_error != null && _destinations == null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-destination-sheet-destination",
+          "type": "list-tile",
+          "label": "<destination title> / <directory or type · status>",
+          "key": "move-destination-<directory> | warp-destination-<workspaceID or directory>",
+          "line": 481,
+          "action": "open-dialog",
+          "target": "session-destination-confirm-dialog",
+          "targetWidget": "_confirmTransfer",
+          "effect": "_select(item) opens the transfer confirmation (_confirmTransfer).",
+          "gates": [
+            "enabled: !_working && !item.current && !(warp && status != 'connected')"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "session-destination-confirm-dialog",
+      "title": "Move session?",
+      "kind": "dialog",
+      "file": "lib/ui/screens/session_destination_sheet.dart",
+      "widget": "_confirmTransfer",
+      "presentedBy": [],
+      "line": 313,
+      "purpose": "Confirm the move and whether uncommitted working changes travel with the session.",
+      "reachedFrom": [
+        {
+          "page": "session-destination-sheet",
+          "element": "session-destination-sheet-destination"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "session-destination-confirm-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 328,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop() (null = abort).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "session-destination-confirm-dialog-without-changes",
+          "type": "button",
+          "label": "Move only",
+          "key": "session-destination-without-changes",
+          "line": 334,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops false; _select runs controller.moveSessionToDirectory(..., moveChanges: false) or controller.warpSessionToWorkspace(..., copyChanges: false), then closes the sheet with a snackbar.",
+          "gates": [
+            "_changes.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "session-destination-confirm-dialog-confirm",
+          "type": "button",
+          "label": "Move with changes | Copy changes and move | Move",
+          "key": "session-destination-confirm",
+          "line": 339,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops (hasChanges && !unknownChanges); _select runs controller.moveSessionToDirectory(sessionID, directory, moveChanges) in move mode or controller.warpSessionToWorkspace(sessionID, directory, workspaceID, copyChanges) in warp mode.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "console-organization-sheet",
+      "title": "Switch organization",
+      "kind": "sheet",
+      "file": "lib/ui/screens/session_destination_sheet.dart",
+      "widget": "_ConsoleOrganizationSheet",
+      "presentedBy": [
+        "showConsoleOrganizationSheet"
+      ],
+      "line": 488,
+      "purpose": "List OpenCode Console organizations grouped by account and switch the active one.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ChatScreen",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5224
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "console-organization-sheet-close",
+          "type": "icon-button",
+          "label": "Close",
+          "key": null,
+          "line": 601,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop().",
+          "gates": [
+            "disabled while _working"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "console-organization-sheet-error-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "file": "lib/ui/widgets/product_states.dart",
+          "line": 615,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "ProductErrorState.onRetry -> _load().",
+          "gates": [
+            "organizations == null && _error != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "console-organization-sheet-org",
+          "type": "list-tile",
+          "label": "<organization name> / <org id>",
+          "key": "console-org-<accountID>-<orgID>",
+          "line": 666,
+          "action": "open-dialog",
+          "target": "console-organization-switch-dialog",
+          "targetWidget": "_switch",
+          "effect": "_switch(organization) opens the switch confirmation.",
+          "gates": [
+            "enabled: !_working && !organization.active"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "console-organization-switch-dialog",
+      "title": "Switch organization?",
+      "kind": "dialog",
+      "file": "lib/ui/screens/session_destination_sheet.dart",
+      "widget": "_switch",
+      "presentedBy": [],
+      "line": 544,
+      "purpose": "Confirm switching the active Console organization.",
+      "reachedFrom": [
+        {
+          "page": "console-organization-sheet",
+          "element": "console-organization-sheet-org"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "console-organization-switch-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 553,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(false).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "console-organization-switch-dialog-confirm",
+          "type": "button",
+          "label": "Switch",
+          "key": "console-org-confirm",
+          "line": 558,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops true; _switch calls controller.switchConsoleOrganization(organization), closes the sheet and shows a snackbar.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "isolated-task-sheet",
+      "title": "New task in a fresh worktree",
+      "kind": "sheet",
+      "file": "lib/ui/screens/isolated_task_sheet.dart",
+      "widget": "IsolatedTaskSheet",
+      "presentedBy": [
+        "showIsolatedTaskSheet"
+      ],
+      "line": 39,
+      "purpose": "Create a fresh worktree for the project, wait for it to be prepared and open a new session in it (non-dismissible sheet with phase-dependent actions).",
+      "reachedFrom": [
+        {
+          "page": "workspace",
+          "element": "workspace-isolated-task"
+        }
+      ],
+      "gates": [
+        "capabilities.projectManagement && capabilities.worktreeCreate",
+        "_selectedWorkspaceID == null and a project is selected"
+      ],
+      "elements": [
+        {
+          "id": "isolated-task-sheet-close",
+          "type": "icon-button",
+          "label": "Close",
+          "key": "isolated-task-close",
+          "line": 191,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_close(): cancels the launch when launch.canCancel (never deletes the worktree) and pops.",
+          "gates": [
+            "disabled while phase == IsolatedTaskPhase.opening"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "isolated-task-sheet-back",
+          "type": "gesture",
+          "label": "[system back]",
+          "key": null,
+          "line": 157,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "PopScope(canPop: !busy): cancels a cancellable launch on pop.",
+          "gates": [
+            "blocked while phase == opening"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "isolated-task-sheet-name",
+          "type": "text-field",
+          "label": "Worktree name (optional)",
+          "key": "isolated-task-name",
+          "line": 225,
+          "action": "submit",
+          "target": null,
+          "targetWidget": null,
+          "effect": "onSubmitted -> _start().",
+          "gates": [
+            "form state: !_invalid && _launch == null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "isolated-task-sheet-start",
+          "type": "button",
+          "label": "Create and start",
+          "key": "isolated-task-start",
+          "line": 239,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_start(): controller.startIsolatedTask(project, expectedScope, name, readinessTimeout); when the launch reaches ready it auto-opens (launch.open()) and the sheet pops with the Session.",
+          "gates": [
+            "form state: !_invalid && _launch == null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "isolated-task-sheet-stop-waiting",
+          "type": "button",
+          "label": "Stop waiting",
+          "key": "isolated-task-stop",
+          "line": 403,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_close(): launch.cancel() and pop; the worktree is kept. (Also TextButton at 411 in the unconfirmed phase.)",
+          "gates": [
+            "phase in idle/creating/preparing/unconfirmed"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "isolated-task-sheet-keep-waiting",
+          "type": "button",
+          "label": "Keep waiting",
+          "key": "isolated-task-keep-waiting",
+          "line": 416,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "launch.keepWaiting().",
+          "gates": [
+            "phase == IsolatedTaskPhase.unconfirmed"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "isolated-task-sheet-open-anyway",
+          "type": "button",
+          "label": "Open anyway",
+          "key": "isolated-task-open-anyway",
+          "line": 421,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "launch.open(acceptUnconfirmed: true).",
+          "gates": [
+            "phase == IsolatedTaskPhase.unconfirmed"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "isolated-task-sheet-retry-open",
+          "type": "button",
+          "label": "Try again",
+          "key": "isolated-task-retry-open",
+          "line": 430,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "launch.open() again after a failed open.",
+          "gates": [
+            "phase == ready && launch.openError != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "isolated-task-sheet-dismiss",
+          "type": "button",
+          "label": "Close",
+          "key": "isolated-task-dismiss",
+          "line": 448,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_close(). (Also TextButton at 436 when ready with an open error.)",
+          "gates": [
+            "phase in failed/cancelled, or ready with openError"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "running-work-sheet",
+      "title": "Tasks",
+      "kind": "sheet",
+      "file": "lib/ui/screens/running_work_sheet.dart",
+      "widget": "RunningWorkSheet",
+      "presentedBy": [
+        "showRunningWorkSheet"
+      ],
+      "line": 72,
+      "purpose": "Running work for the current session: related running agents and managed shell commands, with a run-in-background request.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "ChatScreen._openRunningWork",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 839
+        }
+      ],
+      "gates": [
+        "opener requires _conn.capabilities.projectManagement (chat_screen.dart:835)"
+      ],
+      "elements": [
+        {
+          "id": "running-work-sheet-refresh",
+          "type": "icon-button",
+          "label": "Refresh",
+          "key": null,
+          "line": 287,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refresh().",
+          "gates": [
+            "disabled when disconnected || !_scopeMatches"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "running-work-sheet-close",
+          "type": "icon-button",
+          "label": "Close",
+          "key": null,
+          "line": 292,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop().",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "running-work-sheet-run-in-background",
+          "type": "button",
+          "label": "Run in background | Requesting background work…",
+          "key": null,
+          "line": 309,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Awaits widget.onBackground() (host callback returning BackgroundWorkResult), stores the result and _refresh().",
+          "gates": [
+            "widget.onBackground != null && (canBackground || _promoting || _promotion != null)",
+            "disabled when disconnected || !_scopeMatches || _promoting || !canBackground"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "running-work-sheet-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 360,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refresh().",
+          "gates": [
+            "_error != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "running-work-sheet-agent",
+          "type": "list-tile",
+          "label": "<agent label> / Running | Idle",
+          "key": "work-agent-<session.id>",
+          "line": 405,
+          "action": "navigate",
+          "target": "chat",
+          "targetWidget": "/chat/<sessionId>",
+          "effect": "Pops the sheet with entry.session.id; the opener (ChatScreen._openRunningWork) navigates to that session.",
+          "gates": [
+            "agents.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "running-work-sheet-shell",
+          "type": "list-tile",
+          "label": "<command> / <status> · <elapsed>",
+          "key": "work-shell-<shell.id>",
+          "line": 428,
+          "action": "navigate",
+          "target": "shell-output",
+          "targetWidget": "ShellOutputScreen",
+          "effect": "Pushes ShellOutputScreen(controller, shell) and refreshes on return.",
+          "gates": [
+            "_shells.isNotEmpty",
+            "disabled when disconnected; no-op unless _scopeMatches && conn.status == StreamStatus.connected"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "shell-output",
+      "title": "Command output",
+      "kind": "screen",
+      "file": "lib/ui/screens/running_work_sheet.dart",
+      "widget": "ShellOutputScreen",
+      "presentedBy": [],
+      "line": 455,
+      "purpose": "Live output of one managed shell command, with copy, follow, timeout and stop.",
+      "reachedFrom": [
+        {
+          "page": "running-work-sheet",
+          "element": "running-work-sheet-shell"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "shell-output-copy",
+          "type": "icon-button",
+          "label": "Copy output",
+          "key": null,
+          "line": 697,
+          "action": "copy",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Clipboard.setData(output) and a snackbar.",
+          "gates": [
+            "output.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "shell-output-refresh",
+          "type": "icon-button",
+          "label": "Refresh",
+          "key": null,
+          "line": 711,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refresh(reconcile: true).",
+          "gates": [
+            "_sameScope && _connected && !_stopped"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "shell-output-scroll",
+          "type": "gesture",
+          "label": "[drag scroll up]",
+          "key": null,
+          "line": 721,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Dragging away from the bottom turns _follow off.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "shell-output-timeout",
+          "type": "button",
+          "label": "Change timeout",
+          "key": null,
+          "line": 756,
+          "action": "open-sheet",
+          "target": "shell-output-timeout-sheet",
+          "targetWidget": "_timeout",
+          "effect": "_timeout() opens the timeout sheet.",
+          "gates": [
+            "_output.available && _output.shell.running && !_stopped",
+            "_canMutate"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "shell-output-stop",
+          "type": "button",
+          "label": "Stop command",
+          "key": null,
+          "line": 764,
+          "action": "open-dialog",
+          "target": "shell-output-stop-dialog",
+          "targetWidget": "_stop",
+          "effect": "_stop() opens the stop confirmation.",
+          "gates": [
+            "_output.available && _output.shell.running && !_stopped",
+            "_canMutate"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "shell-output-follow",
+          "type": "toggle",
+          "label": "Follow output",
+          "key": null,
+          "line": 777,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "setState(_follow); refreshes when turned on.",
+          "gates": [
+            "!_stopped && _output.available && (running || hasMore)",
+            "enabled when _sameScope && _connected"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "shell-output-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 798,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refresh(reconcile: true).",
+          "gates": [
+            "_output.error != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "shell-output-more",
+          "type": "button",
+          "label": "Load more output",
+          "key": null,
+          "line": 827,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_refresh().",
+          "gates": [
+            "_output.hasMore && !_stopped && _sameScope && _connected"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "shell-output-stop-dialog",
+      "title": "Stop this command?",
+      "kind": "dialog",
+      "file": "lib/ui/screens/running_work_sheet.dart",
+      "widget": "_stop",
+      "presentedBy": [],
+      "line": 577,
+      "purpose": "Confirm stopping a running managed shell.",
+      "reachedFrom": [
+        {
+          "page": "shell-output",
+          "element": "shell-output-stop"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "shell-output-stop-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 584,
+          "action": "dismiss",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Navigator.pop(false).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "shell-output-stop-dialog-confirm",
+          "type": "button",
+          "label": "Stop command",
+          "key": null,
+          "line": 592,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops true; _stop calls controller.repository.stopManagedShell(shell.id).",
+          "gates": [],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "shell-output-timeout-sheet",
+      "title": "Time remaining",
+      "kind": "sheet",
+      "file": "lib/ui/screens/running_work_sheet.dart",
+      "widget": "_timeout",
+      "presentedBy": [],
+      "line": 608,
+      "purpose": "Pick a new timeout for the running command.",
+      "reachedFrom": [
+        {
+          "page": "shell-output",
+          "element": "shell-output-timeout"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "shell-output-timeout-sheet-option",
+          "type": "list-tile",
+          "label": "1 minute | 5 minutes | 15 minutes | 1 hour | No timeout",
+          "key": null,
+          "line": 637,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Pops with the seconds; _timeout calls controller.repository.setManagedShellTimeout(shell.id, Duration or null) and shows a snackbar.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-session-inventory-footer",
+      "title": "[Session inventory footer]",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/session_inventory_footer.dart",
+      "widget": "SessionInventoryFooter",
+      "presentedBy": [],
+      "line": 7,
+      "purpose": "Continuation controls under session lists when the inventory is partial, loading or failed.",
+      "reachedFrom": [],
+      "gates": [],
+      "embeddedIn": [
+        "WorkspaceScreen",
+        "WorkspaceScreen._showArchived",
+        "RunCommandDialog (lib/ui/widgets/run_command_dialog.dart:186)"
+      ],
+      "elements": [
+        {
+          "id": "embedded-session-inventory-footer-reload",
+          "type": "button",
+          "label": "Reload recent sessions",
+          "key": null,
+          "file": "lib/ui/widgets/session_inventory_footer.dart",
+          "line": 46,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.refreshSessions().",
+          "gates": [
+            "(controller.sessionsError != null || controller.pinnedSessionsLoadFailed) && controller.hasMoreSessions",
+            "disabled while loading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-session-inventory-footer-more",
+          "type": "button",
+          "label": "Load more sessions | Retry | Reload recent sessions",
+          "key": "session-inventory-more",
+          "file": "lib/ui/widgets/session_inventory_footer.dart",
+          "line": 51,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "controller.loadMoreSessions(), or controller.refreshSessions() when the inventory failed and there is nothing to continue.",
+          "gates": [
+            "footer shown when controller.hasMoreSessions || error != null || loading",
+            "disabled while loading"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-mobile-task-list",
+      "title": "[Task list tool view]",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/mobile_task_view.dart",
+      "widget": "MobileTaskList",
+      "presentedBy": [],
+      "line": 11,
+      "purpose": "Renders an agent todo list inside a tool card with progress, a filter and copy.",
+      "reachedFrom": [],
+      "gates": [],
+      "embeddedIn": [
+        "ToolCard (lib/ui/widgets/tool_card.dart:1229)"
+      ],
+      "elements": [
+        {
+          "id": "embedded-mobile-task-list-copy-all",
+          "type": "button",
+          "label": "Copy all tasks",
+          "key": "mobile-tasks-copy-all",
+          "file": "lib/ui/widgets/mobile_task_view.dart",
+          "line": 95,
+          "action": "copy",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_copyAll(): Clipboard.setData(view.toPlainText()) and a snackbar.",
+          "gates": [
+            "disabled while _copying"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-mobile-task-list-filter",
+          "type": "toggle",
+          "label": "Show unfinished only",
+          "key": "mobile-tasks-filter",
+          "file": "lib/ui/widgets/mobile_task_view.dart",
+          "line": 154,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "toggle(): setState(_unfinishedOnly = !_unfinishedOnly) (local view filter; button variants at 154/160).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    }
+  ],
+  "notPages": [
+    {
+      "file": "lib/ui/widgets/session_title.dart",
+      "reason": "pure function presentedSessionTitle(); no widget, no surface and no interactive element"
+    },
+    {
+      "file": "lib/ui/widgets/session_read_state.dart",
+      "reason": "SessionViewObserver (lifecycle observer wrapping chat content) and SessionUnreadBadge (display-only badge); no callbacks. Referenced as display elements on workspace and global-sessions."
+    }
+  ],
+  "notes": [
+    "lib/ui/widgets/running_agents_strip.dart:114 RunningAgentsStrip is not instantiated anywhere under lib/ (only test/running_agents_strip_test.dart:68); chat_screen.dart:64 and running_work_sheet.dart:12 import the file for RunningAgentEntry only. Emitted as embedded overlay with empty embeddedIn.",
+    "lib/ui/screens/workspace_screen.dart:610/621/632 embed ReturnBriefPanel, TeamCard and TermuxAttentionLine (other agents' widgets); recorded as single card/banner elements with targetWidget. TeamCard.onOpen -> TeamHomeScreen (line 854) is the only AI Team entry point in this file.",
+    "lib/ui/screens/workspace_screen.dart:2233 _WorkspaceFolderChooser replaces the whole tab body; modelled as separate page 'workspace-folder-chooser' (kind tab) reached from home-shell-tab-workspace.",
+    "ProductErrorState (lib/ui/widgets/product_states.dart) also renders a 'Report a bug' button; only its 'Try again' retry is recorded here, the rest belongs to that widget's owner.",
+    "Unresolved openers outside this area: lib/ui/screens/chat_screen.dart:839 (showRunningWorkSheet), :5124 (GlobalSessionsScreen), :5163 (ProjectHealthScreen), :5174/:5184 (showSessionDestinationSheet move/warp), :5224 (showConsoleOrganizationSheet).",
+    "Targets outside this area referenced by targetWidget: TeamHomeScreen, TerminalPage, BackgroundSettingsScreen, DevelopmentServicesScreen, SessionRelationsScreen, showSessionHandoff, InfoLabel.show, '/chat/<sessionId>' named route.",
+    "lib/ui/screens/manage_project_screen.dart:31 ManageProjectScreen.isAvailable always returns true, so the 'Manage project' entry in the context sheet is effectively ungated.",
+    "lib/ui/screens/workspace_screen.dart:1106 'Stop sharing' (unshare) runs without any confirmation, unlike share/archive/delete."
+  ]
+}

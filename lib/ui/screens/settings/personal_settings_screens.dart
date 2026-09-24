@@ -1,61 +1,115 @@
 part of '../settings_screen.dart';
 
+/// The parts of Appearance a search result can mean.
+enum AppearanceSection { mode, language, theme }
+
 /// Appearance category: light/dark mode plus the theme-pack picker with
 /// live swatch previews.
-class AppearanceSettingsScreen extends StatelessWidget {
+class AppearanceSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
-  const AppearanceSettingsScreen({super.key, required this.controller});
+
+  /// The part a search result means: the screen opens scrolled to it.
+  final AppearanceSection? initialSection;
+
+  const AppearanceSettingsScreen({
+    super.key,
+    required this.controller,
+    this.initialSection,
+  });
+
+  @override
+  State<AppearanceSettingsScreen> createState() =>
+      _AppearanceSettingsScreenState();
+}
+
+class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
+  final _sectionKeys = {
+    for (final section in AppearanceSection.values)
+      section: GlobalKey(debugLabel: 'appearance-${section.name}'),
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialSection case final section?) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _sectionKeys[section]?.currentContext;
+        if (mounted && target != null) Scrollable.ensureVisible(target);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final controller = widget.controller;
     return Scaffold(
       appBar: AppBar(title: Text(_settingsCopy(context).e7AppearanceTitle)),
-      body: ListView(
+      // Not a lazy list: a dozen rows, and a search result that means one
+      // part must find it laid out.
+      body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
-        children: [
-          ValueListenableBuilder<AppAppearance>(
-            valueListenable: controller.appearance,
-            builder: (context, appearance, _) => ListTile(
-              key: const ValueKey('appearance-settings-entry'),
-              leading: const Icon(AppIconography.contrast),
-              title: Text(_settingsCopy(context).e7SettingsUi69),
-              subtitle: Text(appearanceLabel(appearance, context)),
-              trailing: const Icon(AppIconography.chevronRight),
-              onTap: () =>
-                  showAppearancePicker(context, controller: controller),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ValueListenableBuilder<AppAppearance>(
+              key: _sectionKeys[AppearanceSection.mode],
+              valueListenable: controller.appearance,
+              builder: (context, appearance, _) => ListTile(
+                key: const ValueKey('appearance-settings-entry'),
+                leading: const Icon(AppIconography.contrast),
+                title: Text(_settingsCopy(context).e7SettingsUi69),
+                subtitle: Text(appearanceLabel(appearance, context)),
+                trailing: const Icon(AppIconography.chevronRight),
+                onTap: () =>
+                    showAppearancePicker(context, controller: controller),
+              ),
             ),
-          ),
-          LanguageSettingsTile(controller: controller),
-          SectionLabel(_settingsCopy(context).e7SettingsUi70),
-          ListenableBuilder(
-            listenable: Listenable.merge([
-              controller.themePack,
-              harvestedDynamicPack,
-            ]),
-            builder: (context, _) {
-              final selected = controller.themePack.value;
-              final brightness = Theme.of(context).brightness;
-              return Column(
-                children: [
-                  for (final id in ThemePackId.values)
-                    _ThemePackTile(
-                      id: id,
-                      selected: selected == id,
-                      brightness: brightness,
-                      available:
-                          id != ThemePackId.dynamic ||
-                          harvestedDynamicPack.value != null,
-                      onSelect: () => showThemePackPreview(
-                        context,
-                        controller: controller,
-                        pack: id,
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
+            KeyedSubtree(
+              key: _sectionKeys[AppearanceSection.language],
+              child: LanguageSettingsTile(controller: controller),
+            ),
+            KeyedSubtree(
+              key: _sectionKeys[AppearanceSection.theme],
+              child: SectionLabel(_settingsCopy(context).e7SettingsUi70),
+            ),
+            ListenableBuilder(
+              listenable: Listenable.merge([
+                controller.themePack,
+                harvestedDynamicPack,
+              ]),
+              builder: (context, _) {
+                final selected = controller.themePack.value;
+                final brightness = Theme.of(context).brightness;
+                // Thirty themes as list rows is a very long page. They are a
+                // grid of swatches instead: each card is a miniature of the
+                // theme, so choosing is looking, not reading.
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      for (final id in ThemePackId.values)
+                        _ThemePackTile(
+                          id: id,
+                          selected: selected == id,
+                          brightness: brightness,
+                          available:
+                              id != ThemePackId.dynamic ||
+                              harvestedDynamicPack.value != null,
+                          onSelect: () => showThemePackPreview(
+                            context,
+                            controller: controller,
+                            pack: id,
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -82,54 +136,141 @@ class _ThemePackTile extends StatelessWidget {
         ? harvestedDynamicPack.value
         : themePack(id);
     final palette = pack?.palette(brightness);
-    final swatches = palette == null
-        ? const <Color>[]
-        : [
-            palette.background,
-            palette.scheme.surfaceContainerHigh,
-            palette.scheme.primary,
-            palette.success,
-          ];
-    return ListTile(
-      key: ValueKey('theme-pack-${id.name}'),
+    final theme = Theme.of(context);
+    final label = themePackLabels[id]!;
+    final description = !available
+        ? _settingsCopy(context).e7AppearanceDynamicUnavailable
+        : _themeDescription(context, id);
+    // Three to a row on a phone, more on a wide window.
+    final width = MediaQuery.sizeOf(context).width;
+    final columns = (width / 130).floor().clamp(2, 6);
+    // A hair under the exact share so rounding never drops a card to the
+    // next row.
+    final cardWidth =
+        (width.clamp(0, 900) - 32 - 10 * (columns - 1)) / columns - .5;
+    return Semantics(
+      button: true,
+      selected: selected,
       enabled: available,
-      leading: SizedBox(
-        width: 56,
-        child: palette == null
-            ? const Icon(AppIconography.sparkle)
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final color in swatches)
-                    Container(
-                      width: 12,
-                      height: 24,
-                      margin: const EdgeInsetsDirectional.only(end: 2),
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(3),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outlineVariant,
+      label: description == null ? label : '$label. $description',
+      excludeSemantics: true,
+      child: Opacity(
+        opacity: available ? 1 : .5,
+        child: InkWell(
+          key: ValueKey('theme-pack-${id.name}'),
+          borderRadius: BorderRadius.circular(14),
+          onTap: available ? onSelect : null,
+          child: Container(
+            width: cardWidth,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outlineVariant,
+                width: selected ? 2 : 1,
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // The miniature: the theme's page, a surface on it, a line
+                // of its text, and its accent and success colours.
+                Container(
+                  height: 56,
+                  color: palette?.background ?? theme.colorScheme.surface,
+                  padding: const EdgeInsets.all(8),
+                  child: palette == null
+                      ? const Center(child: Icon(AppIconography.sparkle))
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: palette.scheme.surfaceContainerHigh,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                alignment: AlignmentDirectional.centerStart,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
+                                child: Container(
+                                  height: 4,
+                                  width: 28,
+                                  decoration: BoxDecoration(
+                                    color: palette.scheme.onSurface,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            for (final color in [
+                              palette.scheme.primary,
+                              palette.scheme.secondary,
+                              palette.success,
+                            ])
+                              Container(
+                                width: 12,
+                                height: 12,
+                                margin: const EdgeInsetsDirectional.only(
+                                  start: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                          ],
+                        ),
+                ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(8, 6, 6, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelLarge,
                         ),
                       ),
+                      if (selected)
+                        Icon(
+                          AppIconography.check,
+                          size: 16,
+                          color: theme.colorScheme.primary,
+                        ),
+                    ],
+                  ),
+                ),
+                // Disabled with the truth: a card that cannot be chosen says
+                // why, in words, not only by looking faded.
+                if (!available && description != null)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(8, 0, 8, 8),
+                    child: Text(
+                      description,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                ],
-              ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
-      title: Text(themePackLabels[id]!),
-      subtitle: Text(
-        !available
-            ? _settingsCopy(context).e7AppearanceDynamicUnavailable
-            : _themeDescription(context, id),
-      ),
-      trailing: selected ? const Icon(AppIconography.check) : null,
-      onTap: available ? onSelect : null,
     );
   }
 }
 
-/// Privacy & permissions category: durable OpenCode grants, and the unsent
-/// work this device is holding on the user's behalf.
+/// Privacy category: read-state sync and the unsent work this device is
+/// holding on the user's behalf. Durable grants ("Always allowed actions")
+/// live under Conversation defaults in the hub: they are about how the agent
+/// works, not about privacy.
 class PrivacySettingsScreen extends StatefulWidget {
   final ConnectionController controller;
   const PrivacySettingsScreen({super.key, required this.controller});
@@ -187,7 +328,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_settingsCopy(context).e7SettingsUi5)),
+      appBar: AppBar(title: Text(_settingsCopy(context).settingsHubPrivacyRow)),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
@@ -240,18 +381,6 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                 ],
               );
             },
-          ),
-          ListTile(
-            key: const ValueKey('saved-permissions-entry'),
-            leading: const Icon(AppIconography.privacy),
-            title: Text(_settingsCopy(context).e7SettingsUi74),
-            subtitle: Text(_settingsCopy(context).e7SettingsUi75),
-            trailing: const Icon(AppIconography.chevronRight),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => SavedPermissionsScreen(controller: _controller),
-              ),
-            ),
           ),
           SectionLabel(_settingsCopy(context).e7SettingsUi76),
           // Queued prompts carry attachment data URLs and drafts carry
@@ -347,113 +476,12 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   }
 }
 
-/// Diagnostics category: the process-local error ring.
-class DiagnosticsSettingsScreen extends StatelessWidget {
-  final ConnectionController controller;
-  const DiagnosticsSettingsScreen({super.key, required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(_settingsCopy(context).e7SettingsUi6)),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 24),
-        children: [
-          ListenableBuilder(
-            listenable: controller.diagnostics,
-            builder: (context, _) {
-              final count = controller.diagnostics.count;
-              return ListTile(
-                key: const ValueKey('app-diagnostics-entry'),
-                leading: const Icon(AppIconography.privacy),
-                title: Text(_settingsCopy(context).e7SettingsUi88),
-                subtitle: Text(
-                  count == 0
-                      ? _settingsCopy(context).e7SettingsUi89
-                      : _settingsCopy(context).e7SettingsDiagnosticCount(count),
-                ),
-                trailing: const Icon(AppIconography.chevronRight),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) =>
-                        AppDiagnosticsScreen(controller: controller),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// About category: guide, privacy, licenses, and app details.
-class AboutSettingsScreen extends StatelessWidget {
-  final ConnectionController controller;
-  const AboutSettingsScreen({super.key, required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(_settingsCopy(context).e7SettingsUi7)),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 24),
-        children: [
-          ListTile(
-            key: const ValueKey('settings-setup-guide'),
-            leading: const Icon(AppIconography.guide),
-            title: Text(_settingsCopy(context).onboardingSetupGuide),
-            subtitle: Text(_settingsCopy(context).e7SettingsUi91),
-            trailing: const Icon(AppIconography.chevronRight),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => GuideScreen(embedded: false),
-              ),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.privacy_tip_outlined),
-            title: Text(_settingsCopy(context).e7SettingsUi92),
-            subtitle: Text(_settingsCopy(context).e7SettingsUi93),
-            trailing: const Icon(AppIconography.chevronRight),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const AboutScreen()),
-            ),
-          ),
-          // The voice notices cover models this build can neither download
-          // nor run off Android; the general notices below still list every
-          // component that ships here.
-          if (platformCapabilities.supportsVoice)
-            ListTile(
-              key: const Key('settings-voice-notices'),
-              leading: const Icon(AppIconography.policy),
-              title: Text(_settingsCopy(context).e7SettingsUi94),
-              subtitle: Text(_settingsCopy(context).e7SettingsUi95),
-              trailing: const Icon(AppIconography.chevronRight),
-              onTap: () => showVoiceNotices(context),
-            ),
-          ListTile(
-            leading: const Icon(AppIconography.info),
-            title: Text(_settingsCopy(context).e7SettingsUi96),
-            subtitle: Text(_settingsCopy(context).e7SettingsUi97),
-            trailing: const Icon(AppIconography.chevronRight),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const AboutScreen(initialTab: 1),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-String _themeDescription(BuildContext context, ThemePackId id) => switch (id) {
+String? _themeDescription(BuildContext context, ThemePackId id) => switch (id) {
   ThemePackId.opencode => _settingsCopy(context).e7AppearancePackOpencode,
   ThemePackId.catppuccin => _settingsCopy(context).e7AppearancePackCatppuccin,
   ThemePackId.gruvbox => _settingsCopy(context).e7AppearancePackGruvbox,
   ThemePackId.solarized => _settingsCopy(context).e7AppearancePackSolarized,
   ThemePackId.dynamic => _settingsCopy(context).e7AppearancePackDynamic,
+  // A generated theme is its name and its colours.
+  _ => null,
 };

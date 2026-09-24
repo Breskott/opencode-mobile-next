@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../api/models.dart' show ToolState;
 import '../../domain/run_result.dart';
 import '../../l10n/app_localizations.dart';
+import '../agent_error_words.dart';
 import '../app_theme.dart';
 import 'tool_card.dart';
 
@@ -222,7 +223,10 @@ class RunResultView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              outcome.errorHeadline!,
+              agentErrorWords(
+                outcome.errorHeadline!,
+                AppLocalizations.of(context),
+              ).headline,
               key: const Key('run-result-error'),
               style: theme.textTheme.bodyMedium,
             ),

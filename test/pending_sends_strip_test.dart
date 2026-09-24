@@ -293,7 +293,14 @@ void main() {
     _enqueue(controller, inboxID: 'msg_ctx', type: 'synthetic');
     await _settle(tester);
 
-    expect(find.text('Context update pending'), findsOneWidget);
+    expect(find.text('Context pending'), findsOneWidget);
+    // A standing fact, so a chip in the strip above the composer, not a
+    // bubble of its own among the things you sent.
+    expect(find.byKey(const Key('pending-context-chip')), findsOneWidget);
+    expect(find.byKey(const ValueKey('pending-send-msg_ctx')), findsNothing);
+    _enqueue(controller, inboxID: 'msg_ctx2', type: 'synthetic');
+    await _settle(tester);
+    expect(find.text('Context pending · 2'), findsOneWidget);
     expect(find.byKey(const ValueKey('inbox-action-cancel')), findsNothing);
     expect(find.byKey(const ValueKey('inbox-action-steer')), findsNothing);
     expect(find.byKey(const ValueKey('inbox-action-queue')), findsNothing);
@@ -301,6 +308,198 @@ void main() {
 
   // The busy chat runs a looping typing indicator, so these use pump() with
   // explicit frames rather than pumpAndSettle (which would never settle).
+  testWidgets('a prompt waiting in the inbox is shown once, not twice', (
+    tester,
+  ) async {
+    final api = _V2ChatApi();
+    final controller = await _controller(api);
+    addTearDown(controller.dispose);
+    await _pumpChat(tester, controller);
+    controller.busySessions.add('session-1');
+    controller.notifyListeners();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'Why vertical offers?',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('chat-send-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    // Sent: its optimistic copy stands in the transcript.
+    expect(find.text('Why vertical offers?'), findsOneWidget);
+
+    // The server holds it for the next step. It is now the waiting bubble,
+    // with its flip and cancel; the transcript does not repeat it.
+    _enqueue(
+      controller,
+      inboxID: 'msg_wait',
+      text: 'Why vertical offers?',
+      delivery: 'steer',
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Why vertical offers?'), findsOneWidget);
+    expect(find.byKey(const ValueKey('pending-send-msg_wait')), findsOneWidget);
+  });
+
+  testWidgets('the server\'s own copy of a waiting prompt is not repeated '
+      'either', (tester) async {
+    final api = _V2ChatApi();
+    final controller = await _controller(api);
+    addTearDown(controller.dispose);
+    await _pumpChat(tester, controller);
+    controller.busySessions.add('session-1');
+    controller.notifyListeners();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      'Sections are near the background colours',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('chat-send-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // What a live server does: it admits the prompt under the id it will
+    // keep, and the app swaps its optimistic copy for that message.
+    void event(String type, Map<String, dynamic> properties) =>
+        controller.handleEventForTesting(
+          EventEnvelope(type: type, properties: properties),
+        );
+    event('message.updated', {
+      'info': {
+        'id': 'msg_wait',
+        'sessionID': 'session-1',
+        'role': 'user',
+        'time': {'created': DateTime.now().millisecondsSinceEpoch},
+      },
+    });
+    event('message.part.updated', {
+      'sessionID': 'session-1',
+      'part': {
+        'id': 'p1',
+        'sessionID': 'session-1',
+        'messageID': 'msg_wait',
+        'type': 'text',
+        'text': 'Sections are near the background colours',
+      },
+    });
+    _enqueue(
+      controller,
+      inboxID: 'msg_wait',
+      text: 'Sections are near the background colours',
+      delivery: 'steer',
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byKey(const ValueKey('pending-send-msg_wait')), findsOneWidget);
+    expect(
+      find.text('Sections are near the background colours'),
+      findsOneWidget,
+    );
+  });
+
+  group('steering several times in a row', () {
+    Future<(_V2ChatApi, ConnectionController)> busyChat(
+      WidgetTester tester,
+    ) async {
+      final api = _V2ChatApi();
+      final controller = await _controller(api);
+      addTearDown(controller.dispose);
+      await _pumpChat(tester, controller);
+      controller.busySessions.add('session-1');
+      controller.notifyListeners();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      return (api, controller);
+    }
+
+    Future<void> send(WidgetTester tester, String text) async {
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        text,
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('chat-send-button')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets('waiting steers are taken back and sent as one message', (
+      tester,
+    ) async {
+      final (api, controller) = await busyChat(tester);
+      _enqueue(
+        controller,
+        inboxID: 'm1',
+        text: 'Use a carousel',
+        delivery: 'steer',
+      );
+      _enqueue(
+        controller,
+        inboxID: 'm2',
+        text: 'and keep it compact',
+        delivery: 'steer',
+      );
+      // Queued for after the run is a different intent: it is left alone.
+      _enqueue(
+        controller,
+        inboxID: 'm3',
+        text: 'then write tests',
+        delivery: 'queue',
+      );
+      await tester.pump();
+
+      await send(tester, 'with a detail sheet');
+
+      expect(api.inboxCancels.map((c) => c.$2), ['m1', 'm2']);
+      expect(api.prompts.single.delivery, PromptDelivery.steer);
+      expect(
+        api.prompts.single.text,
+        'Use a carousel\n\nand keep it compact\n\nwith a detail sheet',
+      );
+    });
+
+    testWidgets('one the agent already took goes out on its own', (
+      tester,
+    ) async {
+      final (api, controller) = await busyChat(tester);
+      _enqueue(controller, inboxID: 'm1', text: 'Too late', delivery: 'steer');
+      await tester.pump();
+      api.inboxError = ApiException('delivered', statusCode: 409);
+
+      await send(tester, 'next thought');
+
+      expect(api.prompts.single.text, 'next thought');
+    });
+
+    testWidgets('a message for after the run merges nothing', (tester) async {
+      final (api, controller) = await busyChat(tester);
+      _enqueue(controller, inboxID: 'm1', text: 'Steer me', delivery: 'steer');
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        'later please',
+      );
+      await tester.pump();
+      await tester.tap(find.text('Queue'));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('chat-send-button')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(api.inboxCancels, isEmpty);
+      expect(api.prompts.single.text, 'later please');
+      expect(api.prompts.single.delivery, PromptDelivery.queue);
+    });
+  });
+
   testWidgets('while busy on v2 Stop and Send sit side by side; the toggle '
       'queues', (tester) async {
     final api = _V2ChatApi();

@@ -153,7 +153,15 @@ void main() {
     ) async {
       serverProbe = ({required baseUrl, username, password}) async =>
           ServerProbeResult.success('fixture-version', flavor: flavor);
-      final (store, conn) = await _state([]);
+      // First run no longer names product generations (UX plan 5.6); the
+      // OpenCode 2 shortcut is offered beside the saved servers.
+      final (store, conn) = await _state([
+        ServerProfile(
+          id: 'existing',
+          name: 'Existing',
+          baseUrl: 'https://other.example',
+        ),
+      ]);
       addTearDown(conn.dispose);
       await tester.pumpWidget(_app(store, conn));
       await tester.pumpAndSettle();
@@ -176,8 +184,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('save-server-profile')));
       await tester.pumpAndSettle();
-      expect(store.saved.single.flavor, flavor);
-      expect(store.saved.single.serverVersion, 'fixture-version');
+      final added = store.saved.singleWhere((p) => p.id != 'existing');
+      expect(added.flavor, flavor);
+      expect(added.serverVersion, 'fixture-version');
     });
   }
 
@@ -278,7 +287,10 @@ void main() {
     await tester.pumpAndSettle();
     final entry = find.byKey(const ValueKey('quick-add-termux-card'));
     await _reveal(tester, entry);
-    expect(find.text('Set up OpenCode 1 or 2 on this phone.'), findsOneWidget);
+    expect(
+      find.text('Set up OpenCode 1 or 2 here with Termux.'),
+      findsOneWidget,
+    );
     await tester.tap(entry);
     await tester.pumpAndSettle();
     expect(find.text('Termux route: null'), findsOneWidget);

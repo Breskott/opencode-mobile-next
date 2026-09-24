@@ -115,7 +115,7 @@ void main() {
     pending.complete(page(0));
     await tester.pumpAndSettle();
     expect(find.text('Page 1 of 3'), findsNothing);
-    expect(find.text('Retry'), findsNothing);
+    expect(find.text('Try again'), findsNothing);
     await pump(tester, const SizedBox());
     expect(tester.takeException(), isNull);
   });
@@ -175,7 +175,7 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
     expect(calls.where((call) => call.method == 'render'), hasLength(1));
-    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
     expect(find.text('Page 1 of 3'), findsNothing);
   });
   testWidgets('cancel and renderer death recover without retaining a spinner', (
@@ -195,7 +195,7 @@ void main() {
       findsOneWidget,
     );
     pending = Completer<Object?>();
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('Try again'));
     await tester.pump();
     pending.completeError(PlatformException(code: 'service_died'));
     await tester.pumpAndSettle();
@@ -212,7 +212,7 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
     expect(calls, isEmpty);
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(find.text('Page 1 of 3'), findsOneWidget);
   });
@@ -234,7 +234,7 @@ void main() {
     await tester.pump();
     expect(calls.where((call) => call.method == 'render'), hasLength(1));
     handler((call) async => call.method == 'render' ? page(0, count: 7) : null);
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(find.text('Page 1 of 7'), findsOneWidget);
     final last = calls.last.arguments as Map;

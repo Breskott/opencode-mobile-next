@@ -206,7 +206,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('create-managed-workspace')));
     await tester.pumpAndSettle();
-    expect(find.text('New managed workspace'), findsOneWidget);
+    expect(find.text('New cloud environment'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
@@ -259,7 +259,7 @@ void main() {
       find.descendant(of: tile, matching: find.byType(PopupMenuButton<String>)),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Remove'));
+    await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();
     expect(
       tester

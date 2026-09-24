@@ -5,7 +5,8 @@ import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/domain/plugin_inventory.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/plugin_command_mappings.dart';
-import 'package:opencode_mobile/ui/screens/plugins_screen.dart';
+import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_probe.dart';
+import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import '../../test/support/setup_capture_preferences.dart';
 import 'fixtures.dart';
@@ -132,7 +133,11 @@ void main() {
           final key = GlobalKey();
           await tester.pumpWidget(
             captureApp(
-              home: PluginsScreen(controller: controller),
+              home: PluginsSettingsScreen(
+                controller: controller,
+                probe: (url, {city}) async =>
+                    const ProbeUnreachable(error: 'capture'),
+              ),
               boundaryKey: key,
               controller: controller,
               store: controller.store,

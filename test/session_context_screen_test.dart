@@ -383,7 +383,7 @@ void main() {
       await tester.tap(find.text('Load older messages'));
       await tester.pumpAndSettle();
       expect(find.text('200 of 1,000 tokens'), findsOneWidget);
-      await tester.tap(find.text('Reload recent history'));
+      await tester.tap(find.text('Refresh recent history'));
       await tester.pumpAndSettle();
       expect(cursors, [null, 'older', null]);
       expect(

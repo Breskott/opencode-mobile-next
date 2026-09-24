@@ -65,7 +65,10 @@ void main() {
     expect(find.byKey(const Key('form-sheet')), findsOneWidget);
     expect(find.byKey(const Key('form-title')), findsOneWidget);
     expect(find.text('Connect to Sentry'), findsOneWidget);
-    expect(find.text('Asked by the agent in this session'), findsOneWidget);
+    expect(
+      find.text('Asked by the agent in this conversation'),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('form-field-name')), findsOneWidget);
     expect(find.byKey(const Key('form-apply-bar')), findsOneWidget);
     expect(find.byKey(const Key('form-submit')), findsOneWidget);

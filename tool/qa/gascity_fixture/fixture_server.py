@@ -345,6 +345,9 @@ class FixtureServer(ThreadingHTTPServer):
         # Idempotency-Key -> receipt record, as the front keeps them.
         self.receipts: dict[str, dict[str, Any]] = {}
         self.receipts_lock = threading.Lock()
+        # Beads created through POST /beads (TEAM-306): fx-1, fx-2, ...
+        self.bead_counter = 0
+        self.bead_lock = threading.Lock()
 
     def stop(self) -> None:
         """Wake every stream so handler threads exit, then shut down."""
@@ -472,6 +475,8 @@ class Handler(BaseHTTPRequestHandler):
         parts = tail.strip("/").split("/")
         if tail == "/sling":
             self._sling(scenario)
+        elif tail == "/beads":
+            self._bead_create(scenario)
         elif len(parts) == 3 and parts[0] == "session":
             self._session_mutation(scenario, parts[1], parts[2])
         elif len(parts) == 3 and parts[0] == "runs" and parts[2] == "cancel":
@@ -791,6 +796,36 @@ class Handler(BaseHTTPRequestHandler):
         scenario.append(self._sling_events(scenario, bead_id, body["target"]))
         runs_url = f"/v0/city/{CITY}/runs"
         self._send_json(200, response, {"Location": runs_url})
+
+    def _bead_create(self, scenario: Scenario) -> None:
+        """``POST /beads`` (TEAM-306): a new open task bead, ``fx-<n>``, and
+        its ``bead.created`` event on the stream."""
+        body = self._read_body()
+        if body is None or not isinstance(body.get("title"), str) or not body["title"].strip():
+            self._send_problem(400, "invalid-request", "Invalid Request", "title is required")
+            return
+        with self.server.bead_lock:
+            self.server.bead_counter += 1
+            bead_id = f"fx-{self.server.bead_counter}"
+        bead = {
+            "id": bead_id,
+            "status": "open",
+            "title": body["title"].strip(),
+            "rig": body.get("rig"),
+            "type": body.get("type") or "task",
+        }
+        if isinstance(body.get("description"), str) and body["description"]:
+            bead["description"] = body["description"]
+        if isinstance(body.get("labels"), list):
+            bead["labels"] = body["labels"]
+        event = {
+            "type": "bead.created",
+            "actor": "opencode-mobile",
+            "subject": bead_id,
+            "payload": {"bead": dict(bead, issue_type=bead["type"], created_at=now_iso())},
+        }
+        scenario.append([event])
+        self._send_json(201, bead, {"Location": f"/v0/city/{CITY}/bead/{bead_id}"})
 
     def _sling_events(self, scenario: Scenario, bead_id: str, target: str) -> list[dict[str, Any]]:
         """Routed then claimed bead.updated events, shaped like seq 1034/1072."""

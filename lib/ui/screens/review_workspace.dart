@@ -2310,7 +2310,7 @@ class _CompactExpandBar extends StatelessWidget {
               Icon(AppIconography.chevronDown, size: 20, color: scheme.primary),
               const SizedBox(width: 6),
               Text(
-                'Expand',
+                readerL10n(context).readerUiExpand,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: scheme.primary,
                   fontWeight: FontWeight.w600,
@@ -2912,8 +2912,10 @@ class _ReviewEmptyState extends StatelessWidget {
   Widget build(BuildContext context) => ProductEmptyState(
     key: Key('review-empty'),
     icon: AppIconography.review,
-    title: readerL10n(context).readerUiNoChanges,
-    message: readerL10n(context).readerUiNoChangesHint,
+    // One sentence for every scope: the old copy named the backend and said
+    // "in this conversation", which is wrong for the project's working tree.
+    title: readerL10n(context).emptyTeachChangesTitle,
+    message: readerL10n(context).emptyTeachChangesMessage,
   );
 }
 

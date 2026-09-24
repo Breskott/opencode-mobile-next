@@ -1126,6 +1126,35 @@ void main() {
       );
       expect(agent(const {'running': false}).state, AgentState.stopped);
     });
+    test('agent: a running session outranks a stopped agent word', () {
+      // On the phone (no tmux server) /agents says "stopped" for the pool
+      // template while /sessions shows its session active and running
+      // (emulator proof 2026-09-12, session ph-7bt on bead as-2m5).
+      final live = GcSession.fromJson(const {
+        'id': 'ph-7bt',
+        'state': 'active',
+        'running': true,
+      });
+      expect(
+        agent(const {
+          'state': 'stopped',
+          'running': false,
+        }, session: live).state,
+        AgentState.working,
+      );
+      final gone = GcSession.fromJson(const {
+        'id': 'ph-7bt',
+        'state': 'active',
+        'running': false,
+      });
+      expect(
+        agent(const {
+          'state': 'stopped',
+          'running': false,
+        }, session: gone).state,
+        AgentState.stopped,
+      );
+    });
     test('agent: crashed', () {
       expect(
         agent(const {'state': 'error', 'running': false}).state,

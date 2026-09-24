@@ -441,7 +441,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   ),
                   subtitle: Text(
                     process.running
-                        ? lookupAppLocalizations(Localizations.localeOf(context)).e7SetupProcessRunning(process.command, process.pid)
+                        ? lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupProcessRunning(process.command, process.pid)
                         : lookupAppLocalizations(
                             Localizations.localeOf(context),
                           ).e7SetupProcessExited(

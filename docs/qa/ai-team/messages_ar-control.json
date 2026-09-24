@@ -32,5 +32,6 @@
   "teamUiControlCancelRunConfirmTitle": "إلغاء هذا التشغيل؟",
   "teamUiControlCancelRunConfirmBody": "تتوقف الخطوات الجارية؛ ويبقى العمل المكتمل. لا يمكن التراجع عن هذا من الهاتف.",
   "teamUiControlCloseBatchConfirmTitle": "إغلاق هذه الدفعة؟",
-  "teamUiControlCloseBatchConfirmBody": "تُغلق الدفعة على المضيف. تبقى عناصر عملها المفتوحة مفتوحة لدفعة أخرى."
+  "teamUiControlCloseBatchConfirmBody": "تُغلق الدفعة على المضيف. تبقى عناصر عملها المفتوحة مفتوحة لدفعة أخرى.",
+  "teamUiControlCreateWork": "أُرسلت المهمة إلى وكيل"
 }

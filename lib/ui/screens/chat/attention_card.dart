@@ -417,11 +417,22 @@ String retryBannerHeadline(
 }) {
   final strings = l10n ?? lookupAppLocalizations(const Locale('en'));
   final attempt = retry.attempt > 0 ? ' ${retry.attempt}' : '';
+  // Servers retry for many reasons (a dropped connection, an overloaded
+  // provider). Only call it a rate limit when it is one, or when the server
+  // gave no reason; otherwise the cause is named on the line below.
+  final cause = classifyAgentError(retry.message ?? '');
+  final rateLimit = cause == null || cause == AgentErrorCause.rateLimited;
   final next = retry.next;
-  if (next == null) return strings.chatUiRateLimitRetry(attempt);
+  if (next == null) {
+    return rateLimit
+        ? strings.chatUiRateLimitRetry(attempt)
+        : strings.chatUiRetryingSoon(attempt);
+  }
   final delta = next.difference(now ?? DateTime.now());
   final remaining = delta.isNegative ? Duration.zero : delta;
-  return strings.chatUiRateLimitCountdown(attempt, _countdown(remaining));
+  return rateLimit
+      ? strings.chatUiRateLimitCountdown(attempt, _countdown(remaining))
+      : strings.chatUiRetryingCountdown(attempt, _countdown(remaining));
 }
 
 String _countdown(Duration d) {
@@ -447,7 +458,13 @@ class _RetryAttentionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final title = retryBannerHeadline(retry, l10n: _chatL10n(context));
-    final message = retry.message?.trim();
+    final raw = retry.message?.trim();
+    // The reason in plain words. A rate limit is already the title.
+    final message = raw == null || raw.isEmpty
+        ? null
+        : classifyAgentError(raw) == AgentErrorCause.rateLimited
+        ? null
+        : agentErrorWords(raw, _chatL10n(context)).headline;
     return _AttentionCard(
       icon: AppIcons.retry,
       accent: AppTheme.statusColor(theme, AppStatusTone.attention),

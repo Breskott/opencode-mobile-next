@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/models.dart' show Session, SessionTime;
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -24,6 +25,7 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
+import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Directory _findFixtureRoot() {
@@ -172,6 +174,19 @@ class _Gateway implements OrchestrationGateway {
     required String agentId,
     required String requestId,
   }) => inner.assign(workId, agentId: agentId, requestId: requestId);
+
+  @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) => inner.createWork(
+    title: title,
+    description: description,
+    projectId: projectId,
+    requestId: requestId,
+  );
 }
 
 /// A connection whose plugin controller a test can set directly.
@@ -649,8 +664,37 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('No runs yet.'), findsOneWidget);
-      expect(find.text('Start runs from the host for now.'), findsOneWidget);
+      expect(
+        find.text(
+          'A run is a job the team works through. Start one and its '
+          'progress shows here.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Runs (0)'), findsOneWidget);
+    });
+
+    testWidgets('no runs, and this phone cannot start one: no button', (
+      tester,
+    ) async {
+      final (controller, _) = await boot(
+        configure: (g) => g
+          ..runsOverride = const []
+          ..capabilitiesOverride = const OrchestrationCapabilities(
+            runs: true,
+            agents: true,
+          ),
+      );
+      await pumpHome(tester, controller);
+      final empty = find.byKey(const ValueKey('team-home-runs-empty'));
+      expect(empty, findsOneWidget);
+      expect(find.text('Start runs from the host for now.'), findsOneWidget);
+      // Hide, don't disable: no button the host could not honour.
+      expect(find.text('Start a run'), findsNothing);
+      expect(
+        find.descendant(of: empty, matching: find.byType(TextButton)),
+        findsNothing,
+      );
     });
   });
 
@@ -1127,6 +1171,11 @@ void main() {
       expect(controller.phase, OrchestrationPhase.failed);
       await pumpHome(tester, controller);
       expect(find.byKey(const ValueKey('team-home-error')), findsOneWidget);
+      // A host that could not be read is not an empty team: the failure
+      // keeps "Try again" and never claims there are no runs.
+      expect(find.text('Try again'), findsOneWidget);
+      expect(find.byKey(const ValueKey('team-home-runs-empty')), findsNothing);
+      expect(find.text('No runs yet.'), findsNothing);
       expect(
         find.text(
           'The team host can’t be reached. AI Team works over your Tailscale '
@@ -1144,6 +1193,43 @@ void main() {
   });
 
   group('workspace wiring', () {
+    testWidgets('the card follows Recent and precedes Archived', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final (controller, _) = await boot();
+      final connection = _Connection(ProfileStore(prefs: prefs))
+        ..team = controller;
+      addTearDown(connection.dispose);
+      connection.sessionsById = {
+        'recent': Session(
+          id: 'recent',
+          title: 'recent conversation',
+          time: SessionTime(created: 1, updated: 5),
+        ),
+        'old': Session(
+          id: 'old',
+          title: 'old conversation',
+          time: SessionTime(created: 1, updated: 2, archived: 3),
+        ),
+      };
+      await tester.pumpWidget(
+        app(Scaffold(body: WorkspaceScreen(controller: connection))),
+      );
+      await tester.pumpAndSettle();
+
+      // UX plan 5.5 and 5.7: the person's own conversations come first.
+      double top(Finder finder) => tester.getTopLeft(finder).dy;
+      final card = find.byType(TeamCard);
+      expect(card, findsOneWidget);
+      expect(top(card), greaterThan(top(find.text('Recent conversations'))));
+      expect(top(card), greaterThan(top(find.text('recent conversation'))));
+      expect(top(card), lessThan(top(find.text('Archived conversations'))));
+    });
+
     testWidgets('Open on the card pushes the home', (tester) async {
       final (controller, _) = await boot();
       final connection = _Connection(ProfileStore(prefs: prefs))
@@ -1152,6 +1238,9 @@ void main() {
       await tester.pumpWidget(app(WorkspaceScreen(controller: connection)));
       await tester.pumpAndSettle();
       expect(find.byType(TeamHomeScreen), findsNothing);
+      // The card follows the person's own conversations (UX plan 5.7).
+      await tester.ensureVisible(find.byKey(const ValueKey('team-card-open')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('team-card-open')));
       await tester.pumpAndSettle();
       expect(find.byType(TeamHomeScreen), findsOneWidget);

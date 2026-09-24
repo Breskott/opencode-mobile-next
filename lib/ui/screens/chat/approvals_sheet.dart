@@ -53,6 +53,35 @@ class SessionApprovalsSheet extends StatelessWidget {
     }
   }
 
+  /// Turning it on is confirmed first: it changes every conversation on the
+  /// server, including ones that do not exist yet. Turning it off is not.
+  Future<void> _setEverything(BuildContext context, bool value) async {
+    final strings = _chatL10n(context);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (value) {
+      final confirmed = await showConfirmSheet(
+        context,
+        title: strings.approvalsUiEverythingConfirmTitle,
+        message: strings.approvalsUiEverythingConfirmBody,
+        confirmLabel: strings.approvalsUiEverythingConfirmAction,
+        icon: AppIconography.warning,
+        destructive: true,
+        sheetKey: const Key('approvals-everything-confirm'),
+        confirmKey: const Key('approvals-everything-confirm-action'),
+      );
+      if (!confirmed) return;
+    }
+    try {
+      await controller.setApprovesEverything(value);
+    } catch (error) {
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(strings.approvalsUiSaveFailed(productErrorText(error))),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -74,6 +103,16 @@ class SessionApprovalsSheet extends StatelessWidget {
                 strings.approvalsUiTitle,
                 style: theme.textTheme.titleMedium,
               ),
+              if (effective.serverWide) ...[
+                const SizedBox(height: 8),
+                Text(
+                  strings.approvalsUiEverythingActive,
+                  key: const Key('approvals-everything-active'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
               if (effective.inherited) ...[
                 const SizedBox(height: 12),
                 _ApprovalsInheritedNote(
@@ -150,6 +189,19 @@ class SessionApprovalsSheet extends StatelessWidget {
                     label: Text(strings.approvalsUiFollowParent),
                   ),
                 ),
+              const Divider(height: 24),
+              // The saved, server-wide choice. Error-coloured because it is
+              // the one setting here that reaches conversations you are not
+              // looking at.
+              SwitchListTile(
+                key: const Key('approvals-everything-switch'),
+                value: controller.approvesEverything,
+                activeThumbColor: theme.colorScheme.error,
+                onChanged: (value) => unawaited(_setEverything(context, value)),
+                title: Text(strings.approvalsUiEverythingTitle),
+                subtitle: Text(strings.approvalsUiEverythingDetail),
+                contentPadding: EdgeInsets.zero,
+              ),
               if (setting.automatic) ...[
                 const SizedBox(height: 8),
                 _AutoApprovalRecord(
@@ -168,7 +220,9 @@ class SessionApprovalsSheet extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      strings.approvalsUiServerRulesNote,
+                      controller.approvesEverything
+                          ? strings.approvalsUiServerRulesNoteEverything
+                          : strings.approvalsUiServerRulesNote,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppTheme.mutedOf(theme),
                       ),
@@ -361,71 +415,53 @@ class _AutoApprovalIndicator extends StatelessWidget {
           ? strings.approvalsUiInheritedFrom
           : null;
     }
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 860),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(12, 2, 12, 2),
-          child: Material(
-            key: const Key('auto-approval-indicator'),
-            color: connected
-                ? theme.colorScheme.secondaryContainer
-                : theme.colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-              onTap: onOpen,
-              child: Semantics(
-                button: true,
-                label: [
-                  label,
-                  ?detail,
-                  strings.approvalsUiOpenSettings,
-                ].join('. '),
-                excludeSemantics: true,
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 8, 6),
-                  child: Row(
-                    children: [
-                      Icon(
-                        !connected
-                            ? AppIconography.permissions
-                            : effective.inherited
-                            ? AppIconography.nested
-                            : AppIconography.shield,
-                        size: 18,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              label,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelLarge,
-                            ),
-                            if (detail != null)
-                              Text(
-                                detail,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.mutedOf(theme),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(AppIconography.settings, size: 20),
-                    ],
-                  ),
-                ),
-              ),
+    // A chip, not a bar: it sits in the strip above the composer on every
+    // running turn, so it says its state in a few words and keeps the rest
+    // (what was approved, inheritance, the switches) one tap away. The count
+    // is what changes, which is what makes a glance worth it.
+    // Never silent: once something has been approved, the chip names the
+    // latest and counts them; before that it states the mode.
+    // Short on the chip; the full wording (what was approved last, where
+    // the setting comes from) is the accessibility label and the sheet.
+    final text = !connected
+        ? strings.chatStripAutoApprovePaused
+        : approved.isEmpty
+        ? strings.chatStripAutoApprove
+        : '${strings.chatStripAutoApprove} · ${approved.length}';
+    return Semantics(
+      button: true,
+      label: [label, ?detail, strings.approvalsUiOpenSettings].join('. '),
+      excludeSemantics: true,
+      child: Tooltip(
+        // Long-press says the rest: what was approved last, or where the
+        // setting comes from.
+        message: [label, ?detail].join(' · '),
+        child: ActionChip(
+          key: const Key('auto-approval-indicator'),
+          onPressed: onOpen,
+          materialTapTargetSize: MaterialTapTargetSize.padded,
+          side: BorderSide.none,
+          backgroundColor: connected
+              ? theme.colorScheme.secondaryContainer
+              : theme.colorScheme.surfaceContainerHigh,
+          avatar: Icon(
+            !connected
+                ? AppIconography.permissions
+                : effective.inherited
+                ? AppIconography.nested
+                : AppIconography.shield,
+            size: 16,
+            color: theme.colorScheme.primary,
+          ),
+          label: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * .62,
+            ),
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium,
             ),
           ),
         ),

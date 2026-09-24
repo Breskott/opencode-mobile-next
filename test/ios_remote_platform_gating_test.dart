@@ -401,7 +401,7 @@ void main() {
       await shortcuts.update(
         sessions: [Session(id: 'session-1', title: 'Remote session')],
         profileID: 'profile-1',
-        untitledLabel: 'Untitled session',
+        untitledLabel: 'Untitled conversation',
       );
       await shortcuts.clear();
       final tile = AttentionTileSnapshot(prefs: state.controller.store.prefs);
@@ -428,11 +428,14 @@ void main() {
       final controller = ConnectionController(store);
       addTearDown(controller.dispose);
       await tester.pumpWidget(_screen(controller, const ServersScreen()));
-      expect(find.text('Connect to a server'), findsOneWidget);
+      expect(find.text('On my computer'), findsOneWidget);
+      expect(find.text('On this phone'), findsNothing);
       expect(find.text('Set up OpenCode 1 or 2 on this phone.'), findsNothing);
       expect(find.textContaining('Termux'), findsNothing);
 
-      await tester.tap(find.text('Connect to a server'));
+      await tester.tap(find.text('On my computer'));
+      await _pumpFrames(tester);
+      await tester.tap(find.byKey(const ValueKey('agent-choice-opencode')));
       await _pumpFrames(tester);
       expect(find.text('Paste pairing code'), findsOneWidget);
       expect(find.text('Scan'), findsNothing);
@@ -494,11 +497,30 @@ void main() {
         _screen(state.controller, SettingsScreen(controller: state.controller)),
       );
       await _pumpFrames(tester);
+      // Notifications stays (saved-server monitoring works in the open app)
+      // but says nothing about a background service iOS does not have.
       expect(find.text('Notifications & background'), findsNothing);
+      expect(find.textContaining('Background:'), findsNothing);
+      final notifications = find.byKey(
+        const ValueKey('settings-category-background'),
+      );
+      expect(notifications, findsOneWidget);
+      await tester.ensureVisible(notifications);
+      await _pumpFrames(tester);
+      await tester.tap(notifications);
+      await _pumpFrames(tester);
+      expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('settings-category-background')),
+        find.byKey(const ValueKey('background-live-switch')),
         findsNothing,
       );
+      expect(
+        find.byKey(const ValueKey('notifications-section-background')),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('notify-quiet-hours')), findsNothing);
+      await tester.pageBack();
+      await _pumpFrames(tester);
       expect(
         find.byKey(const ValueKey('settings-category-privacy')),
         findsOneWidget,

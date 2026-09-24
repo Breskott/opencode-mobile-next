@@ -616,6 +616,25 @@ class GasCityGateway
     return control.assign(workId, agentId: agentId, requestId: requestId);
   }
 
+  @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) async {
+    final control = _control;
+    if (control == null || _closed) {
+      return MutationReceipt.rejected(requestId, _frontRequired);
+    }
+    return control.createWork(
+      title: title,
+      description: description,
+      projectId: projectId,
+      requestId: requestId,
+    );
+  }
+
   // -------------------------------------------------------------------------
   // Merge roles (TEAM-205): through the front, else absent
   // -------------------------------------------------------------------------

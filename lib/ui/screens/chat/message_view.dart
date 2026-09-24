@@ -17,8 +17,11 @@ class _PromptErrorBanner extends StatelessWidget {
     final scheme = theme.colorScheme;
     // Servers may attach a stack trace; the user reads one line and can open
     // the rest. A "model not found" answer gets the button that fixes it.
-    final headline = errorHeadline(message);
-    final hasDetails = errorHasDetails(message);
+    final words = agentErrorWords(message, _chatL10n(context));
+    final headline = words.headline;
+    // The server's exact words stay one tap away whenever the sentence shown
+    // is not theirs.
+    final hasDetails = words.humanized || errorHasDetails(message);
     final kind = MessageErrorKind.refineFromText(
       MessageErrorKind.unknown,
       message,
@@ -33,7 +36,6 @@ class _PromptErrorBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: scheme.errorContainer,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: scheme.error.withValues(alpha: .35)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,13 +51,31 @@ class _PromptErrorBanner extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    headline,
-                    key: const ValueKey('prompt-error-headline'),
-                    style: TextStyle(
-                      color: scheme.onErrorContainer,
-                      height: 1.35,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        headline,
+                        key: const ValueKey('prompt-error-headline'),
+                        style: TextStyle(
+                          color: scheme.onErrorContainer,
+                          height: 1.35,
+                        ),
+                      ),
+                      if (words.hint case final hint?)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            hint,
+                            key: const ValueKey('prompt-error-hint'),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: scheme.onErrorContainer.withValues(
+                                alpha: .8,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 IconButton(
@@ -423,6 +443,104 @@ Part? v2VariantPart(MessageWithParts message) {
   return null;
 }
 
+// The transcript's vocabulary. The server stores a conversation as a flat
+// list of messages, and that list is not how a person reads it:
+//
+//  * A **prompt** is what you sent: your words and attachments.
+//  * A **turn** is one prompt and everything the agent did about it, until it
+//    stopped and handed back to you. It is the unit a reader thinks in, and
+//    the unit that gets one footer (model, usage, the "more" control).
+//  * A **step** is one model call inside a turn, which the server stores as
+//    one assistant message: a thought, perhaps a sentence, some tool calls.
+//    A long turn is dozens of them. The boundary between two steps is
+//    plumbing and is never drawn.
+//  * A **notice** is something that happened during a turn and that nobody
+//    typed: the project moved, instructions changed, context was added. The
+//    server files it under the `user` role; it does not end the turn.
+//  * The **reply** is the prose of a whole turn, which is what "copy" copies.
+
+/// Whether [message] is something a person wrote, as opposed to a notice the
+/// server filed under the same role.
+bool _isPrompt(MessageWithParts message) =>
+    message.info.role == 'user' && v2VariantPart(message) == null;
+
+/// Whether the assistant message at [index] is the last step of its turn:
+/// nothing but notices stands between it and the next prompt, or the end.
+bool _endsTurn(List<MessageWithParts> messages, int index) {
+  if (messages[index].info.role != 'assistant') return false;
+  for (var next = index + 1; next < messages.length; next += 1) {
+    if (_isPrompt(messages[next])) return true;
+    if (messages[next].info.role == 'assistant') return false;
+  }
+  return true;
+}
+
+/// For each turn, the one message that carries its "more" control: the step
+/// that ends the turn when that step draws anything, otherwise the last step
+/// that does. A turn often ends on pure bookkeeping (a `step-finish`), and
+/// the control must not vanish with it.
+Set<int> _turnActionOwners(
+  List<MessageWithParts> messages,
+  List<List<Part>> display, {
+  required bool metaAlways,
+  bool running = false,
+  Set<String> ignore = const {},
+}) {
+  final owners = <int>{};
+  int? lastStep;
+  int? lastWithBody;
+  bool hasBody(int index) =>
+      display[index].any((part) => part.isRenderable) ||
+      messages[index].info.errorText != null ||
+      messages[index].info.finish == 'length';
+  void closeTurn({bool last = false}) {
+    final end = lastStep;
+    // The turn in progress has no footer yet: its control would sit under
+    // whatever step happens to be newest and jump down with every new one.
+    // It arrives when the turn ends; long-press works meanwhile.
+    if (end != null && !(last && running)) {
+      final endDraws =
+          hasBody(end) ||
+          metaAlways ||
+          _messageMeta(messages, end).modelLabel != null;
+      final owner = endDraws ? end : lastWithBody;
+      if (owner != null) owners.add(owner);
+    }
+    lastStep = null;
+    lastWithBody = null;
+  }
+
+  for (var index = 0; index < messages.length; index += 1) {
+    // Not drawn, so neither a prompt that ends a turn nor a step of one.
+    if (ignore.contains(messages[index].info.id)) continue;
+    if (_isPrompt(messages[index])) {
+      closeTurn();
+    } else if (messages[index].info.role == 'assistant') {
+      lastStep = index;
+      if (hasBody(index)) lastWithBody = index;
+    }
+  }
+  closeTurn(last: true);
+  return owners;
+}
+
+/// The assistant messages of the turn that holds [index], oldest first.
+/// Notices inside the turn are skipped, not treated as its edge.
+List<MessageWithParts> _turnSteps(List<MessageWithParts> messages, int index) {
+  var start = index;
+  while (start > 0 && !_isPrompt(messages[start - 1])) {
+    start -= 1;
+  }
+  var end = index;
+  while (end + 1 < messages.length && !_isPrompt(messages[end + 1])) {
+    end += 1;
+  }
+  return [
+    for (var i = start; i <= end; i += 1)
+      if (messages[i].info.role == 'assistant') messages[i],
+  ];
+}
+
 /// A quiet divider-row for session-state changes (`model-switched`,
 /// `agent-switched`, `location-switched`) and the compaction-running pill:
 /// hairline — center pill — hairline, deliberately quieter than any bubble.
@@ -502,7 +620,14 @@ class TranscriptNotice extends StatefulWidget {
     this.headerMono,
     this.markdown = false,
     this.error = false,
+    this.actionLabel,
+    this.onAction,
   });
+
+  /// The one thing to do about this notice, on its header line ("Compact
+  /// again" on a failed compaction). Absent when there is nothing to do.
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   final String header;
 
@@ -544,15 +669,9 @@ class _TranscriptNoticeState extends State<TranscriptNotice> {
           onTap: body.isEmpty ? null : () => setState(() => _open = !_open),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: widget.error
-                    ? theme.colorScheme.error.withValues(alpha: .5)
-                    : theme.colorScheme.outlineVariant.withValues(alpha: .5),
-              ),
-            ),
+            // A notice is a line in the transcript, not a card: no frame, and
+            // it shares the prose's left edge.
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -582,6 +701,15 @@ class _TranscriptNoticeState extends State<TranscriptNotice> {
                         ),
                       ),
                     ),
+                    if (widget.onAction != null && widget.actionLabel != null)
+                      TextButton(
+                        key: const Key('transcript-notice-action'),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: widget.onAction,
+                        child: Text(widget.actionLabel!),
+                      ),
                     if (body.isNotEmpty)
                       Icon(
                         _open
@@ -592,7 +720,9 @@ class _TranscriptNoticeState extends State<TranscriptNotice> {
                       ),
                   ],
                 ),
-                if (body.isNotEmpty)
+                // Closed, a routine notice is its header alone; the detail is one
+                // tap away. An error keeps its first lines in view.
+                if (body.isNotEmpty && (_open || widget.error))
                   _chatSizeTransition(
                     reduceMotion: reduceMotion,
                     duration: const Duration(milliseconds: 200),
@@ -637,8 +767,12 @@ class V2TranscriptRow extends StatelessWidget {
     this.parentSessionID,
     this.knownSessions = const {},
     this.onOpenChild,
+    this.onCompactAgain,
   });
 
+  /// Retries a failed compaction. Given only for the newest failure while
+  /// the conversation is idle; older ones are history.
+  final VoidCallback? onCompactAgain;
   final Part part;
   final String messageId;
   final String? parentSessionID;
@@ -693,8 +827,15 @@ class V2TranscriptRow extends StatelessWidget {
             key: ValueKey('compaction-failed-$messageId'),
             icon: AppIconography.collapse,
             header: _chatL10n(context).chatUiCompactionFailed,
-            text: part.text,
+            // What it means for the reader, then the server's own reason.
+            text: [
+              _chatL10n(context).chatUiCompactionFailedHint,
+              if (part.text.trim().isNotEmpty)
+                agentErrorWords(part.text, _chatL10n(context)).headline,
+            ].join(' '),
             error: true,
+            actionLabel: _chatL10n(context).chatUiCompactAgain,
+            onAction: onCompactAgain,
           ),
           _ => TranscriptNotice(
             key: ValueKey('compaction-completed-$messageId'),
@@ -728,10 +869,21 @@ class V2TranscriptRow extends StatelessWidget {
           ),
           _ => (
             AppIconography.server,
-            part.filename ?? _chatL10n(context).chatUiServerMessage,
+            part.filename ??
+                _noticeTitle(part.text) ??
+                _chatL10n(context).chatUiServerMessage,
             null,
           ),
         };
+        final titledByText =
+            part.filename == null &&
+            !const {
+              'instructions',
+              'synthetic',
+              'system',
+              'skill',
+            }.contains(kind) &&
+            _noticeTitle(part.text) != null;
         return TranscriptNotice(
           key: ValueKey('transcript-notice-$messageId'),
           icon: icon,
@@ -741,10 +893,26 @@ class V2TranscriptRow extends StatelessWidget {
               ? _chatL10n(context).sessionInstructionsApplied
               : kind == 'skill' && part.filename == null
               ? ''
+              : titledByText
+              ? _noticeRest(part.text)
               : part.text,
         );
     }
   }
+}
+
+/// A notice's own first line, when it is short enough to be a title. "Server
+/// message" says nothing; the message usually says what it is about.
+String? _noticeTitle(String text) {
+  final first = text.trim().split('\n').first.trim();
+  final plain = first.replaceAll(RegExp(r'[*_`#]+'), '').trim();
+  return plain.isEmpty || plain.length > 60 ? null : plain;
+}
+
+String _noticeRest(String text) {
+  final trimmed = text.trim();
+  final breakAt = trimmed.indexOf('\n');
+  return breakAt < 0 ? '' : trimmed.substring(breakAt).trim();
 }
 
 const _contextToolNames = {'read', 'list', 'glob', 'grep'};
@@ -759,7 +927,7 @@ List<List<Part>> _timelineDisplayParts(List<MessageWithParts> messages) {
 
   void flushPending() {
     if (pendingOwner case final owner?) {
-      if (pendingType == 'text' || pendingType == 'reasoning') {
+      if (pendingType == 'text') {
         display[owner].add(_mergeTextParts(pendingParts));
       } else {
         display[owner].addAll(pendingParts);
@@ -778,8 +946,13 @@ List<List<Part>> _timelineDisplayParts(List<MessageWithParts> messages) {
       display[owner].add(part);
       return;
     }
-    if (pendingType != null && pendingType != part.type) flushPending();
-    pendingType ??= part.type;
+    // Two kinds of stretch: what the agent says (text) and what it does
+    // (thoughts and tool calls). A stretch of work runs across as many steps
+    // as it takes and belongs to the step that began it, so it can be drawn
+    // as one thing.
+    final kind = part.type == 'text' ? 'text' : 'work';
+    if (pendingType != null && pendingType != kind) flushPending();
+    pendingType ??= kind;
     pendingOwner ??= owner;
     pendingParts.add(part);
   }
@@ -831,10 +1004,50 @@ Part _mergeTextParts(List<Part> parts) {
 }
 
 class _AssistantPartRun {
-  const _AssistantPartRun(this.parts, {this.grouped = false});
+  const _AssistantPartRun(
+    this.parts, {
+    this.grouped = false,
+    this.heading,
+    this.note,
+  });
 
   final List<Part> parts;
   final bool grouped;
+
+  /// What the agent said it was about to do, when it said so in a line
+  /// ("Patching home shell") right before this run of tool calls. The run
+  /// carries it as its title, so a step is one line instead of two.
+  final String? heading;
+
+  /// The rest of the thought [heading] opened, shown inside the opened step.
+  final String? note;
+}
+
+/// Splits a thought into a title for the work that follows it and the rest.
+/// Models open a thought with a short line naming what they are about to do
+/// ("**Rebuilding latest source**"), then explain. That line titles the step;
+/// the explanation waits inside it. A thought with no such opening line keeps
+/// its own block.
+({String heading, String? note})? _stepHeading(Part part) {
+  if (part.type != 'reasoning') return null;
+  final text = part.text.trim();
+  if (text.isEmpty) return null;
+  final breakAt = text.indexOf('\n');
+  final first = (breakAt < 0 ? text : text.substring(0, breakAt)).trim();
+  if (first.length > 72) return null;
+  // Models differ. Some open every thought with a title of their own
+  // ("**Rebuilding latest source**"); others think in long prose whose first
+  // line is just its first sentence ("Okay, let me look at the router.").
+  // Only a line the model marked as a heading may title a step when more
+  // follows it; prose stays a thinking block of its own.
+  final markedHeading =
+      first.startsWith('#') ||
+      (first.startsWith('**') && first.endsWith('**') && first.length > 4);
+  if (breakAt >= 0 && !markedHeading) return null;
+  final plain = first.replaceAll(RegExp(r'[*_`#]+'), '').trim();
+  if (plain.isEmpty) return null;
+  final rest = breakAt < 0 ? '' : text.substring(breakAt).trim();
+  return (heading: plain, note: rest.isEmpty ? null : rest);
 }
 
 List<_AssistantPartRun> _groupAssistantParts(List<Part> parts) {
@@ -842,6 +1055,12 @@ List<_AssistantPartRun> _groupAssistantParts(List<Part> parts) {
   var index = 0;
   while (index < parts.length) {
     final current = parts[index];
+    // A thought that is only markup ("**", a lone "#") draws an empty rule.
+    if (current.type == 'reasoning' &&
+        current.text.replaceAll(RegExp(r'[\s*_`#>-]+'), '').isEmpty) {
+      index += 1;
+      continue;
+    }
     if (!_isToolPart(current)) {
       if (current.type != 'text' && current.type != 'reasoning') {
         runs.add(_AssistantPartRun([current]));
@@ -865,11 +1084,21 @@ List<_AssistantPartRun> _groupAssistantParts(List<Part> parts) {
       toolParts.add(parts[next]);
       next += 1;
     }
-    if (toolParts.length == 1) {
-      runs.add(_AssistantPartRun(toolParts));
-    } else {
-      runs.add(_AssistantPartRun(toolParts, grouped: true));
+    // A one-line thought right before the call or the run is its title, not
+    // a row of its own.
+    ({String heading, String? note})? title;
+    if (runs.isNotEmpty && !runs.last.grouped) {
+      title = _stepHeading(runs.last.parts.single);
+      if (title != null) runs.removeLast();
     }
+    runs.add(
+      _AssistantPartRun(
+        toolParts,
+        grouped: toolParts.length > 1,
+        heading: title?.heading,
+        note: title?.note,
+      ),
+    );
     index = next;
   }
   return runs;
@@ -937,8 +1166,14 @@ class _ToolCallGroup extends StatefulWidget {
     required this.onAttachFile,
     required this.onDownloadFile,
     this.onOpenSession,
+    this.heading,
+    this.note,
   });
 
+  /// The agent's own one-line name for this step; replaces the generic
+  /// "Explored" / "Tools" title when present.
+  final String? heading;
+  final String? note;
   final List<Part> parts;
   final Map<String, bool> expansionStore;
   final ToolOutputFileLoader filePreviewLoader;
@@ -1034,13 +1269,14 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
     final allContext = widget.parts.every(
       (part) => _contextToolNames.contains(part.toolName?.trim().toLowerCase()),
     );
-    final title = allContext && !_notRun
+    final kind = allContext && !_notRun
         ? (_running
               ? _chatL10n(context).chatUiExploring
               : _chatL10n(context).chatUiExplored)
         : (_running
               ? _chatL10n(context).chatUiRunningTools
               : _chatL10n(context).chatUiTools);
+    final title = widget.heading ?? kind;
     final status = _failed
         ? _chatL10n(context).chatUiBackgroundError
         : _running
@@ -1050,12 +1286,8 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
         : _chatL10n(context).chatUiCompleted;
     return Container(
       key: const Key('tool-call-group'),
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .28),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.hairline(theme)),
-      ),
+      // No frame: a run of tool calls is a line of the reply. Its steps,
+      // when opened, hang off a single rule on the leading edge.
       child: Column(
         children: [
           Semantics(
@@ -1071,7 +1303,7 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 48),
                 child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 8),
+                  padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 4, 6),
                   child: Row(
                     children: [
                       Icon(
@@ -1080,24 +1312,24 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          summary,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                        child: TitleWithDetail(
+                          gap: 8,
+                          title: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          detail: Text(
+                            summary,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
                       ),
@@ -1124,7 +1356,7 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
                               ? theme.colorScheme.error
                               : _notRun
                               ? theme.colorScheme.onSurfaceVariant
-                              : theme.colorScheme.primary,
+                              : AppTheme.successOf(theme),
                         ),
                       const SizedBox(width: 4),
                       AnimatedRotation(
@@ -1145,36 +1377,240 @@ class _ToolCallGroupState extends State<_ToolCallGroup> {
             ),
           ),
           if (_expanded)
-            Column(
-              children: [
-                Divider(height: 1, color: AppTheme.hairline(theme)),
-                for (var index = 0; index < widget.parts.length; index++) ...[
-                  if (index > 0)
-                    Divider(
-                      height: 1,
-                      indent: 34,
-                      color: AppTheme.hairline(theme),
+            Container(
+              key: const Key('tool-call-group-steps'),
+              margin: const EdgeInsetsDirectional.only(start: 11),
+              decoration: BoxDecoration(
+                border: BorderDirectional(
+                  start: BorderSide(color: AppTheme.hairline(theme)),
+                ),
+              ),
+              child: Column(
+                children: [
+                  if (widget.note case final note?) StepNote(note),
+                  for (var index = 0; index < widget.parts.length; index++) ...[
+                    ToolCard(
+                      key: ValueKey(
+                        widget.parts[index].id ?? widget.parts[index].callID,
+                      ),
+                      toolName: widget.parts[index].toolName!,
+                      state: widget.parts[index].toolState,
+                      embedded: true,
+                      expansionStore: widget.expansionStore,
+                      expansionKey:
+                          'tool:${widget.parts[index].id ?? widget.parts[index].callID}',
+                      filePreviewLoader: widget.filePreviewLoader,
+                      onAttachFile: widget.onAttachFile,
+                      onDownloadFile: widget.onDownloadFile,
+                      onOpenSession: widget.onOpenSession,
                     ),
-                  ToolCard(
-                    key: ValueKey(
-                      widget.parts[index].id ?? widget.parts[index].callID,
-                    ),
-                    toolName: widget.parts[index].toolName!,
-                    state: widget.parts[index].toolState,
-                    embedded: true,
-                    expansionStore: widget.expansionStore,
-                    expansionKey:
-                        'tool:${widget.parts[index].id ?? widget.parts[index].callID}',
-                    filePreviewLoader: widget.filePreviewLoader,
-                    onAttachFile: widget.onAttachFile,
-                    onDownloadFile: widget.onDownloadFile,
-                    onOpenSession: widget.onOpenSession,
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Everything the agent did between two things it said: thoughts, tool calls
+/// and runs of them, folded under one line. Closed, the line says how much
+/// was done and what kind; while work is going on it names the step in hand.
+/// Open, the steps hang off a rule in the order they happened.
+class _WorkGroup extends StatefulWidget {
+  const _WorkGroup({
+    super.key,
+    required this.runs,
+    required this.expansionStore,
+    required this.buildRun,
+  });
+
+  final List<_AssistantPartRun> runs;
+  final Map<String, bool> expansionStore;
+  final Widget Function(_AssistantPartRun run) buildRun;
+
+  @override
+  State<_WorkGroup> createState() => _WorkGroupState();
+}
+
+class _WorkGroupState extends State<_WorkGroup> {
+  late bool _expanded;
+
+  Iterable<Part> get _tools => widget.runs
+      .expand((run) => run.parts)
+      .where((part) => part.type == 'tool');
+
+  String get _storeKey {
+    final first = widget.runs.first.parts.first;
+    return 'work:${first.id ?? first.callID ?? first.messageID}';
+  }
+
+  bool? get _userChoice => widget.expansionStore[_storeKey];
+
+  /// Whether the work ended on a failure. Agents fail and retry all the
+  /// time (a patch that did not apply, then one that did); a failure they got
+  /// past is a detail of the steps, not the state of the work.
+  bool get _endedFailed =>
+      _tools.isNotEmpty && _tools.last.toolState.status == 'error';
+
+  // Only an unrecovered failure or a produced file is worth opening unasked.
+  // Progress is already named on the closed line.
+  bool get _shouldOpen =>
+      _endedFailed ||
+      _tools.any((part) => part.toolState.outputFiles.isNotEmpty);
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = _userChoice ?? _shouldOpen;
+  }
+
+  @override
+  void didUpdateWidget(covariant _WorkGroup oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_userChoice case final choice?) {
+      _expanded = choice;
+    } else if (_shouldOpen) {
+      _expanded = true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final strings = _chatL10n(context);
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _AssistantPartRun? liveRun;
+    Part? livePart;
+    for (final run in widget.runs.reversed) {
+      for (final part in run.parts.reversed) {
+        final status = part.toolState.status;
+        if (part.type == 'tool' &&
+            part.toolState.executed &&
+            (status == 'running' || status == 'pending')) {
+          liveRun = run;
+          livePart = part;
+          break;
+        }
+      }
+      if (livePart != null) break;
+    }
+    final running = livePart != null;
+    final failed = _endedFailed;
+    final title = running
+        ? liveRun!.heading ??
+              runningToolTicker(
+                livePart.toolName ?? 'tool',
+                livePart.toolState,
+                l10n: strings,
+              )
+        : strings.usageModelSteps('${widget.runs.length}');
+    final summary = running
+        ? strings.usageModelSteps('${widget.runs.length}')
+        : _toolRunSentence(_tools.toList(), strings);
+    return Column(
+      key: const Key('work-group'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _expanded,
+          label: '$title, $summary',
+          child: InkWell(
+            key: const Key('work-group-header'),
+            onTap: () => setState(() {
+              _expanded = !_expanded;
+              widget.expansionStore[_storeKey] = _expanded;
+            }),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(4, 6, 4, 6),
+                child: Row(
+                  children: [
+                    Icon(
+                      AppIconography.timeline,
+                      size: 16,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TitleWithDetail(
+                        gap: 8,
+                        title: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        detail: Text(
+                          summary,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    if (running && !reduceMotion)
+                      SizedBox.square(
+                        dimension: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.6,
+                          color: theme.colorScheme.primary,
+                        ),
+                      )
+                    else
+                      Icon(
+                        failed
+                            ? AppIconography.error
+                            : running
+                            ? AppIconography.waitingStart
+                            : AppIconography.checkCircle,
+                        size: 14,
+                        color: failed
+                            ? theme.colorScheme.error
+                            : AppTheme.successOf(theme),
+                      ),
+                    const SizedBox(width: 4),
+                    AnimatedRotation(
+                      turns: _expanded ? .5 : 0,
+                      duration: reduceMotion
+                          ? Duration.zero
+                          : const Duration(milliseconds: 150),
+                      child: Icon(
+                        AppIconography.chevronDown,
+                        size: 16,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_expanded)
+          Container(
+            key: const Key('work-group-steps'),
+            margin: const EdgeInsetsDirectional.only(start: 11),
+            padding: const EdgeInsetsDirectional.only(start: 6),
+            decoration: BoxDecoration(
+              border: BorderDirectional(
+                start: BorderSide(color: AppTheme.hairline(theme)),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [for (final run in widget.runs) widget.buildRun(run)],
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1194,8 +1630,13 @@ class _AssistantMessagePart extends StatelessWidget {
     this.streaming = false,
     this.onOpenSession,
     this.searchQuery = '',
+    this.heading,
+    this.note,
   });
 
+  /// See [_AssistantPartRun.heading] and [_AssistantPartRun.note].
+  final String? heading;
+  final String? note;
   final Part part;
   final String searchQuery;
   final bool reasoningExpanded;
@@ -1269,6 +1710,8 @@ class _AssistantMessagePart extends StatelessWidget {
             : ValueKey(part.id ?? part.callID),
         toolName: part.toolName ?? 'tool',
         state: part.toolState,
+        heading: heading,
+        note: note,
         expansionStore: expansionStore,
         expansionKey: 'tool:${part.id ?? part.callID}',
         filePreviewLoader: filePreviewLoader,
@@ -1365,7 +1808,23 @@ class _MessageView extends StatelessWidget {
     this.onChooseModel,
     this.onOpenSession,
     this.queued = false,
+    this.showActions = true,
+    this.errorRecovered = false,
+    this.onCopy,
   });
+
+  /// Copies the turn's reply. The footer is one line per turn; the action
+  /// people reach for most sits on it directly, next to the menu.
+  final VoidCallback? onCopy;
+
+  /// See [_AssistantErrorRow.recovered].
+  final bool errorRecovered;
+
+  /// Whether the "more" control is drawn under this message. A reply is
+  /// usually several messages; only the one that ends it carries the control,
+  /// so it appears once per turn. Long-press and right-click stay on every
+  /// message.
+  final bool showActions;
 
   /// True for a user prompt the server has accepted but not started: it
   /// runs after the current turn (OpenCode 1 queues mid-turn sends).
@@ -1407,15 +1866,14 @@ class _MessageView extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final bubbleWidthCap = MediaQuery.of(context).size.width * .88;
-
     final body = GestureDetector(
       onLongPress: onLongPress,
       behavior: HitTestBehavior.translucent,
-      // The long-press menu is a pointer shortcut for actions that remain
-      // reachable elsewhere (text selection, timeline fork). Excluding it
-      // keeps each message part as its own semantics node.
-      excludeFromSemantics: true,
+      // Where the "more" control is drawn, the long-press is only a shortcut
+      // to it, and excluding it keeps each message part as its own semantics
+      // node. Where it is not, the long-press is the way in, so assistive
+      // technology must see it.
+      excludeFromSemantics: showActions,
       child: AnimatedContainer(
         // The key must not encode the highlight flag: a highlight-driven
         // remount would kill this fade and reset per-part expansion state.
@@ -1424,8 +1882,8 @@ class _MessageView extends StatelessWidget {
             ? Duration.zero
             : const Duration(milliseconds: 180),
         padding: isUser
-            ? const EdgeInsetsDirectional.fromSTEB(6, 4, 6, 10)
-            : const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 4),
+            ? const EdgeInsetsDirectional.fromSTEB(6, 10, 6, 6)
+            : const EdgeInsetsDirectional.fromSTEB(6, 0, 6, 2),
         decoration: BoxDecoration(
           color: highlighted
               ? theme.colorScheme.primaryContainer.withValues(alpha: .24)
@@ -1433,9 +1891,7 @@ class _MessageView extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
-          crossAxisAlignment: isUser
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (searchMatch case final match?)
               Builder(
@@ -1448,24 +1904,46 @@ class _MessageView extends StatelessWidget {
                 },
               ),
             Container(
-              constraints: BoxConstraints(
-                // Keep prompts readable on wide screens instead of stretching a
-                // bubble across a tablet.
-                maxWidth: isUser && bubbleWidthCap > 640 ? 640 : bubbleWidthCap,
-              ),
+              key: isUser ? ValueKey('user-prompt-${m.info.id}') : null,
+              // Keep prompts readable on wide screens instead of stretching
+              // them across a tablet.
+              width: isUser ? double.infinity : null,
+              constraints: isUser
+                  ? const BoxConstraints(maxWidth: _proseWidthCap)
+                  : null,
+              // Your words and the agent's share one column and one left
+              // edge. A rule in the accent colour on the leading side is what
+              // says "you wrote this": no bubble, no fill, no lost width.
+              margin: isUser
+                  ? const EdgeInsetsDirectional.only(start: 8)
+                  : EdgeInsets.zero,
               padding: isUser
-                  ? const EdgeInsets.symmetric(horizontal: 10, vertical: 10)
+                  ? const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 8)
                   : const EdgeInsets.symmetric(horizontal: 4),
+              // The rule says whose words these are; the wash behind them,
+              // fading out from the rule, makes that unmistakable at a
+              // glance without boxing the text in or costing any width.
               decoration: isUser
                   ? BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(
-                        alpha: .55,
+                      gradient: LinearGradient(
+                        begin: AlignmentDirectional.centerStart.resolve(
+                          Directionality.of(context),
+                        ),
+                        end: AlignmentDirectional.centerEnd.resolve(
+                          Directionality.of(context),
+                        ),
+                        colors: [
+                          theme.colorScheme.primary.withValues(alpha: .20),
+                          theme.colorScheme.primary.withValues(alpha: .06),
+                          theme.colorScheme.primary.withValues(alpha: 0),
+                        ],
+                        stops: const [0, .55, 1],
                       ),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                        bottomLeft: Radius.circular(16),
-                        bottomRight: Radius.circular(5),
+                      border: BorderDirectional(
+                        start: BorderSide(
+                          color: theme.colorScheme.primary,
+                          width: 3,
+                        ),
                       ),
                     )
                   : null,
@@ -1477,32 +1955,22 @@ class _MessageView extends StatelessWidget {
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        for (final run in assistantRuns)
-                          if (run.grouped)
-                            _ToolCallGroup(
+                        for (final stretch in _stretches(assistantRuns))
+                          if (stretch.length > 1)
+                            _WorkGroup(
                               key: ValueKey(
-                                'tools:${run.parts.first.id ?? run.parts.first.callID}',
+                                'work:${stretch.first.parts.first.id ?? stretch.first.parts.first.callID}',
                               ),
-                              parts: run.parts,
+                              runs: stretch,
                               expansionStore: expansionStore,
-                              filePreviewLoader: filePreviewLoader,
-                              onAttachFile: onAttachFile,
-                              onDownloadFile: onDownloadFile,
-                              onOpenSession: onOpenSession,
+                              buildRun: (run) =>
+                                  _runWidget(run, assistantRuns, streaming),
                             )
                           else
-                            _AssistantMessagePart(
-                              part: run.parts.single,
-                              searchQuery: searchQuery,
-                              reasoningExpanded: reasoningExpanded,
-                              expansionStore: expansionStore,
-                              filePreviewLoader: filePreviewLoader,
-                              onAttachFile: onAttachFile,
-                              onDownloadFile: onDownloadFile,
-                              onOpenSession: onOpenSession,
-                              streaming:
-                                  streaming &&
-                                  identical(run, assistantRuns.last),
+                            _runWidget(
+                              stretch.single,
+                              assistantRuns,
+                              streaming,
                             ),
                       ],
                     ),
@@ -1529,27 +1997,74 @@ class _MessageView extends StatelessWidget {
                   ],
                 ),
               ),
-            if (metaParts.isNotEmpty || onLongPress != null)
+            if (m.info.errorText != null)
               Padding(
-                padding: const EdgeInsetsDirectional.only(
-                  top: 1,
-                  start: 6,
-                  end: 6,
+                padding: const EdgeInsets.only(top: 3),
+                child: _AssistantErrorRow(
+                  info: m.info,
+                  recovered: errorRecovered,
+                  onCompact: onCompact,
+                  onOpenProviders: onOpenProviders,
+                  onContinue: onContinue,
+                  onChooseModel: onChooseModel,
                 ),
+              ),
+            if (m.info.finish == 'length' &&
+                m.info.errorKind != MessageErrorKind.outputLength)
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(
+                  _chatL10n(context).chatUiAnswerWasCutOffByTheLength,
+                  key: const Key('message-length-footer'),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.mutedOf(theme),
+                  ),
+                ),
+              ),
+            if (metaParts.isNotEmpty || (showActions && onLongPress != null))
+              Padding(
+                // The first control's disc starts where the prose starts.
+                padding: const EdgeInsetsDirectional.only(top: 1, end: 6),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (metaParts.isNotEmpty)
-                      Flexible(
-                        child: Text(
-                          key: ValueKey('message-meta-${m.info.id}'),
-                          metaParts.join('  ·  '),
-                          style: theme.textTheme.labelSmall!.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                    if (showActions && onCopy != null)
+                      Semantics(
+                        button: true,
+                        label: _chatL10n(context).chatUiCopyMessageText,
+                        child: Tooltip(
+                          message: _chatL10n(context).chatUiCopyMessageText,
+                          child: InkWell(
+                            key: ValueKey('message-copy-${m.info.id}'),
+                            customBorder: const StadiumBorder(),
+                            onTap: onCopy,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minWidth: 44,
+                                minHeight: 44,
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: _MessageActionsDisc.diameter,
+                                  height: _MessageActionsDisc.diameter,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        theme.colorScheme.surfaceContainerHigh,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    AppIcons.copy,
+                                    size: 15,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    if (onLongPress != null)
+                    if (showActions && onLongPress != null)
                       Semantics(
                         button: true,
                         label: _chatL10n(context).chatUiMessageActions,
@@ -1580,30 +2095,24 @@ class _MessageView extends StatelessWidget {
                           ),
                         ),
                       ),
+                    if (metaParts.isNotEmpty)
+                      Flexible(
+                        child: Padding(
+                          // After the controls; alone, it starts on the
+                          // prose edge like everything else.
+                          padding: EdgeInsetsDirectional.only(
+                            start: showActions ? 4 : 8,
+                          ),
+                          child: Text(
+                            key: ValueKey('message-meta-${m.info.id}'),
+                            metaParts.join('  ·  '),
+                            style: theme.textTheme.labelSmall!.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
-                ),
-              ),
-            if (m.info.errorText != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: _AssistantErrorRow(
-                  info: m.info,
-                  onCompact: onCompact,
-                  onOpenProviders: onOpenProviders,
-                  onContinue: onContinue,
-                  onChooseModel: onChooseModel,
-                ),
-              ),
-            if (m.info.finish == 'length' &&
-                m.info.errorKind != MessageErrorKind.outputLength)
-              Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Text(
-                  _chatL10n(context).chatUiAnswerWasCutOffByTheLength,
-                  key: const Key('message-length-footer'),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.mutedOf(theme),
-                  ),
                 ),
               ),
           ],
@@ -1615,6 +2124,60 @@ class _MessageView extends StatelessWidget {
     if (menu == null) return content;
     return ContextMenuRegion(actions: menu, child: content);
   }
+
+  /// Splits a message's runs into what is said and what is done: each text
+  /// block (or attachment) stands alone, and each unbroken stretch of
+  /// thoughts and tool calls between them is one list.
+  static List<List<_AssistantPartRun>> _stretches(
+    List<_AssistantPartRun> runs,
+  ) {
+    final stretches = <List<_AssistantPartRun>>[];
+    var work = <_AssistantPartRun>[];
+    for (final run in runs) {
+      final type = run.parts.first.type;
+      if (type == 'tool' || type == 'reasoning') {
+        work.add(run);
+        continue;
+      }
+      if (work.isNotEmpty) stretches.add(work);
+      work = [];
+      stretches.add([run]);
+    }
+    if (work.isNotEmpty) stretches.add(work);
+    return stretches;
+  }
+
+  Widget _runWidget(
+    _AssistantPartRun run,
+    List<_AssistantPartRun> all,
+    bool streaming,
+  ) => run.grouped
+      ? _ToolCallGroup(
+          key: ValueKey(
+            'tools:${run.parts.first.id ?? run.parts.first.callID}',
+          ),
+          parts: run.parts,
+          heading: run.heading,
+          note: run.note,
+          expansionStore: expansionStore,
+          filePreviewLoader: filePreviewLoader,
+          onAttachFile: onAttachFile,
+          onDownloadFile: onDownloadFile,
+          onOpenSession: onOpenSession,
+        )
+      : _AssistantMessagePart(
+          part: run.parts.single,
+          heading: run.heading,
+          note: run.note,
+          searchQuery: searchQuery,
+          reasoningExpanded: reasoningExpanded,
+          expansionStore: expansionStore,
+          filePreviewLoader: filePreviewLoader,
+          onAttachFile: onAttachFile,
+          onDownloadFile: onDownloadFile,
+          onOpenSession: onOpenSession,
+          streaming: streaming && identical(run, all.last),
+        );
 
   static String _fmtTokens(int n) {
     if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
@@ -1662,6 +2225,7 @@ class _MessageActionsDisc extends StatelessWidget {
 class _AssistantErrorRow extends StatelessWidget {
   const _AssistantErrorRow({
     required this.info,
+    this.recovered = false,
     this.onCompact,
     this.onOpenProviders,
     this.onContinue,
@@ -1669,6 +2233,10 @@ class _AssistantErrorRow extends StatelessWidget {
   });
 
   final MessageInfo info;
+
+  /// True when the turn went on after this error (the server retried, or the
+  /// agent took another step). It is then a line in the story, not an alarm.
+  final bool recovered;
   final VoidCallback? onCompact;
   final VoidCallback? onOpenProviders;
   final VoidCallback? onContinue;
@@ -1678,8 +2246,9 @@ class _AssistantErrorRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final raw = info.errorText ?? '';
-    final text = errorHeadline(raw);
-    final details = errorHasDetails(raw) ? raw : null;
+    final words = agentErrorWords(raw, _chatL10n(context));
+    final text = words.headline;
+    final details = words.humanized || errorHasDetails(raw) ? raw : null;
     final kind = MessageErrorKind.refineFromText(
       info.errorKind ?? MessageErrorKind.unknown,
       raw,
@@ -1745,6 +2314,8 @@ class _AssistantErrorRow extends StatelessWidget {
           key: const Key('error-card-generic'),
           icon: AppIconography.error,
           text: text,
+          hint: recovered ? _chatL10n(context).agentErrorRecovered : words.hint,
+          recovered: recovered,
           details: details,
           actionKey: const Key('error-action-none'),
           actionLabel: '',
@@ -1763,10 +2334,18 @@ class _ErrorActionCard extends StatelessWidget {
     required this.actionLabel,
     required this.onAction,
     this.details,
+    this.hint,
+    this.recovered = false,
   });
 
   final IconData icon;
   final String text;
+
+  /// What happens next, or what to do; under the headline.
+  final String? hint;
+
+  /// A past problem the turn got over: drawn as a quiet line, no card.
+  final bool recovered;
   final Key actionKey;
   final String actionLabel;
   final VoidCallback? onAction;
@@ -1801,12 +2380,21 @@ class _ErrorActionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 6),
-      decoration: BoxDecoration(
-        color: scheme.errorContainer.withValues(alpha: .35),
-        borderRadius: BorderRadius.circular(AppTheme.radiusControl),
-        border: Border.all(color: scheme.error.withValues(alpha: .35)),
-      ),
+      // Same language as the rest of the transcript: no card. A problem that
+      // needs you is marked by a rule in the error colour on the leading
+      // edge (as your own prompts are by the accent); one the turn got over
+      // is a quiet line.
+      margin: EdgeInsetsDirectional.only(start: recovered ? 0 : 4),
+      padding: recovered
+          ? const EdgeInsetsDirectional.fromSTEB(4, 4, 4, 0)
+          : const EdgeInsetsDirectional.fromSTEB(10, 2, 4, 0),
+      decoration: recovered
+          ? null
+          : BoxDecoration(
+              border: BorderDirectional(
+                start: BorderSide(color: scheme.error, width: 3),
+              ),
+            ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -1816,20 +2404,54 @@ class _ErrorActionCard extends StatelessWidget {
             children: [
               Padding(
                 padding: const EdgeInsets.only(top: 1),
-                child: Icon(icon, size: 16, color: scheme.error),
+                child: Icon(
+                  icon,
+                  size: 16,
+                  color: recovered ? scheme.onSurfaceVariant : scheme.error,
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  text,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurface,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      text,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: recovered
+                            ? scheme.onSurfaceVariant
+                            : scheme.onSurface,
+                      ),
+                    ),
+                    if (hint case final hint?)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          hint,
+                          key: const Key('error-hint'),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
+              if (onAction == null && details != null)
+                TextButton(
+                  key: const Key('error-action-details'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: recovered ? scheme.onSurfaceVariant : null,
+                  ),
+                  onPressed: () => _showDetails(context),
+                  child: Text(_chatL10n(context).chatUiDetails),
+                ),
             ],
           ),
-          if (onAction != null || details != null)
+          // With an action to take, both buttons get a row. Details alone
+          // sits at the end of the sentence's line instead of costing one.
+          if (onAction != null)
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -1876,31 +2498,40 @@ String? _modelLabel(MessageInfo info) {
 _MessageMeta _messageMeta(List<MessageWithParts> messages, int index) {
   final current = messages[index];
   if (current.info.role != 'assistant') return const _MessageMeta();
+  // Everything about a turn is said once, in its footer: a label between
+  // two steps would cut the turn in half.
+  if (!_endsTurn(messages, index)) return const _MessageMeta();
 
-  final currentModel = _modelLabel(current.info);
+  final steps = _turnSteps(messages, index);
+  final models = <String>[];
+  for (final step in steps) {
+    final label = _modelLabel(step.info);
+    if (label != null && (models.isEmpty || models.last != label)) {
+      models.add(label);
+    }
+  }
   String? previousModel;
-  for (var previous = index - 1; previous >= 0; previous -= 1) {
+  for (
+    var previous = messages.indexOf(steps.first) - 1;
+    previous >= 0;
+    previous -= 1
+  ) {
     final info = messages[previous].info;
     if (info.role != 'assistant') continue;
     previousModel = _modelLabel(info);
     break;
   }
-  final modelChanged = currentModel != null && currentModel != previousModel;
-
-  final endsAssistantRun =
-      index == messages.length - 1 ||
-      messages[index + 1].info.role != 'assistant';
-  if (!endsAssistantRun) {
-    return _MessageMeta(modelLabel: modelChanged ? currentModel : null);
-  }
+  // Named when the turn ran on a different model than the one before it, or
+  // changed model part-way.
+  final modelChanged =
+      models.isNotEmpty && (models.length > 1 || models.first != previousModel);
+  final currentModel = models.join(' → ');
 
   var turnTokens = 0;
   var turnCost = 0.0;
-  for (var runIndex = index; runIndex >= 0; runIndex -= 1) {
-    final info = messages[runIndex].info;
-    if (info.role != 'assistant') break;
-    turnTokens += info.tokens.total;
-    turnCost += info.cost;
+  for (final step in steps) {
+    turnTokens += step.info.tokens.total;
+    turnCost += step.info.cost;
   }
   return _MessageMeta(
     modelLabel: modelChanged ? currentModel : null,
@@ -2065,6 +2696,16 @@ class _Reasoning extends StatefulWidget {
 class _ReasoningState extends State<_Reasoning> {
   late bool _open;
 
+  static String? _preview(String text) {
+    final line = text.trim().split('\n').first;
+    final plain = line.replaceAll(RegExp(r'[*_`#]+'), '').trim();
+    if (plain.isEmpty) return null;
+    // One line's worth: the row is a label for the thought, not the thought.
+    return plain.length <= 80
+        ? plain
+        : '${plain.substring(0, 80).trimRight()}…';
+  }
+
   // Measurement cache: the painter is retained by the State and re-laid-out
   // only when the text, style, direction, or width actually changes, instead
   // of allocating a fresh TextPainter on every rebuild of a streaming turn.
@@ -2170,7 +2811,9 @@ class _ReasoningState extends State<_Reasoning> {
         );
         return Container(
           key: const Key('assistant-reasoning-block'),
-          margin: const EdgeInsets.only(bottom: 6),
+          // Its rule stands on the same edge as the prose and as the rule
+          // of your own messages.
+          margin: const EdgeInsetsDirectional.only(start: 4, bottom: 6),
           decoration: BoxDecoration(
             border: Border(
               left: BorderSide(
@@ -2222,7 +2865,6 @@ class _ReasoningState extends State<_Reasoning> {
                               4,
                             ),
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   AppIconography.model,
@@ -2230,19 +2872,25 @@ class _ReasoningState extends State<_Reasoning> {
                                   color: theme.colorScheme.onSurfaceVariant,
                                 ),
                                 const SizedBox(width: 5),
-                                InfoLabel.glossary(
-                                  Glossary.reasoning,
-                                  key: const Key('reasoning-glossary'),
-                                  iconSize: 13,
-                                  style: theme.textTheme.labelSmall!.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                // Closed, the row is the thought's first
+                                // line. The word "Reasoning" and what it
+                                // means appear once it is opened.
+                                if (_open)
+                                  InfoLabel.glossary(
+                                    Glossary.reasoning,
+                                    key: const Key('reasoning-glossary'),
+                                    iconSize: 13,
+                                    style: theme.textTheme.labelSmall!.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
-                                ),
                                 if (!_open) ...[
-                                  const SizedBox(width: 4),
                                   Flexible(
                                     child: Text(
-                                      _chatL10n(context).chatUiTapToExpand,
+                                      // What it was thinking about, not an
+                                      // instruction to tap.
+                                      _preview(widget.text) ??
+                                          _chatL10n(context).chatUiTapToExpand,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: theme.textTheme.labelSmall!

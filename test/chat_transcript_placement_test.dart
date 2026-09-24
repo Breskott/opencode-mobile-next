@@ -1,5 +1,6 @@
 import 'support/complete_message_history.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
@@ -156,8 +157,389 @@ void main() {
     expect(find.text('Edit'), findsOneWidget);
     // No "…" placeholder and no orphan actions row for the empty message.
     expect(find.text('…'), findsNothing);
-    expect(find.byKey(const ValueKey('message-actions-a2')), findsNothing);
-    // The real message keeps its actions affordance.
+    // The turn keeps exactly one actions affordance, in its footer: the
+    // bookkeeping tail adds no second one and takes none away.
+    expect(
+      find.byWidgetPredicate((widget) {
+        final key = widget.key;
+        return key is ValueKey<String> &&
+            key.value.startsWith('message-actions-') &&
+            !key.value.startsWith('message-actions-disc-');
+      }),
+      findsOneWidget,
+    );
+  });
+
+  Part tool(String id, String name) => Part(
+    id: id,
+    type: 'tool',
+    callID: id,
+    toolName: name,
+    toolState: ToolState.fromJson(const {
+      'status': 'completed',
+      'input': {'filePath': '/work/lib/main.dart'},
+      'output': 'ok',
+    }, toolName: name),
+  );
+
+  testWidgets('a turn has one control, and a notice does not end the turn', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _message('u1', 'user', [
+        _text('u1-t', 'Tidy the home screen'),
+      ], created: 1),
+      _message('a1', 'assistant', [
+        _text('a1-t', 'Looking first.'),
+      ], created: 2),
+      // Filed under the user role by the server, but nobody typed it.
+      _message('n1', 'user', [
+        Part(id: 'v2-0', type: 'v2:notice', toolName: 'synthetic', text: 'x'),
+      ], created: 3),
+      _message('a2', 'assistant', [_text('a2-t', 'Done.')], created: 4),
+      _message('u2', 'user', [_text('u2-t', 'Thanks')], created: 5),
+      _message('a3', 'assistant', [_text('a3-t', 'Welcome.')], created: 6),
+    ]);
+
+    // No control under a step, under the prompt, or before the notice.
+    expect(find.byKey(const ValueKey('message-actions-u1')), findsNothing);
+    expect(find.byKey(const ValueKey('message-actions-a1')), findsNothing);
+    // One per turn, under the step that ends it.
+    expect(find.byKey(const ValueKey('message-actions-a2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-actions-a3')), findsOneWidget);
+  });
+
+  testWidgets('a one-line thought titles the tool run that follows it', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Patch it')], created: 1),
+      _message('a1', 'assistant', [
+        Part(id: 'a1-r', type: 'reasoning', text: '**Patching home shell**'),
+        tool('a1-t1', 'read'),
+        tool('a1-t2', 'edit'),
+      ], created: 2),
+    ]);
+
+    // One line for the step: the agent's own name for it, then what it did.
+    expect(find.text('Patching home shell'), findsOneWidget);
+    expect(find.byKey(const Key('assistant-reasoning-block')), findsNothing);
+    expect(find.byKey(const Key('tool-call-group')), findsOneWidget);
+    expect(find.text('Tools'), findsNothing);
+  });
+
+  testWidgets('a prompt is a ruled line, not a bubble', (tester) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Hello there')], created: 1),
+      _message('a1', 'assistant', [_text('a1-t', 'Hi.')], created: 2),
+    ]);
+    final prompt = tester.widget<Container>(
+      find.byKey(const ValueKey('user-prompt-u1')),
+    );
+    final decoration = prompt.decoration! as BoxDecoration;
+    expect(decoration.color, isNull);
+    expect(decoration.borderRadius, isNull);
+    expect((decoration.border! as BorderDirectional).start.width, 3);
+    // Prompt and reply share a left edge.
+    expect(
+      tester.getTopLeft(find.text('Hello there')).dx,
+      lessThan(tester.getTopLeft(find.text('Hi.')).dx + 16),
+    );
+  });
+
+  testWidgets('what the agent did between two replies folds under one line', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Fix the balance')], created: 1),
+      _message('a1', 'assistant', [
+        _text('a1-t', 'Looking into it.'),
+        tool('t1', 'bash'),
+      ], created: 2),
+      // Later steps of the same stretch of work, stored as separate messages.
+      _message('a2', 'assistant', [
+        Part(id: 'r2', type: 'reasoning', text: '**Checking persistence**'),
+        tool('t2', 'bash'),
+      ], created: 3),
+      _message('a3', 'assistant', [
+        Part(id: 'r3', type: 'reasoning', text: '**Preparing the patch**'),
+        tool('t3', 'read'),
+        tool('t4', 'read'),
+      ], created: 4),
+      _message('a4', 'assistant', [_text('a4-t', 'Fixed.')], created: 5),
+    ]);
+
+    // Said: visible. Done: one line, however many steps it took.
+    expect(find.text('Looking into it.'), findsOneWidget);
+    expect(find.text('Fixed.'), findsOneWidget);
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.text('3 steps'), findsOneWidget);
+    expect(find.text('Checking persistence'), findsNothing);
+
+    // Discoverable: one tap shows every step, in order, by the agent's name.
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
+    expect(find.text('Checking persistence'), findsOneWidget);
+    expect(find.text('Preparing the patch'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Checking persistence')).dy,
+      lessThan(tester.getTopLeft(find.text('Preparing the patch')).dy),
+    );
+  });
+
+  testWidgets('a thought titles its step and explains itself inside it', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      _message('a1', 'assistant', [
+        Part(
+          id: 'r1',
+          type: 'reasoning',
+          text:
+              // Short, like a real one: a centred line would sit mid-row.
+              '**Rebuilding latest source**\n\nThe bundle is stale.',
+        ),
+        tool('t1', 'bash'),
+      ], created: 2),
+    ]);
+
+    // No "Reasoning (tap to expand)" row of its own.
+    expect(find.byKey(const Key('reasoning-toggle')), findsNothing);
+    expect(find.text('Rebuilding latest source'), findsOneWidget);
+    expect(find.byKey(const Key('step-note')), findsNothing);
+
+    // Why, then what, once the step is opened.
+    await tester.tap(find.text('Rebuilding latest source'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('step-note')), findsOneWidget);
+    expect(find.textContaining('The bundle is stale'), findsOneWidget);
+    // It reads from the leading edge, under the step's title; not centred.
+    expect(
+      tester.getTopLeft(find.textContaining('The bundle is stale')).dx,
+      lessThan(60),
+    );
+  });
+
+  testWidgets('a failure the agent got past does not open or redden the work', (
+    tester,
+  ) async {
+    Part failed(String id) => Part(
+      id: id,
+      type: 'tool',
+      callID: id,
+      toolName: 'edit',
+      toolState: ToolState.fromJson(const {
+        'status': 'error',
+        'input': {'filePath': '/work/lib/main.dart'},
+        'error': 'patch verification failed',
+      }, toolName: 'edit'),
+    );
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      _message('a1', 'assistant', [
+        failed('t1'),
+        Part(id: 'r1', type: 'reasoning', text: '**Retrying the patch**'),
+        tool('t2', 'edit'),
+        _text('a1-t', 'Patched.'),
+      ], created: 2),
+    ]);
+    expect(find.byKey(const Key('work-group')), findsOneWidget);
+    expect(find.byKey(const Key('work-group-steps')), findsNothing);
+    expect(find.text('patch verification failed'), findsNothing);
+  });
+
+  testWidgets('work that ends on a failure opens itself', (tester) async {
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      _message('a1', 'assistant', [
+        tool('t1', 'read'),
+        Part(id: 'r1', type: 'reasoning', text: '**Applying the patch**'),
+        Part(
+          id: 't2',
+          type: 'tool',
+          callID: 't2',
+          toolName: 'edit',
+          toolState: ToolState.fromJson(const {
+            'status': 'error',
+            'input': {'filePath': '/work/lib/main.dart'},
+            'error': 'patch verification failed',
+          }, toolName: 'edit'),
+        ),
+      ], created: 2),
+    ]);
+    expect(find.byKey(const Key('work-group-steps')), findsOneWidget);
+  });
+
+  testWidgets('long prose thinking stays a thinking block, not a step title', (
+    tester,
+  ) async {
+    const thinking =
+        'Okay, let me look at the router.\n\nThe credit products are sent to '
+        'the wrong specialist, which suggests the intent table is matched '
+        'before the product table. I should read the routing code first and '
+        'then check how the seed profile marks an expired card.';
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      _message('a1', 'assistant', [
+        Part(id: 'r1', type: 'reasoning', text: thinking),
+        tool('t1', 'read'),
+        _text('a1-t', 'Found it.'),
+      ], created: 2),
+    ]);
+    // Thought and tool are two steps of one stretch of work.
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('assistant-reasoning-block')), findsOneWidget);
+    // The tool keeps its own name; the first sentence did not become a title.
+    expect(find.text('Read'), findsOneWidget);
+    expect(find.byKey(const Key('step-note')), findsNothing);
+  });
+
+  testWidgets('a running turn has no footer; it arrives when the turn ends', (
+    tester,
+  ) async {
+    final controller = await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'First')], created: 1),
+      _message('a1', 'assistant', [
+        _text('a1-t', 'Done with that.'),
+      ], created: 2),
+      _message('u2', 'user', [_text('u2-t', 'Second')], created: 3),
+      _message('a2', 'assistant', [_text('a2-t', 'Working on it')], created: 4),
+    ], busy: true);
+
+    // The finished turn keeps its one line; the running one has none yet.
     expect(find.byKey(const ValueKey('message-actions-a1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('message-actions-a2')), findsNothing);
+
+    controller.busySessions.remove('session-1');
+    controller.notifyListeners();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('message-actions-a2')), findsOneWidget);
+  });
+
+  testWidgets('the turn footer copies the reply in one tap', (tester) async {
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add((call.arguments as Map)['text'] as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Hi')], created: 1),
+      _message('a1', 'assistant', [_text('a1-t', 'Part one.')], created: 2),
+      _message('a2', 'assistant', [
+        tool('t1', 'read'),
+        _text('a2-t', 'Part two.'),
+      ], created: 3),
+    ]);
+    final copy = find.byKey(const ValueKey('message-copy-a2'));
+    expect(copy, findsOneWidget);
+    expect(tester.getSize(copy).height, greaterThanOrEqualTo(44));
+    await tester.tap(copy);
+    await tester.pumpAndSettle();
+    expect(copied, ['Part one.\n\nPart two.']);
+  });
+
+  testWidgets('only the newest failed compaction offers Compact again, and '
+      'only while idle', (tester) async {
+    MessageWithParts compaction(String id, String kind, int created) =>
+        _message(id, 'user', [
+          Part(id: 'v2-0', type: 'v2:compaction', toolName: kind, text: 'x'),
+        ], created: created);
+    final controller = await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      compaction('c1', 'failed', 2),
+      _message('a1', 'assistant', [_text('a1-t', 'Carrying on.')], created: 3),
+      compaction('c2', 'failed', 4),
+    ]);
+    // One button, on the newest failure.
+    expect(find.text('Compact again'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('compaction-failed-c2')),
+        matching: find.text('Compact again'),
+      ),
+      findsOneWidget,
+    );
+
+    // Not while something is running: it would race the turn.
+    controller.busySessions.add('session-1');
+    controller.notifyListeners();
+    await tester.pump();
+    expect(find.text('Compact again'), findsNothing);
+  });
+
+  testWidgets('a long step title never runs over its detail, however nested', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(340, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    Part read(String id) => Part(
+      id: id,
+      type: 'tool',
+      callID: id,
+      toolName: 'read',
+      toolState: ToolState.fromJson(const {
+        'status': 'completed',
+        'input': {
+          'filePath': '/work/lib/entry.dart',
+          'offset': 126,
+          'limit': 18,
+        },
+        'output': 'ok',
+      }, toolName: 'read'),
+    );
+    await _pump(tester, [
+      _message('u1', 'user', [_text('u1-t', 'Go')], created: 1),
+      _message('a1', 'assistant', [
+        Part(
+          id: 'r1',
+          type: 'reasoning',
+          text: '**Checking AssistantEntry constructor arguments everywhere**',
+        ),
+        read('t1'),
+        Part(
+          id: 'r2',
+          type: 'reasoning',
+          text: '**Fixing widget constructors**',
+        ),
+        read('t2'),
+        _text('a1-t', 'Done.'),
+      ], created: 2),
+    ]);
+    // Inside the work line, where a row has the least room.
+    await tester.tap(find.byKey(const Key('work-group-header')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    final title = find.textContaining('Checking AssistantEntry');
+    expect(title, findsOneWidget);
+    final titleRight = tester.getRect(title).right;
+    // Everything else on that row starts after the title ends.
+    final row = find.ancestor(of: title, matching: find.byType(InkWell)).first;
+    for (final text
+        in find.descendant(of: row, matching: find.byType(Text)).evaluate()) {
+      if (identical(text.widget, tester.widget(title))) continue;
+      final rect = tester.getRect(find.byWidget(text.widget));
+      if (rect.width == 0) continue;
+      expect(
+        rect.left,
+        greaterThanOrEqualTo(titleRight),
+        reason: 'overlaps: ${(text.widget as Text).data}',
+      );
+    }
   });
 }

@@ -104,6 +104,24 @@ class _RecordingPhotoStore extends PromptPhotoStore {
     session = sessionID;
     return null;
   }
+
+  int? limit;
+
+  /// The gallery picks several at once; the draft is saved first either way.
+  @override
+  Future<List<PromptAttachment>> pickMany({
+    required String profileID,
+    required String sessionID,
+    required String? directory,
+    required String? workspace,
+    required int limit,
+  }) async {
+    expect(prefs.getString('oc.sessionDrafts'), contains('Keep before camera'));
+    selected = ImageSource.gallery;
+    session = sessionID;
+    this.limit = limit;
+    return const [];
+  }
 }
 
 Future<ConnectionController> _controller({
@@ -239,6 +257,27 @@ void main() {
       );
     },
   );
+
+  testWidgets('/terminal stays a typed door after Terminal left the menus', (
+    tester,
+  ) async {
+    final conn = await _controller();
+    addTearDown(conn.dispose);
+    await _pumpChat(tester, conn, size: const Size(390, 844), textScale: 1);
+    expect(conn.capabilities.terminal, isTrue);
+    await tester.enterText(
+      find.byKey(const Key('chat-composer-field')),
+      '/terminal',
+    );
+    await tester.pump();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('inline-command-suggestions')),
+        matching: find.textContaining('/terminal'),
+      ),
+      findsOneWidget,
+    );
+  });
 
   testWidgets(
     'local image attachments show a thumbnail with independent removal',
@@ -452,7 +491,7 @@ void main() {
     conn.busySessions.add('session-1');
     conn.notifyListeners();
     await tester.pump();
-    expect(find.text('Background subagents'), findsOneWidget);
+    expect(find.text('Background'), findsOneWidget);
     expect(repository.capabilityReads, 1);
     expect(
       tester.getSize(find.byKey(const Key('background-running-work'))).height,

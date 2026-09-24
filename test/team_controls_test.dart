@@ -9,6 +9,10 @@
 // objective and the supervision line to the Mayor, shows "Planning…
 // (Mayor)" on the home, resolves when a run carrying the objective
 // appears, and a suspended Mayor shows the host-off copy without sending.
+// TEAM-306: on a host that creates work (the phone's loopback) a suspended
+// Mayor shows the direct task form instead, which creates one bead and
+// slings it at the project's polecat pool; a refused create stays on the
+// sheet and says why; a front host keeps the host-off copy.
 // Layout: 320dp × 2.5x, LTR and RTL, for the agent controls and the sheet.
 
 import 'dart:async';
@@ -174,6 +178,14 @@ class _Gateway
     required String agentId,
     required String requestId,
   }) => _call(_Call('assign', workId, requestId, arg: agentId));
+
+  @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) => _call(_Call('createWork', title, requestId, arg: projectId));
 }
 
 void main() {
@@ -597,8 +609,8 @@ void main() {
       await settle(tester);
       await tester.tap(key('team-run-more'));
       await tester.pumpAndSettle();
-      expect(find.text('Cancel run'), findsOneWidget);
-      await tester.tap(find.text('Cancel run'));
+      expect(find.text('Stop run'), findsOneWidget);
+      await tester.tap(find.text('Stop run'));
       await tester.pumpAndSettle();
       expect(key('team-run-cancel-confirm'), findsOneWidget);
       expect(gateway.calls, isEmpty);
@@ -607,7 +619,7 @@ void main() {
       expect(gateway.calls.single.verb, 'cancelRun');
       expect(gateway.calls.single.target, 'oc-xru');
       expect(key('team-run-receipt'), findsOneWidget);
-      expect(find.text('Cancel run · Sent'), findsOneWidget);
+      expect(find.text('Stop run · Sent'), findsOneWidget);
       // The chip sits under the state header, before the progress bar.
       final chipY = tester.getTopLeft(key('team-run-receipt')).dy;
       expect(chipY, greaterThan(tester.getTopLeft(key('team-run-state')).dy));
@@ -626,7 +638,7 @@ void main() {
       await settle(tester);
       await tester.tap(key('team-run-more'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancel run'));
+      await tester.tap(find.text('Stop run'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Keep going'));
       await tester.pumpAndSettle();
@@ -653,7 +665,7 @@ void main() {
       await tester.tap(key('team-run-more'));
       await tester.pumpAndSettle();
       expect(find.text('Close batch'), findsOneWidget);
-      expect(find.text('Cancel run'), findsNothing);
+      expect(find.text('Stop run'), findsNothing);
       await tester.tapAt(Offset.zero);
       await tester.pumpAndSettle();
 
@@ -753,6 +765,35 @@ void main() {
       );
       await settle(tester);
     }
+
+    testWidgets('an empty Runs list teaches and offers Start a run', (
+      tester,
+    ) async {
+      await size(tester, const Size(400, 900));
+      final (controller, gateway) = await boot(
+        configure: (g) => g.runList = const [],
+      );
+      await pumpHome(tester, controller);
+      expect(key('team-home-runs-empty'), findsOneWidget);
+      expect(find.text('No runs yet.'), findsOneWidget);
+      expect(
+        find.text(
+          'A run is a job the team works through. Start one and its '
+          'progress shows here.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Start runs from the host for now.'), findsNothing);
+      await tester.tap(
+        find.descendant(
+          of: key('team-home-runs-empty'),
+          matching: find.text('Start a run'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(key('team-start-run-sheet'), findsOneWidget);
+      expect(gateway.calls, isEmpty);
+    });
 
     testWidgets(
       'sends objective + supervision to the Mayor, shows Planning, resolves',
@@ -874,6 +915,144 @@ void main() {
       expect(key('team-start-run-host-guide'), findsOneWidget);
       expect(key('team-start-run-send'), findsNothing);
       expect(key('team-start-run-objective'), findsNothing);
+      // A front host has no create route: no direct form (TEAM-306).
+      expect(controller.capabilities.controlCreateWork, isFalse);
+      expect(key('team-start-run-direct'), findsNothing);
+      expect(key('team-start-run-direct-send'), findsNothing);
+      expect(gateway.calls, isEmpty);
+    });
+
+    MutationReceipt created(_Call call) => MutationReceipt(
+      id: call.requestId,
+      status: MutationReceiptStatus.accepted,
+      raw: {'id': 'fx-new-1', 'status': 'open', 'title': call.target},
+      upstreamStatus: 201,
+    );
+
+    MutationReceipt slung(_Call call) => MutationReceipt(
+      id: call.requestId,
+      status: MutationReceiptStatus.accepted,
+      correlationId: 'corr-${call.requestId}',
+      upstreamStatus: 202,
+    );
+
+    testWidgets(
+      'TEAM-306: a suspended Mayor on the phone host shows the direct task '
+      'form; Send creates the work and slings it at the project pool',
+      (tester) async {
+        await size(tester, const Size(400, 900));
+        final (controller, gateway) = await boot(
+          capabilities: OrchestrationCapabilities.gascityLoopback,
+          configure: (g) {
+            g.agentList = [fox(), mayor(suspended: true)];
+            g.answer = (call) async =>
+                call.verb == 'createWork' ? created(call) : slung(call);
+          },
+        );
+        await pumpHome(tester, controller);
+        await tester.tap(key('team-home-start-run'));
+        await tester.pumpAndSettle();
+        expect(key('team-start-run-direct'), findsOneWidget);
+        expect(key('team-start-run-planner-off'), findsNothing);
+        expect(key('team-start-run-objective'), findsNothing);
+        expect(
+          find.text(
+            'The planner is off on this host. Give one task straight to '
+            "the project's agent.",
+          ),
+          findsOneWidget,
+        );
+        expect(key('team-start-run-direct-project'), findsOneWidget);
+        expect(find.text('ocproof'), findsOneWidget);
+        expect(find.text('Send to an agent'), findsOneWidget);
+        expect(key('team-start-run-host-guide'), findsOneWidget);
+
+        // Empty title: validation, nothing sent.
+        await tester.tap(key('team-start-run-direct-send'));
+        await tester.pumpAndSettle();
+        expect(find.text('Write a task first.'), findsOneWidget);
+        expect(gateway.calls, isEmpty);
+
+        await tester.enterText(
+          key('team-start-run-direct-title'),
+          'Add a docstring to add() in calc.py',
+        );
+        await tester.enterText(
+          key('team-start-run-direct-details'),
+          'One line, nothing else.',
+        );
+        await tester.tap(key('team-start-run-direct-send'));
+        await tester.pumpAndSettle();
+
+        expect(gateway.calls.map((c) => c.verb), ['createWork', 'assign']);
+        expect(gateway.calls[0].target, 'Add a docstring to add() in calc.py');
+        expect(gateway.calls[0].arg, 'ocproof');
+        expect(gateway.calls[1].target, 'fx-new-1');
+        expect(gateway.calls[1].arg, 'ocproof/gastown.polecat');
+
+        // The sheet closed; the home says the task went out.
+        expect(key('team-start-run-sheet'), findsNothing);
+        expect(find.text('Planning… (Mayor)'), findsNothing);
+        expect(find.text('Task sent to an agent · Confirmed'), findsOneWidget);
+        final record = controller.latestMutation(
+          kind: MutationKind.createWork,
+        )!;
+        expect(record.status, MutationStatus.confirmed);
+        expect(record.receipt?.createdId, 'fx-new-1');
+        expect(record.request.text, 'One line, nothing else.');
+        expect(record.request.projectId, 'ocproof');
+        expect(
+          controller.latestMutation(kind: MutationKind.assign)?.targetId,
+          'fx-new-1',
+        );
+        await drain(tester);
+      },
+    );
+
+    testWidgets('TEAM-306: a refused direct task stays on the sheet and says '
+        'why; nothing is slung', (tester) async {
+      await size(tester, const Size(400, 900));
+      final (controller, gateway) = await boot(
+        capabilities: OrchestrationCapabilities.gascityLoopback,
+        configure: (g) {
+          g.agentList = [fox(), mayor(suspended: true)];
+          g.answer = (call) async =>
+              MutationReceipt.rejected(call.requestId, 'rig ocproof unknown');
+        },
+      );
+      await pumpHome(tester, controller);
+      await tester.tap(key('team-home-start-run'));
+      await tester.pumpAndSettle();
+      await tester.enterText(key('team-start-run-direct-title'), 'Add tests');
+      await tester.tap(key('team-start-run-direct-send'));
+      await tester.pumpAndSettle();
+      expect(gateway.calls.map((c) => c.verb), ['createWork']);
+      expect(key('team-start-run-sheet'), findsOneWidget);
+      expect(key('team-start-run-direct-error'), findsOneWidget);
+      expect(
+        find.text('The host refused the task: rig ocproof unknown'),
+        findsOneWidget,
+      );
+      expect(
+        controller.latestMutation(kind: MutationKind.createWork)?.status,
+        MutationStatus.rejected,
+      );
+    });
+
+    testWidgets('TEAM-306: no project listed: the host-off copy, even on '
+        'the phone host', (tester) async {
+      await size(tester, const Size(400, 900));
+      final (controller, gateway) = await boot(
+        capabilities: OrchestrationCapabilities.gascityLoopback,
+        configure: (g) => g
+          ..agentList = [fox(), mayor(suspended: true)]
+          ..projectList = const [],
+      );
+      await pumpHome(tester, controller);
+      await tester.tap(key('team-home-start-run'));
+      await tester.pumpAndSettle();
+      expect(key('team-start-run-planner-off'), findsOneWidget);
+      expect(key('team-start-run-direct'), findsNothing);
       expect(gateway.calls, isEmpty);
     });
 

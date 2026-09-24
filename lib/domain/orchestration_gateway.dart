@@ -93,6 +93,7 @@ class OrchestrationCapabilities {
     this.controlAgent = false,
     this.controlCancelRun = false,
     this.controlAssign = false,
+    this.controlCreateWork = false,
     this.changes = false,
     this.verification = false,
     this.mergeReadiness = false,
@@ -152,6 +153,13 @@ class OrchestrationCapabilities {
 
   /// Assign work to an agent (sling).
   final bool controlAssign;
+
+  /// Create one work item (bead) from the phone (TEAM-306), so a task can
+  /// go straight to a project's agent pool when the planner is off. On for
+  /// the loopback supervisor (`POST /beads`) and the fixture; off behind
+  /// the host front, which has no create route of its own — a PC-hosted
+  /// city keeps its planner and needs no direct path.
+  final bool controlCreateWork;
 
   /// Change sets produced by work items.
   final bool changes;
@@ -235,6 +243,7 @@ class OrchestrationCapabilities {
     controlAgent: true,
     controlCancelRun: true,
     controlAssign: true,
+    controlCreateWork: true,
     phoneHost: true,
   );
 
@@ -258,6 +267,7 @@ class OrchestrationCapabilities {
     controlAgent: true,
     controlCancelRun: true,
     controlAssign: true,
+    controlCreateWork: true,
     changes: true,
     verification: true,
     mergeReadiness: true,
@@ -270,7 +280,8 @@ class OrchestrationCapabilities {
       controlMessage ||
       controlAgent ||
       controlCancelRun ||
-      controlAssign;
+      controlAssign ||
+      controlCreateWork;
 
   /// Every switch by name, for diagnostics and consistency tests.
   Map<String, bool> asMap() => {
@@ -292,6 +303,7 @@ class OrchestrationCapabilities {
     'controlAgent': controlAgent,
     'controlCancelRun': controlCancelRun,
     'controlAssign': controlAssign,
+    'controlCreateWork': controlCreateWork,
     'changes': changes,
     'verification': verification,
     'mergeReadiness': mergeReadiness,
@@ -409,6 +421,20 @@ class MutationReceipt {
   final int? upstreamStatus;
 
   bool get isAccepted => status == MutationReceiptStatus.accepted;
+
+  /// The id of the resource a create answered with (`raw['id']`, or the
+  /// front receipt's inner `body.id`) when it is a non-empty string; null
+  /// otherwise. Set by [OrchestrationControlGateway.createWork].
+  String? get createdId {
+    final id = raw['id'];
+    if (id is String && id.isNotEmpty) return id;
+    final inner = raw['body'];
+    if (inner is Map) {
+      final innerId = inner['id'];
+      if (innerId is String && innerId.isNotEmpty) return innerId;
+    }
+    return null;
+  }
 
   Map<String, Object?> toJson() => {
     'id': id,
@@ -531,6 +557,18 @@ abstract interface class OrchestrationControlGateway {
   Future<MutationReceipt> assign(
     String workId, {
     required String agentId,
+    required String requestId,
+  });
+
+  /// Creates one work item (bead) titled [title] in the project
+  /// [projectId] (a rig name; the host's default when null), behind
+  /// [OrchestrationCapabilities.controlCreateWork]. The created id comes
+  /// back in [MutationReceipt.createdId] (`receipt.raw['id']`); the caller
+  /// assigns it with [assign].
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
     required String requestId,
   });
 }

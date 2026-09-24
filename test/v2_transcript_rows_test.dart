@@ -55,7 +55,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.text(
-        "The agent's session instructions have been updated for this step.",
+        "The agent's conversation instructions have been updated for this step.",
       ),
       findsOneWidget,
     );
@@ -155,7 +155,7 @@ void main() {
   });
 
   group('TranscriptNotice variants', () {
-    testWidgets('system notice collapses to two lines and expands on tap', (
+    testWidgets('system notice is its header until tapped, then shows all', (
       tester,
     ) async {
       final longBody = List.generate(
@@ -176,8 +176,9 @@ void main() {
       );
       expect(find.byIcon(AppIconography.settingsAdvanced), findsOneWidget);
       expect(find.textContaining('System update'), findsOneWidget);
-      final collapsed = tester.widget<Text>(find.text(longBody));
-      expect(collapsed.maxLines, 2);
+      // A routine notice costs one line of transcript; the detail is a tap
+      // away instead of two lines under every "Context added".
+      expect(find.text(longBody), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('transcript-notice-msg_4')));
       await tester.pumpAndSettle();
@@ -315,8 +316,58 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Compaction failed'), findsOneWidget);
-      expect(find.text('ran out of room'), findsOneWidget);
+      // What it means for the reader first, then the server's reason.
+      expect(
+        find.textContaining('still too long for the model'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('ran out of room'), findsOneWidget);
+      // An old failure is history: nothing to press.
+      expect(find.byKey(const Key('transcript-notice-action')), findsNothing);
     });
+
+    testWidgets('the newest failure can be retried from its own line', (
+      tester,
+    ) async {
+      var retried = 0;
+      await tester.pumpWidget(
+        _host(
+          V2TranscriptRow(
+            part: _tagged(
+              type: 'v2:compaction',
+              kind: 'failed',
+              text: 'Compaction was interrupted',
+            ),
+            messageId: 'msg_11',
+            onCompactAgain: () => retried++,
+          ),
+        ),
+      );
+      expect(find.text('Compact again'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('transcript-notice-action')));
+      expect(retried, 1);
+    });
+  });
+
+  testWidgets('a server message is titled by what it says', (tester) async {
+    await tester.pumpWidget(
+      _host(
+        V2TranscriptRow(
+          part: _tagged(
+            type: 'v2:notice',
+            kind: 'something-new',
+            text: 'Background command finished\nexit 0 after 2m',
+          ),
+          messageId: 'msg_12',
+        ),
+      ),
+    );
+    expect(find.text('Background command finished'), findsOneWidget);
+    expect(find.text('Server message'), findsNothing);
+    // The rest waits behind the tap, not repeated with the title.
+    await tester.tap(find.byKey(const ValueKey('transcript-notice-msg_12')));
+    await tester.pumpAndSettle();
+    expect(find.text('exit 0 after 2m'), findsOneWidget);
   });
 
   group('interleaved tool content', () {
@@ -449,7 +500,7 @@ void main() {
         picker(await controller(), ModelPickerApplyScope.session),
       );
       await tester.pump();
-      expect(find.text('Use for this session'), findsOneWidget);
+      expect(find.text('Use for this conversation'), findsOneWidget);
       await tester.tap(find.byKey(const Key('model-picker-options')));
       await tester.pumpAndSettle();
       expect(
@@ -457,7 +508,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text("Applies to this session's next turns."),
+        find.text("Applies to this conversation's next turns."),
         findsOneWidget,
       );
     });
@@ -469,7 +520,7 @@ void main() {
         picker(await controller(), ModelPickerApplyScope.newSessions),
       );
       await tester.pump();
-      expect(find.text('Use for new sessions'), findsOneWidget);
+      expect(find.text('Use for new conversations'), findsOneWidget);
       expect(
         find.byKey(const Key('model-picker-session-scope-note')),
         findsNothing,

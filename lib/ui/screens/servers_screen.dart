@@ -12,17 +12,26 @@ import '../widgets/setup_ui_messages.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/codex_connection_probe.dart';
+import '../../state/paseo_connection_probe.dart';
 import '../../state/pairing.dart';
 import '../../state/profiles.dart';
 import '../../state/external_agents.dart';
+import '../../state/first_run.dart';
 import '../../termux/bridge.dart';
 import '../app_theme.dart';
+import '../setup_commands.dart';
 import '../widgets/confirm_sheet.dart';
+import '../widgets/first_run_choice.dart';
 import '../widgets/managed_server_health.dart';
 import '../widgets/product_states.dart';
 import '../widgets/team_host_form.dart';
+import '../widgets/local_agent_server_entry.dart';
 import '../widgets/termux_running_server_entry.dart';
+import '../widgets/safety_confirms.dart';
+import '../../state/local_server_controls.dart';
+import 'agent_choice_screen.dart';
 import 'demo_screen.dart';
+import 'guide_screen.dart' show Cmd;
 import 'attention_overview_screen.dart';
 import 'agent_account_screen.dart';
 import 'pairing_scanner_screen.dart';
@@ -35,8 +44,90 @@ import 'external_agents_screen.dart';
 /// when connecting (or saving) did not work out.
 typedef _SubmitOutcome = ({bool saved, String? failure});
 
+/// Checks a Paseo daemon or a Codex app-server, the two socket backends.
+typedef SocketAgentProbe =
+    Future<CodexConnectionProbeResult> Function({
+      required ServerBackend backend,
+      required String baseUrl,
+      required String secret,
+      required String directory,
+    });
+
+Future<CodexConnectionProbeResult> _probeSocketAgent({
+  required ServerBackend backend,
+  required String baseUrl,
+  required String secret,
+  required String directory,
+}) => backend == ServerBackend.paseo
+    ? probePaseoConnection(
+        baseUrl: baseUrl,
+        password: secret,
+        directory: directory,
+      )
+    : probeCodexConnection(
+        baseUrl: baseUrl,
+        token: secret,
+        directory: directory,
+      );
+
+/// The socket-backend counterpart of [serverProbe]: replaceable so a widget
+/// test can answer the connect screen's test without opening a socket.
+@visibleForTesting
+SocketAgentProbe socketAgentProbe = _probeSocketAgent;
+
+/// How long the person must stop typing before the first-run connect screen
+/// tests by itself. Long enough that an address is not probed half-typed,
+/// short enough that the verdict is there when they look up.
+@visibleForTesting
+const autoTestPause = Duration(milliseconds: 800);
+
 AppLocalizations _connectionL10n(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
+
+/// What another surface asks the Servers screen to do as it opens, passed as
+/// the `/servers` route argument.
+///
+/// The server switcher in the shell lists the same servers, but connecting,
+/// credentials, adding and forgetting each have one implementation, here:
+/// the runtime-choice detour, the editor that stays open until a connect
+/// succeeds, and the inline failure card. The switcher hands the choice over
+/// instead of keeping a second, thinner copy of that flow.
+class ServersRouteRequest {
+  /// Connect [profileID] through the list's connect flow. [detectedRunning]
+  /// is the phone card's promise that this runtime is the live one.
+  const ServersRouteRequest.connect(
+    String this.profileID, {
+    this.detectedRunning = false,
+  }) : kind = ServersRouteRequestKind.connect,
+       openCode2 = false;
+
+  /// Open the editor for a new server.
+  const ServersRouteRequest.add()
+    : kind = ServersRouteRequestKind.add,
+      profileID = null,
+      detectedRunning = false,
+      openCode2 = false;
+
+  /// Ask for the phone server's sign-in, saved as [profileID] when it exists.
+  const ServersRouteRequest.enterPhoneCredentials({
+    this.profileID,
+    required this.openCode2,
+  }) : kind = ServersRouteRequestKind.enterPhoneCredentials,
+       detectedRunning = true;
+
+  /// Confirm and forget the saved server [profileID].
+  const ServersRouteRequest.forget(String this.profileID)
+    : kind = ServersRouteRequestKind.forget,
+      detectedRunning = false,
+      openCode2 = false;
+
+  final ServersRouteRequestKind kind;
+  final String? profileID;
+  final bool detectedRunning;
+  final bool openCode2;
+}
+
+enum ServersRouteRequestKind { connect, add, enterPhoneCredentials, forget }
 
 /// Manage opencode server profiles and connect.
 class ServersScreen extends ConsumerStatefulWidget {
@@ -60,6 +151,19 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   int _termuxRevision = 0;
 
   @override
+  void initState() {
+    super.initState();
+    // The welcome as the first thing a device shows is what makes it new
+    // (see [FirstRun]); the shell reads this after the first connect.
+    final store = ref.read(bootstrapProvider).store;
+    unawaited(
+      FirstRun(
+        store.prefs,
+      ).observeServers(hasServers: store.profiles.isNotEmpty),
+    );
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_handledRouteArgument) return;
@@ -67,7 +171,14 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     // The connection banner's "Update password" action routes here with this
     // argument: open the active profile's editor with the password focused so
     // a rotated serve password is one paste away (never a modal).
-    if (ModalRoute.of(context)?.settings.arguments == 'edit-active') {
+    final argument = ModalRoute.of(context)?.settings.arguments;
+    if (argument is ServersRouteRequest) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_handleRouteRequest(argument));
+      });
+      return;
+    }
+    if (argument == 'edit-active') {
       final store = ref.read(bootstrapProvider).store;
       ServerProfile? active;
       for (final p in store.profiles) {
@@ -79,6 +190,28 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           if (mounted) unawaited(_edit(existing: target, focusPassword: true));
         });
       }
+    }
+  }
+
+  Future<void> _handleRouteRequest(ServersRouteRequest request) async {
+    ServerProfile? target;
+    for (final p in ref.read(bootstrapProvider).store.profiles) {
+      if (p.id == request.profileID) target = p;
+    }
+    switch (request.kind) {
+      case ServersRouteRequestKind.add:
+        await _edit();
+      case ServersRouteRequestKind.connect:
+        if (target != null) {
+          await _connect(target, detectedRunning: request.detectedRunning);
+        }
+      case ServersRouteRequestKind.enterPhoneCredentials:
+        await _enterPhoneCredentials(
+          existing: target,
+          openCode2: request.openCode2,
+        );
+      case ServersRouteRequestKind.forget:
+        if (target != null) await _delete(target);
     }
   }
 
@@ -106,6 +239,38 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     List<ServerProfile> profiles,
     ConnectionController connection,
   ) {
+    // Both servers this app can run on the phone lead the list and are
+    // controlled in place: OpenCode first, then the Claude Code daemon. Each
+    // entry decides on its own whether it has anything to show.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _openCodeServerEntry(profiles, connection),
+        LocalAgentServerEntry(
+          profiles: profiles,
+          busy: _busy,
+          revision: _termuxRevision,
+          connectedProfileID: connection.api == null
+              ? null
+              : connection.profile?.id,
+          busyConversations: connection.busySessions.length,
+          onDisconnect: () async {
+            if (!await confirmDisconnectServer(context, connection)) return;
+            await connection.disconnect(keepActive: true);
+          },
+          onForget: _delete,
+          onManage: _openTermuxSetup,
+          onConnect: (profile) => _connect(profile, detectedRunning: true),
+        ),
+      ],
+    );
+  }
+
+  Widget _openCodeServerEntry(
+    List<ServerProfile> profiles,
+    ConnectionController connection,
+  ) {
     return TermuxRunningServerEntry(
       profiles: profiles,
       busy: _busy,
@@ -113,14 +278,74 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
       connectedProfileID: connection.api == null
           ? null
           : connection.profile?.id,
+      busyConversations: connection.busySessions.length,
+      actions: () {
+        final controls = LocalServerControls(
+          store: ref.read(bootstrapProvider).store,
+          connection: connection,
+        );
+        return LocalServerCardActions(
+          restart: () async => controls.restart(),
+          stop: controls.stop,
+        );
+      }(),
+      onDisconnect: () async {
+        if (!await confirmDisconnectServer(context, connection)) return;
+        await connection.disconnect(keepActive: true);
+      },
+      onForget: _delete,
+      onManage: _openTermuxSetup,
       onConnect: (profile) => _connect(profile, detectedRunning: true),
-      onEnterCredentials: (server, existing) => _edit(
+      onEnterCredentials: (server, existing) => _enterPhoneCredentials(
         existing: existing,
-        connectOnSave: true,
-        initialUrl: TermuxBridge.managedServerUrl,
-        focusPassword: true,
-        openCode2Intent: server.flavor == ServerFlavor.v2,
+        openCode2: server.flavor == ServerFlavor.v2,
       ),
+    );
+  }
+
+  /// The phone's own server is running but the app has no usable password for
+  /// it. The app wrote that password, so it first restores it from the phone;
+  /// only when that is impossible (or the restored one was already refused)
+  /// does it ask the person to type one.
+  Future<void> _enterPhoneCredentials({
+    required ServerProfile? existing,
+    required bool openCode2,
+  }) async {
+    if (_busy) return;
+    final recovered = await TermuxBridge.managedServerPassword();
+    if (!mounted) return;
+    final alreadyRefused =
+        existing != null &&
+        !existing.requiresPasswordReentry &&
+        existing.password == recovered;
+    if (recovered != null && !alreadyRefused) {
+      final store = ref.read(bootstrapProvider).store;
+      final profile =
+          existing ??
+          ServerProfile(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            name: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).e7SetupThisDevice,
+            baseUrl: TermuxBridge.managedServerUrl,
+            flavor: openCode2 ? ServerFlavor.v2 : ServerFlavor.v1,
+          );
+      profile
+        ..username = 'opencode'
+        ..password = recovered
+        ..requiresPasswordReentry = false;
+      await store.upsert(profile);
+      if (!mounted) return;
+      setState(() {});
+      await _connect(profile, detectedRunning: true);
+      return;
+    }
+    await _edit(
+      existing: existing,
+      connectOnSave: true,
+      initialUrl: TermuxBridge.managedServerUrl,
+      focusPassword: true,
+      openCode2Intent: openCode2,
     );
   }
 
@@ -176,13 +401,15 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
     }
   }
 
-  Future<void> _edit({
+  /// Completes with whether the editor saved a server.
+  Future<bool> _edit({
     ServerProfile? existing,
     bool focusPassword = false,
     bool tailscale = false,
     String? initialUrl,
     bool openCode2Intent = false,
     bool connectOnSave = false,
+    ServerBackend? presetBackend,
   }) async {
     final isNew = existing == null;
     final useTailscale =
@@ -208,6 +435,7 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
           tailscale: useTailscale,
           initialUrl: initialUrl,
           openCode2Intent: openCode2Intent,
+          presetBackend: presetBackend,
           onSubmit: (profile) => _saveAndConnect(
             profile,
             isNew: isNew,
@@ -219,10 +447,33 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
         ),
       ),
     );
-    if (result == null || !mounted) return;
+    if (result == null) return false;
+    if (!mounted) return true;
     if (isNew || connectOnSave || result.backend == ServerBackend.codex) {
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
     }
+    return true;
+  }
+
+  /// First run, computer path: ask which agent, then open the connect screen
+  /// already set to it. The connect screen is pushed on top of the question,
+  /// so Back returns to the question rather than to the welcome.
+  Future<void> _computerPath() {
+    final navigator = Navigator.of(context);
+    late final MaterialPageRoute<void> question;
+    question = MaterialPageRoute<void>(
+      builder: (_) => AgentChoiceScreen(
+        onChoose: (backend) async {
+          final saved = await _edit(presetBackend: backend);
+          // A first connection turns the root into the shell in place, so
+          // this screen is no longer mounted to clear the stack itself. The
+          // question has been answered; left alone it would sit on top of
+          // the conversation the person is about to land in.
+          if (saved && question.isActive) navigator.removeRoute(question);
+        },
+      ),
+    );
+    return navigator.push<void>(question);
   }
 
   Future<void> _tailscale() async {
@@ -419,11 +670,15 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
             icon: const Icon(AppIconography.info),
             onPressed: () => Navigator.pushNamed(context, '/about'),
           ),
-          IconButton(
-            tooltip: _connectionL10n(context).onboardingSetupGuide,
-            icon: const Icon(AppIconography.question),
-            onPressed: () => Navigator.pushNamed(context, '/guide'),
-          ),
+          // First run asks one question; the guide is reference material and
+          // lives in Settings → Help (UX plan 5.4). It stays here once there
+          // are servers to manage.
+          if (bootstrap.store.profiles.isNotEmpty)
+            IconButton(
+              tooltip: _connectionL10n(context).onboardingSetupGuide,
+              icon: const Icon(AppIconography.question),
+              onPressed: () => Navigator.pushNamed(context, '/guide'),
+            ),
         ],
       ),
       body: Builder(
@@ -436,27 +691,23 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                 store.profiles,
                 accountConnection,
               ),
-              onConnect: () => _edit(),
-              onConnectOpenCode2: () => _edit(openCode2Intent: true),
-              onTailscale: _tailscale,
-              onTermux: _openTermuxSetup,
-              onGuide: () => Navigator.pushNamed(context, '/guide'),
+              onComputer: _computerPath,
+              onPhone: _openTermuxSetup,
               onDemo: _demo,
-              onExternalAgents: _externalAgents,
             );
           }
           final activeId = store.activeId;
           final needsCredential = store.profiles.any(
             (profile) =>
                 profile.id == activeId &&
-                (profile.backend == ServerBackend.codex
+                (profile.usesAgentSocket
                     ? profile.requiresCodexTokenReentry
                     : profile.requiresPasswordReentry),
           );
           final needsToken = store.profiles.any(
             (profile) =>
                 profile.id == activeId &&
-                profile.backend == ServerBackend.codex &&
+                profile.usesAgentSocket &&
                 profile.requiresCodexTokenReentry,
           );
           return ListView(
@@ -597,9 +848,9 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                        if (p.backend == ServerBackend.codex)
+                        if (p.usesAgentSocket)
                           Text(
-                            'Codex${p.codexDirectory.isEmpty ? '' : ' · ${p.codexDirectory}'}',
+                            '${p.backend == ServerBackend.paseo ? 'Paseo' : 'Codex'}${p.codexDirectory.isEmpty ? '' : ' · ${p.codexDirectory}'}',
                             key: ValueKey('codex-profile-${p.id}'),
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary,
@@ -725,36 +976,32 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
   }
 }
 
-/// First run has two immediate jobs: connect an existing server or try safely.
+/// First run asks the only real fork, one question with plain answers (UX
+/// plan 5.6 step 1). Product names, private networks and the guide are met
+/// later, at the step where each one matters.
 class _WelcomeView extends StatelessWidget {
   final bool busy;
 
-  /// The detected on-device server, above every generic choice. It renders
-  /// nothing unless a running server was actually observed.
+  /// The detected on-device server, above the question. It renders nothing
+  /// unless a running server was actually observed: a live thing the app
+  /// found outranks every generic choice.
   final Widget runningServer;
-  final VoidCallback onConnect;
-  final VoidCallback onConnectOpenCode2;
-  final VoidCallback onTailscale;
-  final VoidCallback onTermux;
-  final VoidCallback onGuide;
+  final VoidCallback onComputer;
+  final VoidCallback onPhone;
   final VoidCallback onDemo;
-  final VoidCallback onExternalAgents;
 
   const _WelcomeView({
     required this.busy,
     required this.runningServer,
-    required this.onConnect,
-    required this.onConnectOpenCode2,
-    required this.onTailscale,
-    required this.onTermux,
-    required this.onGuide,
+    required this.onComputer,
+    required this.onPhone,
     required this.onDemo,
-    required this.onExternalAgents,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final copy = _connectionL10n(context);
     return SafeArea(
       child: LayoutBuilder(
         builder: (context, constraints) => SingleChildScrollView(
@@ -771,60 +1018,48 @@ class _WelcomeView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        _connectionL10n(context).onboardingValueTitle,
+                        copy.onboardingValueTitle,
                         style: theme.textTheme.headlineMedium,
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        _connectionL10n(context).onboardingValueBody,
+                        copy.onboardingValueBody,
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 32),
                       runningServer,
-                      FilledButton(
-                        key: const ValueKey('welcome-connect-card'),
-                        onPressed: busy ? null : onConnect,
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(48, 56),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                        ),
+                      Semantics(
+                        header: true,
                         child: Text(
-                          _connectionL10n(context).onboardingConnect,
-                          textAlign: TextAlign.center,
+                          copy.firstRunWhereQuestion,
+                          key: const ValueKey('welcome-question'),
+                          style: theme.textTheme.titleMedium,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: busy ? null : onDemo,
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(48, 48),
-                        ),
-                        child: const Text(DemoCopy.tryDemo),
+                      const SizedBox(height: 12),
+                      FirstRunChoice(
+                        key: const ValueKey('welcome-choice-computer'),
+                        icon: AppIconography.server,
+                        title: copy.firstRunOnComputer,
+                        detail: copy.firstRunOnComputerDetail,
+                        onTap: busy ? null : onComputer,
                       ),
-                      Text(
-                        _connectionL10n(context).onboardingDemoNote,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _OpenCode2Entry(onTap: busy ? null : onConnectOpenCode2),
                       if (platformCapabilities.supportsTermux)
-                        _TermuxEntry(
-                          key: const ValueKey('welcome-termux-card'),
-                          onTap: busy ? null : onTermux,
+                        FirstRunChoice(
+                          key: const ValueKey('welcome-choice-phone'),
+                          icon: AppIconography.phone,
+                          title: copy.onboardingTermuxSetup,
+                          detail: copy.firstRunOnPhoneDetail,
+                          onTap: busy ? null : onPhone,
                         ),
-                      _SetupOptions(
-                        busy: busy,
-                        onTailscale: onTailscale,
-                        onGuide: onGuide,
-                        onExternalAgents: onExternalAgents,
+                      FirstRunChoice(
+                        key: const ValueKey('welcome-choice-demo'),
+                        icon: AppIconography.playCircle,
+                        title: copy.firstRunJustShowMe,
+                        detail: copy.onboardingDemoNote,
+                        onTap: busy ? null : onDemo,
                       ),
                     ],
                   ),
@@ -965,6 +1200,12 @@ class _ProfileEditorScreen extends StatefulWidget {
   final bool openCode2Intent;
   final String? initialUrl;
 
+  /// The agent the person chose on the first-run computer path. The editor
+  /// becomes that agent's connect screen: the backend selector is hidden
+  /// (they already answered), the command to run leads, and the private
+  /// network link sits under the address. Null everywhere else.
+  final ServerBackend? presetBackend;
+
   /// Focus the password field on open — the path taken from the connection
   /// banner after a mid-session 401 (the serve password rotated).
   final bool focusPassword;
@@ -984,6 +1225,7 @@ class _ProfileEditorScreen extends StatefulWidget {
     this.reconnectOnSave = false,
     this.openCode2Intent = false,
     this.initialUrl,
+    this.presetBackend,
     this.focusPassword = false,
     required this.onSubmit,
     this.secureStorageProbe,
@@ -995,7 +1237,9 @@ class _ProfileEditorScreen extends StatefulWidget {
 
 class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   late ServerBackend _backend =
-      widget.existing?.backend ?? ServerBackend.openCode;
+      widget.existing?.backend ??
+      widget.presetBackend ??
+      ServerBackend.openCode;
   late final TextEditingController _name = TextEditingController(
     text: widget.existing?.name ?? '',
   );
@@ -1044,6 +1288,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   int _urlLength = 0;
   int _probeGeneration = 0;
 
+  /// The pause before the first-run test runs by itself; see [_autoTests].
+  Timer? _autoTestTimer;
+
   /// True while a pairing payload's addresses are being probed.
   bool _pairing = false;
 
@@ -1060,7 +1307,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// put the server behind TLS.
   String? _pairingFailure;
 
-  bool get _isCodex => _backend == ServerBackend.codex;
+  /// True for both socket-style backends (Codex app-server and the Paseo
+  /// daemon): they share the address, project folder and secret fields.
+  bool get _isCodex => _backend != ServerBackend.openCode;
+  bool get _isPaseo => _backend == ServerBackend.paseo;
 
   bool get _needsPassword =>
       !_isCodex && (widget.existing?.requiresPasswordReentry ?? false);
@@ -1097,12 +1347,19 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   /// platform may offer it to autofill. So the field is emptied first and the
   /// payload is routed to [_applyPairing].
   void _urlChanged(String value) {
+    _applyUrlChange(value);
+    _scheduleAutoTest();
+  }
+
+  void _applyUrlChange(String value) {
     setState(_invalidateProbe);
     if (_isCodex) {
       final pasted = value.length - _urlLength >= 4;
       _urlLength = value.length;
       if (pasted && !value.contains('://')) {
-        final normalized = normalizeCodexServerUrl(value);
+        final normalized = _isPaseo
+            ? normalizePaseoServerUrl(value)
+            : normalizeCodexServerUrl(value);
         if (normalized != value.trim()) {
           _urlLength = normalized.length;
           _url.value = TextEditingValue(
@@ -1141,7 +1398,56 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     }
   }
 
+  /// Every field's change handler: what was tested is no longer what is
+  /// typed, so the verdict goes and, on the first-run path, a new test is
+  /// queued behind a pause.
+  void _fieldChanged() {
+    setState(_invalidateProbe);
+    _scheduleAutoTest();
+  }
+
+  /// True on the first-run connect screen only (UX plan 5.6 step 3). Editing
+  /// a saved server never tests by itself: that person came to change one
+  /// value, and a probe of the half-edited profile is noise.
+  bool get _autoTests =>
+      widget.presetBackend != null && widget.existing == null;
+
+  /// The required fields as [_testConnection] would accept them, checked
+  /// without its side effects (no error text, no focus move).
+  bool get _readyForAutoTest {
+    if (_url.text.trim().isEmpty) return false;
+    if (_isCodex) {
+      final url = _isPaseo
+          ? normalizePaseoServerUrl(_url.text)
+          : normalizeCodexServerUrl(_url.text);
+      return _validateSocketFields(url) == null;
+    }
+    return validateServerProfileUrl(
+          normalizeServerProfileUrl(_url.text),
+          username: _user.text,
+          password: _pass.text,
+        ) ==
+        null;
+  }
+
+  /// One test after the person pauses, never one per keystroke: each change
+  /// restarts the wait, and [_invalidateProbe] has already retired whatever
+  /// probe was in flight.
+  void _scheduleAutoTest() {
+    _autoTestTimer?.cancel();
+    _autoTestTimer = null;
+    if (!_autoTests || !_readyForAutoTest) return;
+    _autoTestTimer = Timer(autoTestPause, () {
+      _autoTestTimer = null;
+      if (!mounted || _submitting || _pairing || _testing || _closing) return;
+      if (!_readyForAutoTest) return;
+      unawaited(_testConnection(auto: true));
+    });
+  }
+
   void _invalidateProbe() {
+    _autoTestTimer?.cancel();
+    _autoTestTimer = null;
     _probeGeneration += 1;
     _testing = false;
     _submitFailure = null;
@@ -1153,10 +1459,14 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     _pairingFailure = null;
   }
 
-  Future<void> _testConnection() async {
+  /// [auto] is the first-run test that runs by itself. It reports the same
+  /// verdict but never moves focus: the person is still typing somewhere.
+  Future<void> _testConnection({bool auto = false}) async {
     if (_testing) return;
+    _autoTestTimer?.cancel();
+    _autoTestTimer = null;
     if (_isCodex) {
-      await _testCodexConnection();
+      await _testCodexConnection(auto: auto);
       return;
     }
     final url = normalizeServerProfileUrl(_url.text);
@@ -1206,7 +1516,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     });
     // Per the v2 auth taxonomy: a 401 without a password sends the user to
     // the password field; a rejected password selects it for a clean repaste.
-    if (result.flavor == ServerFlavor.v2 && result.needsPassword) {
+    if (!auto && result.flavor == ServerFlavor.v2 && result.needsPassword) {
       if (_pass.text.isNotEmpty) {
         _pass.selection = TextSelection(
           baseOffset: 0,
@@ -1217,8 +1527,18 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     }
   }
 
-  Future<void> _testCodexConnection() async {
-    var url = normalizeCodexServerUrl(_url.text);
+  String? _validateSocketFields(String url) => _isPaseo
+      ? validatePaseoServerUrl(url) ??
+            validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
+            validatePaseoPassword(_codexToken.text)
+      : validateCodexServerUrl(url) ??
+            validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
+            validateCodexConnectionToken(_codexToken.text);
+
+  Future<void> _testCodexConnection({bool auto = false}) async {
+    var url = _isPaseo
+        ? normalizePaseoServerUrl(_url.text)
+        : normalizeCodexServerUrl(_url.text);
     if (url != _url.text.trim()) {
       _urlLength = url.length;
       _url.value = TextEditingValue(
@@ -1226,16 +1546,16 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         selection: TextSelection.collapsed(offset: url.length),
       );
     }
-    final error =
-        validateCodexServerUrl(url) ??
-        validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
-        validateCodexConnectionToken(_codexToken.text);
+    final error = _validateSocketFields(url);
     if (error != null) {
       setState(() {
         _error = error;
         _codexTestResult = null;
       });
-      if (validateCodexServerUrl(url) != null) {
+      if ((_isPaseo
+              ? validatePaseoServerUrl(url)
+              : validateCodexServerUrl(url)) !=
+          null) {
         _urlFocus.requestFocus();
       } else if (validateCodexProjectDirectory(_codexDirectory.text.trim()) !=
           null) {
@@ -1252,9 +1572,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _error = null;
     });
     try {
-      final result = await probeCodexConnection(
+      final result = await socketAgentProbe(
+        backend: _backend,
         baseUrl: url,
-        token: _codexToken.text,
+        secret: _codexToken.text,
         directory: _codexDirectory.text.trim(),
       );
       if (!mounted || generation != _probeGeneration) return;
@@ -1263,7 +1584,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         _submitFailure = null;
         _codexTestResult = result;
       });
-      if (!result.ok) _codexTokenFocus.requestFocus();
+      if (!result.ok && !auto) _codexTokenFocus.requestFocus();
     } catch (error) {
       if (!mounted || generation != _probeGeneration) return;
       setState(() {
@@ -1453,12 +1774,16 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _invalidateProbe();
       _pass.text = text;
     });
+    _scheduleAutoTest();
     _passFocus.requestFocus();
   }
 
   bool get _dirty {
     final baseline = _savedProfile ?? widget.existing;
-    return _backend != (baseline?.backend ?? ServerBackend.openCode) ||
+    return _backend !=
+            (baseline?.backend ??
+                widget.presetBackend ??
+                ServerBackend.openCode) ||
         _name.text != (baseline?.name ?? '') ||
         _url.text != (baseline?.baseUrl ?? '') ||
         _user.text != (baseline?.username ?? '') ||
@@ -1469,6 +1794,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
 
   @override
   void dispose() {
+    _autoTestTimer?.cancel();
     _name.dispose();
     _url.dispose();
     _user.dispose();
@@ -1532,6 +1858,41 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _url.text = reviewed;
       _urlLength = reviewed.length;
     });
+    _scheduleAutoTest();
+  }
+
+  /// "Not on the same network?" on the first-run connect screen. For an
+  /// OpenCode server the reviewed private address comes back into the field.
+  /// Paseo and Codex listen on `ws://`, which the Tailscale screen does not
+  /// produce, so there it is opened for its guidance and the field is left
+  /// to the person.
+  Future<void> _notSameNetwork() async {
+    if (!_isCodex) return _tailscaleHelp();
+    if (_submitting) return;
+    await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const TailscaleSetupScreen()),
+    );
+  }
+
+  /// Null where the link must not exist: off the first-run path, and on a
+  /// platform with no Tailscale handoff (hide, don't disable).
+  Widget? _notSameNetworkLink() {
+    if (widget.presetBackend == null ||
+        !platformCapabilities.supportsTailscaleHandoff) {
+      return null;
+    }
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: TextButton(
+        key: const ValueKey('connect-not-same-network'),
+        style: TextButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          padding: EdgeInsets.zero,
+        ),
+        onPressed: _submitting ? null : () => unawaited(_notSameNetwork()),
+        child: Text(_connectionL10n(context).firstRunNotSameNetwork),
+      ),
+    );
   }
 
   /// "AI Team (optional)" › Add manually: the shared form; a found host is
@@ -1629,11 +1990,10 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   }
 
   Future<void> _saveCodex() async {
-    var url = normalizeCodexServerUrl(_url.text);
-    final error =
-        validateCodexServerUrl(url) ??
-        validateCodexProjectDirectory(_codexDirectory.text.trim()) ??
-        validateCodexConnectionToken(_codexToken.text);
+    var url = _isPaseo
+        ? normalizePaseoServerUrl(_url.text)
+        : normalizeCodexServerUrl(_url.text);
+    final error = _validateSocketFields(url);
     if (error != null) {
       setState(() => _error = error);
       return;
@@ -1648,7 +2008,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
           DateTime.now().microsecondsSinceEpoch.toString(),
       name: _name.text.trim().isEmpty ? uri.host : _name.text.trim(),
       baseUrl: url,
-      backend: ServerBackend.codex,
+      backend: _backend,
       codexDirectory: _codexDirectory.text.trim(),
       codexToken: _codexToken.text,
       serverVersion: probed?.version ?? widget.existing?.serverVersion,
@@ -1679,6 +2039,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       _invalidateProbe();
       _codexToken.text = value;
     });
+    _scheduleAutoTest();
     _codexTokenFocus.requestFocus();
   }
 
@@ -1691,7 +2052,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       focusNode: _nameFocus,
       textInputAction: TextInputAction.next,
       onSubmitted: (_) => _urlFocus.requestFocus(),
-      onChanged: (_) => setState(_invalidateProbe),
+      onChanged: (_) => _fieldChanged(),
       decoration: InputDecoration(
         labelText: _connectionL10n(context).connectionDisplayName,
         hintText: _connectionL10n(context).connectionDisplayNameHint,
@@ -1711,13 +2072,18 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       onChanged: _urlChanged,
       decoration: InputDecoration(
         labelText: _connectionL10n(context).connectionServerAddress,
-        hintText: _connectionL10n(context).codexAddressHint,
+        hintText: _isPaseo
+            ? _connectionL10n(context).paseoAddressHint
+            : _connectionL10n(context).codexAddressHint,
         errorText: _error,
         errorMaxLines: 3,
-        helperText: _connectionL10n(context).codexAddressHelp,
+        helperText: _isPaseo
+            ? _connectionL10n(context).paseoAddressHelp
+            : _connectionL10n(context).codexAddressHelp,
         helperMaxLines: 3,
       ),
     ),
+    ?_notSameNetworkLink(),
     const SizedBox(height: 20),
     TextField(
       enabled: !_submitting,
@@ -1727,7 +2093,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       focusNode: _codexDirectoryFocus,
       textInputAction: TextInputAction.next,
       onSubmitted: (_) => _codexTokenFocus.requestFocus(),
-      onChanged: (_) => setState(_invalidateProbe),
+      onChanged: (_) => _fieldChanged(),
       decoration: InputDecoration(
         labelText: _connectionL10n(context).codexProjectFolder,
         hintText: '/work/my-project',
@@ -1741,7 +2107,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       controller: _codexToken,
       focusNode: _codexTokenFocus,
       autofocus: _needsCodexToken || widget.focusPassword,
-      onChanged: (_) => setState(_invalidateProbe),
+      onChanged: (_) => _fieldChanged(),
       obscureText: _obscurePassword,
       autocorrect: false,
       enableSuggestions: false,
@@ -1754,8 +2120,12 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
       decoration: InputDecoration(
         labelText: _needsCodexToken
             ? _connectionL10n(context).codexTokenReentry
+            : _isPaseo
+            ? _connectionL10n(context).paseoPasswordLabel
             : _connectionL10n(context).codexTokenLabel,
-        helperText: _connectionL10n(context).codexTokenStorageHelp,
+        helperText: _isPaseo
+            ? _connectionL10n(context).paseoPasswordHelp
+            : _connectionL10n(context).codexTokenStorageHelp,
         helperMaxLines: 2,
         suffixIcon: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1838,7 +2208,15 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.existing == null
+    final title = widget.presetBackend != null
+        ? switch (widget.presetBackend!) {
+            ServerBackend.openCode => _connectionL10n(
+              context,
+            ).firstRunAgentOpenCode,
+            ServerBackend.paseo => _connectionL10n(context).firstRunPaseoTitle,
+            ServerBackend.codex => _connectionL10n(context).firstRunAgentCodex,
+          }
+        : widget.existing == null
         ? widget.openCode2Intent && !_isCodex
               ? _connectionL10n(context).oc2DiscoveryEditorTitle
               : lookupAppLocalizations(
@@ -1916,7 +2294,16 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       Text(_connectionL10n(context).tailscaleRecovery),
                     const SizedBox(height: 12),
                   ],
-                  if (widget.existing == null && !widget.tailscale) ...[
+                  if (widget.presetBackend case final preset?) ...[
+                    _ComputerCommand(backend: preset),
+                    const SizedBox(height: 12),
+                  ],
+                  // The person who came through "Which agent?" already chose;
+                  // asking again would be a second, harder copy of the same
+                  // question.
+                  if (widget.existing == null &&
+                      !widget.tailscale &&
+                      widget.presetBackend == null) ...[
                     Text(
                       _connectionL10n(context).connectionTypeLabel,
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -1946,11 +2333,24 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                           label: Text(
                             _connectionL10n(context).codexExperimentalLabel,
                           ),
-                          selected: _isCodex,
+                          selected: _isCodex && !_isPaseo,
                           onSelected: _submitting
                               ? null
                               : (_) => setState(() {
                                   _backend = ServerBackend.codex;
+                                  _invalidateProbe();
+                                }),
+                        ),
+                        ChoiceChip(
+                          key: const ValueKey('server-backend-paseo'),
+                          label: Text(
+                            _connectionL10n(context).paseoExperimentalLabel,
+                          ),
+                          selected: _isPaseo,
+                          onSelected: _submitting
+                              ? null
+                              : (_) => setState(() {
+                                  _backend = ServerBackend.paseo;
                                   _invalidateProbe();
                                 }),
                         ),
@@ -2016,9 +2416,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: Text(
-                        lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).codexApprovalRecoveryNotice,
+                        _isPaseo
+                            ? _connectionL10n(context).paseoSetupNotice
+                            : lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).codexApprovalRecoveryNotice,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -2029,6 +2431,13 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     const SizedBox(height: 12),
                     if (!widget.tailscale)
                       _PairingActions(
+                        // The command is already on screen above, with its
+                        // copy button; only the next move is left to say.
+                        instructions: widget.presetBackend == null
+                            ? null
+                            : platformCapabilities.supportsQrPairing
+                            ? _connectionL10n(context).firstRunPairingNextScan
+                            : _connectionL10n(context).firstRunPairingNextPaste,
                         busy: _pairing,
                         notice: _pairingNotice,
                         failure: _pairingFailure,
@@ -2068,6 +2477,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                         helperMaxLines: 3,
                       ),
                     ),
+                    ?_notSameNetworkLink(),
                     const SizedBox(height: 20),
                     TextField(
                       enabled: !_submitting,
@@ -2076,7 +2486,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       focusNode: _nameFocus,
                       textInputAction: TextInputAction.next,
                       onSubmitted: (_) => _userFocus.requestFocus(),
-                      onChanged: (_) => setState(_invalidateProbe),
+                      onChanged: (_) => _fieldChanged(),
                       decoration: InputDecoration(
                         labelText: _connectionL10n(
                           context,
@@ -2105,7 +2515,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       focusNode: _userFocus,
                       textInputAction: TextInputAction.next,
                       onSubmitted: (_) => _passFocus.requestFocus(),
-                      onChanged: (_) => setState(_invalidateProbe),
+                      onChanged: (_) => _fieldChanged(),
                       decoration: InputDecoration(
                         labelText: lookupAppLocalizations(
                           Localizations.localeOf(context),
@@ -2121,7 +2531,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       controller: _pass,
                       focusNode: _passFocus,
                       autofocus: _needsPassword || widget.focusPassword,
-                      onChanged: (_) => setState(_invalidateProbe),
+                      onChanged: (_) => _fieldChanged(),
                       obscureText: _obscurePassword,
                       autocorrect: false,
                       enableSuggestions: false,
@@ -2419,6 +2829,72 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
   }
 }
 
+/// The one command that starts the chosen agent, with a copy button, and the
+/// rest of the setup guide's commands behind "Show the commands" (UX plan
+/// 5.9). First run is the moment the person is at their computer with a
+/// terminal open; the guide screen stays in Settings → Help for later.
+class _ComputerCommand extends StatelessWidget {
+  const _ComputerCommand({required this.backend});
+
+  final ServerBackend backend;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final copy = _connectionL10n(context);
+    final caption = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      height: 1.35,
+    );
+    return Column(
+      key: const ValueKey('connect-computer-command'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(copy.firstRunRunOnComputer, style: theme.textTheme.titleSmall),
+        Cmd(
+          SetupCommands.startFor(backend),
+          key: const ValueKey('connect-command'),
+        ),
+        Theme(
+          data: theme.copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            key: const ValueKey('connect-show-commands'),
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: EdgeInsets.zero,
+            expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+            shape: const Border(),
+            collapsedShape: const Border(),
+            title: Text(copy.firstRunShowCommands),
+            children: switch (backend) {
+              ServerBackend.openCode => [
+                Text(
+                  copy.e7SharedServersStartedWithOpencodeServeDoNot,
+                  style: caption,
+                ),
+                const Cmd(SetupCommands.legacyServe),
+                Text(
+                  copy.e7SharedThenAddTheServerManuallyWithUsername,
+                  style: caption,
+                ),
+              ],
+              ServerBackend.paseo => [
+                Text(copy.firstRunCommandsPaseoNetwork, style: caption),
+                const Cmd(SetupCommands.paseoStartPrivateNetwork),
+              ],
+              ServerBackend.codex => [
+                Text(copy.firstRunCommandsCodexToken, style: caption),
+                const Cmd(SetupCommands.codexToken),
+                Text(copy.firstRunCommandsCodexUsb, style: caption),
+                const Cmd(SetupCommands.codexUsb),
+              ],
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// The one-step pairing affordance at the top of the server editor.
 ///
 /// `opencode2 pair` prints the address, the username, and the per-run
@@ -2435,6 +2911,7 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
 /// with it.
 class _PairingActions extends StatelessWidget {
   const _PairingActions({
+    this.instructions,
     required this.busy,
     required this.notice,
     required this.failure,
@@ -2442,6 +2919,9 @@ class _PairingActions extends StatelessWidget {
     required this.onScan,
   });
 
+  /// Replaces the line that names the command, where the command is already
+  /// shown above with a copy button.
+  final String? instructions;
   final bool busy;
   final String? notice;
   final String? failure;
@@ -2462,9 +2942,10 @@ class _PairingActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          lookupAppLocalizations(
-            Localizations.localeOf(context),
-          ).e7SetupPairingInstructions,
+          instructions ??
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupPairingInstructions,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
             height: 1.35,

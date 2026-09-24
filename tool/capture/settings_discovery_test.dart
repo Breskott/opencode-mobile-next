@@ -71,9 +71,14 @@ void main() {
             captureApp(
               home: page == 'more'
                   ? const HomeScreen(initialTab: 3)
-                  : page == 'settings'
-                  ? SettingsScreen(controller: controller)
-                  : CodingSettingsScreen(controller: controller),
+                  // "coding" was its own screen when this capture was taken;
+                  // its rows are the hub's Conversation defaults group now.
+                  : SettingsScreen(
+                      controller: controller,
+                      initialGroup: page == 'settings'
+                          ? null
+                          : SettingsGroup.conversation,
+                    ),
               boundaryKey: boundary,
               controller: controller,
               light: light,
@@ -87,9 +92,10 @@ void main() {
             await capturePng(tester, boundary, pixelRatio: 1),
           );
           if (stage == 'after' && page == 'coding' && scale == 1) {
-            await tester.tap(find.text('Selected agent'));
+            await tester.tap(
+              find.byKey(const ValueKey('settings-model-and-mode')),
+            );
             await tester.pumpAndSettle();
-            expect(find.text('Choose an agent'), findsOneWidget);
             expect(controller.selectedAgent, 'build');
           }
           await tester.pumpWidget(const SizedBox.shrink());

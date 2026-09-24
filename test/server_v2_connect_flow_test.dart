@@ -5,11 +5,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
+import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/screens/agent_choice_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/connection_status_banner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/first_run_path.dart';
 
 class _RecordingProfileStore extends ProfileStore {
   _RecordingProfileStore({required super.prefs});
@@ -30,17 +34,39 @@ class _RecordingProfileStore extends ProfileStore {
   }
 }
 
+class _StubGateway implements ServerGateway {
+  @override
+  bool get isClosed => false;
+  @override
+  void close() {}
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
 class _RecordingConnection extends ConnectionController {
   _RecordingConnection(super.store);
+
+  /// Lets a test swap the app root at the moment the connection succeeds.
+  VoidCallback? onConnected;
 
   @override
   Future<void> connect(
     ServerProfile profile, {
     bool redetectOnFailure = true,
-  }) async {}
+  }) async {
+    if (onConnected == null) return;
+    // The save flow reads `api` to decide the connection succeeded.
+    api = _StubGateway();
+    onConnected!.call();
+    // A real connect spans frames: the root has rebuilt into the shell, and
+    // the Servers screen is unmounted, before this future completes.
+    await finishConnect.future;
+  }
+
+  final finishConnect = Completer<void>();
 }
 
-Future<(_RecordingProfileStore, ConnectionController)> _state() async {
+Future<(_RecordingProfileStore, _RecordingConnection)> _state() async {
   SharedPreferences.setMockInitialValues({});
   final store = _RecordingProfileStore(
     prefs: await SharedPreferences.getInstance(),
@@ -61,11 +87,7 @@ Widget _app(ProfileStore store, ConnectionController controller) =>
     );
 
 Future<void> _openEditor(WidgetTester tester) async {
-  final connect = find.byKey(const ValueKey('welcome-connect-card'));
-  await tester.ensureVisible(connect);
-  await tester.pumpAndSettle();
-  await tester.tap(connect);
-  await tester.pumpAndSettle();
+  await openFirstRunConnect(tester);
 }
 
 /// The editor's own field list. `.first` because every text field carries its
@@ -246,6 +268,52 @@ void main() {
     expect(profile.flavor, ServerFlavor.v2);
     expect(profile.serverVersion, '0.0.0-beta-18600');
     expect(profile.password, 'the-serve-password');
+  });
+
+  testWidgets('a first connection leaves no question screen on top', (
+    tester,
+  ) async {
+    serverProbe = ({required baseUrl, username, password}) async =>
+        const ServerProbeResult.success(
+          '0.0.0-beta-18600',
+          flavor: ServerFlavor.v2,
+        );
+    final (store, controller) = await _state();
+    addTearDown(controller.dispose);
+    // The app's root turns from Servers into the shell in place when the
+    // first server connects, so the Servers screen is gone before it can
+    // clear the stack itself.
+    final connected = ValueNotifier(false);
+    addTearDown(connected.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bootstrapProvider.overrideWithValue(AppBootstrap(store)),
+          connProvider.overrideWithValue(controller),
+        ],
+        child: MaterialApp(
+          home: ValueListenableBuilder(
+            valueListenable: connected,
+            builder: (_, isConnected, _) => isConnected
+                ? const Scaffold(body: Text('shell'))
+                : const ServersScreen(),
+          ),
+        ),
+      ),
+    );
+    await _openEditor(tester);
+    await _enter(tester, 'server-url-field', 'https://box.example:4097');
+    await _enter(tester, 'server-password-field', 'the-serve-password');
+    await _test(tester);
+    controller.onConnected = () => connected.value = true;
+    await tester.tap(find.byKey(const ValueKey('save-server-profile')));
+    await tester.pump();
+    await tester.pump();
+    controller.finishConnect.complete();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AgentChoiceScreen), findsNothing);
+    expect(find.text('shell'), findsOneWidget);
   });
 
   testWidgets('a v1 success is labeled limited and stays saveable', (

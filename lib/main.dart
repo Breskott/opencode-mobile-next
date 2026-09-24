@@ -1,5 +1,6 @@
+import 'ui/search/search_index.dart';
 import 'ui/screens/profile_monitor_screen.dart';
-import 'ui/screens/quota_monitor_screen.dart';
+import 'ui/screens/usage_hub_screen.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 
@@ -108,6 +109,14 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
       );
       if (platformCapabilities.supportsPromptPhotos) {
         await controller.promptPhotos.recoverLostData();
+      }
+      // Before anything can alert: quiet hours and Wi-Fi only become one
+      // shared definition. Idempotent, and a failure leaves the legacy
+      // per-server records in charge.
+      try {
+        await controller.migrateNotificationPreferences();
+      } catch (error, stack) {
+        widget.diagnostics.record(error, stack, source: 'notify-migration');
       }
       if (!mounted || generation != _generation) {
         controller.dispose();
@@ -1001,7 +1010,11 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                 }
                 navigator.push(
                   MaterialPageRoute<void>(
-                    builder: (_) => QuotaMonitorScreen(controller: _controller),
+                    // Quota monitoring is part of Usage → Remaining.
+                    builder: (_) => UsageHubScreen(
+                      controller: _controller,
+                      initialSection: UsageSection.remaining,
+                    ),
                   ),
                 );
               }),
@@ -1090,6 +1103,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       );
     }
 
+    final scope = SearchScope(controller: _controller, hasShell: true);
     return [
       DesktopCommand(
         label: l10n.e7LocaleUiNewSession,
@@ -1105,32 +1119,29 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         keys: '$mod + 1',
         onInvoke: () => go(0),
       ),
-      DesktopCommand(
-        label: l10n.e7LocaleUiFiles,
-        icon: Icons.folder_outlined,
-        hint: l10n.e7LocaleUiFilesHint,
-        keys: '$mod + 2',
-        onInvoke: () => go(1),
-      ),
+      // Same order as the dock: the number in the hint is the tab's position.
       DesktopCommand(
         label: l10n.e7LocaleUiActivity,
         icon: Icons.notifications_outlined,
         hint: l10n.e7LocaleUiActivityHint,
+        keys: '$mod + 2',
+        onInvoke: () => go(1),
+      ),
+      DesktopCommand(
+        label: l10n.e7LocaleUiFiles,
+        icon: Icons.folder_outlined,
+        hint: l10n.e7LocaleUiFilesHint,
         keys: '$mod + 3',
         onInvoke: () => go(2),
       ),
-      DesktopCommand(
-        label: l10n.e7LocaleUiMore,
-        icon: Icons.more_horiz_rounded,
-        hint: l10n.e7LocaleUiMoreHint,
-        keys: '$mod + 4',
-        onInvoke: () => go(3),
-      ),
+      // One Settings command: the fourth tab is the hub. "$mod + ," still
+      // opens the same hub over the current screen without leaving it.
       DesktopCommand(
         label: l10n.e7LocaleUiSettings,
         icon: Icons.settings_outlined,
-        keys: '$mod + ,',
-        onInvoke: _openSettings,
+        hint: l10n.e7LocaleUiMoreHint,
+        keys: '$mod + 4',
+        onInvoke: () => go(3),
       ),
       DesktopCommand(
         label: l10n.e7LocaleUiKeyboardShortcuts,
@@ -1149,6 +1160,27 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
         hint: l10n.e7LocaleUiDiagnosticsHint,
         onInvoke: () => _navigatorKey.currentState?.pushNamed('/debug'),
       ),
+      // The rest of the launcher is the app-wide search index, so a setting
+      // or a Project tool is found here exactly as it is in Settings. The
+      // four tabs are the numbered commands above.
+      for (final entry in searchIndex(l10n, scope))
+        if (!entry.id.startsWith('tab-') &&
+            entry.id != 'library-keyboard-shortcuts' &&
+            entry.id != 'app-diagnostics-entry')
+          DesktopCommand(
+            label: entry.title,
+            icon: entry.icon,
+            hint: entry.parent == null
+                ? null
+                : l10n.discoverSearchIn(entry.parent!),
+            keywords: entry.keywords,
+            onInvoke: () {
+              // A context under the navigator: the launcher's own is gone by
+              // the time a command runs.
+              final target = _navigatorKey.currentState?.overlay?.context;
+              if (target != null) unawaited(entry.open(target, scope));
+            },
+          ),
     ];
   }
 
@@ -1243,11 +1275,6 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
               '/': (_) => _Root(),
               '/servers': (_) => const ServersScreen(),
               '/home': (_) => const HomeScreen(),
-              // Activity absorbed Mission Control and Pending requests; the
-              // old deep link still resolves so notifications and shortcuts
-              // built against it keep working.
-              '/activity': (_) => ActivityScreen(controller: _controller),
-              '/requests': (_) => ActivityScreen(controller: _controller),
               '/guide': (_) => GuideScreen(embedded: false),
               '/about': (_) => const AboutScreen(),
               // Termux is an Android app. Registering the route everywhere
@@ -1267,6 +1294,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                     discardIfUntouched:
                         arguments is ChatRouteArguments &&
                         arguments.discardIfUntouched,
+                    focusComposer:
+                        arguments is ChatRouteArguments &&
+                        arguments.focusComposer,
                   ),
                 );
               }

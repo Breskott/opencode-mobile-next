@@ -18,7 +18,8 @@ import '../gascity/gascity_mappers.dart';
 class FixtureControlCall {
   const FixtureControlCall(this.verb, this.target, this.requestId, {this.arg});
 
-  /// `respond`, `message`, `controlAgent`, `cancelRun` or `assign`.
+  /// `respond`, `message`, `controlAgent`, `cancelRun`, `assign` or
+  /// `createWork`.
   final String verb;
   final String target;
   final String requestId;
@@ -383,11 +384,15 @@ class FixtureOrchestrationGateway
   // Controls: accepted and recorded
   // -------------------------------------------------------------------------
 
-  MutationReceipt _accept(FixtureControlCall call) {
+  MutationReceipt _accept(
+    FixtureControlCall call, {
+    Map<String, Object?> raw = const {},
+  }) {
     _controls.add(call);
     return MutationReceipt(
       id: call.requestId,
       status: MutationReceiptStatus.accepted,
+      raw: raw,
     );
   }
 
@@ -429,6 +434,19 @@ class FixtureOrchestrationGateway
     required String requestId,
   }) async =>
       _accept(FixtureControlCall('assign', workId, requestId, arg: agentId));
+
+  /// Answers like the Python fixture's `POST /beads`: the new bead, whose
+  /// id the caller reads back as [MutationReceipt.createdId].
+  @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) async => _accept(
+    FixtureControlCall('createWork', title, requestId, arg: projectId),
+    raw: {'id': 'fx-new-1', 'status': 'open', 'title': title},
+  );
 
   // -------------------------------------------------------------------------
   // Helpers

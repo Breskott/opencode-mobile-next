@@ -31,6 +31,7 @@
 /// | restart | `stop`, then `wake` under the key `<requestId>:wake` |
 /// | cancelRun | `POST /runs/{id}/cancel` for a formula run, `POST /convoy/{id}/close` for a batch |
 /// | assign | `POST /sling` `{bead, target, reassign: true}` |
+/// | createWork | `POST /beads` `{title, description?, rig?, type: 'task', priority: 2, labels: ['opencode-mobile']}` (201 with the bead; TEAM-306) |
 ///
 /// Merge roles (TEAM-205) are the front's own routes, not the supervisor's
 /// (Gas City v0 has no merge-request API; the front implements them over
@@ -201,6 +202,36 @@ class GasCityControl
     requestId,
     body: {'bead': workId, 'target': agentId, 'reassign': true},
   );
+
+  /// `POST /beads`: the body the write proof used live
+  /// (tool/qa/gascity_write_proof.dart). The 201 answer is the bead itself,
+  /// so the receipt's `raw['id']` is the new work item's id.
+  @override
+  Future<MutationReceipt> createWork({
+    required String title,
+    String? description,
+    String? projectId,
+    required String requestId,
+  }) {
+    if (title.trim().isEmpty) {
+      return Future.value(
+        MutationReceipt.rejected(requestId, 'title is empty'),
+      );
+    }
+    return _post(
+      '${_http.cityPath}/beads',
+      requestId,
+      body: {
+        'title': title.trim(),
+        if (description != null && description.trim().isNotEmpty)
+          'description': description.trim(),
+        if (projectId != null && projectId.isNotEmpty) 'rig': projectId,
+        'type': 'task',
+        'priority': 2,
+        'labels': const ['opencode-mobile'],
+      },
+    );
+  }
 
   // -------------------------------------------------------------------------
   // Merge roles (TEAM-205): the front's own routes

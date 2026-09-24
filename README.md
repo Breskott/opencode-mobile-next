@@ -11,22 +11,23 @@ changes from your Android phone. OpenCode Mobile connects to
 [OpenCode](https://opencode.ai) running on your computer or on the phone
 itself through Termux.
 
-**[Download Android APK — 1.0.43+49](https://github.com/Eslamasabry/opencode-mobile-next/releases/download/v1.0.43%2B49/opencode-mobile-1.0.43%2B49.apk)**
-· [Release notes](https://github.com/Eslamasabry/opencode-mobile-next/releases/tag/v1.0.43%2B49)
+**[Download Android APK — 1.0.44+50](https://github.com/Eslamasabry/opencode-mobile-next/releases/download/v1.0.44%2B50/opencode-mobile-1.0.44%2B50.apk)**
+· [Release notes](https://github.com/Eslamasabry/opencode-mobile-next/releases/tag/v1.0.44%2B50)
 · [Set up your connection](#getting-started)
 · [See the current UI](#screenshots)
 · [Get help](SUPPORT.md)
 
-> **Stable Android release: 1.0.43+49 (September 13, 2026).**
-> Primary actions are easier to find across workspace, chat and files. A detected
-> Termux server offers a visible connection action, and completed setup separates
-> server readiness from app connection progress, with cancellation and retry.
-> [Release verification](docs/verification/stable-1.0.43-2026-09-13.md).
+> **Stable Android release: 1.0.44+50 (September 21, 2026).**
+> The conversation reads as turns instead of boxes, errors are said in plain
+> words, OpenCode 2.0 servers and agents behind a Paseo daemon are supported,
+> and several projects can be kept in play at once.
+> [Release verification](docs/verification/stable-1.0.44-2026-09-21.md).
 >
 > Android is the supported release platform. Web support is in active development;
 > desktop and AI Team / Gas City remain experimental.
-> OpenCode Mobile is an independent community project, built with substantial AI
-> assistance. It is not affiliated with or endorsed by the official OpenCode team.
+> OpenCode Mobile is an independent community project. It is not built, maintained,
+> endorsed by, or affiliated with the official OpenCode team. It is built with
+> substantial AI assistance.
 > Report problems from **More → Tools & help → Report a bug** in the app.
 
 ## What it is like to use
@@ -130,7 +131,7 @@ and provider do the work.
 
 ### Connect to your computer
 
-1. **Download the [stable Android APK](https://github.com/Eslamasabry/opencode-mobile-next/releases/download/v1.0.43%2B49/opencode-mobile-1.0.43%2B49.apk).**
+1. **Download the [stable Android APK](https://github.com/Eslamasabry/opencode-mobile-next/releases/download/v1.0.44%2B50/opencode-mobile-1.0.44%2B50.apk).**
    For an existing installation, check the signer in **Settings → About** and
    choose a matching update. Android warns about sideloading outside the Play Store.
 2. **With OpenCode 2 installed on your computer, start pairing.**
@@ -169,7 +170,7 @@ the server as a service on a Linux box are all covered in
 
 | Surface | Release status |
 |---|---|
-| Android | Stable 1.0.43+49; arm64 sideload APK |
+| Android | Stable 1.0.44+50; arm64 sideload APK |
 | OpenCode 1 | Supported against the current 1.18.x line |
 | OpenCode 2 | Beta support targets the captured `0.0.0-beta-18600` contract; newer betas may differ |
 | Linux x64 | Experimental; CI-built tarball and Debian package |

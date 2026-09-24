@@ -110,7 +110,7 @@ class SessionsWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(rowIDs[index], View.VISIBLE)
                 views.setTextViewText(
                     titleIDs[index],
-                    session.optString("title", "Untitled session")
+                    session.optString("title", "Untitled conversation")
                 )
                 views.setTextViewText(
                     timeIDs[index],

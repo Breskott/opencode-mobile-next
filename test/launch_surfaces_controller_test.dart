@@ -166,7 +166,7 @@ void main() {
     expect(sessions, hasLength(4));
     // Pin order is the session list's order: most recently updated first.
     expect(sessions.map((s) => s['id']), ['ses-5', 'ses-4', 'ses-3', 'ses-2']);
-    expect(sessions.last['title'], 'Untitled session');
+    expect(sessions.last['title'], 'Untitled conversation');
     for (final entry in sessions) {
       expect(entry.keys.toSet(), {'id', 'title'});
     }

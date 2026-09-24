@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
+import 'package:opencode_mobile/api2/dialect.dart';
 import 'package:opencode_mobile/api2/gateway_operations.dart';
 import 'package:opencode_mobile/api2/transport.dart';
 import 'package:opencode_mobile/state/connection.dart';
@@ -382,6 +383,9 @@ void main() {
           (server, requests) async {
             final connection = gatewayFor(server);
             addTearDown(connection.close);
+            // Connected to a beta server: health settled the generation at connect,
+            // so a 404 here is a real 404 and costs exactly one request.
+            connection.client.transport.settleDialect(Api2Dialect.beta);
             final gateway = Api2OperationsGateway(client: connection.client);
             await expectLater(
               gateway.importSession(
@@ -534,10 +538,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(repo.writes, isEmpty);
       expect(find.text('conversation.json'), findsOneWidget);
-      expect(
-        find.textContaining('connection or location changed'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('server or project changed'), findsOneWidget);
     },
   );
 
@@ -565,10 +566,7 @@ void main() {
 
     expect(find.text('late.json'), findsNothing);
     expect(find.text('Transfer العربية'), findsNothing);
-    expect(
-      find.textContaining('connection or location changed'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('server or project changed'), findsOneWidget);
     expect(repo.writes, isEmpty);
   });
 

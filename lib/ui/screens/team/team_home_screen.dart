@@ -26,6 +26,8 @@ import '../../widgets/relative_time.dart';
 import '../../widgets/team_agent_row.dart';
 import '../../widgets/team_discovery_card.dart' show teamHostKindFor;
 import '../../widgets/team_host_form.dart' show teamHostKindLabel;
+import '../../widgets/team_controls.dart'
+    show teamControlReceiptWord, teamControlWord;
 import '../../widgets/team_receipt.dart';
 import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
@@ -138,8 +140,25 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
   }
 
   Future<void> _startRun() async {
-    await showStartRunSheet(context, widget.controller);
-    if (mounted) setState(() => _segment = TeamHomeSegment.runs);
+    final record = await showStartRunSheet(context, widget.controller);
+    if (!mounted) return;
+    setState(() => _segment = TeamHomeSegment.runs);
+    // A planner message shows as the Planning card; a direct task
+    // (TEAM-306) has no card of its own, so its receipt is said once here:
+    // "Task sent to an agent · Confirmed", or the host's refusal.
+    if (record == null || record.kind == MutationKind.message) return;
+    final l10n = _copy(context);
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        key: const ValueKey('team-home-direct-receipt'),
+        content: Text(
+          record.status == MutationStatus.rejected
+              ? teamReceiptLine(l10n, record)
+              : '${teamControlWord(l10n, record.request)} · '
+                    '${teamControlReceiptWord(l10n, record.status)}',
+        ),
+      ),
+    );
   }
 
   @override
@@ -230,6 +249,11 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             setState(() => _completedExpanded = !_completedExpanded),
         onToggleUpkeep: (shown) => setState(() => _upkeepShown = shown),
         onOpenRun: widget.onOpenRun ?? _openRun,
+        // The same gate as the Start a run button: the capability, not the
+        // backend, decides whether the empty list may offer it.
+        onStartRun: widget.controller.capabilities.controlMessage
+            ? _startRun
+            : null,
       ),
       TeamHomeSegment.agents => _AgentsSegment(
         snapshot: snapshot,
@@ -583,15 +607,24 @@ class _Empty extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.hint,
+    this.actionLabel,
+    this.onAction,
   });
 
   final IconData icon;
   final String title;
   final String hint;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
-  Widget build(BuildContext context) =>
-      ProductInlineEmpty(icon: icon, title: title, message: hint);
+  Widget build(BuildContext context) => ProductInlineEmpty(
+    icon: icon,
+    title: title,
+    message: hint,
+    actionLabel: actionLabel,
+    onAction: onAction,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -612,7 +645,12 @@ class _RunsSegment extends StatelessWidget {
     required this.onToggleCompleted,
     required this.onToggleUpkeep,
     required this.onOpenRun,
+    required this.onStartRun,
   });
+
+  /// Opens the start-run sheet, or null when this phone cannot start a run
+  /// on this host; the empty list then keeps the "from the host" sentence.
+  final VoidCallback? onStartRun;
 
   final OrchestrationSnapshot snapshot;
   final Set<String> gated;
@@ -787,7 +825,11 @@ class _RunsSegment extends StatelessWidget {
             key: const ValueKey('team-home-runs-empty'),
             icon: AppIconography.agent,
             title: l10n.teamUiCardEmptyTitle,
-            hint: l10n.teamUiCardEmptyHint,
+            hint: onStartRun == null
+                ? l10n.teamUiCardEmptyHint
+                : l10n.emptyTeachTeamRunsMessage,
+            actionLabel: onStartRun == null ? null : l10n.teamUiStartRunFab,
+            onAction: onStartRun,
           )
         else if (visible.isEmpty)
           _Empty(

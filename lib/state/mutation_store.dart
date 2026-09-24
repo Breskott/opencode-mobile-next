@@ -38,6 +38,11 @@ enum MutationKind {
   /// Merge a run into the rig's default branch (TEAM-205); the target is
   /// the run.
   merge,
+
+  /// Create one work item (TEAM-306); the target is the title, there is
+  /// no id yet. The created id lands in the receipt
+  /// ([MutationReceipt.createdId]).
+  createWork,
 }
 
 /// Where a mutation stands (table in the library doc).
@@ -55,6 +60,7 @@ class MutationRequest {
     this.text,
     this.action,
     this.agentId,
+    this.projectId,
   });
 
   /// Answer the gate [gateId] with [response].
@@ -108,6 +114,19 @@ class MutationRequest {
   factory MutationRequest.merge(String runId) =>
       MutationRequest._(kind: MutationKind.merge, targetId: runId);
 
+  /// Create a work item titled [title] (the target: there is no id yet)
+  /// with [description] as its text in the project [projectId].
+  factory MutationRequest.createWork({
+    required String title,
+    String? description,
+    String? projectId,
+  }) => MutationRequest._(
+    kind: MutationKind.createWork,
+    targetId: title,
+    text: description,
+    projectId: projectId,
+  );
+
   /// Decodes a request persisted with [toJson]; null for anything else.
   static MutationRequest? fromJson(Object? json) {
     if (json is! Map) return null;
@@ -134,12 +153,16 @@ class MutationRequest {
       text: json['text'] is String ? json['text'] as String : null,
       action: action,
       agentId: json['agentId'] is String ? json['agentId'] as String : null,
+      projectId: json['projectId'] is String
+          ? json['projectId'] as String
+          : null,
     );
   }
 
   final MutationKind kind;
 
-  /// The gate, agent, run or work item the verb applies to.
+  /// The gate, agent, run or work item the verb applies to; the title for
+  /// [MutationKind.createWork].
   final String targetId;
   final String? choice;
   final bool? confirmed;
@@ -148,6 +171,10 @@ class MutationRequest {
 
   /// The agent a work item is assigned to ([MutationKind.assign]).
   final String? agentId;
+
+  /// The project (rig) a work item is created in
+  /// ([MutationKind.createWork]); null for the host's default.
+  final String? projectId;
 
   /// The gate answer, for [MutationKind.respond]; null for other kinds.
   GateResponse? get response {
@@ -167,6 +194,7 @@ class MutationRequest {
     if (text != null) 'text': text,
     if (action != null) 'action': action!.name,
     if (agentId != null) 'agentId': agentId,
+    if (projectId != null) 'projectId': projectId,
   };
 
   @override

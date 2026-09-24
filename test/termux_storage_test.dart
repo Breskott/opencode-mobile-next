@@ -732,7 +732,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 60));
       expect(fixture.cancels, 1);
-      expect(find.text('Scan cancelled'), findsOneWidget);
+      expect(find.text('Scan stopped'), findsOneWidget);
       // Scan again to completion.
       await tester.tap(find.byKey(const Key('termux-storage-scan')));
       await tester.pump();
@@ -788,7 +788,7 @@ void main() {
       await tester.pumpAndSettle();
       // First step: the confirmation sheet; nothing ran yet.
       expect(find.byKey(const Key('termux-storage-confirm')), findsOneWidget);
-      expect(find.text('Remove 8.1 GB of Build caches?'), findsOneWidget);
+      expect(find.text('Delete 8.1 GB of Build caches?'), findsOneWidget);
       expect(fixture.cleans, isEmpty);
       await tester.tap(find.text('Keep'));
       await tester.pumpAndSettle();

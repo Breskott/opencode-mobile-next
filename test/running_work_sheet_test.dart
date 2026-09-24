@@ -94,9 +94,10 @@ void main() {
     changed.value++;
     await tester.pumpAndSettle();
     expect(find.text('Run in background'), findsOneWidget);
+    // The action speaks for itself; no paragraph explains it.
     expect(
-      find.textContaining('Results return to this chat automatically.'),
-      findsOneWidget,
+      find.textContaining('Results return to this conversation automatically.'),
+      findsNothing,
     );
     eligible = false;
     changed.value++;
@@ -155,12 +156,14 @@ void main() {
       ),
     );
     expect(find.byKey(const Key('work-shell-sh_a')), findsOneWidget);
-    expect(find.textContaining('Exit code 0'), findsOneWidget);
+    // A clean exit reads as finished, not as a code to interpret.
+    expect(find.textContaining('Exit code 0'), findsNothing);
+    expect(find.textContaining('Finished · '), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets(
-    'UXCHAT Tasks explains unavailable background support at large text',
+    'UXCHAT Tasks opens on its list, with no preamble, at large text',
     (tester) async {
       final repo = FakeManagedShellRepository()..shells = [];
       final conn = await connection(repo);
@@ -173,7 +176,8 @@ void main() {
         scale: 2.5,
       );
       expect(find.text('Tasks'), findsOneWidget);
-      expect(find.textContaining('has not confirmed support'), findsOneWidget);
+      expect(find.textContaining('has not confirmed support'), findsNothing);
+      expect(find.textContaining('Agents and commands related'), findsNothing);
       await tester.scrollUntilVisible(
         find.text('No tasks yet'),
         200,
@@ -443,7 +447,7 @@ void main() {
       conn.locationRevision++;
       conn.notifyListeners();
       await tester.pumpAndSettle();
-      expect(find.textContaining('workspace changed'), findsOneWidget);
+      expect(find.textContaining('project changed'), findsOneWidget);
       final refresh = tester.widget<IconButton>(
         find.byWidgetPredicate(
           (widget) => widget is IconButton && widget.tooltip == 'Refresh',
@@ -491,4 +495,93 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+
+  testWidgets('Tasks separates what runs from what is over, by outcome', (
+    tester,
+  ) async {
+    final started = DateTime.now().subtract(const Duration(minutes: 3));
+    ManagedShell shell(
+      String id,
+      String command,
+      ManagedShellStatus status, {
+      int? exitCode,
+    }) => ManagedShell(
+      id: id,
+      sessionID: 'ses_a',
+      command: command,
+      status: status,
+      exitCode: exitCode,
+      startedAt: started,
+      completedAt: status == ManagedShellStatus.running
+          ? null
+          : started.add(const Duration(seconds: 30)),
+    );
+    final repo = FakeManagedShellRepository()
+      ..shells = [
+        shell(
+          'sh_ok',
+          'flutter analyze',
+          ManagedShellStatus.exited,
+          exitCode: 0,
+        ),
+        shell('sh_live', 'uvicorn main:app', ManagedShellStatus.running),
+        shell('sh_bad', 'flutter test', ManagedShellStatus.exited, exitCode: 1),
+        shell(
+          'sh_term',
+          'uvicorn old',
+          ManagedShellStatus.exited,
+          exitCode: 143,
+        ),
+      ];
+    final conn = await connection(repo);
+    addTearDown(conn.dispose);
+    await pump(
+      tester,
+      Scaffold(
+        body: RunningWorkSheet(
+          controller: conn,
+          sessionID: 'ses_a',
+          shellIDs: const {'sh_ok', 'sh_live', 'sh_bad', 'sh_term'},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Running first, whatever order the server listed them in.
+    final live = tester.getTopLeft(find.byKey(const Key('work-shell-sh_live')));
+    for (final id in ['sh_ok', 'sh_bad', 'sh_term']) {
+      expect(
+        live.dy,
+        lessThan(tester.getTopLeft(find.byKey(Key('work-shell-$id'))).dy),
+      );
+    }
+    expect(find.byKey(const Key('work-row-live')), findsOneWidget);
+    // Outcomes in words a person uses: a clean exit finished, a non-zero
+    // exit is named, a terminated server was stopped rather than "failed".
+    expect(find.textContaining('Exit code 1'), findsOneWidget);
+    expect(find.textContaining('Exit code 143'), findsNothing);
+    expect(find.textContaining('Stopped · '), findsOneWidget);
+    expect(find.textContaining('Exit code 0'), findsNothing);
+  });
+
+  test('a command is named by what it runs, not where it lives', () {
+    expect(
+      shortCommand(
+        '/tmp/opencode/flutter/bin/flutter analyze && '
+        '/tmp/opencode/flutter/bin/flutter test --concurrency=1',
+      ),
+      'flutter analyze && flutter test --concurrency=1',
+    );
+    expect(
+      shortCommand(
+        'FINANCEHUB_DB=/tmp/opencode/demo.db ./.venv/bin/uvicorn main:app '
+        '--host 0.0.0.0',
+      ),
+      'uvicorn main:app --host 0.0.0.0',
+    );
+    expect(shortCommand('ls -la | grep foo'), 'ls -la | grep foo');
+    // Arguments that are paths are left alone.
+    expect(shortCommand('cat /etc/hosts'), 'cat /etc/hosts');
+    expect(shortCommand('FOO=1'), 'FOO=1');
+  });
 }

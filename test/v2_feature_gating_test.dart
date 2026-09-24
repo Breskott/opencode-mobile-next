@@ -41,6 +41,10 @@ class _V1Api extends OpenCodeApi with CompleteMessageHistory {
 
   @override
   Future<List<MessageWithParts>> messages(String id) async => [];
+
+  // The Settings hub probes health on open; keep it off the network.
+  @override
+  Future<Health> health() async => Health(healthy: true, version: '1.0.0');
 }
 
 /// A transport reporting the exact OpenCode 2 capability truth. Only the
@@ -374,7 +378,7 @@ void main() {
 
     Future<void> openSessionMenu(WidgetTester tester) async {
       // Workspace also has a section menu; open the session's labeled control.
-      final actions = find.byTooltip('Session actions').hitTestable();
+      final actions = find.byTooltip('Conversation actions').hitTestable();
       expect(actions, findsOneWidget);
       await tester.tap(actions);
       await tester.pumpAndSettle();
@@ -484,14 +488,12 @@ void main() {
     });
   });
 
-  group('disabled settings rows carry an explainer (§7 rows 22, 24)', () {
+  group('settings rows the server cannot serve (§7 rows 22, 23, 24)', () {
     testWidgets('v1 keeps the default shell row live', (tester) async {
       final controller = await _controller(v2: false);
       addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _app(CodingSettingsScreen(controller: controller)),
-      );
+      await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
       await tester.pump();
 
       expect(
@@ -501,33 +503,61 @@ void main() {
       expect(find.byKey(const ValueKey('gated-shell-settings')), findsNothing);
     });
 
-    testWidgets('v2 shows the shell row disabled and says why', (tester) async {
+    testWidgets('v2 hides the shell row; Help says it is not available', (
+      tester,
+    ) async {
       final controller = await _controller(v2: true);
       addTearDown(controller.dispose);
 
-      await tester.pumpWidget(
-        _app(CodingSettingsScreen(controller: controller)),
-      );
+      await tester.pumpWidget(_app(SettingsScreen(controller: controller)));
       await tester.pump();
 
-      // The row survives — a vanished settings row reads as a bug.
+      // §7 row 22 used to keep this row visible-but-disabled, because a
+      // vanished settings row reads as a bug. UX plan rule 7 (hide, don't
+      // disable) now applies to it like every other row, and the explanation
+      // moved to one place that covers all hidden rows: Settings → Help →
+      // "Available on this server", which lists the shell under "Not
+      // available on this server".
       expect(
         find.byKey(const ValueKey('default-shell-settings-entry')),
         findsNothing,
       );
-      final row = find.byKey(const ValueKey('gated-shell-settings'));
-      expect(row, findsOneWidget);
-      expect(tester.widget<ListTile>(row).enabled, isFalse);
-      expect(find.text('Default shell'), findsOneWidget);
+      expect(find.byKey(const ValueKey('gated-shell-settings')), findsNothing);
+      expect(find.text('Default shell'), findsNothing);
+      // Not a dead search result either.
+      await tester.enterText(find.byKey(const Key('library-search')), 'shell');
+      await tester.pump();
       expect(
-        find.text("Shell selection isn't available on OpenCode 2 servers"),
+        find.byKey(const ValueKey('default-shell-settings-entry')),
+        findsNothing,
+      );
+      // "shell" is one of the words that find the explanation instead.
+      final help = find.byKey(const ValueKey('settings-server-capabilities'));
+      expect(help, findsOneWidget);
+
+      await tester.tap(help);
+      await tester.pumpAndSettle();
+      final unavailable = find.byKey(
+        const ValueKey('capabilities-unavailable'),
+      );
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('capability-unavailable-shell')),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byKey(const ValueKey('server-capabilities')),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      expect(
+        find.descendant(of: unavailable, matching: find.text('Default shell')),
         findsOneWidget,
       );
-
-      // Tapping explains instead of doing nothing at all.
-      await tester.tap(row);
-      await tester.pumpAndSettle();
-      expect(find.text('Requires an OpenCode 1 server'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('capability-available-shell')),
+        findsNothing,
+      );
     });
 
     testWidgets('v2 points server updates at the host machine (§7 row 23)', (

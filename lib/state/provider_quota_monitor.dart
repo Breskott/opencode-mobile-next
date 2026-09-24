@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import '../domain/provider_quota.dart';
 import 'budget_persistence.dart';
+import 'notification_preferences.dart';
 import 'profiles.dart';
 
 typedef QuotaMonitorAlert =
@@ -211,6 +212,32 @@ class ProviderQuotaMonitor extends ChangeNotifier {
       store.profiles.where((p) => p.id == id).firstOrNull;
   bool _readable(String id) =>
       !_disposed && !_blocked.contains(id) && isReadable(id);
+
+  late final _notifications = NotificationPreferences(store.prefs);
+
+  /// Alerts, Wi-Fi only and quiet hours are shared with saved-server
+  /// monitoring once the one-time migration has run; until then the source's
+  /// own legacy record still answers. The threshold stays per source.
+  bool alertsFor(QuotaMonitorRules rules) =>
+      _notifications.shared?.quotaAlerts ?? rules.notifications;
+  bool wifiOnlyFor(QuotaMonitorRules rules) =>
+      _notifications.shared?.wifiOnly ?? rules.wifiOnly;
+  bool quietFor(QuotaMonitorRules rules, DateTime now) =>
+      _notifications.shared?.quietAt(now) ?? rules.quietAt(now);
+
+  /// The shared rules were edited: sources waiting for Wi-Fi, or alerts that
+  /// are no longer wanted, must not wait out the current cycle.
+  Future<void> sharedRulesChanged() async {
+    if (_disposed) return;
+    if (_notifications.shared?.quotaAlerts == false) {
+      for (final target in sources) {
+        await _dismiss(target.profileID, target.provider);
+      }
+    }
+    if (_disposed) return;
+    notifyListeners();
+    unawaited(refresh());
+  }
 
   QuotaMonitorRules? rulesFor(String id, QuotaProvider provider) {
     if (!_readable(id) || !quotaCollectionAvailable(provider)) {
@@ -441,7 +468,7 @@ class ProviderQuotaMonitor extends ChangeNotifier {
       final rules = rulesFor(id, provider), profile = _profile(id);
       if (rules != null &&
           profile != null &&
-          rules.notifications &&
+          alertsFor(rules) &&
           !_retiredCredentials.contains(_id(id, provider)) &&
           !_pausedSources.contains(_id(id, provider)) &&
           _observations[_id(id, provider)]?.status !=
@@ -628,7 +655,7 @@ class ProviderQuotaMonitor extends ChangeNotifier {
     }
     ProviderQuotaGateway? gateway;
     try {
-      if (rules.wifiOnly) {
+      if (wifiOnlyFor(rules)) {
         bool? wifi;
         try {
           wifi = await networkWifi().timeout(timeout);
@@ -732,8 +759,8 @@ class ProviderQuotaMonitor extends ChangeNotifier {
       // Foreground use elsewhere and quiet hours suppress new delivery. They
       // do not acknowledge a historical alert; confirmed recovery above does.
       if (_foreground ||
-          !rules.notifications ||
-          rules.quietAt(clock().toLocal())) {
+          !alertsFor(rules) ||
+          quietFor(rules, clock().toLocal())) {
         return;
       }
       if (!changed || !current()) {

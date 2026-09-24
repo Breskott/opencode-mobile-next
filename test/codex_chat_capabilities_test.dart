@@ -12,6 +12,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat/permission_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -122,7 +123,7 @@ void main() {
     expect(find.text('draft.txt'), findsOneWidget);
     expect(
       find.text(
-        'This connection supports text only. Remove attachments before sending.',
+        'This server supports text only. Remove attachments before sending.',
       ),
       findsOneWidget,
     );
@@ -161,23 +162,23 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Changes'), findsNothing);
-    expect(find.text('Fork session'), findsNothing);
+    expect(find.text('Fork conversation'), findsNothing);
     expect(find.text('Revert last prompt'), findsNothing);
     expect(find.text('Compact context'), findsNothing);
     expect(find.text('Run shell command'), findsNothing);
-    expect(find.text('Subagent sessions'), findsNothing);
-    expect(find.text('Share session'), findsNothing);
+    expect(find.text('Subagent conversations'), findsNothing);
+    expect(find.text('Share conversation'), findsNothing);
     // Utility actions live behind the collapsed Session actions group.
-    await tester.ensureVisible(find.text('Session actions'));
-    await tester.tap(find.text('Session actions'));
+    await tester.ensureVisible(find.text('Conversation actions'));
+    await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
-    expect(find.text('Fork session'), findsNothing);
+    expect(find.text('Fork conversation'), findsNothing);
     expect(find.text('Revert last prompt'), findsNothing);
     expect(find.text('Compact context'), findsNothing);
     expect(find.text('Run shell command'), findsNothing);
-    expect(find.text('Share session'), findsNothing);
-    await tester.ensureVisible(find.text('Reload messages'));
-    expect(find.text('Reload messages'), findsOneWidget);
+    expect(find.text('Share conversation'), findsNothing);
+    await tester.ensureVisible(find.text('Refresh messages'));
+    expect(find.text('Refresh messages'), findsOneWidget);
     // Codex has no `opencode --session` CLI, so no resume command is offered.
     expect(find.text('Continue on computer'), findsNothing);
   });
@@ -209,6 +210,58 @@ void main() {
     expect(find.byKey(const Key('command-mobile-editor')), findsOneWidget);
   });
 
+  testWidgets('the command launcher also searches the rest of the app', (
+    tester,
+  ) async {
+    await _pumpChat(tester, _CodexApi());
+    await tester.tap(find.byKey(const Key('composer-tools-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('composer-tool-commands')));
+    await tester.pumpAndSettle();
+    final search = find.byKey(const Key('command-launcher-search'));
+
+    // Nothing extra until the person types.
+    expect(
+      find.byKey(
+        const ValueKey('command-launcher-result-settings-category-appearance'),
+      ),
+      findsNothing,
+    );
+    // The same gates as the Settings search: Codex has no MCP screen and no
+    // terminal, so neither is offered from inside a conversation either.
+    for (final query in ['mcp', 'terminal', 'skills']) {
+      await tester.enterText(search, query);
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('command-launcher-result-settings-mcp')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('command-launcher-result-project-terminal')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const ValueKey('command-launcher-result-inside-capabilities-skills'),
+        ),
+        findsNothing,
+      );
+    }
+
+    await tester.enterText(search, 'theme');
+    await tester.pump();
+    final result = find.byKey(
+      const ValueKey('command-launcher-result-inside-appearance-theme'),
+    );
+    expect(result, findsOneWidget);
+    await tester.ensureVisible(result);
+    await tester.tap(result);
+    await tester.pumpAndSettle();
+    // The sheet is gone and the setting is open over the conversation.
+    expect(search, findsNothing);
+    expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
+  });
+
   testWidgets('Codex timeline keeps message navigation without fork actions', (
     tester,
   ) async {
@@ -226,7 +279,7 @@ void main() {
       ];
     await _pumpChat(tester, api);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Timeline'));
     await tester.pumpAndSettle();

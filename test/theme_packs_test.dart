@@ -55,6 +55,80 @@ void main() {
     }
   });
 
+  test('every theme keeps text and controls readable in both modes', () {
+    double contrast(Color a, Color b) {
+      final la = a.computeLuminance();
+      final lb = b.computeLuminance();
+      final hi = la > lb ? la : lb;
+      final lo = la > lb ? lb : la;
+      return (hi + .05) / (lo + .05);
+    }
+
+    final failures = <String>[];
+    void floor(String what, Color fg, Color bg, double min) {
+      final ratio = contrast(fg, bg);
+      if (ratio < min) {
+        failures.add('$what ${ratio.toStringAsFixed(2)} < $min');
+      }
+    }
+
+    // The generated themes. The four hand-written packs keep their authors'
+    // exact colours (Solarized's famous low contrast included) and have
+    // goldens instead.
+    for (final id in ThemePackId.values.where(
+      (id) => id != ThemePackId.dynamic && !curatedThemePacks.contains(id),
+    )) {
+      for (final brightness in Brightness.values) {
+        final palette = themePack(id).palette(brightness);
+        final s = palette.scheme;
+        final tag = '${id.name}/${brightness.name}';
+        // Reading text: WCAG AA. On the page and on every surface it sits on.
+        for (final surface in [
+          palette.background,
+          s.surface,
+          s.surfaceContainer,
+          s.surfaceContainerHigh,
+        ]) {
+          floor('$tag text', s.onSurface, surface, 4.5);
+          floor('$tag muted text', s.onSurfaceVariant, surface, 4.5);
+        }
+        floor('$tag on primary', s.onPrimary, s.primary, 4.5);
+        floor(
+          '$tag on primary container',
+          s.onPrimaryContainer,
+          s.primaryContainer,
+          4.5,
+        );
+        floor(
+          '$tag on secondary container',
+          s.onSecondaryContainer,
+          s.secondaryContainer,
+          4.5,
+        );
+        floor(
+          '$tag on error container',
+          s.onErrorContainer,
+          s.errorContainer,
+          4.5,
+        );
+        // Things recognised by colour (accent, status): the 3:1 of
+        // non-text contrast.
+        floor('$tag accent', s.primary, palette.background, 3);
+        floor('$tag error', s.error, palette.background, 3);
+        floor('$tag success', palette.success, palette.background, 3);
+      }
+    }
+    expect(failures, isEmpty, reason: failures.join('\n'));
+  });
+
+  test('a stored theme from before the new ones still loads', () {
+    // Stored by name, so adding packs in the middle of the enum is safe.
+    expect(ThemePackId.values.byName('solarized'), ThemePackId.solarized);
+    expect(ThemePackId.values.last, ThemePackId.dynamic);
+    expect(ThemePackId.values.length, greaterThan(25));
+    expect(themePackLabels.keys.toSet(), ThemePackId.values.toSet());
+  });
+
   test('theme pack persistence round-trips through the store', () async {
     SharedPreferences.setMockInitialValues({});
     final preferences = await SharedPreferences.getInstance();

@@ -1,0 +1,1907 @@
+{
+ "area": "i2-team-sheets",
+ "pages": [
+  {
+   "id": "gate-sheet",
+   "title": "<gate title> (Decision / Confirmation / Free text / Gate / Run failed / Review ready)",
+   "kind": "sheet",
+   "file": "lib/ui/screens/team/gate_sheet.dart",
+   "widget": "GateSheet",
+   "presentedBy": [
+    "showGateSheet"
+   ],
+   "line": 96,
+   "purpose": "Needs-you sheet for one orchestration gate: shows the prompt per GateKind and, behind control capabilities, lets the person answer it, with an inline mutation receipt.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_NeedsYouSegment",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 1125
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "ActivityGateTile",
+     "file": "lib/ui/screens/activity_screen.dart",
+     "line": 860
+    },
+    {
+     "page": "system",
+     "element": null,
+     "trigger": "ActivityScreen opened with an initial gate id: post-frame showGateSheet once the team snapshot settled (lib/ui/screens/activity_screen.dart:320); upstream trigger (notification tap) not traced"
+    }
+   ],
+   "gates": [
+    "an OrchestrationController exists for the connected profile (AI Team plugin on)"
+   ],
+   "elements": [
+    {
+     "id": "gate-sheet-missing-close",
+     "type": "button",
+     "label": "Close",
+     "key": "team-gate-close",
+     "line": 143,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.of(context).pop(); shown with the text \"This is no longer waiting on you; it was answered or closed on the host.\"",
+     "gates": [
+      "gate id no longer in controller.snapshot.gates"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-work-chip",
+     "type": "chip",
+     "label": "<work item title>",
+     "key": "team-gate-unblocks-<id> | team-gate-affected-<id>",
+     "line": 327,
+     "action": "open-sheet",
+     "target": "work-sheet",
+     "targetWidget": "showWorkSheet",
+     "effect": "widget.onOpenWork(item.id): showGateSheet pops this sheet then calls showWorkSheet(context, controller, id).",
+     "gates": [
+      "gate.kind == GateKind.gateBead (Unblocks list, non-empty) or GateKind.runFailed (Affected work, non-empty)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-option",
+     "type": "list-tile",
+     "label": "<choice text> (radio row)",
+     "key": "team-gate-option-<index>",
+     "line": 512,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "setState(_selected = index); selects the answer to send (InkWell in _Option, line 1064).",
+     "gates": [
+      "gate.kind == GateKind.choice",
+      "tappable only when controller.capabilities.controlRespond && !hideActions && !busy; otherwise a static row"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-composer",
+     "type": "text-field",
+     "label": "Type your answer",
+     "key": "team-gate-composer",
+     "line": 542,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Multi-line free-text answer bound to _text; readOnly while busy.",
+     "gates": [
+      "gate.kind == GateKind.freeText",
+      "controller.capabilities.controlRespond && !hideActions"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-send",
+     "type": "button",
+     "label": "Send",
+     "key": "team-gate-send",
+     "line": 591,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_send(() => controller.answerGate(gate.id, GateResponse.choice(choice) | GateResponse.text(text))); disabled until an option is selected / text is non-empty.",
+     "gates": [
+      "gate.kind == GateKind.choice (line 591) or GateKind.freeText (line 609)",
+      "controller.capabilities.controlRespond",
+      "hidden while record.status is MutationStatus.unconfirmed or confirmed (hideActions)",
+      "disabled while busy (_sending || record.isSent)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-approve",
+     "type": "button",
+     "label": "Approve",
+     "key": "team-gate-approve",
+     "line": 632,
+     "action": "mutate",
+     "target": "gate-sheet-confirm-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "Non-destructive prompt: _send(controller.answerGate(gate.id, GateResponse.confirmation(confirmed: true))) directly (line 652). Destructive prompt (teamGateIsDestructive(gate)): first opens the confirm sheet \"Approve this destructive action?\" via _confirm, then answers.",
+     "gates": [
+      "gate.kind == GateKind.confirmation",
+      "controller.capabilities.controlRespond",
+      "hidden while record.status is MutationStatus.unconfirmed or confirmed (hideActions)",
+      "disabled while busy (_sending || record.isSent)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-deny",
+     "type": "button",
+     "label": "Deny",
+     "key": "team-gate-deny",
+     "line": 658,
+     "action": "open-sheet",
+     "target": "gate-sheet-confirm-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "Opens the error-tone confirm sheet \"Deny this request?\" via _confirm; on confirm sends controller.answerGate(gate.id, GateResponse.confirmation(confirmed: false)).",
+     "gates": [
+      "gate.kind == GateKind.confirmation",
+      "controller.capabilities.controlRespond",
+      "hidden while record.status is MutationStatus.unconfirmed or confirmed (hideActions)",
+      "disabled while busy (_sending || record.isSent)"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "gate-sheet-mark-done",
+     "type": "button",
+     "label": "Mark done",
+     "key": "team-gate-mark-done",
+     "line": 681,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_send(controller.answerGate(gate.id, const GateResponse.confirmation(confirmed: true))) to close the gate bead.",
+     "gates": [
+      "gate.kind == GateKind.gateBead",
+      "controller.capabilities.controlRespond",
+      "hidden while record.status is MutationStatus.unconfirmed or confirmed (hideActions)",
+      "disabled while busy (_sending || record.isSent)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-run-retry",
+     "type": "button",
+     "label": "Retry",
+     "key": "team-gate-run-retry",
+     "line": 747,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_send(controller.assignWork(item.id, agentId: target)): re-slings the stuck work item to its agent (or the run target gate.raw[\"target\"]).",
+     "gates": [
+      "gate.kind == GateKind.runFailed",
+      "caps.controlAssign && stuck != null && target != null",
+      "hidden while record.status is MutationStatus.unconfirmed or confirmed (hideActions)",
+      "disabled while busy (_sending || record.isSent)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-run-agent",
+     "type": "button",
+     "label": "Restart or reassign",
+     "key": "team-gate-run-agent",
+     "line": 770,
+     "action": "navigate",
+     "target": "team-agent",
+     "targetWidget": "AgentScreen",
+     "effect": "widget.onOpenAgent(agentId): showGateSheet pops the sheet and pushes AgentScreen(controller, agentId).",
+     "gates": [
+      "gate.kind == GateKind.runFailed",
+      "onOpenAgent != null && agentId != null && caps.agents",
+      "hidden while record.status is MutationStatus.unconfirmed or confirmed (hideActions)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-run-logs",
+     "type": "button",
+     "label": "View logs",
+     "key": "team-gate-run-logs",
+     "line": 782,
+     "action": "navigate",
+     "target": "team-agent-output",
+     "targetWidget": "AgentOutputScreen",
+     "effect": "widget.onOpenLogs(agentId): showGateSheet pops the sheet and pushes AgentOutputScreen(controller, agentId).",
+     "gates": [
+      "gate.kind == GateKind.runFailed",
+      "onOpenLogs != null && agentId != null && caps.agentOutput",
+      "hidden while record.status is MutationStatus.unconfirmed or confirmed (hideActions)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-run-cancel",
+     "type": "button",
+     "label": "Cancel work",
+     "key": "team-gate-run-cancel",
+     "line": 792,
+     "action": "open-sheet",
+     "target": "gate-sheet-confirm-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "Opens the confirm sheet \"Cancel this work?\" via _confirm; on confirm _send(controller.cancelRun(runId)).",
+     "gates": [
+      "gate.kind == GateKind.runFailed",
+      "caps.controlCancelRun && gate.runId != null",
+      "hidden while record.status is MutationStatus.unconfirmed or confirmed (hideActions)",
+      "disabled while busy (_sending || record.isSent)"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "gate-sheet-receipt-retry",
+     "type": "button",
+     "label": "Retry (unconfirmed) / Try again (rejected)",
+     "key": "team-gate-retry",
+     "line": 1127,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_retry(record): controller.retryMutation(record.key) creates a new mutation record under a new key and follows it.",
+     "gates": [
+      "record != null",
+      "record.status is MutationStatus.unconfirmed or rejected && record.canRetry",
+      "disabled while _sending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-how",
+     "type": "button",
+     "label": "How",
+     "key": "team-gate-how",
+     "line": 1172,
+     "action": "open-sheet",
+     "target": "team-host-guide-sheet",
+     "targetWidget": "showTeamHostGuideSheet",
+     "effect": "showTeamHostGuideSheet(context), next to the \"Answer this on the host\" line.",
+     "gates": [
+      "actions.isEmpty && !hideActions && record == null (no capability for this variant, or kind reviewReady/unknown)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-technical",
+     "type": "list-tile",
+     "label": "Technical details",
+     "key": "team-gate-technical",
+     "line": 1234,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Expands the raw provider values (request id, session id, kind, work id, run id, every raw scalar), each a TeamTechnicalValue row.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-technical-copy",
+     "type": "icon-button",
+     "label": "Copy",
+     "key": null,
+     "file": "lib/ui/widgets/team_technical_details.dart",
+     "line": 229,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Clipboard.setData(value) then SnackBar \"Copied\"; one per TeamTechnicalValue row.",
+     "gates": [
+      "row value is non-empty",
+      "Technical details expanded"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "gate-sheet-close",
+     "type": "button",
+     "label": "Close",
+     "key": "team-gate-close",
+     "line": 437,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.of(context).pop(). The sheet also closes itself gateSheetAnsweredBeat (900 ms) after the record is confirmed (_scheduleClose).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "gate-sheet-confirm-sheet",
+   "title": "Approve this destructive action? / Deny this request? / Cancel this work?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/team/gate_sheet.dart",
+   "widget": "_confirm",
+   "presentedBy": [],
+   "line": 258,
+   "purpose": "Second step of a destructive gate answer (approve destructive prompt, deny, cancel run) in the error tone; nothing is sent unless confirmed.",
+   "reachedFrom": [
+    {
+     "page": "gate-sheet",
+     "element": "gate-sheet-approve"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "gate-sheet-deny"
+    },
+    {
+     "page": "gate-sheet",
+     "element": "gate-sheet-run-cancel"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "gate-sheet-confirm-sheet-confirm",
+     "type": "button",
+     "label": "Approve / Deny / Cancel work",
+     "key": "team-gate-confirm-yes",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 82,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops true; the gate sheet then calls controller.answerGate(gate.id, GateResponse.confirmation(confirmed: true|false)) or controller.cancelRun(runId).",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "gate-sheet-confirm-sheet-cancel",
+     "type": "button",
+     "label": "Keep",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is sent.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "embedded-team-merge-section",
+   "title": "Ready to merge / Not ready / Merged",
+   "kind": "overlay",
+   "file": "lib/ui/screens/team/merge_section.dart",
+   "widget": "TeamMergeSection",
+   "presentedBy": [],
+   "line": 107,
+   "purpose": "Merge block at the end of the run Overview: readiness lines, file counts, Review changes / Approve request / two-step Merge, and the receipts.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_Overview",
+     "file": "lib/ui/screens/team/run_screen.dart",
+     "line": 822
+    }
+   ],
+   "gates": [
+    "teamMergeEligible: controller.capabilities.mergeReadiness",
+    "controller.gateway is OrchestrationMergeGateway",
+    "teamMergeWorkDone(run, snapshot.work): every work item completed/review/cancelled"
+   ],
+   "embeddedIn": [
+    "RunScreen"
+   ],
+   "elements": [
+    {
+     "id": "embedded-team-merge-section-review",
+     "type": "button",
+     "label": "Review changes",
+     "key": "team-merge-review",
+     "line": 340,
+     "action": "open-sheet",
+     "target": "team-merge-changes-sheet",
+     "targetWidget": "_ChangesSheet",
+     "effect": "_openChanges(readiness): showModalBottomSheet with _ChangesSheet (line 219).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-team-merge-section-approve",
+     "type": "button",
+     "label": "Approve request",
+     "key": "team-merge-approve",
+     "line": 345,
+     "action": "open-sheet",
+     "target": "team-merge-approve-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_onApproveTap(request): confirm sheet, then controller.approveMergeRequest(request.id, runId: run.id).",
+     "gates": [
+      "enabled only when canApprove: request != null && !approved && !approveBusy && !controller.isStale && !merged"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-team-merge-section-merge",
+     "type": "button",
+     "label": "Merge (armed: Confirm merge)",
+     "key": "team-merge-merge",
+     "line": 352,
+     "action": "open-sheet",
+     "target": "team-merge-confirm-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_onMergeTap: first tap arms the button for teamMergeArmWindow (8 s, label \"Confirm merge\"); second tap disarms and opens the destructive confirm sheet, then controller.mergeRun(run.id).",
+     "gates": [
+      "enabled only when canMerge: readiness != null && readiness.canMerge && !merged && !mergeBusy && !controller.isStale"
+     ],
+     "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "team-merge-confirm-sheet",
+   "title": "Merge into {branch}?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/team/merge_section.dart",
+   "widget": "_onMergeTap",
+   "presentedBy": [],
+   "line": 184,
+   "purpose": "Destructive confirmation before merging the run into the target branch.",
+   "reachedFrom": [
+    {
+     "page": "embedded-team-merge-section",
+     "element": "embedded-team-merge-section-merge"
+    }
+   ],
+   "gates": [
+    "Merge button armed (second tap within 8 s)"
+   ],
+   "elements": [
+    {
+     "id": "team-merge-confirm-sheet-confirm",
+     "type": "button",
+     "label": "Merge into {branch}",
+     "key": "team-merge-confirm",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 82,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops true; _onMergeTap then calls controller.mergeRun(run.id).",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "team-merge-confirm-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is sent.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-merge-approve-sheet",
+   "title": "Approve this merge request?",
+   "kind": "sheet",
+   "file": "lib/ui/screens/team/merge_section.dart",
+   "widget": "_onApproveTap",
+   "presentedBy": [],
+   "line": 200,
+   "purpose": "Single confirmation before approving the merge request.",
+   "reachedFrom": [
+    {
+     "page": "embedded-team-merge-section",
+     "element": "embedded-team-merge-section-approve"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "team-merge-approve-sheet-confirm",
+     "type": "button",
+     "label": "Approve request",
+     "key": "team-merge-approve-confirm",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 82,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops true; _onApproveTap then calls controller.approveMergeRequest(request.id, runId: run.id).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-merge-approve-sheet-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is sent.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-merge-changes-sheet",
+   "title": "Changes",
+   "kind": "sheet",
+   "file": "lib/ui/screens/team/merge_section.dart",
+   "widget": "_ChangesSheet",
+   "presentedBy": [],
+   "line": 683,
+   "purpose": "Draggable sheet listing changed files with +/- counts (no diff) and the run's work items.",
+   "reachedFrom": [
+    {
+     "page": "embedded-team-merge-section",
+     "element": "embedded-team-merge-section-review"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "team-merge-changes-sheet-work-row",
+     "type": "list-tile",
+     "label": "<work item title> / <state word>",
+     "key": "team-merge-work-<id>",
+     "line": 787,
+     "action": "open-sheet",
+     "target": "work-sheet",
+     "targetWidget": "showWorkSheet",
+     "effect": "onOpenWork(item.id): pops this sheet and calls showWorkSheet(parent, controller, id) (line 228-230).",
+     "gates": [
+      "run has work items in controller.snapshot.work"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "work-sheet",
+   "title": "<work item title> (Work · bead <id>)",
+   "kind": "sheet",
+   "file": "lib/ui/screens/team/work_sheet.dart",
+   "widget": "WorkSheet",
+   "presentedBy": [
+    "showWorkSheet"
+   ],
+   "line": 171,
+   "purpose": "Detail sheet for one work item: cycle strip, state/owner, description, dependency and blocking chips, branch/worktree, output, validation, timestamps and raw technical details. Read-only apart from jumps.",
+   "reachedFrom": [
+    {
+     "page": "gate-sheet",
+     "element": "gate-sheet-work-chip"
+    },
+    {
+     "page": "team-merge-changes-sheet",
+     "element": "team-merge-changes-sheet-work-row"
+    },
+    {
+     "page": "work-sheet",
+     "element": "work-sheet-dependency-chip"
+    },
+    {
+     "page": "embedded-work-graph",
+     "element": "embedded-work-graph-node"
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_RunScreenState._openWork",
+     "file": "lib/ui/screens/team/run_screen.dart",
+     "line": 144
+    }
+   ],
+   "gates": [
+    "item missing from snapshot shows only \"This work item is no longer on the host.\" (team-work-sheet-missing)"
+   ],
+   "elements": [
+    {
+     "id": "work-sheet-dependency-chip",
+     "type": "chip",
+     "label": "<dependency title or id>",
+     "key": "team-work-dependency-<id>",
+     "line": 282,
+     "action": "open-sheet",
+     "target": "work-sheet",
+     "targetWidget": "showWorkSheet",
+     "effect": "onJump(id): pops this sheet and re-opens showWorkSheet for the other item (line 50-58). Disabled when the dependency is not in the snapshot.",
+     "gates": [
+      "item.dependsOn non-empty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "work-sheet-blocking-chip",
+     "type": "chip",
+     "label": "<blocked item title>",
+     "key": "team-work-blocking-<id>",
+     "line": 282,
+     "action": "open-sheet",
+     "target": "work-sheet",
+     "targetWidget": "showWorkSheet",
+     "effect": "onJump(id): pops this sheet and opens the Work sheet of the item that waits on this one.",
+     "gates": [
+      "another work item lists this id in dependsOn"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "work-sheet-open-session",
+     "type": "button",
+     "label": "Open session",
+     "key": "team-work-sheet-open-session",
+     "line": 403,
+     "action": "navigate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "openSession(link): calls the onOpenSession callback supplied to showWorkSheet with the linked OpenCode session id. No caller in lib/ currently passes onOpenSession, so the button never renders today.",
+     "gates": [
+      "controller.capabilities.sessionLink && workSessionLink(item) != null && onOpenSession != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "work-sheet-technical",
+     "type": "list-tile",
+     "label": "Technical details",
+     "key": "team-work-sheet-technical",
+     "line": 581,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Expands raw values (id, raw state, type, run, parent, project, assignee, session, labels, depends on, closed reason, every raw scalar).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "work-sheet-technical-copy",
+     "type": "icon-button",
+     "label": "Copy",
+     "key": null,
+     "file": "lib/ui/widgets/team_technical_details.dart",
+     "line": 229,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Clipboard.setData(value) then SnackBar \"Copied\"; one per TeamTechnicalValue row.",
+     "gates": [
+      "row value is non-empty",
+      "Technical details expanded"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "embedded-work-graph",
+   "title": "[Work dependency graph]",
+   "kind": "overlay",
+   "file": "lib/ui/screens/team/work_graph.dart",
+   "widget": "WorkGraph",
+   "presentedBy": [],
+   "line": 351,
+   "purpose": "Pan/zoom dependency graph of a run's work items in the run Work tab (graph view).",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_WorkTab",
+     "file": "lib/ui/screens/team/run_screen.dart",
+     "line": 1413
+    }
+   ],
+   "gates": [
+    "run Work tab with TeamWorkView.graph selected"
+   ],
+   "embeddedIn": [
+    "RunScreen"
+   ],
+   "elements": [
+    {
+     "id": "embedded-work-graph-viewer",
+     "type": "gesture",
+     "label": "[pinch-zoom / drag-pan]",
+     "key": "team-work-graph-viewer",
+     "line": 433,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "InteractiveViewer with TransformationController, scale .2 to 3.0; view state only.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-work-graph-node",
+     "type": "gesture",
+     "label": "{title}, {state} (node chip)",
+     "key": "team-work-graph-canvas",
+     "line": 440,
+     "action": "open-sheet",
+     "target": "work-sheet",
+     "targetWidget": "showWorkSheet",
+     "effect": "GestureDetector.onTapUp hit-tests layout.nodeAt and calls widget.onNodeTap(node.id) (also exposed as a semantics button, line 599); RunScreen passes _openWork -> showWorkSheet.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-work-graph-fit",
+     "type": "icon-button",
+     "label": "Fit",
+     "key": "team-work-graph-fit",
+     "line": 466,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_fit(viewport, layout): resets the transform so the whole graph is visible.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "start-run-sheet",
+   "title": "Start a run",
+   "kind": "sheet",
+   "file": "lib/ui/screens/team/start_run_sheet.dart",
+   "widget": "StartRunSheet",
+   "presentedBy": [
+    "showStartRunSheet"
+   ],
+   "line": 67,
+   "purpose": "Composes an objective (project, supervision level) and sends it to the planner (Mayor) agent; shows a planner-missing/off notice instead of the form when no planner can take it.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_TeamHomeScreenState._startRun",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 141
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "start-run-sheet-objective",
+     "type": "text-field",
+     "label": "Objective (hint: What should the team achieve? One outcome, in your words.)",
+     "key": "team-start-run-objective",
+     "line": 208,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Objective text bound to _objective; empty submit shows the error text.",
+     "gates": [
+      "planner present and not off",
+      "disabled while _sending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "start-run-sheet-project",
+     "type": "dropdown",
+     "label": "Project: Let the planner choose / <project name>",
+     "key": "team-start-run-project",
+     "line": 228,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "setState(_projectId = value); the name is included in the planning message.",
+     "gates": [
+      "controller.snapshot.projects.isNotEmpty",
+      "disabled while _sending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "start-run-sheet-supervision",
+     "type": "list-tile",
+     "label": "Supervision: High / Balanced / Autonomous (radio rows)",
+     "key": "team-start-run-supervision-<level>",
+     "line": 258,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "setState(_supervision = level) (InkWell in _SupervisionRow, line 364).",
+     "gates": [
+      "disabled while _sending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "start-run-sheet-send",
+     "type": "button",
+     "label": "Send to planner",
+     "key": "team-start-run-send",
+     "line": 332,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_send(planner): if the planner has no session, controller.controlAgent(planner.id, AgentControlAction.start) first (\"waking\"); then controller.messageAgent(planner.id, composeTeamPlanningMessage(...)) and pops the sheet with the MutationRecord.",
+     "gates": [
+      "disabled while _sending"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "start-run-sheet-host-guide",
+     "type": "button",
+     "label": "Host guide",
+     "key": "team-start-run-host-guide",
+     "line": 443,
+     "action": "open-sheet",
+     "target": "team-host-guide-sheet",
+     "targetWidget": "showTeamHostGuideSheet",
+     "effect": "showTeamHostGuideSheet(context).",
+     "gates": [
+      "teamPlannerAgent(agents) == null or teamPlannerIsOff(planner)"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "embedded-team-planning-card",
+   "title": "Planning… (Mayor) / still planning / unconfirmed / refused",
+   "kind": "overlay",
+   "file": "lib/ui/screens/team/start_run_sheet.dart",
+   "widget": "TeamPlanningCard",
+   "presentedBy": [],
+   "line": 463,
+   "purpose": "Pending card on the AI Team home for one Start-a-run request that has not produced a run yet.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_TeamHomeScreenState",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 299
+    }
+   ],
+   "gates": [
+    "teamPendingPlanning: request.status != TeamPlanningStatus.started and not dismissed"
+   ],
+   "embeddedIn": [
+    "TeamHomeScreen"
+   ],
+   "elements": [
+    {
+     "id": "embedded-team-planning-card-output",
+     "type": "button",
+     "label": "Planner output",
+     "key": "team-planning-output",
+     "line": 567,
+     "action": "navigate",
+     "target": "team-agent-output",
+     "targetWidget": "AgentOutputScreen",
+     "effect": "_openPlannerOutput: Navigator.push(MaterialPageRoute(AgentOutputScreen(controller, agentId: request.plannerId))) (line 476).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-team-planning-card-dismiss",
+     "type": "button",
+     "label": "Dismiss",
+     "key": "team-planning-dismiss",
+     "line": 573,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "controller.dismissPlanning(request.key): hides the card (app-side dismissal; the host request is untouched).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-phone-onboarding-offer",
+   "title": "Also run an AI team on this phone",
+   "kind": "onboarding-step",
+   "file": "lib/ui/widgets/team_phone_onboarding.dart",
+   "widget": "TeamPhoneOnboardingBlock",
+   "presentedBy": [],
+   "line": 615,
+   "purpose": "Optional offer card after the Termux server is running: download size, battery warning, skip or set up.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_TermuxSetupScreenState._teamPhoneBlock",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
+     "line": 1458
+    }
+   ],
+   "gates": [
+    "await runtime.supportsAiTeam (absent otherwise)",
+    "managed Termux server profile (block built by TermuxSetupScreen._teamPhoneBlock)",
+    "runtime phase idle/unknown && orchestrationStore.phoneOffer(profile.id) == PhoneOffer.open"
+   ],
+   "embeddedIn": [
+    "TermuxSetupScreen"
+   ],
+   "elements": [
+    {
+     "id": "team-phone-onboarding-offer-skip",
+     "type": "button",
+     "label": "Skip for now",
+     "key": "team-phone-skip",
+     "line": 674,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_skip: orchestrationStore.setPhoneOffer(profile.id, PhoneOffer.skipped) and hides the block (re-offered once in Settings > Plugins).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-phone-onboarding-offer-set-up",
+     "type": "button",
+     "label": "Set up AI team",
+     "key": "team-phone-set-up",
+     "line": 679,
+     "action": "mutate",
+     "target": "team-phone-onboarding-project-sheet",
+     "targetWidget": "_ProjectSheet",
+     "effect": "_setUp: picks the project (_chooseProject: saved workspace dir, the only project, or else the project sheet) then _run(from: download): runtime.install() -> runtime.init(project) -> runtime.start() -> teamPhoneEnable writes the phone OrchestrationConfig on the profile.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-phone-onboarding-project-sheet",
+   "title": "Choose a project",
+   "kind": "sheet",
+   "file": "lib/ui/widgets/team_phone_onboarding.dart",
+   "widget": "_ProjectSheet",
+   "presentedBy": [],
+   "line": 984,
+   "purpose": "Pick the managed project folder the city is created next to, or name a new folder when there are none (opened by _chooseProject, line 423).",
+   "reachedFrom": [
+    {
+     "page": "team-phone-onboarding-offer",
+     "element": "team-phone-onboarding-offer-set-up"
+    },
+    {
+     "page": "team-phone-onboarding-steps",
+     "element": "team-phone-onboarding-steps-continue"
+    },
+    {
+     "page": "team-phone-onboarding-failed",
+     "element": "team-phone-onboarding-failed-retry"
+    }
+   ],
+   "gates": [
+    "_project == null, no saved workspace directory among runtime.managedProjects(), and projects.length != 1"
+   ],
+   "elements": [
+    {
+     "id": "team-phone-onboarding-project-sheet-radio",
+     "type": "list-tile",
+     "label": "<folder name> / <path> (radio)",
+     "key": "team-phone-project-<i>",
+     "line": 1084,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "RadioGroup.onChanged (line 1080): setState(_selected = value).",
+     "gates": [
+      "projects non-empty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-phone-onboarding-project-sheet-continue",
+     "type": "button",
+     "label": "Continue",
+     "key": "team-phone-project-continue",
+     "line": 1104,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(_selected): returns the chosen path to _chooseProject, which starts the setup run.",
+     "gates": [
+      "projects non-empty",
+      "_selected != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-phone-onboarding-project-sheet-new-folder",
+     "type": "text-field",
+     "label": "Folder name",
+     "key": "team-phone-new-folder",
+     "line": 1058,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onSubmitted -> _create().",
+     "gates": [
+      "projects empty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-phone-onboarding-project-sheet-create",
+     "type": "button",
+     "label": "Create and continue",
+     "key": "team-phone-create-folder",
+     "line": 1072,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_create: validates with projectFolderNameProblem, runtime.createManagedProject(name), pops with the new path.",
+     "gates": [
+      "projects empty",
+      "disabled while _creating"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-phone-onboarding-steps",
+   "title": "Setting up the AI team",
+   "kind": "onboarding-step",
+   "file": "lib/ui/widgets/team_phone_onboarding.dart",
+   "widget": "TeamPhoneOnboardingBlock",
+   "presentedBy": [],
+   "line": 716,
+   "purpose": "Five-step progress list (download, packages, city, start, connect) with the live output panel; polls runtime.status()/logTail() every 2 s.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_TermuxSetupScreenState._teamPhoneBlock",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
+     "line": 1458
+    },
+    {
+     "page": "team-phone-onboarding-offer",
+     "element": "team-phone-onboarding-offer-set-up"
+    }
+   ],
+   "gates": [
+    "await runtime.supportsAiTeam (absent otherwise)",
+    "managed Termux server profile (block built by TermuxSetupScreen._teamPhoneBlock)",
+    "status.busy or a part-way phase (installed / cityReady / stopped ...)"
+   ],
+   "embeddedIn": [
+    "TermuxSetupScreen"
+   ],
+   "elements": [
+    {
+     "id": "team-phone-onboarding-steps-copy-log",
+     "type": "icon-button",
+     "label": "Copy output",
+     "key": null,
+     "file": "lib/ui/widgets/setup_terminal.dart",
+     "line": 135,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "SetupTerminal.onCopy -> _copyLog (team_phone_onboarding.dart:575): Clipboard.setData(_log) then SnackBar (l10n.workCopied). Disabled while the log is empty.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-phone-onboarding-steps-continue",
+     "type": "button",
+     "label": "Continue",
+     "key": "team-phone-continue",
+     "line": 764,
+     "action": "mutate",
+     "target": "team-phone-onboarding-project-sheet",
+     "targetWidget": "_ProjectSheet",
+     "effect": "_resume: continues from where the runtime got to (install / init / start), choosing a project first when needed, via _run.",
+     "gates": [
+      "!running (neither _busy nor status.busy): a setup interrupted part-way"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-phone-onboarding-success",
+   "title": "AI team is running on this phone · {n} agents ready",
+   "kind": "onboarding-step",
+   "file": "lib/ui/widgets/team_phone_onboarding.dart",
+   "widget": "TeamPhoneOnboardingBlock",
+   "presentedBy": [],
+   "line": 777,
+   "purpose": "Success card once the phone supervisor is ready and the profile carries the phone config.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_TermuxSetupScreenState._teamPhoneBlock",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
+     "line": 1458
+    }
+   ],
+   "gates": [
+    "await runtime.supportsAiTeam (absent otherwise)",
+    "managed Termux server profile (block built by TermuxSetupScreen._teamPhoneBlock)",
+    "status.phase == ready && status.isReady && !killedByAndroid"
+   ],
+   "embeddedIn": [
+    "TermuxSetupScreen"
+   ],
+   "elements": [
+    {
+     "id": "team-phone-onboarding-success-open-workspace",
+     "type": "button",
+     "label": "Open Workspace",
+     "key": "team-phone-open-workspace",
+     "line": 816,
+     "action": "navigate",
+     "target": "home",
+     "targetWidget": "/home",
+     "effect": "widget.onOpenWorkspace: TermuxSetupScreen connects to the profile if needed (_finishConnect) then _continueToApp -> pushNamedAndRemoveUntil(\"/home\") (termux_setup_screen.dart:1447-1472).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-phone-onboarding-failed",
+   "title": "The AI team could not be set up.",
+   "kind": "onboarding-step",
+   "file": "lib/ui/widgets/team_phone_onboarding.dart",
+   "widget": "TeamPhoneOnboardingBlock",
+   "presentedBy": [],
+   "line": 828,
+   "purpose": "Failure card: honest reason sentence, step list with the failed step, last output, Retry.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_TermuxSetupScreenState._teamPhoneBlock",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
+     "line": 1458
+    }
+   ],
+   "gates": [
+    "await runtime.supportsAiTeam (absent otherwise)",
+    "managed Termux server profile (block built by TermuxSetupScreen._teamPhoneBlock)",
+    "status.phase == failed, or ready but not healthy, or a TermuxBridgeException on dispatch"
+   ],
+   "embeddedIn": [
+    "TermuxSetupScreen"
+   ],
+   "elements": [
+    {
+     "id": "team-phone-onboarding-failed-copy-log",
+     "type": "icon-button",
+     "label": "Copy output",
+     "key": null,
+     "file": "lib/ui/widgets/setup_terminal.dart",
+     "line": 135,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "SetupTerminal.onCopy -> _copyLog (team_phone_onboarding.dart:575): Clipboard.setData(_log) then SnackBar (l10n.workCopied). Disabled while the log is empty.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-phone-onboarding-failed-retry",
+     "type": "button",
+     "label": "Retry",
+     "key": "team-phone-retry",
+     "line": 864,
+     "action": "mutate",
+     "target": "team-phone-onboarding-project-sheet",
+     "targetWidget": "_ProjectSheet",
+     "effect": "_retry: restarts from the failed step (teamPhoneFailedStep) via _run; picks a project first when the city step or install is redone.",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-phone-onboarding-killed",
+   "title": "[Android stopped the team]",
+   "kind": "onboarding-step",
+   "file": "lib/ui/widgets/team_phone_onboarding.dart",
+   "widget": "TeamPhoneOnboardingBlock",
+   "presentedBy": [],
+   "line": 876,
+   "purpose": "Card shown when Android killed the phone supervisor: \"Android stopped the team while the app was away. Nothing is lost.\"",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_TermuxSetupScreenState._teamPhoneBlock",
+     "file": "lib/ui/screens/termux_setup_screen.dart",
+     "line": 1458
+    }
+   ],
+   "gates": [
+    "await runtime.supportsAiTeam (absent otherwise)",
+    "managed Termux server profile (block built by TermuxSetupScreen._teamPhoneBlock)",
+    "status.phase == ready && status.killedByAndroid"
+   ],
+   "embeddedIn": [
+    "TermuxSetupScreen"
+   ],
+   "elements": [
+    {
+     "id": "team-phone-onboarding-killed-start-again",
+     "type": "button",
+     "label": "Start again",
+     "key": "team-phone-start-again",
+     "line": 905,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_startAgain: runtime.start(), then teamPhoneEnable if not yet connected.",
+     "gates": [
+      "disabled while _busy"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "embedded-team-phone-section",
+   "title": "On this phone",
+   "kind": "overlay",
+   "file": "lib/ui/widgets/team_phone_section.dart",
+   "widget": "TeamPhoneSection",
+   "presentedBy": [],
+   "line": 80,
+   "purpose": "Section of the AI Team plugin sheet for the Termux profile: phone supervisor status, Start/Stop, keep-running tips, Remove.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_TeamPluginSheetState",
+     "file": "lib/ui/screens/settings/plugins_screen.dart",
+     "line": 636
+    }
+   ],
+   "gates": [
+    "teamPhoneProfile(profile) (host)",
+    "controls only when await runtime.supportsAiTeam; otherwise a \"not available\" text"
+   ],
+   "embeddedIn": [
+    "TeamPluginSheet"
+   ],
+   "elements": [
+    {
+     "id": "embedded-team-phone-section-start-again",
+     "type": "button",
+     "label": "Start again",
+     "key": "team-phone-start-again",
+     "line": 381,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_start -> _run(runtime.start); enables the phone config on the profile when it comes up ready.",
+     "gates": [
+      "status.killedByAndroid",
+      "disabled while working"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-team-phone-section-stop",
+     "type": "button",
+     "label": "Stop",
+     "key": "team-phone-stop",
+     "line": 388,
+     "action": "open-sheet",
+     "target": "team-phone-stop-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_stop: confirm sheet, then _run(runtime.stop).",
+     "gates": [
+      "status.isReady (running) && !killed",
+      "disabled while working"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "embedded-team-phone-section-start",
+     "type": "button",
+     "label": "Start",
+     "key": "team-phone-start",
+     "line": 395,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_start -> _run(runtime.start).",
+     "gates": [
+      "canStart: status != null && !working && !running && status.hasCity"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-team-phone-section-open-setup",
+     "type": "button",
+     "label": "Open phone setup",
+     "key": "team-phone-open-setup",
+     "line": 402,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "_openSetup: widget.onOpenSetup or Navigator.pushNamed(\"/termux-setup\") (line 268).",
+     "gates": [
+      "status != null && !working && not running/killed/canStart (no city yet)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-team-phone-section-keep-running",
+     "type": "list-tile",
+     "label": "Keep it running",
+     "key": "team-phone-keep-running",
+     "line": 411,
+     "action": "open-sheet",
+     "target": "team-phone-tips-sheet",
+     "targetWidget": "showTeamPhoneTipsSheet",
+     "effect": "showTeamPhoneTipsSheet(context).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-team-phone-section-remove",
+     "type": "button",
+     "label": "Remove from this phone",
+     "key": "team-phone-remove",
+     "line": 428,
+     "action": "open-sheet",
+     "target": "team-phone-remove-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_remove: destructive confirm sheet, then runtime.remove(), turns the plugin off for the profile and calls onRemoved.",
+     "gates": [
+      "status.installed",
+      "disabled while working"
+     ],
+     "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "team-phone-stop-sheet",
+   "title": "Stop the team on this phone?",
+   "kind": "sheet",
+   "file": "lib/ui/widgets/team_phone_section.dart",
+   "widget": "_stop",
+   "presentedBy": [],
+   "line": 191,
+   "purpose": "Confirmation before stopping the phone-hosted supervisor.",
+   "reachedFrom": [
+    {
+     "page": "embedded-team-phone-section",
+     "element": "embedded-team-phone-section-stop"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "team-phone-stop-sheet-confirm",
+     "type": "button",
+     "label": "Stop team",
+     "key": "team-phone-stop-confirm",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 82,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops true; _stop then runs _run(runtime.stop). Not styled destructive (destructive: false in the call).",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "team-phone-stop-sheet-cancel",
+     "type": "button",
+     "label": "Keep",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is sent.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-phone-remove-sheet",
+   "title": "Remove the AI team from this phone?",
+   "kind": "sheet",
+   "file": "lib/ui/widgets/team_phone_section.dart",
+   "widget": "_remove",
+   "presentedBy": [],
+   "line": 207,
+   "purpose": "Destructive confirmation before removing the on-device AI Team runtime.",
+   "reachedFrom": [
+    {
+     "page": "embedded-team-phone-section",
+     "element": "embedded-team-phone-section-remove"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "team-phone-remove-sheet-confirm",
+     "type": "button",
+     "label": "Remove",
+     "key": "team-phone-remove-confirm",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 82,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops true; _remove then runtime.remove(), controller.remove() or orchestrationStore.sweep, clears profile.orchestration, setPhoneOffer(dismissed), syncOrchestration, SnackBar, onRemoved.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "team-phone-remove-sheet-cancel",
+     "type": "button",
+     "label": "Keep",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is sent.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-phone-tips-sheet",
+   "title": "Keep it running",
+   "kind": "sheet",
+   "file": "lib/ui/widgets/team_phone_section.dart",
+   "widget": "showTeamPhoneTipsSheet",
+   "presentedBy": [
+    "showTeamPhoneTipsSheet"
+   ],
+   "line": 450,
+   "purpose": "Tips to keep the phone supervisor alive (wake lock, battery, phantom-process ADB commands).",
+   "reachedFrom": [
+    {
+     "page": "embedded-team-phone-section",
+     "element": "embedded-team-phone-section-keep-running"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "team-phone-tips-sheet-copy",
+     "type": "button",
+     "label": "Copy commands",
+     "key": "team-phone-tips-copy",
+     "line": 516,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Clipboard.setData(teamPhoneAdbCommands) then SnackBar.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "embedded-team-phone-reoffer-card",
+   "title": "Set up AI team on this phone",
+   "kind": "overlay",
+   "file": "lib/ui/widgets/team_phone_section.dart",
+   "widget": "TeamPhoneReofferCard",
+   "presentedBy": [],
+   "line": 540,
+   "purpose": "One-time re-offer of the skipped on-device onboarding step, in Settings > Plugins.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_PluginsSettingsScreenState",
+     "file": "lib/ui/screens/settings/plugins_screen.dart",
+     "line": 128
+    }
+   ],
+   "gates": [
+    "teamPhoneProfile(profile) (host)",
+    "profile.orchestration == null && phoneOffer(profile.id) == PhoneOffer.skipped && await runtime.supportsAiTeam"
+   ],
+   "embeddedIn": [
+    "PluginsSettingsScreen"
+   ],
+   "elements": [
+    {
+     "id": "embedded-team-phone-reoffer-card-dismiss",
+     "type": "button",
+     "label": "Not now",
+     "key": "plugins-phone-offer-dismiss",
+     "line": 636,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_dismiss: orchestrationStore.setPhoneOffer(profile.id, PhoneOffer.dismissed); never returns.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-team-phone-reoffer-card-set-up",
+     "type": "button",
+     "label": "Set up",
+     "key": "plugins-phone-offer-set-up",
+     "line": 641,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "_setUp: widget.onSetUp or Navigator.pushNamed(\"/termux-setup\") (line 590).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-host-sheet",
+   "title": "Add AI Team host",
+   "kind": "sheet",
+   "file": "lib/ui/widgets/team_host_form.dart",
+   "widget": "TeamHostForm",
+   "presentedBy": [
+    "showTeamHostSheet"
+   ],
+   "line": 165,
+   "purpose": "Manual-add form: address, optional city, kind of computer; one submit probes the host and returns the OrchestrationConfig.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_ProfileEditorScreenState",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 1540
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_TeamPluginSheetState",
+     "file": "lib/ui/screens/settings/plugins_screen.dart",
+     "line": 311
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "team-host-sheet-url",
+     "type": "text-field",
+     "label": "Address",
+     "key": "team-host-url",
+     "line": 280,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Host URL bound to _url; disabled while testing.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-host-sheet-city",
+     "type": "text-field",
+     "label": "City (optional)",
+     "key": "team-host-city",
+     "line": 296,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onSubmitted -> _submit().",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-host-sheet-kind",
+     "type": "chip",
+     "label": "Kind of computer: Desktop computer / Laptop / Windows (WSL)",
+     "key": "team-host-kind-<kind>",
+     "line": 323,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "ChoiceChip.onSelected: setState(_kind = kind); only picks the disclaimer line. Disabled while testing.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "team-host-sheet-verdict-how",
+     "type": "button",
+     "label": "How",
+     "key": "team-host-verdict-how",
+     "line": 349,
+     "action": "open-sheet",
+     "target": "team-host-guide-sheet",
+     "targetWidget": "showTeamHostGuideSheet",
+     "effect": "showTeamHostGuideSheet(context).",
+     "gates": [
+      "_failure != null && verdict is ProbeNotGasCity"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-host-sheet-submit",
+     "type": "button",
+     "label": "Test and turn on (while testing: Checking the address…)",
+     "key": "team-host-submit",
+     "line": 372,
+     "action": "submit",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_submit: validates the URL and the tailnet/loopback http rule (isOrchestrationUrlAllowed), runs widget.probe(url, city); on ProbeFound calls onFound(teamConfigFromVerdict(...)), which pops the sheet with the config (line 158); otherwise shows the verdict note.",
+     "gates": [
+      "disabled while _testing"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-host-guide-sheet",
+   "title": "Run an AI team on your computer",
+   "kind": "sheet",
+   "file": "lib/ui/widgets/team_host_form.dart",
+   "widget": "showTeamHostGuideSheet",
+   "presentedBy": [
+    "showTeamHostGuideSheet"
+   ],
+   "line": 434,
+   "purpose": "Read-only four-step host setup guide; no interactive element.",
+   "reachedFrom": [
+    {
+     "page": "gate-sheet",
+     "element": "gate-sheet-how"
+    },
+    {
+     "page": "start-run-sheet",
+     "element": "start-run-sheet-host-guide"
+    },
+    {
+     "page": "team-host-sheet",
+     "element": "team-host-sheet-verdict-how"
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_ProfileEditorScreenState",
+     "file": "lib/ui/screens/servers_screen.dart",
+     "line": 2397
+    },
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_TeamPluginSheetState",
+     "file": "lib/ui/screens/settings/plugins_screen.dart",
+     "line": 555
+    }
+   ],
+   "gates": [],
+   "elements": []
+  },
+  {
+   "id": "team-turn-off-sheet",
+   "title": "Turn off AI Team for {server}?",
+   "kind": "sheet",
+   "file": "lib/ui/widgets/team_host_form.dart",
+   "widget": "showTeamTurnOffSheet",
+   "presentedBy": [
+    "showTeamTurnOffSheet"
+   ],
+   "line": 510,
+   "purpose": "Destructive confirmation before turning the AI Team plugin off for a server.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_TeamPluginSheetState",
+     "file": "lib/ui/screens/settings/plugins_screen.dart",
+     "line": 351
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "team-turn-off-sheet-confirm",
+     "type": "button",
+     "label": "Turn off",
+     "key": "team-turn-off-confirm",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 82,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Pops true; the caller (TeamPluginSheet, plugins_screen.dart:351) turns the plugin off for the profile.",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "team-turn-off-sheet-cancel",
+     "type": "button",
+     "label": "Keep",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Navigator.pop(context, false); nothing is sent.",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "embedded-team-discovery-card",
+   "title": "{server} also runs an AI team. Turn it on?",
+   "kind": "overlay",
+   "file": "lib/ui/widgets/team_discovery_card.dart",
+   "widget": "TeamDiscoveryCard",
+   "presentedBy": [],
+   "line": 137,
+   "purpose": "Offer card shown when the automatic probe found a Gas City host next to the connected server.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_PluginsSettingsScreenState",
+     "file": "lib/ui/screens/settings/plugins_screen.dart",
+     "line": 122
+    }
+   ],
+   "gates": [
+    "_discovery.result != null && profile != null && profile.orchestration == null"
+   ],
+   "embeddedIn": [
+    "PluginsSettingsScreen"
+   ],
+   "elements": [
+    {
+     "id": "embedded-team-discovery-card-not-now",
+     "type": "button",
+     "label": "Not now",
+     "key": "team-discovery-not-now",
+     "line": 255,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_discovery.dismiss(): orchestrationStore.dismissDiscovery(profile.id) and hides the offer.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "embedded-team-discovery-card-turn-on",
+     "type": "button",
+     "label": "Turn on",
+     "key": "team-discovery-turn-on",
+     "line": 260,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "_discovery.turnOn(): profile.orchestration = teamConfigFromVerdict(found, ...), store.upsert(profile), controller.syncOrchestration().",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-host-details-sheet",
+   "title": "Technical details",
+   "kind": "sheet",
+   "file": "lib/ui/widgets/team_technical_details.dart",
+   "widget": "TeamHostDetailsSheet",
+   "presentedBy": [
+    "showTeamHostDetailsSheet"
+   ],
+   "line": 40,
+   "purpose": "Read-only host identity (provider, version, city, address, host mode, access), raw values with copy buttons and the product-to-provider term list.",
+   "reachedFrom": [
+    {
+     "page": "?",
+     "element": null,
+     "widget": "_HostChip",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 362
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "team-host-details-sheet-copy",
+     "type": "icon-button",
+     "label": "Copy",
+     "key": null,
+     "line": 229,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Clipboard.setData(value) then SnackBar \"Copied\"; one per TeamTechnicalValue row (provider, address, city, last answer).",
+     "gates": [
+      "row value is non-empty"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "embedded-team-technical-value",
+   "title": "[Raw value row with copy]",
+   "kind": "overlay",
+   "file": "lib/ui/widgets/team_technical_details.dart",
+   "widget": "TeamTechnicalValue",
+   "presentedBy": [],
+   "line": 190,
+   "purpose": "Label + selectable mono value + copy button, reused in Technical details expanders on hosts owned by other agents.",
+   "reachedFrom": [],
+   "gates": [],
+   "embeddedIn": [
+    "AgentScreen",
+    "RunScreen",
+    "TeamPluginSheet"
+   ],
+   "elements": [
+    {
+     "id": "embedded-team-technical-value-copy",
+     "type": "icon-button",
+     "label": "Copy",
+     "key": null,
+     "line": 229,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Clipboard.setData(ClipboardData(text: value)) then SnackBar \"Copied\".",
+     "gates": [
+      "value.isNotEmpty"
+     ],
+     "destructive": false
+    }
+   ]
+  }
+ ],
+ "notPages": [
+  {
+   "file": "lib/ui/widgets/team_vocabulary.dart",
+   "reason": "strings/glyph/classification helpers (teamGateKindWord, teamWorkGlyph, TeamRunProgress ...); no surface and no interactive element"
+  }
+ ],
+ "notes": [
+  "lib/ui/screens/team/work_sheet.dart:319 embeds TeamCycleStrip (lib/ui/widgets/team_cycle_strip.dart, owned by i1); any interactive elements of the strip also belong on page work-sheet.",
+  "lib/ui/screens/team/work_sheet.dart:399 'Open session' needs onOpenSession, but no caller of showWorkSheet in lib/ passes it (run_screen.dart:144, gate_sheet.dart:72, merge_section.dart:230), so the button is currently unreachable.",
+  "lib/ui/screens/team/start_run_sheet.dart:308 embeds TeamBoundariesRow (policy_block.dart, not assigned to i2); grep found no onTap/onPressed in that file.",
+  "Confirm sheets are built by showConfirmSheet (lib/ui/widgets/confirm_sheet.dart:10, not assigned); their confirm/cancel element lines 82/86 point into that file, the page line is the call site.",
+  "gate-sheet-approve is recorded as mutate; for destructive prompts (teamGateIsDestructive) it first opens gate-sheet-confirm-sheet (gate_sheet.dart:641).",
+  "team-phone-stop-sheet: call passes no destructive flag (team_phone_section.dart:191) but stopping the team is marked destructive: true per the brief's stop/kill rule.",
+  "Onboarding block host: lib/ui/screens/termux_setup_screen.dart:1458 (_teamPhoneBlock, used at :2018 and :2266). _View.checking/_View.hidden render nothing. The Copy output icon lives in lib/ui/widgets/setup_terminal.dart:130 (SetupTerminal, not assigned).",
+  "team_phone_section.dart:268 and :590 push the named route '/termux-setup'; target id 'termux-setup' is derived. team-phone-onboarding-success target 'home' is derived from route '/home'.",
+  "activity_screen.dart:320 opens showGateSheet automatically for an initial gate id; the upstream trigger (notification tap / deep link) was not traced.",
+  "embedded-team-technical-value hosts found by grep: agent_screen.dart, run_screen.dart, plugins_screen.dart (exact host widget inside plugins_screen assumed TeamPluginSheet)."
+ ]
+}

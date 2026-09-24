@@ -4,18 +4,26 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/notification_preferences.dart';
 import 'package:opencode_mobile/state/profile_monitor.dart';
 import 'package:opencode_mobile/ui/screens/profile_monitor_screen.dart';
 import 'package:opencode_mobile/ui/screens/activity_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'support/profile_monitor_fixture.dart';
 
 Future<void> _reveal(WidgetTester tester, Finder target) async {
+  // A screen that builds every row can scroll straight to one; a lazy list
+  // has to be dragged until the row exists.
+  if (target.evaluate().isNotEmpty) {
+    await tester.ensureVisible(target);
+    await tester.pump();
+  }
   for (
     var attempt = 0;
     attempt < 30 && target.hitTestable().evaluate().isEmpty;
     attempt++
   ) {
-    await tester.drag(find.byType(ListView), const Offset(0, -180));
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -180));
     await tester.pump();
   }
   expect(target.hitTestable(), findsOneWidget);
@@ -62,14 +70,25 @@ void main() {
       await tester.pump();
       expect(reads, 0);
       expect(find.text('Not monitored · attention unknown'), findsNWidgets(2));
-      final enable = find
-          .widgetWithText(SwitchListTile, 'Monitor this server')
-          .first;
+      // The list holds no settings of its own; monitoring is turned on in
+      // Notifications, one link away.
+      expect(find.byType(Switch), findsNothing);
+      await tester.tap(
+        find.byKey(const ValueKey('monitor-notification-settings')),
+      );
+      await tester.pumpAndSettle();
+      final enable = find.descendant(
+        of: find.byKey(const ValueKey('monitor-enabled-profile-1')),
+        matching: find.byType(Switch),
+      );
       await tester.ensureVisible(enable);
+      await tester.pumpAndSettle();
       await tester.tap(enable);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       expect(reads, 1);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
       expect(find.text('Current observation'), findsOneWidget);
       expect(find.text('Private title'), findsOneWidget);
       await _reveal(tester, find.text('Not monitored · attention unknown'));
@@ -103,11 +122,11 @@ void main() {
           ).copyWith(textScaler: const TextScaler.linear(2.5)),
           child: child!,
         ),
-        home: ProfileMonitorScreen(controller: controller),
+        home: NotificationsSettingsScreen(controller: controller),
       ),
     );
     final enable = find.descendant(
-      of: find.widgetWithText(SwitchListTile, 'Monitor this server'),
+      of: find.byKey(const ValueKey('monitor-enabled-profile-1')),
       matching: find.byType(Switch),
     );
     await _reveal(tester, enable);
@@ -122,7 +141,7 @@ void main() {
     await tester.tap(quiet.hitTestable());
     await tester.pump();
     expect(controller.profileMonitor.rulesFor('profile-1').quietStart, 22 * 60);
-    final checkIn = find.byKey(const ValueKey('monitor-check-in-profile-1'));
+    final checkIn = find.byKey(const ValueKey('notify-check-ins'));
     await _reveal(tester, checkIn);
     expect(
       controller.profileMonitor.rulesFor('profile-1').checkInAfterMinutes,
@@ -136,9 +155,7 @@ void main() {
       controller.profileMonitor.rulesFor('profile-1').checkInAfterMinutes,
       30,
     );
-    final duration = find.byKey(
-      const ValueKey('monitor-check-in-after-profile-1'),
-    );
+    final duration = find.byKey(const ValueKey('notify-check-in-after'));
     await _reveal(tester, duration);
     await tester.tap(duration.hitTestable());
     await tester.pumpAndSettle();
@@ -148,12 +165,9 @@ void main() {
       controller.profileMonitor.rulesFor('profile-1').checkInAfterMinutes,
       15,
     );
-    expect(
-      jsonDecode(
-        store.prefs.getString(ProfileMonitor.rulesKey('profile-1'))!,
-      )['checkInAfterMinutes'],
-      15,
-    );
+    // Stored once, for every server, not inside this server's record.
+    expect(store.prefs.getInt(NotificationPreferences.checkInKey), 15);
+    expect(store.prefs.getInt(NotificationPreferences.quietStartKey), 22 * 60);
     await tester.pumpWidget(const SizedBox.shrink());
     controller.dispose();
     await tester.pump();

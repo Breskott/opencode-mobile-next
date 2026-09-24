@@ -138,6 +138,41 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('retry banner', () {
+    test('a retry is only called a rate limit when it is one', () {
+      final now = DateTime(2026, 9, 2, 12);
+      // The server retries for many reasons; your screenshot's was a dropped
+      // socket under a "Rate limited" title.
+      expect(
+        retryBannerHeadline(
+          SessionRetryState(
+            attempt: 2,
+            next: now.add(const Duration(seconds: 42)),
+            message: 'ECONNRESET: The socket connection was closed',
+          ),
+          now: now,
+        ),
+        'Retrying 2 in 0:42',
+      );
+      expect(
+        retryBannerHeadline(
+          SessionRetryState(attempt: 1, message: 'Overloaded'),
+          now: now,
+        ),
+        'Retrying 1…',
+      );
+      expect(
+        retryBannerHeadline(
+          SessionRetryState(
+            attempt: 3,
+            next: now.add(const Duration(seconds: 5)),
+            message: '429 Too Many Requests',
+          ),
+          now: now,
+        ),
+        'Rate limited. Retrying 3 in 0:05',
+      );
+    });
+
     test('headline names the attempt and counts down to next', () {
       final now = DateTime(2026, 9, 2, 12);
       expect(
@@ -198,7 +233,9 @@ void main() {
         find.textContaining(RegExp(r'Rate limited\. Retrying 2 in 0:4[12]')),
         findsOneWidget,
       );
-      expect(find.text('Rate limit exceeded, backing off'), findsOneWidget);
+      // The title already says it is a rate limit; the server's sentence
+      // saying so again is not repeated under it.
+      expect(find.text('Rate limit exceeded, backing off'), findsNothing);
 
       // The one-second ticker keeps rebuilding the banner (the countdown text
       // itself reads the wall clock, which the test clock does not move).
@@ -216,119 +253,6 @@ void main() {
       // Let the attention region's exit animation finish.
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.byKey(const ValueKey('retry-banner')), findsNothing);
-    });
-
-    testWidgets('sessions tab marks a retrying session', (tester) async {
-      final api = _Api();
-      final controller = await _controller(api);
-      controller.sessionsById['session-1'] = Session(
-        id: 'session-1',
-        title: 'Retrying chat',
-        time: SessionTime(created: 1, updated: 2),
-      );
-      controller.retryStates['session-1'] = const SessionRetryState(attempt: 3);
-      controller.busySessions.add('session-1');
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [connProvider.overrideWithValue(controller)],
-          child: MaterialApp(
-            home: Scaffold(body: SessionsTab(controller: controller)),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const Key('session-retrying-session-1')),
-        findsOneWidget,
-      );
-      expect(find.text('Retrying'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
-    });
-  });
-
-  group('session row usage chips', () {
-    Future<void> pumpRows(
-      WidgetTester tester,
-      Session session, {
-      double textScale = 1,
-    }) async {
-      final controller = await _controller(_Api());
-      controller.sessionsById[session.id] = session;
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [connProvider.overrideWithValue(controller)],
-          child: MediaQuery(
-            data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-            child: MaterialApp(
-              home: Scaffold(body: SessionsTab(controller: controller)),
-            ),
-          ),
-        ),
-      );
-      // The compaction pill spins forever, so settle by hand.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 600));
-    }
-
-    testWidgets('show cost, diff summary and compaction when reported', (
-      tester,
-    ) async {
-      await pumpRows(
-        tester,
-        Session(
-          id: 's1',
-          title: 'Usage',
-          time: SessionTime(created: 1, updated: 2),
-          cost: 0.4249,
-          summary: const SessionDiffSummary(
-            additions: 120,
-            deletions: 34,
-            files: 6,
-          ),
-          compactingSince: DateTime.now(),
-        ),
-      );
-      expect(find.byKey(const Key('session-cost-s1')), findsOneWidget);
-      expect(find.text(r'$0.42'), findsOneWidget);
-      expect(find.byKey(const Key('session-diff-s1')), findsOneWidget);
-      expect(find.textContaining('6 files'), findsOneWidget);
-      expect(find.byKey(const Key('session-compacting-s1')), findsOneWidget);
-      expect(find.text('Compacting…'), findsOneWidget);
-    });
-
-    testWidgets('hide zero cost and empty summaries', (tester) async {
-      await pumpRows(
-        tester,
-        Session(
-          id: 's2',
-          title: 'Quiet',
-          time: SessionTime(created: 1, updated: 2),
-          cost: 0,
-          summary: const SessionDiffSummary(),
-        ),
-      );
-      expect(find.byKey(const Key('session-cost-s2')), findsNothing);
-      expect(find.byKey(const Key('session-diff-s2')), findsNothing);
-    });
-
-    testWidgets('drop usage chips at 2x text scale, keep state chips', (
-      tester,
-    ) async {
-      await pumpRows(
-        tester,
-        Session(
-          id: 's3',
-          title: 'Large text',
-          time: SessionTime(created: 1, updated: 2),
-          cost: 1.5,
-          summary: const SessionDiffSummary(additions: 1, files: 1),
-          compactingSince: DateTime.now(),
-        ),
-        textScale: 2,
-      );
-      expect(find.byKey(const Key('session-cost-s3')), findsNothing);
-      expect(find.byKey(const Key('session-diff-s3')), findsNothing);
-      expect(find.byKey(const Key('session-compacting-s3')), findsOneWidget);
     });
   });
 

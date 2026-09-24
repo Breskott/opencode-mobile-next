@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 
-import 'models.dart';
+import 'dialect.dart';
 
 /// Transport layer for the OpenCode 2 server API (`/api/...`).
 ///
@@ -133,21 +133,89 @@ class Api2Transport {
     CancelToken? cancelToken,
     Duration? receiveTimeout,
   }) async {
+    final known = _dialect;
+    final route = known == Api2Dialect.stable
+        ? stableRoute(method, path, query: query, body: body)
+        : Api2Route(method, path, query: query, body: body);
     try {
       final response = await _dio.request<dynamic>(
-        path,
-        data: body,
-        queryParameters: _cleanQuery(query),
+        route.path,
+        data: route.body,
+        queryParameters: _cleanQuery(route.query),
         options: Options(
-          method: method,
+          method: route.method,
           receiveTimeout: receiveTimeout ?? requestTimeout,
         ),
         cancelToken: cancelToken,
       );
-      return response.data;
+      if (known == null && path == '/health') _dialect = Api2Dialect.beta;
+      return known == Api2Dialect.stable
+          ? stableResponse(method, path, response.data)
+          : response.data;
     } on DioException catch (e) {
-      throw mapError(e, '$method $path');
+      // A 404 before the generation is known may only mean this is the
+      // stable line, where the route moved. Ask once, then send it again
+      // the way that generation expects. Health is the usual first call, so
+      // connecting settles this with no extra request on a beta server.
+      if (known == null &&
+          e.response?.statusCode == 404 &&
+          _moved(method, path, query: query, body: body) &&
+          await _detectStable()) {
+        return _send(
+          path,
+          method: method,
+          body: body,
+          query: query,
+          cancelToken: cancelToken,
+          receiveTimeout: receiveTimeout,
+        );
+      }
+      throw mapError(e, '${route.method} ${route.path}');
     }
+  }
+
+  Api2Dialect? _dialect;
+
+  /// The API generation this server speaks; null until a request settled it.
+  Api2Dialect? get dialect => _dialect;
+
+  /// Records a generation learned elsewhere (the connect-time probe reports
+  /// the server's version), so no request has to find it out again.
+  void settleDialect(Api2Dialect value) => _dialect = value;
+
+  bool _moved(
+    String method,
+    String path, {
+    Map<String, dynamic>? query,
+    Object? body,
+  }) {
+    try {
+      final route = stableRoute(method, path, query: query, body: body);
+      return route.method != method || route.path != path;
+    } on Api2RemovedInStable {
+      return true;
+    }
+  }
+
+  /// `/api/info` exists only on the stable line. Anything but a clean answer
+  /// leaves the generation unknown, so a later request can ask again.
+  Future<bool> _detectStable() async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/info',
+        options: Options(receiveTimeout: const Duration(seconds: 8)),
+      );
+      final data = response.data;
+      if (data is Map && data['version'] is String) {
+        _dialect = Api2Dialect.stable;
+        return true;
+      }
+    } on DioException catch (e) {
+      // A clean 404 is the beta answering; remember it so later 404s do not
+      // ask again. Anything else (auth, a dropped connection) settles nothing.
+      if (e.response?.statusCode == 404) _dialect = Api2Dialect.beta;
+    }
+    return false;
   }
 
   /// Raw bytes (used by `/api/fs/read/...` which has no JSON envelope).
@@ -157,17 +225,32 @@ class Api2Transport {
     CancelToken? cancelToken,
     ProgressCallback? onReceiveProgress,
   }) async {
+    final known = _dialect;
+    final route = known == Api2Dialect.stable
+        ? stableRoute('GET', path, query: query)
+        : Api2Route('GET', path, query: query);
     try {
       final response = await _dio.get<List<int>>(
-        path,
-        queryParameters: _cleanQuery(query),
+        route.path,
+        queryParameters: _cleanQuery(route.query),
         options: Options(responseType: ResponseType.bytes),
         cancelToken: cancelToken,
         onReceiveProgress: onReceiveProgress,
       );
       return response.data ?? const [];
     } on DioException catch (e) {
-      throw mapError(e, 'GET $path');
+      if (known == null &&
+          e.response?.statusCode == 404 &&
+          _moved('GET', path, query: query) &&
+          await _detectStable()) {
+        return getBytes(
+          path,
+          query: query,
+          cancelToken: cancelToken,
+          onReceiveProgress: onReceiveProgress,
+        );
+      }
+      throw mapError(e, 'GET ${route.path}');
     }
   }
 
@@ -193,66 +276,16 @@ class Api2Transport {
     }
   }
 
-  /// Reads the server's readiness surface. opencode 2.0.5+ dropped
-  /// `/api/health` and answers `GET /api/info` instead (`{version, pid, urls,
-  /// paths}` — protocol group `server.server` at tag v2.0.7), so a missing
-  /// `/health` route falls back to `/info`; both mean "the app layer is up".
-  /// 503 while the app layer boots surfaces as [Api2Unavailable]; a
-  /// missing/denied password as [Api2AuthRequired].
+  /// Reads `/api/health`. 503 while the app layer boots surfaces as
+  /// [Api2Unavailable]; a missing/denied password as [Api2AuthRequired].
   Future<Api2Health> health({CancelToken? cancelToken}) async {
-    try {
-      final json = await getJson('/health', cancelToken: cancelToken);
-      final health = Api2Health.fromJson(
-        json is Map<String, dynamic> ? json : const {},
-      );
-      // The beta health payload carries the version; the 2.x health answer is
-      // only `{healthy:true}`, so pull the version from /info when it is
-      // missing (the version string is surfaced for pinning).
-      if (health.version != null) return health;
-      final info = await _serverInfoOrNull(cancelToken: cancelToken);
-      if (info == null) return health;
-      return Api2Health(
-        healthy: health.healthy,
-        version: info.version,
-        pid: info.pid,
-      );
-    } on Api2RequestError catch (error) {
-      // 404/405/501 = this build has no /api/health at all (opencode 2.0.x).
-      if (!_isMissingRoute(error)) rethrow;
-      final info = await serverInfo(cancelToken: cancelToken);
-      return Api2Health(healthy: true, version: info.version, pid: info.pid);
-    }
+    final json = await getJson('/health', cancelToken: cancelToken);
+    return Api2Health.fromJson(json is Map<String, dynamic> ? json : const {});
   }
-
-  /// `GET /api/info` — server identity, the readiness surface of opencode
-  /// 2.0.5+. `Api2RequestError` with a 404 means the address is not a 2.0.x
-  /// server.
-  Future<Api2ServerInfo> serverInfo({CancelToken? cancelToken}) async {
-    final json = await getJson('/info', cancelToken: cancelToken);
-    return Api2ServerInfo.fromJson(
-      json is Map<String, dynamic> ? json : const {},
-    );
-  }
-
-  /// Best-effort [serverInfo] for enriching an answer that already proved the
-  /// server is up; never throws.
-  Future<Api2ServerInfo?> _serverInfoOrNull({CancelToken? cancelToken}) async {
-    try {
-      return await serverInfo(cancelToken: cancelToken);
-    } on Api2Error {
-      return null;
-    }
-  }
-
-  /// Routes an older/newer build no longer serves answer 404 (405/501 on some
-  /// proxies); callers treat those as "absent, try the other surface".
-  static bool _isMissingRoute(Api2Error error) =>
-      const [404, 405, 501].contains(error.statusCode);
 
   /// Health probe that also reports whether the server speaks the v2 API
-  /// this client targets (any server that answers `/api/health` or the
-  /// 2.0.5+ `/api/info` qualifies; the version string is surfaced for
-  /// pinning).
+  /// this client targets (any `0.0.0-beta-*`/newer server that serves
+  /// `/api/health` qualifies; the version string is surfaced for pinning).
   Future<Api2Health> checkServer({CancelToken? cancelToken}) async {
     final health = await this.health(cancelToken: cancelToken);
     if (!health.healthy) {
@@ -334,9 +367,7 @@ class Api2Transport {
   }
 }
 
-/// Readiness payload. The beta v2 shape is `GET /api/health` →
-/// `{healthy, version, pid}`; the 2.x health answer is only `{healthy:true}`
-/// and the version then comes from `Api2ServerInfo` (`GET /api/info`).
+/// `GET /api/health` payload.
 class Api2Health {
   final bool healthy;
   final String? version;

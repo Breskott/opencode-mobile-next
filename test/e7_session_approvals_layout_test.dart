@@ -116,7 +116,7 @@ EventEnvelope _ask(String id, String session) => EventEnvelope(
 Future<void> _openApprovals(WidgetTester tester) async {
   await tester.tap(find.byKey(const ValueKey('session-actions-button')));
   await tester.pumpAndSettle();
-  final actions = find.text('Session actions');
+  final actions = find.text('Conversation actions');
   await tester.ensureVisible(actions);
   await tester.pumpAndSettle();
   await tester.tap(actions);
@@ -190,7 +190,7 @@ void main() {
         // The indicator is on while the setting is on.
         final indicator = find.byKey(const Key('auto-approval-indicator'));
         expect(indicator, findsOneWidget);
-        expect(find.text('Approving automatically'), findsOneWidget);
+        expect(find.text('Auto-approve'), findsOneWidget);
 
         // A request is answered without a card, and the record names it.
         controller.handleEventForTesting(_ask('req-1', 'parent'));
@@ -198,7 +198,7 @@ void main() {
         expect(api.replies, [('req-1', 'once')]);
         expect(find.byKey(const Key('permission-card-review')), findsNothing);
         expect(
-          find.text('Auto-approved · Run a shell command'),
+          find.byTooltip(RegExp('Auto-approved · Run a shell command')),
           findsOneWidget,
         );
         await _captureScreen(tester, 'indicator-${direction.name}');
@@ -211,12 +211,17 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text('1 request approved automatically on this connection'),
+          find.text('1 request approved automatically on this server'),
+          findsOneWidget,
+        );
+        // Named on the chip (its tooltip) and listed in the sheet's record.
+        expect(
+          find.byTooltip(RegExp('Auto-approved · Run a shell command')),
           findsOneWidget,
         );
         expect(
-          find.text('Auto-approved · Run a shell command'),
-          findsNWidgets(2),
+          find.textContaining('Auto-approved · Run a shell command'),
+          findsOneWidget,
         );
         await _captureScreen(tester, 'sheet-record-${direction.name}');
         await _tapVisible(tester, find.text('Ask each time'));
@@ -248,8 +253,11 @@ void main() {
         await tester.pumpWidget(_app(controller, 'child', direction));
         await tester.pumpAndSettle();
 
-        expect(find.text('Approving automatically'), findsOneWidget);
-        expect(find.text('Inherited from parent session'), findsOneWidget);
+        expect(find.textContaining('Auto-approve'), findsOneWidget);
+        expect(
+          find.byTooltip(RegExp('Inherited from parent conversation')),
+          findsOneWidget,
+        );
         await _captureScreen(tester, 'child-indicator-${direction.name}');
 
         await _tapVisible(
@@ -260,7 +268,10 @@ void main() {
           find.byKey(const Key('approvals-inherited-note')),
           findsOneWidget,
         );
-        expect(find.text('Inherited from parent session'), findsWidgets);
+        expect(
+          find.byTooltip(RegExp('Inherited from parent conversation')),
+          findsWidgets,
+        );
         expect(find.byKey(const Key('approvals-follow-parent')), findsNothing);
         await _captureScreen(tester, 'child-sheet-${direction.name}');
 
@@ -314,15 +325,15 @@ void main() {
     );
     await tester.pumpWidget(_app(controller, 'parent', TextDirection.ltr));
     await tester.pumpAndSettle();
-    expect(find.text('Approving automatically'), findsOneWidget);
+    expect(find.text('Auto-approve'), findsOneWidget);
 
     controller.status = StreamStatus.reconnecting;
     controller.notifyListeners();
     // The connection banner animates while reconnecting; pump a fixed frame.
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byKey(const Key('auto-approval-indicator')), findsOneWidget);
-    expect(find.text('Auto-approval paused'), findsOneWidget);
-    expect(find.text('Not connected'), findsOneWidget);
+    expect(find.text('Auto-approve paused'), findsOneWidget);
+    expect(find.byTooltip(RegExp('Not connected')), findsOneWidget);
     expect(tester.takeException(), isNull);
     // A request arriving now waits for a person: covered by the controller
     // test. (A permission card next to the reconnecting banner at 320dp/2.5x
@@ -366,7 +377,58 @@ void main() {
     expect(api.replies, [('req-1', 'reject')]);
     expect(find.byKey(const Key('permission-card-review')), findsNothing);
     expect(find.byKey(const Key('auto-approval-indicator')), findsOneWidget);
-    expect(find.text('Approving automatically'), findsOneWidget);
+    expect(find.text('Auto-approve'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('approve everything is confirmed, saved, and can be declined', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final (controller, _) = await _boot();
+    await tester.pumpWidget(_app(controller, 'parent', TextDirection.ltr));
+    await tester.pumpAndSettle();
+    await _openApprovals(tester);
+
+    // At 2.5x text the tile is taller than the sheet's viewport, so its
+    // centre can be off screen; its title line is not.
+    Future<void> tapEverything() async {
+      final tile = find.byKey(const Key('approvals-everything-switch'));
+      await tester.ensureVisible(tile);
+      await tester.pumpAndSettle();
+      await tester.tapAt(tester.getTopLeft(tile) + const Offset(30, 24));
+      await tester.pumpAndSettle();
+    }
+
+    // Declining the confirmation changes nothing.
+    await tapEverything();
+    expect(
+      find.byKey(const Key('approvals-everything-confirm')),
+      findsOneWidget,
+    );
+    await _tapVisible(tester, find.text('Cancel'));
+    expect(controller.approvesEverything, isFalse);
+
+    // Confirming turns it on for conversations that never had a setting.
+    await tapEverything();
+    await _tapVisible(
+      tester,
+      find.byKey(const Key('approvals-everything-confirm-action')),
+    );
+    expect(controller.approvesEverything, isTrue);
+    expect(controller.autoApprovalFor('parent').automatic, isTrue);
+    expect(controller.autoApprovalFor('never-seen').automatic, isTrue);
+    expect(
+      find.byKey(const Key('approvals-everything-active')),
+      findsOneWidget,
+    );
+
+    // Turning it off needs no confirmation.
+    await tapEverything();
+    expect(controller.approvesEverything, isFalse);
+    expect(controller.autoApprovalFor('never-seen').automatic, isFalse);
   });
 }

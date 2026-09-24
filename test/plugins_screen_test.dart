@@ -12,8 +12,9 @@ import 'package:opencode_mobile/domain/server_gateway.dart'
     show StreamStatus, CommandInfo;
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_probe.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Api extends OpenCodeApi {
@@ -89,7 +90,13 @@ Widget _app(ConnectionController controller, {double textScale = 1}) =>
         ).copyWith(textScaler: TextScaler.linear(textScale)),
         child: child!,
       ),
-      home: PluginsScreen(controller: controller),
+      // The real Plugins screen, so the section is exercised where it lives.
+      // The probe never finds an AI Team host and never touches the network.
+      home: PluginsSettingsScreen(
+        controller: controller,
+        probe: (url, {city}) async =>
+            const ProbeUnreachable(error: 'no answer'),
+      ),
     );
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -209,16 +216,50 @@ void main() {
     expect(find.textContaining('no longer available here'), findsOneWidget);
   });
 
+  testWidgets('one Plugins screen: "In this app" above "On the server"', (
+    tester,
+  ) async {
+    final repository = _Repository()..plugins = [_plugin];
+    await tester.pumpWidget(_app(await _controller(repository)));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppBar), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('Plugins')),
+      findsOneWidget,
+    );
+    final app = find.text('In this app');
+    final server = find.text('On the server');
+    expect(app, findsOneWidget);
+    expect(server, findsOneWidget);
+    expect(tester.getTopLeft(app).dy, lessThan(tester.getTopLeft(server).dy));
+    final team = find.byKey(const ValueKey('plugins-ai-team-row'));
+    expect(tester.getTopLeft(team).dy, lessThan(tester.getTopLeft(server).dy));
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('plugins-section-server')),
+        matching: find.text('reviewer'),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('unsupported servers make no plugin request', (tester) async {
     final repository = _Repository();
     await tester.pumpWidget(
       _app(await _controller(repository, supported: false)),
     );
     await tester.pumpAndSettle();
+    // Hide, don't disable: without an inventory the "On the server" section
+    // is absent, while "In this app" stays.
+    expect(find.byKey(const ValueKey('plugins-section-server')), findsNothing);
+    expect(find.text('On the server'), findsNothing);
     expect(
       find.text('This server does not support plugin inspection.'),
-      findsOneWidget,
+      findsNothing,
     );
+    expect(find.byKey(const ValueKey('plugins-section-app')), findsOneWidget);
+    expect(find.byKey(const ValueKey('plugins-ai-team-row')), findsOneWidget);
     expect(repository.calls, 0);
   });
 
@@ -230,12 +271,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Could not load plugins. Try again.'), findsOneWidget);
       expect(find.textContaining('synthetic-secret'), findsNothing);
-      expect(find.text('No plugins reported for this location.'), findsNothing);
+      expect(find.text('No plugins reported for this project.'), findsNothing);
       repository.fail = false;
       await tester.tap(find.text('Try again'));
       await tester.pumpAndSettle();
       expect(
-        find.text('No plugins reported for this location.'),
+        find.text('No plugins reported for this project.'),
         findsOneWidget,
       );
       expect(repository.calls, 2);
@@ -256,7 +297,7 @@ void main() {
     oldResponse.complete([_plugin]);
     await tester.pumpAndSettle();
     expect(find.text('reviewer'), findsNothing);
-    expect(find.text('No plugins reported for this location.'), findsOneWidget);
+    expect(find.text('No plugins reported for this project.'), findsOneWidget);
     expect(repository.calls, 2);
   });
 
@@ -322,7 +363,7 @@ void main() {
     controller.status = StreamStatus.connected;
     controller.notifyListeners();
     await tester.pumpAndSettle();
-    expect(find.text('No plugins reported for this location.'), findsOneWidget);
+    expect(find.text('No plugins reported for this project.'), findsOneWidget);
     expect(repository.calls, 3);
   });
 

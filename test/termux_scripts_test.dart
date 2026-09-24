@@ -389,6 +389,19 @@ message=This belongs to the terminal
     expect(bootstrap, isNot(contains('--allow-unauthenticated')));
   });
 
+  test('OpenCode 2 readiness accepts the stable route and the beta one', () {
+    // 2.0.4 and later answer at /api/info and 404 at /api/health; the beta
+    // this app installed before is the reverse. Found live: the switch to
+    // 2.0.10 installed fine and then failed as "not ready within 30 seconds".
+    final manager = TermuxBridge.managerScriptForTesting();
+    expect(
+      manager,
+      contains("opencode2) health_path='/api/info /api/health' ;;"),
+    );
+    expect(manager, contains(r'for path in $OC_HEALTH_PATH; do'));
+    expect(manager, contains(r'''[ "$unauth $auth" != '401 200' ] || break'''));
+  });
+
   test(
     'Ubuntu npm install requires its matching pinned binary and cleans cache',
     () {
@@ -401,11 +414,12 @@ message=This belongs to the terminal
       addTearDown(() => directory.deleteSync(recursive: true));
       final calls = File('${directory.path}/calls');
       for (final runtime in TermuxRuntime.values) {
+        // OpenCode 2 moved to the @opencode scope when it left beta.
         final mainPackage = runtime == TermuxRuntime.openCode2
-            ? '@opencode-ai/cli'
+            ? '@opencode/cli'
             : 'opencode-ai';
         final binaryPrefix = runtime == TermuxRuntime.openCode2
-            ? '@opencode-ai/cli'
+            ? '@opencode/cli'
             : 'opencode';
         for (final scenario in [
           ('arm64', 0, '$binaryPrefix-linux-arm64'),
@@ -422,6 +436,7 @@ npm() {
   return "$MOCK_NPM_EXIT"
 }
 ''';
+          Directory('${directory.path}/bin').createSync(recursive: true);
           final script = '$prelude$block\ninstall_opencode\n';
           final result = Process.runSync(
             'bash',
@@ -432,6 +447,8 @@ npm() {
               'NPM_CALLS': calls.path,
               'OC_RUNTIME': runtime.wireName,
               'OC_REQUESTED_VERSION': runtime.pinnedVersion,
+              'OC2_PREFIX': '${directory.path}/oc2',
+              'OC2_LINK_DIR': '${directory.path}/bin',
             },
           );
           expect(
@@ -457,6 +474,28 @@ npm() {
               '$mainPackage@${runtime.pinnedVersion}',
             ]),
           );
+          // Both packages install a command named `opencode`; sharing the
+          // global prefix fails with EEXIST. OpenCode 2 gets its own prefix,
+          // only `opencode2` is linked, and the dead beta package is removed.
+          if (runtime == TermuxRuntime.openCode2) {
+            expect(
+              arguments,
+              containsAllInOrder(['--prefix', '${directory.path}/oc2']),
+            );
+            expect(
+              arguments,
+              containsAllInOrder(['uninstall', '-g', '@opencode-ai/cli']),
+            );
+            if (scenario.$2 == 0) {
+              expect(
+                Link('${directory.path}/bin/opencode2').targetSync(),
+                '${directory.path}/oc2/bin/opencode2',
+              );
+            }
+          } else {
+            expect(arguments, isNot(contains('--prefix')));
+            expect(arguments, isNot(contains('uninstall')));
+          }
           expect(arguments.where((value) => value.contains('musl')), isEmpty);
           expect(arguments, isNot(contains('--force')));
           final cache = arguments[arguments.indexOf('--cache') + 1];
@@ -500,13 +539,16 @@ proot-distro() {
     [ "$3" = -- ] && [ "$5" = --version ] || return 83
   case "$4" in
     opencode) printf '1.18.29\r\n' ;;
-    opencode2) printf 'opencode2 v0.0.0-beta-18600\r\n' ;;
+    opencode2) printf '%s\r\n' "${MOCK_OC2_VERSION:-opencode2 v0.0.0-beta-18600}" ;;
     *) return 84 ;;
   esac
 }
 [ "$(runtime_version)" = 1.18.29 ] || exit 85
 printf opencode2 > "$RUNTIME_FILE"
 [ "$(runtime_version)" = 0.0.0-beta-18600 ] || exit 86
+# The stable line names itself `opencode`, not `opencode2`.
+MOCK_OC2_VERSION='opencode v2.0.10'
+[ "$(runtime_version)" = 2.0.10 ] || exit 89
 printf unsupported > "$RUNTIME_FILE"
 if runtime_version; then exit 87; fi
 if write_state preparing bad 4096; then exit 88; fi
@@ -524,7 +566,7 @@ if write_state preparing bad 4096; then exit 88; fi
       script.indexOf('\nold_runtime='),
       script.indexOf('\npassword_tmp='),
     );
-    expect(script, contains("setup '4096' '0.0.0-beta-18600'"));
+    expect(script, contains("setup '4096' '2.0.10'"));
     expect(script, contains("\"\$self_start\" 'opencode2'"));
     expect(
       script.indexOf(guard),

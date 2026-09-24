@@ -35,7 +35,8 @@ MutationRecord? teamGateMutation(
       MutationKind.approveMerge => workOfRun.contains(record.targetId),
       MutationKind.respond ||
       MutationKind.message ||
-      MutationKind.controlAgent => false,
+      MutationKind.controlAgent ||
+      MutationKind.createWork => false,
     };
     if (!matches) continue;
     if (best == null || record.createdAt.isAfter(best.createdAt)) {

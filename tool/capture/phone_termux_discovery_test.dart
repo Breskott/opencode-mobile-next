@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
-import 'package:opencode_mobile/ui/screens/library_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import '../../test/support/setup_capture_preferences.dart';
 import 'fixtures.dart';
@@ -58,8 +58,11 @@ void main() {
             captureApp(
               home: page == 'more'
                   ? Scaffold(
-                      appBar: AppBar(title: const Text('More')),
-                      body: LibraryScreen(controller: controller),
+                      appBar: AppBar(title: const Text('Settings')),
+                      body: SettingsScreen(
+                        controller: controller,
+                        embedded: true,
+                      ),
                     )
                   : const ServersScreen(),
               boundaryKey: boundary,

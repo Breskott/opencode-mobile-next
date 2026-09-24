@@ -178,6 +178,21 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     // A wake-time reconnect may replace the repository while preserving the
     // user-selected profile and location. Reacquire that transport below.
     final source = _authSourceFor(widget.controller);
+    if (server.status == 'connected') {
+      final confirmed = await confirmDisconnectMcp(
+        context,
+        serverName: server.name,
+      );
+      // The list can reload or switch profile while the sheet is open.
+      if (!confirmed ||
+          !mounted ||
+          source != _authSourceFor(widget.controller) ||
+          _serversSource != _mcpSource ||
+          _busy.contains(server.name) ||
+          _removingMcp.contains(server.name)) {
+        return;
+      }
+    }
     setState(() => _busy.add(server.name));
     try {
       final repository = await _requireActionRepository();

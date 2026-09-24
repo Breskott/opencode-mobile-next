@@ -180,7 +180,7 @@ void main() {
       find.byKey(const ValueKey('activity-recent-ses_child')),
       findsNothing,
     );
-    // No duplicate finder link: Workspace already owns "Search all sessions".
+    // No duplicate finder link: Workspace already owns "Search all conversations".
     expect(find.byKey(const ValueKey('activity-all-sessions')), findsNothing);
   });
 
@@ -276,10 +276,13 @@ void main() {
     expect(find.byKey(const ValueKey('activity-all-clear')), findsOneWidget);
     expect(find.text('All clear here'), findsOneWidget);
     expect(
-      find.textContaining('Nothing needs you in the checked locations'),
+      find.text(
+        'Nothing needs you. Approvals and questions from running work '
+        'appear here.',
+      ),
       findsOneWidget,
     );
-    expect(find.text('All sessions'), findsNothing);
+    expect(find.text('All conversations'), findsNothing);
   });
 
   testWidgets('running sessions omit empty attention bookkeeping', (
@@ -311,7 +314,7 @@ void main() {
     expect(find.byKey(const ValueKey('activity-all-clear')), findsNothing);
     expect(find.text('Status incomplete'), findsOneWidget);
     expect(find.textContaining('2 unknown'), findsOneWidget);
-    await tester.tap(find.text('Check again'));
+    await tester.tap(find.text('Try again'));
     await tester.pumpAndSettle();
     expect(controller.refreshCalls, 1);
     expect(find.text('Status incomplete'), findsOneWidget);

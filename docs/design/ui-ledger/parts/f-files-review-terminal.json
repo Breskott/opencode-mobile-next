@@ -1,0 +1,2747 @@
+{
+  "area": "f-files-review-terminal",
+  "pages": [
+    {
+      "id": "project-hub",
+      "title": "Project",
+      "kind": "tab",
+      "file": "lib/ui/screens/project_hub_screen.dart",
+      "widget": "ProjectHub",
+      "presentedBy": [],
+      "line": 36,
+      "purpose": "Root tab 2: the tools that act on the current project, one row each (Files, Changes, Terminal, Project health, Worktrees, Search files) under the project name and folder. Files opens inside the tab and stays alive behind the hub; the other rows push their existing screens.",
+      "reachedFrom": [
+        {
+          "page": "home-shell",
+          "element": "home-shell-tab-files"
+        }
+      ],
+      "gates": [
+        "ProjectHub.isAvailable(conn.capabilities): at least one row is available"
+      ],
+      "elements": [
+        {
+          "id": "project-hub-files",
+          "type": "list-tile",
+          "label": "Files",
+          "key": "project-hub-files",
+          "line": 291,
+          "action": "navigate",
+          "target": "files",
+          "targetWidget": "FilesScreen",
+          "effect": "_openFiles(): builds FilesScreen inside the tab on first use and shows it in place of the hub.",
+          "gates": [
+            "capabilities.fileBrowsing"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-changes",
+          "type": "list-tile",
+          "label": "Changes",
+          "key": "project-hub-changes",
+          "line": 298,
+          "action": "navigate",
+          "target": "review-workspace",
+          "targetWidget": "ReviewWorkspace",
+          "effect": "_openChanges(): pushWorkingTreeReview(context, controller) pushes ReviewWorkspace on the working-tree scope; a returned review comment is copied to the clipboard (deliverReviewPrompt).",
+          "gates": [
+            "capabilities.fileBrowsing"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-terminal",
+          "type": "list-tile",
+          "label": "Terminal",
+          "key": "project-hub-terminal",
+          "line": 305,
+          "action": "navigate",
+          "target": "terminal",
+          "targetWidget": "TerminalPage",
+          "effect": "_openTerminal(): Navigator.push(MaterialPageRoute(TerminalPage(controller))).",
+          "gates": [
+            "capabilities.terminal"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-health",
+          "type": "list-tile",
+          "label": "Project health",
+          "key": "project-hub-health",
+          "line": 312,
+          "action": "navigate",
+          "target": "project-health",
+          "targetWidget": "ProjectHealthScreen",
+          "effect": "_openHealth(): controller.prepareActionRepository() then pushes ProjectHealthScreen; a missing repository shows the product error.",
+          "gates": [
+            "capabilities.projectManagement"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-worktrees",
+          "type": "list-tile",
+          "label": "Worktrees",
+          "key": "project-hub-worktrees",
+          "line": 320,
+          "action": "navigate",
+          "target": "worktrees",
+          "targetWidget": "WorktreesScreen",
+          "effect": "_openWorktrees(): resolves the catalog project that owns controller.directory (WorkspaceScreen.projectForDirectory over repository.listProjects()) and pushes WorktreesScreen; no matching project shows \"No project folder is open. Choose one from Work.\"",
+          "gates": [
+            "capabilities.projectManagement"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-search",
+          "type": "list-tile",
+          "label": "Search files",
+          "key": "project-hub-search",
+          "line": 327,
+          "action": "navigate",
+          "target": "files",
+          "targetWidget": "FilesScreen",
+          "effect": "_searchFiles(): opens Files inside the tab and focuses its search field (same path as Ctrl/Cmd+F).",
+          "gates": [
+            "capabilities.fileBrowsing"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-files-back",
+          "type": "icon-button",
+          "label": "Back",
+          "key": "project-hub-files-back",
+          "line": 234,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "Hides Files and shows the hub again; Files keeps its folder and search.",
+          "gates": [
+            "Files is showing inside the tab"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "project-hub-system-back",
+          "type": "gesture",
+          "label": "[system back]",
+          "key": null,
+          "line": 109,
+          "action": "other",
+          "target": null,
+          "targetWidget": null,
+          "effect": "_handleBack(): FilesBackController.handleBack() first (keyboard, search, parent folder); at the Files root it returns to the hub; on the hub it declines so the shell returns to Work.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "files",
+      "title": "Files",
+      "kind": "tab",
+      "file": "lib/ui/screens/files_screen.dart",
+      "widget": "FilesScreen",
+      "presentedBy": [],
+      "line": 35,
+      "purpose": "Project file browser with file/symbol search, breadcrumbs, VCS change badges and an inline preview pane on wide layouts. Hosted inside the Project tab (kept alive behind the hub) or pushed from a conversation.",
+      "reachedFrom": [
+        {
+          "page": "project-hub",
+          "element": "project-hub-files"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._executeMobileCommand (_ChatCommandAction.files, wrapped in a Scaffold titled \"Project files\")",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5144
+        }
+      ],
+      "gates": [
+        "conn.capabilities.fileBrowsing",
+        "add-to-prompt / attach affordances only when opened from a chat (widget.handoff / widget.onAttachFile != null)"
+      ],
+      "elements": [
+        {
+          "id": "files-search-field",
+          "type": "text-field",
+          "label": "Search files / Search symbols",
+          "key": "files-search-field",
+          "line": 768,
+          "action": "other",
+          "target": null,
+          "effect": "onChanged debounces _scheduleFileSearch / _scheduleSymbolSearch (350 ms for symbols); onSubmitted runs _searchFiles / _searchSymbols (repository.findWorkspaceSymbols) depending on _surface.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "files-search-focus-shortcut",
+          "type": "gesture",
+          "label": "Ctrl+F",
+          "key": null,
+          "line": 131,
+          "action": "other",
+          "target": null,
+          "effect": "Shell bumps focusSearchSignal; _focusSearch() focuses the search field and selects its text.",
+          "gates": [
+            "widget.focusSearchSignal != null (root tab only)",
+            "desktop only in practice (shell dispatches app shortcuts only on desktop)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-surface-selector",
+          "type": "icon-button",
+          "label": "Search files / Search symbols (tooltip)",
+          "key": "file-surface-selector",
+          "line": 775,
+          "action": "other",
+          "target": null,
+          "effect": "Opens overflow menu for the search surface (files vs symbols).",
+          "gates": [
+            "widget.controller.capabilities.workspaceSymbols"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-surface-files",
+          "type": "menu-item",
+          "label": "Files",
+          "key": null,
+          "line": 784,
+          "action": "other",
+          "target": null,
+          "effect": "_selectSurface(_FileSurface.files): clears search, reloads the origin directory via _load(origin).",
+          "gates": [
+            "widget.controller.capabilities.workspaceSymbols"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-surface-symbols",
+          "type": "menu-item",
+          "label": "Symbols",
+          "key": null,
+          "line": 784,
+          "action": "other",
+          "target": null,
+          "effect": "_selectSurface(_FileSurface.symbols): clears search and switches the list to workspace symbol search.",
+          "gates": [
+            "widget.controller.capabilities.workspaceSymbols"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-search-clear",
+          "type": "icon-button",
+          "label": "Clear file search / Clear symbol search",
+          "key": null,
+          "line": 815,
+          "action": "other",
+          "target": null,
+          "effect": "_clearSearch(): clears the field and reloads the directory the search started from (or resets symbols).",
+          "gates": [
+            "_search.text.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-order-menu",
+          "type": "icon-button",
+          "label": "File order",
+          "key": null,
+          "line": 830,
+          "action": "other",
+          "target": null,
+          "effect": "Opens overflow menu for file ordering.",
+          "gates": [
+            "_surface == _FileSurface.files",
+            "ReaderPreferencesScope.maybeOf(context) != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-order-default",
+          "type": "menu-item",
+          "label": "Default order",
+          "key": null,
+          "line": 838,
+          "action": "toggle-setting",
+          "target": null,
+          "effect": "saveReaderPreferences(context, sourceFirst: false) persists the reader preference.",
+          "gates": [
+            "_surface == _FileSurface.files",
+            "readerPreferences != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-order-source-first",
+          "type": "menu-item",
+          "label": "Source first",
+          "key": null,
+          "line": 843,
+          "action": "toggle-setting",
+          "target": null,
+          "effect": "saveReaderPreferences(context, sourceFirst: true) persists the reader preference. A third, disabled entry shows the hint \"Reorders entries; no files are hidden.\"",
+          "gates": [
+            "_surface == _FileSurface.files",
+            "readerPreferences != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-breadcrumb-root",
+          "type": "chip",
+          "label": "Project root",
+          "key": null,
+          "line": 883,
+          "action": "other",
+          "target": null,
+          "effect": "_navigateTo(''): loads the project root.",
+          "gates": [
+            "_surface == _FileSurface.files && _path.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-breadcrumb-folder",
+          "type": "chip",
+          "label": "<folder name> (semantics: Open folder {folder})",
+          "key": null,
+          "line": 902,
+          "action": "other",
+          "target": null,
+          "effect": "_navigateTo(crumbs.take(i).join('/')): loads that ancestor directory. The last crumb is a non-interactive Chip.",
+          "gates": [
+            "_surface == _FileSurface.files && _path.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-changes-card",
+          "type": "card",
+          "label": "{count} changed files",
+          "key": "files-changes-card",
+          "line": 1580,
+          "action": "open-sheet",
+          "target": "files-changes-sheet",
+          "targetWidget": "_ChangesSheet",
+          "effect": "_openChanges(): opens the Changes sheet and then acts on the returned _ChangeChoice (review all / review file / stage file).",
+          "gates": [
+            "_surface == _FileSurface.files && _fileStatuses.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-split-handle",
+          "type": "gesture",
+          "label": "[tree/preview split drag handle]",
+          "key": "files-split-handle",
+          "line": 1543,
+          "action": "other",
+          "target": null,
+          "effect": "Horizontal drag resizes the tree pane (_treeWidth, clamped 240..maxWidth-320).",
+          "gates": [
+            "constraints.maxWidth >= 900",
+            "desktopInteractions (otherwise a static VerticalDivider)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-status-retry",
+          "type": "button",
+          "label": "Try again",
+          "key": null,
+          "line": 1776,
+          "action": "other",
+          "target": null,
+          "effect": "_retryFileStatuses(): reloads VCS file statuses after a status-load failure (notice key file-status-notice).",
+          "gates": [
+            "_fileStatusesError != null",
+            "disabled while _fileStatusesLoading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": null,
+          "line": 1022,
+          "action": "other",
+          "target": null,
+          "effect": "_refreshFiles() -> _searchFiles(_search.text) reloads the listing; on the symbols surface re-runs _searchSymbols(_search.text) (lines 1412/1428/1437).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "files-error-retry",
+          "type": "button",
+          "label": "Try again (ProductErrorState)",
+          "key": null,
+          "line": 1004,
+          "action": "other",
+          "target": null,
+          "effect": "ProductErrorState.onRetry -> _refreshFiles (files) or _searchSymbols(_search.text) (symbols, line 1415).",
+          "gates": [
+            "_error != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row",
+          "type": "list-tile",
+          "label": "<file or folder name>",
+          "key": "project-file-<path>",
+          "line": 1042,
+          "action": "open-sheet",
+          "target": "files-file-viewer-sheet",
+          "targetWidget": "_FileViewer",
+          "effect": "Tap: folder -> _navigateTo(node.path); file -> _openFile(node) (sheet below 900 px, preview pane at >= 900 px); a deleted file -> _reviewFileChange(node) pushes ReviewWorkspace instead.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "files-row-actions-button",
+          "type": "icon-button",
+          "label": "Actions for {name}",
+          "key": "project-file-actions-<path>",
+          "line": 1094,
+          "action": "open-sheet",
+          "target": "files-row-actions-sheet",
+          "targetWidget": "_showFileRowActions",
+          "effect": "_showFileRowActions(node, change): the visible equivalent of the long-press and right-click on the row (gesture audit).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "files-row-long-press",
+          "type": "gesture",
+          "label": "[long press on file row]",
+          "key": null,
+          "line": 1085,
+          "action": "open-sheet",
+          "target": "files-row-actions-sheet",
+          "targetWidget": "_showFileRowActions",
+          "effect": "_showFileRowActions(node, change): bottom sheet with the same actions as the desktop context menu.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "files-row-context-menu",
+          "type": "gesture",
+          "label": "[right click on file row]",
+          "key": null,
+          "line": 1040,
+          "action": "other",
+          "target": null,
+          "effect": "ContextMenuRegion opens the desktop context menu built by _fileRowActions(node, change); pass-through off desktop.",
+          "gates": [
+            "desktop only (ContextMenuRegion)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row-menu-open-folder",
+          "type": "menu-item",
+          "label": "Open folder",
+          "key": "file-menu-open",
+          "line": 1171,
+          "action": "other",
+          "target": null,
+          "effect": "Calls _navigateTo(node.path): clears the search and loads that directory.",
+          "gates": [
+            "desktop context menu",
+            "node.isDir && change?.status != 'deleted'"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row-menu-open",
+          "type": "menu-item",
+          "label": "Open",
+          "key": "file-menu-open",
+          "line": 1178,
+          "action": "open-sheet",
+          "target": "files-file-viewer-sheet",
+          "targetWidget": "_FileViewer",
+          "effect": "Calls _openFile(node): below 900 px opens the file viewer sheet, at >= 900 px selects the file into the right-hand preview pane. Label is a hard-coded English string, not l10n.",
+          "gates": [
+            "desktop context menu",
+            "!node.isDir && change?.status != 'deleted'"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row-menu-attach",
+          "type": "menu-item",
+          "label": "Attach to prompt",
+          "key": "file-menu-attach",
+          "line": 1185,
+          "action": "mutate",
+          "target": null,
+          "effect": "Calls _attachFile(path): controller.prepareActionTransport(), api.fileContent(path), then the host onAttachFile callback; snackbar \"Attached\".",
+          "gates": [
+            "desktop context menu",
+            "widget.onAttachFile != null (Files opened from a chat)",
+            "!node.isDir && not deleted"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row-menu-reference",
+          "type": "menu-item",
+          "label": "Add as reference",
+          "key": "file-menu-reference",
+          "line": 1192,
+          "action": "mutate",
+          "target": null,
+          "effect": "Calls _stageProjectFile(path, null) -> handoff.stage(ReviewReference) on the originating chat composer; snackbar files-staged-notice.",
+          "gates": [
+            "desktop context menu",
+            "widget.handoff != null (Files opened from a chat)",
+            "!node.isDir && not deleted"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row-menu-review",
+          "type": "menu-item",
+          "label": "Open in Review",
+          "key": "file-menu-review",
+          "line": 1200,
+          "action": "navigate",
+          "target": "review-workspace",
+          "targetWidget": "ReviewWorkspace",
+          "effect": "Calls _reviewFileChange(node): pushes ReviewWorkspace (working-tree scope, initialFile = node.path).",
+          "gates": [
+            "desktop context menu",
+            "change != null (file has a VCS status)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row-menu-copy-path",
+          "type": "menu-item",
+          "label": "Copy path",
+          "key": "file-menu-copy-path",
+          "line": 1206,
+          "action": "copy",
+          "target": null,
+          "effect": "Calls _copyPath(path): Clipboard.setData + snackbar \"Copied path\".",
+          "gates": [
+            "desktop context menu"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-symbol-row",
+          "type": "list-tile",
+          "label": "<symbol name> (<kind> · path:line:column)",
+          "key": "workspace-symbol-<path>-<line>",
+          "line": 1448,
+          "action": "open-sheet",
+          "target": "files-file-viewer-sheet",
+          "targetWidget": "_FileViewer",
+          "effect": "_openSymbol(symbol) -> _openFile(..., initialLine: symbol.line): opens the viewer focused on the symbol line.",
+          "gates": [
+            "_surface == _FileSurface.symbols"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-system-back",
+          "type": "gesture",
+          "label": "[system back]",
+          "key": null,
+          "line": 241,
+          "action": "other",
+          "target": null,
+          "effect": "_handleBack(): closes the keyboard, else clears the search, else navigates to the parent folder; via PopScope when standalone or FilesBackController when hosted in the shell.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "files-row-actions-sheet",
+      "title": "[File row actions: <file name>]",
+      "kind": "sheet",
+      "file": "lib/ui/screens/files_screen.dart",
+      "widget": "_showFileRowActions",
+      "presentedBy": [
+        "_showFileRowActions"
+      ],
+      "line": 1102,
+      "purpose": "Touch counterpart of the file row context menu; header tile (key file-row-actions-sheet) shows the name and relative path.",
+      "reachedFrom": [
+        {
+          "page": "files",
+          "element": "files-row-long-press"
+        }
+      ],
+      "gates": [
+        "_fileRowActions(node, change).isNotEmpty"
+      ],
+      "elements": [
+        {
+          "id": "files-row-actions-sheet-open-folder",
+          "type": "list-tile",
+          "label": "Open folder",
+          "key": "file-menu-open",
+          "line": 1133,
+          "action": "other",
+          "target": null,
+          "effect": "Pops the sheet, then: Calls _navigateTo(node.path): clears the search and loads that directory. (action built at line 1171)",
+          "gates": [
+            "node.isDir && change?.status != 'deleted'"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row-actions-sheet-open",
+          "type": "list-tile",
+          "label": "Open",
+          "key": "file-menu-open",
+          "line": 1133,
+          "action": "open-sheet",
+          "target": "files-file-viewer-sheet",
+          "targetWidget": "_FileViewer",
+          "effect": "Pops the sheet, then: Calls _openFile(node): below 900 px opens the file viewer sheet, at >= 900 px selects the file into the right-hand preview pane. Label is a hard-coded English string, not l10n. (action built at line 1178)",
+          "gates": [
+            "!node.isDir && change?.status != 'deleted'"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row-actions-sheet-attach",
+          "type": "list-tile",
+          "label": "Attach to prompt",
+          "key": "file-menu-attach",
+          "line": 1133,
+          "action": "mutate",
+          "target": null,
+          "effect": "Pops the sheet, then: Calls _attachFile(path): controller.prepareActionTransport(), api.fileContent(path), then the host onAttachFile callback; snackbar \"Attached\". (action built at line 1185)",
+          "gates": [
+            "widget.onAttachFile != null (Files opened from a chat)",
+            "!node.isDir && not deleted"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row-actions-sheet-reference",
+          "type": "list-tile",
+          "label": "Add as reference",
+          "key": "file-menu-reference",
+          "line": 1133,
+          "action": "mutate",
+          "target": null,
+          "effect": "Pops the sheet, then: Calls _stageProjectFile(path, null) -> handoff.stage(ReviewReference) on the originating chat composer; snackbar files-staged-notice. (action built at line 1192)",
+          "gates": [
+            "widget.handoff != null (Files opened from a chat)",
+            "!node.isDir && not deleted"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row-actions-sheet-review",
+          "type": "list-tile",
+          "label": "Open in Review",
+          "key": "file-menu-review",
+          "line": 1133,
+          "action": "navigate",
+          "target": "review-workspace",
+          "targetWidget": "ReviewWorkspace",
+          "effect": "Pops the sheet, then: Calls _reviewFileChange(node): pushes ReviewWorkspace (working-tree scope, initialFile = node.path). (action built at line 1200)",
+          "gates": [
+            "change != null (file has a VCS status)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-row-actions-sheet-copy-path",
+          "type": "list-tile",
+          "label": "Copy path",
+          "key": "file-menu-copy-path",
+          "line": 1133,
+          "action": "copy",
+          "target": null,
+          "effect": "Pops the sheet, then: Calls _copyPath(path): Clipboard.setData + snackbar \"Copied path\". (action built at line 1206)",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "files-changes-sheet",
+      "title": "Changes",
+      "kind": "sheet",
+      "file": "lib/ui/screens/files_screen.dart",
+      "widget": "_ChangesSheet",
+      "presentedBy": [
+        "_openChanges"
+      ],
+      "line": 1611,
+      "purpose": "Changed files grouped by VCS status (modified, added, deleted) with totals; returns a _ChangeChoice to FilesScreen._openChanges.",
+      "reachedFrom": [
+        {
+          "page": "files",
+          "element": "files-changes-card"
+        }
+      ],
+      "gates": [
+        "_fileStatuses.isNotEmpty"
+      ],
+      "elements": [
+        {
+          "id": "files-changes-sheet-review-all",
+          "type": "button",
+          "label": "Review all changes",
+          "key": "review-all-changes",
+          "line": 1667,
+          "action": "navigate",
+          "target": "review-workspace",
+          "targetWidget": "ReviewWorkspace",
+          "effect": "Pops with _ChangeAction.reviewAll; _openChanges then calls _reviewChanges() which pushes ReviewWorkspace (working-tree scope).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "files-changes-sheet-file",
+          "type": "list-tile",
+          "label": "<file name> (<path> · +N −M)",
+          "key": "changed-file-<path>",
+          "line": 1696,
+          "action": "navigate",
+          "target": "review-workspace",
+          "targetWidget": "ReviewWorkspace",
+          "effect": "Pops with _ChangeAction.review; _openChanges calls _reviewFileChange(node) pushing ReviewWorkspace at that file.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "files-changes-sheet-stage",
+          "type": "icon-button",
+          "label": "Add {path} to the prompt",
+          "key": "stage-change-<path>",
+          "line": 1713,
+          "action": "mutate",
+          "target": null,
+          "effect": "Pops with _ChangeAction.stage; _openChanges calls _stageReference(ReviewReference changedFile) -> handoff.stage(); snackbar files-staged-notice.",
+          "gates": [
+            "canStage (widget.handoff != null)"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "files-file-viewer-sheet",
+      "title": "<file name>",
+      "kind": "sheet",
+      "file": "lib/ui/screens/files_screen.dart",
+      "widget": "_FileViewer",
+      "presentedBy": [
+        "_openFile"
+      ],
+      "line": 1791,
+      "purpose": "Loads and previews one project file (FilePreviewBody) with copy, reference, attach, save and reload actions; shown as an 85% height sheet below 900 px and embedded as the right pane of Files at >= 900 px.",
+      "reachedFrom": [
+        {
+          "page": "files",
+          "element": "files-row"
+        },
+        {
+          "page": "files",
+          "element": "files-symbol-row"
+        },
+        {
+          "page": "files",
+          "element": "files-row-menu-open"
+        },
+        {
+          "page": "files-row-actions-sheet",
+          "element": "files-row-actions-sheet-open"
+        }
+      ],
+      "gates": [
+        "sheet when MediaQuery width < 900; otherwise embedded pane in Files"
+      ],
+      "elements": [
+        {
+          "id": "files-file-viewer-sheet-close",
+          "type": "icon-button",
+          "label": "Close (CloseButton)",
+          "key": null,
+          "line": 2088,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.pop(context).",
+          "gates": [
+            "!widget.embedded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-file-viewer-sheet-wrap",
+          "type": "toggle",
+          "label": "Wrap lines / Scroll lines",
+          "key": null,
+          "file": "lib/ui/widgets/reader_preferences.dart",
+          "line": 2098,
+          "action": "toggle-setting",
+          "target": null,
+          "effect": "ReaderWrapButton(fallbackWrap: false): saveReaderPreferences(context, wrapCode: !wrap).",
+          "gates": [
+            "widget.initialLine != null",
+            "ReaderPreferencesScope present"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-file-viewer-sheet-copy",
+          "type": "button",
+          "label": "Copy",
+          "key": null,
+          "line": 2099,
+          "action": "copy",
+          "target": null,
+          "effect": "Clipboard.setData(file content) + snackbar \"Copied\".",
+          "gates": [
+            "disabled when _content == null or binary"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-file-viewer-sheet-reference",
+          "type": "button",
+          "label": "Reference",
+          "key": "project-file-add-reference",
+          "line": 2121,
+          "action": "mutate",
+          "target": null,
+          "effect": "widget.onAddReference -> FilesScreen._stageProjectFile(path, initialLine) -> handoff.stage().",
+          "gates": [
+            "widget.onAddReference != null (widget.handoff != null)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-file-viewer-sheet-attach",
+          "type": "button",
+          "label": "Attach",
+          "key": "project-file-attach",
+          "line": 2128,
+          "action": "mutate",
+          "target": null,
+          "effect": "_attach(): calls host onAttachFile(path, exportData) and shows \"attached\" snackbar.",
+          "gates": [
+            "widget.onAttachFile != null",
+            "disabled while _content == null || _attaching"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-file-viewer-sheet-save",
+          "type": "button",
+          "label": "Save",
+          "key": "project-file-download",
+          "line": 2143,
+          "action": "external-link",
+          "target": null,
+          "effect": "_download(): FilePicker.saveFile(...) writes the file to the device; snackbar on success.",
+          "gates": [
+            "disabled while _content == null || _downloading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-file-viewer-sheet-reload",
+          "type": "button",
+          "label": "Reload",
+          "key": null,
+          "line": 2156,
+          "action": "other",
+          "target": null,
+          "effect": "_fetch(): re-reads the file content from the server.",
+          "gates": [
+            "disabled when _scopeInvalid"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "files-file-viewer-sheet-error-retry",
+          "type": "button",
+          "label": "Try again (ProductErrorState)",
+          "key": null,
+          "line": 2171,
+          "action": "other",
+          "target": null,
+          "effect": "ProductErrorState.onRetry -> _fetch().",
+          "gates": [
+            "_error != null && !_scopeInvalid"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "review-workspace",
+      "title": "Review changes",
+      "kind": "screen",
+      "file": "lib/ui/screens/review_workspace.dart",
+      "widget": "ReviewWorkspace",
+      "presentedBy": [],
+      "line": 29,
+      "purpose": "Diff review workspace: scope picker (session / working tree / branch), per-file navigation, unified or split diff, line and hunk selection, and hand-off of files, selections and comments to the chat composer.",
+      "reachedFrom": [
+        {
+          "page": "files-changes-sheet",
+          "element": "files-changes-sheet-review-all"
+        },
+        {
+          "page": "files-changes-sheet",
+          "element": "files-changes-sheet-file"
+        },
+        {
+          "page": "files",
+          "element": "files-row-menu-review"
+        },
+        {
+          "page": "files-row-actions-sheet",
+          "element": "files-row-actions-sheet-review"
+        },
+        {
+          "page": "files",
+          "element": "files-row"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._showDiff",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5812
+        }
+      ],
+      "gates": [
+        "from Files: a file with a VCS status exists",
+        "from chat: _conn.capabilities.sessionDiff && !_conn.isIsolated (isolated sessions get DiffView instead)"
+      ],
+      "elements": [
+        {
+          "id": "review-workspace-wrap",
+          "type": "toggle",
+          "label": "Wrap lines / Scroll lines",
+          "key": null,
+          "file": "lib/ui/widgets/reader_preferences.dart",
+          "line": 280,
+          "action": "toggle-setting",
+          "target": null,
+          "effect": "ReaderWrapButton: saveReaderPreferences(context, wrapCode: !wrap).",
+          "gates": [
+            "_mode == ReviewDiffMode.unified",
+            "ReaderPreferencesScope present"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-staged-count",
+          "type": "button",
+          "label": "{count} on prompt",
+          "key": "review-staged-count",
+          "line": 289,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.maybePop(): returns to the chat whose composer holds the staged references.",
+          "gates": [
+            "widget.handoff != null",
+            "handoff.references.length > 0"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-refresh",
+          "type": "icon-button",
+          "label": "Refresh changes",
+          "key": "review-refresh",
+          "line": 298,
+          "action": "other",
+          "target": null,
+          "effect": "_load(): re-runs the loader for the current scope.",
+          "gates": [
+            "disabled while _diffs == null || _refreshing"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-scope-picker",
+          "type": "toggle",
+          "label": "Session | Working tree | Branch",
+          "key": "review-scope-picker",
+          "line": 722,
+          "action": "other",
+          "target": null,
+          "effect": "SegmentedButton -> _selectScope(scope): resets diffs/selection and _load()s that scope. Segments are the review \"tabs\"; they share one body.",
+          "gates": [
+            "_availableScopes.length > 1 (one segment per non-null loader: loadDiffs, loadWorkingTreeDiffs, loadBranchDiffs)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-refresh-banner-retry",
+          "type": "button",
+          "label": "Retry (ProductRefreshBody banner)",
+          "key": null,
+          "line": 316,
+          "action": "other",
+          "target": null,
+          "effect": "ProductRefreshBody.onRetry -> _load() when a refresh failed but cached diffs exist.",
+          "gates": [
+            "_diffs != null && _error != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-error-retry",
+          "type": "button",
+          "label": "Try again (ProductErrorState)",
+          "key": "review-error",
+          "line": 340,
+          "action": "other",
+          "target": null,
+          "effect": "_ReviewErrorState.onRetry -> _load(). Key review-error.",
+          "gates": [
+            "_diffs == null && _error != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": null,
+          "line": 453,
+          "action": "other",
+          "target": null,
+          "effect": "RefreshIndicator.onRefresh -> _load() (also on the empty state, line 343).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-file-strip-tab",
+          "type": "tab",
+          "label": "<file basename> (+N -M, viewed mark)",
+          "key": "review-file-<index>",
+          "line": 853,
+          "action": "other",
+          "target": null,
+          "effect": "_selectFile(index): selects the file, marks it viewed, clears the selection, scrolls to top. Horizontal strip key review-file-strip.",
+          "gates": [
+            "constraints.maxWidth < 840 (phone/narrow layout)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-file-list-row",
+          "type": "list-tile",
+          "label": "<file path> (status, +N -M)",
+          "key": "review-file-<index>",
+          "line": 1009,
+          "action": "other",
+          "target": null,
+          "effect": "_selectFile(index) from the 292 px side list (key review-file-list).",
+          "gates": [
+            "constraints.maxWidth >= 840 (wide layout)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-mode-unified",
+          "type": "button",
+          "label": "Unified",
+          "key": "review-mode-unified",
+          "line": 1145,
+          "action": "other",
+          "target": null,
+          "effect": "onModeChanged(ReviewDiffMode.unified): setState _mode and _clearSelection(). Present in all three toolbar variants (lines 1145, 1239, 1405).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-mode-split",
+          "type": "button",
+          "label": "Split",
+          "key": "review-mode-split",
+          "line": 1151,
+          "action": "other",
+          "target": null,
+          "effect": "onModeChanged(ReviewDiffMode.split): setState _mode and _clearSelection(). Present in all three toolbar variants (lines 1151, 1245, 1413).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-previous-hunk",
+          "type": "icon-button",
+          "label": "Previous hunk",
+          "key": "review-previous-hunk",
+          "line": 1432,
+          "action": "other",
+          "target": null,
+          "effect": "_jumpToHunk(-1, hunks): canvas.revealSourceIndex(previous hunk header), wrapping. Key only on the phone toolbar; unkeyed twins at 1158 and 1252.",
+          "gates": [
+            "disabled when hunks.isEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-next-hunk",
+          "type": "icon-button",
+          "label": "Next hunk",
+          "key": "review-next-hunk",
+          "line": 1438,
+          "action": "other",
+          "target": null,
+          "effect": "_jumpToHunk(1, hunks): canvas.revealSourceIndex(next hunk header), wrapping. Unkeyed twins at 1166 and 1260.",
+          "gates": [
+            "disabled when hunks.isEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-ask-file",
+          "type": "button",
+          "label": "Ask about file (compact toolbar: Ask)",
+          "key": null,
+          "line": 1227,
+          "action": "open-sheet",
+          "target": "review-comment-sheet",
+          "targetWidget": "_ReviewCommentComposer",
+          "effect": "_openCommentComposer(diff, lines, wholeFile: true).",
+          "gates": [
+            "wide or compact toolbar (toolbar width >= 560 or compact height); phone uses the overflow menu"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-add-file",
+          "type": "button",
+          "label": "Add file to prompt (compact toolbar: Add file)",
+          "key": "review-add-file",
+          "line": 1222,
+          "action": "mutate",
+          "target": null,
+          "effect": "_stageFile(diff): handoff.stage(ReviewReference changedFile) on the originating composer; snackbar review-staged-notice. Compact twin key review-add-file-compact (line 1176).",
+          "gates": [
+            "widget.handoff != null",
+            "wide or compact toolbar"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-copy-patch",
+          "type": "button",
+          "label": "Copy patch (compact toolbar: Copy)",
+          "key": null,
+          "line": 1265,
+          "action": "copy",
+          "target": null,
+          "effect": "_copyText(diff.patch ?? diff.after): clipboard + snackbar. Compact twin at line 1181.",
+          "gates": [
+            "disabled when (diff.patch ?? diff.after ?? '').isEmpty",
+            "wide or compact toolbar"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-file-actions",
+          "type": "icon-button",
+          "label": "File review actions",
+          "key": "review-file-actions",
+          "line": 1353,
+          "action": "other",
+          "target": null,
+          "effect": "Opens overflow menu.",
+          "gates": [
+            "phone toolbar: !compact && toolbar width < 560"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-file-actions-ask",
+          "type": "menu-item",
+          "label": "Ask about file",
+          "key": null,
+          "line": 1367,
+          "action": "open-sheet",
+          "target": "review-comment-sheet",
+          "targetWidget": "_ReviewCommentComposer",
+          "effect": "onAsk -> _openCommentComposer(diff, lines, wholeFile: true).",
+          "gates": [
+            "phone toolbar"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-file-actions-add",
+          "type": "menu-item",
+          "label": "Add file to prompt",
+          "key": null,
+          "line": 1376,
+          "action": "mutate",
+          "target": null,
+          "effect": "onAddFile -> _stageFile(diff) -> handoff.stage().",
+          "gates": [
+            "phone toolbar",
+            "onAddFile != null (widget.handoff != null)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-file-actions-copy",
+          "type": "menu-item",
+          "label": "Copy patch",
+          "key": null,
+          "line": 1386,
+          "action": "copy",
+          "target": null,
+          "effect": "onCopy -> _copyText(patch).",
+          "gates": [
+            "phone toolbar",
+            "enabled only when patch/after text is non-empty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-diff-line",
+          "type": "gesture",
+          "label": "[tap diff line]",
+          "key": "review-line-<index>",
+          "line": 1891,
+          "action": "other",
+          "target": null,
+          "effect": "_selectLine(index): first tap selects a line, a second tap on another line extends to a range, tapping the single selected line clears. Rows key review-line-<index>; split rows review-split-row-<index> (line 1879); wrapped phone rows at 2016.",
+          "gates": [
+            "line.selectable"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-hunk-header",
+          "type": "gesture",
+          "label": "[tap hunk header]",
+          "key": "review-line-<index>",
+          "line": 1897,
+          "action": "other",
+          "target": null,
+          "effect": "_selectHunk(index, lines): selects every selectable line of the hunk (toggle) so the selection bar can add the hunk. In the wrapped phone canvas this is the right zone of _CompactHunkBar (line 2256).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-expand-above",
+          "type": "gesture",
+          "label": "+{count} lines",
+          "key": null,
+          "line": 2222,
+          "action": "other",
+          "target": null,
+          "effect": "_CompactHunkBar left zone -> _expandAbove(hunkIndex, hiddenAbove): reveals hidden unchanged lines above the hunk.",
+          "gates": [
+            "wrapped (phone) canvas",
+            "row.expandable && row.hiddenAbove > 0"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-expand-below",
+          "type": "gesture",
+          "label": "Expand ({count} more)",
+          "key": "review-expand-below-<hunk>",
+          "line": 2302,
+          "action": "other",
+          "target": null,
+          "effect": "_CompactExpandBar -> _expandBelow(hunk, remaining): reveals the next 20 unchanged lines. \"Expand\" is a hard-coded English string.",
+          "gates": [
+            "wrapped (phone) canvas"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-selection-clear",
+          "type": "icon-button",
+          "label": "Clear selection",
+          "key": "review-selection-clear",
+          "line": 2675,
+          "action": "other",
+          "target": null,
+          "effect": "setState(_clearSelection).",
+          "gates": [
+            "selectedCount > 0"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-selection-copy",
+          "type": "icon-button",
+          "label": "Copy selection",
+          "key": "review-selection-copy",
+          "line": 2681,
+          "action": "copy",
+          "target": null,
+          "effect": "_copyText(_selectedSnippet(lines)).",
+          "gates": [
+            "selectedCount > 0"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-selection-add",
+          "type": "icon-button",
+          "label": "Add selection to prompt / Add hunk to prompt",
+          "key": "review-selection-add",
+          "line": 2688,
+          "action": "mutate",
+          "target": null,
+          "effect": "_stageSelection(diff, lines): handoff.stage(ReviewReference kind hunk|selection with snippet).",
+          "gates": [
+            "selectedCount > 0",
+            "widget.handoff != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-selection-comment",
+          "type": "button",
+          "label": "Comment",
+          "key": "review-comment-action",
+          "line": 2697,
+          "action": "open-sheet",
+          "target": "review-comment-sheet",
+          "targetWidget": "_ReviewCommentComposer",
+          "effect": "_openCommentComposer(diff, lines) for the selected lines.",
+          "gates": [
+            "selectedCount > 0"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-hunk-bar-previous",
+          "type": "icon-button",
+          "label": "Previous hunk",
+          "key": "review-hunk-bar-previous",
+          "line": 2737,
+          "action": "other",
+          "target": null,
+          "effect": "_jumpToHunk(-1, hunks) from the bottom hunk bar (key review-hunk-bar).",
+          "gates": [
+            "selectedCount == 0 && !wide && !compactToolbar && hunks.isNotEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "review-workspace-hunk-bar-next",
+          "type": "icon-button",
+          "label": "Next hunk",
+          "key": "review-hunk-bar-next",
+          "line": 2743,
+          "action": "other",
+          "target": null,
+          "effect": "_jumpToHunk(1, hunks) from the bottom hunk bar.",
+          "gates": [
+            "selectedCount == 0 && !wide && !compactToolbar && hunks.isNotEmpty"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "review-comment-sheet",
+      "title": "Comment on change",
+      "kind": "sheet",
+      "file": "lib/ui/screens/review_workspace.dart",
+      "widget": "_ReviewCommentComposer",
+      "presentedBy": [
+        "_openCommentComposer"
+      ],
+      "line": 2755,
+      "purpose": "Composer for a review comment on the selected lines or the entire change; the result is staged on the chat composer (handoff) or popped back as a formatted prompt.",
+      "reachedFrom": [
+        {
+          "page": "review-workspace",
+          "element": "review-workspace-ask-file"
+        },
+        {
+          "page": "review-workspace",
+          "element": "review-workspace-file-actions-ask"
+        },
+        {
+          "page": "review-workspace",
+          "element": "review-workspace-selection-comment"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "review-comment-sheet-field",
+          "type": "text-field",
+          "label": "What should OpenCode inspect or change?",
+          "key": "review-comment-field",
+          "line": 2809,
+          "action": "submit",
+          "target": null,
+          "effect": "Autofocused multiline field; onSubmitted -> _submit() pops the sheet with the trimmed text.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "review-comment-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 2830,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.pop(context) with no result.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "review-comment-sheet-add",
+          "type": "button",
+          "label": "Add to prompt",
+          "key": "review-add-to-prompt",
+          "line": 2836,
+          "action": "submit",
+          "target": null,
+          "effect": "_submit(): pops with the comment; _openCommentComposer then either _stage()s a ReviewReference(kind comment) via handoff.stage(), or, without a handoff, pops ReviewWorkspace with _reviewPrompt(...) (caller sends it to the chat or clipboard).",
+          "gates": [
+            "disabled while the field is empty"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "terminal",
+      "title": "Terminal",
+      "kind": "screen",
+      "file": "lib/ui/screens/terminal_screen.dart",
+      "widget": "TerminalPage",
+      "presentedBy": [],
+      "line": 80,
+      "purpose": "List of server terminal processes (TerminalScreen body) with create, open, rename and stop/remove.",
+      "reachedFrom": [
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "OpenTerminalIntent keyboard shortcut handled in _HomeScreenState (lib/ui/screens/home_screen.dart:67), gated by capabilities.terminal"
+        }
+      ],
+      "gates": [
+        "controller.capabilities.terminal (checked by every opener)"
+      ],
+      "elements": [
+        {
+          "id": "terminal-pull-refresh",
+          "type": "gesture",
+          "label": "[pull to refresh]",
+          "key": null,
+          "line": 417,
+          "action": "other",
+          "target": null,
+          "effect": "_load(): repository terminal list reload (also on the empty state, line 400).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "terminal-error-retry",
+          "type": "button",
+          "label": "Try again (ProductErrorState) / Retry (ProductRefreshBody banner)",
+          "key": null,
+          "line": 394,
+          "action": "other",
+          "target": null,
+          "effect": "onRetry -> _load() (lines 382 and 394).",
+          "gates": [
+            "_error != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-empty-new",
+          "type": "button",
+          "label": "New terminal",
+          "key": null,
+          "line": 413,
+          "action": "navigate",
+          "target": "terminal-surface",
+          "targetWidget": "TerminalSurface",
+          "effect": "ProductEmptyState action -> _create(): repository.createTerminal(title: \"Terminal N\"), then _open(process) and _load().",
+          "gates": [
+            "_processes.isEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-process-row",
+          "type": "list-tile",
+          "label": "<process title> (Running/Exited chip, command · pid/exit code)",
+          "key": null,
+          "line": 426,
+          "action": "navigate",
+          "target": "terminal-surface",
+          "targetWidget": "TerminalSurface",
+          "effect": "_open(process): pushes TerminalSurface for that process.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "terminal-process-actions",
+          "type": "icon-button",
+          "label": "Terminal actions",
+          "key": null,
+          "line": 458,
+          "action": "other",
+          "target": null,
+          "effect": "Opens overflow menu.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "terminal-process-actions-rename",
+          "type": "menu-item",
+          "label": "Rename",
+          "key": null,
+          "line": 467,
+          "action": "open-dialog",
+          "target": "terminal-rename-dialog",
+          "targetWidget": "_rename",
+          "effect": "_rename(process).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "terminal-process-actions-remove",
+          "type": "menu-item",
+          "label": "Stop (running) / Remove (exited)",
+          "key": null,
+          "line": 475,
+          "action": "open-sheet",
+          "target": "terminal-remove-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "_remove(process) opens the confirm sheet.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "terminal-process-context-menu",
+          "type": "gesture",
+          "label": "[right click on terminal row]",
+          "key": null,
+          "line": 493,
+          "action": "other",
+          "target": null,
+          "effect": "ContextMenuRegion opens the desktop context menu; pass-through off desktop.",
+          "gates": [
+            "desktop only (ContextMenuRegion)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-process-menu-open",
+          "type": "menu-item",
+          "label": "Open",
+          "key": "terminal-menu-open",
+          "line": 495,
+          "action": "navigate",
+          "target": "terminal-surface",
+          "targetWidget": "TerminalSurface",
+          "effect": "_open(process).",
+          "gates": [
+            "desktop context menu"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-process-menu-rename",
+          "type": "menu-item",
+          "label": "Rename",
+          "key": "terminal-menu-rename",
+          "line": 503,
+          "action": "open-dialog",
+          "target": "terminal-rename-dialog",
+          "targetWidget": "_rename",
+          "effect": "_rename(process).",
+          "gates": [
+            "desktop context menu"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-process-menu-remove",
+          "type": "menu-item",
+          "label": "Stop (running) / Remove (exited)",
+          "key": "terminal-menu-remove",
+          "line": 511,
+          "action": "open-sheet",
+          "target": "terminal-remove-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "_remove(process).",
+          "gates": [
+            "desktop context menu"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "terminal-new-fab",
+          "type": "fab",
+          "label": "Terminal",
+          "key": null,
+          "line": 535,
+          "action": "navigate",
+          "target": "terminal-surface",
+          "targetWidget": "TerminalSurface",
+          "effect": "_create(): repository.createTerminal(...), then pushes TerminalSurface and reloads the list. heroTag new-terminal.",
+          "gates": [
+            "disabled while _creating"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "terminal-rename-dialog",
+      "title": "Rename terminal",
+      "kind": "dialog",
+      "file": "lib/ui/screens/terminal_screen.dart",
+      "widget": "_rename",
+      "presentedBy": [
+        "_rename"
+      ],
+      "line": 267,
+      "purpose": "AlertDialog to edit a terminal process title.",
+      "reachedFrom": [
+        {
+          "page": "terminal",
+          "element": "terminal-process-actions-rename"
+        },
+        {
+          "page": "terminal",
+          "element": "terminal-process-menu-rename"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "terminal-rename-dialog-title-field",
+          "type": "text-field",
+          "label": "Title",
+          "key": null,
+          "line": 275,
+          "action": "other",
+          "target": null,
+          "effect": "onChanged stores editedTitle; prefilled with process.title.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "terminal-rename-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 286,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.pop(context).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "terminal-rename-dialog-save",
+          "type": "button",
+          "label": "Save",
+          "key": null,
+          "line": 294,
+          "action": "mutate",
+          "target": null,
+          "effect": "Pops with the trimmed title; _rename then calls repository.renameTerminal(process.id, title) and _load() (no-op when empty or the location changed).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "terminal-remove-sheet",
+      "title": "Stop terminal? / Remove terminal?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/terminal_screen.dart",
+      "widget": "_remove",
+      "presentedBy": [
+        "_remove"
+      ],
+      "line": 327,
+      "purpose": "showConfirmSheet confirmation before stopping a running terminal or removing an exited one (buttons are rendered by lib/ui/widgets/confirm_sheet.dart).",
+      "reachedFrom": [
+        {
+          "page": "terminal",
+          "element": "terminal-process-actions-remove"
+        },
+        {
+          "page": "terminal",
+          "element": "terminal-process-menu-remove"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "terminal-remove-sheet-confirm",
+          "type": "button",
+          "label": "Stop (running) / Remove (exited)",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 344,
+          "action": "mutate",
+          "target": null,
+          "effect": "Returns true; _remove then calls repository.removeTerminal(process.id) and _load(). Running processes and their children are terminated.",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "terminal-remove-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 327,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Returns false (default cancelLabel of showConfirmSheet).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "terminal-surface",
+      "title": "<terminal process title>",
+      "kind": "screen",
+      "file": "lib/ui/screens/terminal_screen.dart",
+      "widget": "TerminalSurface",
+      "presentedBy": [],
+      "line": 635,
+      "purpose": "Live terminal session for one server process: xterm view or accessible transcript mode, control-key strip, copy and reconnect.",
+      "reachedFrom": [
+        {
+          "page": "terminal",
+          "element": "terminal-process-row"
+        },
+        {
+          "page": "terminal",
+          "element": "terminal-new-fab"
+        },
+        {
+          "page": "terminal",
+          "element": "terminal-empty-new"
+        },
+        {
+          "page": "terminal",
+          "element": "terminal-process-menu-open"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "terminal-surface-copy",
+          "type": "icon-button",
+          "label": "Copy terminal selection or transcript",
+          "key": null,
+          "line": 1010,
+          "action": "copy",
+          "target": null,
+          "effect": "_copyOutput(): copies the xterm selection, else the whole transcript, to the clipboard.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-accessible-mode",
+          "type": "icon-button",
+          "label": "Use accessible transcript and input / Use interactive terminal",
+          "key": "terminal-accessible-mode",
+          "line": 1017,
+          "action": "other",
+          "target": null,
+          "effect": "Toggles _accessibleMode between the xterm TerminalView and the transcript + command field.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-reconnect",
+          "type": "icon-button",
+          "label": "Reconnect",
+          "key": "terminal-reconnect",
+          "line": 1033,
+          "action": "other",
+          "target": null,
+          "effect": "_connect(): reopens the terminal websocket channel.",
+          "gates": [
+            "disabled while _connecting || _lifecycleSuspended"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-error-retry",
+          "type": "banner",
+          "label": "Try again",
+          "key": null,
+          "line": 1075,
+          "action": "other",
+          "target": null,
+          "effect": "MaterialBanner action -> _connect().",
+          "gates": [
+            "_error != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-view",
+          "type": "text-field",
+          "label": "[interactive xterm TerminalView]",
+          "key": null,
+          "line": 1102,
+          "action": "submit",
+          "target": null,
+          "effect": "Keyboard/IME input is written to the PTY (_write); on desktop hardware keys go through _onTerminalKey; autoResize triggers repository.resizeTerminal(id, rows, cols) debounced 150 ms.",
+          "gates": [
+            "!_accessibleMode",
+            "readOnly when !_canWrite"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-key-ctrl-c",
+          "type": "button",
+          "label": "Ctrl-C",
+          "key": null,
+          "line": 1150,
+          "action": "submit",
+          "target": null,
+          "effect": "_sendControl('\\x03') writes the control sequence to the terminal (strip key terminal-control-strip).",
+          "gates": [
+            "disabled when !_canWrite"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-key-ctrl-d",
+          "type": "button",
+          "label": "Ctrl-D",
+          "key": null,
+          "line": 1157,
+          "action": "submit",
+          "target": null,
+          "effect": "_sendControl('\\x04') writes the control sequence to the terminal (strip key terminal-control-strip).",
+          "gates": [
+            "disabled when !_canWrite"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-key-esc",
+          "type": "button",
+          "label": "Esc",
+          "key": null,
+          "line": 1164,
+          "action": "submit",
+          "target": null,
+          "effect": "_sendControl('\\x1b') writes the control sequence to the terminal (strip key terminal-control-strip).",
+          "gates": [
+            "disabled when !_canWrite"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-key-tab",
+          "type": "button",
+          "label": "Tab",
+          "key": null,
+          "line": 1171,
+          "action": "submit",
+          "target": null,
+          "effect": "_sendControl('\\t') writes the control sequence to the terminal (strip key terminal-control-strip).",
+          "gates": [
+            "disabled when !_canWrite"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-key-up",
+          "type": "button",
+          "label": "↑",
+          "key": null,
+          "line": 1178,
+          "action": "submit",
+          "target": null,
+          "effect": "_sendControl('\\x1b[A') writes the control sequence to the terminal (strip key terminal-control-strip).",
+          "gates": [
+            "disabled when !_canWrite"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-key-down",
+          "type": "button",
+          "label": "↓",
+          "key": null,
+          "line": 1185,
+          "action": "submit",
+          "target": null,
+          "effect": "_sendControl('\\x1b[B') writes the control sequence to the terminal (strip key terminal-control-strip).",
+          "gates": [
+            "disabled when !_canWrite"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-key-left",
+          "type": "button",
+          "label": "←",
+          "key": null,
+          "line": 1192,
+          "action": "submit",
+          "target": null,
+          "effect": "_sendControl('\\x1b[D') writes the control sequence to the terminal (strip key terminal-control-strip).",
+          "gates": [
+            "disabled when !_canWrite"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-key-right",
+          "type": "button",
+          "label": "→",
+          "key": null,
+          "line": 1199,
+          "action": "submit",
+          "target": null,
+          "effect": "_sendControl('\\x1b[C') writes the control sequence to the terminal (strip key terminal-control-strip).",
+          "gates": [
+            "disabled when !_canWrite"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-accessible-input",
+          "type": "text-field",
+          "label": "Terminal command input",
+          "key": "terminal-accessible-input",
+          "line": 1318,
+          "action": "submit",
+          "target": null,
+          "effect": "onSubmitted -> _sendAccessibleInput(): writes the line to the terminal.",
+          "gates": [
+            "_accessibleMode",
+            "enabled only when _canWrite"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "terminal-surface-accessible-send",
+          "type": "icon-button",
+          "label": "Send command to terminal",
+          "key": null,
+          "line": 1342,
+          "action": "submit",
+          "target": null,
+          "effect": "_sendAccessibleInput().",
+          "gates": [
+            "_accessibleMode",
+            "disabled when !_canWrite"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "stage-revert-sheet",
+      "title": "Stage a revert from this prompt?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/staged_revert_screen.dart",
+      "widget": "showStageRevertSheet",
+      "presentedBy": [
+        "showStageRevertSheet"
+      ],
+      "line": 15,
+      "purpose": "Confirms staging a session revert from a chat prompt and whether file changes are reverted too; returns applyFiles to the caller.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._stageFromMessage",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 4236
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "stage-revert-sheet-apply-files",
+          "type": "toggle",
+          "label": "Revert file changes too",
+          "key": null,
+          "line": 54,
+          "action": "other",
+          "target": null,
+          "effect": "CheckboxListTile toggles the local applyFiles flag (default true).",
+          "gates": [
+            "enabled only when controller.isRevertReviewCurrent(review) && !busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "stage-revert-sheet-confirm",
+          "type": "button",
+          "label": "Stage and review",
+          "key": null,
+          "line": 66,
+          "action": "mutate",
+          "target": "staged-revert",
+          "targetWidget": "StagedRevertScreen",
+          "effect": "Pops with applyFiles; the caller (_ChatScreenState._stageFromMessage) calls _conn.stageSessionRevert(review, messageID, applyFiles:) and then _reviewStagedRevert() pushes StagedRevertScreen.",
+          "gates": [
+            "enabled only when current && !busy"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "stage-revert-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 72,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.pop(context).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "staged-revert",
+      "title": "Review staged revert",
+      "kind": "screen",
+      "file": "lib/ui/screens/staged_revert_screen.dart",
+      "widget": "StagedRevertScreen",
+      "presentedBy": [],
+      "line": 88,
+      "purpose": "Shows the staged revert boundary prompt and the server preview of affected files, with commit (permanent) or clear actions.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._reviewStagedRevert (called by _stageFromMessage and other chat entry points)",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 4264
+        }
+      ],
+      "gates": [
+        "repository implements StagedRevertGateway for the prompt text"
+      ],
+      "elements": [
+        {
+          "id": "staged-revert-review-latest",
+          "type": "button",
+          "label": "Review latest state",
+          "key": null,
+          "line": 243,
+          "action": "other",
+          "target": null,
+          "effect": "controller.ensureSession(sessionID), then re-reads controller.reviewSessionRevert(sessionID) and reloads the prompt.",
+          "gates": [
+            "(!current || revert == null) && sameScope",
+            "disabled while busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "staged-revert-file-row",
+          "type": "list-tile",
+          "label": "<file path> (+N −M)",
+          "key": null,
+          "line": 345,
+          "action": "navigate",
+          "target": "diff-view",
+          "targetWidget": "DiffView",
+          "effect": "Pushes DiffView.single(file) for that staged file diff.",
+          "gates": [
+            "revert.files non-empty",
+            "enabled only when current"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "staged-revert-commit",
+          "type": "button",
+          "label": "Make revert permanent",
+          "key": "commit-staged-revert",
+          "line": 316,
+          "action": "open-sheet",
+          "target": "staged-revert-confirm-sheet",
+          "targetWidget": "_apply",
+          "effect": "_apply(commit: true) opens the confirmation sheet.",
+          "gates": [
+            "revert != null",
+            "enabled only when current && !busy"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "staged-revert-clear",
+          "type": "button",
+          "label": "Clear staged revert",
+          "key": "clear-staged-revert",
+          "line": 324,
+          "action": "open-sheet",
+          "target": "staged-revert-confirm-sheet",
+          "targetWidget": "_apply",
+          "effect": "_apply(commit: false) opens the confirmation sheet.",
+          "gates": [
+            "revert != null",
+            "enabled only when current && !busy"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "staged-revert-confirm-sheet",
+      "title": "Make this revert permanent? / Clear this staged revert?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/staged_revert_screen.dart",
+      "widget": "_apply",
+      "presentedBy": [
+        "_apply"
+      ],
+      "line": 137,
+      "purpose": "Confirmation before committing or clearing the staged revert.",
+      "reachedFrom": [
+        {
+          "page": "staged-revert",
+          "element": "staged-revert-commit"
+        },
+        {
+          "page": "staged-revert",
+          "element": "staged-revert-clear"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "staged-revert-confirm-sheet-confirm",
+          "type": "button",
+          "label": "Make revert permanent / Clear staged revert",
+          "key": "confirm-staged-revert",
+          "line": 171,
+          "action": "mutate",
+          "target": null,
+          "effect": "Pops true; _apply then calls controller.commitSessionRevert(reviewed) or controller.clearSessionRevert(reviewed) and pops StagedRevertScreen if still current. Error-colored when committing.",
+          "gates": [
+            "enabled only when controller.isRevertReviewCurrent(reviewed) && !busy"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "staged-revert-confirm-sheet-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 190,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.pop(context, false).",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "file-preview-sheet",
+      "title": "<file name>",
+      "kind": "sheet",
+      "file": "lib/ui/widgets/file_preview.dart",
+      "widget": "_FilePreviewSheet",
+      "presentedBy": [
+        "showFilePreviewSheet"
+      ],
+      "line": 161,
+      "purpose": "In-app preview of an attachment, tool output or file (86% height sheet with its own ScaffoldMessenger) with copy, attach, save and close; body is FilePreviewBody.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ContextCapsuleScreenState",
+          "file": "lib/ui/screens/context_capsule_screen.dart",
+          "line": 283
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_AttachmentPart.openPreview",
+          "file": "lib/ui/screens/chat/message_view.dart",
+          "line": 1968
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_PendingAttachmentChip.openPreview",
+          "file": "lib/ui/screens/chat/composer.dart",
+          "line": 1491
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 3208
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5973
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_DiffPreview (_SeeAllButton)",
+          "file": "lib/ui/widgets/tool_card.dart",
+          "line": 1823
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ToolOutputPreview.openPreview",
+          "file": "lib/ui/widgets/tool_card.dart",
+          "line": 2022
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ToolOutputFileTileState",
+          "file": "lib/ui/widgets/tool_card.dart",
+          "line": 2139
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_Mono (_SeeAllButton)",
+          "file": "lib/ui/widgets/tool_card.dart",
+          "line": 2289
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "file-preview-sheet-copy",
+          "type": "icon-button",
+          "label": "Copy file contents",
+          "key": null,
+          "line": 318,
+          "action": "copy",
+          "target": null,
+          "effect": "_copy(data.copyText): clipboard + snackbar; on failure a snackbar with a \"Retry\" action (line 217) re-runs _copy.",
+          "gates": [
+            "data.copyText != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "file-preview-sheet-attach",
+          "type": "icon-button",
+          "label": "Attach to prompt",
+          "key": "file-preview-attach",
+          "line": 324,
+          "action": "mutate",
+          "target": null,
+          "effect": "_attach(): awaits the caller-supplied onAttach(), then pops the sheet.",
+          "gates": [
+            "widget.onAttach != null",
+            "disabled while _attaching"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "file-preview-sheet-download",
+          "type": "icon-button",
+          "label": "Save to device",
+          "key": "file-preview-download",
+          "line": 336,
+          "action": "external-link",
+          "target": null,
+          "effect": "_download(): caller-supplied onDownload() or FilePicker.saveFile(...); snackbar \"Saved\".",
+          "gates": [
+            "data.exportBytes != null",
+            "disabled while _downloading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "file-preview-sheet-close",
+          "type": "icon-button",
+          "label": "Close preview",
+          "key": null,
+          "line": 347,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.of(context).pop().",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-file-preview-body",
+      "title": "[File preview body]",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/file_preview.dart",
+      "widget": "FilePreviewBody",
+      "presentedBy": [],
+      "line": 364,
+      "purpose": "Type-aware preview body (image, markdown, JSON/code, focused source line, CSV/TSV table, SVG, PDF) embedded in the preview sheet, the Files viewer and the skill screens.",
+      "reachedFrom": [],
+      "gates": [],
+      "elements": [
+        {
+          "id": "embedded-file-preview-body-image-zoom",
+          "type": "gesture",
+          "label": "[pinch/pan image]",
+          "key": "file-preview-image",
+          "line": 396,
+          "action": "other",
+          "target": null,
+          "effect": "InteractiveViewer around the raster image (key file-preview-image).",
+          "gates": [
+            "data.isRasterImage"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-file-preview-body-md-rendered",
+          "type": "button",
+          "label": "Rendered",
+          "key": "file-preview-rendered-mode",
+          "line": 839,
+          "action": "other",
+          "target": null,
+          "effect": "SmartTextPreview: setState _rawMarkdown = false (rendered MarkdownText).",
+          "gates": [
+            "markdown file",
+            "enabled only when _rawMarkdown"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-file-preview-body-md-raw",
+          "type": "button",
+          "label": "Raw",
+          "key": "file-preview-raw-mode",
+          "line": 846,
+          "action": "other",
+          "target": null,
+          "effect": "SmartTextPreview: setState _rawMarkdown = true (CodeBlock source).",
+          "gates": [
+            "markdown file",
+            "enabled only when !_rawMarkdown"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-file-preview-body-csv-table",
+          "type": "button",
+          "label": "Table",
+          "key": null,
+          "file": "lib/ui/widgets/delimited_file_preview.dart",
+          "line": 81,
+          "action": "other",
+          "target": null,
+          "effect": "DelimitedFilePreview: _source = false (table view).",
+          "gates": [
+            "delimited (CSV/TSV) file",
+            "enabled && available && _source"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-file-preview-body-csv-source",
+          "type": "button",
+          "label": "Source",
+          "key": null,
+          "file": "lib/ui/widgets/delimited_file_preview.dart",
+          "line": 90,
+          "action": "other",
+          "target": null,
+          "effect": "DelimitedFilePreview: _source = true (raw text).",
+          "gates": [
+            "delimited (CSV/TSV) file",
+            "enabled && available && !_source"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-file-preview-body-svg-image",
+          "type": "button",
+          "label": "Image",
+          "key": null,
+          "file": "lib/ui/widgets/svg_file_preview.dart",
+          "line": 56,
+          "action": "other",
+          "target": null,
+          "effect": "SvgFilePreview: _source = false (rendered SVG inside an InteractiveViewer, line 101).",
+          "gates": [
+            "SVG file",
+            "enabled && svg != null && _source"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-file-preview-body-svg-source",
+          "type": "button",
+          "label": "Source",
+          "key": null,
+          "file": "lib/ui/widgets/svg_file_preview.dart",
+          "line": 63,
+          "action": "other",
+          "target": null,
+          "effect": "SvgFilePreview: _source = true (SVG source text).",
+          "gates": [
+            "SVG file",
+            "enabled && svg != null && !_source"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-file-preview-body-pdf-previous",
+          "type": "button",
+          "label": "Previous",
+          "key": null,
+          "file": "lib/ui/widgets/pdf_file_preview.dart",
+          "line": 142,
+          "action": "other",
+          "target": null,
+          "effect": "PdfFilePreview: _load(image.page - 1) renders the previous page.",
+          "gates": [
+            "PDF file",
+            "_enabled && _foreground && !loading && image.page > 0"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-file-preview-body-pdf-next",
+          "type": "button",
+          "label": "Next",
+          "key": null,
+          "file": "lib/ui/widgets/pdf_file_preview.dart",
+          "line": 151,
+          "action": "other",
+          "target": null,
+          "effect": "PdfFilePreview: _load(image.page + 1) renders the next page.",
+          "gates": [
+            "PDF file",
+            "image.page + 1 < image.pageCount && image.page + 1 < LocalPdf.maxPages"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-file-preview-body-pdf-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "file": "lib/ui/widgets/pdf_file_preview.dart",
+          "line": 166,
+          "action": "other",
+          "target": null,
+          "effect": "PdfFilePreview: _cancel() the in-flight render and set _error = cancelled.",
+          "gates": [
+            "PDF file",
+            "loading"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-file-preview-body-pdf-retry",
+          "type": "button",
+          "label": "Retry",
+          "key": null,
+          "file": "lib/ui/widgets/pdf_file_preview.dart",
+          "line": 180,
+          "action": "other",
+          "target": null,
+          "effect": "PdfFilePreview: _load(_wanted) again.",
+          "gates": [
+            "PDF file",
+            "error != null and not unavailable/encrypted/limit",
+            "_enabled && _foreground"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-file-preview-body-pdf-zoom",
+          "type": "gesture",
+          "label": "[pinch/pan PDF page]",
+          "key": null,
+          "file": "lib/ui/widgets/pdf_file_preview.dart",
+          "line": 200,
+          "action": "other",
+          "target": null,
+          "effect": "InteractiveViewer around the rendered page image.",
+          "gates": [
+            "PDF file"
+          ],
+          "destructive": false
+        }
+      ],
+      "embeddedIn": [
+        "_FilePreviewSheet",
+        "_FileViewer",
+        "SkillActivation host (lib/ui/screens/library/skill_activation.dart:97)",
+        "Skills screen host (lib/ui/screens/library/skills_screen.dart:203)"
+      ]
+    },
+    {
+      "id": "diff-view",
+      "title": "Review",
+      "kind": "screen",
+      "file": "lib/ui/widgets/diff_view.dart",
+      "widget": "DiffView",
+      "presentedBy": [
+        "DiffView.open",
+        "DiffView.single"
+      ],
+      "line": 23,
+      "purpose": "Read-only full-screen diff of one or more files with sticky file headers and expandable context gaps.",
+      "reachedFrom": [
+        {
+          "page": "staged-revert",
+          "element": "staged-revert-file-row"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ChatScreenState._showDiff (isolated session)",
+          "file": "lib/ui/screens/chat_screen.dart",
+          "line": 5805
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_DiffSheetState",
+          "file": "lib/ui/screens/chat/session_sheets.dart",
+          "line": 231
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_PermissionSheetState._openFullDiff",
+          "file": "lib/ui/screens/chat/permission_sheet.dart",
+          "line": 275
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "diff-view-close",
+          "type": "icon-button",
+          "label": "Close (CloseButton)",
+          "key": null,
+          "line": 62,
+          "action": "dismiss",
+          "target": null,
+          "effect": "AppBar leading CloseButton pops the route.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "diff-view-wrap",
+          "type": "toggle",
+          "label": "Wrap lines / Scroll lines",
+          "key": null,
+          "file": "lib/ui/widgets/reader_preferences.dart",
+          "line": 66,
+          "action": "toggle-setting",
+          "target": null,
+          "effect": "ReaderWrapButton: saveReaderPreferences(context, wrapCode: !wrap).",
+          "gates": [
+            "ReaderPreferencesScope present"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "diff-view-copy",
+          "type": "icon-button",
+          "label": "Copy updated file / Copy patch",
+          "key": null,
+          "line": 68,
+          "action": "copy",
+          "target": null,
+          "effect": "Clipboard.setData(single.after ?? single.patch) with success/failure snackbar.",
+          "gates": [
+            "allowCopy && diffs.length == 1",
+            "disabled when the text is empty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "diff-view-collapse-context",
+          "type": "gesture",
+          "label": "Hide revealed context",
+          "key": "diff-collapse-<index>",
+          "line": 594,
+          "action": "other",
+          "target": null,
+          "effect": "_GapBar: removes _shownTop/_shownBottom for that gap.",
+          "gates": [
+            "gap has revealed rows"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "diff-view-expand-down",
+          "type": "gesture",
+          "label": "Show next {count} lines",
+          "key": "diff-expand-down-<index>",
+          "line": 615,
+          "action": "other",
+          "target": null,
+          "effect": "_GapBar -> _expandTop(index) reveals up to 20 lines below the previous hunk.",
+          "gates": [
+            "gap rows available && index > 0 && remaining > 0"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "diff-view-expand-up",
+          "type": "gesture",
+          "label": "Show {count} previous lines ({remaining} hidden)",
+          "key": "diff-gap-<index>",
+          "line": 627,
+          "action": "other",
+          "target": null,
+          "effect": "_GapBar -> _expandBottom(index) reveals up to 20 lines above the next hunk; inert \"missing context\" label when rows are unavailable.",
+          "gates": [
+            "expandable (gap.rows != null)"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "run-command-dialog",
+      "title": "Run /{command}",
+      "kind": "dialog",
+      "file": "lib/ui/widgets/run_command_dialog.dart",
+      "widget": "_RunCommandDialog",
+      "presentedBy": [
+        "showRunCommandDialog"
+      ],
+      "line": 10,
+      "purpose": "Runs a slash command in a new or existing chat with optional arguments; returns the session id.",
+      "reachedFrom": [
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_ServerPluginsSectionState",
+          "file": "lib/ui/screens/settings/server_plugins_section.dart",
+          "line": 477
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_CommandsScreenState._run",
+          "file": "lib/ui/screens/library/commands_screen.dart",
+          "line": 152
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "run-command-dialog-destination",
+          "type": "dropdown",
+          "label": "Chat (New chat | <session title> | Untitled chat)",
+          "key": "command-destination",
+          "line": 160,
+          "action": "other",
+          "target": null,
+          "effect": "Sets _destination (empty = new chat).",
+          "gates": [
+            "disabled while _sending"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "run-command-dialog-arguments",
+          "type": "text-field",
+          "label": "Arguments (optional)",
+          "key": "command-arguments",
+          "line": 187,
+          "action": "other",
+          "target": null,
+          "effect": "Free-text command arguments.",
+          "gates": [
+            "disabled while _sending"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "run-command-dialog-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "line": 208,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.pop(); blocked (PopScope canPop false) while _sending.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "run-command-dialog-run",
+          "type": "button",
+          "label": "Run (Running… while sending)",
+          "key": "command-submit",
+          "line": 212,
+          "action": "submit",
+          "target": null,
+          "effect": "_submit(): controller.prepareActionTransport(), optional validateCommand(), controller.createSession() for a new chat, controller.waitForSessionSelection(), api.slashCommand(sessionID, name, args, model, variant); pops with the session id.",
+          "gates": [
+            "disabled while _sending"
+          ],
+          "destructive": false
+        }
+      ]
+    }
+  ],
+  "notPages": [
+    {
+      "file": "lib/ui/widgets/code_highlight.dart",
+      "reason": "pure syntax-highlighting helper, no surface and no interactive element"
+    }
+  ],
+  "notes": [
+    "lib/ui/widgets/reader_preferences.dart: ReaderWrapButton (line 88) is recorded as an embedded element on files-file-viewer-sheet, review-workspace and diff-view; ReaderPreferencesScope itself is a non-visual InheritedNotifier.",
+    "lib/ui/screens/review_workspace.dart has no TabBar: the scope SegmentedButton (line 722) and the file strip (line 845) act as tabs but share one body, so they are elements of review-workspace, not separate tab pages.",
+    "review_workspace.dart toolbar has three layout variants (wide 1191, compact-height 1138, phone 1282) that reuse the same keys; elements are recorded once with the variant lines in effect/gates.",
+    "files_screen.dart:1180 \"Open\" and review_workspace.dart:2313 \"Expand\" are hard-coded English strings (not in app_en.arb).",
+    "files_screen.dart _FileViewer (line 1791) is both a modal sheet (<900 px, line 565) and an embedded pane (>=900 px, line 956); recorded once as files-file-viewer-sheet.",
+    "run_command_dialog.dart:185 embeds SessionInventoryFooter, which is outside this area; its elements are not recorded here.",
+    "chat_screen.dart:3208/5973 openers of showFilePreviewSheet: enclosing method names not resolved (only the class), coordinator to resolve.",
+    "ProductErrorState / ProductRefreshBody / ProductEmptyState retry buttons are defined in shared widgets outside this area; ProductErrorState shows a hard-coded \"Try again\" plus a bug-report button (product-error-report-bug) owned by that shared widget; ProductRefreshBody uses l10n refreshRetry = \"Retry\".",
+    "Terminal confirm sheet buttons live in lib/ui/widgets/confirm_sheet.dart (cancelLabel default \"Cancel\", line 15)."
+  ]
+}

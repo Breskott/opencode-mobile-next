@@ -9,16 +9,22 @@ import '../../state/connection.dart';
 import '../../state/provider_quota_overview.dart';
 import '../../state/provider_quota_budgets.dart';
 import '../app_theme.dart';
-import 'quota_monitor_screen.dart';
+import '../widgets/quota_monitor_section.dart';
+import 'settings_screen.dart' show NotificationsSettingsScreen;
 
 class ProviderQuotaScreen extends StatefulWidget {
   final ConnectionController controller;
   final ProviderQuotaOverview? overview;
 
+  /// True as the "Remaining" section of the Usage screen, which already
+  /// supplies the app bar.
+  final bool embedded;
+
   const ProviderQuotaScreen({
     super.key,
     required this.controller,
     this.overview,
+    this.embedded = false,
   });
 
   @override
@@ -27,6 +33,7 @@ class ProviderQuotaScreen extends StatefulWidget {
 
 class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
   late ProviderQuotaOverview _overview;
+  final _scroll = ScrollController();
   bool _trusted = false;
 
   @override
@@ -51,6 +58,7 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
 
   @override
   void dispose() {
+    _scroll.dispose();
     if (widget.overview == null) {
       _overview.dispose();
     }
@@ -96,7 +104,6 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
       return;
     }
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    var notifications = false, wifiOnly = false, quiet = false;
     var threshold = 100.0;
     final accepted = await showDialog<bool>(
       context: context,
@@ -128,24 +135,6 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
                   ],
                   onChanged: (value) => update(() => threshold = value ?? 100),
                 ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.quotaMonitorNotifications),
-                  value: notifications,
-                  onChanged: (value) => update(() => notifications = value),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.quotaMonitorWifi),
-                  value: wifiOnly,
-                  onChanged: (value) => update(() => wifiOnly = value),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.quotaMonitorQuiet),
-                  value: quiet,
-                  onChanged: (value) => update(() => quiet = value),
-                ),
               ],
             ),
           ),
@@ -165,6 +154,7 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
     if (!mounted || accepted != true) {
       return;
     }
+    final shared = widget.controller.sharedNotifyRules;
     final valid =
         !_overview.detached &&
         !_overview.snapshotIsStale &&
@@ -174,11 +164,14 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
         await widget.controller.quotaMonitor.enroll(
           profileID,
           snapshot,
-          notifications: notifications,
+          // Alerts, Wi-Fi only and quiet hours are shared (Notifications).
+          // The record still carries them so a build that has not migrated
+          // reads the same answer.
+          notifications: shared.quotaAlerts,
           threshold: threshold,
-          wifiOnly: wifiOnly,
-          quietStart: quiet ? 22 * 60 : null,
-          quietEnd: quiet ? 8 * 60 : null,
+          wifiOnly: shared.wifiOnly,
+          quietStart: shared.quietEnabled ? shared.quietStart : null,
+          quietEnd: shared.quietEnabled ? shared.quietEnd : null,
         );
     if (!mounted) {
       return;
@@ -189,12 +182,15 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
       ).showSnackBar(SnackBar(content: Text(l10n.quotaMonitorSaveFailed)));
       return;
     }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => QuotaMonitorScreen(controller: widget.controller),
-      ),
-    );
+    // The new source appears in the monitoring section below, in place.
   }
+
+  void _openNotifications() => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) =>
+          NotificationsSettingsScreen(controller: widget.controller),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -205,211 +201,223 @@ class _ProviderQuotaScreenState extends State<ProviderQuotaScreen> {
       final snapshot = _overview.snapshot;
       final canRefresh = _overview.canRead && !_overview.loading;
       final detached = _overview.detached;
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.quotaTitle),
-          actions: [
-            IconButton(
-              tooltip: l10n.quotaMonitorTitle,
-              icon: const Icon(AppIconography.activity),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) =>
-                      QuotaMonitorScreen(controller: widget.controller),
-                ),
-              ),
-            ),
-            if (_overview.consented)
-              IconButton(
-                tooltip: l10n.quotaRefresh,
-                onPressed: canRefresh
-                    ? () => unawaited(_overview.refresh())
-                    : null,
-                icon: const Icon(AppIconography.retry),
-              ),
-          ],
-        ),
-        body: SafeArea(
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 860),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                children: [
+      final refresh = _overview.consented
+          ? IconButton(
+              tooltip: l10n.quotaRefresh,
+              onPressed: canRefresh
+                  ? () => unawaited(_overview.refresh())
+                  : null,
+              icon: const Icon(AppIconography.retry),
+            )
+          : null;
+      final body = SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 860),
+            child: ListView(
+              controller: _scroll,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              children: [
+                // Inside Usage there is no app bar of its own to hold
+                // Refresh, so it sits beside the description.
+                if (widget.embedded && refresh != null)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: Text(l10n.quotaDescription)),
+                      refresh,
+                    ],
+                  )
+                else
                   Text(l10n.quotaDescription),
+                const SizedBox(height: 16),
+                if (detached)
+                  _Notice(text: l10n.quotaSourceChanged)
+                else ...[
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final provider in QuotaProvider.values)
+                        ChoiceChip(
+                          label: Text(switch (provider) {
+                            QuotaProvider.codex => l10n.quotaCodex,
+                            QuotaProvider.claude => l10n.quotaClaude,
+                            QuotaProvider.minimax => l10n.quotaMiniMax,
+                            QuotaProvider.glm => l10n.quotaGlm,
+                          }),
+                          selected: _overview.provider == provider,
+                          onSelected: (_) {
+                            if (_overview.provider == provider) {
+                              return;
+                            }
+                            setState(() => _trusted = false);
+                            _overview.selectProvider(provider);
+                          },
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
-                  if (detached)
-                    _Notice(text: l10n.quotaSourceChanged)
-                  else ...[
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final provider in QuotaProvider.values)
-                          ChoiceChip(
-                            label: Text(switch (provider) {
-                              QuotaProvider.codex => l10n.quotaCodex,
-                              QuotaProvider.claude => l10n.quotaClaude,
-                              QuotaProvider.minimax => l10n.quotaMiniMax,
-                              QuotaProvider.glm => l10n.quotaGlm,
-                            }),
-                            selected: _overview.provider == provider,
-                            onSelected: (_) {
-                              if (_overview.provider == provider) {
-                                return;
-                              }
-                              setState(() => _trusted = false);
-                              _overview.selectProvider(provider);
-                            },
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(l10n.quotaSource, style: theme.textTheme.titleSmall),
-                    const SizedBox(height: 4),
+                  Text(l10n.quotaSource, style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 4),
+                  Text(
+                    _source(l10n),
+                    textDirection: _source(l10n) == l10n.quotaUnknownSource
+                        ? null
+                        : TextDirection.ltr,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  if (!_overview.providerSupported)
+                    _Notice(text: l10n.quotaClaudeUnavailable)
+                  else if (!_overview.consented) ...[
                     Text(
-                      _source(l10n),
-                      textDirection: _source(l10n) == l10n.quotaUnknownSource
-                          ? null
-                          : TextDirection.ltr,
-                      style: theme.textTheme.bodyMedium,
+                      l10n.quotaSetupTitle,
+                      style: theme.textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 16),
-                    if (!_overview.providerSupported)
-                      _Notice(text: l10n.quotaClaudeUnavailable)
-                    else if (!_overview.consented) ...[
-                      Text(
-                        l10n.quotaSetupTitle,
-                        style: theme.textTheme.titleMedium,
+                    const SizedBox(height: 8),
+                    Text(l10n.quotaSetupDescription),
+                    const SizedBox(height: 12),
+                    SelectableText(
+                      textDirection: TextDirection.ltr,
+                      quotaPathFor(_overview.provider),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontFamily: AppTheme.monoFamily,
                       ),
-                      const SizedBox(height: 8),
-                      Text(l10n.quotaSetupDescription),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(l10n.quotaSetupGuide),
+                    if (_overview.setupNeeded) ...[
                       const SizedBox(height: 12),
-                      SelectableText(
-                        textDirection: TextDirection.ltr,
-                        quotaPathFor(_overview.provider),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontFamily: AppTheme.monoFamily,
+                      _Notice(text: l10n.quotaSetupNeeded),
+                    ],
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      title: Text(l10n.quotaConsent),
+                      value: _trusted,
+                      onChanged: _overview.setupNeeded
+                          ? null
+                          : (value) =>
+                                setState(() => _trusted = value ?? false),
+                    ),
+                    FilledButton.icon(
+                      onPressed: !_trusted || _overview.setupNeeded
+                          ? null
+                          : () {
+                              // The reading replaces the setup text above;
+                              // the monitoring section below keeps the list
+                              // long, so without this the person is left
+                              // looking at it instead of the result.
+                              if (_scroll.hasClients) _scroll.jumpTo(0);
+                              unawaited(_overview.allowAndRefresh());
+                            },
+                      icon: const Icon(AppIconography.speed),
+                      label: Text(l10n.quotaRead),
+                    ),
+                  ] else ...[
+                    if (_overview.loading) ...[
+                      LinearProgressIndicator(
+                        semanticsLabel: l10n.quotaLoading,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (_overview.failure case final failure?) ...[
+                      _Notice(text: _failure(failure, l10n), error: true),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton(
+                          onPressed: canRefresh
+                              ? () => unawaited(_overview.refresh())
+                              : null,
+                          child: Text(l10n.quotaRefresh),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(l10n.quotaSetupGuide),
-                      if (_overview.setupNeeded) ...[
-                        const SizedBox(height: 12),
-                        _Notice(text: l10n.quotaSetupNeeded),
-                      ],
-                      CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        title: Text(l10n.quotaConsent),
-                        value: _trusted,
-                        onChanged: _overview.setupNeeded
-                            ? null
-                            : (value) =>
-                                  setState(() => _trusted = value ?? false),
-                      ),
-                      FilledButton.icon(
-                        onPressed: !_trusted || _overview.setupNeeded
-                            ? null
-                            : () => unawaited(_overview.allowAndRefresh()),
-                        icon: const Icon(AppIconography.speed),
-                        label: Text(l10n.quotaRead),
-                      ),
-                    ] else ...[
-                      if (_overview.loading) ...[
-                        LinearProgressIndicator(
-                          semanticsLabel: l10n.quotaLoading,
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      if (_overview.failure case final failure?) ...[
-                        _Notice(text: _failure(failure, l10n), error: true),
+                    ],
+                    if (snapshot != null) ...[
+                      if (snapshot.canShowWindows)
                         Align(
                           alignment: AlignmentDirectional.centerStart,
                           child: TextButton(
-                            onPressed: canRefresh
-                                ? () => unawaited(_overview.refresh())
-                                : null,
-                            child: Text(l10n.quotaRefresh),
+                            onPressed: _overview.snapshotIsStale
+                                ? null
+                                : _enroll,
+                            child: Text(l10n.quotaMonitorEnable),
                           ),
                         ),
-                      ],
-                      if (snapshot != null) ...[
-                        if (snapshot.canShowWindows)
-                          Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: TextButton(
-                              onPressed: _overview.snapshotIsStale
-                                  ? null
-                                  : _enroll,
-                              child: Text(l10n.quotaMonitorEnable),
-                            ),
-                          ),
-                        if (_overview.budgets.failed)
-                          _Notice(
-                            text: l10n.quotaBudgetSaveFailed,
-                            error: true,
-                          ),
-                        if (_overview.budgets.attentionVisible &&
-                            !_overview.snapshotIsStale)
-                          _Notice(text: l10n.quotaBudgetAttention),
-                        if (!snapshot.canShowWindows)
-                          _Notice(text: _status(snapshot.status, l10n))
-                        else
-                          _QuotaReport(
-                            snapshot: snapshot,
-                            stale: _overview.snapshotIsStale,
-                            now: _overview.clock(),
-                            budgets: _overview.budgets,
-                          ),
-                      ],
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: _overview.budgets.saving
-                            ? null
-                            : () async {
-                                final clear = await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text(l10n.quotaBudgetClearAll),
-                                    content: Text(
-                                      l10n.quotaBudgetClearDescription,
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context, false),
-                                        child: Text(l10n.workCancel),
-                                      ),
-                                      FilledButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context, true),
-                                        child: Text(l10n.quotaBudgetClearAll),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (clear == true) {
-                                  await _overview.budgets.clearAll();
-                                }
-                              },
-                        child: Text(l10n.quotaBudgetClearAll),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          setState(() => _trusted = false);
-                          _overview.disable();
-                        },
-                        child: Text(l10n.quotaForgetConsent),
-                      ),
+                      if (_overview.budgets.failed)
+                        _Notice(text: l10n.quotaBudgetSaveFailed, error: true),
+                      if (_overview.budgets.attentionVisible &&
+                          !_overview.snapshotIsStale)
+                        _Notice(text: l10n.quotaBudgetAttention),
+                      if (!snapshot.canShowWindows)
+                        _Notice(text: _status(snapshot.status, l10n))
+                      else
+                        _QuotaReport(
+                          snapshot: snapshot,
+                          stale: _overview.snapshotIsStale,
+                          now: _overview.clock(),
+                          budgets: _overview.budgets,
+                        ),
                     ],
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: _overview.budgets.saving
+                          ? null
+                          : () async {
+                              final clear = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text(l10n.quotaBudgetClearAll),
+                                  content: Text(
+                                    l10n.quotaBudgetClearDescription,
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: Text(l10n.workCancel),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: Text(l10n.quotaBudgetClearAll),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (clear == true) {
+                                await _overview.budgets.clearAll();
+                              }
+                            },
+                      child: Text(l10n.quotaBudgetClearAll),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _trusted = false);
+                        _overview.disable();
+                      },
+                      child: Text(l10n.quotaForgetConsent),
+                    ),
                   ],
                 ],
-              ),
+                // Monitored sources belong to any saved server, so they
+                // stay listed when this server's reading is unavailable.
+                const Divider(height: 48),
+                QuotaMonitorSection(
+                  controller: widget.controller,
+                  onOpenNotifications: _openNotifications,
+                ),
+              ],
             ),
           ),
         ),
+      );
+      if (widget.embedded) return body;
+      return Scaffold(
+        appBar: AppBar(title: Text(l10n.quotaTitle), actions: [?refresh]),
+        body: body,
       );
     },
   );

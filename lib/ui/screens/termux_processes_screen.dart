@@ -16,6 +16,7 @@ import '../../termux/processes.dart';
 import '../app_theme.dart';
 import '../desktop/desktop_interaction.dart';
 import '../widgets/confirm_sheet.dart';
+import '../widgets/safety_confirms.dart';
 import '../widgets/product_states.dart';
 import 'termux_setup_screen.dart';
 
@@ -108,25 +109,13 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
     }
   }
 
-  Future<void> _stopProcess(
-    TermuxProcess process, {
-    required bool confirm,
-  }) async {
-    final l10n = _copy(context);
-    if (confirm) {
-      final confirmed = await showConfirmSheet(
-        context,
-        title: l10n.termuxProcsStopOneTitle(process.name),
-        message: l10n.termuxProcsStopOneBody,
-        confirmLabel: l10n.termuxProcsStop,
-        cancelLabel: l10n.termuxProcsKeep,
-        icon: AppIcons.stop,
-        destructive: true,
-        sheetKey: const Key('termux-procs-confirm'),
-        confirmKey: const Key('termux-procs-confirm-stop'),
-      );
-      if (!confirmed || !mounted) return;
-    }
+  Future<void> _stopProcess(TermuxProcess process) async {
+    final confirmed = await confirmStopProcess(
+      context,
+      processName: process.name,
+      orphan: process.isOrphan,
+    );
+    if (!confirmed || !mounted) return;
     await _runStop(() => TermuxProcesses.stopPid(process.pid));
   }
 
@@ -266,9 +255,7 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
                   ),
                   onPressed: () {
                     Navigator.pop(sheetContext);
-                    unawaited(
-                      _stopProcess(process, confirm: !process.isOrphan),
-                    );
+                    unawaited(_stopProcess(process));
                   },
                   icon: const Icon(AppIcons.stop),
                   label: Text(l10n.termuxProcsStop),
@@ -414,7 +401,7 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
           process: process,
           enabled: !_busy,
           onOpen: () => _showDetails(process),
-          onStop: () => _stopProcess(process, confirm: !process.isOrphan),
+          onStop: () => _stopProcess(process),
           onProtected: _openServerControls,
         ),
     ];

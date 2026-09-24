@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../app_theme.dart';
+import '../setup_commands.dart';
 import '../widgets/product_states.dart';
 import 'connection_help_screen.dart';
 
@@ -46,7 +47,10 @@ class GuideScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(_sharedCopy(context).e7SharedInATerminalOnTheComputerWhere),
-              const Cmd('opencode2 pair', key: ValueKey('guide-pair-command')),
+              const Cmd(
+                SetupCommands.pair,
+                key: ValueKey('guide-pair-command'),
+              ),
               Text(_sharedCopy(context).e7SharedItStartsTheServerAndPrintsA),
             ],
           ),
@@ -116,9 +120,7 @@ class GuideScreen extends StatelessWidget {
                       context,
                     ).e7SharedServersStartedWithOpencodeServeDoNot,
                   ),
-                  const Cmd(
-                    'OPENCODE_SERVER_PASSWORD=your-secret \\\n  opencode serve --hostname 127.0.0.1 --port 4096',
-                  ),
+                  const Cmd(SetupCommands.legacyServe),
                   Text(
                     _sharedCopy(
                       context,

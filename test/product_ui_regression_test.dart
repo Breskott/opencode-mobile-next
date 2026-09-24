@@ -21,6 +21,8 @@ import 'package:opencode_mobile/ui/widgets/file_preview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xterm/xterm.dart';
 
+import 'support/first_run_path.dart';
+
 class _TestApi extends OpenCodeApi {
   _TestApi({this.files, this.findFiles, this.contents = const {}})
     : super(baseUrl: 'http://localhost');
@@ -618,7 +620,9 @@ void main() {
     expect(reviewPrompt, contains('Review `README.md`'));
     expect(reviewPrompt, contains('Keep this wording precise.'));
     expect(
-      find.text('Review comment added. Return to the chat to continue.'),
+      find.text(
+        'Review comment added. Return to the conversation to continue.',
+      ),
       findsOneWidget,
     );
   });
@@ -687,7 +691,7 @@ void main() {
     expect(copiedText, contains('Review `README.md`'));
     expect(copiedText, contains('Use the approved wording.'));
     expect(
-      find.text('Review comment copied. Paste it into a chat.'),
+      find.text('Review comment copied. Paste it into a conversation.'),
       findsOneWidget,
     );
   });
@@ -1149,7 +1153,9 @@ void main() {
     expect(attachedData?.mimeType, 'text/markdown');
     expect(attachedData?.text, body);
     expect(
-      find.text('review.md attached. Return to the chat to add your comment.'),
+      find.text(
+        'review.md attached. Return to the conversation to add your comment.',
+      ),
       findsOneWidget,
     );
   });
@@ -1277,7 +1283,7 @@ void main() {
     expect(repository.queries, ['MissingSymbol']);
     expect(find.text('No symbols found'), findsOneWidget);
     expect(
-      find.textContaining('do not support workspace-wide symbol search'),
+      find.textContaining('do not support project-wide symbol search'),
       findsOneWidget,
     );
   });
@@ -1640,10 +1646,10 @@ void main() {
         child: const MaterialApp(home: ServersScreen()),
       ),
     );
-    await tester.tap(find.byKey(const ValueKey('welcome-connect-card')));
-    await tester.pumpAndSettle();
+    await openFirstRunConnect(tester);
 
-    expect(find.text('Add server'), findsOneWidget);
+    // The connect screen is titled with the agent the person chose.
+    expect(find.widgetWithText(AppBar, 'OpenCode'), findsOneWidget);
     expect(find.byKey(const ValueKey('server-profile-editor')), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.text('Server URL'), findsOneWidget);

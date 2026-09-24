@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show compute, listEquals;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -28,6 +28,8 @@ import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/offline_queue.dart';
 import '../../state/connection.dart';
+import '../../state/conversation_nudges.dart';
+import '../../state/nudges.dart';
 import '../../state/review_handoff.dart';
 import '../../state/prompt_shelf.dart';
 import '../../state/session_drafts.dart';
@@ -38,20 +40,25 @@ import '../../voice/controller.dart';
 import '../../voice/voice_ui.dart';
 import '../../voice/read_aloud.dart';
 import '../navigation/chat_route.dart';
+import '../../domain/agent_error_text.dart';
+import '../../domain/office_text.dart';
+import '../agent_error_words.dart';
 import '../app_theme.dart';
 import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../desktop/file_drop.dart';
 import '../desktop/shortcuts.dart';
+import '../search/search_index.dart';
 import '../widgets/agent_color.dart';
-import '../widgets/appearance_picker.dart';
 import '../widgets/connection_status_banner.dart';
-import '../widgets/entrance.dart';
 import '../widgets/confirm_sheet.dart';
+import '../widgets/safety_confirms.dart';
 import '../widgets/diff_view.dart';
 import '../widgets/file_preview.dart';
+import '../widgets/first_reply_notify_card.dart';
 import '../widgets/info_label.dart';
 import '../widgets/markdown.dart';
+import '../widgets/nudge_card.dart';
 import '../widgets/pickers.dart';
 import '../widgets/model_shortcuts.dart';
 import '../widgets/product_states.dart';
@@ -84,13 +91,12 @@ import 'staged_revert_screen.dart';
 import 'session_destination_sheet.dart';
 import 'session_relations_screen.dart';
 import 'settings_screen.dart';
+import 'capabilities_screen.dart';
 import 'terminal_screen.dart';
-import 'tools_screen.dart';
 import 'web_sources_screen.dart';
 import 'context_capsule_screen.dart';
 import '../early_l10n.dart';
 
-part 'chat/sessions_tab.dart';
 part 'chat/timeline_sheet.dart';
 part 'chat/transcript_find.dart';
 part 'chat/command_launcher.dart';
@@ -104,6 +110,7 @@ part 'chat/attention_card.dart';
 part 'chat/approvals_sheet.dart';
 part 'chat/read_aloud.dart';
 part 'chat/voice_conversation.dart';
+part 'chat/nudge_slot.dart';
 
 const _maxAttachmentCount = 5;
 const _maxAttachmentBytes = 10 * 1024 * 1024;
@@ -208,6 +215,10 @@ class ChatScreen extends StatefulWidget {
   final List<PromptAttachment> initialAttachments;
   final bool discardIfUntouched;
 
+  /// Opens with the keyboard up. Only the conversation first run lands in
+  /// asks for this; everywhere else the person chooses when to type.
+  final bool focusComposer;
+
   /// An enclosing experience can provide its own navigation and task guidance.
   /// Defaults preserve the ordinary standalone chat presentation.
   final bool showAppBar;
@@ -224,6 +235,7 @@ class ChatScreen extends StatefulWidget {
     this.initialText = '',
     this.initialAttachments = const [],
     this.discardIfUntouched = false,
+    this.focusComposer = false,
     this.showAppBar = true,
     this.emptyState,
     this.handoffStore,
@@ -362,6 +374,14 @@ class _ChatScreenState extends State<ChatScreen>
   String? _readAloudVoiceID;
   ReadAloudFailure? _lastReadAloudFailure;
   void _updateSpeech(VoidCallback change) => setState(change);
+  // One-time nudges (UX plan 5.8): the rules live in the watcher, the screen
+  // only reports facts and renders the slot. See chat/nudge_slot.dart.
+  ConversationNudgeWatcher? _nudgeWatcher;
+  bool _nudgeObserveQueued = false;
+  void _nudgesChanged() {
+    if (mounted) setState(() {});
+  }
+
   int _promptContentRevision = 0;
   bool get _promptShelfBusy =>
       _photoBusy ||
@@ -532,6 +552,7 @@ class _ChatScreenState extends State<ChatScreen>
     _ChatCommandAction.redo => _conn.capabilities.sessionRevert,
     _ChatCommandAction.references => _conn.capabilities.fileBrowsing,
     _ChatCommandAction.integrations ||
+    _ChatCommandAction.mcpServers ||
     _ChatCommandAction.skills => _conn.capabilities.serverCatalog,
     _ChatCommandAction.model => true,
     _ => true,
@@ -581,6 +602,11 @@ class _ChatScreenState extends State<ChatScreen>
     if (!_conn.isIsolated) {
       _handoff.store.addListener(_onHandoffChanged); // UX-103 review handoff
     }
+    if (widget.focusComposer) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focus.requestFocus();
+      });
+    }
     _load();
     if (_conn.capabilities.serverCatalog) {
       unawaited(_loadServerCommands());
@@ -589,6 +615,7 @@ class _ChatScreenState extends State<ChatScreen>
     unawaited(_loadRunningShells());
     _sub = _conn.events.listen(_onEvent);
     _wasBusy = _conn.busySessions.contains(widget.sessionID);
+    _startNudges();
     final injectedVoice = widget.voiceController;
     if (!_conn.isIsolated && injectedVoice != null) {
       _voice = injectedVoice;
@@ -1428,6 +1455,13 @@ class _ChatScreenState extends State<ChatScreen>
             if (msg.role == 'assistant' && msg.errorText != null) {
               _promptError = msg.errorText;
               _recoverFromPromptError(msg.errorText);
+            } else if (msg.role == 'assistant' &&
+                _promptError != null &&
+                !_messages.any((known) => known.info.id == msg.id)) {
+              // A new step after the error: the turn moved on (the server
+              // retried, or the agent carried on). A banner still saying
+              // something is wrong would now be false.
+              _promptError = null;
             }
             _messageVersions[msg.id] = ++_eventVersion;
             if (!_reconcilePendingMessage(
@@ -1788,6 +1822,16 @@ class _ChatScreenState extends State<ChatScreen>
       _historyRefreshPending = false;
       unawaited(_load());
     });
+  }
+
+  /// Whether two error texts are the same problem: the same words, or the
+  /// same recognised cause (a banner from a session event and the reply's
+  /// own error often differ by a prefix or a trailing sentence).
+  static bool _sameError(String? a, String b) {
+    if (a == null) return false;
+    if (a.trim() == b.trim()) return true;
+    final cause = classifyAgentError(a);
+    return cause != null && cause == classifyAgentError(b);
   }
 
   bool _currentHistory(int generation, _HistoryScope scope) =>
@@ -2177,13 +2221,16 @@ class _ChatScreenState extends State<ChatScreen>
     for (var i = 0; i < files.length; i++) {
       final part = files[i];
       final attachment = pending.attachments[i];
-      if ((part.filename ?? '') != attachment.filename) return false;
-      if (part.mime?.isNotEmpty == true && part.mime != attachment.mime) {
-        return false;
-      }
-      if (part.url?.isNotEmpty == true && part.url != attachment.url) {
-        return false;
-      }
+      // The name is what identifies an attachment across the round trip. A
+      // server that stores none cannot contradict the one that was sent.
+      final name = part.filename ?? '';
+      if (name.isNotEmpty && name != attachment.filename) return false;
+      // The URL and the type are deliberately not compared. The app sends a
+      // `data:` URI (or a path); a server keeps the file itself and answers
+      // with its own location, and may name the type differently
+      // (`image/jpg`). Requiring them to match left the optimistic bubble
+      // unreconciled, so the same prompt appeared again after every turn
+      // whenever photos were attached.
     }
     return true;
   }
@@ -2388,6 +2435,40 @@ class _ChatScreenState extends State<ChatScreen>
     _focus.requestFocus();
   }
 
+  /// Withdraws this conversation's steering messages that the agent has not
+  /// picked up yet and returns their text, oldest first, so the message being
+  /// sent can carry them. Only plain-text steers are taken: one with files
+  /// stays as it is, as does anything queued for after the run (that was a
+  /// deliberate choice of timing). An item the agent took in the meantime
+  /// (409) is simply not ours to merge any more.
+  Future<List<String>> _takeBackWaitingSteers() async {
+    if (_conn.isIsolated || !_conn.supportsInbox) return const [];
+    if (!_conn.busySessions.contains(widget.sessionID)) return const [];
+    final waiting =
+        _conn
+            .inboxItemsFor(widget.sessionID)
+            .where(
+              (item) =>
+                  item.type == 'user' &&
+                  item.delivery == Api2Delivery.steer &&
+                  (item.promptText ?? '').trim().isNotEmpty &&
+                  (item.payload['files'] is! List ||
+                      (item.payload['files'] as List).isEmpty),
+            )
+            .toList()
+          ..sort((a, b) => (a.timeCreated ?? 0).compareTo(b.timeCreated ?? 0));
+    final texts = <String>[];
+    for (final item in waiting) {
+      try {
+        final text = await _conn.cancelInboxItem(widget.sessionID, item.id);
+        if (text != null && text.trim().isNotEmpty) texts.add(text.trim());
+      } catch (_) {
+        // Delivered already, or the server said no: it goes out on its own.
+      }
+    }
+    return texts;
+  }
+
   /// Flips a pending server send between steer and queue delivery.
   Future<void> _flipInboxDelivery(Api2InboxItem item) async {
     final next = item.delivery == Api2Delivery.steer
@@ -2537,7 +2618,17 @@ class _ChatScreenState extends State<ChatScreen>
       );
       return;
     }
-    final text = _composer.text.trim();
+    // Several steering messages in a row are one thought, typed in pieces.
+    // Left as separate inbox items they reach the agent as separate
+    // interruptions; taken back and sent together they are one.
+    final earlier = delivery == PromptDelivery.steer
+        ? await _takeBackWaitingSteers()
+        : const <String>[];
+    if (!mounted) return;
+    final text = [
+      ...earlier,
+      _composer.text.trim(),
+    ].where((piece) => piece.isNotEmpty).join('\n\n');
     if (text.isEmpty && _attachments.isEmpty) {
       setState(() => _sending = false);
       return;
@@ -3131,6 +3222,10 @@ class _ChatScreenState extends State<ChatScreen>
     }
     setState(() => _photoBusy = true);
     try {
+      if (source == ImageSource.gallery) {
+        await _pickGalleryPhotos();
+        return;
+      }
       final photo = await _conn.promptPhotos.pick(
         profileID: _draftProfileID,
         sessionID: widget.sessionID,
@@ -3146,6 +3241,153 @@ class _ChatScreenState extends State<ChatScreen>
     } finally {
       if (mounted) setState(() => _photoBusy = false);
     }
+  }
+
+  /// Standing facts about this conversation's run, as one line of labelled
+  /// chips above the composer: that approvals are automatic, and that the
+  /// running work can be sent to the background. They used to be a bar and a
+  /// link of their own, repeated above the composer on every running turn.
+  Widget _composerStatusStrip() {
+    final approval = _conn.isIsolated
+        ? null
+        : _conn.autoApprovalFor(widget.sessionID);
+    // A request waiting for a person has its own card, which also says when
+    // an automatic reply failed; the chip steps aside until it is answered.
+    final showApproval =
+        approval != null &&
+        approval.automatic &&
+        _conn.permissionsForSession(widget.sessionID).isEmpty;
+    final showBackground = _canBackgroundWork || _backgrounding;
+    // Context the server will hand the agent at its next step (a finished
+    // background command, changed instructions). Nothing to do about it, so
+    // it is a label, not a bubble of its own above the composer.
+    final pendingContext = _conn.isIsolated
+        ? 0
+        : _conn
+              .inboxItemsFor(widget.sessionID)
+              .where((item) => item.type != 'user')
+              .length;
+    if (!showApproval && !showBackground && pendingContext == 0) {
+      return const SizedBox.shrink();
+    }
+    final theme = Theme.of(context);
+    final strings = _chatL10n(context);
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 0),
+        // One line, always. Short labels keep all three on a phone's width;
+        // at large text sizes the line scrolls sideways instead of stacking.
+        child: SingleChildScrollView(
+          key: const Key('composer-status-strip'),
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            spacing: 8,
+            children: [
+              if (pendingContext > 0)
+                Chip(
+                  key: const Key('pending-context-chip'),
+                  materialTapTargetSize: MaterialTapTargetSize.padded,
+                  side: BorderSide.none,
+                  backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                  avatar: Icon(
+                    AppIconography.sparkle,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  label: Text(
+                    pendingContext > 1
+                        ? '${strings.chatStripContextPending} · $pendingContext'
+                        : strings.chatStripContextPending,
+                    style: theme.textTheme.labelMedium,
+                  ),
+                ),
+              if (showApproval)
+                _AutoApprovalIndicator(
+                  key: const ValueKey('auto-approval-indicator-slot'),
+                  effective: approval,
+                  connected: _conn.isConnected,
+                  approved: _conn.autoApprovedFor(widget.sessionID),
+                  onOpen: () => unawaited(
+                    showSessionApprovalsSheet(
+                      context,
+                      controller: _conn,
+                      sessionID: widget.sessionID,
+                    ),
+                  ),
+                ),
+              if (showBackground)
+                Tooltip(
+                  message: strings.backgroundWorkShortcut,
+                  child: ActionChip(
+                    key: const Key('background-running-work'),
+                    onPressed: _backgrounding ? null : _backgroundRunningWork,
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
+                    side: BorderSide.none,
+                    backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                    avatar: _backgrounding
+                        ? const SizedBox.square(
+                            dimension: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            AppIconography.lowPriority,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
+                    label: Text(
+                      strings.chatStripBackground,
+                      style: theme.textTheme.labelMedium,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Gallery: as many photos as the draft still has room for, in one visit.
+  Future<void> _pickGalleryPhotos() async {
+    final picked = await _conn.promptPhotos.pickMany(
+      profileID: _draftProfileID,
+      sessionID: widget.sessionID,
+      directory: _draftDirectory,
+      workspace: _draftWorkspace,
+      limit: _maxAttachmentCount - _attachments.length,
+    );
+    if (!mounted || picked.isEmpty) return;
+    if (_draftLocation != _conn.locationRevision ||
+        _conn.profile?.id != _draftProfileID) {
+      _showActionError(_chatL10n(context).photoOtherLocation);
+      return;
+    }
+    var bytes = _attachments.fold<int>(
+      0,
+      (total, a) => total + _attachmentByteLength(a),
+    );
+    final added = <PromptAttachment>[];
+    var full = false;
+    for (final attachment in picked) {
+      if (_attachments.any((a) => a.url == attachment.url) ||
+          added.any((a) => a.url == attachment.url)) {
+        continue;
+      }
+      final size = _attachmentByteLength(attachment);
+      if (_attachments.length + added.length >= _maxAttachmentCount ||
+          bytes + size > _maxAggregateAttachmentBytes) {
+        full = true;
+        break;
+      }
+      bytes += size;
+      added.add(attachment);
+    }
+    if (added.isNotEmpty) {
+      setState(() => _attachments.addAll(added));
+      await _persistDraft();
+    }
+    if (full && mounted) _showActionError(_chatL10n(context).photoDraftFull);
   }
 
   Future<void> _applyPendingPhoto(
@@ -3304,6 +3546,9 @@ class _ChatScreenState extends State<ChatScreen>
     if (bytes == null) {
       throw ProductException(strings.chatUiEachAttachmentMustBe10MBOr);
     }
+    if (isOfficeDocument(file.name)) {
+      return _officeAttachment(file.name, bytes);
+    }
     final mime = promptAttachmentMime(filename: file.name, bytes: bytes);
     if (mime == null) {
       throw ProductException(unsupportedAttachment);
@@ -3314,6 +3559,53 @@ class _ChatScreenState extends State<ChatScreen>
       url: 'data:$mime;base64,${base64Encode(bytes)}',
     );
     return attachment;
+  }
+
+  /// A workbook or Word document, attached as the text it contains. No model
+  /// takes these files as they are; read on the phone, a sheet is CSV and a
+  /// document is its paragraphs, which an agent can work with.
+  Future<PromptAttachment> _officeAttachment(
+    String filename,
+    Uint8List bytes,
+  ) async {
+    final strings = _chatL10n(context);
+    final OfficeText converted;
+    try {
+      // Off the UI thread: a large sheet is a lot of XML.
+      converted = await compute(
+        (({String name, Uint8List bytes}) input) =>
+            officeDocumentAsText(input.name, input.bytes),
+        (name: filename, bytes: bytes),
+      );
+    } on FormatException {
+      throw ProductException(strings.chatAttachmentOfficeUnreadable(filename));
+    }
+    if (converted.text.isEmpty) {
+      throw ProductException(strings.chatAttachmentOfficeEmpty(filename));
+    }
+    final spreadsheet = !filename.toLowerCase().endsWith('.docx');
+    final text = [
+      strings.chatAttachmentOfficeHeader(filename),
+      if (converted.truncated) strings.chatAttachmentOfficeTruncated,
+      '',
+      converted.text,
+    ].join('\n');
+    if (mounted) {
+      _showComposerNote(
+        spreadsheet
+            ? strings.chatAttachmentSheetAttached(
+                filename,
+                converted.sections,
+                converted.lines,
+              )
+            : strings.chatAttachmentDocumentAttached(filename),
+      );
+    }
+    return PromptAttachment(
+      mime: 'text/plain',
+      filename: '$filename.${spreadsheet ? 'csv' : 'txt'}',
+      url: 'data:text/plain;base64,${base64Encode(utf8.encode(text))}',
+    );
   }
 
   Future<void> _openPromptEditor() async {
@@ -3452,7 +3744,10 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
+  /// Every entry point (banner, session menu, /unshare) lands here, so the
+  /// confirmation cannot be skipped by choosing a different one.
   Future<void> _stopSharing() async {
+    if (!await confirmStopSharing(context) || !mounted) return;
     try {
       final repository = await _requireActionRepository();
       await repository.unshareSession(widget.sessionID);
@@ -3885,16 +4180,11 @@ class _ChatScreenState extends State<ChatScreen>
         text: _messageText(message),
       );
     }
-    var start = index;
-    var end = index;
-    while (start > 0 && _messages[start - 1].info.role == 'assistant') {
-      start--;
-    }
-    while (end + 1 < _messages.length &&
-        _messages[end + 1].info.role == 'assistant') {
-      end++;
-    }
-    final reply = _messages.getRange(start, end + 1);
+    // The reply is the whole turn; a notice in the middle of it (context
+    // added, project moved) is not where it ends.
+    final reply = _turnSteps(_messages, index);
+    final start = _messages.indexOf(reply.first);
+    final end = _messages.indexOf(reply.last);
     final unfinished =
         _conn.busySessions.contains(widget.sessionID) &&
         reply.any((item) => item.info.time?.isDone != true);
@@ -4119,6 +4409,24 @@ class _ChatScreenState extends State<ChatScreen>
     } catch (error) {
       if (mounted) _showActionError(error);
     }
+  }
+
+  /// Whether the failed compaction at [index] is still the state of things:
+  /// it is the newest compaction notice, nothing is running, and this server
+  /// can compact on request.
+  bool _canCompactAgain(int index) {
+    if (_conn.isIsolated || !_supportsSessionCompact) return false;
+    if (_conn.busySessions.contains(widget.sessionID)) return false;
+    final part = v2VariantPart(_messages[index]);
+    if (part?.type != 'v2:compaction' || part?.toolName != 'failed') {
+      return false;
+    }
+    for (var later = index + 1; later < _messages.length; later += 1) {
+      if (v2VariantPart(_messages[later])?.type == 'v2:compaction') {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<void> _compact() async {
@@ -4726,7 +5034,7 @@ class _ChatScreenState extends State<ChatScreen>
           context,
         ).chatUiInspectMCPStatusAuthenticationAndResources,
         group: 'OpenCode',
-        action: _ChatCommandAction.integrations,
+        action: _ChatCommandAction.mcpServers,
       ),
       _ChatCommand.mobile(
         slash: 'connect',
@@ -5210,11 +5518,28 @@ class _ChatScreenState extends State<ChatScreen>
           );
         }
         return;
+      // "/connect" and "/mcps" land on the same screens as Settings › Agent
+      // setup › Providers and › MCP, so each has one home.
       case _ChatCommandAction.integrations:
         if (mounted) {
           await Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => IntegrationsScreen(controller: _conn),
+              builder: (_) => IntegrationsScreen(
+                controller: _conn,
+                mode: IntegrationsMode.providers,
+              ),
+            ),
+          );
+        }
+        return;
+      case _ChatCommandAction.mcpServers:
+        if (mounted) {
+          await Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => IntegrationsScreen(
+                controller: _conn,
+                mode: IntegrationsMode.mcp,
+              ),
             ),
           );
         }
@@ -5244,10 +5569,14 @@ class _ChatScreenState extends State<ChatScreen>
         }
         return;
       case _ChatCommandAction.tools:
+        // Same destination as Settings › Agent setup › Commands & tools,
+        // opened on its Tools tab (index 1 whenever the inventory exists,
+        // which is also the gate for this command).
         if (mounted) {
           await Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => ToolsScreen(controller: _conn),
+              builder: (_) =>
+                  CapabilitiesScreen(controller: _conn, initialTab: 1),
             ),
           );
         }
@@ -5265,10 +5594,12 @@ class _ChatScreenState extends State<ChatScreen>
         }
         return;
       case _ChatCommandAction.status:
+        // "/status" means this server's health, not all of Settings: open
+        // the hub's Connection › This server screen.
         if (mounted) {
           await Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => SettingsScreen(controller: _conn),
+              builder: (_) => ServerSettingsScreen(controller: _conn),
             ),
           );
         }
@@ -5283,8 +5614,13 @@ class _ChatScreenState extends State<ChatScreen>
         }
         return;
       case _ChatCommandAction.appearance:
+        // Settings › Appearance, the one home of theme and language.
         if (mounted) {
-          await showAppearancePicker(context, controller: _conn);
+          await Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => AppearanceSettingsScreen(controller: _conn),
+            ),
+          );
         }
         return;
       case _ChatCommandAction.diff:
@@ -6299,14 +6635,9 @@ class _ChatScreenState extends State<ChatScreen>
   ) {
     final permission = pendingPermissions.firstOrNull;
     final question = _conn.questionForSession(widget.sessionID);
-    // Automatic approval is never silent: while the setting is on, the
-    // attention slot itself says so — even when the app is disconnected and
-    // approvals are paused — and names the last request answered. A request
-    // that needs a person takes the slot instead (its card says when an
-    // automatic reply failed); the strip returns once it is answered.
-    final approval = _conn.isIsolated
-        ? null
-        : _conn.autoApprovalFor(widget.sessionID);
+    // Automatic approval is never silent, but it is a standing fact, not an
+    // event: it lives in the chip strip above the composer
+    // ([_composerStatusStrip]), not in this slot.
     return _chatSizeTransition(
       reduceMotion: reduceMotion,
       duration: const Duration(milliseconds: 220),
@@ -6330,20 +6661,6 @@ class _ChatScreenState extends State<ChatScreen>
                   ? _RetryAttentionCard(
                       key: const ValueKey('retry-banner'),
                       retry: _retryState!,
-                    )
-                  : approval != null && approval.automatic
-                  ? _AutoApprovalIndicator(
-                      key: const ValueKey('auto-approval-indicator-slot'),
-                      effective: approval,
-                      connected: _conn.isConnected,
-                      approved: _conn.autoApprovedFor(widget.sessionID),
-                      onOpen: () => unawaited(
-                        showSessionApprovalsSheet(
-                          context,
-                          controller: _conn,
-                          sessionID: widget.sessionID,
-                        ),
-                      ),
                     )
                   : const SizedBox.shrink(
                       key: ValueKey('permission-card-none'),
@@ -6371,6 +6688,7 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   Widget build(BuildContext context) {
     _syncFind();
+    _queueNudgeObservation();
     final theme = Theme.of(context);
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final busy = _conn.busySessions.contains(widget.sessionID);
@@ -6380,6 +6698,48 @@ class _ChatScreenState extends State<ChatScreen>
         ? _queuedAfterIndex(_messages)
         : -1;
     final displayParts = _timelineDisplayParts(_messages);
+    // A prompt waiting in the server's inbox (steering, or queued behind the
+    // run) is shown once, as its waiting bubble above the composer, where
+    // it can still be flipped or cancelled. Its optimistic copy in the
+    // transcript would say the same thing a second time, and would make the
+    // running turn look finished.
+    final waiting = !_conn.isIsolated && _conn.capabilities.inbox
+        ? [
+            for (final item in _conn.inboxItemsFor(widget.sessionID))
+              if (item.type == 'user') item,
+          ]
+        : const <Api2InboxItem>[];
+    final waitingIDs = {for (final item in waiting) item.id};
+    final waitingTexts = {
+      for (final item in waiting) (item.promptText ?? '').trim(),
+    };
+    // Where the agent's latest words end. A waiting prompt is always after
+    // them; an older prompt with the same words is history and stays.
+    final lastAssistant = _messages.lastIndexWhere(
+      (message) => message.info.role == 'assistant',
+    );
+    final waitingLocalIDs = <String>{
+      if (waiting.isNotEmpty)
+        for (var i = 0; i < _messages.length; i++)
+          if (_messages[i].info.role == 'user' &&
+              v2VariantPart(_messages[i]) == null &&
+              // The server admits a prompt under the id it will keep, and
+              // the optimistic copy is swapped for that message at once, so
+              // the copy in the transcript usually carries the item's id.
+              (waitingIDs.contains(_messages[i].info.id) ||
+                  (i > lastAssistant &&
+                      waitingTexts.contains(
+                        _messageText(_messages[i]).trim(),
+                      ))))
+            _messages[i].info.id,
+    };
+    final turnActionOwners = _turnActionOwners(
+      _messages,
+      displayParts,
+      ignore: waitingLocalIDs,
+      metaAlways: _conn.transcriptTimestampsVisible,
+      running: _conn.busySessions.contains(widget.sessionID),
+    );
     final showAttachmentNote = _attachmentNoteVisible();
     final pendingPermissions = _conn.permissionsForSession(widget.sessionID);
 
@@ -6539,7 +6899,14 @@ class _ChatScreenState extends State<ChatScreen>
             // banners cannot stack three deep over the transcript: a prompt
             // error outranks subagent context, which outranks the share
             // notice (sharing stays visible in Session actions).
-            if (_promptError case final promptError?)
+            //
+            // The banner is for an error with no home in the transcript (a
+            // prompt the server refused, a session-level failure). One that
+            // a reply already carries is shown there, once, with its actions.
+            if (_promptError case final promptError?
+                when !_messages.any(
+                  (message) => _sameError(message.info.errorText, promptError),
+                ))
               _PromptErrorBanner(
                 message: promptError,
                 onDismiss: () => setState(() => _promptError = null),
@@ -6698,6 +7065,10 @@ class _ChatScreenState extends State<ChatScreen>
                                                         1 -
                                                         i;
                                                     final m = _messages[index];
+                                                    if (waitingLocalIDs
+                                                        .contains(m.info.id)) {
+                                                      return const SizedBox.shrink();
+                                                    }
                                                     if (v2VariantPart(m)
                                                         case final tagged?) {
                                                       return V2TranscriptRow(
@@ -6710,6 +7081,14 @@ class _ChatScreenState extends State<ChatScreen>
                                                             widget.sessionID,
                                                         knownSessions:
                                                             _conn.sessionsById,
+                                                        onCompactAgain:
+                                                            _canCompactAgain(
+                                                              index,
+                                                            )
+                                                            ? () => unawaited(
+                                                                _compact(),
+                                                              )
+                                                            : null,
                                                         onOpenChild:
                                                             _conn
                                                                 .capabilities
@@ -6790,6 +7169,35 @@ class _ChatScreenState extends State<ChatScreen>
                                                             ).transcriptFindCount(
                                                               _findCursor + 1,
                                                               _findHits.length,
+                                                            ),
+                                                      // One "more" control
+                                                      // per turn: under the
+                                                      // message that ends a
+                                                      // reply, never under
+                                                      // each step of it or
+                                                      // under the prompt.
+                                                      // An error with more of the
+                                                      // turn after it was got over.
+                                                      errorRecovered:
+                                                          m.info.errorText !=
+                                                              null &&
+                                                          !_endsTurn(
+                                                            _messages,
+                                                            index,
+                                                          ),
+                                                      showActions:
+                                                          turnActionOwners
+                                                              .contains(index),
+                                                      onCopy:
+                                                          _conn.isIsolated ||
+                                                              _messageCopy(
+                                                                m,
+                                                              ).text.isEmpty
+                                                          ? null
+                                                          : () => unawaited(
+                                                              _copyMessageText(
+                                                                m,
+                                                              ),
                                                             ),
                                                       onLongPress:
                                                           _conn.isIsolated
@@ -6978,6 +7386,22 @@ class _ChatScreenState extends State<ChatScreen>
                                 onAnswer: () =>
                                     unawaited(_openForm(pendingForm)),
                               ),
+                            // The one nudge slot: below whatever needs the
+                            // person, above the composer. It gives way to a
+                            // short (keyboard) layout like every quiet strip.
+                            // At large text the sentence is tall: it takes at
+                            // most a third of the body and scrolls, ending on
+                            // its two controls.
+                            if (bodyConstraints.maxHeight >= 420)
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight: bodyConstraints.maxHeight / 3,
+                                ),
+                                child: SingleChildScrollView(
+                                  reverse: true,
+                                  child: _nudgeSlot(context),
+                                ),
+                              ),
                             // The offline-draft half of the strip is v1-safe;
                             // only the inbox bubbles are v2-only (§7 rule 5).
                             if ((
@@ -6985,7 +7409,16 @@ class _ChatScreenState extends State<ChatScreen>
                                     widget.sessionID,
                                   ),
                                   inbox: _conn.capabilities.inbox
-                                      ? _conn.inboxItemsFor(widget.sessionID)
+                                      // What you sent and is waiting. The
+                                      // server's own pending context
+                                      // updates are a standing fact and
+                                      // live in the chip strip.
+                                      ? _conn
+                                            .inboxItemsFor(widget.sessionID)
+                                            .where(
+                                              (item) => item.type == 'user',
+                                            )
+                                            .toList()
                                       : const <Api2InboxItem>[],
                                 )
                                 case final pendingSends
@@ -7125,52 +7558,27 @@ class _ChatScreenState extends State<ChatScreen>
                                       text: _composerNote!,
                                     ),
                             ),
-                            if (_canBackgroundWork || _backgrounding)
-                              Align(
-                                alignment: AlignmentDirectional.centerStart,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                  child: Tooltip(
-                                    message: _chatL10n(
-                                      context,
-                                    ).backgroundWorkShortcut,
-                                    child: TextButton.icon(
-                                      key: const Key('background-running-work'),
-                                      style: TextButton.styleFrom(
-                                        minimumSize: const Size(48, 48),
-                                      ),
-                                      onPressed: _backgrounding
-                                          ? null
-                                          : _backgroundRunningWork,
-                                      icon: _backgrounding
-                                          ? const SizedBox.square(
-                                              dimension: 18,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            )
-                                          : const Icon(
-                                              AppIconography.lowPriority,
-                                              size: 20,
-                                            ),
-                                      label: Text(
-                                        _backgroundSupport ==
-                                                BackgroundWorkSupport.subagents
-                                            ? _chatL10n(
-                                                context,
-                                              ).backgroundSubagentsTitle
-                                            : _chatL10n(
-                                                context,
-                                              ).backgroundWorkTitle,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                            _composerStatusStrip(),
                             if (_voiceConversation)
                               _voiceConversationControls(),
+                            // First run's one notification question; the card
+                            // is absent for everyone it is not due for.
+                            FirstReplyNotifyCard(
+                              controller: _conn,
+                              compact: compactComposer,
+                              replyCompleted:
+                                  !_conn.busySessions.contains(
+                                    widget.sessionID,
+                                  ) &&
+                                  // A reply that failed is not the moment
+                                  // to offer "get told when it's done".
+                                  _promptError == null &&
+                                  _messages.any(
+                                    (message) =>
+                                        message.info.role == 'assistant' &&
+                                        message.info.errorText == null,
+                                  ),
+                            ),
                             Center(
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(
@@ -7378,6 +7786,7 @@ class _ChatScreenState extends State<ChatScreen>
     _composer.removeListener(_scheduleDraftSave);
     WidgetsBinding.instance.removeObserver(this);
     _conn.removeListener(_onConnectionChanged);
+    _stopNudges();
     if (_conn.isIsolated) {
       _handoff.store.dispose();
     } else {

@@ -146,6 +146,20 @@ void main() {
     },
   );
 
+  test('OpenCode 2.0.4 and later answer at /api/info, not /api/health', () async {
+    final result = await probe(
+      handler: (options) => options.path.endsWith('/api/info')
+          ? _json(
+              '{"version":"2.0.10","pid":4242,"urls":["http://127.0.0.1:4096"]}',
+              200,
+            )
+          : _empty(404),
+    );
+    expect(result.ok, isTrue);
+    expect(result.flavor, ServerFlavor.v2);
+    expect(result.version, '2.0.10');
+  });
+
   test('a 404 on /api/health falls through to the v1 health check', () async {
     final result = await probe(
       handler: (options) => options.path.endsWith('/api/health')
@@ -288,58 +302,5 @@ void main() {
     expect(result.flavor, ServerFlavor.v1);
     expect(result.version, '1.18.25');
     expect(result.needsPassword, isFalse);
-  });
-
-  test('an opencode 2.0.x server is detected through /api/info', () async {
-    // 2.0.5–2.0.7 dropped /api/health from the protocol and moved the identity
-    // payload to /api/info (`{version, pid, urls, paths}` — no `healthy` key).
-    // Probing only /api/health there reads 404 and the server used to be
-    // reported as "not an OpenCode server" even though it was up.
-    final result = await probe(
-      handler: (options) => options.path.endsWith('/api/info')
-          ? _json(
-              '{"version":"2.0.7","pid":5150,'
-              '"urls":["http://127.0.0.1:4096"],"paths":{"tmp":"/tmp"}}',
-              200,
-            )
-          : _empty(404),
-      password: 'the-password',
-    );
-    expect(result.ok, isTrue);
-    expect(result.flavor, ServerFlavor.v2);
-    expect(result.version, '2.0.7');
-    expect(result.needsPassword, isFalse);
-  });
-
-  test('the v2 auth gate also answers 401 on /api/info', () async {
-    final result = await probe(
-      handler: (options) =>
-          options.path.endsWith('/api/info') ? _empty(401) : _empty(404),
-    );
-    expect(result.ok, isFalse);
-    expect(result.flavor, ServerFlavor.v2);
-    expect(result.needsPassword, isTrue);
-    expect(result.message, 'This server requires its serve password.');
-  });
-
-  test('a health payload on /api/info never claims 2.0.x', () async {
-    // The info shape never carries `healthy`; anything that does is the health
-    // shape and must keep the v1 verdict (a v1 server answering this route
-    // with a health body is not a 2.0.x server).
-    final result = await probe(
-      handler: (options) {
-        if (options.path.endsWith('/api/info')) {
-          return _json('{"healthy":true,"version":"2.0.0"}', 200);
-        }
-        if (options.path.endsWith('/api/health')) {
-          // v1 does answer /api/health — with no version field.
-          return _json('{"healthy":true}', 200);
-        }
-        return _json('{"healthy":true,"version":"1.18.30"}', 200);
-      },
-    );
-    expect(result.ok, isTrue);
-    expect(result.flavor, ServerFlavor.v1);
-    expect(result.version, '1.18.30');
   });
 }

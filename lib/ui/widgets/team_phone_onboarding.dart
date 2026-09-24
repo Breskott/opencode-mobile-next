@@ -308,6 +308,9 @@ class _TeamPhoneOnboardingBlockState extends State<TeamPhoneOnboardingBlock> {
     if (status.busy) {
       _log = await runtime.logTail();
       if (mounted) setState(_startPolling);
+    } else if (status.phase == TeamRuntimePhase.failed) {
+      // A failure the app comes back to keeps its last output on screen.
+      await _refreshLog();
     }
   }
 

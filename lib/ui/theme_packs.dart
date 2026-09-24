@@ -4,6 +4,8 @@ import '../state/profiles.dart' show ThemePackId;
 
 export '../state/profiles.dart' show ThemePackId;
 
+import 'theme_packs_generated.dart';
+
 /// Holds the Material You pack once main harvests the system palette; null
 /// when unavailable (below Android 12, desktop, tests).
 final ValueNotifier<ThemePack?> harvestedDynamicPack = ValueNotifier(null);
@@ -53,17 +55,29 @@ class ThemePack {
 /// callers must use [dynamicThemePack] with harvested schemes, or fall back
 /// to [ThemePackId.opencode].
 ThemePack themePack(ThemePackId id) => switch (id) {
-  ThemePackId.opencode || ThemePackId.dynamic => _opencode,
   ThemePackId.catppuccin => _catppuccin,
   ThemePackId.gruvbox => _gruvbox,
   ThemePackId.solarized => _solarized,
+  // The generated packs (see theme_packs_generated.dart); the OpenCode pack
+  // stands in for Material You, which has no static palette.
+  _ => generatedThemePack(id) ?? _opencode,
 };
 
-const themePackLabels = {
+/// The packs spelled out by hand, role by role. They have goldens; the
+/// generated ones are held to a contrast floor by test instead.
+const curatedThemePacks = [
+  ThemePackId.opencode,
+  ThemePackId.catppuccin,
+  ThemePackId.gruvbox,
+  ThemePackId.solarized,
+];
+
+final themePackLabels = <ThemePackId, String>{
   ThemePackId.opencode: 'OpenCode',
   ThemePackId.catppuccin: 'Catppuccin',
   ThemePackId.gruvbox: 'Gruvbox',
   ThemePackId.solarized: 'Solarized',
+  ...generatedThemePackLabels,
   ThemePackId.dynamic: 'Material You',
 };
 

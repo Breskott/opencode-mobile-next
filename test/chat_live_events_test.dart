@@ -16,10 +16,14 @@ import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/state/review_handoff.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
+import 'package:opencode_mobile/ui/screens/capabilities_screen.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/global_sessions_screen.dart';
+import 'package:opencode_mobile/ui/screens/library_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
 import 'package:opencode_mobile/ui/screens/session_context_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
+import 'package:opencode_mobile/ui/screens/tools_screen.dart';
 import 'package:opencode_mobile/ui/widgets/product_states.dart';
 import 'package:opencode_mobile/ui/widgets/markdown.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -64,8 +68,6 @@ class _FakeOpenCodeApi extends OpenCodeApi with CompleteMessageHistory {
   String? slashVariant;
   int abortCalls = 0;
   Object? abortError;
-  bool failRename = false;
-  bool failDelete = false;
   int createCalls = 0;
   final List<({String id, String title})> renameCalls = [];
   final List<String> deleteCalls = [];
@@ -164,13 +166,11 @@ class _FakeOpenCodeApi extends OpenCodeApi with CompleteMessageHistory {
   @override
   Future<void> renameSession(String id, String title) async {
     renameCalls.add((id: id, title: title));
-    if (failRename) throw StateError('rename failed');
   }
 
   @override
   Future<void> deleteSession(String id) async {
     deleteCalls.add(id);
-    if (failDelete) throw StateError('delete failed');
   }
 }
 
@@ -1173,7 +1173,9 @@ void main() {
         ..pageHandler = (cursor) async => cursor == null
             ? ServerPage(
                 items: [
-                  for (var i = 0; i < 20; i++) historyMessage('recent-$i'),
+                  // Enough one-line rows that reaching the oldest leaves the
+                  // reader well over the 480px "away from latest" mark.
+                  for (var i = 0; i < 40; i++) historyMessage('recent-$i'),
                 ],
                 nextCursor: 'older',
               )
@@ -1280,7 +1282,7 @@ void main() {
             : pending.future;
       final controller = await _pumpChat(tester, api);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Session menu'));
+      await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Timeline'));
       await tester.pumpAndSettle();
@@ -1474,7 +1476,7 @@ void main() {
     expect(api.deleteCalls, isEmpty);
     expect(
       find.text(
-        'Empty session was kept because OpenCode could not verify or remove it.',
+        'Empty conversation was kept because OpenCode could not verify or remove it.',
       ),
       findsOneWidget,
     );
@@ -1664,7 +1666,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('subagent-session-list')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Subagent sessions'), findsOneWidget);
+    expect(find.text('Subagent conversations'), findsOneWidget);
     expect(find.text('Review mobile flow'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -1769,7 +1771,7 @@ void main() {
       ];
     await _pumpChat(tester, api);
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Changes'));
     await tester.pumpAndSettle();
@@ -1798,7 +1800,7 @@ void main() {
       ];
     await _pumpChat(tester, api);
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Changes'));
     await tester.pumpAndSettle();
@@ -2582,11 +2584,14 @@ void main() {
     await _pumpEvent(tester);
 
     expect(find.text('Hello'), findsOneWidget);
-    expect(find.byKey(const Key('reasoning-inline')), findsOneWidget);
+    // A one-line thought right before a tool call is that call's title: the
+    // step is one row, not a heading row and a tool row.
+    expect(find.byKey(const Key('reasoning-inline')), findsNothing);
     expect(find.byKey(const Key('reasoning-toggle')), findsNothing);
     expect(find.text('why this works'), findsOneWidget);
     expect(find.text('**why this works**'), findsNothing);
-    await tester.tap(find.text('search'));
+    expect(find.textContaining('search'), findsOneWidget);
+    await tester.tap(find.text('why this works'));
     await _pumpEvent(tester);
     expect(find.textContaining('"query": "chat"'), findsOneWidget);
     semantics.dispose();
@@ -2685,7 +2690,7 @@ void main() {
     expect(controller.transcriptReasoningExpanded, isTrue);
     expect(find.text(reasoning), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Display and context'));
     await tester.pumpAndSettle();
@@ -2708,7 +2713,7 @@ void main() {
     );
     await _dismissSheetIfOpen(tester);
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Display and context'));
     await tester.pumpAndSettle();
@@ -2775,7 +2780,7 @@ void main() {
     );
 
     Future<void> flipGlobal() async {
-      await tester.tap(find.byTooltip('Session menu'));
+      await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Display and context'));
       await tester.pumpAndSettle();
@@ -2920,12 +2925,58 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(GlobalSessionsScreen), findsOneWidget);
-    expect(find.text('All sessions'), findsOneWidget);
+    expect(find.text('All conversations'), findsOneWidget);
   });
 
-  testWidgets('themes command opens the native appearance picker', (
-    tester,
-  ) async {
+  // Navigation commands land on the same screens as the Settings hub rows,
+  // so a typed alias and the hub never disagree about where a thing lives.
+  for (final entry in <String, (Type, bool Function(Widget))>{
+    'status': (ServerSettingsScreen, (_) => true),
+    'connect': (
+      IntegrationsScreen,
+      (widget) =>
+          (widget as IntegrationsScreen).mode == IntegrationsMode.providers,
+    ),
+    'mcps': (
+      IntegrationsScreen,
+      (widget) => (widget as IntegrationsScreen).mode == IntegrationsMode.mcp,
+    ),
+    'tools': (
+      CapabilitiesScreen,
+      (widget) => (widget as CapabilitiesScreen).initialTab == 1,
+    ),
+  }.entries) {
+    testWidgets('${entry.key} command opens its Settings hub destination', (
+      tester,
+    ) async {
+      await _pumpChat(
+        tester,
+        _FakeOpenCodeApi(),
+        repository: _DestinationRepository(),
+      );
+      await _useComposerTool(tester, 'commands');
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('command-launcher-search')),
+        entry.key,
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(Key('command-mobile-${entry.key}')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      final destination = find.byType(entry.value.$1);
+      expect(destination, findsOneWidget);
+      expect(entry.value.$2(tester.widget(destination)), isTrue);
+      // Never the whole hub under a misleading name.
+      expect(find.byType(SettingsScreen), findsNothing);
+      if (entry.key == 'tools') {
+        expect(find.byType(ToolsScreen), findsOneWidget);
+      }
+    });
+  }
+
+  testWidgets('themes command opens Settings › Appearance', (tester) async {
     final controller = await _pumpChat(tester, _FakeOpenCodeApi());
     await _useComposerTool(tester, 'commands');
     await tester.pumpAndSettle();
@@ -2937,6 +2988,9 @@ void main() {
     await tester.tap(find.byKey(const Key('command-mobile-themes')));
     await tester.pumpAndSettle();
 
+    expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('appearance-settings-entry')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('appearance-picker')), findsOneWidget);
     await tester.ensureVisible(find.byKey(const Key('appearance-light')));
     await tester.pumpAndSettle();
@@ -2965,7 +3019,7 @@ void main() {
       ];
 
     await _pumpChat(tester, api);
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Todos'));
     await tester.pumpAndSettle();
@@ -2983,7 +3037,7 @@ void main() {
       );
 
     await _pumpChat(tester, api);
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Todos'));
     await tester.pumpAndSettle();
@@ -3008,12 +3062,12 @@ void main() {
     final api = _FakeOpenCodeApi();
 
     await _pumpChat(tester, api);
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Todos'));
     await tester.pumpAndSettle();
 
-    expect(find.text('No todos in this session'), findsOneWidget);
+    expect(find.text('No todos in this conversation'), findsOneWidget);
   });
 
   testWidgets('launcher combines mobile actions with server commands', (
@@ -3095,7 +3149,9 @@ void main() {
     await tester.tap(find.byKey(const Key('project-file-attach')));
     await tester.pumpAndSettle();
     expect(
-      find.text('review.md attached. Return to the chat to add your comment.'),
+      find.text(
+        'review.md attached. Return to the conversation to add your comment.',
+      ),
       findsOneWidget,
     );
 
@@ -3361,7 +3417,7 @@ void main() {
 
     await _pumpChat(tester, api, reduceMotion: true);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     // The sheet scrolls at 320dp with 2x text; the chip stays reachable.
     await tester.ensureVisible(find.text('Timeline'));
@@ -3431,7 +3487,7 @@ void main() {
 
     await _pumpChat(tester, api, repository: repository);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Timeline'));
     await tester.pumpAndSettle();
@@ -3476,7 +3532,7 @@ void main() {
       controller: controller,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Timeline'));
     await tester.pumpAndSettle();
@@ -3574,7 +3630,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     // The sheet scrolls at 320dp with 2x text; every group stays reachable.
     await tester.ensureVisible(find.text('Display and context'));
@@ -3590,7 +3646,7 @@ void main() {
     expect(tester.takeException(), isNull);
     await _dismissSheetIfOpen(tester);
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Timeline'));
     await tester.pumpAndSettle();
@@ -3863,7 +3919,7 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Session menu'));
+      await tester.tap(find.byTooltip('Conversation menu'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Timeline'));
       await tester.pumpAndSettle();
@@ -4111,6 +4167,87 @@ void main() {
     expect(find.text('stale'), findsNothing);
   });
 
+  testWidgets(
+    'a prompt with photos is not shown twice when the server re-homes them',
+    (tester) async {
+      final prompt = Completer<void>();
+      final api = _FakeOpenCodeApi()..promptCompleter = prompt;
+      final controller = await _controller(api);
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [connProvider.overrideWithValue(controller)],
+          child: const MaterialApp(
+            home: ChatScreen(
+              sessionID: 'session-1',
+              initialAttachments: [
+                PromptAttachment(
+                  mime: 'image/jpeg',
+                  filename: '1000101752.jpg',
+                  url: 'data:image/jpeg;base64,/9j/4AAQ',
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('chat-composer-field')),
+        'match this UI',
+      );
+      await tester.pump();
+      await tester.tap(find.byTooltip('Send'));
+      await tester.pump();
+      expect(find.text('match this UI'), findsOneWidget);
+
+      // The server's copy: same text and file name, but the file now lives at
+      // the server's own location and the type is spelled differently.
+      for (final part in [
+        _partJson(
+          id: 'part-1',
+          messageID: 'user-1',
+          type: 'text',
+          text: 'match this UI',
+        ),
+        {
+          ..._partJson(
+            id: 'file-0',
+            messageID: 'user-1',
+            type: 'file',
+            text: '',
+          ),
+          'filename': '1000101752.jpg',
+          'mime': 'image/jpg',
+          'url': 'file:///srv/opencode/attachments/ab12/1000101752.jpg',
+        },
+      ]) {
+        controller.handleEventForTesting(
+          _event('message.part.updated', {
+            'sessionID': 'session-1',
+            'part': part,
+          }),
+        );
+      }
+      controller.handleEventForTesting(
+        _event('message.updated', {
+          'info': {
+            'id': 'user-1',
+            'sessionID': 'session-1',
+            'role': 'user',
+            'time': {'created': DateTime.now().millisecondsSinceEpoch},
+          },
+        }),
+      );
+      await tester.pump();
+      prompt.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('match this UI'), findsOneWidget);
+      expect(find.text('1000101752.jpg'), findsOneWidget);
+    },
+  );
+
   testWidgets('canonical user event replaces the optimistic bubble', (
     tester,
   ) async {
@@ -4287,6 +4424,112 @@ void main() {
     );
   });
 
+  testWidgets('an error a reply carries is not repeated in a banner', (
+    tester,
+  ) async {
+    final api = _FakeOpenCodeApi();
+    final controller = await _pumpChat(tester, api);
+    controller.handleEventForTesting(
+      _event('message.updated', {
+        'info': {
+          'id': 'assistant-1',
+          'sessionID': 'session-1',
+          'role': 'assistant',
+          'time': {'created': 1, 'completed': 2},
+          'error': {
+            'name': 'ProviderError',
+            'data': {'message': 'WebSocket inbound queue overflow'},
+          },
+        },
+      }),
+    );
+    await _pumpEvent(tester);
+
+    expect(
+      find.text('This request was too large to send to the model.'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('prompt-error-banner')), findsNothing);
+  });
+
+  testWidgets('a dropped connection is said in plain words, once, and the '
+      'banner leaves when the turn moves on', (tester) async {
+    const raw =
+        'ECONNRESET: The socket connection was closed unexpectedly. For more '
+        'information, pass `verbose: true` in the second argument to fetch()';
+    final api = _FakeOpenCodeApi();
+    final controller = await _pumpChat(tester, api);
+    controller.handleEventForTesting(
+      _event('session.error', {
+        'sessionID': 'session-1',
+        'error': {
+          'name': 'UnknownError',
+          'data': {'message': raw},
+        },
+      }),
+    );
+    await _pumpEvent(tester);
+    expect(find.byKey(const ValueKey('prompt-error-banner')), findsOneWidget);
+    expect(find.text('The connection to the model dropped.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('prompt-error-hint')), findsOneWidget);
+    expect(find.textContaining('ECONNRESET'), findsNothing);
+    expect(find.textContaining('fetch()'), findsNothing);
+    // The server's exact words are one tap away.
+    await tester.tap(find.byKey(const ValueKey('prompt-error-details')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('ECONNRESET'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+
+    // The reply carries the same problem (worded slightly differently by the
+    // server): one place says it, not two.
+    controller.handleEventForTesting(
+      _event('message.updated', {
+        'info': {
+          'id': 'assistant-1',
+          'sessionID': 'session-1',
+          'role': 'assistant',
+          'time': {'created': 1, 'completed': 2},
+          'error': {
+            'name': 'UnknownError',
+            'data': {
+              'message': 'The socket connection was closed unexpectedly.',
+            },
+          },
+        },
+      }),
+    );
+    await _pumpEvent(tester);
+    expect(find.text('The connection to the model dropped.'), findsOneWidget);
+
+    // The agent carries on: the error becomes a quiet line of the turn and
+    // no banner claims something is still wrong.
+    controller.handleEventForTesting(
+      _event('message.updated', {
+        'info': {
+          'id': 'assistant-2',
+          'sessionID': 'session-1',
+          'role': 'assistant',
+          'time': {'created': 3},
+        },
+      }),
+    );
+    controller.handleEventForTesting(
+      _event('message.part.updated', {
+        'sessionID': 'session-1',
+        'part': _partJson(
+          id: 'p2',
+          messageID: 'assistant-2',
+          type: 'text',
+          text: 'Retrying the build.',
+        ),
+      }),
+    );
+    await _pumpEvent(tester);
+    expect(find.byKey(const ValueKey('prompt-error-banner')), findsNothing);
+    expect(find.text('The agent carried on after this.'), findsOneWidget);
+  });
+
   testWidgets('a model-not-found session error shows one line and Choose model', (
     tester,
   ) async {
@@ -4398,9 +4641,9 @@ void main() {
     final controller = await _pumpChat(tester, api);
     controller.selectedVariant = 'fast';
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Session actions'));
+    await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Retry last prompt'));
     await tester.pumpAndSettle();
@@ -4421,9 +4664,9 @@ void main() {
       }),
     );
     await _pumpEvent(tester);
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Session actions'));
+    await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Retry last prompt'));
     await tester.pumpAndSettle();
@@ -4469,97 +4712,6 @@ void main() {
     expect(api.slashModel?.providerID, 'anthropic');
     expect(api.slashModel?.modelID, 'claude-sonnet');
     expect(api.slashVariant, 'high');
-  });
-
-  testWidgets('session rename and delete failures preserve the session', (
-    tester,
-  ) async {
-    final api = _FakeOpenCodeApi()
-      ..failRename = true
-      ..failDelete = true;
-    final controller = await _controller(api);
-    addTearDown(controller.dispose);
-    controller.sessionsById = {
-      'session-1': Session(
-        id: 'session-1',
-        title: 'Original title',
-        time: SessionTime(created: 1, updated: 1),
-      ),
-    };
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: SessionsTab(controller: controller)),
-      ),
-    );
-
-    await tester.tap(find.byType(PopupMenuButton<String>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Delete'));
-    await tester.pumpAndSettle();
-    expect(find.text('Delete chat?'), findsOneWidget);
-    expect(controller.sessionsById, contains('session-1'));
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
-    await tester.pumpAndSettle();
-    expect(find.text('OpenCode is unreachable. Try again.'), findsOneWidget);
-    expect(controller.sessionsById, contains('session-1'));
-    expect(find.text('Original title'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byType(PopupMenuButton<String>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Rename'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'Changed title');
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-    await tester.pumpAndSettle();
-    expect(find.text('OpenCode is unreachable. Try again.'), findsOneWidget);
-    expect(controller.sessionsById['session-1']?.title, 'Original title');
-    expect(find.text('Original title'), findsOneWidget);
-  });
-
-  testWidgets('session row end-swipe runs the existing delete confirm flow', (
-    tester,
-  ) async {
-    final api = _FakeOpenCodeApi();
-    final controller = await _controller(api);
-    addTearDown(controller.dispose);
-    controller.sessionsById = {
-      'session-1': Session(
-        id: 'session-1',
-        title: 'Swipe me away',
-        time: SessionTime(created: 1, updated: 1),
-      ),
-    };
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: SessionsTab(controller: controller)),
-      ),
-    );
-
-    final row = find.byKey(const ValueKey('session-dismiss-session-1'));
-    expect(row, findsOneWidget);
-    // The trailing popup menu remains alongside the swipe affordance.
-    expect(find.byType(PopupMenuButton<String>), findsOneWidget);
-
-    // Cancelling the confirm sheet keeps the session.
-    await tester.drag(row, const Offset(-400, 0));
-    await tester.pumpAndSettle();
-    expect(find.text('Delete chat?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
-    await tester.pumpAndSettle();
-    expect(api.deleteCalls, isEmpty);
-    expect(find.text('Swipe me away'), findsOneWidget);
-
-    // Confirming deletes through the same flow as the popup menu.
-    await tester.drag(row, const Offset(-400, 0));
-    await tester.pumpAndSettle();
-    expect(find.text('Delete chat?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
-    await tester.pumpAndSettle();
-
-    expect(api.deleteCalls, ['session-1']);
-    expect(find.text('Swipe me away'), findsNothing);
   });
 
   testWidgets('attachment count limit is enforced before opening the picker', (
@@ -4923,7 +5075,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
     // The sheet scrolls at 320dp with 2x text; the groups stay reachable.
     await tester.ensureVisible(find.text('Display and context'));
@@ -4939,16 +5091,16 @@ void main() {
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Session menu'));
+    await tester.tap(find.byTooltip('Conversation menu'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Session actions'));
+    await tester.ensureVisible(find.text('Conversation actions'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Session actions'));
+    await tester.tap(find.text('Conversation actions'));
     await tester.pumpAndSettle();
     expect(find.text('Retry last prompt'), findsOneWidget);
-    await tester.ensureVisible(find.text('Reload messages'));
+    await tester.ensureVisible(find.text('Refresh messages'));
     await tester.pumpAndSettle();
-    expect(find.text('Reload messages'), findsOneWidget);
+    expect(find.text('Refresh messages'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

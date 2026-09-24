@@ -157,7 +157,7 @@ void main() {
       expect(find.text('screenshot.png'), findsNothing);
       expect(find.text('Apply to draft'), findsNothing);
       expect(
-        find.textContaining('task, connection or draft changed'),
+        find.textContaining('conversation, server or draft changed'),
         findsOneWidget,
       );
     },

@@ -12,11 +12,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../api/models.dart';
 import '../codex/gateway.dart';
 import '../codex/transport.dart' show CodexFailure, CodexFailureKind;
+import '../paseo/gateway.dart';
+import '../paseo/transport.dart' show PaseoFailure, PaseoFailureKind;
 import '../api/opencode_api.dart';
 import '../api2/models.dart' show Api2Delivery, Api2FormInfo, Api2InboxItem;
 import '../api/product_repository.dart';
 import '../api/server_probe.dart';
 import '../termux/managed_server_recovery.dart';
+import 'notification_preferences.dart';
+import 'nudges.dart';
 import 'profile_monitor.dart';
 import 'provider_quota_monitor.dart';
 import '../quota/provider_quota_client.dart';
@@ -31,6 +35,7 @@ import '../background/team_alerts.dart';
 import '../background/pinned_session_shortcuts.dart';
 import '../background/widget_snapshot.dart';
 import '../l10n/app_localizations.dart';
+import '../platform/platform_capabilities.dart';
 import '../diagnostics/app_diagnostics.dart';
 import '../termux/bridge.dart';
 import 'isolated_task_launch.dart';
@@ -38,6 +43,7 @@ import 'model_library.dart';
 import 'offline_queue.dart';
 import 'orchestration.dart';
 import 'orchestration_store.dart';
+import 'elsewhere_attention.dart';
 import 'profiles.dart';
 import 'pending_auth.dart';
 import 'session_drafts.dart';
@@ -279,6 +285,77 @@ class ConnectionController extends ChangeNotifier {
     if (!_disposed) super.notifyListeners();
   }
 
+  /// The one home of quiet hours, Wi-Fi only, check-ins and the "what
+  /// notifies me" choices. Both monitors and this controller's own alerts
+  /// read it; only the Notifications screen writes it.
+  late final notificationPreferences = NotificationPreferences(store.prefs);
+
+  /// The one-time tips registry (UX plan 5.8). One instance app-wide, because
+  /// it also arbitrates the single nudge slot.
+  late final nudges = NudgeRegistry(store.prefs);
+
+  /// The shared rules as they apply now: the migrated value, or what the
+  /// legacy per-server records say while the migration has not run.
+  SharedNotifyRules get sharedNotifyRules =>
+      notificationPreferences.shared ??
+      notificationPreferences.readLegacy(_notifyMigrationOrder);
+
+  /// The connected server first, so its quiet hours win a disagreement.
+  List<String> get _notifyMigrationOrder {
+    final first = profile?.id ?? store.activeId;
+    return [
+      ?first,
+      for (final saved in store.profiles)
+        if (saved.id != first) saved.id,
+    ];
+  }
+
+  /// Folds the legacy per-server definitions into the shared one. Safe to
+  /// call on every start: after the first run it changes nothing.
+  Future<void> migrateNotificationPreferences() =>
+      notificationPreferences.migrate(_notifyMigrationOrder);
+
+  Future<void> updateSharedNotifyRules(
+    SharedNotifyRules Function(SharedNotifyRules current) change,
+  ) async {
+    final before = await notificationPreferences.migrate(_notifyMigrationOrder);
+    final after = change(before);
+    if (after == before) return;
+    await notificationPreferences.save(after);
+    if (_disposed) return;
+    await profileMonitor.sharedRulesChanged(
+      checkInChanged: after.checkInAfterMinutes != before.checkInAfterMinutes,
+    );
+    await quotaMonitor.sharedRulesChanged();
+    if (!_disposed) notifyListeners();
+  }
+
+  Future<void> setNotifyFinishedRuns(bool value) async {
+    await notificationPreferences.setFinishedRuns(value);
+    if (_disposed) return;
+    if (!value) {
+      for (final sessionID in _alertedStatusSessions.toList()) {
+        unawaited(
+          backgroundLive.dismissCodingAlert(_statusAlertKey(sessionID)),
+        );
+      }
+      _alertedStatusSessions.clear();
+    }
+    notifyListeners();
+  }
+
+  Future<void> setNotifyRequests(bool value) async {
+    await notificationPreferences.setRequests(value);
+    if (_disposed) return;
+    if (!value) {
+      for (final sessionID in _alertedInputKinds.keys.toList()) {
+        unawaited(backgroundLive.dismissCodingAlert(_inputAlertKey(sessionID)));
+      }
+      _alertedInputKinds.clear();
+    }
+    notifyListeners();
+  }
+
   final MonitorGatewayFactory? _monitorGatewayFactory;
   ProfileMonitor get profileMonitor => _profileMonitor ??= ProfileMonitor(
     store: store,
@@ -477,6 +554,9 @@ class ConnectionController extends ChangeNotifier {
         questions.length +
         forms.length +
         (orchestration?.attentionCount ?? 0) +
+        // This server's other projects: the Inbox badge counts what needs
+        // you wherever it is.
+        waitingElsewhereCount +
         store.profiles
             .where((p) => p.id != selected && isProfileReadable(p.id))
             .fold<int>(
@@ -516,6 +596,7 @@ class ConnectionController extends ChangeNotifier {
   final ProductRepositoryFactory _repositoryFactory;
   final V2GatewayPairFactory _v2GatewayFactory;
   final V2GatewayPairFactory _codexGatewayFactory;
+  final V2GatewayPairFactory _paseoGatewayFactory;
   final EventStreamFactory _eventStreamFactory;
   final EventStreamFactory? _globalEventStreamFactory;
   final LocalWakeLockEnsurer _localWakeLockEnsurer;
@@ -953,6 +1034,7 @@ class ConnectionController extends ChangeNotifier {
     ProductRepositoryFactory? repositoryFactory,
     V2GatewayPairFactory? v2GatewayFactory,
     V2GatewayPairFactory? codexGatewayFactory,
+    V2GatewayPairFactory? paseoGatewayFactory,
     EventStreamFactory? eventStreamFactory,
     EventStreamFactory? globalEventStreamFactory,
     BackgroundLiveController? backgroundLive,
@@ -972,6 +1054,7 @@ class ConnectionController extends ChangeNotifier {
        _repositoryFactory = repositoryFactory ?? _createRepository,
        _v2GatewayFactory = v2GatewayFactory ?? _createV2GatewayPair,
        _codexGatewayFactory = codexGatewayFactory ?? _createCodexGatewayPair,
+       _paseoGatewayFactory = paseoGatewayFactory ?? _createPaseoGatewayPair,
        _eventStreamFactory = eventStreamFactory ?? _createEventStream,
        _globalEventStreamFactory =
            globalEventStreamFactory ??
@@ -1193,6 +1276,21 @@ class ConnectionController extends ChangeNotifier {
       profileMonitor.rulesFor(profile?.id ?? '').notifications &&
       !profileMonitor.rulesFor(profile?.id ?? '').quietAt(DateTime.now());
 
+  /// Whether a run finishing after the person leaves would reach them as a
+  /// notification: the background connection is on, Android granted the
+  /// permission, this server's alerts and the finished-run choice are on, and
+  /// it is not quiet hours. The same conditions [_settleSessionAttention]
+  /// checks, minus "the app is in the background", which leaving makes true.
+  bool get finishedRunNotificationsReady {
+    if (!platformCapabilities.supportsNotifications) return false;
+    final rules = profileMonitor.rulesFor(profile?.id ?? '');
+    return keepLiveInBackground &&
+        backgroundLive.notificationGranted &&
+        rules.notifications &&
+        notificationPreferences.finishedRuns &&
+        !rules.quietAt(DateTime.now());
+  }
+
   void _markSessionAttentionActive(String sessionID) {
     if (sessionID.isEmpty) return;
     _attentionActiveSessions.add(sessionID);
@@ -1209,7 +1307,9 @@ class ConnectionController extends ChangeNotifier {
         profileMonitor.rulesFor(profile?.id ?? '').enabled) {
       return;
     }
-    if (!_canShowCodingAlert || sessionsById[sessionID]?.parentID != null) {
+    if (!_canShowCodingAlert ||
+        !notificationPreferences.finishedRuns ||
+        sessionsById[sessionID]?.parentID != null) {
       return;
     }
     if (!_alertedStatusSessions.add(sessionID)) return;
@@ -1230,7 +1330,11 @@ class ConnectionController extends ChangeNotifier {
   }
 
   void _showInputAlert(String sessionID, CodingAlertKind kind) {
-    if (sessionID.isEmpty || !_canShowCodingAlert) return;
+    if (sessionID.isEmpty ||
+        !_canShowCodingAlert ||
+        !notificationPreferences.requests) {
+      return;
+    }
     // The alert represents one exact request: the front permission, or the
     // quick-reply-eligible question (falling back to the front question).
     final quickReplyQuestion = kind == CodingAlertKind.question
@@ -1328,7 +1432,7 @@ class ConnectionController extends ChangeNotifier {
     if (_disposed || !keepLiveInBackground) return;
     final profile = _connectedProfile;
     if (profile == null ||
-        profile.backend == ServerBackend.codex ||
+        profile.usesAgentSocket ||
         !_isLoopbackUrl(profile.baseUrl)) {
       return;
     }
@@ -1383,6 +1487,16 @@ class ConnectionController extends ChangeNotifier {
     return (gateway: gateway, operations: gateway);
   }
 
+  static ({ServerGateway gateway, ServerOperationsGateway operations})
+  _createPaseoGatewayPair(ServerProfile profile) {
+    final gateway = PaseoGateway.connect(
+      baseUrl: profile.baseUrl,
+      password: profile.codexToken,
+      directory: profile.codexDirectory,
+    );
+    return (gateway: gateway, operations: gateway);
+  }
+
   /// Constructs the transport pair for [profile]'s cached flavor. The two
   /// v1 factories stay the injected test seams; v2 goes through
   /// [_v2GatewayFactory].
@@ -1395,6 +1509,9 @@ class ConnectionController extends ChangeNotifier {
     }
     if (profile.backend == ServerBackend.codex) {
       return _codexGatewayFactory(profile);
+    }
+    if (profile.backend == ServerBackend.paseo) {
+      return _paseoGatewayFactory(profile);
     }
     if (profile.flavor == ServerFlavor.v2) return _v2GatewayFactory(profile);
     final v1Api = _apiFactory(profile);
@@ -1459,12 +1576,14 @@ class ConnectionController extends ChangeNotifier {
   /// attaching the live gateway supplies the authoritative set.
   ServerCapabilities get capabilities =>
       api?.capabilities ??
-      ((_connectedProfile ?? profile)?.backend == ServerBackend.codex
-          ? codexServerCapabilities
-          : ServerCapabilities.allV1);
+      switch ((_connectedProfile ?? profile)?.backend) {
+        ServerBackend.codex => codexServerCapabilities,
+        ServerBackend.paseo => paseoServerCapabilities,
+        _ => ServerCapabilities.allV1,
+      };
 
   bool get usesConnectionToken =>
-      (_connectedProfile ?? profile)?.backend == ServerBackend.codex;
+      (_connectedProfile ?? profile)?.usesAgentSocket ?? false;
 
   void _acceptRunningServerVersion(String? rawVersion) {
     final next = rawVersion?.trim() ?? '';
@@ -1535,7 +1654,7 @@ class ConnectionController extends ChangeNotifier {
   /// a real project folder; the server's own working directory is never used
   /// as a workspace (see `workspace_paths.dart`).
   bool get workspaceChoiceRequired {
-    if (_connectedProfile?.backend == ServerBackend.codex) return false;
+    if (_connectedProfile?.usesAgentSocket ?? false) return false;
     if (!capabilities.projectManagement) return false;
     return isProtectedWorkspaceDirectory(directory);
   }
@@ -1731,8 +1850,15 @@ class ConnectionController extends ChangeNotifier {
     _lifecycleSuspended = false;
     _lifecycleWasBackgrounded = false;
     _lifecycleResume = null;
-    final isCodex = profile.backend == ServerBackend.codex;
-    final validationError = isCodex
+    // Codex and Paseo share the socket-style profile and its connect path.
+    final isCodex = profile.usesAgentSocket;
+    final validationError = profile.backend == ServerBackend.paseo
+        ? (profile.requiresCodexTokenReentry
+              ? 'The saved password is unavailable. Enter it again.'
+              : validatePaseoServerUrl(profile.baseUrl) ??
+                    validatePaseoPassword(profile.codexToken) ??
+                    validateCodexProjectDirectory(profile.codexDirectory))
+        : isCodex
         ? (profile.requiresCodexTokenReentry
               ? 'The saved connection token is unavailable. Enter it again.'
               : validateCodexServerUrl(profile.baseUrl) ??
@@ -2277,8 +2403,16 @@ class ConnectionController extends ChangeNotifier {
 
   void _startGlobalEvents(int generation, ServerGateway currentApi) {
     late final LiveEventChannel stream;
+    // What this server's other projects are doing is only knowable from
+    // here; a different server's tally would be wrong.
+    final profileID = profile?.id;
+    if (_elsewhereProfileID != profileID) {
+      _elsewhereProfileID = profileID;
+      elsewhereAttention.clear();
+    }
     void handleEvent(EventEnvelope event) {
       if (!_isCurrentGlobalStream(generation, currentApi, stream)) return;
+      elsewhereAttention.handle(event);
       if (event.type == 'installation.update-available' ||
           event.type == 'installation.updated' ||
           event.type == 'worktree.ready' ||
@@ -2315,14 +2449,16 @@ class ConnectionController extends ChangeNotifier {
   void _noteAuthFailure(Object error) {
     if ((error is CodexFailure &&
             error.kind == CodexFailureKind.authentication) ||
+        (error is PaseoFailure &&
+            error.kind == PaseoFailureKind.authentication) ||
         error is Api2AuthRequired ||
         (error is ApiException &&
             error.statusCode == 401 &&
             (_connectedProfile?.flavor == ServerFlavor.v2 ||
-                _connectedProfile?.backend == ServerBackend.codex))) {
+                (_connectedProfile?.usesAgentSocket ?? false)))) {
       passwordRejected = true;
       final rejectedProfile = _connectedProfile;
-      if (rejectedProfile?.backend == ServerBackend.codex) {
+      if (rejectedProfile?.usesAgentSocket ?? false) {
         rejectedProfile!.requiresCodexTokenReentry = true;
       }
     }
@@ -2358,7 +2494,7 @@ class ConnectionController extends ChangeNotifier {
   /// the profile's cached flavor (persisting remote corrections), null
   /// otherwise. A managed local mismatch fails without changing its profile.
   Future<ServerProbeResult?> _redetectFlavor(ServerProfile profile) async {
-    if (profile.backend == ServerBackend.codex) return null;
+    if (profile.usesAgentSocket) return null;
     try {
       final result = await serverProbe(
         baseUrl: profile.baseUrl,
@@ -3094,6 +3230,19 @@ class ConnectionController extends ChangeNotifier {
         sessionID,
         (id) => sessionsById[id]?.parentID,
       );
+
+  /// Whether this server runs in "approve everything" mode on this phone.
+  bool get approvesEverything =>
+      sessionAutoApproval.approvesEverything(_autoApprovalProfile);
+
+  /// Saves the server-wide choice. Throws when storage refuses.
+  Future<void> setApprovesEverything(bool value) async {
+    await sessionAutoApproval.setApprovesEverything(
+      _autoApprovalProfile,
+      value,
+    );
+    if (!_disposed) notifyListeners();
+  }
 
   /// Stores the session's own approval setting, or clears it (null) so the
   /// session follows its parent again. Throws when storage refuses.
@@ -5128,7 +5277,7 @@ class ConnectionController extends ChangeNotifier {
   Future<bool> queuePrompt(QueuedPrompt prompt) =>
       _serializeQueueChange(() async {
         final target = store.profiles.where((p) => p.id == prompt.profileID);
-        if (target.any((p) => p.backend == ServerBackend.codex)) return false;
+        if (target.any((p) => p.usesAgentSocket)) return false;
         if (prompt.payloadBytes > OfflineQueueStore.maxEntryBytes) return false;
         final eviction = OfflineQueueStore.enforceLimits([..._queue, prompt]);
         // The new entry losing its own eviction pass means the queue could not
@@ -7441,6 +7590,80 @@ class ConnectionController extends ChangeNotifier {
     }
   }
 
+  /// Running and waiting conversations in this server's other projects,
+  /// from its server-wide event channel.
+  late final elsewhereAttention = ElsewhereAttention()
+    ..addListener(_elsewhereChanged);
+
+  // The Inbox badge and the Work tab read the tally through this controller.
+  void _elsewhereChanged() {
+    if (!_disposed) notifyListeners();
+  }
+
+  String? _elsewhereProfileID;
+
+  /// Conversations in other projects that are stopped on you.
+  int get waitingElsewhereCount =>
+      elsewhereAttention.waitingCount(except: directory);
+
+  /// Projects used on this server, most recent first, the current one
+  /// included.
+  List<ProfileLocation> get recentLocations {
+    final id = profile?.id;
+    return id == null ? const [] : store.recentLocations(id);
+  }
+
+  Future<void> forgetRecentLocation(String directory) async {
+    final id = profile?.id;
+    if (id == null) return;
+    await store.forgetRecentLocation(id, directory);
+    if (!_disposed) notifyListeners();
+  }
+
+  /// Conversations in this server's *other* projects: running ones first,
+  /// then the most recently touched. Empty when the server cannot list
+  /// across projects. Whether a conversation elsewhere is running is only
+  /// known where the server reports activity server-wide (OpenCode 2); on
+  /// other servers they are listed by recency alone.
+  Future<List<ElsewhereConversation>> conversationsElsewhere({
+    int limit = 6,
+  }) async {
+    final currentRepository = repository;
+    final currentApi = api;
+    if (currentRepository == null ||
+        currentApi == null ||
+        !capabilities.globalSessionSearch) {
+      return const [];
+    }
+    final generation = _generation;
+    final here = directory;
+    final page = await currentRepository.listGlobalSessions(limit: 40);
+    Map<String, String> statuses = const {};
+    try {
+      statuses = await currentApi.sessionStatuses();
+    } catch (_) {}
+    if (_disposed || generation != _generation) return const [];
+    final elsewhere = [
+      for (final result in page.items)
+        if ((result.session.directory ?? result.projectDirectory)
+            case final String where
+            when where != here && result.session.parentID == null)
+          ElsewhereConversation(
+            session: result.session,
+            directory: where,
+            projectName: result.projectName,
+            running: statuses[result.session.id] == 'busy',
+          ),
+    ];
+    elsewhere.sort((a, b) {
+      if (a.running != b.running) return a.running ? -1 : 1;
+      return (b.session.time?.updated ?? 0).compareTo(
+        a.session.time?.updated ?? 0,
+      );
+    });
+    return elsewhere.take(limit).toList();
+  }
+
   Future<void> selectLocation({String? directory, String? workspace}) =>
       _selectLocation(directory: directory, workspace: workspace);
 
@@ -7524,7 +7747,7 @@ class ConnectionController extends ChangeNotifier {
         _deletingReadProfiles.contains(profile.id)) {
       return;
     }
-    if (profile.backend == ServerBackend.codex) {
+    if (profile.usesAgentSocket) {
       directory ??= profile.codexDirectory;
       if (workspace != null ||
           validateCodexProjectDirectory(directory) != null) {
@@ -8605,5 +8828,29 @@ class ConnectionController extends ChangeNotifier {
     themePack.dispose();
     unawaited(_eventBus.close());
     super.dispose();
+  }
+}
+
+/// A conversation in a project other than the selected one, as the Work tab
+/// lists it.
+class ElsewhereConversation {
+  const ElsewhereConversation({
+    required this.session,
+    required this.directory,
+    required this.running,
+    this.projectName,
+  });
+
+  final Session session;
+  final String directory;
+  final String? projectName;
+  final bool running;
+
+  /// The project's name as the server gives it, else its folder's name.
+  String get project {
+    final name = projectName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    final parts = directory.split('/').where((part) => part.isNotEmpty);
+    return parts.isEmpty ? directory : parts.last;
   }
 }

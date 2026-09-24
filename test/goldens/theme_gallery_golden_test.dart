@@ -46,7 +46,9 @@ void main() {
     ]);
   });
 
-  for (final id in ThemePackId.values.where((p) => p != ThemePackId.dynamic)) {
+  // Goldens for the hand-written packs. The generated ones share one recipe
+  // and are held to a contrast floor in theme_packs_test.dart instead.
+  for (final id in curatedThemePacks) {
     for (final brightness in Brightness.values) {
       final mode = brightness == Brightness.dark ? 'dark' : 'light';
       testWidgets('component gallery · ${id.name} · $mode', (tester) async {

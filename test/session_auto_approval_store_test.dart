@@ -288,6 +288,43 @@ void main() {
       );
     });
   });
+  group('approve everything (server-wide)', () {
+    String? noParent(String _) => null;
+
+    test('reaches every conversation, including ones never seen', () async {
+      final (store, prefs, _) = await _boot();
+      expect(store.effectiveFor('p', 'new', noParent).automatic, isFalse);
+      await store.setApprovesEverything('p', true);
+      final effective = store.effectiveFor('p', 'new', noParent);
+      expect(effective.automatic, isTrue);
+      expect(effective.serverWide, isTrue);
+      expect(effective.explicit, isFalse);
+      // Only this server.
+      expect(store.effectiveFor('other', 'new', noParent).automatic, isFalse);
+
+      // Saved: a fresh store over the same preferences still has it.
+      final reopened = SessionAutoApprovalStore(prefs);
+      expect(reopened.approvesEverything('p'), isTrue);
+      await reopened.setApprovesEverything('p', false);
+      expect(reopened.effectiveFor('p', 'new', noParent).automatic, isFalse);
+    });
+
+    test('a conversation set to ask keeps asking', () async {
+      final (store, _, _) = await _boot();
+      await store.setApprovesEverything('p', true);
+      await store.set('p', 'careful', SessionAutoApproval.ask);
+      final effective = store.effectiveFor('p', 'careful', noParent);
+      expect(effective.automatic, isFalse);
+      expect(effective.explicit, isTrue);
+    });
+
+    test('is not listed as a conversation', () async {
+      final (store, _, _) = await _boot();
+      await store.setApprovesEverything('p', true);
+      await store.set('p', 's1', _auto);
+      expect(store.settingsFor('p').keys, ['s1']);
+    });
+  });
 }
 
 Session _session(String id, {String? parentID}) =>

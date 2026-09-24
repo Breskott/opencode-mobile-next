@@ -16,6 +16,8 @@ import 'package:opencode_mobile/ui/screens/tailscale_setup_screen.dart';
 import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
 import 'package:opencode_mobile/ui/widgets/setup_terminal.dart';
 
+import 'support/first_run_path.dart';
+
 import '../tool/capture/fixtures.dart'
     show loadCaptureFonts, captureTheme, capturePng, writePng;
 
@@ -191,10 +193,7 @@ void main() {
             expect(docs.hitTestable(), findsOneWidget);
           }
           if (page == 'servers') {
-            final connect = find.byKey(const ValueKey('welcome-connect-card'));
-            await tester.ensureVisible(connect);
-            await tester.tap(connect);
-            await tester.pumpAndSettle();
+            await openFirstRunConnect(tester);
             final address = find.byKey(const ValueKey('server-url-field'));
             await tester.ensureVisible(address);
             expect(
