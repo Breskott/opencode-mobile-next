@@ -28523,6 +28523,120 @@ abstract class AppLocalizations {
   /// **'The folder could not be checked: {reason}'**
   String projectFolderCheckFailed(String reason);
 
+  /// Row at the top of the folder browser that goes to the folder above
+  ///
+  /// In en, this message translates to:
+  /// **'Up one folder'**
+  String get folderBrowserUp;
+
+  /// Screen-reader label of the folder browser's current path
+  ///
+  /// In en, this message translates to:
+  /// **'Current folder: {path}'**
+  String folderBrowserCurrent(String path);
+
+  /// Primary button of the folder browser: opens the folder being shown as the project
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String folderBrowserOpen(String name);
+
+  /// Supporting line of a folder row that is a git repository
+  ///
+  /// In en, this message translates to:
+  /// **'Git repository'**
+  String get folderBrowserGit;
+
+  /// Supporting line of a folder row OpenCode already knows as a project
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode project'**
+  String get folderBrowserProject;
+
+  /// Tooltip of a project row's button that browses into it instead of opening it
+  ///
+  /// In en, this message translates to:
+  /// **'Show the folders in {name}'**
+  String folderBrowserShowInside(String name);
+
+  /// Shown in place of the Open button while the browser shows the projects folder itself
+  ///
+  /// In en, this message translates to:
+  /// **'Your projects live here. Tap one to open it, or make a new one below.'**
+  String get folderBrowserProjectsHere;
+
+  /// Shown in place of the Open button while the browser shows the home folder or /
+  ///
+  /// In en, this message translates to:
+  /// **'The home folder and the root cannot be projects. Open a folder inside.'**
+  String get folderBrowserHomeHere;
+
+  /// Empty state title of the projects folder
+  ///
+  /// In en, this message translates to:
+  /// **'No projects yet'**
+  String get folderBrowserNoProjectsTitle;
+
+  /// Empty state body of the projects folder
+  ///
+  /// In en, this message translates to:
+  /// **'Name one below to make it here.'**
+  String get folderBrowserNoProjectsBody;
+
+  /// Empty state title of a folder with no folders inside
+  ///
+  /// In en, this message translates to:
+  /// **'No folders in here'**
+  String get folderBrowserEmptyTitle;
+
+  /// Empty state body of a folder with no folders inside
+  ///
+  /// In en, this message translates to:
+  /// **'Make a new project in it below, or go up one folder.'**
+  String get folderBrowserEmptyBody;
+
+  /// Error state title when a folder could not be listed
+  ///
+  /// In en, this message translates to:
+  /// **'This folder can’t be shown'**
+  String get folderBrowserErrorTitle;
+
+  /// Error body: the built-in Ubuntu is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Ubuntu isn’t installed in the app yet.'**
+  String get folderBrowserErrorNotInstalled;
+
+  /// Error body: the folder does not exist
+  ///
+  /// In en, this message translates to:
+  /// **'It isn’t there any more.'**
+  String get folderBrowserErrorMissing;
+
+  /// Error body: permission denied
+  ///
+  /// In en, this message translates to:
+  /// **'The app isn’t allowed to read it.'**
+  String get folderBrowserErrorDenied;
+
+  /// Error body: the folder is a symbolic link the app does not follow
+  ///
+  /// In en, this message translates to:
+  /// **'It is a link. Enter its path instead.'**
+  String get folderBrowserErrorLinked;
+
+  /// Error body: listing failed for another reason
+  ///
+  /// In en, this message translates to:
+  /// **'Try again, or enter its path instead.'**
+  String get folderBrowserErrorFailed;
+
+  /// Action that lists the folder again after an error
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get folderBrowserRetry;
+
   /// Button that opens the steps for running OpenCode inside the app
   ///
   /// In en, this message translates to:
