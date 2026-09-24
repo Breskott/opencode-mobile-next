@@ -24,6 +24,7 @@ The parts live in `lib/ui/kit/`. A screen that needs something the kit lacks add
 | Destructive | Error-coloured text or tonal, always confirmed | never primary unless the whole screen is the delete | — |
 
 - Buttons in a block are stacked, full width, in the order primary, secondary, tertiary. Never right-aligned clusters, never mixed alignment.
+- Where two tertiary actions must never sit side by side (a server's Update beside its destructive Stop), `KitActionStack` puts each on a line of its own, in the same order.
 - On widths of 600 dp and up, they may sit in one row, primary rightmost.
 - A button is never a status display. "Starting the server…" is progress (§4), not a disabled button with a spinner.
 - A disabled button needs a reason visible near it, or it is hidden.
@@ -71,6 +72,8 @@ A message that belongs to one part of a form or list (a connection test's verdic
   - An action that cannot run now dims (`enabled: false`) and its supporting line says why.
   - A row that deletes something is `destructive: true`: error-coloured title and icon, and it confirms before acting.
 - State lives in the row (dot, mark, "Needs you"), not in extra cards above the list.
+- The thing in use now (the server the app is connected to) carries the current mark: `KitRowIcon(current: true)`, a filled accent circle, and its supporting line starts with the word ("Connected · …") so the mark is never colour-only.
+- A row's rarer actions are in its overflow menu (`KitRowMenu`), never buttons in the row; destructive entries are error-coloured and confirm. A row that opens another screen ends with `KitChevron`; one that unfolds in place (a group, a rare choice) is `KitExpandRow`; an on/off setting is `KitSwitchRow`.
 - The same thing appears once per screen.
 
 ## 7. Words
