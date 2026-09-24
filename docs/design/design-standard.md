@@ -99,3 +99,15 @@ A message that belongs to one part of a form or list (a connection test's verdic
 6. Settings.
 
 Each step ships with its goldens and joins the checked list.
+
+## 10. Motion and illustration
+
+The owner (2026-09-25): "be more creative — add animations, cool graphics … they could even move". Consistent is not enough; the app should feel alive where a person waits, finishes something, or finds nothing yet. Spec and slices: `docs/design/motion-and-illustration-2026-09-25.md`.
+
+- **One drawing style.** Line art in the brand's stroke (the "open portal" mark, `assets/branding/open-portal/mark.svg`): rounded caps and joins, one accent (`colorScheme.primary`) for what matters, muted and hairline strokes for the rest, soft accent washes for fills. Drawn in code as a `KitScene` (`lib/ui/kit/kit_illustration.dart`), never a bitmap, so it follows dark and light and scales. `KitPortalScene` is the reference.
+- **Where drawings go.** A moment, not every screen: first run and setup, waiting (connecting, installing, a team at work), finished (setup ready, a task merged), empty (nothing here yet), and a few failures (not answering, offline). `KitStateView(illustration: …)` takes one in place of its icon circle. Never on a list row, a form field or a dialog.
+- **How things move.** `KitMotion` holds the timings and curves: `quick` 150 ms for a control answering a touch, `standard` 250 ms for a part appearing, `entrance` 900 ms for a drawing drawing itself in, `celebration` 1.4 s for a finished moment, `breath` 4 s per ambient loop. Curves: `enter`, `exit`, `emphasized`. No other durations.
+- **Loops only while waiting.** A drawing's entrance plays once. An ambient loop (`ambient: true`) runs only on a screen where the person waits, at most one per screen, and stops when the wait ends. Resting screens are still.
+- **Respect the person and the phone.** With the system's "remove animations", every drawing shows its finished frame and nothing loops (`KitMotion.reduced`). Animate paint and transforms only — no layout, blur or shadow animation; each drawing sits in its own `RepaintBoundary`; tickers stop off screen. Issue #87's complaint was a choppy app: a new animation that drops frames on the emulator's `gfxinfo` is a regression.
+- **Tests.** `test/flutter_test_config.dart` sets `KitMotion.loops = false`, so screens settle for `pumpAndSettle` and goldens show the finished drawing. `flutter_animate` stays banned. Each scene has a golden (dark and light) of its finished frame.
+- **Decorative by default.** A drawing is excluded from semantics unless it says something the text does not.

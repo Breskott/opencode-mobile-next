@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import 'kit_buttons.dart';
+import 'kit_illustration.dart';
 import 'kit_progress.dart';
 
 enum KitStateSize {
@@ -17,7 +18,8 @@ enum KitStateSize {
 /// whole screen, empty, error, stopped or offline, blocked. Fixed slots, in
 /// this order:
 ///
-/// 1. [icon] in a tonal circle, tinted by [tone] (never a solid red block);
+/// 1. [icon] in a tonal circle, tinted by [tone] (never a solid red block),
+///    or an [illustration] (§10) where the moment deserves one;
 /// 2. [title]: one line that says the state now, never contradicting the
 ///    progress ("Starting OpenCode…", not "stopped" while it starts);
 /// 3. [body]: at most two short sentences;
@@ -55,6 +57,8 @@ class KitStateView extends StatefulWidget {
     this.footer,
     this.detailsChild,
     this.padding,
+    this.illustration,
+    this.illustrationAmbient = false,
   });
 
   final IconData icon;
@@ -91,6 +95,14 @@ class KitStateView extends StatefulWidget {
   /// Overrides the inline size's padding, for a host already on the rails.
   final EdgeInsetsGeometry? padding;
 
+  /// A drawing (design standard §10) in place of the icon circle; [icon]
+  /// still names the state.
+  final KitScene? illustration;
+
+  /// Keep [illustration] moving after its entrance: only for a state the
+  /// person waits in (connecting, installing).
+  final bool illustrationAmbient;
+
   @override
   State<KitStateView> createState() => _KitStateViewState();
 }
@@ -125,18 +137,25 @@ class _KitStateViewState extends State<KitStateView> {
       children: [
         Align(
           alignment: AlignmentDirectional.centerStart,
-          child: Container(
-            key: const ValueKey('kit-state-icon'),
-            width: page ? 48 : 36,
-            height: page ? 48 : 36,
-            decoration: BoxDecoration(
-              color: tint.withValues(alpha: .14),
-              shape: BoxShape.circle,
-            ),
-            child:
-                widget.iconChild ??
-                Icon(widget.icon, size: page ? 24 : 19, color: tint),
-          ),
+          child: widget.illustration != null
+              ? KitIllustration(
+                  key: const ValueKey('kit-state-illustration'),
+                  scene: widget.illustration!,
+                  width: page ? 140 : 88,
+                  ambient: widget.illustrationAmbient,
+                )
+              : Container(
+                  key: const ValueKey('kit-state-icon'),
+                  width: page ? 48 : 36,
+                  height: page ? 48 : 36,
+                  decoration: BoxDecoration(
+                    color: tint.withValues(alpha: .14),
+                    shape: BoxShape.circle,
+                  ),
+                  child:
+                      widget.iconChild ??
+                      Icon(widget.icon, size: page ? 24 : 19, color: tint),
+                ),
         ),
         SizedBox(height: page ? 20 : 12),
         Text(

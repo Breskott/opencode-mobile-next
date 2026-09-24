@@ -18,6 +18,8 @@
 /// | [KitStatusMark] | §6 a step's leading state mark (waiting, working, done, failed) |
 /// | [KitTaskMark] | §6 a task's leading mark: a step's four, needs you, stopped |
 /// | [KitNotice] | §3 a message inside one part of a form or list |
+/// | [KitMotion] | §10 the timings, curves and when things may loop |
+/// | [KitIllustration], [KitScene], [KitDraw], [KitPortalScene] | §10 drawings in the brand's line, drawn in code, that can move |
 ///
 /// The older shared states in `product_states.dart` are re-exported here so
 /// a screen imports one library; new screens use [KitStateView] for them.
@@ -34,6 +36,8 @@ export '../widgets/product_states.dart'
 export 'kit_action_stack.dart';
 export 'kit_ask_line.dart';
 export 'kit_buttons.dart';
+export 'kit_illustration.dart';
+export 'kit_motion.dart';
 export 'kit_panel.dart';
 export 'kit_notice.dart';
 export 'kit_progress.dart';
@@ -46,3 +50,4 @@ export 'kit_state_view.dart';
 export 'kit_status_line.dart';
 export 'kit_status_mark.dart';
 export 'kit_task_mark.dart';
+export 'scenes/portal_scene.dart';
