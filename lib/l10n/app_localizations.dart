@@ -30064,6 +30064,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This phone · Termux'**
   String get phoneServerTermuxTitle;
+
+  /// Work tab: where the conversation list would be, once the server has not answered for 8 seconds and nothing is listed yet
+  ///
+  /// In en, this message translates to:
+  /// **'Your conversations will be back'**
+  String get workNotAnsweringListTitle;
+
+  /// Work tab: under workNotAnsweringListTitle; the status line above has the way out (Retry or Restart)
+  ///
+  /// In en, this message translates to:
+  /// **'They show here again as soon as the server answers.'**
+  String get workNotAnsweringListBody;
+
+  /// All conversations: title of the state when the list could not load; the reason is under it
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load conversations'**
+  String get globalSessionsLoadFailedTitle;
+
+  /// Files: title of the state when the folder's listing could not load; the reason is under it
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open this folder'**
+  String get filesLoadFailedTitle;
+
+  /// Files › Symbols: title of the state when the symbol search failed; the reason is under it
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t search symbols'**
+  String get filesSymbolsFailedTitle;
+
+  /// Terminal (server): title of the state when the server's terminals could not be listed; the reason is under it
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t list the terminals'**
+  String get terminalListFailedTitle;
 }
 
 class _AppLocalizationsDelegate

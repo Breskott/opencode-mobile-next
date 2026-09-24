@@ -14,6 +14,9 @@ import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/reader_preferences.dart';
+import '../../feedback/bug_report.dart';
+import '../kit/kit.dart' show KitAction, KitStateView;
+import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart';
 import 'review_workspace.dart';
 import '../app_theme.dart';
@@ -1008,20 +1011,31 @@ class _FilesScreenState extends State<FilesScreen> {
     if (_error != null) {
       return RefreshIndicator(
         onRefresh: _refreshFiles,
-        child: ProductErrorState(message: _error!, onRetry: _refreshFiles),
+        child: _loadFailed(
+          readerL10n(context).filesLoadFailedTitle,
+          _error!,
+          _refreshFiles,
+        ),
       );
     }
     if (_entries != null && entries.isEmpty) {
+      final searching = _search.text.isNotEmpty;
       return RefreshIndicator(
         onRefresh: _refreshFiles,
-        child: ProductEmptyState(
+        // An empty folder is the open folder; a filter that matched nothing
+        // is the magnifier (one drawing per kind of state).
+        child: KitStateView(
+          key: ValueKey(searching ? 'files-no-match' : 'files-empty-folder'),
           icon: Icons.folder_off_outlined,
-          title: _search.text.isEmpty
-              ? readerL10n(context).readerUiEmptyFolder
-              : readerL10n(context).readerUiNoFiles,
-          message: _search.text.isEmpty
-              ? readerL10n(context).readerUiPullRefresh
-              : readerL10n(context).readerUiTryFileName,
+          illustration: searching
+              ? const StatesSearchScene()
+              : const StatesFolderScene(),
+          title: searching
+              ? readerL10n(context).readerUiNoFiles
+              : readerL10n(context).readerUiEmptyFolder,
+          body: searching
+              ? readerL10n(context).readerUiTryFileName
+              : readerL10n(context).readerUiPullRefresh,
         ),
       );
     }
@@ -1422,6 +1436,35 @@ class _FilesScreenState extends State<FilesScreen> {
     return details.isEmpty ? null : details.join(' · ');
   }
 
+  /// A listing that could not load: the unplugged drawing every load
+  /// failure uses, the reason, Try again, and Report a bug.
+  Widget _loadFailed(
+    String title,
+    String message,
+    Future<void> Function() onRetry,
+  ) {
+    final l10n = readerL10n(context);
+    return KitStateView(
+      key: const ValueKey('files-load-failed'),
+      icon: AppIconography.error,
+      tone: AppStatusTone.failure,
+      illustration: const StatesUnpluggedScene(),
+      title: title,
+      body: message,
+      primary: KitAction(
+        label: l10n.commonRetry,
+        onPressed: () => unawaited(onRetry()),
+      ),
+      tertiary: [
+        KitAction(
+          key: const ValueKey('product-error-report-bug'),
+          label: l10n.e7LibraryReportABug,
+          onPressed: () => unawaited(openBugReport(context)),
+        ),
+      ],
+    );
+  }
+
   Widget _symbolList(ThemeData theme) {
     if (_loading && _symbols == null) {
       return const LoadingList(rows: 6);
@@ -1429,9 +1472,10 @@ class _FilesScreenState extends State<FilesScreen> {
     if (_error != null) {
       return RefreshIndicator(
         onRefresh: () => _searchSymbols(_search.text),
-        child: ProductErrorState(
-          message: _error!,
-          onRetry: () => _searchSymbols(_search.text),
+        child: _loadFailed(
+          readerL10n(context).filesSymbolsFailedTitle,
+          _error!,
+          () => _searchSymbols(_search.text),
         ),
       );
     }
@@ -1445,10 +1489,12 @@ class _FilesScreenState extends State<FilesScreen> {
     if (_symbols?.isEmpty == true) {
       return RefreshIndicator(
         onRefresh: () => _searchSymbols(_search.text),
-        child: ProductEmptyState(
+        child: KitStateView(
+          key: const ValueKey('files-no-symbols'),
           icon: Icons.search_off_rounded,
+          illustration: const StatesSearchScene(),
           title: readerL10n(context).readerUiNoSymbols,
-          message: readerL10n(context).readerUiSymbolsUnavailable,
+          body: readerL10n(context).readerUiSymbolsUnavailable,
         ),
       );
     }

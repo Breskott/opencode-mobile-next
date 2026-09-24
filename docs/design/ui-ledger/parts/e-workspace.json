@@ -2900,12 +2900,28 @@
           "type": "button",
           "label": "Try again",
           "key": null,
-          "file": "lib/ui/widgets/product_states.dart",
-          "line": 656,
+          "file": "lib/ui/screens/global_sessions_screen.dart",
+          "line": 677,
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "ProductErrorState.onRetry -> _loadMore when more pages remain and pagination is sane, else _reload.",
+          "effect": "KitStateView primary (the unplugged drawing, \"Couldn't load conversations\") -> _loadMore when more pages remain and pagination is sane, else _reload.",
+          "gates": [
+            "_error != null && _results.isEmpty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "global-sessions-error-report-bug",
+          "type": "button",
+          "label": "Report a bug",
+          "key": "product-error-report-bug",
+          "file": "lib/ui/screens/global_sessions_screen.dart",
+          "line": 683,
+          "action": "other",
+          "target": null,
+          "targetWidget": "openBugReport",
+          "effect": "KitStateView tertiary -> openBugReport(context).",
           "gates": [
             "_error != null && _results.isEmpty"
           ],
@@ -2916,12 +2932,12 @@
           "type": "button",
           "label": "Refresh | Clear search",
           "key": null,
-          "file": "lib/ui/widgets/product_states.dart",
-          "line": 674,
+          "file": "lib/ui/screens/global_sessions_screen.dart",
+          "line": 710,
           "action": "other",
           "target": null,
           "targetWidget": null,
-          "effect": "ProductEmptyState.onAction: _reload() when the query is empty, otherwise clears the search and reloads.",
+          "effect": "KitStateView: with no query, a tertiary Refresh -> _reload() under the fresh-sheet drawing; with a query that matched nothing, a secondary Clear search that clears it and reloads, under the magnifier.",
           "gates": [
             "_results.isEmpty && !_hasMore"
           ],

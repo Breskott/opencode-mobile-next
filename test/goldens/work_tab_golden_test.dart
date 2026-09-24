@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/sse.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
@@ -207,6 +208,8 @@ void main() {
         'work_empty',
         light: light,
         controller: await workController(),
+        // The empty state's drawing finishes its entrance.
+        before: () => tester.pump(KitMotion.entrance),
       );
     });
 
@@ -276,6 +279,7 @@ void main() {
         'work_chooser',
         light: light,
         controller: controller,
+        before: () => tester.pump(KitMotion.entrance),
       );
     });
   }

@@ -36,6 +36,8 @@ class _ChatLoadError extends StatelessWidget {
       key: const ValueKey('chat-load-error'),
       icon: AppIconography.error,
       tone: AppStatusTone.failure,
+      // Every load failure draws the unplugged cable (design standard §10).
+      illustration: const StatesUnpluggedScene(),
       title: l10n.chatLoadFailedTitle,
       body: l10n.chatLoadFailedBody,
       primary: KitAction(

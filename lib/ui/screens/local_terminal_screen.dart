@@ -12,6 +12,7 @@ import '../../builtin/team/builtin_team.dart' show BuiltinTeam;
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import '../kit/scenes/states_scenes.dart';
 import '../kit/terminal_key_bar.dart';
 import '../widgets/confirm_sheet.dart';
 import 'phone_setup/phone_setup_routes.dart';
@@ -320,6 +321,7 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
       return KitStateView(
         key: const ValueKey('local-terminal-not-set-up'),
         icon: AppIconography.terminal,
+        illustration: const StatesTerminalScene(),
         title: l10n.localTerminalNotSetUpTitle,
         body: l10n.localTerminalNotSetUpBody,
         primary: KitAction(
@@ -411,6 +413,7 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
                   key: const ValueKey('local-terminal-ended'),
                   size: KitStateSize.inline,
                   icon: AppIconography.terminal,
+                  illustration: const StatesTerminalScene(ended: true),
                   title: l10n.localTerminalEndedTitle,
                   body: l10n.localTerminalEndedBody(shell.exitCode ?? -1),
                   primary: KitAction(

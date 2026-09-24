@@ -17,6 +17,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profile_monitor.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
 import 'package:opencode_mobile/ui/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,6 +45,7 @@ Future<void> _golden(
   required WorkController controller,
   Widget home = const HomeScreen(initialTab: 0),
   VoidCallback? dispose,
+  Duration settle = Duration.zero,
 }) async {
   _mockSecureStorage(tester);
   tester.view.physicalSize = const Size(412, 915);
@@ -61,6 +63,7 @@ Future<void> _golden(
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(settle);
     expect(tester.takeException(), isNull);
     await expectLater(
       find.byKey(boundary),
@@ -236,6 +239,8 @@ void main() {
         light: light,
         controller: controller,
         home: const HomeScreen(initialTab: 1),
+        // Inbox's drawing finishes its entrance.
+        settle: KitMotion.entrance,
       );
     });
   }
