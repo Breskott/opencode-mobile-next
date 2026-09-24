@@ -26,7 +26,7 @@ diagnostics → Performance → Copy report.
 | Record | What it covers |
 |---|---|
 | [phone-setup-v2-2026-09-24](phone-setup-v2-2026-09-24/README.md) | OpenCode inside the app (no Termux): built-in Linux, the resumable setup engine, setup screens, background survival, the catalog wait |
-| `aiteam-builtin-2026-09-24` (in progress on `feat/aiteam-component`) | AI Team as a setup component; Android 14 and 15 emulators |
+| [aiteam-builtin-2026-09-24](aiteam-builtin-2026-09-24/README.md) | AI Team inside the app: component, second service, per-project team, a real task to a merged commit on Android 15; process counts vs the 32 limit |
 
 The older folders in this directory are earlier screenshot sets and do not follow
 this format.
