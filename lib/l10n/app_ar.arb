@@ -4687,6 +4687,7 @@
   "phoneServerCardStopped": "متوقف",
   "phoneServerCardStarting": "جارٍ التشغيل",
   "phoneServerCardStopping": "جارٍ الإيقاف",
+  "phoneServerCardRemoving": "جارٍ الإزالة",
   "phoneServerCardChecking": "جارٍ التحقق",
   "phoneServerCardNotSetUp": "غير مُعَدّ",
   "phoneServerCardSettingUp": "جارٍ الإعداد",

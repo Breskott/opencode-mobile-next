@@ -17763,6 +17763,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get phoneServerCardStopping => 'جارٍ الإيقاف';
 
   @override
+  String get phoneServerCardRemoving => 'جارٍ الإزالة';
+
+  @override
   String get phoneServerCardChecking => 'جارٍ التحقق';
 
   @override

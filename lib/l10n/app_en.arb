@@ -18975,6 +18975,10 @@
   "@phoneServerCardStopping": {
     "description": "Status of the server on this phone while it stops"
   },
+  "phoneServerCardRemoving": "Removing",
+  "@phoneServerCardRemoving": {
+    "description": "Status of the server on this phone while Remove deletes it"
+  },
   "phoneServerCardChecking": "Checking",
   "@phoneServerCardChecking": {
     "description": "Status before the server on this phone has been read"

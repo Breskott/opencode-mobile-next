@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../builtin/setup/setup_contract.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
 import 'phone_setup_selection.dart';
 
 /// The Customize sheet of screen A, and "Add tools" from the phone's card.
@@ -179,7 +180,7 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
       shrinkWrap: true,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Semantics(
             header: true,
             child: Text(
@@ -190,14 +191,12 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
             ),
           ),
         ),
+        // On the sheet's 16 dp rails, like every list (standard §1).
         for (final component in rows)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: _row(context, l10n, component, checking: checking),
-          ),
+          _row(context, l10n, component, checking: checking),
         Divider(height: 1, color: AppTheme.hairline(theme)),
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -207,26 +206,22 @@ class _SetupCustomizeSheetState extends State<SetupCustomizeSheet> {
                 child: Text(
                   totalsText,
                   key: const ValueKey('phone-setup-customize-totals'),
-                  textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: AppTheme.mutedOf(theme),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
-              FilledButton(
+              // The totals line right above is the reason when it is off
+              // ("Nothing chosen yet", "Checking…").
+              KitButton.primary(
                 key: const ValueKey('phone-setup-customize-done'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
+                label: widget.addMode
+                    ? l10n.phoneSetupStartAdd
+                    : l10n.phoneSetupStartDone,
                 onPressed: checking || (widget.addMode && install.isEmpty)
                     ? null
                     : () => Navigator.of(context).pop(_result),
-                child: Text(
-                  widget.addMode
-                      ? l10n.phoneSetupStartAdd
-                      : l10n.phoneSetupStartDone,
-                ),
               ),
             ],
           ),

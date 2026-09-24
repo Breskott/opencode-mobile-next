@@ -5,18 +5,21 @@ import 'package:flutter/material.dart';
 import '../../builtin/setup/setup_contract.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import 'terminal_view.dart';
 
-/// The progress of any setup job: one overall bar, a checklist of the job's
-/// components, and the live log behind "Show details"
-/// (docs/design/phone-setup-v2-2026-09-24.md, goal 3).
+/// The progress of any setup job as one state (design standard §3, §4): an
+/// icon and a title that say where the job stands, one overall bar with one
+/// line under it, a checklist of the job's components, the one action that
+/// fits (Continue setup, or Cancel while it runs) and the live log under
+/// "Details" (docs/design/phone-setup-v2-2026-09-24.md, goal 3).
 ///
 /// It knows nothing about where it is shown: no Scaffold, no navigation, no
-/// engine. First setup hosts it on screen B; "Add tools", updates and AI
-/// Team's own install host the same widget with their own [progress]. Every
-/// number it draws comes straight from [progress]; where a component reports
-/// only stages it says what is happening and shows an indeterminate line,
-/// never an estimate dressed up as a measurement.
+/// engine. First setup hosts it on screen B; "Add tools" and updates host
+/// the same widget with their own [progress] and [title]. Every number it
+/// draws comes straight from [progress]; where a component reports only
+/// stages it says what is happening, never an estimate dressed up as a
+/// measurement.
 class SetupProgressView extends StatefulWidget {
   const SetupProgressView({
     super.key,
@@ -25,6 +28,7 @@ class SetupProgressView extends StatefulWidget {
     this.onContinue,
     this.onCancel,
     this.note,
+    this.title,
   });
 
   final SetupProgress progress;
@@ -41,9 +45,14 @@ class SetupProgressView extends StatefulWidget {
   /// Offered only while the job runs. The host decides whether to confirm.
   final VoidCallback? onCancel;
 
-  /// One quiet line under the checklist while the job runs; the host's own
+  /// One quiet line under the title while the job runs; the host's own
   /// words ("You can leave the app…"), since only it knows what leaving means.
   final String? note;
+
+  /// What the job is, while it runs or has just finished ("Setting up
+  /// OpenCode on this phone", "Adding Python"). A stopped or failed job says
+  /// that instead, so the title never contradicts the bar.
+  final String? title;
 
   /// Network trouble as curl, apt and the resolver word it. Matched so the
   /// person is told to reconnect instead of being shown a curl exit code.
@@ -92,10 +101,9 @@ class _SetupProgressViewState extends State<SetupProgressView> {
   double _furthest = 0;
   String _jobKey = '';
 
-  /// Bumped when a new job starts, so the bar restarts from its value
-  /// instead of easing backwards from the old job's end.
-  int _generation = 0;
-  bool _details = false;
+  /// True for the one update in which a new job started: the bar takes the
+  /// new job's value at once instead of easing backwards from the old end.
+  bool _jump = false;
 
   @override
   void initState() {
@@ -115,9 +123,9 @@ class _SetupProgressViewState extends State<SetupProgressView> {
         next.state == SetupState.running &&
         (old.progress.state == SetupState.done ||
             old.progress.state == SetupState.idle);
-    if (key != _jobKey || restarted) {
+    _jump = key != _jobKey || restarted;
+    if (_jump) {
       _jobKey = key;
-      _generation++;
       _furthest = next.overall.clamp(0, 1).toDouble();
     } else {
       _furthest = math.max(_furthest, next.overall.clamp(0, 1).toDouble());
@@ -131,7 +139,6 @@ class _SetupProgressViewState extends State<SetupProgressView> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final progress = widget.progress;
@@ -145,31 +152,50 @@ class _SetupProgressViewState extends State<SetupProgressView> {
               ),
           ];
     final failed = progress.state == SetupState.failed;
-    final running =
-        progress.state == SetupState.running ||
-        progress.state == SetupState.idle;
+    final stopped =
+        progress.state == SetupState.interrupted ||
+        progress.state == SetupState.cancelled;
+    final done = progress.state == SetupState.done;
+    final running = !failed && !stopped && !done;
     final network = failed && _looksLikeNetwork(progress);
+    final title = widget.title ?? l10n.phoneSetupProgressTitle;
 
-    return Column(
+    final (icon, tone) = failed
+        ? (AppIconography.error, AppStatusTone.failure)
+        : stopped
+        ? (AppIconography.pause, AppStatusTone.attention)
+        : done
+        ? (AppIconography.check, AppStatusTone.ok)
+        : (AppIconography.download, AppStatusTone.progress);
+
+    // A job can fail between components (the server start after the last
+    // install): the body says why even though no row carries it.
+    final String? body;
+    Key? bodyKey;
+    if (failed) {
+      if (rows.any((r) => r.state == ComponentState.failed)) {
+        body = null;
+      } else {
+        body = network
+            ? l10n.setupProgressViewNoInternet
+            : (progress.error ?? l10n.setupProgressViewFailedUnknown);
+        bodyKey = const Key('setup-progress-job-error');
+      }
+    } else if (stopped) {
+      body = progress.state == SetupState.interrupted
+          ? l10n.setupProgressViewInterrupted
+          : l10n.setupProgressViewCancelled;
+    } else if (running) {
+      body = widget.note;
+    } else {
+      body = null;
+    }
+
+    final checklist = Column(
+      key: const Key('setup-progress-checklist'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _OverallBar(
-          key: ValueKey('setup-progress-bar-$_generation'),
-          value: _furthest,
-          failed: failed,
-          reduceMotion: reduceMotion,
-          semanticsLabel: l10n.setupProgressViewOverallLabel,
-        ),
-        const SizedBox(height: 10),
-        Text(
-          _statusLine(l10n, progress),
-          key: const Key('setup-progress-status'),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: failed ? theme.colorScheme.error : AppTheme.mutedOf(theme),
-          ),
-        ),
-        const SizedBox(height: 20),
         for (final row in rows)
           _ComponentRow(
             key: ValueKey('setup-progress-row-${row.id}'),
@@ -180,108 +206,73 @@ class _SetupProgressViewState extends State<SetupProgressView> {
                 : null,
             reduceMotion: reduceMotion,
           ),
-        if (failed && !rows.any((r) => r.state == ComponentState.failed))
-          // A job can fail between components (the server start after the
-          // last install); say why even though no row carries it.
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              network
-                  ? l10n.setupProgressViewNoInternet
-                  : (progress.error ?? l10n.setupProgressViewFailedUnknown),
-              key: const Key('setup-progress-job-error'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
-          ),
-        if (running && widget.note != null) ...[
-          const SizedBox(height: 20),
-          Text(
-            widget.note!,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.mutedOf(theme),
-            ),
-          ),
-        ],
-        const SizedBox(height: 16),
-        if (progress.canContinue && widget.onContinue != null) ...[
-          FilledButton(
-            key: const Key('setup-progress-continue'),
-            style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-            onPressed: widget.onContinue,
-            child: Text(l10n.setupProgressViewContinue),
-          ),
-          const SizedBox(height: 4),
-        ],
-        _actions(l10n, running),
-        _detailsPanel(l10n, progress.logTail, reduceMotion),
       ],
     );
-  }
 
-  Widget _actions(AppLocalizations l10n, bool running) {
-    final toggle = TextButton.icon(
-      key: const Key('setup-progress-details'),
-      style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-      onPressed: () => setState(() => _details = !_details),
-      icon: Icon(
-        _details ? AppIconography.chevronUp : AppIconography.chevronDown,
-        size: AppIconography.inlineSize,
-      ),
-      label: Text(
-        _details
-            ? l10n.setupProgressViewHideDetails
-            : l10n.setupProgressViewShowDetails,
-      ),
-    );
-    final cancel = running && widget.onCancel != null
-        ? TextButton(
-            key: const Key('setup-progress-cancel'),
-            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-            onPressed: widget.onCancel,
-            child: Text(l10n.setupProgressViewCancel),
+    final log = progress.logTail.trimRight();
+    final details = log.isEmpty
+        ? Text(
+            l10n.setupProgressViewNoLog,
+            key: const Key('setup-progress-log'),
+            style: Theme.of(context).textTheme.bodySmall,
           )
-        : null;
-    // Wrap rather than Row: at 2.5x text on a 320dp phone the two labels do
-    // not fit side by side, and Cancel drops under the toggle instead of
-    // clipping. spaceBetween keeps Cancel at the trailing edge otherwise.
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [toggle, ?cancel],
-    );
-  }
+        // Logs are left-to-right whatever the app's direction; flipping
+        // them would scramble paths and flags. Tail-first: each new poll
+        // re-renders the last lines, so the panel follows the output.
+        : Directionality(
+            key: const Key('setup-progress-log'),
+            textDirection: TextDirection.ltr,
+            child: TerminalView(output: log),
+          );
 
-  Widget _detailsPanel(AppLocalizations l10n, String log, bool reduceMotion) {
-    final theme = Theme.of(context);
-    return AnimatedSize(
-      duration: reduceMotion
+    // The bar eases towards the furthest point; the first build and a new
+    // job draw the value as is.
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: _furthest),
+      duration: reduceMotion || _jump
           ? Duration.zero
-          : const Duration(milliseconds: 220),
+          : const Duration(milliseconds: 700),
       curve: Curves.easeOutCubic,
-      alignment: AlignmentDirectional.topStart,
-      child: !_details
-          ? const SizedBox(width: double.infinity)
-          : Padding(
-              key: const Key('setup-progress-log'),
-              padding: const EdgeInsets.only(top: 4),
-              child: log.trim().isEmpty
-                  ? Text(
-                      l10n.setupProgressViewNoLog,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                      ),
-                    )
-                  // Logs are left-to-right whatever the app's direction;
-                  // flipping them would scramble paths and flags.
-                  : Directionality(
-                      textDirection: TextDirection.ltr,
-                      // Tail-first: each new poll re-renders the last lines,
-                      // so the panel follows the output without scrolling.
-                      child: TerminalView(output: log.trimRight()),
-                    ),
+      builder: (context, shown, _) => KitStateView(
+        icon: icon,
+        tone: tone,
+        title: failed || stopped ? l10n.setupProgressViewFailedTitle : title,
+        titleKey: const Key('setup-progress-title'),
+        body: body,
+        bodyKey: bodyKey,
+        // Each row speaks for itself when setup moves on (below); the whole
+        // page announcing every byte would drown that out.
+        liveRegion: false,
+        progress: KitProgress.known(
+          shown,
+          key: const Key('setup-progress-overall'),
+          tone: failed
+              ? AppStatusTone.failure
+              : stopped
+              ? AppStatusTone.neutral
+              : null,
+          semanticsLabel: l10n.setupProgressViewOverallLabel,
+          caption: running || done ? _timeLine(l10n, progress) : null,
+        ),
+        content: checklist,
+        primary: progress.canContinue && widget.onContinue != null
+            ? KitAction(
+                key: const Key('setup-progress-continue'),
+                label: l10n.setupProgressViewContinue,
+                onPressed: widget.onContinue,
+              )
+            : null,
+        tertiary: [
+          if (running && widget.onCancel != null)
+            KitAction(
+              key: const Key('setup-progress-cancel'),
+              label: l10n.setupProgressViewCancel,
+              onPressed: widget.onCancel,
+              destructive: true,
             ),
+        ],
+        detailsChild: details,
+      ),
     );
   }
 
@@ -292,23 +283,14 @@ class _SetupProgressViewState extends State<SetupProgressView> {
     return id;
   }
 
-  String _statusLine(AppLocalizations l10n, SetupProgress progress) {
-    switch (progress.state) {
-      case SetupState.done:
-        return l10n.setupProgressViewDone;
-      case SetupState.failed:
-        return l10n.setupProgressViewFailedTitle;
-      case SetupState.interrupted:
-        return l10n.setupProgressViewInterrupted;
-      case SetupState.cancelled:
-        return l10n.setupProgressViewCancelled;
-      case SetupState.idle:
-      case SetupState.running:
-        final eta = progress.etaSeconds;
-        if (eta == null) return l10n.setupProgressViewGettingStarted;
-        if (eta < 60) return l10n.setupProgressViewUnderMinute;
-        return l10n.setupProgressViewMinutesLeft((eta / 60).round());
-    }
+  /// The one line under the bar while it moves: how long is left, only
+  /// when the engine knows.
+  String _timeLine(AppLocalizations l10n, SetupProgress progress) {
+    if (progress.state == SetupState.done) return l10n.setupProgressViewDone;
+    final eta = progress.etaSeconds;
+    if (eta == null) return l10n.setupProgressViewGettingStarted;
+    if (eta < 60) return l10n.setupProgressViewUnderMinute;
+    return l10n.setupProgressViewMinutesLeft((eta / 60).round());
   }
 
   String _failureText(
@@ -345,55 +327,10 @@ class _SetupProgressViewState extends State<SetupProgressView> {
   }
 }
 
-/// The overall bar. It eases towards [value]; the host keeps [value] from
-/// ever going backwards, and a new job gets a new key so the bar starts
-/// from the new job's value rather than sliding back.
-class _OverallBar extends StatelessWidget {
-  const _OverallBar({
-    super.key,
-    required this.value,
-    required this.failed,
-    required this.reduceMotion,
-    required this.semanticsLabel,
-  });
-
-  final double value;
-  final bool failed;
-  final bool reduceMotion;
-  final String semanticsLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // A calm red: the error role, softened, so a failure reads as "stopped"
-    // rather than an alarm.
-    final color = failed
-        ? theme.colorScheme.error.withValues(alpha: .75)
-        : theme.colorScheme.primary;
-    return TweenAnimationBuilder<double>(
-      // Only `end`: the first build draws the value as is; later values
-      // ease from wherever the bar is.
-      tween: Tween<double>(end: value),
-      duration: reduceMotion
-          ? Duration.zero
-          : const Duration(milliseconds: 700),
-      curve: Curves.easeOutCubic,
-      builder: (context, shown, _) => LinearProgressIndicator(
-        key: const Key('setup-progress-overall'),
-        value: shown,
-        minHeight: 6,
-        borderRadius: BorderRadius.circular(3),
-        color: color,
-        backgroundColor: theme.colorScheme.surfaceContainerHighest,
-        semanticsLabel: semanticsLabel,
-        // No localized value: Android reads a progress bar's value as a
-        // number, and the default (the drawn percent) is what it can parse;
-        // an Arabic percent sign there fails semantics validation.
-      ),
-    );
-  }
-}
-
+/// One component of the job, as a [KitRow]: its state mark, its title, and
+/// what it is doing on the trailing side ("Downloading · 18 of 30 MB", or
+/// the version once done). With large text the detail moves under the
+/// title instead of squeezing it; a failure is said under the title.
 class _ComponentRow extends StatelessWidget {
   const _ComponentRow({
     super.key,
@@ -421,82 +358,50 @@ class _ComponentRow extends StatelessWidget {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final muted = AppTheme.mutedOf(theme);
     final detail = _detail(l10n);
-    final stageOnly = _active && row.fraction == null;
+    final stacked = AppTheme.stackedActions(context);
+    final detailKey = Key('setup-progress-detail-${row.id}');
+    final failure = this.failure;
 
-    final titleStyle = theme.textTheme.bodyLarge?.copyWith(
-      color: row.state == ComponentState.pending ? muted : null,
-      fontWeight: _active ? FontWeight.w600 : null,
-    );
-    final detailStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: muted,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
-
-    final content = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 24, height: 24, child: Center(child: _icon(theme))),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Title and detail share a line when they fit; with large
-                // text the detail wraps under the title instead of
-                // squeezing it. spaceBetween puts the detail at the
-                // trailing edge in either direction.
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  children: [
-                    Text(title, style: titleStyle),
-                    if (detail != null)
-                      Text(
-                        detail,
-                        key: Key('setup-progress-detail-${row.id}'),
-                        style: detailStyle,
-                      ),
-                  ],
-                ),
-                if (stageOnly)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: reduceMotion
-                        // A still line: something is happening, with no
-                        // motion and no invented amount.
-                        ? Container(
-                            key: const Key('setup-progress-stage-line'),
-                            height: 2,
-                            color: theme.colorScheme.primary.withValues(
-                              alpha: .35,
-                            ),
-                          )
-                        : LinearProgressIndicator(
-                            key: const Key('setup-progress-stage-line'),
-                            minHeight: 2,
-                            borderRadius: BorderRadius.circular(1),
-                            backgroundColor: Colors.transparent,
-                          ),
-                  ),
-                if (failure != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      failure!,
-                      key: Key('setup-progress-error-${row.id}'),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
-                    ),
-                  ),
-              ],
+    final InlineSpan? supporting = failure != null
+        ? TextSpan(
+            text: failure,
+            style: TextStyle(
+              color: AppTheme.statusColor(theme, AppStatusTone.failure),
             ),
-          ),
-        ],
-      ),
+          )
+        : stacked && detail != null
+        ? TextSpan(
+            text: detail,
+            style: const TextStyle(
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          )
+        : null;
+
+    final content = KitRow(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      leading: _mark(),
+      title: title,
+      supporting: supporting,
+      supportingMaxLines: 4,
+      supportingKey: failure != null
+          ? Key('setup-progress-error-${row.id}')
+          : stacked
+          ? detailKey
+          : null,
+      trailing: !stacked && detail != null
+          ? Padding(
+              padding: const EdgeInsetsDirectional.only(start: 12),
+              child: Text(
+                detail,
+                key: detailKey,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: muted,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            )
+          : null,
     );
 
     // The label changes with the stage or the state, not with each byte, so
@@ -526,7 +431,7 @@ class _ComponentRow extends StatelessWidget {
     );
   }
 
-  /// The right-hand text, from the row's own signal only.
+  /// The trailing text, from the row's own signal only.
   String? _detail(AppLocalizations l10n) {
     if (_finished) return row.version;
     if (row.state == ComponentState.failed) return null;
@@ -556,43 +461,12 @@ class _ComponentRow extends StatelessWidget {
     return null;
   }
 
-  Widget _icon(ThemeData theme) {
-    final Widget icon = switch (row.state) {
-      ComponentState.done || ComponentState.skipped => Icon(
-        AppIconography.check,
-        key: const ValueKey('done'),
-        size: AppIconography.inlineSize,
-        color: AppTheme.successOf(theme),
-      ),
-      ComponentState.running || ComponentState.checking =>
-        reduceMotion
-            ? Icon(
-                AppIconography.statusDot,
-                key: const ValueKey('running'),
-                size: 12,
-                color: theme.colorScheme.primary,
-              )
-            : const SizedBox(
-                key: ValueKey('running'),
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-      ComponentState.failed => Icon(
-        AppIconography.error,
-        key: const ValueKey('failed'),
-        size: AppIconography.inlineSize,
-        color: theme.colorScheme.error,
-      ),
-      ComponentState.pending => Container(
-        key: const ValueKey('pending'),
-        width: 10,
-        height: 10,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: AppTheme.mutedOf(theme), width: 1.5),
-        ),
-      ),
+  Widget _mark() {
+    final state = switch (row.state) {
+      ComponentState.done || ComponentState.skipped => KitMarkState.done,
+      ComponentState.running || ComponentState.checking => KitMarkState.working,
+      ComponentState.failed => KitMarkState.failed,
+      ComponentState.pending => KitMarkState.waiting,
     };
     // The check "lands" (a short scale and fade) as a row completes. It is
     // the switch between states that animates, so rows already done when
@@ -611,11 +485,9 @@ class _ComponentRow extends StatelessWidget {
           child: child,
         ),
       ),
-      child: KeyedSubtree(
-        key: ValueKey(
-          '${row.id}-${_finished ? ComponentState.done : row.state}',
-        ),
-        child: icon,
+      child: KitStatusMark(
+        key: ValueKey('${row.id}-${state.name}'),
+        state: state,
       ),
     );
   }

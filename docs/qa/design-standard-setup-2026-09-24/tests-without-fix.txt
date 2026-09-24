@@ -1,0 +1,28 @@
+# test/design_standard_setup_test.dart and test/design_standard_test.dart (this branch's versions)
+# run on dca366f1 (before the migration), pinned Flutter 91f8bd75, 2026-09-24
+
+test/design_standard_test.dart: migrated screens use the kit, not raw progress, cards or buttons [E]
+test/design_standard_test.dart: each migrated screen has dark and light goldens at 412x915 [E]
+test/design_standard_setup_test.dart: start screen: Open says it is starting, with no button standing in for it (§2) [E]
+test/design_standard_setup_test.dart: "This phone": Start shows Starting, with no disabled Start and no extra bar (§2, §4) [E]
+test/design_standard_setup_test.dart: progress: a interrupted setup is not titled "Setting up" (§3) [E]
+test/design_standard_setup_test.dart: progress: a cancelled setup is not titled "Setting up" (§3) [E]
+test/design_standard_setup_test.dart: progress: a stage-only step draws no second bar (§4) [E]
+test/design_standard_setup_test.dart: ready: Create stacks full width under the name (§2) [E]
+00:03 +2 -8: Some tests failed.
+
+# design_standard_test: files that still draw raw parts on dca366f1
+lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart: FilledButton x2
+lib/ui/screens/phone_setup/phone_setup_ready_screen.dart: CircularProgressIndicator x1
+lib/ui/screens/phone_setup/phone_setup_ready_screen.dart: FilledButton x2
+lib/ui/screens/phone_setup/phone_setup_start_screen.dart: CircularProgressIndicator x1
+lib/ui/screens/phone_setup/phone_setup_start_screen.dart: FilledButton x2
+lib/ui/screens/phone_setup/phone_setup_start_screen.dart: LinearProgressIndicator x1
+lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart: CircularProgressIndicator x1
+lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart: FilledButton x2
+lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart: LinearProgressIndicator x1
+lib/ui/widgets/phone_server_card.dart: FilledButton x8
+lib/ui/widgets/phone_server_card.dart: LinearProgressIndicator x1
+lib/ui/widgets/setup_progress_view.dart: CircularProgressIndicator x1
+lib/ui/widgets/setup_progress_view.dart: FilledButton x2
+lib/ui/widgets/setup_progress_view.dart: LinearProgressIndicator x2

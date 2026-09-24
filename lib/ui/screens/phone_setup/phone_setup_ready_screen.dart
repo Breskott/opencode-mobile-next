@@ -10,6 +10,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/connection.dart';
 import '../../../state/profiles.dart';
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
 import '../../navigation/chat_route.dart';
 import '../../widgets/product_states.dart';
 import '../project_folder_actions.dart';
@@ -187,23 +188,6 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = _l10n;
-    final muted = theme.textTheme.bodyMedium!.copyWith(
-      color: AppTheme.mutedOf(theme),
-    );
-    final createButton = FilledButton(
-      key: const ValueKey('phone-setup-ready-create'),
-      style: FilledButton.styleFrom(minimumSize: const Size(96, 48)),
-      onPressed: _busy ? null : _create,
-      child: _busy
-          ? SizedBox.square(
-              dimension: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                semanticsLabel: l10n.phoneSetupReadyCreating,
-              ),
-            )
-          : Text(l10n.phoneSetupReadyCreate),
-    );
     final field = TextField(
       key: const ValueKey('phone-setup-ready-name'),
       controller: _name,
@@ -245,93 +229,37 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
           ],
         ),
         body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-                children: [
-                  Row(
-                    children: [
-                      ExcludeSemantics(
-                        child: ReadyCheck(color: AppTheme.successOf(theme)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Semantics(
-                          header: true,
-                          child: Text(
-                            l10n.phoneSetupReadyTitle,
-                            key: const ValueKey('phone-setup-ready-title'),
-                            style: theme.textTheme.headlineSmall,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  Text(
-                    l10n.phoneSetupReadyNameTitle,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  // Side by side when there is room; stacked on a narrow
-                  // phone or with large text, where a squeezed field would
-                  // hide the name being typed.
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final roomy =
-                          constraints.maxWidth >= 360 &&
-                          MediaQuery.textScalerOf(context).scale(14) <= 18;
-                      if (roomy) {
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: field),
-                            const SizedBox(width: 12),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: createButton,
-                            ),
-                          ],
-                        );
-                      }
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          field,
-                          const SizedBox(height: 12),
-                          createButton,
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(l10n.phoneSetupReadyOr, style: muted),
-                      TextButton(
-                        key: const ValueKey('phone-setup-ready-open-existing'),
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(48, 48),
-                        ),
-                        onPressed: _busy ? null : _openExisting,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Flexible(
-                              child: Text(l10n.phoneSetupReadyOpenExisting),
-                            ),
-                            const Icon(AppIconography.chevronRight, size: 18),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+          top: false,
+          // One state (design standard §3): the check, what is ready, the
+          // one thing left (a name, then Create) and the quiet other way.
+          child: KitStateView(
+            icon: AppIconography.check,
+            tone: AppStatusTone.ok,
+            iconChild: ExcludeSemantics(
+              child: ReadyCheck(
+                color: AppTheme.statusColor(theme, AppStatusTone.ok),
+                size: 26,
+                ring: false,
               ),
             ),
+            title: l10n.phoneSetupReadyTitle,
+            titleKey: const ValueKey('phone-setup-ready-title'),
+            body: l10n.phoneSetupReadyNameTitle,
+            liveRegion: false,
+            content: field,
+            primary: KitAction(
+              key: const ValueKey('phone-setup-ready-create'),
+              label: l10n.phoneSetupReadyCreate,
+              onPressed: _busy ? null : _create,
+              working: _busy,
+            ),
+            tertiary: [
+              KitAction(
+                key: const ValueKey('phone-setup-ready-open-existing'),
+                label: l10n.phoneSetupReadyOpenExisting,
+                onPressed: _busy ? null : _openExisting,
+              ),
+            ],
           ),
         ),
       ),
@@ -342,10 +270,18 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
 /// The small success moment: a check that draws itself in once. No confetti,
 /// no loop; with reduced motion it is simply there.
 class ReadyCheck extends StatefulWidget {
-  const ReadyCheck({super.key, required this.color, this.size = 32});
+  const ReadyCheck({
+    super.key,
+    required this.color,
+    this.size = 32,
+    this.ring = true,
+  });
 
   final Color color;
   final double size;
+
+  /// Draws its own ring; off inside a state's tonal circle, which is one.
+  final bool ring;
 
   static const duration = Duration(milliseconds: 420);
 
@@ -389,6 +325,7 @@ class _ReadyCheckState extends State<ReadyCheck>
         painter: _CheckPainter(
           progress: Curves.easeOutCubic.transform(_draw.value),
           color: widget.color,
+          ring: widget.ring,
         ),
       ),
     ),
@@ -396,20 +333,27 @@ class _ReadyCheckState extends State<ReadyCheck>
 }
 
 class _CheckPainter extends CustomPainter {
-  const _CheckPainter({required this.progress, required this.color});
+  const _CheckPainter({
+    required this.progress,
+    required this.color,
+    required this.ring,
+  });
 
   final double progress;
   final Color color;
+  final bool ring;
 
   @override
   void paint(Canvas canvas, Size size) {
     final stroke = size.width * .09;
-    final ring = Paint()
-      ..color = color.withValues(alpha: .18 + .82 * progress)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke;
-    final center = size.center(Offset.zero);
-    canvas.drawCircle(center, size.width / 2 - stroke / 2, ring);
+    if (ring) {
+      final paint = Paint()
+        ..color = color.withValues(alpha: .18 + .82 * progress)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke;
+      final center = size.center(Offset.zero);
+      canvas.drawCircle(center, size.width / 2 - stroke / 2, paint);
+    }
     final check = Path()
       ..moveTo(size.width * .28, size.height * .52)
       ..lineTo(size.width * .44, size.height * .67)
@@ -428,5 +372,5 @@ class _CheckPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_CheckPainter old) =>
-      old.progress != progress || old.color != color;
+      old.progress != progress || old.color != color || old.ring != ring;
 }

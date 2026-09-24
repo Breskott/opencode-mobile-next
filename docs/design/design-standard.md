@@ -63,6 +63,8 @@ Cards are for content the person works with, not for wrapping a message.
 
 - Section header: `SectionLabel`, sentence case, with an optional count or action on the right.
 - Rows: `KitRow`, with a leading icon or status dot, title (1 line), supporting line (1 line, muted), and a trailing value, chevron or single icon action.
+  - A list of steps (setup's checklist) leads each row with `KitStatusMark`: waiting, working, done, failed. The mark is a state, not a second bar.
+  - Only titles in the person's own words (conversation titles) may wrap, and app words may wrap at large text, so nothing is cut to a few letters.
 - State lives in the row (dot, mark, "Needs you"), not in extra cards above the list.
 - The same thing appears once per screen.
 

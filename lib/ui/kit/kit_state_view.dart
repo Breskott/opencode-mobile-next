@@ -26,6 +26,13 @@ enum KitStateSize {
 /// 6. [details]: a collapsed "Details" row for technical text (address,
 ///    error), in mono, never above the actions. [detailNotes] are plain
 ///    lines shown above that text when it opens (for example what to check).
+///    [detailsChild] shows richer technical content there instead (a live
+///    log).
+///
+/// Two optional places hold what a state is made of, without new slots in
+/// that order: [content] sits between the progress and the actions (the
+/// steps a progress is made of, a name field), and [footer] after
+/// everything (the less common ways in, folded away).
 class KitStateView extends StatefulWidget {
   const KitStateView({
     super.key,
@@ -43,6 +50,11 @@ class KitStateView extends StatefulWidget {
     this.titleKey,
     this.bodyKey,
     this.liveRegion = true,
+    this.iconChild,
+    this.content,
+    this.footer,
+    this.detailsChild,
+    this.padding,
   });
 
   final IconData icon;
@@ -61,6 +73,23 @@ class KitStateView extends StatefulWidget {
 
   /// Announce the state when it changes (a page state usually should).
   final bool liveRegion;
+
+  /// Drawn inside the tonal circle instead of [icon] (a check that draws
+  /// itself in); [icon] still names the state.
+  final Widget? iconChild;
+
+  /// Between the progress and the actions: what the state is made of.
+  final Widget? content;
+
+  /// After the actions and the details: the less common ways on.
+  final Widget? footer;
+
+  /// Shown under "Details" when it opens, after [detailNotes] and
+  /// [details]; for technical content that is not one string (a log view).
+  final Widget? detailsChild;
+
+  /// Overrides the inline size's padding, for a host already on the rails.
+  final EdgeInsetsGeometry? padding;
 
   @override
   State<KitStateView> createState() => _KitStateViewState();
@@ -81,7 +110,10 @@ class _KitStateViewState extends State<KitStateView> {
     final page = widget.size == KitStateSize.page;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final tint = toneColor(theme, widget.tone);
-    final hasDetails = widget.details != null || widget.detailNotes.isNotEmpty;
+    final hasDetails =
+        widget.details != null ||
+        widget.detailNotes.isNotEmpty ||
+        widget.detailsChild != null;
     final actions = KitActionBlock(
       primary: widget.primary,
       secondary: widget.secondary,
@@ -101,7 +133,9 @@ class _KitStateViewState extends State<KitStateView> {
               color: tint.withValues(alpha: .14),
               shape: BoxShape.circle,
             ),
-            child: Icon(widget.icon, size: page ? 24 : 19, color: tint),
+            child:
+                widget.iconChild ??
+                Icon(widget.icon, size: page ? 24 : 19, color: tint),
           ),
         ),
         SizedBox(height: page ? 20 : 12),
@@ -123,6 +157,10 @@ class _KitStateViewState extends State<KitStateView> {
         if (widget.progress case final progress?) ...[
           SizedBox(height: page ? 20 : 12),
           KitProgressView(progress: progress),
+        ],
+        if (widget.content case final content?) ...[
+          SizedBox(height: page ? 20 : 12),
+          content,
         ],
         if (!actions.isEmpty) ...[SizedBox(height: page ? 24 : 12), actions],
         if (hasDetails) ...[
@@ -177,9 +215,14 @@ class _KitStateViewState extends State<KitStateView> {
                         color: AppTheme.mutedOf(theme),
                       ),
                     ),
+                  ?widget.detailsChild,
                 ],
               ),
             ),
+        ],
+        if (widget.footer case final footer?) ...[
+          SizedBox(height: page ? 16 : 8),
+          footer,
         ],
       ],
     );
@@ -190,7 +233,7 @@ class _KitStateViewState extends State<KitStateView> {
     );
     if (!page) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        padding: widget.padding ?? const EdgeInsets.fromLTRB(16, 16, 16, 8),
         child: announced,
       );
     }

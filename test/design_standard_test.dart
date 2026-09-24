@@ -7,13 +7,15 @@
 // an entry in [_allowed] with its reason.
 //
 // Each migrated screen also has golden renders at 412x915, dark and light,
-// in test/goldens/ (made by test/goldens/work_tab_golden_test.dart).
+// in test/goldens/ (made by test/goldens/work_tab_golden_test.dart and
+// test/goldens/phone_setup_golden_test.dart).
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
 /// Screen files built on the kit, with the golden renders that show them.
-/// Only grows (§9 migration order: connection states, then the Work tab).
+/// Only grows (§9 migration order: connection states, the Work tab, phone
+/// setup).
 const _migrated = <String, List<String>>{
   // §9 step 1: connecting, starting, not answering, stopped, failed.
   'lib/ui/widgets/saved_server_connection_card.dart': [
@@ -37,6 +39,35 @@ const _migrated = <String, List<String>>{
   'lib/ui/widgets/work_status_line.dart': [
     'work_not_answering',
     'work_runaway',
+  ],
+  // §9 step 3: phone setup (start, customize, progress, ready, the welcome's
+  // setup line) and the "This phone" card.
+  'lib/ui/screens/phone_setup/phone_setup_start_screen.dart': [
+    'setup_start',
+    'setup_start_progress',
+    'setup_start_stopped',
+    'setup_start_ready',
+    'setup_start_termux',
+  ],
+  'lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart': [
+    'setup_customize',
+  ],
+  'lib/ui/screens/phone_setup/phone_setup_progress_screen.dart': [
+    'setup_progress_running',
+    'setup_progress_failed',
+  ],
+  'lib/ui/widgets/setup_progress_view.dart': [
+    'setup_progress_running',
+    'setup_progress_failed',
+  ],
+  'lib/ui/screens/phone_setup/phone_setup_ready_screen.dart': ['setup_ready'],
+  'lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart': [
+    'setup_welcome_entry',
+  ],
+  'lib/ui/widgets/phone_server_card.dart': [
+    'phone_card_running',
+    'phone_card_stopped',
+    'phone_card_setting_up',
   ],
 };
 

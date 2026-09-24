@@ -23,6 +23,7 @@ class KitRow extends StatelessWidget {
     this.supportingMaxLines = 1,
     this.titleKey,
     this.supportingKey,
+    this.padding,
   });
 
   final Widget? leading;
@@ -45,6 +46,11 @@ class KitRow extends StatelessWidget {
   final Key? titleKey;
   final Key? supportingKey;
 
+  /// The row's own padding; by default the 16 dp rails of a list. A row
+  /// inside a block that already sits on the rails (a state, a card's
+  /// content) passes its own, usually no side padding.
+  final EdgeInsetsGeometry? padding;
+
   /// A leading icon at the row's size, muted unless [color] is given.
   static Widget icon(BuildContext context, IconData icon, {Color? color}) =>
       SizedBox.square(
@@ -66,12 +72,14 @@ class KitRow extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 56),
         child: Padding(
-          padding: EdgeInsetsDirectional.fromSTEB(
-            16,
-            8,
-            trailing == null ? 16 : 4,
-            8,
-          ),
+          padding:
+              padding ??
+              EdgeInsetsDirectional.fromSTEB(
+                16,
+                8,
+                trailing == null ? 16 : 4,
+                8,
+              ),
           child: Row(
             children: [
               if (leading case final leading?) ...[

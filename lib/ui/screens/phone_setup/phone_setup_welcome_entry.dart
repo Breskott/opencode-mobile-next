@@ -6,6 +6,7 @@ import '../../../builtin/setup/phone_setup.dart';
 import '../../../builtin/setup/setup_contract.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
 import '../../widgets/product_states.dart' show productErrorText;
 import 'phone_setup_routes.dart';
 
@@ -197,7 +198,7 @@ class _PhoneSetupWelcomeEntryState extends State<PhoneSetupWelcomeEntry> {
       detail: detail,
       action: action,
       meter: meter,
-      running: progress.state == SetupState.running,
+      state: progress.state,
       busy: _busy,
       failure: _failure,
       onPressed: onPressed,
@@ -205,8 +206,9 @@ class _PhoneSetupWelcomeEntryState extends State<PhoneSetupWelcomeEntry> {
   }
 }
 
-/// Lines, not boxes: a tinted strip with the words, a thin meter and one
-/// button, the same weight as the detected-server entry above the question.
+/// The line as an inline [KitStateView] (design standard §3): the phone icon
+/// in its tonal circle, the one sentence of where setup stands, its bar, and
+/// the one button, on the welcome's own rails.
 class _EntryLine extends StatelessWidget {
   const _EntryLine({
     super.key,
@@ -214,7 +216,7 @@ class _EntryLine extends StatelessWidget {
     required this.detail,
     required this.action,
     required this.meter,
-    required this.running,
+    required this.state,
     required this.busy,
     required this.failure,
     required this.onPressed,
@@ -224,94 +226,47 @@ class _EntryLine extends StatelessWidget {
   final String? detail;
   final String action;
   final double? meter;
-  final bool running;
+  final SetupState state;
   final bool busy;
   final String? failure;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    return Padding(
+    final running = state == SetupState.running;
+    final failure = this.failure;
+    final tone = failure != null
+        ? AppStatusTone.failure
+        : switch (state) {
+            SetupState.running => AppStatusTone.progress,
+            SetupState.done => AppStatusTone.ok,
+            _ => AppStatusTone.attention,
+          };
+    final meter = this.meter;
+    return KitStateView(
+      size: KitStateSize.inline,
       padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.only(top: 2, end: 12),
-                child: Icon(
-                  AppIconography.phone,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Semantics(
-                      liveRegion: running,
-                      child: Text(
-                        title,
-                        key: const ValueKey('welcome-phone-setup-title'),
-                        style: theme.textTheme.titleMedium,
-                      ),
-                    ),
-                    if (detail != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        detail!,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: muted,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (meter != null) ...[
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(2),
-              child: LinearProgressIndicator(
-                value: meter!.clamp(0, 1).toDouble(),
-                minHeight: 4,
-                color: running ? theme.colorScheme.primary : muted,
-                backgroundColor: AppTheme.hairline(theme),
-              ),
+      icon: AppIconography.phone,
+      tone: tone,
+      title: title,
+      titleKey: const ValueKey('welcome-phone-setup-title'),
+      body: failure ?? detail,
+      bodyKey: failure != null
+          ? const ValueKey('welcome-phone-setup-failure')
+          : null,
+      // Announced while it moves; a stopped line waits to be read.
+      liveRegion: running,
+      progress: meter == null
+          ? null
+          : KitProgress.known(
+              meter.clamp(0, 1).toDouble(),
+              tone: running ? null : AppStatusTone.neutral,
             ),
-          ],
-          if (failure != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              failure!,
-              key: const ValueKey('welcome-phone-setup-failure'),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          FilledButton(
-            key: const ValueKey('welcome-phone-setup-action'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-            ),
-            onPressed: busy ? null : onPressed,
-            child: busy
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(action, textAlign: TextAlign.center),
-          ),
-        ],
+      primary: KitAction(
+        key: const ValueKey('welcome-phone-setup-action'),
+        label: action,
+        onPressed: busy ? null : onPressed,
+        working: busy,
       ),
     );
   }
