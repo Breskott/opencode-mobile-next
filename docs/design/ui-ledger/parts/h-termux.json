@@ -3789,7 +3789,7 @@
         "openPhoneSetupReady"
       ],
       "line": 22,
-      "purpose": "Phone setup v2 screen C: the agent is running, so the only thing left is a place to work. One name makes a project and lands in its first conversation with the keyboard up; Open an existing folder is the quiet alternative. Takes the progress screen's place (pushReplacement) so Back never returns to a finished setup.",
+      "purpose": "Phone setup v2 screen C: the agent is running, so the only thing left is a place to work. One step: a celebration drawing (SetupReadyScene, played once), 'OpenCode is ready', one name field whose primary 'Create and open' makes the project and lands in its first conversation, and the quiet 'Open a folder instead', which opens the folder sheet only when tapped (never on its own, so there is one name field on screen). Takes the progress screen's place (pushReplacement) so Back never returns to a finished setup.",
       "reachedFrom": [
         {
           "page": "phone-setup-progress",
@@ -3832,7 +3832,7 @@
         {
           "id": "phone-setup-ready-create",
           "type": "button",
-          "label": "Create",
+          "label": "Create and open",
           "key": "phone-setup-ready-create",
           "line": 250,
           "action": "submit",
@@ -3845,7 +3845,7 @@
         {
           "id": "phone-setup-ready-open-existing",
           "type": "button",
-          "label": "Open an existing folder",
+          "label": "Open a folder instead",
           "key": "phone-setup-ready-open-existing",
           "line": 257,
           "action": "open-sheet",
@@ -3878,6 +3878,10 @@
     {
       "file": "lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart",
       "reason": "PhoneSetupWelcomeEntry is the first-run welcome's own status line about a phone setup job that already exists (running / stopped part way / done but nothing saved); embedded in servers-welcome (lib/ui/screens/servers_screen.dart:710), not a surface of its own. Its action button opens phone-setup-progress or resumes/reopens the job."
+    },
+    {
+      "file": "lib/ui/screens/phone_setup/phone_setup_hero.dart",
+      "reason": "layout only: PhoneSetupHero draws setup start and ready (the drawing at the top, then the state's slots); its actions are the host screens' and are recorded on their pages"
     }
   ],
   "notes": [

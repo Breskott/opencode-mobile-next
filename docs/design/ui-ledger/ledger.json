@@ -1,5 +1,5 @@
 {
- "generatedFrom": "c0db399f1d07feacdebc77ce2bca2399b6ea9a0d",
+ "generatedFrom": "cf1d7464c94cbddc7dd660d13a98719b49036957",
  "pages": [
   {
    "id": "system",
@@ -24030,7 +24030,7 @@
     "openPhoneSetupReady"
    ],
    "line": 22,
-   "purpose": "Phone setup v2 screen C: the agent is running, so the only thing left is a place to work. One name makes a project and lands in its first conversation with the keyboard up; Open an existing folder is the quiet alternative. Takes the progress screen's place (pushReplacement) so Back never returns to a finished setup.",
+   "purpose": "Phone setup v2 screen C: the agent is running, so the only thing left is a place to work. One step: a celebration drawing (SetupReadyScene, played once), 'OpenCode is ready', one name field whose primary 'Create and open' makes the project and lands in its first conversation, and the quiet 'Open a folder instead', which opens the folder sheet only when tapped (never on its own, so there is one name field on screen). Takes the progress screen's place (pushReplacement) so Back never returns to a finished setup.",
    "reachedFrom": [
     {
      "page": "phone-setup-progress",
@@ -24073,7 +24073,7 @@
     {
      "id": "phone-setup-ready-create",
      "type": "button",
-     "label": "Create",
+     "label": "Create and open",
      "key": "phone-setup-ready-create",
      "file": "lib/ui/screens/phone_setup/phone_setup_ready_screen.dart",
      "line": 250,
@@ -24087,7 +24087,7 @@
     {
      "id": "phone-setup-ready-open-existing",
      "type": "button",
-     "label": "Open an existing folder",
+     "label": "Open a folder instead",
      "key": "phone-setup-ready-open-existing",
      "file": "lib/ui/screens/phone_setup/phone_setup_ready_screen.dart",
      "line": 257,
@@ -42821,6 +42821,11 @@
    "file": "lib/ui/screens/perf_trace_section.dart",
    "reason": "PerfTraceSection is the 'Performance' block of App diagnostics (embedded via lib/ui/screens/app_diagnostics_screen.dart:252, host page app-diagnostics), not a surface of its own; its Copy report and Clear buttons are recorded on app-diagnostics with `file` set here.",
    "part": "j1-settings-more"
+  },
+  {
+   "file": "lib/ui/screens/phone_setup/phone_setup_hero.dart",
+   "reason": "layout only: PhoneSetupHero draws setup start and ready (the drawing at the top, then the state's slots); its actions are the host screens' and are recorded on their pages",
+   "part": "h-termux"
   },
   {
    "file": "lib/ui/screens/phone_setup/phone_setup_routes.dart",
