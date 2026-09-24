@@ -10,6 +10,7 @@ import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/dto/dto.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_gateway.dart';
 import 'package:opencode_mobile/orchestration/adapters/gascity/gascity_mappers.dart';
+import 'package:opencode_mobile/orchestration/models/work.dart';
 
 import 'support/gascity_recorded_city.dart';
 
@@ -216,6 +217,18 @@ void main() {
         runs.where((r) => r.kind == RunKind.formula).every((r) => r.isUpkeep),
         isTrue,
       );
+    });
+
+    test('a finished run keeps its work: the merged task is listed under it '
+        '(the Work tab of a finished run was empty)', () async {
+      final g = gateway();
+      final work = await g.work();
+      final mine = work.where((item) => item.runId == 'ma-lqw').toList();
+      expect(mine.map((item) => item.id), ['ma-7mr']);
+      expect(mine.single.title, _task);
+      expect(mine.single.state, WorkState.completed);
+      // Listed once, even when the open list has it too.
+      expect(work.where((item) => item.id == 'ma-7mr'), hasLength(1));
     });
 
     test('history reads are bounded: newest 20, one week of close events, '

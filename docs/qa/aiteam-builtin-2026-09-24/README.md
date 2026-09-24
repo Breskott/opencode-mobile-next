@@ -125,8 +125,9 @@ Found on the way and fixed on the branch afterwards (not in this APK):
   The same refresh still runs inside the first connect: 7.5 s of the 12.2 s
   "Start OpenCode" step.
 
-Also seen, not fixed: the team's own agent conversations show on the Work tab
-under "In other projects". One of their titles shows raw `<tool_call>` text.
+Also seen: the team's own agent conversations showed on the Work tab under
+"In other projects", one titled with raw `<tool_call>` text. Fixed afterwards
+on `fix/work-tab-team-sessions`: see `../work-tab-team-sessions-2026-09-24/`.
 
 ## Android 14 (emulator-5554): the phantom-process kill, before tuning
 
@@ -415,6 +416,9 @@ to their first line, session and chore metadata to 5 keys, and `/runs` and
 - **A long-lived city.** More than 20 closed convoys, or pruned
   `convoy.closed` events (the gateway then falls back to `created_at`), are
   unit-tested only.
-- **The run detail of a finished run.** Its work list comes from the open
-  `/beads`, so the merged task is not listed under the run there (found by
-  reading `run_screen.dart`). Not changed.
+- **The run detail of a finished run.** Its work list came from the open
+  `/beads` only, so the merged task was not listed under the run. Since
+  the next commit, `work()` adds the tracked items of the recent finished
+  convoys: the recorded city lists `ma-7mr` (Completed) under `ma-lqw`
+  (`team_finished_runs_test` › "a finished run keeps its work", which
+  fails without it). The Work tab was not viewed on a device.

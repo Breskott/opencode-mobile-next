@@ -1302,3 +1302,26 @@ String? _rigOf(String? identity) {
 String? _workError(WorkItem item) =>
     readText(readMapField(item.raw, 'metadata'), 'last_error') ??
     'Work item ${item.id} failed';
+
+/// The tracked items of finished convoys as work of those runs, leaving out
+/// ids already [listed] (the open list) and, with [projectId], other
+/// projects' items. A closed convoy's items are closed beads `/beads` no
+/// longer lists, so without these a finished run shows no work.
+List<WorkItem> finishedConvoyWork(
+  Iterable<GcConvoy> finished, {
+  Set<String> listed = const {},
+  String? projectId,
+}) {
+  final context = GcWorkContext(
+    convoyByBead: {
+      for (final convoy in finished)
+        for (final child in convoy.children) child.id: convoy.id,
+    },
+  );
+  final seen = {...listed};
+  return [
+    for (final convoy in finished)
+      for (final child in convoy.children)
+        if (seen.add(child.id)) mapBead(child, context: context),
+  ].where((item) => projectId == null || item.projectId == projectId).toList();
+}

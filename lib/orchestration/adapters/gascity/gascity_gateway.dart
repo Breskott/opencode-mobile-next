@@ -352,8 +352,46 @@ class GasCityGateway
 
   @override
   Future<List<WorkItem>> work({String? projectId}) async {
-    final snapshot = await _workSnapshot(projectId: projectId);
-    return snapshot.items;
+    final results = await Future.wait<Object>([
+      _workSnapshot(projectId: projectId),
+      _finishedForWork(),
+    ]);
+    final snapshot = results[0] as _WorkSnapshot;
+    final finished = results[1] as List<GcConvoy>;
+    return [
+      ...snapshot.items,
+      ...finishedConvoyWork(
+        finished,
+        listed: {for (final item in snapshot.items) item.id},
+        projectId: projectId,
+      ),
+    ];
+  }
+
+  Future<List<GcConvoy>>? _finishedWorkLoad;
+  DateTime? _finishedWorkLoadedAt;
+
+  /// The recently finished convoys with their tracked items, for [work]:
+  /// `/beads` lists open work only, so a finished run's Work tab was empty.
+  /// Read at most every 30 s (the details themselves are cached).
+  Future<List<GcConvoy>> _finishedForWork() {
+    final now = _clock();
+    final at = _finishedWorkLoadedAt;
+    final load = _finishedWorkLoad;
+    if (load != null &&
+        at != null &&
+        now.difference(at) < const Duration(seconds: 30)) {
+      return load;
+    }
+    _finishedWorkLoadedAt = now;
+    return _finishedWorkLoad = () async {
+      try {
+        final history = await _finishedConvoyHistory();
+        return await _finishedConvoyDetails(history, openIds: const {});
+      } on Object {
+        return const <GcConvoy>[];
+      }
+    }();
   }
 
   @override
