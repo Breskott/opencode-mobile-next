@@ -1,6 +1,6 @@
 Every test file under test/ that imports a file this branch changed
 (transitively), plus the glossary, l10n coverage and design-standard tests.
-Candidate: ds/aiteam, code of d39e9408 (WIP save; the final commit only adds docs).
+Candidate: ds/aiteam, code of d39e9408 (WIP save), identical in 6fad0334 (docs added).
 Pinned Flutter 91f8bd75076e9c740aa13cf67eb9ec1a093f68f5, flutter test --no-pub.
 
 == chunk 00 (--concurrency=6)

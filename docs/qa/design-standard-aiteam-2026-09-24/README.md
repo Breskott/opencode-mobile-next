@@ -71,8 +71,9 @@ answering" reuses `workServerKeepsTrying`.
 ## Builds
 
 - Branch `ds/aiteam`, from `feat/phone-setup-v2` @ `dca366f1`. Code, tests, goldens and
-  renders: WIP save `d39e9408` (the session was killed by the machine running out of
-  memory), then the final commit on top. No APK built (no Gradle builds on this machine).
+  renders: commit `6fad0334`, the WIP save `d39e9408` (made when the session was killed
+  by the machine running out of memory) amended with this record; the code is the
+  same one the test runs used. No APK built (no Gradle builds on this machine).
 
 ## Devices
 
