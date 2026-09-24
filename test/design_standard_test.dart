@@ -51,7 +51,11 @@ const _migrated = <String, List<String>>{
   // Step 2 leftovers (test/goldens/work_parts_golden_test.dart): the AI
   // Team section, the one-time tip, the other servers and the shell's
   // connection line on the other tabs.
-  'lib/ui/widgets/team_card.dart': ['work_team', 'team_card'],
+  'lib/ui/widgets/team_card.dart': [
+    'work_team',
+    'team_card',
+    'team_card_phone',
+  ],
   'lib/ui/widgets/nudge_card.dart': ['work_nudge'],
   'lib/ui/widgets/other_servers_panel.dart': ['work_other_servers'],
   'lib/ui/widgets/connection_status_banner.dart': ['shell_reconnecting'],
@@ -88,6 +92,7 @@ const _migrated = <String, List<String>>{
   // team_agent_golden_test.dart, team_sheets_golden_test.dart).
   'lib/ui/screens/team/team_home_screen.dart': [
     'team_home_loaded',
+    'team_home_loaded_phone',
     'team_home_empty',
     'team_home_error',
     'team_home_not_answering',

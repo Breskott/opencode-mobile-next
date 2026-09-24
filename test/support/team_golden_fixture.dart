@@ -46,7 +46,30 @@ enum TeamScene {
 }
 
 class _SceneGateway extends FixtureOrchestrationGateway {
-  _SceneGateway({required super.fixturePath, required this.scene});
+  _SceneGateway({
+    required super.fixturePath,
+    required this.scene,
+    super.hostMode,
+    super.url,
+    this.city,
+  });
+
+  /// The city this scene's host reports, when not the recorded one.
+  final String? city;
+
+  @override
+  OrchestrationHostIdentity? get host {
+    final recorded = super.host;
+    final name = city;
+    if (recorded == null || name == null) return recorded;
+    return OrchestrationHostIdentity(
+      provider: recorded.provider,
+      version: recorded.version,
+      city: name,
+      url: recorded.url,
+      hostMode: recorded.hostMode,
+    );
+  }
 
   final TeamScene scene;
 
@@ -216,26 +239,50 @@ Directory _fixtureRoot() {
 }
 
 /// A started controller for [scene]. Dispose it after the render.
-Future<OrchestrationController> teamSceneController(TeamScene scene) async {
+///
+/// [onPhone] hosts the team on the phone itself, as the in-app AI Team does
+/// (BuiltinTeam.config: loopback 127.0.0.1:8472, city "phone"); otherwise
+/// the team runs on a computer (the recorded PC city).
+Future<OrchestrationController> teamSceneController(
+  TeamScene scene, {
+  bool onPhone = false,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final path = _fixtureRoot().path;
-  final config = OrchestrationConfig(
-    provider: OrchestrationProvider.fixture,
-    url: 'http://pop-os:7000',
-    city: 'bright-lights',
-    enabledAt: DateTime.utc(2026, 9, 10),
-  );
+  final config = onPhone
+      ? OrchestrationConfig(
+          provider: OrchestrationProvider.fixture,
+          url: 'http://127.0.0.1:8472',
+          city: 'phone',
+          hostMode: OrchestrationHostMode.phone,
+          hostKind: OrchestrationHostKind.phone,
+          enabledAt: DateTime.utc(2026, 9, 10),
+        )
+      : OrchestrationConfig(
+          provider: OrchestrationProvider.fixture,
+          url: 'http://pop-os:7000',
+          city: 'bright-lights',
+          enabledAt: DateTime.utc(2026, 9, 10),
+        );
   final controller = OrchestrationController(
     profile: ServerProfile(
       id: 'golden',
-      name: 'Development PC',
-      baseUrl: 'https://server.example',
+      name: onPhone ? 'This phone' : 'Development PC',
+      baseUrl: onPhone ? 'http://127.0.0.1:4097' : 'https://server.example',
       orchestration: config,
     ),
     config: config,
     store: OrchestrationStore(prefs),
-    gatewayFactory: (_, _) => _SceneGateway(fixturePath: path, scene: scene),
+    gatewayFactory: (_, _) => _SceneGateway(
+      fixturePath: path,
+      scene: scene,
+      hostMode: onPhone
+          ? OrchestrationHostMode.phone
+          : OrchestrationHostMode.computer,
+      url: config.url,
+      city: onPhone ? config.city : null,
+    ),
     probe: switch (scene) {
       TeamScene.failed => (_) async => const ProbeUnreachable(
         error: 'Connection refused (http://pop-os:7000)',
@@ -264,11 +311,17 @@ enum TeamShot {
   runWork(TeamScene.loaded, 'team_run_work'),
   startRun(TeamScene.loaded, 'team_start_run'),
   card(TeamScene.loaded, 'team_card'),
-  agentOutput(TeamScene.loaded, 'team_agent_output');
+  agentOutput(TeamScene.loaded, 'team_agent_output'),
+  // The in-app AI Team: the same team hosted on this phone.
+  homeLoadedPhone(TeamScene.loaded, 'team_home_loaded_phone', onPhone: true),
+  cardPhone(TeamScene.loaded, 'team_card_phone', onPhone: true);
 
-  const TeamShot(this.scene, this.fileName);
+  const TeamShot(this.scene, this.fileName, {this.onPhone = false});
 
   final TeamScene scene;
+
+  /// The team runs on this phone (the in-app AI Team), not a computer.
+  final bool onPhone;
 
   /// The golden and capture file name.
   final String fileName;
@@ -285,7 +338,10 @@ Future<OrchestrationController> pumpTeamShot(
 }) async {
   tester.view.physicalSize = const Size(412, 915);
   tester.view.devicePixelRatio = 1;
-  final controller = await teamSceneController(shot.scene);
+  final controller = await teamSceneController(
+    shot.scene,
+    onPhone: shot.onPhone,
+  );
   DateTime now() => teamSceneClock;
   final Widget home = switch (shot) {
     TeamShot.runOverview || TeamShot.runWork => RunScreen(
@@ -297,7 +353,7 @@ Future<OrchestrationController> pumpTeamShot(
       controller: controller,
       agentId: 'fox',
     ),
-    TeamShot.card => Scaffold(
+    TeamShot.card || TeamShot.cardPhone => Scaffold(
       body: SafeArea(
         child: ListView(
           children: [TeamCard(controller: controller, onOpen: () {})],
@@ -322,7 +378,7 @@ Future<OrchestrationController> pumpTeamShot(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
   switch (shot) {
-    case TeamShot.homeLoaded:
+    case TeamShot.homeLoaded || TeamShot.homeLoadedPhone:
       // The finished run: "Done · merged · Finished 5h ago" under Completed.
       await tester.tap(find.byKey(const ValueKey('team-home-completed-group')));
     case TeamShot.homeNotAnswering:
@@ -336,6 +392,7 @@ Future<OrchestrationController> pumpTeamShot(
         TeamShot.homeError ||
         TeamShot.runOverview ||
         TeamShot.card ||
+        TeamShot.cardPhone ||
         TeamShot.agentOutput:
       break;
   }
