@@ -287,6 +287,53 @@ max_active_sessions = 1
       );
     });
 
+    test(
+      'phone upkeep runs its sweeps one after another, one run at a time',
+      () async {
+        final dir = await Directory.systemTemp.createTemp('oc-upkeep');
+        addTearDown(() => dir.delete(recursive: true));
+        final bin = Directory('${dir.path}/bin')..createSync();
+        final calls = File('${dir.path}/calls.log');
+        // A `gc` that takes a while, like a sweep under proot.
+        final gc = File('${bin.path}/gc')
+          ..writeAsStringSync(
+            '#!/bin/sh\necho "start \$*" >> ${calls.path}\n'
+            'sleep 1\necho "end \$*" >> ${calls.path}\n',
+          );
+        Process.runSync('chmod', ['755', gc.path]);
+        final city = Directory('${dir.path}/city')..createSync();
+        final script = File('${dir.path}/upkeep.sh')
+          ..writeAsStringSync(
+            BuiltinTeam.upkeepScript.replaceAll(BuiltinTeam.cityDir, city.path),
+          );
+        final env = {'PATH': '${bin.path}:/usr/bin:/bin'};
+        // Gas City starts the next run while the first is still going.
+        final first = await Process.start('sh', [
+          script.path,
+        ], environment: env);
+        while (!calls.existsSync()) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        }
+        final watch = Stopwatch()..start();
+        final second = Process.runSync('sh', [script.path], environment: env);
+        expect(second.exitCode, 0);
+        expect(watch.elapsed, lessThan(const Duration(seconds: 1)));
+        expect(await first.exitCode, 0);
+        // One run's sweeps, strictly one after another.
+        expect(calls.readAsLinesSync(), [
+          'start order run beads-health',
+          'end order run beads-health',
+          'start order run order-tracking-sweep',
+          'end order run order-tracking-sweep',
+          'start order run gate-sweep',
+          'end order run gate-sweep',
+        ]);
+      },
+      skip: Process.runSync('sh', ['-c', 'command -v flock']).exitCode == 0
+          ? false
+          : 'no flock here',
+    );
+
     test('an older team gets the tuning once, the rest of it kept', () async {
       final dir = await Directory.systemTemp.createTemp('oc-tune');
       addTearDown(() => dir.delete(recursive: true));

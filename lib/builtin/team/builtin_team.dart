@@ -206,6 +206,12 @@ class BuiltinTeam {
 cd /root/aiteam/city || exit 1
 state=/root/aiteam/city/.gc/runtime/packs/phone
 mkdir -p "$state"
+# One run at a time: Gas City starts the next run on the cooldown even when
+# the last one is still going (a slow orphan sweep outlasts two minutes),
+# and two runs side by side is what this order exists to avoid. The lock
+# goes with the process, so a run killed at its timeout leaves none behind.
+exec 9>"$state/upkeep.lock"
+flock -n 9 || exit 0
 n=$(cat "$state/upkeep.count" 2>/dev/null || echo 0)
 case $n in *[!0-9]*|'') n=0 ;; esac
 n=$((n + 1))

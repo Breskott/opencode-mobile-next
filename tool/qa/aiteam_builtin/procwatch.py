@@ -14,6 +14,10 @@
       process breakdown (by command, then every row) of the TOP highest
       samples (default 1).
 
+  procwatch.py counts OUT.log
+      One line per sample (time, total, children): the small record kept
+      next to a QA README instead of the full log.
+
   procwatch.py kills DEVICE
       Android's phantom-process kills and SIGSYS lines in logcat.
 
@@ -132,6 +136,10 @@ def main():
         sample(sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), sys.argv[5])
     elif cmd == 'summary':
         summary(sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 1)
+    elif cmd == 'counts':
+        for b in blocks(sys.argv[2]):
+            if b['total'] is not None:
+                print(f'{b["time"]} {b["total"]} {b["total"] - 1}')
     elif cmd == 'kills':
         kills(sys.argv[2])
     else:
