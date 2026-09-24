@@ -1,0 +1,87 @@
+00:00 +0: loading test/team_directories_test.dart
+00:00 +0: test/team_directories_test.dart: isAiTeamDirectory the in-app team home and everything in it is the team's
+00:00 +1: test/team_directories_test.dart: isAiTeamDirectory a Gas City work folder is the team's wherever the city lives
+00:00 +2: test/team_directories_test.dart: isAiTeamDirectory the person's own folders are not, the team's rig included
+00:00 +3: test/team_directories_test.dart: isAiTeamDirectory the built-in team home and the rule are one constant
+00:00 +4: test/team_directories_test.dart: isAiTeamConversation judged by the conversation's own folder
+00:00 +5: test/team_directories_test.dart: isAiTeamConversation the project folder decides only when the conversation has none
+00:00 +6: test/session_title_text_test.dart: displaySessionTitleText cuts the leaked tool call off the refinery title
+00:00 +7: test/session_title_text_test.dart: displaySessionTitleText cuts at every kind of model markup
+00:00 +8: test/session_title_text_test.dart: displaySessionTitleText drops a marker the server cut in half, with its ellipsis
+00:00 +9: test/session_title_text_test.dart: displaySessionTitleText ellipsis after cut markup goes too
+00:00 +10: test/session_title_text_test.dart: displaySessionTitleText ordinary titles are left as they are
+00:00 +11: test/session_title_text_test.dart: displaySessionTitleText nothing readable left is empty
+00:00 +12: test/session_title_text_test.dart: presentedSessionTitle every session list shows the cleaned title
+00:00 +12 -1: test/session_title_text_test.dart: presentedSessionTitle every session list shows the cleaned title [E]
+00:00 +12 -1: test/session_title_text_test.dart: presentedSessionTitle markup-only titles fall back to the untitled wording
+00:00 +12 -2: test/session_title_text_test.dart: presentedSessionTitle markup-only titles fall back to the untitled wording [E]
+00:00 +12 -2: test/session_title_text_test.dart: presentedSessionTitle the stored title is not changed
+00:02 +13 -2: test/work_tab_team_sessions_test.dart: In other projects: the team's sessions are left out, the person's conversation in the team's rig stays
+00:02 +13 -3: test/global_sessions_screen_test.dart: All conversations leaves out the AI Team's own sessions
+00:02 +13 -3: test/work_tab_team_sessions_test.dart: In other projects: the team's sessions are left out, the person's conversation in the team's rig stays [E]
+00:02 +13 -4: test/global_sessions_screen_test.dart: All conversations leaves out the AI Team's own sessions
+00:02 +13 -4: test/work_tab_team_sessions_test.dart: a team busy enough to fill the first pages does not push the person's conversations out [E]
+00:02 +13 -5: test/global_sessions_screen_test.dart: All conversations leaves out the AI Team's own sessions
+00:02 +13 -5: test/work_tab_team_sessions_test.dart: the team's runs and requests are not counted as the person's other projects or the Inbox badge [E]
+00:02 +13 -6: test/global_sessions_screen_test.dart: All conversations leaves out the AI Team's own sessions
+00:02 +13 -6: test/work_tab_team_sessions_test.dart: a team folder is never the project opened for the person [E]
+00:03 +13 -6: test/work_tab_team_sessions_test.dart: the Work tab panel shows the person's conversation and project, and none of the team's
+00:03 +13 -7: test/global_sessions_screen_test.dart: All conversations leaves out the AI Team's own sessions
+00:03 +13 -7: test/work_tab_team_sessions_test.dart: the Work tab panel shows the person's conversation and project, and none of the team's [E]
+00:03 +13 -7: test/work_tab_team_sessions_test.dart: a leaked tool call never reaches the Work tab list
+00:03 +13 -8: test/global_sessions_screen_test.dart: All conversations leaves out the AI Team's own sessions
+00:03 +13 -8: test/work_tab_team_sessions_test.dart: a leaked tool call never reaches the Work tab list [E]
+00:03 +13 -8: test/global_sessions_screen_test.dart: All conversations leaves out the AI Team's own sessions
+00:04 +13 -9: test/global_sessions_screen_test.dart: All conversations leaves out the AI Team's own sessions [E]
+00:04 +13 -9: test/global_sessions_screen_test.dart: 320dp 2.5x LTR finder keeps filters and project paths readable
+00:04 +14 -9: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:04 +15 -9: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:04 +16 -9: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:04 +17 -9: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:04 +18 -9: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:05 +19 -9: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:05 +20 -9: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:05 +21 -9: test/global_sessions_screen_test.dart: editing query invalidates a pending page before debounce
+00:05 +22 -9: test/projects_screen_test.dart: project browser and rename dialog fit compact large text
+00:05 +23 -9: test/projects_screen_test.dart: project browser and rename dialog fit compact large text
+00:05 +24 -9: test/projects_screen_test.dart: project browser and rename dialog fit compact large text
+00:05 +25 -9: test/global_sessions_screen_test.dart: finder searches server titles and includes archived on demand
+00:05 +26 -9: test/projects_screen_test.dart: the project list leaves out the AI Team's own folders
+00:06 +27 -9: test/projects_screen_test.dart: the project list leaves out the AI Team's own folders
+00:06 +27 -10: test/global_sessions_screen_test.dart: finder paginates with the exact opaque server token
+00:06 +27 -10: test/projects_screen_test.dart: the project list leaves out the AI Team's own folders [E]
+00:06 +28 -10: test/projects_screen_test.dart: project search and reset-name use server project truth
+00:06 +29 -10: test/global_sessions_screen_test.dart: global project rows keep a useful label and tap semantics
+00:06 +30 -10: test/projects_screen_test.dart: selecting a project opens its exact local directory
+00:06 +31 -10: test/global_sessions_screen_test.dart: cross-project result switches location before opening chat
+00:06 +32 -10: test/projects_screen_test.dart: workspace groups projects behind one compact context entry
+00:06 +33 -10: test/projects_screen_test.dart: workspace groups projects behind one compact context entry
+00:07 +34 -10: test/projects_screen_test.dart: workspace groups projects behind one compact context entry
+00:07 +35 -10: test/global_sessions_screen_test.dart: repository replacement retires a pending page and keeps retry
+00:07 +36 -10: test/projects_screen_test.dart: workspace puts sessions above the one management route
+00:07 +37 -10: test/projects_screen_test.dart: workspace puts sessions above the one management route
+00:07 +38 -10: test/global_sessions_screen_test.dart: steal affordance appears only for sessions elsewhere
+00:07 +39 -10: test/global_sessions_screen_test.dart: steal affordance appears only for sessions elsewhere
+00:07 +40 -10: test/projects_screen_test.dart: recent session end-swipe archives with an undo window
+00:07 +41 -10: test/global_sessions_screen_test.dart: stealing confirms, calls the repository, and opens the chat
+00:07 +42 -10: test/global_sessions_screen_test.dart: stealing confirms, calls the repository, and opens the chat
+00:07 +43 -10: test/projects_screen_test.dart: project discovery does not block already loaded conversations
+00:07 +44 -10: test/projects_screen_test.dart: project discovery does not block already loaded conversations
+00:07 +45 -10: test/global_sessions_screen_test.dart: a failed steal reports inline and keeps the list
+00:08 +46 -10: test/projects_screen_test.dart: failed project discovery still finds and opens a previous chat
+00:08 +47 -10: test/projects_screen_test.dart: failed project discovery still finds and opens a previous chat
+00:08 +48 -10: test/projects_screen_test.dart: retrying the project catalog keeps loaded conversations visible
+00:08 +49 -10: test/projects_screen_test.dart: a fresh server with zero projects asks for a project folder
+00:08 +50 -10: test/projects_screen_test.dart: a home-folder project is never opened automatically
+00:08 +51 -10: test/projects_screen_test.dart: an empty project catalog does not hide existing sessions
+00:08 +52 -10: test/projects_screen_test.dart: zero projects still allows finding and opening an older chat
+00:08 +53 -10: test/projects_screen_test.dart: zero projects keeps session errors and older pages reachable
+00:08 +54 -10: test/projects_screen_test.dart: a first session starts only after a project folder is opened by path
+00:09 +55 -10: test/projects_screen_test.dart: creating a folder on the managed server opens it
+00:09 +56 -10: test/projects_screen_test.dart: remote servers offer open by path but not create
+00:09 +57 -10: test/projects_screen_test.dart: OpenCode inside the app its projects are listed and open with one tap
+00:09 +58 -10: test/projects_screen_test.dart: OpenCode inside the app a new project needs only a safe name
+00:09 +59 -10: test/projects_screen_test.dart: OpenCode inside the app a name that already exists just opens it
+00:09 +60 -10: test/projects_screen_test.dart: OpenCode inside the app a typed path that does not exist offers Create it
+00:09 +61 -10: test/projects_screen_test.dart: OpenCode inside the app Create a new folder makes it inside the app
+00:10 +62 -10: Some tests failed.

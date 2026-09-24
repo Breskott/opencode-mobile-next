@@ -27,6 +27,7 @@ diagnostics → Performance → Copy report.
 |---|---|
 | [phone-setup-v2-2026-09-24](phone-setup-v2-2026-09-24/README.md) | OpenCode inside the app (no Termux): built-in Linux, the resumable setup engine, setup screens, background survival, the catalog wait |
 | [aiteam-builtin-2026-09-24](aiteam-builtin-2026-09-24/README.md) | AI Team inside the app: component, second service, per-project team, a real task to a merged commit on Android 15; process counts vs the 32 limit |
+| [work-tab-team-sessions-2026-09-24](work-tab-team-sessions-2026-09-24/README.md) | The AI Team's own sessions kept out of the Work tab, projects and All conversations; leaked tool-call markup cut from session titles (tests only) |
 
 The older folders in this directory are earlier screenshot sets and do not follow
 this format.
