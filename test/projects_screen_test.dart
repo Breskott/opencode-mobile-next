@@ -264,10 +264,18 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      // Nothing contradicts the pager: no "no conversations" text, and no
+      // Archived row until an archived conversation is actually known
+      // (work-tab cleanup item 4). Load more is the way on.
       expect(
         find.text('No recent conversations in loaded results'),
-        findsOneWidget,
+        findsNothing,
       );
+      expect(find.text('Archived conversations'), findsNothing);
+      await tester.tap(
+        find.byKey(const ValueKey('session-inventory-more')).hitTestable(),
+      );
+      await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('Archived conversations'),
         180,
@@ -278,18 +286,7 @@ void main() {
             )
             .first,
       );
-      // Move the row above the docked quick-ask control before tapping it.
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -220));
-      await tester.pumpAndSettle();
       await tester.tap(find.text('Archived conversations'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('No archived conversations in loaded results'),
-        findsOneWidget,
-      );
-      await tester.tap(
-        find.byKey(const ValueKey('session-inventory-more')).hitTestable(),
-      );
       await tester.pumpAndSettle();
       expect(
         find.byKey(const ValueKey('archived-session-archived')),
@@ -751,6 +748,9 @@ void main() {
       expect(find.text('Project list unavailable'), findsOneWidget);
       expect(find.text('Swipe target'), findsOneWidget);
       expect(find.text('Try again'), findsOneWidget);
+      // One status line: Try again on it, Search all behind its menu.
+      await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Search all conversations'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Previous conversation'));

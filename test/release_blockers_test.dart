@@ -933,10 +933,15 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    // The banner itself is one line; the staleness explanation and the raw
-    // error live behind its Details action.
-    expect(find.text('Connection lost'), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
+    // On Work the one status line says it after the grace time (work-tab
+    // cleanup); the staleness explanation and the raw error live behind its
+    // Details action, as they did behind the banner's.
+    await tester.pump(const Duration(seconds: 9));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const ValueKey('work-status-server')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('work-status-details')));
     await tester.pumpAndSettle();
     expect(find.textContaining('may be stale'), findsOneWidget);
     await tester.pumpWidget(const MaterialApp(home: SizedBox()));

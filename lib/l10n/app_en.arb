@@ -19753,5 +19753,117 @@
   "aiteamComponentChildProcesses": "Android stops an app's extra programs when it runs many at once, and a team runs several. If the team stops while it works, turn on Developer options › Disable child process restrictions.",
   "@aiteamComponentChildProcesses": {
     "description": "Explains Android's child-process limit and the Developer options switch"
+  },
+  "workUnreviewed": "Unreviewed",
+  "@workUnreviewed": {
+    "description": "Mark on a Work tab row (and other-project row) whose finished result has not been looked at"
+  },
+  "workMarkReviewed": "Mark as reviewed",
+  "@workMarkReviewed": {
+    "description": "Row menu item: drops the Unreviewed mark on this device; the conversation stays unread on the server"
+  },
+  "workMarkReviewedFailed": "Couldn't mark it as reviewed. Try again.",
+  "@workMarkReviewedFailed": {
+    "description": "Snackbar when saving the reviewed mark failed"
+  },
+  "workOtherProjects": "Other projects",
+  "@workOtherProjects": {
+    "description": "Work tab section listing the other recent projects"
+  },
+  "workAllProjects": "All projects",
+  "@workAllProjects": {
+    "description": "Work tab: row under Other projects that opens the full project list"
+  },
+  "workOpenLiveConversation": "Open “{title}”",
+  "@workOpenLiveConversation": {
+    "description": "Tooltip of the trailing button that opens another project's live conversation",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "workRunningCount": "{count, plural, =1{Running} other{Running · {count}}}",
+  "@workRunningCount": {
+    "description": "Other project row: how many conversations are running there",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workLoadingLabel": "Loading",
+  "@workLoadingLabel": {
+    "description": "Accessibility label of the Work tab's single loading bar"
+  },
+  "workServerNotAnsweringPhone": "OpenCode on this phone isn't answering",
+  "@workServerNotAnsweringPhone": {
+    "description": "Status line / connecting card title when the phone's own server does not answer"
+  },
+  "workServerNotAnswering": "{server} isn't answering",
+  "@workServerNotAnswering": {
+    "description": "Status line / connecting card title when a remote server does not answer",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "workServerKeepsTrying": "The app keeps trying in the background.",
+  "@workServerKeepsTrying": {
+    "description": "Connecting card body once the server has not answered for 8 seconds"
+  },
+  "workServerRestart": "Restart",
+  "@workServerRestart": {
+    "description": "Status line / card action restarting the phone's own server"
+  },
+  "workServerRestartTitle": "Restart OpenCode on this phone?",
+  "@workServerRestartTitle": {
+    "description": "Confirm title before restarting the phone's server"
+  },
+  "workServerRestartBody": "A running agent turn will stop. Your conversations are kept.",
+  "@workServerRestartBody": {
+    "description": "Confirm body before restarting the phone's server"
+  },
+  "workChooseAnotherServer": "Choose another server",
+  "@workChooseAnotherServer": {
+    "description": "Connecting card action once the server has not answered for 8 seconds"
+  },
+  "workStale": "This may be out of date",
+  "@workStale": {
+    "description": "Status line when waiting requests could not be refreshed"
+  },
+  "workRunaway": "OpenCode has been busy for {duration} with nothing to do",
+  "@workRunaway": {
+    "description": "Status line: a leftover process on the phone keeps using the CPU",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "workRunawayInProject": "OpenCode has been busy in {project} for {duration} with nothing to do",
+  "@workRunawayInProject": {
+    "description": "Status line: a leftover process in a project folder keeps using the CPU",
+    "placeholders": {
+      "project": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "workRunawaySee": "See what's running",
+  "@workRunawaySee": {
+    "description": "Status line action opening the Running now screen"
+  },
+  "connectStartingPhone": "Starting OpenCode on this phone…",
+  "@connectStartingPhone": {
+    "description": "Connecting screen title while the phone's own server starts"
+  },
+  "connectStartingBody": "Your conversations are kept. This can take a minute.",
+  "@connectStartingBody": {
+    "description": "Connecting screen body while the phone's own server starts"
   }
 }

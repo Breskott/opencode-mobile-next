@@ -29145,6 +29145,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Android stops an app\'s extra programs when it runs many at once, and a team runs several. If the team stops while it works, turn on Developer options › Disable child process restrictions.'**
   String get aiteamComponentChildProcesses;
+
+  /// Mark on a Work tab row (and other-project row) whose finished result has not been looked at
+  ///
+  /// In en, this message translates to:
+  /// **'Unreviewed'**
+  String get workUnreviewed;
+
+  /// Row menu item: drops the Unreviewed mark on this device; the conversation stays unread on the server
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as reviewed'**
+  String get workMarkReviewed;
+
+  /// Snackbar when saving the reviewed mark failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t mark it as reviewed. Try again.'**
+  String get workMarkReviewedFailed;
+
+  /// Work tab section listing the other recent projects
+  ///
+  /// In en, this message translates to:
+  /// **'Other projects'**
+  String get workOtherProjects;
+
+  /// Work tab: row under Other projects that opens the full project list
+  ///
+  /// In en, this message translates to:
+  /// **'All projects'**
+  String get workAllProjects;
+
+  /// Tooltip of the trailing button that opens another project's live conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Open “{title}”'**
+  String workOpenLiveConversation(String title);
+
+  /// Other project row: how many conversations are running there
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Running} other{Running · {count}}}'**
+  String workRunningCount(int count);
+
+  /// Accessibility label of the Work tab's single loading bar
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get workLoadingLabel;
+
+  /// Status line / connecting card title when the phone's own server does not answer
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode on this phone isn\'t answering'**
+  String get workServerNotAnsweringPhone;
+
+  /// Status line / connecting card title when a remote server does not answer
+  ///
+  /// In en, this message translates to:
+  /// **'{server} isn\'t answering'**
+  String workServerNotAnswering(String server);
+
+  /// Connecting card body once the server has not answered for 8 seconds
+  ///
+  /// In en, this message translates to:
+  /// **'The app keeps trying in the background.'**
+  String get workServerKeepsTrying;
+
+  /// Status line / card action restarting the phone's own server
+  ///
+  /// In en, this message translates to:
+  /// **'Restart'**
+  String get workServerRestart;
+
+  /// Confirm title before restarting the phone's server
+  ///
+  /// In en, this message translates to:
+  /// **'Restart OpenCode on this phone?'**
+  String get workServerRestartTitle;
+
+  /// Confirm body before restarting the phone's server
+  ///
+  /// In en, this message translates to:
+  /// **'A running agent turn will stop. Your conversations are kept.'**
+  String get workServerRestartBody;
+
+  /// Connecting card action once the server has not answered for 8 seconds
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another server'**
+  String get workChooseAnotherServer;
+
+  /// Status line when waiting requests could not be refreshed
+  ///
+  /// In en, this message translates to:
+  /// **'This may be out of date'**
+  String get workStale;
+
+  /// Status line: a leftover process on the phone keeps using the CPU
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode has been busy for {duration} with nothing to do'**
+  String workRunaway(String duration);
+
+  /// Status line: a leftover process in a project folder keeps using the CPU
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode has been busy in {project} for {duration} with nothing to do'**
+  String workRunawayInProject(String project, String duration);
+
+  /// Status line action opening the Running now screen
+  ///
+  /// In en, this message translates to:
+  /// **'See what\'s running'**
+  String get workRunawaySee;
+
+  /// Connecting screen title while the phone's own server starts
+  ///
+  /// In en, this message translates to:
+  /// **'Starting OpenCode on this phone…'**
+  String get connectStartingPhone;
+
+  /// Connecting screen body while the phone's own server starts
+  ///
+  /// In en, this message translates to:
+  /// **'Your conversations are kept. This can take a minute.'**
+  String get connectStartingBody;
 }
 
 class _AppLocalizationsDelegate

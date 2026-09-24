@@ -18052,4 +18052,87 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aiteamComponentChildProcesses =>
       'Android stops an app\'s extra programs when it runs many at once, and a team runs several. If the team stops while it works, turn on Developer options › Disable child process restrictions.';
+
+  @override
+  String get workUnreviewed => 'Unreviewed';
+
+  @override
+  String get workMarkReviewed => 'Mark as reviewed';
+
+  @override
+  String get workMarkReviewedFailed =>
+      'Couldn\'t mark it as reviewed. Try again.';
+
+  @override
+  String get workOtherProjects => 'Other projects';
+
+  @override
+  String get workAllProjects => 'All projects';
+
+  @override
+  String workOpenLiveConversation(String title) {
+    return 'Open “$title”';
+  }
+
+  @override
+  String workRunningCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Running · $count',
+      one: 'Running',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get workLoadingLabel => 'Loading';
+
+  @override
+  String get workServerNotAnsweringPhone =>
+      'OpenCode on this phone isn\'t answering';
+
+  @override
+  String workServerNotAnswering(String server) {
+    return '$server isn\'t answering';
+  }
+
+  @override
+  String get workServerKeepsTrying => 'The app keeps trying in the background.';
+
+  @override
+  String get workServerRestart => 'Restart';
+
+  @override
+  String get workServerRestartTitle => 'Restart OpenCode on this phone?';
+
+  @override
+  String get workServerRestartBody =>
+      'A running agent turn will stop. Your conversations are kept.';
+
+  @override
+  String get workChooseAnotherServer => 'Choose another server';
+
+  @override
+  String get workStale => 'This may be out of date';
+
+  @override
+  String workRunaway(String duration) {
+    return 'OpenCode has been busy for $duration with nothing to do';
+  }
+
+  @override
+  String workRunawayInProject(String project, String duration) {
+    return 'OpenCode has been busy in $project for $duration with nothing to do';
+  }
+
+  @override
+  String get workRunawaySee => 'See what\'s running';
+
+  @override
+  String get connectStartingPhone => 'Starting OpenCode on this phone…';
+
+  @override
+  String get connectStartingBody =>
+      'Your conversations are kept. This can take a minute.';
 }
