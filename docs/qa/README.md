@@ -1,0 +1,32 @@
+# QA records
+
+Each change that matters is tested in a real scenario on a device and recorded here,
+so what was proven can be audited later (owner's rule, 2026-09-24).
+
+## Record format
+
+One folder per feature and date: `docs/qa/<feature>-<YYYY-MM-DD>/`. Its `README.md` has:
+
+1. **Scope:** the modules and contracts touched, and the spec.
+2. **Builds:** branch and commit, and the APK's SHA-256 when one was published.
+3. **Devices:** model or AVD, Android version and ABI, and anything notable (for
+   example, no Termux installed).
+4. **Runs:** numbered steps with expected vs actual, marked PASS or FAIL.
+5. **Evidence:** files next to the README: screenshots, logs, `OCTRACE` timing
+   excerpts, run marks. Video links go here too; videos are on the Tailscale-only file
+   server, not in git.
+6. **How to reproduce:** the exact commands.
+7. **NOT proven:** what these runs do not show.
+
+Tracing: `adb logcat -s flutter | grep OCTRACE` on any build, or Settings → App
+diagnostics → Performance → Copy report.
+
+## Audit-style records
+
+| Record | What it covers |
+|---|---|
+| [phone-setup-v2-2026-09-24](phone-setup-v2-2026-09-24/README.md) | OpenCode inside the app (no Termux): built-in Linux, the resumable setup engine, setup screens, background survival, the catalog wait |
+| `aiteam-builtin-2026-09-24` (in progress on `feat/aiteam-component`) | AI Team as a setup component; Android 14 and 15 emulators |
+
+The older folders in this directory are earlier screenshot sets and do not follow
+this format.
