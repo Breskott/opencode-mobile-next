@@ -2561,6 +2561,37 @@
       ]
     },
     {
+      "id": "local-agent-page",
+      "title": "Claude Code",
+      "kind": "screen",
+      "file": "lib/ui/screens/local_agent_screen.dart",
+      "widget": "LocalAgentScreen",
+      "presentedBy": [],
+      "line": 14,
+      "purpose": "Claude Code on this phone on its own page (docs/design/phone-server-screens-cleanup-2026-09-24.md §2): hosts LocalAgentOnboardingBlock (offer, install, sign-in, project folder, start and stop). The On this phone page shows it as one optional row.",
+      "reachedFrom": [
+        {
+          "page": "termux-setup-installed",
+          "element": null,
+          "note": "\"Claude Code on this phone · Optional\" row (key local-agent-row)"
+        },
+        {
+          "page": "termux-setup-connected",
+          "element": null,
+          "note": "\"Claude Code on this phone · Optional\" row (key local-agent-row)"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "Settings search (SearchEntry 'inside-phone-claude-code', lib/ui/search/search_index.dart)"
+        }
+      ],
+      "gates": [
+        "not opened while the person chose Claude Code in setup: the block then stays inline on On this phone and installs by itself"
+      ],
+      "elements": []
+    },
+    {
       "id": "embedded-local-agent-onboarding-block",
       "title": "Claude Code on this phone",
       "kind": "overlay",
@@ -2575,7 +2606,8 @@
         "hidden when claude.sh status cannot be read or the offer was dismissed (prefs local_agents_offer_skipped)"
       ],
       "embeddedIn": [
-        "TermuxSetupScreen"
+        "TermuxSetupScreen",
+        "LocalAgentScreen"
       ],
       "key": "local-agent-block",
       "elements": [
@@ -3165,6 +3197,665 @@
           "destructive": false
         }
       ]
+    },
+    {
+      "id": "builtin-server-setup",
+      "title": "OpenCode inside the app",
+      "kind": "screen",
+      "file": "lib/ui/screens/builtin_server_screen.dart",
+      "widget": "BuiltinServerScreen",
+      "presentedBy": [
+        "openBuiltinServerScreen"
+      ],
+      "line": 22,
+      "purpose": "Experimental (GitHub issue #87) manual walkthrough of the four steps BuiltinLinux drives: download Ubuntu, install OpenCode inside it, start the server on 127.0.0.1, connect. Superseded by phone setup v2 (screens A-C, phone-setup-start/progress/ready); kept only as the repair path when the in-app server will not start before the app is connected (no 'This phone' card is shown yet).",
+      "reachedFrom": [
+        {
+          "page": "root-connecting",
+          "element": null,
+          "note": "SavedServerConnectionCard.onOpenInAppSetup, shown only when an in-app server profile failed to start (main.dart:1595-1597); not yet an element on root-connecting in a-shell.json"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_builtinServerChoice (key termux-setup-builtin-open)",
+          "file": "lib/ui/screens/termux_setup_screen.dart",
+          "line": 2763
+        }
+      ],
+      "gates": [
+        "BuiltinLinux.supported, else shows the Android-only message (key builtin-server-unsupported)"
+      ],
+      "elements": [
+        {
+          "id": "builtin-server-install-ubuntu",
+          "type": "button",
+          "label": "Install | Retry",
+          "key": "builtin-install-ubuntu",
+          "line": 508,
+          "action": "mutate",
+          "target": null,
+          "effect": "_installUbuntu(): BuiltinLinux.install(), polling status while it downloads.",
+          "gates": [
+            "status != null",
+            "disabled while _busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "builtin-server-runtime",
+          "type": "toggle",
+          "label": "OpenCode 1 | OpenCode 2",
+          "key": "builtin-runtime",
+          "line": 540,
+          "action": "other",
+          "target": null,
+          "effect": "_selectRuntime(value): sets _runtime and persists it to builtinRuntimePrefKey; re-checks the installed version.",
+          "gates": [
+            "ubuntuReady",
+            "disabled while _busy or the server is running"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "builtin-server-install-opencode",
+          "type": "button",
+          "label": "Install | Retry",
+          "key": "builtin-install-opencode",
+          "line": 579,
+          "action": "mutate",
+          "target": null,
+          "effect": "_installOpenCode(): runs the pinned-version install script for _runtime inside Ubuntu.",
+          "gates": [
+            "ubuntuReady && !openCodeReady",
+            "disabled while _busy or _checkingVersion"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "builtin-server-start",
+          "type": "button",
+          "label": "Start | Retry",
+          "key": "builtin-start",
+          "line": 644,
+          "action": "mutate",
+          "target": null,
+          "effect": "_start(): BuiltinLinux starts the OpenCode process on 127.0.0.1.",
+          "gates": [
+            "openCodeReady && !running",
+            "disabled while _busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "builtin-server-stop",
+          "type": "button",
+          "label": "Stop",
+          "key": "builtin-stop",
+          "line": 638,
+          "action": "mutate",
+          "target": null,
+          "effect": "_stop(): stops the running in-app OpenCode process.",
+          "gates": [
+            "running",
+            "disabled while _busy"
+          ],
+          "destructive": true
+        },
+        {
+          "id": "builtin-server-show-log",
+          "type": "button",
+          "label": "Show log",
+          "key": "builtin-show-log",
+          "line": 654,
+          "action": "open-sheet",
+          "target": "builtin-server-log-sheet",
+          "targetWidget": "_showLog",
+          "effect": "_showLog(): reads BuiltinLinux.serverLog() then opens the log sheet.",
+          "gates": [
+            "openCodeReady"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "builtin-server-connect",
+          "type": "button",
+          "label": "Connect",
+          "key": "builtin-connect",
+          "line": 697,
+          "action": "mutate",
+          "target": null,
+          "effect": "_connect(): ensures a saved profile for the in-app server, connects, then on success pushNamedAndRemoveUntil('/home').",
+          "gates": [
+            "running && !_starting && !connected",
+            "disabled while _busy"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "builtin-server-remove",
+          "type": "button",
+          "label": "Remove",
+          "key": "builtin-remove",
+          "line": 721,
+          "action": "open-sheet",
+          "target": "builtin-server-remove-confirm-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "_remove(): showConfirmSheet, then on confirm BuiltinLinux.uninstall() and resets the step state.",
+          "gates": [
+            "ubuntuReady",
+            "disabled while _busy"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "builtin-server-log-sheet",
+      "title": "Server log",
+      "kind": "sheet",
+      "file": "lib/ui/screens/builtin_server_screen.dart",
+      "widget": "_showLog",
+      "presentedBy": [],
+      "line": 307,
+      "purpose": "Plain-text scroll of BuiltinLinux.serverLog(), or the empty-log message.",
+      "reachedFrom": [
+        {
+          "page": "builtin-server-setup",
+          "element": "builtin-server-show-log"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "builtin-server-log-close",
+          "type": "icon-button",
+          "label": "Close",
+          "key": null,
+          "line": 326,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.of(context).pop().",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "builtin-server-remove-confirm-sheet",
+      "title": "Remove the built-in Ubuntu?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/builtin_server_screen.dart",
+      "widget": "_remove",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 356,
+      "purpose": "Confirms deleting the whole built-in Ubuntu (Node.js, OpenCode, everything installed for it).",
+      "reachedFrom": [
+        {
+          "page": "builtin-server-setup",
+          "element": "builtin-server-remove"
+        }
+      ],
+      "gates": [],
+      "key": "builtin-server-remove-confirm",
+      "elements": [
+        {
+          "id": "builtin-server-remove-confirm-confirm",
+          "type": "button",
+          "label": "Remove",
+          "key": "builtin-server-remove-confirm",
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "Pops true; _remove() then calls BuiltinLinux.uninstall().",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "builtin-server-remove-confirm-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops false; nothing changes.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "phone-setup-start",
+      "title": "On this phone",
+      "kind": "screen",
+      "file": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart",
+      "widget": "PhoneSetupStartScreen",
+      "presentedBy": [
+        "openPhoneSetupStart"
+      ],
+      "line": 29,
+      "purpose": "Phone setup v2 screen A (docs/design/phone-setup-v2-2026-09-24.md): one hero that follows what is already true on the phone (a setup running or stopped part way, an OpenCode already ready in the app, one Termux already runs, or the first-time promise), one filled action, and the rarer ways in folded under 'Other ways'.",
+      "reachedFrom": [
+        {
+          "page": "servers-welcome",
+          "element": "servers-welcome-termux-setup",
+          "note": "g-servers.json's target/targetWidget for this element are stale (termux-setup / '/termux-setup'); the current callback is _openPhoneSetup -> openPhoneSetupStart(context) (servers_screen.dart:243-247, 712)"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "_PhoneSetupEntry (key quick-add-phone-card, ServersScreen._openPhoneSetup)",
+          "file": "lib/ui/screens/servers_screen.dart",
+          "line": 842,
+          "note": "g-servers.json's servers page already records a 'servers-termux-setup' element (key quick-add-termux-card) with the same stale target; the current code's key and destination differ"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "SearchEntry 'settings-on-this-phone' (lib/ui/search/search_index.dart): open: openPhoneSetupStart(context)"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "phone-setup-start-primary-set-up",
+          "type": "button",
+          "label": "Set up",
+          "key": "phone-setup-start-primary",
+          "line": 472,
+          "action": "mutate",
+          "target": "phone-setup-progress",
+          "targetWidget": "PhoneSetupProgressScreen",
+          "effect": "_run(_selection): SetupEngine.run(ids, params: firstSetup), then on success _showProgress() -> openProgress(context) (defaults to _openFirstSetupProgress).",
+          "gates": [
+            "hero == fresh (no job on disk, nothing installed, no Termux server detected)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-start-primary-continue",
+          "type": "button",
+          "label": "Continue",
+          "key": "phone-setup-start-primary",
+          "line": 472,
+          "action": "mutate",
+          "target": "phone-setup-progress",
+          "targetWidget": "PhoneSetupProgressScreen",
+          "effect": "_continue(progress): if progress.canContinue, re-runs the job's own selection (_run); else opens the progress screen directly (_showProgress).",
+          "gates": [
+            "hero == progress (a setup job is running or stopped part way)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-start-primary-open",
+          "type": "button",
+          "label": "Open",
+          "key": "phone-setup-start-primary",
+          "line": 472,
+          "action": "navigate",
+          "target": "home-shell",
+          "targetWidget": "/home",
+          "effect": "_open(progress): starts the in-app server if needed and connects, then pushNamedAndRemoveUntil('/home'); with no saved in-app profile, re-runs the job instead (same as Set up).",
+          "gates": [
+            "hero == ready (setup finished, OpenCode installed in-app)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-start-primary-connect",
+          "type": "button",
+          "label": "Connect",
+          "key": "phone-setup-start-primary",
+          "line": 472,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "_connectTermux(): pushNamedAndRemoveUntil('/servers', request) built from the detected Termux server (connect directly, enter its password, or just show the Servers list if stopped).",
+          "gates": [
+            "hero == termux (Termux already runs OpenCode)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-start-customize",
+          "type": "button",
+          "label": "Customize",
+          "key": "phone-setup-start-customize",
+          "line": 481,
+          "action": "open-sheet",
+          "target": "phone-setup-customize-sheet",
+          "targetWidget": "showPhoneSetupCustomize",
+          "effect": "_customize(): showPhoneSetupCustomize(context, selected: _selection); the result replaces _selection.",
+          "gates": [
+            "hero == fresh && includesText != null"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-start-other-ways",
+          "type": "button",
+          "label": "Other ways",
+          "key": "phone-setup-start-other-ways",
+          "line": 528,
+          "action": "other",
+          "target": null,
+          "effect": "Toggles _otherWaysOpen to reveal the rarer rows below.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-start-set-up-here",
+          "type": "list-tile",
+          "label": "Set up OpenCode on this phone",
+          "key": "phone-setup-start-set-up-here",
+          "line": 550,
+          "action": "mutate",
+          "target": "phone-setup-progress",
+          "targetWidget": "PhoneSetupProgressScreen",
+          "effect": "Same as Set up: _run(_selection). Shown so Termux is not the only way once Other ways is open.",
+          "gates": [
+            "_otherWaysOpen && hero == termux"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-start-use-termux",
+          "type": "list-tile",
+          "label": "Use Termux instead",
+          "key": "phone-setup-start-use-termux",
+          "line": 558,
+          "action": "navigate",
+          "target": "termux-setup",
+          "targetWidget": "/termux-setup",
+          "effect": "_useTermux(): pushNamed('/termux-setup'); re-probes Termux on return so the hero can switch to it.",
+          "gates": [
+            "_otherWaysOpen && hero != termux"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-start-by-address",
+          "type": "list-tile",
+          "label": "Connect by address",
+          "key": "phone-setup-start-by-address",
+          "line": 565,
+          "action": "navigate",
+          "target": "servers",
+          "targetWidget": "/servers",
+          "effect": "_connectByAddress(): pushNamed('/servers', arguments: ServersRouteRequest.add()).",
+          "gates": [
+            "_otherWaysOpen"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "phone-setup-customize-sheet",
+      "title": "Choose what to install | Add tools",
+      "kind": "sheet",
+      "file": "lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart",
+      "widget": "SetupCustomizeSheet",
+      "presentedBy": [
+        "showPhoneSetupCustomize",
+        "showSetupCustomizeSheet"
+      ],
+      "line": 41,
+      "purpose": "First setup: every component, required ones on and locked with their reason, optional ones as switches, returning the whole selection. Add mode ('Add tools' from the This phone card): only optional components not yet installed. A running total of time and size always counts what the engine will really install, dependencies included.",
+      "reachedFrom": [
+        {
+          "page": "phone-setup-start",
+          "element": "phone-setup-start-customize"
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "showPhoneSetupCustomize(addMode: true) ('Add tools' on the This phone card)",
+          "file": "lib/ui/widgets/phone_server_card.dart",
+          "line": 109
+        },
+        {
+          "page": "?",
+          "element": null,
+          "widget": "showPhoneSetupCustomize (AI Team phone onboarding)",
+          "file": "lib/ui/widgets/builtin_team_section.dart",
+          "line": 51
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "phone-setup-customize-toggle",
+          "type": "toggle",
+          "label": "<component title>",
+          "key": "phone-setup-customize-<component.id>",
+          "line": 276,
+          "action": "other",
+          "target": null,
+          "effect": "_toggle(component, on): adds/removes the component and cascades to the optional components it depends on / that depend on it. View state only until Done returns the selection.",
+          "gates": [
+            "!component.required",
+            "not addMode, or addMode && not already installed"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-customize-done",
+          "type": "button",
+          "label": "Done | Add",
+          "key": "phone-setup-customize-done",
+          "line": 217,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Navigator.of(context).pop(_result): returns the ids the caller should hand to SetupEngine.run.",
+          "gates": [
+            "not while checking installed components (add mode) or nothing chosen (add mode)"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "phone-setup-progress",
+      "title": "Setting up OpenCode on this phone",
+      "kind": "screen",
+      "file": "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart",
+      "widget": "PhoneSetupProgressScreen",
+      "presentedBy": [
+        "openPhoneSetupProgress"
+      ],
+      "line": 21,
+      "purpose": "Phone setup v2 screen B: a thin host for SetupProgressView. The job runs natively under a foreground service, so leaving this screen never stops it; coming back re-reads it. A first setup hands off to screen C (Ready) when done; an update or added tools just close back to where they were opened.",
+      "reachedFrom": [
+        {
+          "page": "phone-setup-start",
+          "element": "phone-setup-start-primary-set-up"
+        },
+        {
+          "page": "phone-setup-start",
+          "element": "phone-setup-start-primary-continue"
+        },
+        {
+          "page": "phone-setup-start",
+          "element": "phone-setup-start-set-up-here"
+        },
+        {
+          "page": "servers-welcome",
+          "element": null,
+          "note": "PhoneSetupWelcomeEntry's action button while a job is running or stopped part way (welcome-phone-setup-action)"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "phone setup notification tap while the job is running/stopped/failed/cancelled (openPhoneSetupFromNotification, phone_setup_routes.dart:88-124)"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "phone-setup-progress-continue",
+          "type": "button",
+          "label": "Continue",
+          "key": "setup-progress-continue",
+          "file": "lib/ui/widgets/setup_progress_view.dart",
+          "line": 260,
+          "action": "mutate",
+          "target": null,
+          "effect": "_continue(): re-runs the job's own component ids (or the defaults), resuming a stopped/interrupted/failed job.",
+          "gates": [
+            "progress.canContinue"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-progress-cancel",
+          "type": "button",
+          "label": "Cancel",
+          "key": "setup-progress-cancel",
+          "file": "lib/ui/widgets/setup_progress_view.dart",
+          "line": 268,
+          "action": "open-sheet",
+          "target": "phone-setup-progress-stop-sheet",
+          "targetWidget": "showConfirmSheet",
+          "effect": "_cancel(): showConfirmSheet, then on confirm SetupEngine.cancel().",
+          "gates": [
+            "job is running"
+          ],
+          "destructive": true
+        }
+      ]
+    },
+    {
+      "id": "phone-setup-progress-stop-sheet",
+      "title": "Stop setting up?",
+      "kind": "sheet",
+      "file": "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart",
+      "widget": "_cancel",
+      "presentedBy": [
+        "showConfirmSheet"
+      ],
+      "line": 106,
+      "purpose": "Confirms stopping the running setup job.",
+      "reachedFrom": [
+        {
+          "page": "phone-setup-progress",
+          "element": "phone-setup-progress-cancel"
+        }
+      ],
+      "gates": [],
+      "key": "phone-setup-progress-stop-confirm",
+      "elements": [
+        {
+          "id": "phone-setup-progress-stop-confirm",
+          "type": "button",
+          "label": "Stop",
+          "key": "phone-setup-progress-stop-confirm",
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 68,
+          "action": "mutate",
+          "target": null,
+          "effect": "Pops true; SetupEngine.cancel().",
+          "gates": [],
+          "destructive": true
+        },
+        {
+          "id": "phone-setup-progress-keep-going",
+          "type": "button",
+          "label": "Keep going",
+          "key": null,
+          "file": "lib/ui/widgets/confirm_sheet.dart",
+          "line": 86,
+          "action": "dismiss",
+          "target": null,
+          "effect": "Pops false; the job keeps running.",
+          "gates": [],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "phone-setup-ready",
+      "title": "OpenCode is ready",
+      "kind": "screen",
+      "file": "lib/ui/screens/phone_setup/phone_setup_ready_screen.dart",
+      "widget": "PhoneSetupReadyScreen",
+      "presentedBy": [
+        "openPhoneSetupReady"
+      ],
+      "line": 22,
+      "purpose": "Phone setup v2 screen C: the agent is running, so the only thing left is a place to work. One name makes a project and lands in its first conversation with the keyboard up; Open an existing folder is the quiet alternative. Takes the progress screen's place (pushReplacement) so Back never returns to a finished setup.",
+      "reachedFrom": [
+        {
+          "page": "phone-setup-progress",
+          "element": null,
+          "note": "automatic hand-off, not a tap: when firstSetup and the job reaches SetupState.done (phone_setup_progress_screen.dart:78-92)"
+        },
+        {
+          "page": "system",
+          "element": null,
+          "trigger": "phone setup notification tap when the job is done, firstSetup and screen C was not shown yet for this job (openPhoneSetupFromNotification, phone_setup_routes.dart:108-115)"
+        }
+      ],
+      "gates": [],
+      "elements": [
+        {
+          "id": "phone-setup-ready-close",
+          "type": "icon-button",
+          "label": "Close",
+          "key": "phone-setup-ready-close",
+          "line": 223,
+          "action": "navigate",
+          "target": "home-shell",
+          "targetWidget": "/",
+          "effect": "_leave(): pushNamedAndRemoveUntil('/', (_) => false); PopScope also routes Back here.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-ready-name",
+          "type": "text-field",
+          "label": "Project name",
+          "key": "phone-setup-ready-name",
+          "line": 191,
+          "action": "other",
+          "target": null,
+          "effect": "Prefilled with 'my-app' and selected; onChanged clears the field error, onSubmitted triggers Create.",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-ready-create",
+          "type": "button",
+          "label": "Create",
+          "key": "phone-setup-ready-create",
+          "line": 250,
+          "action": "submit",
+          "target": "chat",
+          "targetWidget": "/chat/<id>",
+          "effect": "_create(): validates the name, creates the project folder (BuiltinProjectFolders), ensures the app is connected, selects it as the location, creates a session, then pushNamedAndRemoveUntil('/home') and pushNamed('/chat/<id>', ChatRouteArguments.firstRun()).",
+          "gates": [],
+          "destructive": false
+        },
+        {
+          "id": "phone-setup-ready-open-existing",
+          "type": "button",
+          "label": "Open an existing folder",
+          "key": "phone-setup-ready-open-existing",
+          "line": 257,
+          "action": "open-sheet",
+          "target": null,
+          "targetWidget": "ProjectFolderActions.openFolder",
+          "effect": "_openExisting(): ensures the app is connected, then ProjectFolderActions.openFolder(context, connection) (the same folder sheet Work and the project picker use); on a chosen path, pushNamedAndRemoveUntil('/home').",
+          "gates": [],
+          "destructive": false
+        }
+      ]
     }
   ],
   "notPages": [
@@ -3175,6 +3866,18 @@
     {
       "file": "lib/ui/widgets/local_server_card.dart",
       "reason": "shared presentation of the two on-phone server cards (LocalServerCard); every control is a callback wired by TermuxRunningServerEntry or LocalAgentServerEntry and is recorded on their pages"
+    },
+    {
+      "file": "lib/ui/screens/phone_setup/phone_setup_routes.dart",
+      "reason": "navigation only: openPhoneSetupStart/showPhoneSetupCustomize/openPhoneSetupProgress/openPhoneSetupReady and openPhoneSetupFromNotification wire the phone setup screens together and route a setup notification tap; no surface or widget of its own."
+    },
+    {
+      "file": "lib/ui/screens/phone_setup/phone_setup_selection.dart",
+      "reason": "pure arithmetic over the SetupComponent registry (defaultSetupSelection, expandSetupSelection, setupTotals, size/duration text, includedToolNames); no widget, surface or interactive element. Used by phone-setup-start and phone-setup-customize-sheet."
+    },
+    {
+      "file": "lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart",
+      "reason": "PhoneSetupWelcomeEntry is the first-run welcome's own status line about a phone setup job that already exists (running / stopped part way / done but nothing saved); embedded in servers-welcome (lib/ui/screens/servers_screen.dart:710), not a surface of its own. Its action button opens phone-setup-progress or resumes/reopens the job."
     }
   ],
   "notes": [

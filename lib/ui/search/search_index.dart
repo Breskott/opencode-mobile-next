@@ -23,6 +23,7 @@ import '../screens/external_agents_screen.dart';
 import '../screens/global_sessions_screen.dart';
 import '../screens/guide_screen.dart';
 import '../screens/library_screen.dart';
+import '../screens/local_agent_screen.dart';
 import '../screens/profile_monitor_screen.dart';
 import '../screens/project_hub_screen.dart';
 import '../screens/saved_permissions_screen.dart';
@@ -312,8 +313,9 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       icon: AppIconography.phone,
       title: onThisPhone,
       keywords: l10n.settingsHubSearchPhoneAliases,
-      // The phone setup screen; Termux stays under its "Other ways".
-      pages: const ['termux-setup'],
+      // Phone setup v2 screen A; Termux stays one tap away under its "Other
+      // ways" row.
+      pages: const ['phone-setup-start', 'termux-setup'],
       // Local Android tools belong to the phone, not the connected server's
       // capability set.
       gate: (scope) => scope.platform.supportsTermux,
@@ -935,6 +937,24 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       pages: const ['termux-storage'],
       gate: (scope) => scope.platform.supportsTermux,
       open: _screen((_) => const TermuxStorageScreen()),
+    ),
+    SearchEntry(
+      id: 'inside-phone-claude-code',
+      kind: SearchEntryKind.insideSettings,
+      icon: AppIconography.agent,
+      title: l10n.localAgentPageTitle,
+      parent: onThisPhone,
+      keywords: l10n.localAgentTitle,
+      pages: const ['local-agent-page'],
+      gate: (scope) => scope.platform.supportsTermux,
+      open: (context, _) => _push(
+        context,
+        LocalAgentScreen(
+          onConnected: () => Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/home', (_) => false),
+        ),
+      ),
     ),
     SearchEntry(
       id: 'inside-servers-monitor',

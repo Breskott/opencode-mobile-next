@@ -2214,6 +2214,38 @@
           "effect": "ExpansionTile: expands the selectable message + stack trace.",
           "gates": [],
           "destructive": false
+        },
+        {
+          "id": "app-diagnostics-perf-copy",
+          "type": "button",
+          "label": "Copy report",
+          "key": "perf-trace-copy",
+          "file": "lib/ui/screens/perf_trace_section.dart",
+          "line": 55,
+          "action": "copy",
+          "target": null,
+          "targetWidget": null,
+          "effect": "PerfTraceSection._copy(): Clipboard.setData(PerfTrace.reportText()); snackbar perfTraceCopied. The 'Performance' block under the error log (where time went in this run, grouped steps and recent steps).",
+          "gates": [
+            "disabled when PerfTrace.recent(...) is empty"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "app-diagnostics-perf-clear",
+          "type": "button",
+          "label": "Clear",
+          "key": "perf-trace-clear",
+          "file": "lib/ui/screens/perf_trace_section.dart",
+          "line": 63,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "PerfTrace.clear(): drops the recorded performance trace with no confirmation.",
+          "gates": [
+            "disabled when PerfTrace.recent(...) is empty"
+          ],
+          "destructive": true
         }
       ]
     },
@@ -3262,6 +3294,10 @@
     {
       "file": "lib/ui/screens/library_screen.dart",
       "reason": "No surface since UX phase 2: the More tab (LibraryScreen) merged into the Settings hub. The file only hosts the library part files (catalog, integrations, commands, skills, references) and defaultModelLabel()."
+    },
+    {
+      "file": "lib/ui/screens/perf_trace_section.dart",
+      "reason": "PerfTraceSection is the 'Performance' block of App diagnostics (embedded via lib/ui/screens/app_diagnostics_screen.dart:252, host page app-diagnostics), not a surface of its own; its Copy report and Clear buttons are recorded on app-diagnostics with `file` set here."
     }
   ],
   "notes": [

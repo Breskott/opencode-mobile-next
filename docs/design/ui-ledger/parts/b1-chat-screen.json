@@ -663,7 +663,16 @@
    ]
   }
  ],
- "notPages": [],
+ "notPages": [
+  {
+   "file": "lib/ui/screens/chat/chat_states.dart",
+   "reason": "part of chat_screen.dart (design standard §9 step 5): the chat page's own loading/error states and its one status line, not a surface of their own; shown inline on the chat page."
+  },
+  {
+   "file": "lib/ui/screens/chat/empty_chat.dart",
+   "reason": "part of chat_screen.dart: ChatStartFacts plus the empty-conversation starters/body shown inline on the chat page before the first message, not a surface of their own."
+  }
+ ],
  "notes": [
   "Scope: lines 1-3800 of lib/ui/screens/chat_screen.dart are almost entirely state and handlers; only three interactive declarations live here (snackbar Undo 1172, load-older button 2014, composer key handler 573). All other chat elements are declared in build() after line 3800 (agent b2) or in lib/ui/screens/chat/*.dart.",
   "Handler -> surface map for handlers defined in this range (their openers are declared elsewhere; use as targetWidget evidence):",

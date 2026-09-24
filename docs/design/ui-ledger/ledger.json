@@ -1,5 +1,5 @@
 {
- "generatedFrom": "72dd9e0f758503298855e96c9ca9be5c4e9a3e1e",
+ "generatedFrom": "d1e39af88c748fd2b793c49fe39ab7aa2bf7e1f7",
  "pages": [
   {
    "id": "system",
@@ -405,6 +405,58 @@
      "destructive": false
     },
     {
+     "id": "system-settings-search-searchentry-inside-phone-claude-code-lib-ui--to-local-agent-page",
+     "type": "gesture",
+     "label": "Settings search (SearchEntry 'inside-phone-claude-code', lib/ui/search/search_index.dart)",
+     "key": null,
+     "file": "lib/main.dart",
+     "line": null,
+     "action": "navigate",
+     "target": "local-agent-page",
+     "effect": "Settings search (SearchEntry 'inside-phone-claude-code', lib/ui/search/search_index.dart)",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "system-searchentry-settings-on-this-phone-lib-ui-search-search-inde-to-phone-setup-start",
+     "type": "gesture",
+     "label": "SearchEntry 'settings-on-this-phone' (lib/ui/search/search_index.dart): open: openPhoneSetupStart(context)",
+     "key": null,
+     "file": "lib/main.dart",
+     "line": null,
+     "action": "navigate",
+     "target": "phone-setup-start",
+     "effect": "SearchEntry 'settings-on-this-phone' (lib/ui/search/search_index.dart): open: openPhoneSetupStart(context)",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "system-phone-setup-notification-tap-while-the-job-is-running-stoppe-to-phone-setup-progress",
+     "type": "gesture",
+     "label": "phone setup notification tap while the job is running/stopped/failed/cancelled (openPhoneSetupFromNotification, phone_setup_routes.dart:88-124)",
+     "key": null,
+     "file": "lib/main.dart",
+     "line": null,
+     "action": "navigate",
+     "target": "phone-setup-progress",
+     "effect": "phone setup notification tap while the job is running/stopped/failed/cancelled (openPhoneSetupFromNotification, phone_setup_routes.dart:88-124)",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "system-phone-setup-notification-tap-when-the-job-is-done-firstsetup-to-phone-setup-ready",
+     "type": "gesture",
+     "label": "phone setup notification tap when the job is done, firstSetup and screen C was not shown yet for this job (openPhoneSetupFromNotification, phone_setup_routes.dart:108-115)",
+     "key": null,
+     "file": "lib/main.dart",
+     "line": null,
+     "action": "navigate",
+     "target": "phone-setup-ready",
+     "effect": "phone setup notification tap when the job is done, firstSetup and screen C was not shown yet for this job (openPhoneSetupFromNotification, phone_setup_routes.dart:108-115)",
+     "gates": [],
+     "destructive": false
+    },
+    {
      "id": "system-activityscreen-opened-with-an-initial-gate-id-post-frame-sho-to-gate-sheet",
      "type": "gesture",
      "label": "ActivityScreen opened with an initial gate id: post-frame showGateSheet once the team snapshot settled (lib/ui/screens/activity_screen.dart:320); upstream trigger (notification tap) not traced",
@@ -793,6 +845,148 @@
    ],
    "elements": [
     {
+     "id": "root-connecting-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": "saved-server-retry",
+     "file": "lib/main.dart",
+     "line": 359,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "onRetry -> _RootState: _started = false; _connectSaved() which calls conn.connect(profile) (main.dart:1418).",
+     "gates": [
+      "failed",
+      "!primaryIsRetry"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/saved_server_connection_card.dart"
+    },
+    {
+     "id": "root-connecting-change",
+     "type": "button",
+     "label": "Change server",
+     "key": "saved-server-change",
+     "file": "lib/main.dart",
+     "line": 369,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "onChangeServer -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false) (main.dart:1402).",
+     "gates": [
+      "failed",
+      "!primaryIsChange"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/saved_server_connection_card.dart"
+    },
+    {
+     "id": "root-connecting-primary-termux",
+     "type": "button",
+     "label": "Check Termux",
+     "key": "saved-server-open-termux",
+     "file": "lib/main.dart",
+     "line": 380,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "Primary action when ConnectionFailure.primary == openTermuxSetup: navigator.pushNamed('/termux-setup').",
+     "gates": [
+      "failure.primary == ConnectionFailureAction.openTermuxSetup && onOpenTermuxSetup != null",
+      "widget.supportsTermux && !widget.usesConnectionToken && isLoopbackHost(Uri.tryParse(widget.baseUrl)?.host ?? '') (card) and !conn.usesConnectionToken && platformCapabilities.supportsTermux (_Root)"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/saved_server_connection_card.dart"
+    },
+    {
+     "id": "root-connecting-primary-password",
+     "type": "button",
+     "label": "Update password",
+     "key": "saved-server-update-password",
+     "file": "lib/main.dart",
+     "line": 391,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "onUpdatePassword -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false, arguments: 'edit-active') which opens the active profile editor (main.dart:1409).",
+     "gates": [
+      "failure.primary == ConnectionFailureAction.updatePassword && onUpdatePassword != null"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/saved_server_connection_card.dart"
+    },
+    {
+     "id": "root-connecting-primary-token",
+     "type": "button",
+     "label": "Update token",
+     "key": "saved-server-update-token",
+     "file": "lib/main.dart",
+     "line": 402,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "onUpdateToken -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false, arguments: 'edit-active') (main.dart:1404).",
+     "gates": [
+      "failure.primary == ConnectionFailureAction.updateToken && onUpdateToken != null"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/saved_server_connection_card.dart"
+    },
+    {
+     "id": "root-connecting-primary-change",
+     "type": "button",
+     "label": "Change server",
+     "key": "saved-server-change-primary",
+     "file": "lib/main.dart",
+     "line": 412,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "Primary variant of Change server: pushNamedAndRemoveUntil('/servers').",
+     "gates": [
+      "failure.primary == ConnectionFailureAction.changeServer"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/saved_server_connection_card.dart"
+    },
+    {
+     "id": "root-connecting-primary-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": "saved-server-retry-primary",
+     "file": "lib/main.dart",
+     "line": 422,
+     "action": "other",
+     "target": null,
+     "targetWidget": null,
+     "effect": "Primary variant of retry (fallback when the diagnosed primary action has no callback): _started = false; _connectSaved().",
+     "gates": [
+      "failed",
+      "failure.primary == retry or its callback is null"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/saved_server_connection_card.dart"
+    },
+    {
+     "id": "root-connecting-termux-secondary",
+     "type": "button",
+     "label": "Termux setup",
+     "key": "saved-server-open-termux",
+     "file": "lib/main.dart",
+     "line": 446,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "onOpenTermuxSetup -> navigator.pushNamed('/termux-setup') (main.dart:1416).",
+     "gates": [
+      "failed",
+      "primaryIsRetry && onOpenTermuxSetup != null",
+      "widget.supportsTermux && !widget.usesConnectionToken && isLoopbackHost(Uri.tryParse(widget.baseUrl)?.host ?? '') (card) and !conn.usesConnectionToken && platformCapabilities.supportsTermux (_Root)"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/saved_server_connection_card.dart"
+    },
+    {
      "id": "root-connecting-details-toggle",
      "type": "button",
      "label": "Details / Hide details",
@@ -805,140 +999,6 @@
      "effect": "Toggles _detailsOpen to reveal the raw error text (SelectableText).",
      "gates": [
       "failed (error != null || requiresTokenReentry)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "root-connecting-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": "saved-server-retry",
-     "file": "lib/ui/widgets/saved_server_connection_card.dart",
-     "line": 359,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "onRetry -> _RootState: _started = false; _connectSaved() which calls conn.connect(profile) (main.dart:1418).",
-     "gates": [
-      "failed",
-      "!primaryIsRetry"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "root-connecting-change",
-     "type": "button",
-     "label": "Change server",
-     "key": "saved-server-change",
-     "file": "lib/ui/widgets/saved_server_connection_card.dart",
-     "line": 369,
-     "action": "navigate",
-     "target": "servers",
-     "targetWidget": "/servers",
-     "effect": "onChangeServer -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false) (main.dart:1402).",
-     "gates": [
-      "failed",
-      "!primaryIsChange"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "root-connecting-primary-termux",
-     "type": "button",
-     "label": "Check Termux",
-     "key": "saved-server-open-termux",
-     "file": "lib/ui/widgets/saved_server_connection_card.dart",
-     "line": 380,
-     "action": "navigate",
-     "target": "termux-setup",
-     "targetWidget": "/termux-setup",
-     "effect": "Primary action when ConnectionFailure.primary == openTermuxSetup: navigator.pushNamed('/termux-setup').",
-     "gates": [
-      "failure.primary == ConnectionFailureAction.openTermuxSetup && onOpenTermuxSetup != null",
-      "widget.supportsTermux && !widget.usesConnectionToken && isLoopbackHost(Uri.tryParse(widget.baseUrl)?.host ?? '') (card) and !conn.usesConnectionToken && platformCapabilities.supportsTermux (_Root)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "root-connecting-primary-password",
-     "type": "button",
-     "label": "Update password",
-     "key": "saved-server-update-password",
-     "file": "lib/ui/widgets/saved_server_connection_card.dart",
-     "line": 391,
-     "action": "navigate",
-     "target": "servers",
-     "targetWidget": "/servers",
-     "effect": "onUpdatePassword -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false, arguments: 'edit-active') which opens the active profile editor (main.dart:1409).",
-     "gates": [
-      "failure.primary == ConnectionFailureAction.updatePassword && onUpdatePassword != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "root-connecting-primary-token",
-     "type": "button",
-     "label": "Update token",
-     "key": "saved-server-update-token",
-     "file": "lib/ui/widgets/saved_server_connection_card.dart",
-     "line": 402,
-     "action": "navigate",
-     "target": "servers",
-     "targetWidget": "/servers",
-     "effect": "onUpdateToken -> navigator.pushNamedAndRemoveUntil('/servers', (_) => false, arguments: 'edit-active') (main.dart:1404).",
-     "gates": [
-      "failure.primary == ConnectionFailureAction.updateToken && onUpdateToken != null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "root-connecting-primary-change",
-     "type": "button",
-     "label": "Change server",
-     "key": "saved-server-change-primary",
-     "file": "lib/ui/widgets/saved_server_connection_card.dart",
-     "line": 412,
-     "action": "navigate",
-     "target": "servers",
-     "targetWidget": "/servers",
-     "effect": "Primary variant of Change server: pushNamedAndRemoveUntil('/servers').",
-     "gates": [
-      "failure.primary == ConnectionFailureAction.changeServer"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "root-connecting-primary-retry",
-     "type": "button",
-     "label": "Try again",
-     "key": "saved-server-retry-primary",
-     "file": "lib/ui/widgets/saved_server_connection_card.dart",
-     "line": 422,
-     "action": "other",
-     "target": null,
-     "targetWidget": null,
-     "effect": "Primary variant of retry (fallback when the diagnosed primary action has no callback): _started = false; _connectSaved().",
-     "gates": [
-      "failed",
-      "failure.primary == retry or its callback is null"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "root-connecting-termux-secondary",
-     "type": "button",
-     "label": "Termux setup",
-     "key": "saved-server-open-termux",
-     "file": "lib/ui/widgets/saved_server_connection_card.dart",
-     "line": 446,
-     "action": "navigate",
-     "target": "termux-setup",
-     "targetWidget": "/termux-setup",
-     "effect": "onOpenTermuxSetup -> navigator.pushNamed('/termux-setup') (main.dart:1416).",
-     "gates": [
-      "failed",
-      "primaryIsRetry && onOpenTermuxSetup != null",
-      "widget.supportsTermux && !widget.usesConnectionToken && isLoopbackHost(Uri.tryParse(widget.baseUrl)?.host ?? '') (card) and !conn.usesConnectionToken && platformCapabilities.supportsTermux (_Root)"
      ],
      "destructive": false
     }
@@ -2133,6 +2193,14 @@
     {
      "page": "termux-setup-installed",
      "element": "termux-setup-installed-team-open-workspace"
+    },
+    {
+     "page": "phone-setup-start",
+     "element": "phone-setup-start-primary-open"
+    },
+    {
+     "page": "phone-setup-ready",
+     "element": "phone-setup-ready-close"
     },
     {
      "page": "team-phone-onboarding-success",
@@ -5900,6 +5968,20 @@
      "destructive": false
     },
     {
+     "id": "embedded-chat-nudge-slot-dismiss",
+     "type": "icon-button",
+     "label": "Hide tip",
+     "key": "nudge-<id>-dismiss",
+     "file": "lib/ui/screens/chat/nudge_slot.dart",
+     "line": 99,
+     "action": "dismiss",
+     "target": null,
+     "effect": "onDismiss -> NudgeRegistry.dismiss(id): records the nudge as dismissed so it never shows again (until Settings → Help → Show tips again).",
+     "gates": [],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/nudge_card.dart"
+    },
+    {
      "id": "embedded-chat-nudge-slot-compact-action",
      "type": "button",
      "label": "Compact conversation",
@@ -5930,19 +6012,6 @@
       "conversation open and busy for 60 s",
       "controller.finishedRunNotificationsReady (platform, background connection on, notification permission granted, finished-run rule on, not quiet hours)"
      ],
-     "destructive": false
-    },
-    {
-     "id": "embedded-chat-nudge-slot-dismiss",
-     "type": "icon-button",
-     "label": "Hide tip",
-     "key": "nudge-<id>-dismiss",
-     "file": "lib/ui/widgets/nudge_card.dart",
-     "line": 99,
-     "action": "dismiss",
-     "target": null,
-     "effect": "onDismiss -> NudgeRegistry.dismiss(id): records the nudge as dismissed so it never shows again (until Settings → Help → Show tips again).",
-     "gates": [],
      "destructive": false
     }
    ]
@@ -7312,6 +7381,10 @@
      "element": "profile-monitor-busy-row"
     },
     {
+     "page": "phone-setup-ready",
+     "element": "phone-setup-ready-create"
+    },
+    {
      "page": "commands",
      "element": "commands-row-open-chat"
     },
@@ -7330,6 +7403,48 @@
     "most authoring features are disabled when _conn.isIsolated"
    ],
    "elements": [
+    {
+     "id": "chat-first-reply-notify-decline",
+     "type": "button",
+     "label": "Not now",
+     "key": "first-reply-notify-decline",
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 169,
+     "action": "dismiss",
+     "target": null,
+     "effect": "_decline(): FirstRun.answerNotifyAsk(); the card is never shown again. Settings → Notifications remains the home.",
+     "gates": [
+      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
+      "this conversation holds a completed assistant reply and is not busy",
+      "platformCapabilities.supportsNotifications && supportsBackgroundService",
+      "!controller.isIsolated",
+      "!controller.keepLiveInBackground",
+      "hidden while the composer is compact (keyboard up / short window)"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/first_reply_notify_card.dart"
+    },
+    {
+     "id": "chat-first-reply-notify-accept",
+     "type": "button",
+     "label": "Notify me (card: Get told when it's done?)",
+     "key": "first-reply-notify-accept",
+     "file": "lib/ui/screens/chat_screen.dart",
+     "line": 177,
+     "action": "toggle-setting",
+     "target": null,
+     "effect": "_accept(): controller.setKeepLiveInBackground(true) (the native 'enable' call that raises POST_NOTIFICATIONS and starts the service), re-enables finished-run and request notifications if they were off, then FirstRun.answerNotifyAsk(); a refusal shows backgroundLive.lastError in a snackbar and still counts as an answer.",
+     "gates": [
+      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
+      "this conversation holds a completed assistant reply and is not busy",
+      "platformCapabilities.supportsNotifications && supportsBackgroundService",
+      "!controller.isIsolated",
+      "!controller.keepLiveInBackground",
+      "hidden while the composer is compact (keyboard up / short window)"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/first_reply_notify_card.dart"
+    },
     {
      "id": "chat-prompt-history-keys",
      "type": "gesture",
@@ -8793,46 +8908,6 @@
      ],
      "destructive": false,
      "hostWiring": true
-    },
-    {
-     "id": "chat-first-reply-notify-decline",
-     "type": "button",
-     "label": "Not now",
-     "key": "first-reply-notify-decline",
-     "file": "lib/ui/widgets/first_reply_notify_card.dart",
-     "line": 169,
-     "action": "dismiss",
-     "target": null,
-     "effect": "_decline(): FirstRun.answerNotifyAsk(); the card is never shown again. Settings → Notifications remains the home.",
-     "gates": [
-      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
-      "this conversation holds a completed assistant reply and is not busy",
-      "platformCapabilities.supportsNotifications && supportsBackgroundService",
-      "!controller.isIsolated",
-      "!controller.keepLiveInBackground",
-      "hidden while the composer is compact (keyboard up / short window)"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "chat-first-reply-notify-accept",
-     "type": "button",
-     "label": "Notify me (card: Get told when it's done?)",
-     "key": "first-reply-notify-accept",
-     "file": "lib/ui/widgets/first_reply_notify_card.dart",
-     "line": 177,
-     "action": "toggle-setting",
-     "target": null,
-     "effect": "_accept(): controller.setKeepLiveInBackground(true) (the native 'enable' call that raises POST_NOTIFICATIONS and starts the service), re-enables finished-run and request notifications if they were off, then FirstRun.answerNotifyAsk(); a refusal shows backgroundLive.lastError in a snackbar and still counts as an answer.",
-     "gates": [
-      "FirstRun.notifyAskPending (set when first run lands in its first conversation)",
-      "this conversation holds a completed assistant reply and is not busy",
-      "platformCapabilities.supportsNotifications && supportsBackgroundService",
-      "!controller.isIsolated",
-      "!controller.keepLiveInBackground",
-      "hidden while the composer is compact (keyboard up / short window)"
-     ],
-     "destructive": false
     }
    ]
   },
@@ -13695,6 +13770,10 @@
     {
      "page": "projects",
      "element": "projects-open-folder"
+    },
+    {
+     "page": "phone-setup-ready",
+     "element": "phone-setup-ready-open-existing"
     }
    ],
    "gates": [],
@@ -14837,6 +14916,42 @@
    "gates": [],
    "elements": [
     {
+     "id": "workspace-nudge-pin-got-it",
+     "type": "button",
+     "label": "Got it",
+     "key": "nudge-pin-action",
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 93,
+     "action": "dismiss",
+     "target": null,
+     "effect": "One-time tip above Recent (workspace_screen.dart:793): 'Pin conversations you return to from their menu; they stay at the top of Work.' -> controller.nudges.dismiss(NudgeId.pinConversations).",
+     "gates": [
+      "second distinct project directory used on this server (NudgeRegistry.noteProjectUsed)",
+      "registry.firstReplySeen (never during first run before the first reply)",
+      "Work visible and its route current",
+      "controller.canPinSessions, nothing pinned in this scope, Recent not empty",
+      "offered once ever; never while another nudge is showing"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/nudge_card.dart"
+    },
+    {
+     "id": "workspace-nudge-pin-dismiss",
+     "type": "icon-button",
+     "label": "Hide tip",
+     "key": "nudge-pin-dismiss",
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 99,
+     "action": "dismiss",
+     "target": null,
+     "effect": "controller.nudges.dismiss(NudgeId.pinConversations).",
+     "gates": [
+      "same as workspace-nudge-pin-got-it"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/nudge_card.dart"
+    },
+    {
      "id": "workspace-active-session-directory",
      "type": "list-tile",
      "label": "<directory basename> / Active session directory · {directory}",
@@ -15012,6 +15127,23 @@
       "archived.isNotEmpty || partial (controller.hasMoreSessions || sessionsLoading || sessionsError != null)"
      ],
      "destructive": false
+    },
+    {
+     "id": "workspace-team-card",
+     "type": "card",
+     "label": "[AI Team card]",
+     "key": null,
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 794,
+     "action": "navigate",
+     "target": "team-home",
+     "targetWidget": "TeamHomeScreen",
+     "effect": "Embeds TeamCard(controller: team, onOpen: () => _openTeamHome(team)) after Recent and its load-more footer and before Archived; onOpen pushes TeamHomeScreen(controller: team). What the team needs from the person reaches Inbox; the card's other controls belong to the widget's owner.",
+     "gates": [
+      "widget.controller.orchestration != null (AI Team plugin configured on the profile)"
+     ],
+     "destructive": false,
+     "widgetFile": "lib/ui/widgets/team_card.dart"
     },
     {
      "id": "workspace-archive-undo",
@@ -15435,56 +15567,6 @@
      "effect": "_createSession(): controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()), then refreshSessions(); docked quick-ask pill replacing a FAB.",
      "gates": [
       "disabled while _creating"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "workspace-nudge-pin-got-it",
-     "type": "button",
-     "label": "Got it",
-     "key": "nudge-pin-action",
-     "file": "lib/ui/widgets/nudge_card.dart",
-     "line": 93,
-     "action": "dismiss",
-     "target": null,
-     "effect": "One-time tip above Recent (workspace_screen.dart:793): 'Pin conversations you return to from their menu; they stay at the top of Work.' -> controller.nudges.dismiss(NudgeId.pinConversations).",
-     "gates": [
-      "second distinct project directory used on this server (NudgeRegistry.noteProjectUsed)",
-      "registry.firstReplySeen (never during first run before the first reply)",
-      "Work visible and its route current",
-      "controller.canPinSessions, nothing pinned in this scope, Recent not empty",
-      "offered once ever; never while another nudge is showing"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "workspace-nudge-pin-dismiss",
-     "type": "icon-button",
-     "label": "Hide tip",
-     "key": "nudge-pin-dismiss",
-     "file": "lib/ui/widgets/nudge_card.dart",
-     "line": 99,
-     "action": "dismiss",
-     "target": null,
-     "effect": "controller.nudges.dismiss(NudgeId.pinConversations).",
-     "gates": [
-      "same as workspace-nudge-pin-got-it"
-     ],
-     "destructive": false
-    },
-    {
-     "id": "workspace-team-card",
-     "type": "card",
-     "label": "[AI Team card]",
-     "key": null,
-     "file": "lib/ui/widgets/team_card.dart",
-     "line": 794,
-     "action": "navigate",
-     "target": "team-home",
-     "targetWidget": "TeamHomeScreen",
-     "effect": "Embeds TeamCard(controller: team, onOpen: () => _openTeamHome(team)) after Recent and its load-more footer and before Archived; onOpen pushes TeamHomeScreen(controller: team). What the team needs from the person reaches Inbox; the card's other controls belong to the widget's owner.",
-     "gates": [
-      "widget.controller.orchestration != null (AI Team plugin configured on the profile)"
      ],
      "destructive": false
     }
@@ -21357,6 +21439,14 @@
      "element": "termux-setup-connect-existing"
     },
     {
+     "page": "phone-setup-start",
+     "element": "phone-setup-start-primary-connect"
+    },
+    {
+     "page": "phone-setup-start",
+     "element": "phone-setup-start-by-address"
+    },
+    {
      "page": "settings-disconnect-sheet",
      "element": "settings-disconnect-sheet-confirm"
     }
@@ -23037,6 +23127,246 @@
    ]
   },
   {
+   "id": "builtin-server-setup",
+   "title": "OpenCode inside the app",
+   "kind": "screen",
+   "area": "termux",
+   "file": "lib/ui/screens/builtin_server_screen.dart",
+   "widget": "BuiltinServerScreen",
+   "presentedBy": [
+    "openBuiltinServerScreen"
+   ],
+   "line": 22,
+   "purpose": "Experimental (GitHub issue #87) manual walkthrough of the four steps BuiltinLinux drives: download Ubuntu, install OpenCode inside it, start the server on 127.0.0.1, connect. Superseded by phone setup v2 (screens A-C, phone-setup-start/progress/ready); kept only as the repair path when the in-app server will not start before the app is connected (no 'This phone' card is shown yet).",
+   "reachedFrom": [
+    {
+     "page": "root-connecting",
+     "element": null
+    },
+    {
+     "page": "termux-setup",
+     "element": null,
+     "evidence": "lib/ui/screens/termux_setup_screen.dart:2763"
+    }
+   ],
+   "gates": [
+    "BuiltinLinux.supported, else shows the Android-only message (key builtin-server-unsupported)"
+   ],
+   "elements": [
+    {
+     "id": "builtin-server-install-ubuntu",
+     "type": "button",
+     "label": "Install | Retry",
+     "key": "builtin-install-ubuntu",
+     "file": "lib/ui/screens/builtin_server_screen.dart",
+     "line": 508,
+     "action": "mutate",
+     "target": null,
+     "effect": "_installUbuntu(): BuiltinLinux.install(), polling status while it downloads.",
+     "gates": [
+      "status != null",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "builtin-server-runtime",
+     "type": "toggle",
+     "label": "OpenCode 1 | OpenCode 2",
+     "key": "builtin-runtime",
+     "file": "lib/ui/screens/builtin_server_screen.dart",
+     "line": 540,
+     "action": "other",
+     "target": null,
+     "effect": "_selectRuntime(value): sets _runtime and persists it to builtinRuntimePrefKey; re-checks the installed version.",
+     "gates": [
+      "ubuntuReady",
+      "disabled while _busy or the server is running"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "builtin-server-install-opencode",
+     "type": "button",
+     "label": "Install | Retry",
+     "key": "builtin-install-opencode",
+     "file": "lib/ui/screens/builtin_server_screen.dart",
+     "line": 579,
+     "action": "mutate",
+     "target": null,
+     "effect": "_installOpenCode(): runs the pinned-version install script for _runtime inside Ubuntu.",
+     "gates": [
+      "ubuntuReady && !openCodeReady",
+      "disabled while _busy or _checkingVersion"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "builtin-server-stop",
+     "type": "button",
+     "label": "Stop",
+     "key": "builtin-stop",
+     "file": "lib/ui/screens/builtin_server_screen.dart",
+     "line": 638,
+     "action": "mutate",
+     "target": null,
+     "effect": "_stop(): stops the running in-app OpenCode process.",
+     "gates": [
+      "running",
+      "disabled while _busy"
+     ],
+     "destructive": true
+    },
+    {
+     "id": "builtin-server-start",
+     "type": "button",
+     "label": "Start | Retry",
+     "key": "builtin-start",
+     "file": "lib/ui/screens/builtin_server_screen.dart",
+     "line": 644,
+     "action": "mutate",
+     "target": null,
+     "effect": "_start(): BuiltinLinux starts the OpenCode process on 127.0.0.1.",
+     "gates": [
+      "openCodeReady && !running",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "builtin-server-show-log",
+     "type": "button",
+     "label": "Show log",
+     "key": "builtin-show-log",
+     "file": "lib/ui/screens/builtin_server_screen.dart",
+     "line": 654,
+     "action": "open-sheet",
+     "target": "builtin-server-log-sheet",
+     "targetWidget": "_showLog",
+     "effect": "_showLog(): reads BuiltinLinux.serverLog() then opens the log sheet.",
+     "gates": [
+      "openCodeReady"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "builtin-server-connect",
+     "type": "button",
+     "label": "Connect",
+     "key": "builtin-connect",
+     "file": "lib/ui/screens/builtin_server_screen.dart",
+     "line": 697,
+     "action": "mutate",
+     "target": null,
+     "effect": "_connect(): ensures a saved profile for the in-app server, connects, then on success pushNamedAndRemoveUntil('/home').",
+     "gates": [
+      "running && !_starting && !connected",
+      "disabled while _busy"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "builtin-server-remove",
+     "type": "button",
+     "label": "Remove",
+     "key": "builtin-remove",
+     "file": "lib/ui/screens/builtin_server_screen.dart",
+     "line": 721,
+     "action": "open-sheet",
+     "target": "builtin-server-remove-confirm-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_remove(): showConfirmSheet, then on confirm BuiltinLinux.uninstall() and resets the step state.",
+     "gates": [
+      "ubuntuReady",
+      "disabled while _busy"
+     ],
+     "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "builtin-server-log-sheet",
+   "title": "Server log",
+   "kind": "sheet",
+   "area": "termux",
+   "file": "lib/ui/screens/builtin_server_screen.dart",
+   "widget": "_showLog",
+   "presentedBy": [],
+   "line": 307,
+   "purpose": "Plain-text scroll of BuiltinLinux.serverLog(), or the empty-log message.",
+   "reachedFrom": [
+    {
+     "page": "builtin-server-setup",
+     "element": "builtin-server-show-log"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "builtin-server-log-close",
+     "type": "icon-button",
+     "label": "Close",
+     "key": null,
+     "file": "lib/ui/screens/builtin_server_screen.dart",
+     "line": 326,
+     "action": "dismiss",
+     "target": null,
+     "effect": "Navigator.of(context).pop().",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "builtin-server-remove-confirm-sheet",
+   "title": "Remove the built-in Ubuntu?",
+   "kind": "sheet",
+   "area": "termux",
+   "file": "lib/ui/screens/builtin_server_screen.dart",
+   "widget": "_remove",
+   "presentedBy": [
+    "showConfirmSheet"
+   ],
+   "line": 356,
+   "purpose": "Confirms deleting the whole built-in Ubuntu (Node.js, OpenCode, everything installed for it).",
+   "reachedFrom": [
+    {
+     "page": "builtin-server-setup",
+     "element": "builtin-server-remove"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "builtin-server-remove-confirm-confirm",
+     "type": "button",
+     "label": "Remove",
+     "key": "builtin-server-remove-confirm",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 68,
+     "action": "mutate",
+     "target": null,
+     "effect": "Pops true; _remove() then calls BuiltinLinux.uninstall().",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "builtin-server-remove-confirm-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "effect": "Pops false; nothing changes.",
+     "gates": [],
+     "destructive": false
+    }
+   ],
+   "key": "builtin-server-remove-confirm"
+  },
+  {
    "id": "development-services",
    "title": "Development services",
    "kind": "screen",
@@ -23489,6 +23819,460 @@
    ]
   },
   {
+   "id": "local-agent-page",
+   "title": "Claude Code",
+   "kind": "screen",
+   "area": "termux",
+   "file": "lib/ui/screens/local_agent_screen.dart",
+   "widget": "LocalAgentScreen",
+   "presentedBy": [],
+   "line": 14,
+   "purpose": "Claude Code on this phone on its own page (docs/design/phone-server-screens-cleanup-2026-09-24.md §2): hosts LocalAgentOnboardingBlock (offer, install, sign-in, project folder, start and stop). The On this phone page shows it as one optional row.",
+   "reachedFrom": [
+    {
+     "page": "termux-setup-installed",
+     "element": null
+    },
+    {
+     "page": "termux-setup-connected",
+     "element": null
+    },
+    {
+     "page": "system",
+     "element": "system-settings-search-searchentry-inside-phone-claude-code-lib-ui--to-local-agent-page"
+    }
+   ],
+   "gates": [
+    "not opened while the person chose Claude Code in setup: the block then stays inline on On this phone and installs by itself"
+   ],
+   "elements": []
+  },
+  {
+   "id": "phone-setup-customize-sheet",
+   "title": "Choose what to install | Add tools",
+   "kind": "sheet",
+   "area": "termux",
+   "file": "lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart",
+   "widget": "SetupCustomizeSheet",
+   "presentedBy": [
+    "showPhoneSetupCustomize",
+    "showSetupCustomizeSheet"
+   ],
+   "line": 41,
+   "purpose": "First setup: every component, required ones on and locked with their reason, optional ones as switches, returning the whole selection. Add mode ('Add tools' from the This phone card): only optional components not yet installed. A running total of time and size always counts what the engine will really install, dependencies included.",
+   "reachedFrom": [
+    {
+     "page": "phone-setup-start",
+     "element": "phone-setup-start-customize"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "phone-setup-customize-done",
+     "type": "button",
+     "label": "Done | Add",
+     "key": "phone-setup-customize-done",
+     "file": "lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart",
+     "line": 217,
+     "action": "dismiss",
+     "target": null,
+     "effect": "Navigator.of(context).pop(_result): returns the ids the caller should hand to SetupEngine.run.",
+     "gates": [
+      "not while checking installed components (add mode) or nothing chosen (add mode)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-customize-toggle",
+     "type": "toggle",
+     "label": "<component title>",
+     "key": "phone-setup-customize-<component.id>",
+     "file": "lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart",
+     "line": 276,
+     "action": "other",
+     "target": null,
+     "effect": "_toggle(component, on): adds/removes the component and cascades to the optional components it depends on / that depend on it. View state only until Done returns the selection.",
+     "gates": [
+      "!component.required",
+      "not addMode, or addMode && not already installed"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "phone-setup-progress",
+   "title": "Setting up OpenCode on this phone",
+   "kind": "screen",
+   "area": "termux",
+   "file": "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart",
+   "widget": "PhoneSetupProgressScreen",
+   "presentedBy": [
+    "openPhoneSetupProgress"
+   ],
+   "line": 21,
+   "purpose": "Phone setup v2 screen B: a thin host for SetupProgressView. The job runs natively under a foreground service, so leaving this screen never stops it; coming back re-reads it. A first setup hands off to screen C (Ready) when done; an update or added tools just close back to where they were opened.",
+   "reachedFrom": [
+    {
+     "page": "phone-setup-start",
+     "element": "phone-setup-start-primary-set-up"
+    },
+    {
+     "page": "phone-setup-start",
+     "element": "phone-setup-start-primary-continue"
+    },
+    {
+     "page": "phone-setup-start",
+     "element": "phone-setup-start-set-up-here"
+    },
+    {
+     "page": "servers-welcome",
+     "element": null
+    },
+    {
+     "page": "system",
+     "element": "system-phone-setup-notification-tap-while-the-job-is-running-stoppe-to-phone-setup-progress"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "phone-setup-progress-continue",
+     "type": "button",
+     "label": "Continue",
+     "key": "setup-progress-continue",
+     "file": "lib/ui/widgets/setup_progress_view.dart",
+     "line": 260,
+     "action": "mutate",
+     "target": null,
+     "effect": "_continue(): re-runs the job's own component ids (or the defaults), resuming a stopped/interrupted/failed job.",
+     "gates": [
+      "progress.canContinue"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-progress-cancel",
+     "type": "button",
+     "label": "Cancel",
+     "key": "setup-progress-cancel",
+     "file": "lib/ui/widgets/setup_progress_view.dart",
+     "line": 268,
+     "action": "open-sheet",
+     "target": "phone-setup-progress-stop-sheet",
+     "targetWidget": "showConfirmSheet",
+     "effect": "_cancel(): showConfirmSheet, then on confirm SetupEngine.cancel().",
+     "gates": [
+      "job is running"
+     ],
+     "destructive": true
+    }
+   ]
+  },
+  {
+   "id": "phone-setup-progress-stop-sheet",
+   "title": "Stop setting up?",
+   "kind": "sheet",
+   "area": "termux",
+   "file": "lib/ui/screens/phone_setup/phone_setup_progress_screen.dart",
+   "widget": "_cancel",
+   "presentedBy": [
+    "showConfirmSheet"
+   ],
+   "line": 106,
+   "purpose": "Confirms stopping the running setup job.",
+   "reachedFrom": [
+    {
+     "page": "phone-setup-progress",
+     "element": "phone-setup-progress-cancel"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "phone-setup-progress-stop-confirm",
+     "type": "button",
+     "label": "Stop",
+     "key": "phone-setup-progress-stop-confirm",
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 68,
+     "action": "mutate",
+     "target": null,
+     "effect": "Pops true; SetupEngine.cancel().",
+     "gates": [],
+     "destructive": true
+    },
+    {
+     "id": "phone-setup-progress-keep-going",
+     "type": "button",
+     "label": "Keep going",
+     "key": null,
+     "file": "lib/ui/widgets/confirm_sheet.dart",
+     "line": 86,
+     "action": "dismiss",
+     "target": null,
+     "effect": "Pops false; the job keeps running.",
+     "gates": [],
+     "destructive": false
+    }
+   ],
+   "key": "phone-setup-progress-stop-confirm"
+  },
+  {
+   "id": "phone-setup-ready",
+   "title": "OpenCode is ready",
+   "kind": "screen",
+   "area": "termux",
+   "file": "lib/ui/screens/phone_setup/phone_setup_ready_screen.dart",
+   "widget": "PhoneSetupReadyScreen",
+   "presentedBy": [
+    "openPhoneSetupReady"
+   ],
+   "line": 22,
+   "purpose": "Phone setup v2 screen C: the agent is running, so the only thing left is a place to work. One name makes a project and lands in its first conversation with the keyboard up; Open an existing folder is the quiet alternative. Takes the progress screen's place (pushReplacement) so Back never returns to a finished setup.",
+   "reachedFrom": [
+    {
+     "page": "phone-setup-progress",
+     "element": null
+    },
+    {
+     "page": "system",
+     "element": "system-phone-setup-notification-tap-when-the-job-is-done-firstsetup-to-phone-setup-ready"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "phone-setup-ready-name",
+     "type": "text-field",
+     "label": "Project name",
+     "key": "phone-setup-ready-name",
+     "file": "lib/ui/screens/phone_setup/phone_setup_ready_screen.dart",
+     "line": 191,
+     "action": "other",
+     "target": null,
+     "effect": "Prefilled with 'my-app' and selected; onChanged clears the field error, onSubmitted triggers Create.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-ready-close",
+     "type": "icon-button",
+     "label": "Close",
+     "key": "phone-setup-ready-close",
+     "file": "lib/ui/screens/phone_setup/phone_setup_ready_screen.dart",
+     "line": 223,
+     "action": "navigate",
+     "target": "home-shell",
+     "targetWidget": "/",
+     "effect": "_leave(): pushNamedAndRemoveUntil('/', (_) => false); PopScope also routes Back here.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-ready-create",
+     "type": "button",
+     "label": "Create",
+     "key": "phone-setup-ready-create",
+     "file": "lib/ui/screens/phone_setup/phone_setup_ready_screen.dart",
+     "line": 250,
+     "action": "submit",
+     "target": "chat",
+     "targetWidget": "/chat/<id>",
+     "effect": "_create(): validates the name, creates the project folder (BuiltinProjectFolders), ensures the app is connected, selects it as the location, creates a session, then pushNamedAndRemoveUntil('/home') and pushNamed('/chat/<id>', ChatRouteArguments.firstRun()).",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-ready-open-existing",
+     "type": "button",
+     "label": "Open an existing folder",
+     "key": "phone-setup-ready-open-existing",
+     "file": "lib/ui/screens/phone_setup/phone_setup_ready_screen.dart",
+     "line": 257,
+     "action": "open-sheet",
+     "target": "project-folder-open-dialog",
+     "targetWidget": "ProjectFolderActions.openFolder",
+     "effect": "_openExisting(): ensures the app is connected, then ProjectFolderActions.openFolder(context, connection) (the same folder sheet Work and the project picker use); on a chosen path, pushNamedAndRemoveUntil('/home').",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "phone-setup-start",
+   "title": "On this phone",
+   "kind": "screen",
+   "area": "termux",
+   "file": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart",
+   "widget": "PhoneSetupStartScreen",
+   "presentedBy": [
+    "openPhoneSetupStart"
+   ],
+   "line": 29,
+   "purpose": "Phone setup v2 screen A (docs/design/phone-setup-v2-2026-09-24.md): one hero that follows what is already true on the phone (a setup running or stopped part way, an OpenCode already ready in the app, one Termux already runs, or the first-time promise), one filled action, and the rarer ways in folded under 'Other ways'.",
+   "reachedFrom": [
+    {
+     "page": "servers-welcome",
+     "element": "servers-welcome-termux-setup"
+    },
+    {
+     "page": "servers",
+     "element": null,
+     "evidence": "lib/ui/screens/servers_screen.dart:842"
+    },
+    {
+     "page": "system",
+     "element": "system-searchentry-settings-on-this-phone-lib-ui-search-search-inde-to-phone-setup-start"
+    }
+   ],
+   "gates": [],
+   "elements": [
+    {
+     "id": "phone-setup-start-primary-set-up",
+     "type": "button",
+     "label": "Set up",
+     "key": "phone-setup-start-primary",
+     "file": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart",
+     "line": 472,
+     "action": "mutate",
+     "target": "phone-setup-progress",
+     "targetWidget": "PhoneSetupProgressScreen",
+     "effect": "_run(_selection): SetupEngine.run(ids, params: firstSetup), then on success _showProgress() -> openProgress(context) (defaults to _openFirstSetupProgress).",
+     "gates": [
+      "hero == fresh (no job on disk, nothing installed, no Termux server detected)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-start-primary-continue",
+     "type": "button",
+     "label": "Continue",
+     "key": "phone-setup-start-primary",
+     "file": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart",
+     "line": 472,
+     "action": "mutate",
+     "target": "phone-setup-progress",
+     "targetWidget": "PhoneSetupProgressScreen",
+     "effect": "_continue(progress): if progress.canContinue, re-runs the job's own selection (_run); else opens the progress screen directly (_showProgress).",
+     "gates": [
+      "hero == progress (a setup job is running or stopped part way)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-start-primary-open",
+     "type": "button",
+     "label": "Open",
+     "key": "phone-setup-start-primary",
+     "file": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart",
+     "line": 472,
+     "action": "navigate",
+     "target": "home-shell",
+     "targetWidget": "/home",
+     "effect": "_open(progress): starts the in-app server if needed and connects, then pushNamedAndRemoveUntil('/home'); with no saved in-app profile, re-runs the job instead (same as Set up).",
+     "gates": [
+      "hero == ready (setup finished, OpenCode installed in-app)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-start-primary-connect",
+     "type": "button",
+     "label": "Connect",
+     "key": "phone-setup-start-primary",
+     "file": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart",
+     "line": 472,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "_connectTermux(): pushNamedAndRemoveUntil('/servers', request) built from the detected Termux server (connect directly, enter its password, or just show the Servers list if stopped).",
+     "gates": [
+      "hero == termux (Termux already runs OpenCode)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-start-customize",
+     "type": "button",
+     "label": "Customize",
+     "key": "phone-setup-start-customize",
+     "file": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart",
+     "line": 481,
+     "action": "open-sheet",
+     "target": "phone-setup-customize-sheet",
+     "targetWidget": "showPhoneSetupCustomize",
+     "effect": "_customize(): showPhoneSetupCustomize(context, selected: _selection); the result replaces _selection.",
+     "gates": [
+      "hero == fresh && includesText != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-start-other-ways",
+     "type": "button",
+     "label": "Other ways",
+     "key": "phone-setup-start-other-ways",
+     "file": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart",
+     "line": 528,
+     "action": "other",
+     "target": null,
+     "effect": "Toggles _otherWaysOpen to reveal the rarer rows below.",
+     "gates": [],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-start-set-up-here",
+     "type": "list-tile",
+     "label": "Set up OpenCode on this phone",
+     "key": "phone-setup-start-set-up-here",
+     "file": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart",
+     "line": 550,
+     "action": "mutate",
+     "target": "phone-setup-progress",
+     "targetWidget": "PhoneSetupProgressScreen",
+     "effect": "Same as Set up: _run(_selection). Shown so Termux is not the only way once Other ways is open.",
+     "gates": [
+      "_otherWaysOpen && hero == termux"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-start-use-termux",
+     "type": "list-tile",
+     "label": "Use Termux instead",
+     "key": "phone-setup-start-use-termux",
+     "file": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart",
+     "line": 558,
+     "action": "navigate",
+     "target": "termux-setup",
+     "targetWidget": "/termux-setup",
+     "effect": "_useTermux(): pushNamed('/termux-setup'); re-probes Termux on return so the hero can switch to it.",
+     "gates": [
+      "_otherWaysOpen && hero != termux"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "phone-setup-start-by-address",
+     "type": "list-tile",
+     "label": "Connect by address",
+     "key": "phone-setup-start-by-address",
+     "file": "lib/ui/screens/phone_setup/phone_setup_start_screen.dart",
+     "line": 565,
+     "action": "navigate",
+     "target": "servers",
+     "targetWidget": "/servers",
+     "effect": "_connectByAddress(): pushNamed('/servers', arguments: ServersRouteRequest.add()).",
+     "gates": [
+      "_otherWaysOpen"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
    "id": "termux-processes",
    "title": "Running now",
    "kind": "screen",
@@ -23831,6 +24615,10 @@
     {
      "page": "embedded-local-agent-server-entry",
      "element": "embedded-local-agent-server-entry-menu-manage"
+    },
+    {
+     "page": "phone-setup-start",
+     "element": "phone-setup-start-use-termux"
     },
     {
      "page": "embedded-team-phone-section",
@@ -24957,33 +25745,6 @@
    ]
   },
   {
-   "id": "local-agent-page",
-   "title": "Claude Code",
-   "kind": "screen",
-   "area": "termux",
-   "file": "lib/ui/screens/local_agent_screen.dart",
-   "widget": "LocalAgentScreen",
-   "presentedBy": [],
-   "line": 14,
-   "purpose": "Claude Code on this phone on its own page (docs/design/phone-server-screens-cleanup-2026-09-24.md §2): hosts LocalAgentOnboardingBlock (offer, install, sign-in, project folder, start and stop). The On this phone page shows it as one optional row.",
-   "reachedFrom": [
-    {
-     "page": "termux-setup-installed",
-     "element": null,
-     "note": "\"Claude Code on this phone · Optional\" row (key local-agent-row)"
-    },
-    {
-     "page": "termux-setup-connected",
-     "element": null,
-     "note": "\"Claude Code on this phone · Optional\" row (key local-agent-row)"
-    }
-   ],
-   "gates": [
-    "not opened while the person chose Claude Code in setup: the block then stays inline on On this phone and installs by itself"
-   ],
-   "elements": []
-  },
-  {
    "id": "termux-setup-start-installed-sheet",
    "title": "Start installed OpenCode?",
    "kind": "sheet",
@@ -25432,6 +26193,11 @@
    "purpose": "The one door to Claude Code on the phone: offer, install (Node.js, Paseo daemon, Claude Code) with a step list and the live output, Claude's own sign-in in a Termux terminal, start, and Connect through one saved Paseo server on ws://127.0.0.1:6767. Reads and drives LocalAgentRuntime (~/.oc/claude.sh).",
    "reachedFrom": [
     {
+     "page": "local-agent-page",
+     "element": null,
+     "via": "embedded"
+    },
+    {
      "page": "termux-setup",
      "element": null,
      "via": "embedded"
@@ -25442,9 +26208,11 @@
     "hidden when claude.sh status cannot be read or the offer was dismissed (prefs local_agents_offer_skipped)"
    ],
    "embeddedIn": [
-    "TermuxSetupScreen"
+    "TermuxSetupScreen",
+    "LocalAgentScreen"
    ],
    "hostPages": [
+    "local-agent-page",
     "termux-setup"
    ],
    "elements": [
@@ -26620,6 +27388,10 @@
     {
      "page": "activity",
      "element": "activity-team-agent-blocked-row"
+    },
+    {
+     "page": "team-agents",
+     "element": "team-agents-row"
     },
     {
      "page": "gate-sheet",
@@ -28487,6 +29259,87 @@
    ]
   },
   {
+   "id": "team-agents",
+   "title": "Agents",
+   "kind": "screen",
+   "area": "team",
+   "file": "lib/ui/screens/team/team_agents_screen.dart",
+   "widget": "TeamAgentsScreen",
+   "presentedBy": [],
+   "line": 26,
+   "purpose": "What the home's '{live} agents · {working} working' row opens: the agents that are on, named by role, then the ones switched off on the host under one collapsed 'Suspended on the host' group. A row opens AgentScreen.",
+   "reachedFrom": [
+    {
+     "page": "team-home-runs-tab",
+     "element": "team-home-runs-agents-row"
+    }
+   ],
+   "gates": [
+    "ConnectionController.orchestration != null (lib/state/connection.dart:712); same AI Team availability gate as team-home"
+   ],
+   "elements": [
+    {
+     "id": "team-agents-suspended-group",
+     "type": "list-tile",
+     "label": "Suspended on the host ({count})",
+     "key": "team-home-suspended-group",
+     "file": "lib/ui/screens/team/team_agents_screen.dart",
+     "line": 234,
+     "action": "other",
+     "target": null,
+     "effect": "_GroupRow.onTap -> setState(_suspendedExpanded = !_suspendedExpanded) (team_agents_screen.dart:170).",
+     "gates": [
+      "off.isNotEmpty (teamOffAgents(snapshot.agents))"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-agents-error-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": "team-agents-retry",
+     "file": "lib/ui/screens/team/team_states.dart",
+     "line": 41,
+     "action": "mutate",
+     "target": null,
+     "effect": "teamScreenState's KitStateView primary (and the not-answering state's secondary, same key) -> onRetry -> _refresh(): controller.retry() when phase == failed, else controller.refresh().",
+     "gates": [
+      "teamScreenFailed(controller), or the not-answering state after 8s of teamScreenLoading(controller)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-agents-status-retry",
+     "type": "button",
+     "label": "Try again",
+     "key": "team-agents-status-retry",
+     "file": "lib/ui/screens/team/team_states.dart",
+     "line": 125,
+     "action": "mutate",
+     "target": null,
+     "effect": "teamStatusLine's KitStatusLine action (stale or refresh-failed line) -> onRetry -> _refresh().",
+     "gates": [
+      "controller.isStale, or controller.lastError?.kind == OrchestrationErrorKind.readFailed && lastRefreshedAt != null"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-agents-row",
+     "type": "list-tile",
+     "label": "<agent name> · <role> · <provider / model> · <state word>",
+     "key": "team-home-agent-<agent.id>",
+     "file": "lib/ui/widgets/team_agent_row.dart",
+     "line": 113,
+     "action": "navigate",
+     "target": "team-agent",
+     "targetWidget": "AgentScreen",
+     "effect": "TeamAgentRow.onTap -> row()'s onTap -> _openAgent(agent): widget.onOpenAgent ?? Navigator.push(AgentScreen(controller, agentId: agent.id, now: widget.now)) (team_agents_screen.dart:68-80, 151).",
+     "gates": [],
+     "destructive": false
+    }
+   ]
+  },
+  {
    "id": "team-home",
    "title": "AI Team",
    "kind": "screen",
@@ -28718,6 +29571,20 @@
      "gates": [
       "AppTheme.stackedActions(context)"
      ],
+     "destructive": false
+    },
+    {
+     "id": "team-home-runs-agents-row",
+     "type": "list-tile",
+     "label": "{live} agents · {working} working",
+     "key": "team-home-agents-row",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 550,
+     "action": "navigate",
+     "target": "team-agents",
+     "targetWidget": "TeamAgentsScreen",
+     "effect": "_AgentsRow.onTap -> _openAgents(): Navigator.push(TeamAgentsScreen(controller, onOpenAgent: widget.onOpenAgent, now: widget.now)) (team_home_screen.dart:142-152). \"3. The team itself: one row, not a tab.\"",
+     "gates": [],
      "destructive": false
     },
     {
@@ -30864,6 +31731,38 @@
      "effect": "ExpansionTile: expands the selectable message + stack trace.",
      "gates": [],
      "destructive": false
+    },
+    {
+     "id": "app-diagnostics-perf-copy",
+     "type": "button",
+     "label": "Copy report",
+     "key": "perf-trace-copy",
+     "file": "lib/ui/screens/perf_trace_section.dart",
+     "line": 55,
+     "action": "copy",
+     "target": null,
+     "targetWidget": null,
+     "effect": "PerfTraceSection._copy(): Clipboard.setData(PerfTrace.reportText()); snackbar perfTraceCopied. The 'Performance' block under the error log (where time went in this run, grouped steps and recent steps).",
+     "gates": [
+      "disabled when PerfTrace.recent(...) is empty"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "app-diagnostics-perf-clear",
+     "type": "button",
+     "label": "Clear",
+     "key": "perf-trace-clear",
+     "file": "lib/ui/screens/perf_trace_section.dart",
+     "line": 63,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "PerfTrace.clear(): drops the recorded performance trace with no confirmation.",
+     "gates": [
+      "disabled when PerfTrace.recent(...) is empty"
+     ],
+     "destructive": true
     }
    ]
   },
@@ -37821,6 +38720,26 @@
    },
    {
     "from": "system",
+    "element": "system-settings-search-searchentry-inside-phone-claude-code-lib-ui--to-local-agent-page",
+    "to": "local-agent-page"
+   },
+   {
+    "from": "system",
+    "element": "system-searchentry-settings-on-this-phone-lib-ui-search-search-inde-to-phone-setup-start",
+    "to": "phone-setup-start"
+   },
+   {
+    "from": "system",
+    "element": "system-phone-setup-notification-tap-while-the-job-is-running-stoppe-to-phone-setup-progress",
+    "to": "phone-setup-progress"
+   },
+   {
+    "from": "system",
+    "element": "system-phone-setup-notification-tap-when-the-job-is-done-firstsetup-to-phone-setup-ready",
+    "to": "phone-setup-ready"
+   },
+   {
+    "from": "system",
     "element": "system-activityscreen-opened-with-an-initial-gate-id-post-frame-sho-to-gate-sheet",
     "to": "gate-sheet"
    },
@@ -39695,6 +40614,76 @@
     "to": "termux-setup"
    },
    {
+    "from": "builtin-server-setup",
+    "element": "builtin-server-show-log",
+    "to": "builtin-server-log-sheet"
+   },
+   {
+    "from": "builtin-server-setup",
+    "element": "builtin-server-remove",
+    "to": "builtin-server-remove-confirm-sheet"
+   },
+   {
+    "from": "phone-setup-start",
+    "element": "phone-setup-start-primary-set-up",
+    "to": "phone-setup-progress"
+   },
+   {
+    "from": "phone-setup-start",
+    "element": "phone-setup-start-primary-continue",
+    "to": "phone-setup-progress"
+   },
+   {
+    "from": "phone-setup-start",
+    "element": "phone-setup-start-primary-open",
+    "to": "home-shell"
+   },
+   {
+    "from": "phone-setup-start",
+    "element": "phone-setup-start-primary-connect",
+    "to": "servers"
+   },
+   {
+    "from": "phone-setup-start",
+    "element": "phone-setup-start-customize",
+    "to": "phone-setup-customize-sheet"
+   },
+   {
+    "from": "phone-setup-start",
+    "element": "phone-setup-start-set-up-here",
+    "to": "phone-setup-progress"
+   },
+   {
+    "from": "phone-setup-start",
+    "element": "phone-setup-start-use-termux",
+    "to": "termux-setup"
+   },
+   {
+    "from": "phone-setup-start",
+    "element": "phone-setup-start-by-address",
+    "to": "servers"
+   },
+   {
+    "from": "phone-setup-progress",
+    "element": "phone-setup-progress-cancel",
+    "to": "phone-setup-progress-stop-sheet"
+   },
+   {
+    "from": "phone-setup-ready",
+    "element": "phone-setup-ready-close",
+    "to": "home-shell"
+   },
+   {
+    "from": "phone-setup-ready",
+    "element": "phone-setup-ready-create",
+    "to": "chat"
+   },
+   {
+    "from": "phone-setup-ready",
+    "element": "phone-setup-ready-open-existing",
+    "to": "project-folder-open-dialog"
+   },
+   {
     "from": "team-home",
     "element": "team-home-start-run",
     "to": "start-run-sheet"
@@ -39718,6 +40707,11 @@
     "from": "team-home-runs-tab",
     "element": "team-home-runs-tab-empty-start-run",
     "to": "start-run-sheet"
+   },
+   {
+    "from": "team-home-runs-tab",
+    "element": "team-home-runs-agents-row",
+    "to": "team-agents"
    },
    {
     "from": "team-home-agents-tab",
@@ -39777,6 +40771,11 @@
    {
     "from": "team-run-agents-tab",
     "element": "team-run-agents-row",
+    "to": "team-agent"
+   },
+   {
+    "from": "team-agents",
+    "element": "team-agents-row",
     "to": "team-agent"
    },
    {
@@ -40602,6 +41601,12 @@
     "from": "termux-setup-installed",
     "element": "termux-setup-installed-reinstall",
     "to": "termux-setup-unchecked-install-sheet",
+    "secondary": true
+   },
+   {
+    "from": "servers-welcome",
+    "element": "servers-welcome-termux-setup",
+    "to": "phone-setup-start",
     "secondary": true
    },
    {
@@ -41461,6 +42466,22 @@
     "via": "embedded"
    },
    {
+    "from": "termux-setup-installed",
+    "element": null,
+    "to": "local-agent-page"
+   },
+   {
+    "from": "termux-setup-connected",
+    "element": null,
+    "to": "local-agent-page"
+   },
+   {
+    "from": "local-agent-page",
+    "element": null,
+    "to": "embedded-local-agent-onboarding-block",
+    "via": "embedded"
+   },
+   {
     "from": "termux-setup",
     "element": null,
     "to": "embedded-local-agent-onboarding-block",
@@ -41477,6 +42498,31 @@
     "element": null,
     "to": "embedded-local-agent-server-entry",
     "via": "embedded"
+   },
+   {
+    "from": "root-connecting",
+    "element": null,
+    "to": "builtin-server-setup"
+   },
+   {
+    "from": "termux-setup",
+    "element": null,
+    "to": "builtin-server-setup"
+   },
+   {
+    "from": "servers",
+    "element": null,
+    "to": "phone-setup-start"
+   },
+   {
+    "from": "servers-welcome",
+    "element": null,
+    "to": "phone-setup-progress"
+   },
+   {
+    "from": "phone-setup-progress",
+    "element": null,
+    "to": "phone-setup-ready"
    },
    {
     "from": "work-sheet",
@@ -41747,6 +42793,16 @@
    "part": "a-shell"
   },
   {
+   "file": "lib/ui/screens/chat/chat_states.dart",
+   "reason": "part of chat_screen.dart (design standard §9 step 5): the chat page's own loading/error states and its one status line, not a surface of their own; shown inline on the chat page.",
+   "part": "b1-chat-screen"
+  },
+  {
+   "file": "lib/ui/screens/chat/empty_chat.dart",
+   "reason": "part of chat_screen.dart: ChatStartFacts plus the empty-conversation starters/body shown inline on the chat page before the first message, not a surface of their own.",
+   "part": "b1-chat-screen"
+  },
+  {
    "file": "lib/ui/screens/chat/form_flow.dart",
    "reason": "presentConnectionForm is glue only: it calls presentForm (lib/ui/widgets/form_renderer.dart, another agent) and routes submit/cancel to connection.replyForm / connection.cancelForm, plus a snackbar 'Already answered elsewhere'. Callers: chat_screen.dart:4451, activity_screen.dart:148/807, profile_monitor_screen.dart:70, return_brief_panel.dart:77.",
    "part": "c-chat-compose"
@@ -41757,8 +42813,38 @@
    "part": "j1-settings-more"
   },
   {
+   "file": "lib/ui/screens/perf_trace_section.dart",
+   "reason": "PerfTraceSection is the 'Performance' block of App diagnostics (embedded via lib/ui/screens/app_diagnostics_screen.dart:252, host page app-diagnostics), not a surface of its own; its Copy report and Clear buttons are recorded on app-diagnostics with `file` set here.",
+   "part": "j1-settings-more"
+  },
+  {
+   "file": "lib/ui/screens/phone_setup/phone_setup_routes.dart",
+   "reason": "navigation only: openPhoneSetupStart/showPhoneSetupCustomize/openPhoneSetupProgress/openPhoneSetupReady and openPhoneSetupFromNotification wire the phone setup screens together and route a setup notification tap; no surface or widget of its own.",
+   "part": "h-termux"
+  },
+  {
+   "file": "lib/ui/screens/phone_setup/phone_setup_selection.dart",
+   "reason": "pure arithmetic over the SetupComponent registry (defaultSetupSelection, expandSetupSelection, setupTotals, size/duration text, includedToolNames); no widget, surface or interactive element. Used by phone-setup-start and phone-setup-customize-sheet.",
+   "part": "h-termux"
+  },
+  {
+   "file": "lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart",
+   "reason": "PhoneSetupWelcomeEntry is the first-run welcome's own status line about a phone setup job that already exists (running / stopped part way / done but nothing saved); embedded in servers-welcome (lib/ui/screens/servers_screen.dart:710), not a surface of its own. Its action button opens phone-setup-progress or resumes/reopens the job.",
+   "part": "h-termux"
+  },
+  {
    "file": "lib/ui/screens/team/policy_block.dart",
    "reason": "TeamPolicyBlock is a read-only rendering block (supervision line + boundary chips) embedded in the run Overview (run_screen.dart:775) only when `controller.policy != null`; no surface and no interactive element.",
+   "part": "i1-team-core"
+  },
+  {
+   "file": "lib/ui/screens/team/team_needs_you.dart",
+   "reason": "Embedded blocks, not pages of their own: TeamNeedsYouCard (one question as a request block) is shown on team-home-needs-you-tab (team_home_screen.dart:421) and team-run-overview-tab (run_screen.dart:780); TeamGateRow (one of several questions as a row) is shown on team-home-needs-you-tab (team_home_screen.dart:432). Both open the Gate sheet.",
+   "part": "i1-team-core"
+  },
+  {
+   "file": "lib/ui/screens/team/team_states.dart",
+   "reason": "Shared helper (design standard §3, §4), not a page: teamScreenState/teamScreenLoading/teamScreenFailed/teamStatusLine render the AI Team screens' connecting/error/stale states and one status line; its retry buttons are recorded as elements of the host pages (team-home, team-run, team-agent, team-agents) with `file` set here.",
    "part": "i1-team-core"
   },
   {
@@ -42280,6 +43366,14 @@
   {
    "part": "i1-team-core",
    "note": "A TeamLinkKind.gate deep link goes to ActivityScreen(initialTeamGateId) (lib/main.dart:881-888), not to a team screen."
+  },
+  {
+   "part": "i1-team-core",
+   "note": "team-agents (team_agents_screen.dart) added for the aiteam-redesign-2026-09-24 merge; its RefreshIndicator (team_agents_screen.dart:177, onRefresh -> _refresh()) is left out of elements: unlike team-home/team-run/team-agent it has no app-bar Refresh icon-button, so pulling to refresh may be the only way to force a refresh outside of a stale/failed state. Flag for gesture-audit.md / a product decision rather than recording an unanswerable gesture-audit row."
+  },
+  {
+   "part": "i1-team-core",
+   "note": "team-home, team-run and team-agent's error/loading states are recorded elsewhere in this file with `file: lib/ui/widgets/product_states.dart` (ProductErrorState/ProductEmptyState); their code now goes through team_states.dart's teamScreenState instead (see its docstring: \"they now come from here\"). Left as recorded (not this task's scope); team-agents, added after that refactor, is recorded against team_states.dart directly."
   },
   {
    "part": "i2-team-sheets",

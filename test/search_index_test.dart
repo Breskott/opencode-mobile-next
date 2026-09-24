@@ -65,11 +65,21 @@ const _excluded = <String, String>{
   'pairing-scanner': 'a step of adding a server',
   'team-agent': 'one agent of one AI Team run',
   'team-agent-output': 'one agent of one AI Team run',
+  'team-agents': "needs the AI Team; opened from the home's agents row",
   'team-run': 'one AI Team run',
   'team-run-agents-tab': 'a tab of one AI Team run',
   'team-run-overview-tab': 'a tab of one AI Team run',
   'team-run-work-tab': 'a tab of one AI Team run',
   'team-run-timeline-tab': 'a tab of one AI Team run',
+  'phone-setup-progress':
+      'a step of phone setup; opened from On this phone '
+      'or a setup notification',
+  'phone-setup-ready':
+      'a step of phone setup; shown automatically when a '
+      'first setup finishes',
+  'builtin-server-setup':
+      'an experimental repair path, superseded by phone '
+      'setup v2; opened from a failed saved connection or Termux setup',
 };
 
 class _Api extends OpenCodeApi {
