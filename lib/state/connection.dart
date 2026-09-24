@@ -2062,6 +2062,40 @@ class ConnectionController extends ChangeNotifier {
       return;
     }
 
+    _startEvents(generation, currentApi);
+    _markDataRefreshReady(generation, currentApi);
+    notifyListeners();
+    unawaited(
+      _loadAfterConnect(
+        generation: generation,
+        currentApi: currentApi,
+        currentRepository: currentRepository,
+        profile: profile,
+      ),
+    );
+  }
+
+  /// What a connection without a saved folder loads: conversations and
+  /// waiting requests first, then the one-time provider runtime refresh and
+  /// the catalog, which only the model list needs (the refresh alone held
+  /// the phone's first connect for 7.5 s). OpenCode 1 answers on one
+  /// thread, so asking in this order keeps the small reads in front.
+  Future<void> _loadAfterConnect({
+    required int generation,
+    required ServerGateway currentApi,
+    required ServerOperationsGateway currentRepository,
+    required ServerProfile profile,
+  }) async {
+    try {
+      await Future.wait<void>([
+        refreshSessions(),
+        refreshPendingPermissions(),
+        refreshPendingQuestions(),
+      ]);
+    } catch (_) {
+      // Each refresh reports its own failure; the catalog still loads.
+    }
+    if (!_isCurrent(generation, currentApi)) return;
     await _refreshPreexistingProviderRuntime(
       generation: generation,
       currentApi: currentApi,
@@ -2069,14 +2103,7 @@ class ConnectionController extends ChangeNotifier {
       profile: profile,
     );
     if (!_isCurrent(generation, currentApi)) return;
-
-    unawaited(_loadCatalog());
-    _startEvents(generation, currentApi);
-    _markDataRefreshReady(generation, currentApi);
-    unawaited(refreshSessions());
-    unawaited(refreshPendingPermissions());
-    unawaited(refreshPendingQuestions());
-    notifyListeners();
+    await _loadCatalog();
   }
 
   Future<void> _loadCatalog() =>

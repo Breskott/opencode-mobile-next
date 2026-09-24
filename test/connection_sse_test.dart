@@ -1599,6 +1599,45 @@ void main() {
     controller.dispose();
   });
 
+  testWidgets('the first connect does not wait for the one-time provider '
+      'runtime refresh; the catalog loads after it', (tester) async {
+    // Android 15 run, 2026-09-24: 7.5 s of the 12.2 s "Start OpenCode" setup
+    // step was this refresh, before any conversation could load.
+    final apis = <_ControlledApi>[];
+    final integrations = Completer<List<IntegrationInfo>>();
+    final catalogLoads = <String>[];
+    final controller = ConnectionController(
+      await _store(),
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: (api) =>
+          _SlowIntegrationsRepository(api, integrations, catalogLoads),
+      eventStreamFactory: _streamFactory([]),
+    );
+    var connected = false;
+    unawaited(
+      controller.connect(_profile('server')).then((_) => connected = true),
+    );
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+    expect(connected, isTrue);
+    expect(apis.single.sessionsCalls, greaterThan(0));
+    expect(catalogLoads, isEmpty);
+
+    integrations.complete(const []);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+    expect(catalogLoads, isNotEmpty);
+    controller.dispose();
+  });
+
   testWidgets('a new folder opens before the one-time provider runtime '
       'refresh, and its catalog loads after it', (tester) async {
     // Android 15 run, 2026-09-24: creating a project took 7.6 s, 6.8 s of it
