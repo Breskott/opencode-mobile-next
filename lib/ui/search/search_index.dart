@@ -33,7 +33,7 @@ import '../screens/settings_screen.dart';
 import '../screens/tailscale_setup_screen.dart';
 import '../screens/team/team_home_screen.dart';
 import '../screens/termux_processes_screen.dart';
-import '../screens/termux_setup_screen.dart';
+import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/termux_storage_screen.dart';
 import '../screens/usage_hub_screen.dart';
 import '../widgets/pickers.dart';
@@ -312,11 +312,12 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       icon: AppIconography.phone,
       title: onThisPhone,
       keywords: l10n.settingsHubSearchPhoneAliases,
+      // The phone setup screen; Termux stays under its "Other ways".
       pages: const ['termux-setup'],
       // Local Android tools belong to the phone, not the connected server's
       // capability set.
       gate: (scope) => scope.platform.supportsTermux,
-      open: _screen((_) => const TermuxSetupScreen()),
+      open: (context, _) => openPhoneSetupStart(context),
     ),
     SearchEntry(
       id: 'settings-accounts',

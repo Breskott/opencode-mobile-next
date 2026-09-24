@@ -292,7 +292,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           builder: (_) => _thisServerRow(controller),
         ),
         row('settings-saved-servers', subtitle: copy.e7SettingsUi64),
-        row('settings-on-this-phone', subtitle: l10n.onboardingRunOnPhone),
+        row(
+          'settings-on-this-phone',
+          subtitle: l10n.phoneSetupStartEntryDetail,
+        ),
         row('settings-accounts', subtitle: copy.settingsHubAccountsSubtitle),
         row('settings-external-agents'),
         row('settings-tailscale'),

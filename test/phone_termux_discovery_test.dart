@@ -6,6 +6,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
@@ -83,7 +84,10 @@ void main() {
           find.descendant(of: phone, matching: find.text('On this phone')),
           findsOneWidget,
         );
-        expect(find.text('Run OpenCode here with Termux'), findsOneWidget);
+        expect(
+          find.text('Run a coding agent right here. No computer needed.'),
+          findsOneWidget,
+        );
         // A Connection row: above everything that depends on the server.
         expect(
           find.descendant(
@@ -144,6 +148,23 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('On this phone'));
         await tester.pumpAndSettle();
+        // The phone setup screen; Termux is one of its other ways.
+        expect(find.byType(PhoneSetupStartScreen), findsOneWidget);
+        // It gives reading a stopped setup a few seconds before it shows.
+        await tester.pump(const Duration(seconds: 4));
+        await tester.pumpAndSettle();
+        final otherWays = find.byKey(
+          const ValueKey('phone-setup-start-other-ways'),
+        );
+        await tester.ensureVisible(otherWays);
+        await tester.tap(otherWays);
+        await tester.pumpAndSettle();
+        final useTermux = find.byKey(
+          const ValueKey('phone-setup-start-use-termux'),
+        );
+        await tester.ensureVisible(useTermux);
+        await tester.tap(useTermux);
+        await tester.pumpAndSettle();
         expect(find.byType(TermuxSetupScreen), findsOneWidget);
         if (state == 'not installed') {
           expect(find.text('Get Termux'), findsOneWidget);
@@ -162,9 +183,15 @@ void main() {
           controller.store.profiles.single.baseUrl,
           'https://work.example',
         );
-        expect(calls, ['getCapabilities']);
+        // Only reads: the setup screen and the Termux screen each look once.
+        expect(calls.toSet(), {'getCapabilities'});
         await tester.pageBack();
         await tester.pumpAndSettle();
+        // Back through the setup screen to Settings. Its Termux look has
+        // timeouts of its own (up to 10 s); let them run out.
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 11));
         expect(find.text('On this phone'), findsOneWidget);
       },
     );
