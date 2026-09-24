@@ -11,8 +11,7 @@ import '../../builtin/local_terminal.dart';
 import '../../builtin/team/builtin_team.dart' show BuiltinTeam;
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
-import '../kit/kit_state_view.dart';
-import '../kit/kit_status_line.dart';
+import '../kit/kit.dart';
 import '../kit/terminal_key_bar.dart';
 import '../widgets/confirm_sheet.dart';
 import 'phone_setup/phone_setup_routes.dart';
@@ -276,17 +275,9 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
           child: Column(
             children: [
               ?header,
-              SizedBox(
-                height: 2,
-                child: starting
-                    ? Semantics(
-                        label: l10n.localTerminalStarting,
-                        child: const LinearProgressIndicator(
-                          key: ValueKey('local-terminal-loading'),
-                          minHeight: 2,
-                        ),
-                      )
-                    : null,
+              KitLoadingBar(
+                loading: starting,
+                label: l10n.localTerminalStarting,
               ),
             ],
           ),
@@ -316,12 +307,11 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
         tone: AppStatusTone.failure,
         title: l10n.localTerminalFailedTitle,
         body: l10n.localTerminalFailedBody,
-        primary: KitStateAction(
+        primary: KitAction(
           key: const ValueKey('local-terminal-try-again'),
           label: l10n.localTerminalTryAgain,
           onPressed: () => unawaited(_open()),
         ),
-        detailsLabel: l10n.localTerminalDetails,
         details: _statusFailure,
       );
     }
@@ -332,7 +322,7 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
         icon: AppIconography.terminal,
         title: l10n.localTerminalNotSetUpTitle,
         body: l10n.localTerminalNotSetUpBody,
-        primary: KitStateAction(
+        primary: KitAction(
           key: const ValueKey('local-terminal-set-up'),
           label: l10n.localTerminalSetUp,
           onPressed: () async {
@@ -353,12 +343,11 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
         tone: AppStatusTone.failure,
         title: l10n.localTerminalFailedTitle,
         body: l10n.localTerminalFailedBody,
-        primary: KitStateAction(
+        primary: KitAction(
           key: const ValueKey('local-terminal-try-again'),
           label: l10n.localTerminalTryAgain,
           onPressed: () => _restart(shell),
         ),
-        detailsLabel: l10n.localTerminalDetails,
         details: shell.failure,
       );
     }
@@ -375,7 +364,7 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
                 key: const ValueKey('local-terminal-cost'),
                 icon: AppIconography.info,
                 tone: AppStatusTone.attention,
-                text: processes == null
+                message: processes == null
                     ? l10n.localTerminalCost(
                         LocalTerminalSessions.processesPerShell,
                         LocalTerminalSessions.androidProcessLimit,
@@ -420,11 +409,11 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
                 top: false,
                 child: KitStateView(
                   key: const ValueKey('local-terminal-ended'),
-                  inline: true,
+                  size: KitStateSize.inline,
                   icon: AppIconography.terminal,
                   title: l10n.localTerminalEndedTitle,
                   body: l10n.localTerminalEndedBody(shell.exitCode ?? -1),
-                  primary: KitStateAction(
+                  primary: KitAction(
                     key: const ValueKey('local-terminal-restart'),
                     label: l10n.localTerminalRestart,
                     onPressed: () => _restart(shell),

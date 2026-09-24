@@ -1,9 +1,8 @@
 // TEAM-108: the AI Team home at 320dp × 2.5x text, LTR and RTL, English
-// and Arabic: the host chip, the three segments (each with a busy list),
-// the Technical details sheet and the read-only gate sheet all fit, and
-// nothing overflows or scrolls sideways. At this text size the segments
-// and the run filters are each one labelled menu button (stable home fix,
-// 2026-09-13; test/team_home_stable_layout_test.dart covers normal text).
+// and Arabic: the questions, the tasks, search and the filter menu (past
+// eight tasks), the Technical details sheet, the agents list and the
+// read-only gate sheet all fit, and nothing overflows or scrolls sideways
+// (AI Team redesign, 2026-09-24).
 
 import 'dart:async';
 import 'dart:io';
@@ -206,6 +205,11 @@ void main() {
         run('r3', 'Android background handoff', RunState.planning),
         run('r4', 'Database tests', RunState.waiting),
         run('r5', 'Release notes', RunState.completed),
+        // Past eight tasks the home offers search and the filter menu.
+        run('r6', 'Crash reporter opt-in', RunState.working),
+        run('r7', 'Widget text scaling', RunState.working),
+        run('r8', 'Deep link routing', RunState.waiting),
+        run('r9', 'Settings search index', RunState.waiting),
       ]
       ..workOverride = const [
         WorkItem(
@@ -292,12 +296,6 @@ void main() {
         home: home,
       );
 
-  Future<void> reveal(WidgetTester tester, Finder target) async {
-    await Scrollable.ensureVisible(tester.element(target), alignment: .5);
-    await tester.pump();
-    expect(target.hitTestable(), findsOneWidget);
-  }
-
   /// Lists build lazily: scroll the segment's list until [target] exists
   /// and is tappable.
   Future<void> revealIn(
@@ -321,23 +319,12 @@ void main() {
     expect(target.hitTestable(), findsOneWidget);
   }
 
-  /// At 2.5x the three segments are one menu button (stable home,
-  /// 2026-09-13): open it and pick the section; nothing scrolls sideways.
-  Future<void> segment(WidgetTester tester, String name) async {
-    expect(find.byKey(const ValueKey('team-home-segments')), findsNothing);
-    final menu = find.byKey(const ValueKey('team-home-segments-menu'));
-    expect(menu.hitTestable(), findsOneWidget);
-    await tester.tap(menu);
+  /// Opens search from the top bar, and returns the filter menu button.
+  Future<Finder> openSearch(WidgetTester tester) async {
+    final open = find.byKey(const ValueKey('team-home-search-open'));
+    expect(open.hitTestable(), findsOneWidget);
+    await tester.tap(open);
     await tester.pumpAndSettle();
-    final item = find.byKey(ValueKey('team-home-segment-$name'));
-    expect(item.hitTestable(), findsOneWidget);
-    await tester.tap(item);
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-  }
-
-  /// The filter menu button in the Runs list, scrolled into view.
-  Future<Finder> filterMenu(WidgetTester tester) async {
     final menu = find.byKey(const ValueKey('team-home-filter-menu'));
     await revealIn(tester, 'team-home-runs', menu, up: true);
     return menu;
@@ -348,7 +335,9 @@ void main() {
       final tag = '${direction.name} ${locale.languageCode}';
       final l10n = lookupAppLocalizations(locale);
 
-      testWidgets('320dp 2.5x $tag: the three segments fit', (tester) async {
+      testWidgets('320dp 2.5x $tag: the home, search and sheets fit', (
+        tester,
+      ) async {
         tester.view.physicalSize = const Size(320, 740);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
@@ -370,101 +359,15 @@ void main() {
           320,
         );
 
-        // Runs: the blocked convoy with its needs-you marker, the open
-        // runs and the collapsed completed group.
-        expect(
-          find.byKey(const ValueKey('team-home-run-oc-xru')),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(const ValueKey('team-home-run-needs-you-oc-xru')),
-          findsOneWidget,
-        );
-        final group = find.byKey(const ValueKey('team-home-completed-group'));
-        await revealIn(tester, 'team-home-runs', group);
-        await tester.tap(group);
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        final done = find.byKey(const ValueKey('team-home-run-r5'));
-        await revealIn(tester, 'team-home-runs', done);
-        // Filters: one labelled menu at large text, never four stacked
-        // chips; the chosen filter reads on the button.
-        expect(find.byType(ChoiceChip), findsNothing);
-        final filters = await filterMenu(tester);
-        await tester.tap(filters);
-        await tester.pumpAndSettle();
-        final blocked = find.byKey(const ValueKey('team-home-filter-blocked'));
-        expect(blocked.hitTestable(), findsOneWidget);
-        await tester.tap(blocked);
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        expect(blocked, findsNothing, reason: 'menu closed');
-        expect(
-          find.descendant(
-            of: filters,
-            matching: find.text(l10n.teamUiHomeFilterBlocked),
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(const ValueKey('team-home-run-oc-xru')),
-          findsOneWidget,
-        );
-        expect(find.byKey(const ValueKey('team-home-run-r3')), findsNothing);
-
-        // The host chip wraps its long line and opens Technical details.
-        final chip = find.byKey(const ValueKey('team-home-host-chip'));
-        await reveal(tester, chip);
-        await tester.tap(chip);
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        final sheet = find.byKey(const ValueKey('team-home-host-sheet'));
-        expect(sheet, findsOneWidget);
-        expect(
-          find.descendant(of: sheet, matching: find.text('1.4.1')),
-          findsOneWidget,
-        );
-        // Read-only: no buttons of its own; dismiss it like a swipe would.
-        tester.state<NavigatorState>(find.byType(Navigator)).pop();
-        await tester.pumpAndSettle();
-        expect(sheet, findsNothing);
-
-        // Agents: every live row with its state word, then the stopped
-        // dog under the collapsed "Suspended on the host" group (TEAM-115).
-        await segment(tester, 'agents');
-        for (final id in ['wolf', 'fox']) {
-          await revealIn(
-            tester,
-            'team-home-agents',
-            find.byKey(ValueKey('team-home-agent-$id')),
-          );
-        }
-        final suspended = find.byKey(
-          const ValueKey('team-home-suspended-group'),
-        );
-        await revealIn(tester, 'team-home-agents', suspended);
-        expect(
-          find.byKey(const ValueKey('team-home-agent-dog-1')),
-          findsNothing,
-        );
-        await tester.tap(suspended);
-        await tester.pumpAndSettle();
-        await revealIn(
-          tester,
-          'team-home-agents',
-          find.byKey(const ValueKey('team-home-agent-dog-1')),
-        );
-        expect(tester.takeException(), isNull);
-
-        // Needs you: both gates; the read-only sheet scrolls and closes.
-        await segment(tester, 'needs-you');
+        // Needs you: two questions are rows, first; the read-only sheet
+        // scrolls and closes.
         final gate = find.byKey(const ValueKey('team-home-gate-g1'));
         await revealIn(
           tester,
-          'team-home-needs-you',
+          'team-home-runs',
           find.byKey(const ValueKey('team-home-gate-g2')),
         );
-        await revealIn(tester, 'team-home-needs-you', gate, up: true);
+        await revealIn(tester, 'team-home-runs', gate, up: true);
         await tester.tap(gate);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
@@ -487,25 +390,55 @@ void main() {
         await tester.tap(close);
         await tester.pumpAndSettle();
         expect(gateSheet, findsNothing);
+
+        // Tasks, then what finished.
+        for (final id in ['oc-xru', 'r2', 'r3', 'r4', 'r5']) {
+          await revealIn(
+            tester,
+            'team-home-runs',
+            find.byKey(ValueKey('team-home-run-$id')),
+          );
+        }
         expect(tester.takeException(), isNull);
 
-        // Back to Runs: the filter held and the search field stays usable.
-        await segment(tester, 'runs');
+        // Search and the filter menu: a labelled menu, never chips; the
+        // chosen filter reads on the button.
+        await revealIn(
+          tester,
+          'team-home-runs',
+          find.byKey(const ValueKey('team-home-run-oc-xru')),
+          up: true,
+        );
+        final filters = await openSearch(tester);
+        expect(find.byType(ChoiceChip), findsNothing);
+        await tester.tap(filters);
+        await tester.pumpAndSettle();
+        final blocked = find.byKey(const ValueKey('team-home-filter-blocked'));
+        expect(blocked.hitTestable(), findsOneWidget);
+        await tester.tap(blocked);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(blocked, findsNothing, reason: 'menu closed');
         expect(
           find.descendant(
-            of: await filterMenu(tester),
+            of: filters,
             matching: find.text(l10n.teamUiHomeFilterBlocked),
           ),
           findsOneWidget,
-          reason: 'still blocked',
         );
+        expect(find.byKey(const ValueKey('team-home-run-r3')), findsNothing);
         final search = find.byKey(const ValueKey('team-home-search'));
-        await revealIn(tester, 'team-home-runs', search);
+        await revealIn(tester, 'team-home-runs', search, up: true);
         await tester.enterText(search, 'Sync');
         await tester.pumpAndSettle();
         // r2 carries the failed-run gate, so it counts as blocked and
-        // matches the search; the convoy's title does not.
-        expect(find.byKey(const ValueKey('team-home-run-r2')), findsOneWidget);
+        // matches the search; the convoy's title does not. The questions
+        // sit above the tasks, so the row is scrolled to.
+        await revealIn(
+          tester,
+          'team-home-runs',
+          find.byKey(const ValueKey('team-home-run-r2')),
+        );
         expect(
           find.byKey(const ValueKey('team-home-run-oc-xru')),
           findsNothing,
@@ -514,9 +447,50 @@ void main() {
         await revealIn(tester, 'team-home-runs', clear, up: true);
         await tester.tap(clear);
         await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+
+        // Technical details behind the info button.
+        await tester.tap(find.byKey(const ValueKey('team-home-info')));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final sheet = find.byKey(const ValueKey('team-home-host-sheet'));
+        expect(sheet, findsOneWidget);
         expect(
-          find.byKey(const ValueKey('team-home-run-oc-xru')),
+          find.descendant(of: sheet, matching: find.text('1.4.1')),
           findsOneWidget,
+        );
+        tester.state<NavigatorState>(find.byType(Navigator)).pop();
+        await tester.pumpAndSettle();
+        expect(sheet, findsNothing);
+
+        // Agents: one row on the home opens the list; every live row, then
+        // the stopped dog under the collapsed group (TEAM-115).
+        final agentsRow = find.byKey(const ValueKey('team-home-agents-row'));
+        await revealIn(tester, 'team-home-runs', agentsRow);
+        await tester.tap(agentsRow);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        for (final id in ['wolf', 'fox']) {
+          await revealIn(
+            tester,
+            'team-home-agents',
+            find.byKey(ValueKey('team-home-agent-$id')),
+          );
+        }
+        final suspended = find.byKey(
+          const ValueKey('team-home-suspended-group'),
+        );
+        await revealIn(tester, 'team-home-agents', suspended);
+        expect(
+          find.byKey(const ValueKey('team-home-agent-dog-1')),
+          findsNothing,
+        );
+        await tester.tap(suspended);
+        await tester.pumpAndSettle();
+        await revealIn(
+          tester,
+          'team-home-agents',
+          find.byKey(const ValueKey('team-home-agent-dog-1')),
         );
         expect(tester.takeException(), isNull);
       });
@@ -563,17 +537,18 @@ void main() {
           find.byKey(const ValueKey('team-home-runs-empty')),
           findsOneWidget,
         );
-        await segment(tester, 'agents');
+        // Nothing waits on the person: no section, not an empty one.
+        expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('team-home-agents-row')));
+        await tester.pumpAndSettle();
         expect(
           find.byKey(const ValueKey('team-home-agents-empty')),
           findsOneWidget,
         );
-        await segment(tester, 'needs-you');
-        expect(
-          find.byKey(const ValueKey('team-home-needs-you-empty')),
-          findsOneWidget,
-        );
         expect(tester.takeException(), isNull);
+        // Back to the home, so the next scene starts on it.
+        tester.state<NavigatorState>(find.byType(Navigator)).pop();
+        await tester.pumpAndSettle();
 
         // Loading: a controller that has not started.
         final config = OrchestrationConfig(

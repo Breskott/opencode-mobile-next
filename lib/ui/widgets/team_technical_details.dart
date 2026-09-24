@@ -1,8 +1,9 @@
 /// The AI Team plugin's identity and Technical details pieces (02-ux §8):
 /// label-over-value identity rows, raw provider values with a copy button
 /// and the side-by-side term rows, shared by the Settings sheet (TEAM-106)
-/// and the host chip on the AI Team home (TEAM-108), which opens
-/// [TeamHostDetailsSheet].
+/// and the info button on the AI Team home (TEAM-108), which opens
+/// [TeamHostDetailsSheet]: everything the home's one-phrase host line
+/// leaves out (address, version, city, access, the host kind's line).
 library;
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
 import '../../state/profiles.dart';
 import '../app_theme.dart';
+import 'team_discovery_card.dart' show teamHostDisclaimer, teamHostKindFor;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -87,6 +89,20 @@ class TeamHostDetailsSheet extends StatelessWidget {
               OrchestrationHostMode.computer => l10n.teamUiHostModeComputer,
               OrchestrationHostMode.phone => l10n.teamUiHostModePhone,
             },
+          ),
+          // How this kind of host behaves (03-onboarding §4, TEAM-206):
+          // one line, here with the host's other facts rather than on the
+          // Work tab's section.
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              teamHostDisclaimer(l10n, teamHostKindFor(config, hostMode)),
+              key: const ValueKey('team-host-disclaimer'),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: muted,
+                height: 1.3,
+              ),
+            ),
           ),
           TeamIdentityRow(
             label: l10n.teamUiLabelAccess,

@@ -278,55 +278,38 @@ void main() {
         expect(tester.takeException(), isNull);
 
         expect(find.byKey(const ValueKey('team-card-data')), findsOneWidget);
+        // What needs the person first, then at most two running tasks: no
+        // percentage, bar, dots or engine words (AI Team redesign).
         expect(
           find.byKey(const ValueKey('team-card-needs-you')),
           findsOneWidget,
         );
-        expect(
-          find.byKey(const ValueKey('team-card-bar-blocked')),
-          findsOneWidget,
+        final rows = find.byWidgetPredicate(
+          (w) =>
+              w.key is ValueKey<String> &&
+              RegExp(
+                r'^team-card-run-(?!line-)',
+              ).hasMatch((w.key! as ValueKey<String>).value),
         );
+        expect(rows.evaluate().length, inInclusiveRange(1, 2));
+        expect(find.textContaining('%'), findsNothing);
+        expect(find.textContaining('٪'), findsNothing);
+        expect(find.textContaining('Gas City'), findsNothing);
         expect(
-          find.byKey(const ValueKey('team-card-run-oc-xru')),
-          findsOneWidget,
+          find.textContaining(
+            locale.languageCode == 'ar' ? 'فريق الذكاء الاصطناعي' : 'AI Team',
+          ),
+          findsWidgets,
         );
-        expect(
-          find.byKey(const ValueKey('team-card-completed-runs')),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(const ValueKey('team-card-more-runs')),
-          findsOneWidget,
-        );
-        expect(
-          find.byKey(const ValueKey('team-card-constellation')),
-          findsOneWidget,
-        );
-        // The Gas City identifier stays LTR in Arabic; the title translates.
-        expect(
-          tester
-              .widget<Text>(find.byKey(const ValueKey('team-card-city')))
-              .textDirection,
-          TextDirection.ltr,
-        );
-        if (locale.languageCode == 'ar') {
-          expect(find.text('فريق الذكاء الاصطناعي · Gas City'), findsOneWidget);
-          expect(find.text('اكتمل 33٪.'), findsOneWidget);
-        } else {
-          expect(find.text('AI Team · Gas City'), findsOneWidget);
-          expect(find.text('33% done.'), findsOneWidget);
-        }
         // The card never scrolls sideways: it is as wide as the screen.
         expect(tester.getSize(find.byType(TeamCard)).width, 320);
 
+        // The header row opens the team; the card refreshes itself.
         final open = find.byKey(const ValueKey('team-card-open'));
         await reveal(tester, open);
         await tester.tap(open);
         expect(opened, 1);
-        final refresh = find.byKey(const ValueKey('team-card-refresh'));
-        await reveal(tester, refresh);
-        await tester.tap(refresh);
-        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('team-card-refresh')), findsNothing);
         expect(tester.takeException(), isNull);
       });
 
@@ -357,8 +340,9 @@ void main() {
           app(TeamCard(controller: empty, onOpen: () {}), direction, locale),
         );
         await tester.pumpAndSettle();
-        expect(find.byKey(const ValueKey('team-card-empty')), findsOneWidget);
-        await reveal(tester, find.byKey(const ValueKey('team-card-refresh')));
+        // One muted line, and it opens the team like the header.
+        final idle = find.byKey(const ValueKey('team-card-empty'));
+        await reveal(tester, idle);
         expect(tester.takeException(), isNull);
 
         // Error.

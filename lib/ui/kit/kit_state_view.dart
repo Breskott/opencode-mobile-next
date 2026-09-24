@@ -1,183 +1,256 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
+import 'kit_buttons.dart';
+import 'kit_progress.dart';
 
-/// An action of a [KitStateView]: a label and what it does.
-class KitStateAction {
-  const KitStateAction({
-    required this.label,
-    required this.onPressed,
-    this.key,
-  });
+enum KitStateSize {
+  /// Fills the body, centred vertically, with no card around it.
+  page,
 
-  final String label;
-  final VoidCallback onPressed;
-  final Key? key;
+  /// Inside a list, the same slots at smaller type.
+  inline,
 }
 
-/// Every "not the normal content" moment (docs/design/design-standard.md §3):
-/// icon in a tonal circle, a one-line title, a short body, optional progress,
-/// actions in the one button hierarchy, and technical details collapsed last.
+/// Every "not the normal content" moment (design standard §3): loading a
+/// whole screen, empty, error, stopped or offline, blocked. Fixed slots, in
+/// this order:
 ///
-/// [inline] is the smaller size for a place inside other content; the page
-/// size fills the body, centred, with no card around it.
-class KitStateView extends StatelessWidget {
+/// 1. [icon] in a tonal circle, tinted by [tone] (never a solid red block);
+/// 2. [title]: one line that says the state now, never contradicting the
+///    progress ("Starting OpenCode…", not "stopped" while it starts);
+/// 3. [body]: at most two short sentences;
+/// 4. [progress] (§4);
+/// 5. actions in the one hierarchy (§2);
+/// 6. [details]: a collapsed "Details" row for technical text (address,
+///    error), in mono, never above the actions. [detailNotes] are plain
+///    lines shown above that text when it opens (for example what to check).
+///    [detailsChild] shows richer technical content there instead (a live
+///    log).
+///
+/// Two optional places hold what a state is made of, without new slots in
+/// that order: [content] sits between the progress and the actions (the
+/// steps a progress is made of, a name field), and [footer] after
+/// everything (the less common ways in, folded away).
+class KitStateView extends StatefulWidget {
   const KitStateView({
     super.key,
     required this.icon,
     required this.title,
-    this.body,
     this.tone = AppStatusTone.neutral,
+    this.body,
     this.progress,
     this.primary,
     this.secondary,
     this.tertiary = const [],
-    this.detailsLabel,
     this.details,
-    this.inline = false,
+    this.detailNotes = const [],
+    this.size = KitStateSize.page,
+    this.titleKey,
+    this.bodyKey,
+    this.liveRegion = true,
+    this.iconChild,
+    this.content,
+    this.footer,
+    this.detailsChild,
+    this.padding,
   });
 
   final IconData icon;
+  final AppStatusTone tone;
   final String title;
   final String? body;
-  final AppStatusTone tone;
-
-  /// A determinate or indeterminate bar with its own line (§4), or null.
-  final Widget? progress;
-
-  final KitStateAction? primary;
-  final KitStateAction? secondary;
-
-  /// At most two; more belong in an overflow menu.
-  final List<KitStateAction> tertiary;
-
-  /// The collapsed row's label ("Details") and its text, shown in mono.
-  final String? detailsLabel;
+  final KitProgress? progress;
+  final KitAction? primary;
+  final KitAction? secondary;
+  final List<KitAction> tertiary;
   final String? details;
+  final List<String> detailNotes;
+  final KitStateSize size;
+  final Key? titleKey;
+  final Key? bodyKey;
 
-  final bool inline;
+  /// Announce the state when it changes (a page state usually should).
+  final bool liveRegion;
+
+  /// Drawn inside the tonal circle instead of [icon] (a check that draws
+  /// itself in); [icon] still names the state.
+  final Widget? iconChild;
+
+  /// Between the progress and the actions: what the state is made of.
+  final Widget? content;
+
+  /// After the actions and the details: the less common ways on.
+  final Widget? footer;
+
+  /// Shown under "Details" when it opens, after [detailNotes] and
+  /// [details]; for technical content that is not one string (a log view).
+  final Widget? detailsChild;
+
+  /// Overrides the inline size's padding, for a host already on the rails.
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  State<KitStateView> createState() => _KitStateViewState();
+}
+
+class _KitStateViewState extends State<KitStateView> {
+  bool _detailsOpen = false;
+
+  /// The icon's colour for [tone]; neutral is the muted text colour.
+  static Color toneColor(ThemeData theme, AppStatusTone tone) =>
+      tone == AppStatusTone.neutral
+      ? AppTheme.mutedOf(theme)
+      : AppTheme.statusColor(theme, tone);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = AppTheme.statusColor(theme, tone);
-    final circle = inline ? 40.0 : 64.0;
-    final content = Column(
+    final page = widget.size == KitStateSize.page;
+    final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    final tint = toneColor(theme, widget.tone);
+    final hasDetails =
+        widget.details != null ||
+        widget.detailNotes.isNotEmpty ||
+        widget.detailsChild != null;
+    final actions = KitActionBlock(
+      primary: widget.primary,
+      secondary: widget.secondary,
+      tertiary: widget.tertiary,
+    );
+    final column = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Center(
+        Align(
+          alignment: AlignmentDirectional.centerStart,
           child: Container(
-            width: circle,
-            height: circle,
+            key: const ValueKey('kit-state-icon'),
+            width: page ? 48 : 36,
+            height: page ? 48 : 36,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: .14),
+              color: tint.withValues(alpha: .14),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: circle * .5),
+            child:
+                widget.iconChild ??
+                Icon(widget.icon, size: page ? 24 : 19, color: tint),
           ),
         ),
-        SizedBox(height: inline ? 8 : 16),
-        Semantics(
-          header: true,
-          liveRegion: true,
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: inline
-                ? theme.textTheme.titleSmall
-                : theme.textTheme.titleMedium,
-          ),
+        SizedBox(height: page ? 20 : 12),
+        Text(
+          widget.title,
+          key: widget.titleKey,
+          style: page ? theme.textTheme.titleLarge : theme.textTheme.titleSmall,
         ),
-        if (body != null) ...[
-          const SizedBox(height: 6),
+        if (widget.body case final body?) ...[
+          SizedBox(height: page ? 8 : 4),
           Text(
-            body!,
-            textAlign: TextAlign.center,
+            body,
+            key: widget.bodyKey,
             style:
-                (inline
-                        ? theme.textTheme.bodySmall
-                        : theme.textTheme.bodyMedium)
-                    ?.copyWith(color: AppTheme.mutedOf(theme)),
+                (page ? theme.textTheme.bodyMedium : theme.textTheme.bodySmall)
+                    ?.copyWith(color: AppTheme.mutedOf(theme), height: 1.4),
           ),
         ],
-        if (progress != null) ...[const SizedBox(height: 16), progress!],
-        if (primary != null) ...[
-          SizedBox(height: inline ? 12 : 20),
-          FilledButton(
-            key: primary!.key,
-            style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
-            onPressed: primary!.onPressed,
-            child: Text(primary!.label),
-          ),
+        if (widget.progress case final progress?) ...[
+          SizedBox(height: page ? 20 : 12),
+          KitProgressView(progress: progress),
         ],
-        if (secondary != null) ...[
-          const SizedBox(height: 8),
-          OutlinedButton(
-            key: secondary!.key,
-            style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
-            onPressed: secondary!.onPressed,
-            child: Text(secondary!.label),
-          ),
+        if (widget.content case final content?) ...[
+          SizedBox(height: page ? 20 : 12),
+          content,
         ],
-        for (final action in tertiary.take(2))
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: TextButton(
-              key: action.key,
-              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-              onPressed: action.onPressed,
-              child: Text(action.label),
-            ),
-          ),
-        if (details != null && details!.trim().isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Theme(
-              data: theme.copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                key: const ValueKey('kit-state-details'),
-                tilePadding: EdgeInsets.zero,
-                title: Text(
-                  detailsLabel ?? '',
-                  style: theme.textTheme.bodyMedium,
+        if (!actions.isEmpty) ...[SizedBox(height: page ? 24 : 12), actions],
+        if (hasDetails) ...[
+          SizedBox(height: page ? 12 : 4),
+          KitInset(
+            child: TextButton.icon(
+              key: const ValueKey('kit-state-details'),
+              onPressed: () => setState(() => _detailsOpen = !_detailsOpen),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.mutedOf(theme),
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: KitButton.tertiaryInset,
                 ),
-                children: [
-                  Directionality(
-                    textDirection: TextDirection.ltr,
-                    child: SelectableText(
-                      details!.trim(),
-                      style: const TextStyle(
-                        fontFamily: AppTheme.monoFamily,
-                        fontSize: AppTheme.codeFontSize,
-                      ),
-                    ),
-                  ),
-                ],
+              ),
+              icon: Icon(
+                _detailsOpen
+                    ? AppIconography.chevronUp
+                    : AppIconography.chevronDown,
+                size: 18,
+              ),
+              label: Text(
+                _detailsOpen ? l10n.e7SetupHideDetails : l10n.e7SetupDetails,
               ),
             ),
           ),
+          if (_detailsOpen)
+            Container(
+              key: const ValueKey('kit-state-details-text'),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(AppTheme.radiusControl),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final note in widget.detailNotes)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        note,
+                        style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
+                      ),
+                    ),
+                  if (widget.details case final details?)
+                    SelectableText(
+                      details,
+                      textDirection: TextDirection.ltr,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontFamily: AppTheme.monoFamily,
+                        color: AppTheme.mutedOf(theme),
+                      ),
+                    ),
+                  ?widget.detailsChild,
+                ],
+              ),
+            ),
+        ],
+        if (widget.footer case final footer?) ...[
+          SizedBox(height: page ? 16 : 8),
+          footer,
+        ],
       ],
     );
-    if (inline) {
+    final announced = Semantics(
+      container: true,
+      liveRegion: widget.liveRegion,
+      child: column,
+    );
+    if (!page) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: content,
+        padding: widget.padding ?? const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: announced,
       );
     }
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        physics: const AlwaysScrollableScrollPhysics(),
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            minHeight: constraints.hasBoundedHeight
-                ? (constraints.maxHeight - 48).clamp(0, double.infinity)
-                : 0,
+            minHeight: constraints.hasBoundedHeight ? constraints.maxHeight : 0,
           ),
           child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: content,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: announced,
+              ),
             ),
           ),
         ),

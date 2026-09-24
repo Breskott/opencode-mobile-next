@@ -1,0 +1,178 @@
+00:00 +0: loading test/work_tab_cleanup_test.dart
+00:00 +0: test/work_tab_cleanup_test.dart: item 1: restoring the saved project no folder chooser; the header names the saved project
+00:00 +1: test/work_tab_cleanup_test.dart: item 1: restoring the saved project no folder chooser; the header names the saved project
+00:00 +2: test/work_tab_cleanup_test.dart: item 1: restoring the saved project no folder chooser; the header names the saved project
+00:00 +3: test/work_tab_cleanup_test.dart: item 1: restoring the saved project no folder chooser; the header names the saved project
+00:00 +4: test/work_tab_cleanup_test.dart: item 1: restoring the saved project no folder chooser; the header names the saved project
+00:00 +5: test/work_tab_cleanup_test.dart: item 1: restoring the saved project no folder chooser; the header names the saved project
+00:00 +6: test/work_tab_status_line_test.dart: the leftover-process line (item 7) the phone case reads "OpenCode has been busy", with See what's running, and its dismissal lasts until the process changes
+00:01 +7: test/goldens/work_tab_golden_test.dart: connection · connecting · dark
+00:01 +8: test/goldens/work_tab_golden_test.dart: connection · connecting · dark
+00:01 +9: test/goldens/work_tab_golden_test.dart: connection · connecting · dark
+00:01 +10: test/goldens/work_tab_golden_test.dart: connection · connecting · dark
+00:01 +11: test/goldens/work_tab_golden_test.dart: connection · connecting · dark
+00:01 +12: test/goldens/work_tab_golden_test.dart: connection · connecting · dark
+00:01 +13: test/work_tab_cleanup_test.dart: items 3 and 4: first load a reconnect on the Work tab shows the one bar, not the shell banner
+00:01 +14: test/work_tab_cleanup_test.dart: items 3 and 4: first load a reconnect on the Work tab shows the one bar, not the shell banner
+00:01 +15: test/work_tab_cleanup_test.dart: items 3 and 4: first load a reconnect on the Work tab shows the one bar, not the shell banner
+00:01 +16: test/work_tab_cleanup_test.dart: items 3 and 4: first load a reconnect on the Work tab shows the one bar, not the shell banner
+00:01 +17: test/work_tab_cleanup_test.dart: items 3 and 4: first load a reconnect on the Work tab shows the one bar, not the shell banner
+00:01 +18: test/work_tab_cleanup_test.dart: items 3 and 4: first load a reconnect on the Work tab shows the one bar, not the shell banner
+00:01 +19: test/work_tab_cleanup_test.dart: items 3 and 4: first load a reconnect on the Work tab shows the one bar, not the shell banner
+00:02 +20: test/return_brief_widget_test.dart: an unreviewed result is marked in its row, and there is no separate card
+00:02 +21: test/return_brief_widget_test.dart: an unreviewed result is marked in its row, and there is no separate card
+00:02 +22: test/return_brief_widget_test.dart: an unreviewed result is marked in its row, and there is no separate card
+00:02 +23: test/return_brief_widget_test.dart: an unreviewed result is marked in its row, and there is no separate card
+00:02 +24: test/return_brief_widget_test.dart: an unreviewed result is marked in its row, and there is no separate card
+00:02 +25: test/return_brief_widget_test.dart: an unreviewed result is marked in its row, and there is no separate card
+00:02 +26: test/goldens/work_tab_golden_test.dart: work · restoring · dark
+00:02 +27: test/goldens/work_tab_golden_test.dart: work · restoring · dark
+00:02 +28: test/goldens/work_tab_golden_test.dart: work · restoring · dark
+00:02 +29: test/goldens/work_tab_golden_test.dart: work · restoring · dark
+00:02 +30: test/work_tab_cleanup_test.dart: item 9: New conversation and the tab bar cover nothing at rest and at the end of the list
+00:02 +31: test/work_tab_cleanup_test.dart: item 9: New conversation and the tab bar cover nothing at rest and at the end of the list
+00:02 +32: test/work_tab_cleanup_test.dart: item 9: New conversation and the tab bar cover nothing at rest and at the end of the list
+00:03 +33: test/work_tab_cleanup_test.dart: item 9: New conversation and the tab bar cover nothing at rest and at the end of the list
+00:03 +34: test/work_tab_cleanup_test.dart: item 9: New conversation and the tab bar cover nothing at rest and at the end of the list
+00:03 +35: test/return_brief_widget_test.dart: Mark as reviewed never views the conversation or answers a request, and lasts until the next result
+00:03 +36: test/goldens/work_tab_golden_test.dart: work · loading · dark
+00:03 +37: test/work_tab_cleanup_test.dart: item 10: a server that does not answer the Work tab says so after 8 s, with Try again and Restart
+00:03 +38: test/work_tab_cleanup_test.dart: item 10: a server that does not answer the Work tab says so after 8 s, with Try again and Restart
+00:03 +39: test/work_tab_cleanup_test.dart: item 10: a server that does not answer the Work tab says so after 8 s, with Try again and Restart
+00:03 +40: test/work_tab_cleanup_test.dart: item 10: a server that does not answer the Work tab says so after 8 s, with Try again and Restart
+00:03 +41: test/return_brief_widget_test.dart: Review results opens the result and acknowledges nothing
+00:03 +42: test/return_brief_widget_test.dart: Review results opens the result and acknowledges nothing
+00:04 +43: test/goldens/work_tab_golden_test.dart: work · loaded · dark
+00:04 +44: test/work_tab_cleanup_test.dart: text scale 2 at 320 dp: nothing overflows
+00:04 +45: test/work_tab_cleanup_test.dart: text scale 2 at 320 dp: nothing overflows
+00:04 +46: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:04 +47: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:04 +48: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:04 +49: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:04 +50: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:04 +51: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:04 +52: test/other_projects_panel_test.dart: with one project in play the Work tab shows nothing extra
+00:04 +53: test/goldens/work_tab_golden_test.dart: work · runaway · dark
+00:04 +54: test/goldens/work_tab_golden_test.dart: work · runaway · dark
+00:04 +55: test/other_projects_panel_test.dart: the trailing button opens the live conversation in its own project
+00:05 +56: test/goldens/work_tab_golden_test.dart: work · no project yet · dark
+00:05 +57: test/goldens/work_tab_golden_test.dart: work · no project yet · dark
+00:05 +58: test/goldens/work_tab_golden_test.dart: work · no project yet · dark
+00:05 +59: test/other_projects_panel_test.dart: a project can be taken off the list
+00:05 +60: test/other_projects_panel_test.dart: a project can be taken off the list
+00:05 +61: test/saved_server_connection_card_test.dart: connecting state shows progress and no actions
+00:05 +62: test/saved_server_connection_card_test.dart: connecting state shows progress and no actions
+00:05 +63: test/saved_server_connection_card_test.dart: connecting state shows progress and no actions
+00:05 +64: test/saved_server_connection_card_test.dart: connecting state shows progress and no actions
+00:05 +65: test/saved_server_connection_card_test.dart: connecting state shows progress and no actions
+00:05 +66: test/saved_server_connection_card_test.dart: connecting state shows progress and no actions
+00:05 +67: test/saved_server_connection_card_test.dart: connecting state shows progress and no actions
+00:05 +68: test/goldens/work_tab_golden_test.dart: work · loading · light
+00:05 +69: test/saved_server_connection_card_test.dart: loopback keeps retry primary and Termux setup secondary
+00:06 +70: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +71: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +72: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +73: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +74: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +75: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +76: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +77: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +78: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +79: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +80: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +81: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +82: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +83: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:06 +84: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:07 +85: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:07 +86: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:07 +87: test/home_navigation_test.dart: navigation stays inside its glass surface at 320.0 and 2.5x (en)
+00:07 +88: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, dark: the project, its actions, session state and the docked New session stay clear
+00:07 +89: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, dark: the project, its actions, session state and the docked New session stay clear
+00:07 +90: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, dark: the project, its actions, session state and the docked New session stay clear
+00:07 +91: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, dark: the project, its actions, session state and the docked New session stay clear
+00:07 +92: test/workspace_stable_layout_test.dart: 320dp, 2.0x text, dark: the project, its actions, session state and the docked New session stay clear
+00:07 +93: test/home_navigation_test.dart: navigation stays inside its glass surface at 390.0 and 2.5x (en)
+00:07 +94: test/work_tab_team_sessions_test.dart: the Work tab panel shows the person's conversation and project, and none of the team's
+00:08 +95: test/work_tab_team_sessions_test.dart: the Work tab panel shows the person's conversation and project, and none of the team's
+00:08 +96: test/work_tab_team_sessions_test.dart: the Work tab panel shows the person's conversation and project, and none of the team's
+00:08 +97: test/workspace_stable_layout_test.dart: 320dp, 2.5x text, dark: the project, its actions, session state and the docked New session stay clear
+00:08 +98: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:08 +99: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:08 +100: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:08 +101: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:08 +102: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:08 +103: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:09 +104: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:09 +105: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:09 +106: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:09 +107: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:09 +108: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:09 +109: test/home_navigation_test.dart: Files Back clears search, ascends folders, returns home, then guards exit
+00:09 +110: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:09 +111: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:09 +112: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:09 +113: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:09 +114: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:09 +115: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:09 +116: test/projects_screen_test.dart: archived pager remains reachable through an empty filtered first page
+00:09 +117: test/home_navigation_test.dart: inactive Files tab does not consume Back
+00:09 +118: test/home_navigation_test.dart: inactive Files tab does not consume Back
+00:09 +119: test/home_navigation_test.dart: inactive Files tab does not consume Back
+00:10 +120: test/home_navigation_test.dart: inactive Files tab does not consume Back
+00:10 +121: test/release_blockers_test.dart: markdown blocks custom schemes and confirms HTTP with host
+00:10 +122: test/release_blockers_test.dart: markdown blocks custom schemes and confirms HTTP with host
+00:10 +123: test/home_navigation_test.dart: switching destinations preserves Files search and folder
+00:10 +124: test/home_navigation_test.dart: switching destinations preserves Files search and folder
+00:10 +125: test/home_navigation_test.dart: switching destinations preserves Files search and folder
+00:10 +126: test/release_blockers_test.dart: sharing requires privacy consent and exposes stop sharing
+00:10 +127: test/release_blockers_test.dart: sharing requires privacy consent and exposes stop sharing
+00:10 +128: test/release_blockers_test.dart: sharing requires privacy consent and exposes stop sharing
+00:11 +129: test/release_blockers_test.dart: sharing requires privacy consent and exposes stop sharing
+00:11 +130: test/release_blockers_test.dart: sharing requires privacy consent and exposes stop sharing
+00:11 +131: test/release_blockers_test.dart: sharing requires privacy consent and exposes stop sharing
+00:11 +132: test/release_blockers_test.dart: sharing requires privacy consent and exposes stop sharing
+00:11 +133: test/release_blockers_test.dart: sharing requires privacy consent and exposes stop sharing
+00:11 +134: test/home_navigation_test.dart: frosted dock preserves last file reachability and yields to keyboard
+00:11 +135: test/home_navigation_test.dart: frosted dock preserves last file reachability and yields to keyboard
+00:12 +136: test/release_blockers_test.dart: session menu Stop sharing waits for the confirm sheet
+00:12 +137: test/release_blockers_test.dart: session menu Stop sharing waits for the confirm sheet
+00:12 +138: test/release_blockers_test.dart: session menu Stop sharing waits for the confirm sheet
+00:12 +139: test/release_blockers_test.dart: session menu Stop sharing waits for the confirm sheet
+00:12 +140: test/release_blockers_test.dart: session menu Stop sharing waits for the confirm sheet
+00:12 +141: test/release_blockers_test.dart: session menu Stop sharing waits for the confirm sheet
+00:12 +142: test/release_blockers_test.dart: session menu Stop sharing waits for the confirm sheet
+00:12 +143: test/home_navigation_test.dart: one pending badge, on the Inbox destination
+00:12 +144: test/home_navigation_test.dart: one pending badge, on the Inbox destination
+00:12 +145: test/release_blockers_test.dart: /unshare waits for the confirm sheet
+00:12 +146: test/release_blockers_test.dart: /unshare waits for the confirm sheet
+00:12 +147: test/release_blockers_test.dart: /unshare waits for the confirm sheet
+00:12 +148: test/release_blockers_test.dart: /unshare waits for the confirm sheet
+00:13 +149: test/release_blockers_test.dart: /unshare waits for the confirm sheet
+00:13 +150: test/release_blockers_test.dart: /unshare waits for the confirm sheet
+00:13 +151: test/release_blockers_test.dart: /unshare waits for the confirm sheet
+00:13 +152: test/home_navigation_test.dart: cold start opens where the person is needed something waiting: Inbox, on the request itself
+00:13 +153: test/projects_screen_test.dart: OpenCode inside the app its projects are listed and open with one tap
+00:13 +154: test/release_blockers_test.dart: question sheet keeps actions reachable with keyboard and 2x text
+00:13 +155: test/home_navigation_test.dart: cold start opens where the person is needed the first read of pending requests decides, once
+00:13 +156: test/home_navigation_test.dart: cold start opens where the person is needed the first read of pending requests decides, once
+00:13 +157: test/home_navigation_test.dart: cold start opens where the person is needed the first read of pending requests decides, once
+00:13 +158: test/release_blockers_test.dart: compact composer shows one slash result when height allows
+00:13 +159: test/projects_screen_test.dart: OpenCode inside the app a name that already exists just opens it
+00:13 +160: test/home_navigation_test.dart: cold start opens where the person is needed a read that finds nothing leaves Work, and a late request does not move the person
+00:13 +161: test/release_blockers_test.dart: full-screen prompt editor fits a 320dp phone at 2x text
+00:13 +162: test/projects_screen_test.dart: OpenCode inside the app a typed path that does not exist offers Create it
+00:13 +163: test/home_navigation_test.dart: cold start opens where the person is needed picking a tab during the read is final
+00:14 +164: test/home_navigation_test.dart: cold start opens where the person is needed picking a tab during the read is final
+00:14 +165: test/projects_screen_test.dart: OpenCode inside the app Create a new folder makes it inside the app
+00:14 +166: test/release_blockers_test.dart: tool expansion has 48dp target and reduced-motion semantics
+00:14 +167: test/home_navigation_test.dart: cold start opens where the person is needed an explicit destination is respected
+00:14 +168: test/release_blockers_test.dart: bundled privacy policy and open source notices render in app
+00:14 +169: test/release_blockers_test.dart: bundled privacy policy and open source notices render in app
+00:14 +170: test/release_blockers_test.dart: bundled privacy policy and open source notices render in app
+00:14 +171: test/release_blockers_test.dart: bundled privacy policy and open source notices render in app
+00:14 +172: test/release_blockers_test.dart: bundled privacy policy and open source notices render in app
+00:15 +173: test/release_blockers_test.dart: bundled privacy policy and open source notices render in app
+00:15 +174: test/release_blockers_test.dart: bundled privacy policy and open source notices render in app
+00:15 +175: test/release_blockers_test.dart: offline banner states that displayed data may be stale
+00:16 +176: All tests passed!

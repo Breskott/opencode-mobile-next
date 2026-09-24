@@ -1330,11 +1330,18 @@ class SdkProductRepository extends ProductRepository
   @override
   Future<void> removeTerminal(String id) =>
       _guard('Could not stop the terminal', () async {
-        await _client.getPtyApi().ptyRemove(
-          ptyID: id,
-          directory: _directory,
-          workspace: _workspace,
-        );
+        try {
+          await _client.getPtyApi().ptyRemove(
+            ptyID: id,
+            directory: _directory,
+            workspace: _workspace,
+          );
+        } on sdk.OpenCodeApiException catch (error) {
+          // Already gone (the shell exited, or another client closed it):
+          // stopping it is done, not an error to show.
+          if (error.statusCode == 404) return;
+          rethrow;
+        }
       });
 
   @override

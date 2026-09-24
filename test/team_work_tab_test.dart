@@ -448,12 +448,12 @@ void main() {
     // Blocked: waits on the open Sync engine, not on the done Storage.
     expect(
       tester.widget<Text>(key('team-run-work-detail-w-blocked')).data,
-      'Waits on 1 item · 3h ago',
+      'Waits on 1 step · 3h ago',
     );
     // Needs input: the agent on it is the owner.
     expect(
       tester.widget<Text>(key('team-run-work-detail-w-input')).data,
-      'Waits on 1 item · 3h ago',
+      'Waits on 1 step · 3h ago',
     );
     expect(
       find.descendant(

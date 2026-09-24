@@ -237,16 +237,16 @@ class _NotificationsSettingsScreenState
       ),
       _RowDetail(copy.notifyQuietDetail),
       if (rules.quietEnabled) ...[
-        ListTile(
+        KitRow(
           key: const ValueKey('notify-quiet-start'),
-          title: Text(copy.monitorQuietStart),
-          subtitle: Text(_clock(rules.quietStart!)),
+          title: copy.monitorQuietStart,
+          supporting: TextSpan(text: _clock(rules.quietStart!)),
           onTap: _saving ? null : () => _quietTime(true, rules),
         ),
-        ListTile(
+        KitRow(
           key: const ValueKey('notify-quiet-end'),
-          title: Text(copy.monitorQuietEnd),
-          subtitle: Text(_clock(rules.quietEnd!)),
+          title: copy.monitorQuietEnd,
+          supporting: TextSpan(text: _clock(rules.quietEnd!)),
           onTap: _saving ? null : () => _quietTime(false, rules),
         ),
       ],
@@ -268,26 +268,32 @@ class _NotificationsSettingsScreenState
       ),
       _RowDetail(copy.e7SettingsUi26),
       if (controller.keepLiveInBackground)
-        ListTile(
+        KitRow(
           key: const ValueKey('background-battery-row'),
-          leading: Icon(
+          leading: KitRow.icon(
+            context,
             live.batteryOptimizationIgnored
                 ? AppIconography.batteryCharging
                 : AppIconography.batteryWarning,
           ),
-          title: Text(
-            live.batteryOptimizationIgnored
-                ? copy.e7SettingsUi27
-                : copy.e7SettingsUi28,
-          ),
-          subtitle: Text(
-            live.batteryOptimizationIgnored
+          title: live.batteryOptimizationIgnored
+              ? copy.e7SettingsUi27
+              : copy.e7SettingsUi28,
+          supporting: TextSpan(
+            text: live.batteryOptimizationIgnored
                 ? copy.e7SettingsUi29
                 : copy.e7SettingsUi30,
           ),
-          trailing: live.batteryOptimizationIgnored
-              ? const Icon(AppIconography.check)
-              : const Icon(AppIconography.externalLink),
+          supportingMaxLines: 2,
+          trailing: SizedBox.square(
+            dimension: 48,
+            child: Icon(
+              live.batteryOptimizationIgnored
+                  ? AppIconography.check
+                  : AppIconography.externalLink,
+              size: 20,
+            ),
+          ),
           onTap: live.batteryOptimizationIgnored
               ? null
               : () async {
@@ -372,14 +378,12 @@ class _NotificationsSettingsScreenState
                 controller.backgroundLive.stoppedByAndroidTimeout)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Card(
+                child: KitNotice(
                   key: const ValueKey('background-timeout-notice'),
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  child: ListTile(
-                    leading: const Icon(Icons.timer_off_outlined),
-                    title: Text(copy.e7SettingsUi23),
-                    subtitle: Text(copy.e7SettingsUi24),
-                  ),
+                  tone: AppStatusTone.attention,
+                  icon: Icons.timer_off_outlined,
+                  title: copy.e7SettingsUi23,
+                  message: copy.e7SettingsUi24,
                 ),
               ),
             for (final (slug, title, rows) in sections)
@@ -525,13 +529,20 @@ class _BackgroundStatusRow extends StatelessWidget {
         ? theme.colorScheme.error
         : running
         ? AppTheme.successOf(theme)
-        : AppTheme.mutedOf(theme);
-    return ListTile(
+        : null;
+    // The state is the tinted icon and the words (§6), not a coloured title.
+    return KitRow(
       key: const ValueKey('background-status-row'),
-      leading: Icon(icon, color: color),
-      title: Text(title, style: TextStyle(color: color)),
-      subtitle: Text(_settingsCopy(context).e7SettingsUi34),
-      trailing: stopped ? const Icon(AppIconography.retry) : null,
+      leading: KitRow.icon(context, icon, color: color),
+      title: title,
+      supporting: TextSpan(text: _settingsCopy(context).e7SettingsUi34),
+      supportingMaxLines: 2,
+      trailing: stopped
+          ? const SizedBox.square(
+              dimension: 48,
+              child: Icon(AppIconography.retry, size: 20),
+            )
+          : null,
       onTap: stopped ? onRestart : null,
     );
   }

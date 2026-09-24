@@ -1,148 +1,10 @@
 part of '../chat_screen.dart';
 
-/// Inline attention surface pinned directly above the composer. It replaces
-/// the auto-opened, non-dismissible permission sheet: a request arriving
+/// The attention surface pinned directly above the composer, drawn with the
+/// kit's [KitRequestCard] (design standard §2, §3). It replaces the
+/// auto-opened, non-dismissible permission sheet: a request arriving
 /// mid-sentence no longer steals the keyboard. One card shows at a time
 /// (oldest request first); the full sheet stays one tap away behind Review.
-class _AttentionCard extends StatelessWidget {
-  const _AttentionCard({
-    required this.icon,
-    required this.title,
-    required this.announcement,
-    this.summary,
-    this.detail,
-    this.primary,
-    this.secondary,
-    this.accent,
-    this.minHeight = 72,
-    this.body,
-  });
-
-  final IconData icon;
-  final String title;
-
-  /// Optional content between the header and the buttons — the question
-  /// card puts its option rows here so every flavour shares one frame.
-  final Widget? body;
-
-  /// Icon and border tint; defaults to the primary colour. The retry banner
-  /// passes the attention tone so it reads as a wait, not an ask.
-  final Color? accent;
-
-  /// Minimum card height; the permission card keeps 72 so its two buttons
-  /// never crowd, the slimmer retry banner passes 0.
-  final double minHeight;
-
-  /// Read by TalkBack when the card appears, e.g. "Permission needed: Run a
-  /// shell command". The visible title stays a plain [Text] for tests and
-  /// for sighted readers.
-  final String announcement;
-  final String? summary;
-  final String? detail;
-  final Widget? primary;
-  final Widget? secondary;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final tint = accent ?? scheme.primary;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 860),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 12, 2),
-          child: Container(
-            constraints: BoxConstraints(minHeight: minHeight),
-            padding: const EdgeInsetsDirectional.fromSTEB(14, 12, 12, 10),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-              border: Border.all(color: tint.withValues(alpha: .45)),
-              boxShadow: AppTheme.raised(theme),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Icon(icon, color: tint),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Semantics(
-                            container: true,
-                            liveRegion: true,
-                            label: announcement,
-                            excludeSemantics: true,
-                            child: Text(
-                              title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleSmall,
-                            ),
-                          ),
-                          if (summary case final summary?
-                              when summary.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Text(
-                                summary,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontFamily: AppTheme.monoFamily,
-                                  fontSize: AppTheme.codeFontSize,
-                                ),
-                              ),
-                            ),
-                          if (detail case final detail? when detail.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Text(
-                                detail,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: AppTheme.mutedOf(theme),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                if (body case final body?)
-                  Padding(padding: const EdgeInsets.only(top: 8), child: body),
-                if (primary != null || secondary != null) ...[
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      alignment: WrapAlignment.end,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [?secondary, ?primary],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// Permission requests first open their complete scope and available preview.
 /// Arriving requests never steal focus or authorize work from the summary.
@@ -164,7 +26,7 @@ class _PermissionAttentionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = permissionRequestTitle(permission.permission);
-    return _AttentionCard(
+    return KitRequestCard(
       icon: permissionActionIcon(permission.permission),
       title: title,
       announcement: _chatL10n(context).chatUiPermissionNeeded(title),
@@ -174,17 +36,17 @@ class _PermissionAttentionCard extends StatelessWidget {
       detail: autoApprovalFailed
           ? _chatL10n(context).approvalsUiFailedDetail
           : permission.message,
-      primary: FilledButton.icon(
+      primary: KitAction(
         key: const Key('permission-card-review'),
         onPressed: onReview,
-        icon: const Icon(AppIconography.checklist, size: 18),
-        label: Text(_chatL10n(context).reviewTitle),
+        icon: AppIconography.checklist,
+        label: _chatL10n(context).reviewTitle,
       ),
     );
   }
 }
 
-/// The question flavour of [_AttentionCard]: the prompt header and question,
+/// The question flavour of the request card: the prompt header and question,
 /// every choice as a tappable option row, the free-text field when the
 /// prompt accepts one, and More (opens the full sheet). A single-select
 /// prompt answers on tap; multi-select and two-prompt questions collect
@@ -294,14 +156,15 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
     final title = first?.title.trim().isNotEmpty == true
         ? first!.title.trim()
         : _chatL10n(context).chatUiOpenCodeNeedsInput;
-    final more = TextButton(
+    // The full sheet: a rare path, so a text button under the answer.
+    final more = KitAction(
       key: const Key('question-card-more'),
       onPressed: widget.replying ? null : widget.onMore,
-      child: Text(_chatL10n(context).chatUiMore),
+      label: _chatL10n(context).chatUiMore,
     );
     if (first == null || questionPrefersSheet(widget.question)) {
       final count = _prompts.length;
-      return _AttentionCard(
+      return KitRequestCard(
         icon: AppIconography.question,
         title: title,
         announcement: _chatL10n(context).chatUiQuestionLabel(title),
@@ -310,44 +173,35 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
             : count > 1
             ? _chatL10n(context).chatUiQuestionsSummary(first.question, count)
             : first.question,
-        primary: FilledButton(
+        primary: KitAction(
           key: const Key('question-card-answer'),
           onPressed: widget.replying ? null : widget.onMore,
-          child: Text(_chatL10n(context).returnBriefAnswer),
+          label: _chatL10n(context).returnBriefAnswer,
         ),
       );
     }
 
     final sending = widget.replying;
-    // Send earns its place only when a tap cannot be the whole answer.
+    // Send earns its place only when a tap cannot be the whole answer; while
+    // the answer is on its way the same button says so (its own tap in
+    // flight), and the choices above are held.
     final showSend = !_answersOnTap || _hasCustomText;
-    final Widget primary = sending
-        ? Row(
+    final KitAction? primary = sending
+        ? KitAction(
             key: const Key('question-card-sending'),
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox.square(
-                dimension: 14,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _chatL10n(context).queuedSending,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                ),
-              ),
-            ],
+            onPressed: null,
+            working: true,
+            label: _chatL10n(context).queuedSending,
           )
         : showSend
-        ? FilledButton(
+        ? KitAction(
             key: const Key('question-card-send'),
             onPressed: _complete ? _send : null,
-            child: Text(_chatL10n(context).chatUiSend),
+            label: _chatL10n(context).chatUiSend,
           )
-        : more;
+        : null;
 
-    return _AttentionCard(
+    return KitRequestCard(
       icon: AppIconography.question,
       title: title,
       announcement: _chatL10n(context).chatUiQuestionLabel(title),
@@ -400,8 +254,8 @@ class _QuestionAttentionCardState extends State<_QuestionAttentionCard> {
           ],
         ],
       ),
-      secondary: identical(primary, more) ? null : more,
       primary: primary,
+      tertiary: [more],
     );
   }
 }
@@ -446,7 +300,7 @@ String _countdown(Duration d) {
   return '$minutes:$seconds';
 }
 
-/// The provider-retry flavour of [_AttentionCard]: a slim banner naming the
+/// The provider-retry flavour of the request card: a slim banner naming the
 /// attempt and counting down to the next one, the server's own words when
 /// it sent any, and Stop wired to the same abort as the app-bar button.
 class _RetryAttentionCard extends StatelessWidget {
@@ -456,7 +310,6 @@ class _RetryAttentionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final title = retryBannerHeadline(retry, l10n: _chatL10n(context));
     final raw = retry.message?.trim();
     // The reason in plain words. A rate limit is already the title.
@@ -465,13 +318,43 @@ class _RetryAttentionCard extends StatelessWidget {
         : classifyAgentError(raw) == AgentErrorCause.rateLimited
         ? null
         : agentErrorWords(raw, _chatL10n(context)).headline;
-    return _AttentionCard(
+    return KitRequestCard(
       icon: AppIcons.retry,
-      accent: AppTheme.statusColor(theme, AppStatusTone.attention),
-      minHeight: 0,
+      tone: AppStatusTone.attention,
       title: title,
       announcement: title,
       detail: message == null || message.isEmpty ? null : message,
+    );
+  }
+}
+
+/// The form flavour of the request card, for a pending form of the open
+/// session (design doc §2): the form's title, its question count, and
+/// Answer, which opens the shared form renderer.
+class _FormRequestCard extends StatelessWidget {
+  const _FormRequestCard({
+    super.key,
+    required this.form,
+    required this.onAnswer,
+  });
+
+  final Api2FormInfo form;
+  final VoidCallback onAnswer;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = _chatL10n(context);
+    final title = form.title ?? l10n.chatUiInputRequested;
+    return KitRequestCard(
+      icon: AppIconography.checklist,
+      title: title,
+      announcement: title,
+      detail: l10n.chatUiQuestionCount(form.fields.length),
+      primary: KitAction(
+        key: ValueKey('form-request-answer-${form.id}'),
+        onPressed: onAnswer,
+        label: l10n.returnBriefAnswer,
+      ),
     );
   }
 }

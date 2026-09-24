@@ -19,6 +19,7 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/merge_section.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -378,8 +379,7 @@ void main() {
   bool enabled(WidgetTester tester, String name) {
     final widget = tester.widget(key(name));
     return switch (widget) {
-      FilledButton() => widget.onPressed != null,
-      OutlinedButton() => widget.onPressed != null,
+      KitButton() => widget.onPressed != null,
       _ => throw StateError('not a button: $widget'),
     };
   }
@@ -410,16 +410,28 @@ void main() {
       );
     });
 
-    testWidgets('present once every item is done or review-ready, at the '
-        'end of the Overview', (tester) async {
+    testWidgets('present once every item is done or review-ready, in the '
+        'Overview before the steps and Details', (tester) async {
       final (controller, gateway) = await boot();
       await pumpRun(tester, controller);
       expect(key('team-merge-section'), findsOneWidget);
       expect(gateway.readinessReads, 1);
+      // The redesigned Overview: what needs the person, then the merge,
+      // then the steps; the numbers stay last, under Details.
       final overview = find.byKey(const ValueKey('team-run-overview'));
       final list = tester.widget<ListView>(overview);
-      final delegate = list.childrenDelegate as SliverChildListDelegate;
-      expect(delegate.children.last, isA<TeamMergeSection>());
+      final children =
+          (list.childrenDelegate as SliverChildListDelegate).children;
+      bool holdsMerge(Widget w) =>
+          w is TeamMergeSection ||
+          (w is Padding && w.child is TeamMergeSection);
+      final merge = children.indexWhere(holdsMerge);
+      final details = children.indexWhere(
+        (c) => c.key == const ValueKey('team-run-summary'),
+      );
+      expect(merge, isNonNegative);
+      expect(details, children.length - 1, reason: 'Details stays last');
+      expect(merge, lessThan(details));
     });
 
     testWidgets('Refresh reads the readiness again', (tester) async {
@@ -437,7 +449,7 @@ void main() {
     testWidgets('every line renders with ✓ and the files line', (tester) async {
       final (controller, _) = await boot();
       await pumpRun(tester, controller);
-      expect(textOf(tester, 'team-merge-title'), 'READY TO MERGE');
+      expect(textOf(tester, 'team-merge-title'), 'Ready to merge');
       expect(
         textOf(tester, 'team-merge-request'),
         '· merge request $_requestId',
@@ -484,7 +496,7 @@ void main() {
         ),
       );
       await pumpRun(tester, controller);
-      expect(textOf(tester, 'team-merge-title'), 'NOT READY TO MERGE');
+      expect(textOf(tester, 'team-merge-title'), 'Not ready to merge');
       expect(enabled(tester, 'team-merge-merge'), isFalse);
       expect(
         textOf(tester, 'team-merge-disabled-reason'),
@@ -547,7 +559,7 @@ void main() {
         ),
       );
       await pumpRun(tester, controller);
-      expect(textOf(tester, 'team-merge-title'), 'READY TO MERGE');
+      expect(textOf(tester, 'team-merge-title'), 'Ready to merge');
       expect(enabled(tester, 'team-merge-merge'), isFalse);
       expect(
         textOf(tester, 'team-merge-boundary'),
@@ -688,7 +700,7 @@ void main() {
         textOf(tester, 'team-merge-receipt'),
         'Merged into main · c02e375',
       );
-      expect(textOf(tester, 'team-merge-title'), 'MERGED');
+      expect(textOf(tester, 'team-merge-title'), 'Merged');
       expect(enabled(tester, 'team-merge-merge'), isFalse);
       expect(gateway.readinessReads, 2);
     });
@@ -778,7 +790,7 @@ void main() {
         readiness: _ready(mergeCommit: 'abcdef0123456789', branches: const []),
       );
       await pumpRun(tester, controller);
-      expect(textOf(tester, 'team-merge-title'), 'MERGED');
+      expect(textOf(tester, 'team-merge-title'), 'Merged');
       expect(textOf(tester, 'team-merge-files'), 'Already on main');
       expect(
         textOf(tester, 'team-merge-receipt'),
@@ -965,8 +977,13 @@ void main() {
       for (final word in ['Force', 'Reset', 'Delete', 'worktree']) {
         expect(find.textContaining(word), findsNothing, reason: word);
       }
-      expect(find.byType(FilledButton), findsOneWidget);
-      expect(find.byType(OutlinedButton), findsNWidgets(2));
+      // Design standard §2: the section's three buttons are one kit block
+      // (Merge primary, Approve secondary, Review changes tertiary).
+      final section = key('team-merge-section');
+      expect(
+        find.descendant(of: section, matching: find.byType(KitButton)),
+        findsNWidgets(3),
+      );
     });
   });
 

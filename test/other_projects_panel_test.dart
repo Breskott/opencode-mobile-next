@@ -104,11 +104,16 @@ void main() {
       tester,
       recents: const [ProfileLocation(directory: '/work/app')],
     );
-    expect(find.byKey(const Key('recent-projects-strip')), findsNothing);
-    expect(find.text('In other projects'), findsNothing);
+    expect(find.byKey(const Key('other-projects-panel')), findsNothing);
+    expect(find.text('Other projects'), findsNothing);
   });
 
-  testWidgets('recent projects are one tap away and show what runs there', (
+  Finder row(String directory) =>
+      find.byKey(ValueKey('other-project-$directory'));
+  Finder inRow(String directory, String text) =>
+      find.descendant(of: row(directory), matching: find.textContaining(text));
+
+  testWidgets('each other project is one row that says what runs there', (
     tester,
   ) async {
     final controller = await _pump(
@@ -123,21 +128,23 @@ void main() {
         _conversation('s2', 'Tidy css', '/work/site'),
       ],
     );
-    // The current project is the header's job, not a chip.
-    expect(find.text('app'), findsNothing);
-    final strip = find.byKey(const Key('recent-projects-strip'));
-    Finder chip(String label) =>
-        find.descendant(of: strip, matching: find.text(label));
-    expect(chip('FinanceHub3 · 1'), findsOneWidget);
-    expect(chip('site'), findsOneWidget);
+    // The current project is the header's job, not a row.
+    expect(row('/work/app'), findsNothing);
+    expect(find.text('Other projects'), findsOneWidget);
+    expect(inRow('/work/FinanceHub3', 'FinanceHub3'), findsOneWidget);
+    expect(inRow('/work/FinanceHub3', 'Running · Fix offers'), findsOneWidget);
+    // Nothing live in site: its row names no conversation.
+    expect(find.textContaining('Tidy css'), findsNothing);
+    // Each project is named once on the whole panel.
+    expect(find.textContaining('site'), findsOneWidget);
 
-    await tester.tap(chip('site'));
+    await tester.tap(find.text('site'));
     await tester.pump();
     expect(controller.switched, ['/work/site']);
   });
 
-  testWidgets('conversations elsewhere are listed, running first in words, '
-      'and open in their own project', (tester) async {
+  testWidgets('the trailing button opens the live conversation in its own '
+      'project', (tester) async {
     final controller = await _pump(
       tester,
       elsewhere: [
@@ -145,14 +152,61 @@ void main() {
         _conversation('s2', 'Tidy css', '/work/site'),
       ],
     );
-    expect(find.text('In other projects'), findsOneWidget);
-    expect(find.text('FinanceHub3 · Running'), findsOneWidget);
-    expect(find.text('site'), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('elsewhere-s1')));
+    expect(
+      find.byKey(const ValueKey('other-project-open-/work/site')),
+      findsNothing,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('other-project-open-/work/FinanceHub3')),
+    );
     await tester.pumpAndSettle();
     expect(controller.opened, ['/work/FinanceHub3']);
     expect(find.text('route /chat/s1'), findsOneWidget);
+  });
+
+  testWidgets('at most three rows, then All projects; needs you comes first', (
+    tester,
+  ) async {
+    final opened = <String>[];
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final controller = _Controller(ProfileStore(prefs: prefs))
+      ..status = StreamStatus.connected
+      ..directory = '/work/app'
+      ..recents = [
+        for (final name in ['app', 'a', 'b', 'c', 'd'])
+          ProfileLocation(directory: '/work/$name'),
+      ];
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: OtherProjectsPanel(
+            controller: controller,
+            onAllProjects: () => opened.add('all'),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('a'), findsOneWidget);
+    expect(find.text('c'), findsOneWidget);
+    expect(find.text('d'), findsNothing);
+    controller.elsewhereAttention.handle(
+      EventEnvelope(
+        type: 'question.asked',
+        directory: '/work/d',
+        properties: const {'id': 'q1', 'sessionID': 's9'},
+      ),
+    );
+    await tester.pump();
+    // Stuck on the person: it moves up into the three shown.
+    expect(inRow('/work/d', 'Needs you'), findsOneWidget);
+    expect(find.text('c'), findsNothing);
+    await tester.tap(find.text('All projects'));
+    expect(opened, ['all']);
   });
 
   testWidgets('a project where an agent is stopped on you says so, live', (
@@ -178,12 +232,12 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('FinanceHub3 · Needs you'), findsNWidgets(2));
+    expect(inRow('/work/FinanceHub3', 'Needs you · Fix offers'), findsOne);
     expect(controller.waitingElsewhereCount, 1);
     // The Inbox badge counts it.
     expect(controller.unifiedAttentionCount, 1);
 
-    // A project not on the strip yet earns a chip the moment it needs you.
+    // A project not listed yet earns a row the moment it needs you.
     controller.elsewhereAttention.handle(
       EventEnvelope(
         type: 'question.asked',
@@ -192,7 +246,7 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('site · Needs you'), findsOneWidget);
+    expect(inRow('/work/site', 'Needs you'), findsOneWidget);
 
     controller.elsewhereAttention.handle(
       EventEnvelope(
@@ -202,10 +256,10 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('FinanceHub3 · Needs you'), findsNothing);
+    expect(inRow('/work/FinanceHub3', 'Needs you'), findsNothing);
   });
 
-  testWidgets('a project can be taken off the strip', (tester) async {
+  testWidgets('a project can be taken off the list', (tester) async {
     final controller = await _pump(
       tester,
       recents: const [

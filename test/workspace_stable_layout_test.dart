@@ -244,7 +244,8 @@ void main() {
           tester.getBottomLeft(_isolated).dy,
           lessThanOrEqualTo(tester.getTopLeft(_primary).dy),
         );
-        expect(tester.getBottomLeft(_pill).dy, 900 - 6);
+        // The kit pins the block 8 dp above the shell's bottom inset.
+        expect(tester.getBottomLeft(_pill).dy, 900 - 8);
 
         // The end of the list clears the dock by the dock's real height.
         await tester.drag(

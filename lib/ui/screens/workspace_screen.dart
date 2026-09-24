@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../api/product_repository.dart';
+import '../../domain/return_brief.dart';
 import '../../domain/workspace_paths.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
@@ -18,20 +19,22 @@ import '../widgets/safety_confirms.dart';
 import '../widgets/nudge_card.dart';
 import '../widgets/other_servers_panel.dart';
 import '../widgets/other_projects_panel.dart';
-import '../widgets/product_states.dart';
+import '../kit/kit.dart';
+import '../widgets/product_states.dart' show productErrorText, showProductError;
 import '../widgets/relative_time.dart';
 import '../widgets/session_title.dart';
-import '../widgets/session_read_state.dart';
-import '../widgets/return_brief_panel.dart';
+import '../widgets/request_routes.dart';
 import '../widgets/session_inventory_footer.dart';
 import '../widgets/team_card.dart';
 import '../widgets/termux_phone_tools.dart';
+import '../widgets/work_status_line.dart';
 import '../../termux/bridge.dart';
 import 'global_sessions_screen.dart';
 import 'isolated_task_sheet.dart';
 import 'manage_project_screen.dart';
 import 'project_folder_actions.dart';
 import 'projects_screen.dart';
+import 'run_result_screen.dart';
 import 'settings_screen.dart';
 import 'team/team_home_screen.dart';
 import '../app_theme.dart';
@@ -39,7 +42,30 @@ import '../../domain/team_directories.dart';
 
 class WorkspaceScreen extends StatefulWidget {
   final ConnectionController controller;
-  const WorkspaceScreen({super.key, required this.controller});
+
+  /// The server is this phone's own (Termux or in the app): the status line
+  /// calls it "OpenCode on this phone" and offers [onRestartServer].
+  final bool serverOnThisPhone;
+
+  /// Restarts the phone's server and reconnects; null when this server
+  /// cannot be restarted from here.
+  final Future<void> Function()? onRestartServer;
+
+  const WorkspaceScreen({
+    super.key,
+    required this.controller,
+    this.serverOnThisPhone = false,
+    this.onRestartServer,
+  });
+
+  /// Test seam: replaces the phone's leftover-process watcher, so the status
+  /// line's "OpenCode has been busy" state can be shown without Termux.
+  @visibleForTesting
+  static Widget Function(
+    BuildContext context,
+    Widget Function(BuildContext context, WorkRunawayNotice? notice) builder,
+  )?
+  debugRunawayWatcher;
 
   /// The catalog project that owns [directory]: its root or a listed
   /// worktree first, then any project containing it. Shared with the Project
@@ -79,9 +105,30 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
   int _dataRefreshRevision = 0;
   final Set<String> _pendingArchive = {};
 
-  bool get _hasProjectDetails =>
-      widget.controller.capabilities.projectManagement &&
-      (_projects?.isNotEmpty == true || _selectedDirectory != null);
+  /// A project picked on a fresh connection is being opened.
+  bool _selectingInitial = false;
+
+  /// Opening the saved project was tried and left no folder open: the
+  /// folder chooser may show.
+  bool _restoreGaveUp = false;
+
+  /// The project folder that is about to open while none is open yet: the
+  /// saved one being restored, or the one picked for a fresh connection.
+  /// While it is set the header names it and the folder chooser stays away
+  /// (work-tab cleanup item 1: the chooser flashed during a restore).
+  String? get _pendingDirectory {
+    final controller = widget.controller;
+    if (controller.directory != null) return null;
+    if (_selectingInitial && _selectedDirectory != null) {
+      return _selectedDirectory;
+    }
+    if (_restoreGaveUp) return null;
+    return controller.savedProjectDirectory;
+  }
+
+  /// The folder the header names: the open one, else the one opening.
+  String? get _headerDirectory =>
+      widget.controller.directory ?? _pendingDirectory;
 
   @override
   void initState() {
@@ -90,6 +137,21 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     widget.controller.addListener(_changed);
     widget.controller.nudges.addListener(_nudgesChanged);
     _load();
+  }
+
+  @override
+  void didUpdateWidget(WorkspaceScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (identical(oldWidget.controller, widget.controller)) return;
+    // Another connection behind the same tab: listen to it and start over.
+    oldWidget.controller.removeListener(_changed);
+    oldWidget.controller.nudges.removeListener(_nudgesChanged);
+    widget.controller.addListener(_changed);
+    widget.controller.nudges.addListener(_nudgesChanged);
+    _dataRefreshRevision = widget.controller.dataRefreshRevision;
+    _restoreGaveUp = false;
+    _selectingInitial = false;
+    unawaited(_load());
   }
 
   void _nudgesChanged() {
@@ -176,16 +238,19 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       if (!mounted || generation != _loadGeneration) return;
       projects.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       var shouldSelectInitialLocation = false;
+      var shouldRestoreSaved = false;
       setState(() {
         _projects = projects;
-        if (projects.isEmpty) {
+        if (projects.isEmpty && widget.controller.directory != null) {
           _selectedProjectID = null;
           _selectedDirectory = widget.controller.directory;
           _selectedWorkspaceID = widget.controller.workspace;
           return;
         }
         final controllerDirectory = widget.controller.directory;
+        final saved = widget.controller.savedProjectDirectory;
         if (controllerDirectory != null) {
+          _restoreGaveUp = false;
           _selectedDirectory = controllerDirectory;
           _selectedWorkspaceID = widget.controller.workspace;
           final matching = WorkspaceScreen.projectForDirectory(
@@ -195,6 +260,16 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           // An unlisted explicit folder is still the active context. Never
           // label it with a different catalog project's name.
           _selectedProjectID = matching?.id;
+        } else if (saved != null && !_restoreGaveUp) {
+          // The person already has a project on this server: it is being
+          // restored (or is opened now), never replaced by another one.
+          _selectedDirectory = saved;
+          _selectedWorkspaceID = null;
+          _selectedProjectID = WorkspaceScreen.projectForDirectory(
+            projects,
+            saved,
+          )?.id;
+          shouldRestoreSaved = true;
         } else {
           // Only a real project folder is opened automatically. The server's
           // catch-all root and any home folder are skipped, so a fresh
@@ -222,14 +297,20 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
           _selectedDirectory = selected.directory;
           _selectedWorkspaceID = null;
           shouldSelectInitialLocation = true;
+          _selectingInitial = true;
         }
       });
       final selected = _selectedProject;
       if (shouldSelectInitialLocation && selected != null) {
-        await widget.controller.selectInitialLocation(
-          directory: _selectedDirectory ?? selected.directory,
-        );
+        try {
+          await widget.controller.selectInitialLocation(
+            directory: _selectedDirectory ?? selected.directory,
+          );
+        } finally {
+          if (mounted) setState(() => _selectingInitial = false);
+        }
       }
+      if (shouldRestoreSaved) await _restoreSaved();
     } catch (error) {
       if (mounted && generation == _loadGeneration) {
         setState(() => _projectError = productErrorText(error));
@@ -237,6 +318,23 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     }
     if (generation != _loadGeneration) return;
     await _loadWorkspaces();
+  }
+
+  /// Opens the saved project when the connection came up without it. When
+  /// connect is still restoring it there is nothing to do but wait; when the
+  /// attempt leaves no folder open, the folder chooser may show.
+  Future<void> _restoreSaved() async {
+    final controller = widget.controller;
+    if (controller.restoringSavedLocation) return;
+    try {
+      await controller.restoreSavedLocation();
+    } catch (_) {
+      // Reported through locationError; the chooser below is the way on.
+    }
+    if (!mounted) return;
+    if (controller.directory == null && !controller.restoringSavedLocation) {
+      setState(() => _restoreGaveUp = true);
+    }
   }
 
   Future<void> _loadWorkspaces() async {
@@ -376,6 +474,8 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     if (!capabilities.projectManagement || !capabilities.worktreeCreate) {
       return null;
     }
+    // Nothing starts before a project folder is open (or while it opens).
+    if (widget.controller.workspaceChoiceRequired) return null;
     if (_selectedWorkspaceID != null) return null;
     final project = _selectedProject;
     if (project == null || project.directory.trim().isEmpty) return null;
@@ -400,13 +500,17 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Project discovery and session inventory are independent. A pending or
-    // failed catalog must not hide conversations that the server can still
-    // list, or the route that finds sessions in other directories.
+    // The Work tab, top to bottom (work-tab cleanup, 2026-09-24): the
+    // project header from the first frame, one loading bar, at most one
+    // status line, what needs you, this project's conversations, the other
+    // projects once each, and New conversation docked below the list.
+    // Project discovery and session inventory are independent: a pending
+    // or failed catalog never hides conversations the server can list.
     // Rows swiped to Archive vanish immediately and come back on Undo; the
     // server call only happens once the snackbar has gone.
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    final sessions = widget.controller
+    final controller = widget.controller;
+    final sessions = controller
         .sortedSessions()
         .where((session) => !_pendingArchive.contains(session.id))
         .toList();
@@ -425,30 +529,41 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         .where(
           (session) =>
               !blockers.containsKey(session.id) &&
-              widget.controller.busySessions.contains(session.id),
+              controller.busySessions.contains(session.id),
         )
         .toList();
     final pinned = sessions
         .where(
           (session) =>
               !blockers.containsKey(session.id) &&
-              !widget.controller.busySessions.contains(session.id) &&
-              widget.controller.isSessionPinned(session.id),
+              !controller.busySessions.contains(session.id) &&
+              controller.isSessionPinned(session.id),
         )
         .toList();
     final recent = sessions
         .where(
           (session) =>
               !blockers.containsKey(session.id) &&
-              !widget.controller.busySessions.contains(session.id) &&
-              !widget.controller.isSessionPinned(session.id),
+              !controller.busySessions.contains(session.id) &&
+              !controller.isSessionPinned(session.id),
         )
         .toList();
-    final archived = widget.controller.archivedSessions();
-    final capabilities = widget.controller.capabilities;
-    final pinNudge = widget.controller.nudges.activeFor(
-      NudgeRegistry.workScope,
-    );
+    // A finished result nobody has looked at carries its mark in its own
+    // row; the separate "Unreviewed work" card is gone (item 5).
+    final acknowledged = controller.returnBriefAcknowledgement;
+    ReturnBriefRun? unreviewed(Session session) =>
+        blockers.containsKey(session.id)
+        ? null
+        : ReturnBrief.unreviewedRun(
+            session,
+            readStateKnown: controller.supportsSessionReadState,
+            isUnread: controller.isSessionUnread,
+            isBusy: controller.busySessions.contains,
+            ack: acknowledged,
+          );
+    final archived = controller.archivedSessions();
+    final capabilities = controller.capabilities;
+    final pinNudge = controller.nudges.activeFor(NudgeRegistry.workScope);
     _queuePinNudge(
       visible:
           TickerMode.valuesOf(context).enabled &&
@@ -456,22 +571,18 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       // Only with something to pin, a way to pin it, and no pin here yet:
       // someone who already pins has nothing to learn from the tip.
       canOffer:
-          widget.controller.canPinSessions &&
-          widget.controller.pinnedSessionIDs.isEmpty &&
+          controller.canPinSessions &&
+          controller.pinnedSessionIDs.isEmpty &&
           recent.isNotEmpty,
     );
-    final partial =
-        widget.controller.hasMoreSessions ||
-        widget.controller.sessionsLoading ||
-        widget.controller.sessionsError != null;
-    // Teach only when the list is known to be empty. A partial or failed
-    // load cannot claim "no conversations yet", and a row waiting out its
-    // Undo snackbar is hidden, not gone.
-    final nothingYet =
-        !partial &&
-        sessions.isEmpty &&
-        archived.isEmpty &&
-        _pendingArchive.isEmpty;
+
+    // A project is being restored (or picked for a fresh connection): the
+    // header names it and the chooser waits. The chooser only appears once
+    // that has finished and there really is no project (item 1).
+    final restoring =
+        capabilities.projectManagement &&
+        controller.workspaceChoiceRequired &&
+        _pendingDirectory != null;
 
     // No project folder yet (or an older build saved the server's home
     // folder): sessions cannot start until the user creates or opens one.
@@ -479,506 +590,463 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
     // not flash it first, and it keeps the server-wide session finder so
     // earlier conversations stay reachable.
     if (capabilities.projectManagement &&
-        widget.controller.workspaceChoiceRequired &&
+        controller.workspaceChoiceRequired &&
+        !restoring &&
         (_projects != null || _projectError != null)) {
-      return _WorkspaceFolderChooser(
-        notice: widget.controller.locationNotice,
-        projectError: _projectError,
-        canCreate: ProjectFolderActions.canCreate(widget.controller),
-        onCreate: _createProjectFolder,
-        onOpen: _openProjectFolder,
-        onBrowse: _openProjects,
-        onSearchAll: capabilities.globalSessionSearch ? _openAllSessions : null,
-        onRetry: _load,
+      // The chooser is a state of its own; a server that stops answering is
+      // still said above it, in the same one status line.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          WorkStatusLine(
+            controller: controller,
+            serverOnThisPhone: widget.serverOnThisPhone,
+            onRestartServer: widget.onRestartServer,
+          ),
+          Expanded(child: _chooser(capabilities)),
+        ],
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+    final partial =
+        controller.hasMoreSessions ||
+        controller.sessionsLoading ||
+        controller.sessionsError != null;
+    // Loading for the first time: nothing listed yet and something is on
+    // its way. Skeleton rows stand in, and no empty or "load more" text
+    // contradicts them (item 4).
+    final firstLoad =
+        sessions.isEmpty &&
+        _pendingArchive.isEmpty &&
+        controller.sessionsError == null &&
+        (restoring ||
+            controller.sessionsLoading ||
+            controller.locationLoading ||
+            controller.connectionLoading);
+    // One bar for everything loading the first time (item 3).
+    final loading =
+        firstLoad ||
+        restoring ||
+        (capabilities.projectManagement &&
+            _projects == null &&
+            _projectError == null) ||
+        controller.locationLoading ||
+        controller.connectionLoading;
+    // Teach only when the list is known to be empty. A partial or failed
+    // load cannot claim "no conversations yet", and a row waiting out its
+    // Undo snackbar is hidden, not gone.
+    final nothingYet =
+        !partial &&
+        !firstLoad &&
+        sessions.isEmpty &&
+        archived.isEmpty &&
+        _pendingArchive.isEmpty;
+    final showEmpty = recent.isEmpty && !partial && !firstLoad;
+    final headerDirectory = _headerDirectory;
+
+    Widget row(Session session, {bool busy = false, String? blocker}) =>
+        _SessionRow(
+          controller: controller,
+          session: session,
+          busy: busy,
+          blocker: blocker,
+          unreviewed: busy ? null : unreviewed(session),
+          onOpen: _openSession,
+          onAction: _sessionAction,
+          sharingAvailable: capabilities.sessionShare,
+          archiveAvailable: capabilities.sessionArchive,
+        );
+
+    return KitScreen(
+      header: [
         // Which project this is stays put while the list scrolls (UX plan
-        // 5.7): the switcher is the header, not a row to scroll back to. It
-        // is context, not a control panel: the name owns its row at every
-        // text size, and a single chevron opens the project sheet with the
-        // full folder path, switching, managing and the review-state caveat.
-        if (_hasProjectDetails)
+        // 5.7), and it is there from the first frame: the folder is known
+        // before the project list is (item 2). A single chevron opens the
+        // project sheet with the full folder path, switching and managing.
+        if (capabilities.projectManagement && headerDirectory != null)
           _ProjectHeader(
             key: const ValueKey('current-project-entry'),
             // The phone server's folder of projects is where it starts, not
             // a project: say a project is still to be chosen.
-            name:
-                _selectedDirectory == null ||
-                    _isPhoneProjectsRoot(_selectedDirectory!)
+            name: _isPhoneProjectsRoot(headerDirectory)
                 ? _l10n(context).e7WorkspaceChooseProject
-                : _selectedProject?.name ?? _basename(_selectedDirectory!),
+                : _projectName(headerDirectory),
             // With no project yet there is nothing to describe or manage:
             // go straight to the list, where creating one comes first.
-            onTap:
-                _selectedDirectory == null ||
-                    _isPhoneProjectsRoot(_selectedDirectory!)
+            onTap: _isPhoneProjectsRoot(headerDirectory)
                 ? _openProjects
                 : _openContextSheet,
           ),
         // Still context, not management: the conversation is running
         // somewhere other than the project root.
         if (capabilities.projectManagement && _hasExternalSessionDirectory)
-          ListTile(
+          KitRow(
             key: const ValueKey('active-session-directory'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            minLeadingWidth: 32,
-            horizontalTitleGap: 12,
-            leading: const SizedBox.square(
-              dimension: 32,
-              child: Icon(AppIconography.nested, size: 24),
-            ),
-            title: Text(_basename(_selectedDirectory!)),
-            subtitle: Text(
-              _l10n(context).e7WorkspaceActiveDirectory(_selectedDirectory!),
-              style: Theme.of(context).textTheme.bodySmall,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            leading: KitRow.icon(context, AppIconography.nested),
+            title: _basename(_selectedDirectory!),
+            supporting: TextSpan(
+              text: _l10n(
+                context,
+              ).e7WorkspaceActiveDirectory(_selectedDirectory!),
             ),
             onTap: () => _showDirectoryDetails(_selectedDirectory!),
           ),
         if (!capabilities.projectManagement &&
-            widget.controller.directory?.isNotEmpty == true)
-          ListTile(
+            controller.directory?.isNotEmpty == true)
+          KitRow(
             key: const ValueKey('restricted-directory-context'),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            minLeadingWidth: 32,
-            horizontalTitleGap: 12,
-            leading: const SizedBox.square(
-              dimension: 32,
-              child: Icon(AppIconography.files, size: 24),
-            ),
-            title: Text(_basename(widget.controller.directory!)),
-            subtitle: Text(
-              widget.controller.directory!,
-              textDirection: TextDirection.ltr,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            onTap: () => _showDirectoryDetails(widget.controller.directory!),
+            leading: KitRow.icon(context, AppIconography.files),
+            title: _basename(controller.directory!),
+            // A path reads left to right in any interface: isolate it.
+            supporting: TextSpan(text: '\u2066${controller.directory!}\u2069'),
+            onTap: () => _showDirectoryDetails(controller.directory!),
           ),
-        Expanded(
-          child: Stack(
-            children: [
-              RefreshIndicator(
-                onRefresh: _refreshWorkspace,
-                child: DesktopScrollbarArea(
-                  builder: (scrollController) => CustomScrollView(
-                    controller: scrollController,
-                    key: const PageStorageKey('workspace-scroll'),
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      // Notices and project-catalog states; the project itself is
-                      // the fixed header above.
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // The other projects in play: one tap to switch,
-                            // and what is going on in them.
-                            // The other agent on this phone (or any watched
-                            // server) that is working or waiting on you.
-                            OtherServersPanel(controller: widget.controller),
-                            OtherProjectsPanel(controller: widget.controller),
-                            if (widget.controller.locationNotice != null)
-                              ListTile(
-                                key: const ValueKey('location-recovery-notice'),
-                                dense: true,
-                                visualDensity: VisualDensity.compact,
-                                leading: const Icon(
-                                  AppIconography.info,
-                                  size: 18,
-                                ),
-                                title: Text(
-                                  widget.controller.locationNotice!,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                trailing: IconButton(
-                                  key: const ValueKey(
-                                    'location-recovery-dismiss',
-                                  ),
-                                  tooltip: l10n.workspaceDismissNotice,
-                                  onPressed:
-                                      widget.controller.dismissLocationNotice,
-                                  icon: const Icon(
-                                    AppIconography.close,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                            // The project catalog and session inventory are separate.
-                            // An empty catalog must not hide existing conversations,
-                            // inventory errors, or the server-wide session finder.
-                            if (capabilities.projectManagement &&
-                                _projects == null &&
-                                _projectError == null)
-                              // A transient state: the caption's search stays
-                              // reachable below, so no second search button here.
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Semantics(
-                                  label: _l10n(
-                                    context,
-                                  ).e7WorkspaceLoadingProjects,
-                                  child: const LinearProgressIndicator(),
-                                ),
-                              ),
-                            if (capabilities.projectManagement &&
-                                _projectError != null)
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Semantics(
-                                      liveRegion: true,
-                                      child: Text(
-                                        l10n.workspaceProjectListUnavailable,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.titleMedium,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(_projectError!),
-                                    const SizedBox(height: 4),
-                                    Text(l10n.workspaceProjectListFallback),
-                                    Wrap(
-                                      spacing: 8,
-                                      children: [
-                                        TextButton.icon(
-                                          onPressed: _load,
-                                          icon: const Icon(
-                                            AppIconography.retry,
-                                          ),
-                                          label: Text(
-                                            l10n.workspaceRetryProjects,
-                                          ),
-                                        ),
-                                        if (capabilities.globalSessionSearch)
-                                          TextButton.icon(
-                                            onPressed: _openAllSessions,
-                                            icon: const Icon(
-                                              AppIconography.searchList,
-                                            ),
-                                            label: Text(
-                                              l10n.workspaceSearchAllSessions,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            if (capabilities.projectManagement &&
-                                _projects?.isEmpty == true &&
-                                _selectedDirectory == null)
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: ProductInlineEmpty(
-                                  icon: Icons.folder_off_outlined,
-                                  title: _l10n(context).e7WorkspaceNoProjects,
-                                  message: capabilities.globalSessionSearch
-                                      ? _l10n(
-                                          context,
-                                        ).e7WorkspaceNoProjectsSearch
-                                      : _l10n(
-                                          context,
-                                        ).e7WorkspaceServerNoProjects,
-                                  actionLabel: capabilities.globalSessionSearch
-                                      ? _l10n(
-                                          context,
-                                        ).workspaceSearchAllSessions
-                                      : null,
-                                  onAction: capabilities.globalSessionSearch
-                                      ? _openAllSessions
-                                      : null,
-                                ),
-                              ),
-                            if (capabilities.projectManagement &&
-                                _workspaceError != null)
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  0,
-                                  16,
-                                  8,
-                                ),
-                                child: Text(
-                                  _workspaceError!,
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                ),
-                              ),
-                          ],
+      ],
+      // One bar for everything loading the first time (item 3).
+      loading: loading,
+      loadingLabel: l10n.workLoadingLabel,
+      body: RefreshIndicator(
+        onRefresh: _refreshWorkspace,
+        child: DesktopScrollbarArea(
+          builder: (scrollController) => CustomScrollView(
+            controller: scrollController,
+            key: const PageStorageKey('workspace-scroll'),
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // 1. At most one status line, and only with something to
+              // do (item 3, 6, 7).
+              SliverToBoxAdapter(child: _statusLine(context, l10n)),
+              if (capabilities.projectManagement &&
+                  _projects?.isEmpty == true &&
+                  headerDirectory == null)
+                SliverToBoxAdapter(
+                  child: KitStateView(
+                    size: KitStateSize.inline,
+                    liveRegion: false,
+                    icon: AppIconography.folders,
+                    title: _l10n(context).e7WorkspaceNoProjects,
+                    body: capabilities.globalSessionSearch
+                        ? _l10n(context).e7WorkspaceNoProjectsSearch
+                        : _l10n(context).e7WorkspaceServerNoProjects,
+                    tertiary: [
+                      if (capabilities.globalSessionSearch)
+                        KitAction(
+                          label: _l10n(context).workspaceSearchAllSessions,
+                          onPressed: _openAllSessions,
                         ),
-                      ),
-                      SliverToBoxAdapter(
-                        child: ReturnBriefPanel(
-                          controller: widget.controller,
-                          inventoryStatusInParent: true,
-                          unknownStatusInParent: _hasProjectDetails,
-                        ),
-                      ),
-                      // TEAM-305: a stray helper burning CPU on the phone server is
-                      // an attention item too; the line links to Running now.
-                      if (platformCapabilities.supportsTermux &&
-                          TermuxBridge.managesServerUrl(
-                            widget.controller.profile?.baseUrl,
-                          ))
-                        const SliverToBoxAdapter(child: TermuxAttentionLine()),
-                      // 2. Work waiting on the user, first: the persona's top job
-                      // is seeing what needs them, and a blocked run reads as
-                      // "Working" anywhere else.
-                      if (attention.isNotEmpty)
-                        SliverToBoxAdapter(
-                          child: SectionLabel(
-                            _l10n(context).e7WorkspaceNeedsYou,
-                            key: const ValueKey('workspace-needs-you'),
-                            trailing: Text('${attention.length}'),
-                          ),
-                        ),
-                      if (attention.isNotEmpty)
-                        SliverList.builder(
-                          itemCount: attention.length,
-                          itemBuilder: (context, index) => _SessionRow(
-                            controller: widget.controller,
-                            session: attention[index],
-                            busy: widget.controller.busySessions.contains(
-                              attention[index].id,
-                            ),
-                            blocker: blockers[attention[index].id],
-                            onOpen: _openSession,
-                            onAction: _sessionAction,
-                            sharingAvailable:
-                                widget.controller.capabilities.sessionShare,
-                            archiveAvailable:
-                                widget.controller.capabilities.sessionArchive,
-                          ),
-                        ),
-                      // 3. Running work, with its live state; then pins.
-                      if (active.isNotEmpty)
-                        SliverToBoxAdapter(
-                          child: SectionLabel(
-                            l10n.workRunning,
-                            key: const ValueKey('workspace-running'),
-                            trailing: Text('${active.length}'),
-                          ),
-                        ),
-                      if (active.isNotEmpty)
-                        SliverList.builder(
-                          itemCount: active.length,
-                          itemBuilder: (context, index) => _SessionRow(
-                            controller: widget.controller,
-                            session: active[index],
-                            busy: true,
-                            onOpen: _openSession,
-                            onAction: _sessionAction,
-                            sharingAvailable:
-                                widget.controller.capabilities.sessionShare,
-                            archiveAvailable:
-                                widget.controller.capabilities.sessionArchive,
-                          ),
-                        ),
-                      if (pinned.isNotEmpty)
-                        SliverToBoxAdapter(
-                          child: SectionLabel(
-                            l10n.sessionPinned,
-                            trailing: Text('${pinned.length}'),
-                          ),
-                        ),
-                      if (pinned.isNotEmpty)
-                        SliverList.builder(
-                          itemCount: pinned.length,
-                          itemBuilder: (context, index) => _SessionRow(
-                            controller: widget.controller,
-                            session: pinned[index],
-                            busy: widget.controller.busySessions.contains(
-                              pinned[index].id,
-                            ),
-                            onOpen: _openSession,
-                            onAction: _sessionAction,
-                            sharingAvailable:
-                                widget.controller.capabilities.sessionShare,
-                            archiveAvailable:
-                                widget.controller.capabilities.sessionArchive,
-                          ),
-                        ),
-                      // The pin tip sits on the list it is about.
-                      if (pinNudge != null)
-                        SliverToBoxAdapter(
-                          child: NudgeCard(
-                            id: pinNudge.id,
-                            icon: AppIconography.pin,
-                            message: l10n.nudgePin,
-                            actionLabel: l10n.e7GlossaryGotIt,
-                            dismissTooltip: l10n.nudgeDismiss,
-                            onAction: () => unawaited(
-                              widget.controller.nudges.dismiss(pinNudge.id),
-                            ),
-                            onDismiss: () => unawaited(
-                              widget.controller.nudges.dismiss(pinNudge.id),
-                            ),
-                          ),
-                        ),
-                      // 4. Recent sessions. Search stays a one-tap icon; the
-                      // occasional actions sit behind one labelled menu so the
-                      // caption keeps its width on a phone at large text.
-                      SliverToBoxAdapter(
-                        child: SectionLabel(
-                          _l10n(context).e7WorkspaceRecentSessions,
-                          trailing: _SectionActions(
-                            controller: widget.controller,
-                            onSearch: capabilities.globalSessionSearch
-                                ? _openAllSessions
-                                : null,
-                            onOpenBackgroundSettings:
-                                platformCapabilities.supportsBackgroundService
-                                ? _openBackgroundSettings
-                                : null,
-                          ),
-                        ),
-                      ),
-                      if (recent.isEmpty)
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 26),
-                            child: ProductInlineEmpty(
-                              key: ValueKey(
-                                nothingYet
-                                    ? 'work-empty-teaching'
-                                    : 'work-empty-recent',
-                              ),
-                              icon: AppIconography.chat,
-                              title: partial
-                                  ? l10n.sessionsNoLoadedRecent
-                                  : nothingYet
-                                  ? l10n.emptyTeachWorkTitle
-                                  : pinned.isNotEmpty
-                                  ? l10n.sessionsNoOtherRecent
-                                  : _l10n(context).e7WorkspaceNoRecent,
-                              message: partial
-                                  ? _l10n(context).e7WorkspaceLoadedRecentEmpty
-                                  : nothingYet
-                                  ? l10n.emptyTeachWorkMessage
-                                  : widget.controller.directory == null
-                                  ? _l10n(
-                                      context,
-                                    ).e7WorkspaceChooseFolderToStart
-                                  : _l10n(context).e7WorkspaceStartInWorkspace,
-                              // No button here: the docked New conversation
-                              // is the one action that fills this list, and
-                              // an empty Work tab keeps exactly one of them
-                              // (workspace_hierarchy_test pins that).
-                            ),
-                          ),
-                        )
-                      else
-                        SliverList.builder(
-                          itemCount: recent.length,
-                          itemBuilder: (context, index) => _SessionRow(
-                            controller: widget.controller,
-                            session: recent[index],
-                            busy: false,
-                            onOpen: _openSession,
-                            onAction: _sessionAction,
-                            sharingAvailable:
-                                widget.controller.capabilities.sessionShare,
-                            archiveAvailable:
-                                widget.controller.capabilities.sessionArchive,
-                          ),
-                        ),
-                      SliverToBoxAdapter(
-                        child: SessionInventoryFooter(
-                          controller: widget.controller,
-                        ),
-                      ),
-                      // The AI Team plugin's card follows the person's own
-                      // conversations (UX plan 5.5, 5.7); what its agents need from
-                      // the person already reaches Inbox. It is not in the tree at
-                      // all while the profile has no plugin config (02 §2.3 N).
-                      if (widget.controller.orchestration case final team?)
-                        SliverToBoxAdapter(
-                          child: TeamCard(
-                            controller: team,
-                            onOpen: () => _openTeamHome(team),
-                          ),
-                        ),
-                      if (archived.isNotEmpty || partial)
-                        SliverToBoxAdapter(
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                            ),
-                            minLeadingWidth: 32,
-                            horizontalTitleGap: 12,
-                            leading: const SizedBox.square(
-                              dimension: 32,
-                              child: Icon(AppIconography.archive, size: 24),
-                            ),
-                            title: Text(
-                              _l10n(context).e7WorkspaceArchivedSessions,
-                            ),
-                            // The footer owns partial-inventory truth. A count here
-                            // would suggest every archived session was known.
-                            subtitle: partial
-                                ? null
-                                : Text(
-                                    _l10n(
-                                      context,
-                                    ).e7WorkspaceArchivedCount(archived.length),
-                                  ),
-                            trailing: const Icon(AppIconography.chevronRight),
-                            onTap: _showArchived,
-                          ),
-                        ),
-                      // The scroll end clears the docked actions by their real
-                      // height: a fixed 96 hid the last row once the pill stacked
-                      // or its label wrapped at large text.
-                      SliverLayoutBuilder(
-                        builder: (context, constraints) => SliverToBoxAdapter(
-                          child: SizedBox(
-                            key: const ValueKey('workspace-scroll-end'),
-                            height:
-                                36 +
-                                _QuickAskPill.dockInset(context) +
-                                _QuickAskPill.metrics(
-                                  context,
-                                  width: constraints.crossAxisExtent - 32,
-                                  hasIsolated: _isolatedTaskProject != null,
-                                ).height,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
+              // 2. Work waiting on the user, first: the persona's top
+              // job is seeing what needs them, and a blocked run reads
+              // as "Working" anywhere else.
+              if (attention.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: SectionLabel(
+                    _l10n(context).e7WorkspaceNeedsYou,
+                    key: const ValueKey('workspace-needs-you'),
+                    trailing: Text('${attention.length}'),
+                  ),
+                ),
+              if (attention.isNotEmpty)
+                SliverList.builder(
+                  itemCount: attention.length,
+                  itemBuilder: (context, index) => row(
+                    attention[index],
+                    busy: controller.busySessions.contains(attention[index].id),
+                    blocker: blockers[attention[index].id],
+                  ),
+                ),
+              // 3. Running work, with its live state; then pins.
+              if (active.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: SectionLabel(
+                    l10n.workRunning,
+                    key: const ValueKey('workspace-running'),
+                    trailing: Text('${active.length}'),
+                  ),
+                ),
+              if (active.isNotEmpty)
+                SliverList.builder(
+                  itemCount: active.length,
+                  itemBuilder: (context, index) =>
+                      row(active[index], busy: true),
+                ),
+              if (pinned.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: SectionLabel(
+                    l10n.sessionPinned,
+                    trailing: Text('${pinned.length}'),
+                  ),
+                ),
+              if (pinned.isNotEmpty)
+                SliverList.builder(
+                  itemCount: pinned.length,
+                  itemBuilder: (context, index) => row(
+                    pinned[index],
+                    busy: controller.busySessions.contains(pinned[index].id),
+                  ),
+                ),
+              // The pin tip sits on the list it is about.
+              if (pinNudge != null)
+                SliverToBoxAdapter(
+                  child: NudgeCard(
+                    id: pinNudge.id,
+                    icon: AppIconography.pin,
+                    message: l10n.nudgePin,
+                    actionLabel: l10n.e7GlossaryGotIt,
+                    dismissTooltip: l10n.nudgeDismiss,
+                    onAction: () =>
+                        unawaited(controller.nudges.dismiss(pinNudge.id)),
+                    onDismiss: () =>
+                        unawaited(controller.nudges.dismiss(pinNudge.id)),
+                  ),
+                ),
+              // 4. Recent sessions. Search stays a one-tap icon; the
+              // occasional actions sit behind one labelled menu so the
+              // caption keeps its width on a phone at large text.
+              SliverToBoxAdapter(
+                child: SectionLabel(
+                  _l10n(context).e7WorkspaceRecentSessions,
+                  trailing: _SectionActions(
+                    controller: controller,
+                    onSearch: capabilities.globalSessionSearch
+                        ? _openAllSessions
+                        : null,
+                    onOpenBackgroundSettings:
+                        platformCapabilities.supportsBackgroundService
+                        ? _openBackgroundSettings
+                        : null,
+                  ),
+                ),
               ),
-              // 4. Start a prompt: a docked quick-ask pill opens a fresh session in
-              // the active project without scrolling, replacing the New-session FAB.
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: _QuickAskPill.dockInset(context),
-                child: _QuickAskPill(
-                  creating: _creating,
-                  onTap: _creating ? null : _createSession,
-                  onIsolatedTask: _isolatedTaskProject == null
-                      ? null
-                      : _startIsolatedTask,
-                  isolatedTaskLabel: l10n.isolatedTaskAction,
+              if (firstLoad)
+                const SliverToBoxAdapter(child: KitSkeletonRows())
+              else if (showEmpty)
+                SliverToBoxAdapter(
+                  child: KitStateView(
+                    key: ValueKey(
+                      nothingYet ? 'work-empty-teaching' : 'work-empty-recent',
+                    ),
+                    size: KitStateSize.inline,
+                    liveRegion: false,
+                    icon: AppIconography.chat,
+                    title: nothingYet
+                        ? l10n.emptyTeachWorkTitle
+                        : pinned.isNotEmpty
+                        ? l10n.sessionsNoOtherRecent
+                        : _l10n(context).e7WorkspaceNoRecent,
+                    body: nothingYet
+                        ? l10n.emptyTeachWorkMessage
+                        : controller.directory == null
+                        ? _l10n(context).e7WorkspaceChooseFolderToStart
+                        : _l10n(context).e7WorkspaceStartInWorkspace,
+                    // No button here: the pinned New conversation is the
+                    // one action that fills this list, and an empty Work
+                    // tab keeps exactly one of them (workspace_hierarchy_test
+                    // pins that).
+                  ),
+                )
+              else
+                SliverList.builder(
+                  itemCount: recent.length,
+                  itemBuilder: (context, index) => row(recent[index]),
+                ),
+              // Older pages: skeletons while one loads, and the footer
+              // (Load more, or an error with Try again) only when
+              // nothing is loading.
+              if (controller.sessionsLoadingMore)
+                const SliverToBoxAdapter(child: KitSkeletonRows(count: 2))
+              else if (!controller.sessionsLoading)
+                SliverToBoxAdapter(
+                  child: SessionInventoryFooter(controller: controller),
+                ),
+              // The AI Team plugin's card follows the person's own
+              // conversations (UX plan 5.5, 5.7); what its agents need
+              // from the person already reaches Inbox. It is not in the
+              // tree at all while the profile has no plugin config.
+              if (controller.orchestration case final team?)
+                SliverToBoxAdapter(
+                  child: TeamCard(
+                    controller: team,
+                    onOpen: () => _openTeamHome(team),
+                  ),
+                ),
+              if (archived.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: KitRow(
+                    key: const ValueKey('workspace-archived'),
+                    leading: KitRow.icon(context, AppIconography.archive),
+                    title: _l10n(context).e7WorkspaceArchivedSessions,
+                    // The footer owns partial-inventory truth. A count
+                    // here would suggest every archived one was known.
+                    supporting: partial
+                        ? null
+                        : TextSpan(
+                            text: _l10n(
+                              context,
+                            ).e7WorkspaceArchivedCount(archived.length),
+                          ),
+                    trailing: const SizedBox.square(
+                      dimension: 48,
+                      child: Icon(AppIconography.chevronRight, size: 20),
+                    ),
+                    onTap: _showArchived,
+                  ),
+                ),
+              // 5. Everything else going on: the other projects on this
+              // server once each, then other servers with something
+              // running or waiting (items 6 and 8).
+              SliverToBoxAdapter(
+                child: OtherProjectsPanel(
+                  controller: controller,
+                  currentDirectory: headerDirectory,
+                  onAllProjects: _openProjects,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: OtherServersPanel(controller: controller),
+              ),
+              const SliverToBoxAdapter(
+                child: SizedBox(
+                  key: ValueKey('workspace-scroll-end'),
+                  height: 16,
                 ),
               ),
             ],
           ),
         ),
-      ],
+      ),
+      // 6. New conversation, pinned below the list rather than over it, so
+      // no row or header ever sits under it or under the tab bar: the list
+      // ends where the pinned block begins (item 9, standard §1).
+      bottom: _QuickAskPill(
+        creating: _creating,
+        onTap: _creating || controller.workspaceChoiceRequired
+            ? null
+            : _createSession,
+        onIsolatedTask: _isolatedTaskProject == null
+            ? null
+            : _startIsolatedTask,
+        isolatedTaskLabel: l10n.isolatedTaskAction,
+      ),
     );
+  }
+
+  Widget _chooser(ServerCapabilities capabilities) {
+    final controller = widget.controller;
+    return _WorkspaceFolderChooser(
+      notice: controller.locationNotice,
+      projectError: _projectError,
+      canCreate: ProjectFolderActions.canCreate(controller),
+      onCreate: _createProjectFolder,
+      onOpen: _openProjectFolder,
+      onBrowse: _openProjects,
+      onSearchAll: capabilities.globalSessionSearch ? _openAllSessions : null,
+      onRetry: _load,
+    );
+  }
+
+  /// The project's name for [directory]: the catalog's when it lists the
+  /// project, else the folder's own name.
+  String _projectName(String directory) {
+    final projects = _projects;
+    final project = projects == null
+        ? null
+        : WorkspaceScreen.projectForDirectory(projects, directory);
+    return project?.name ?? _basename(directory);
+  }
+
+  /// The one status line, in priority order: server not answering (inside
+  /// [WorkStatusLine]), the project list, the waiting requests, a leftover
+  /// process on the phone, a location notice.
+  Widget _statusLine(BuildContext context, AppLocalizations l10n) {
+    final controller = widget.controller;
+    final capabilities = controller.capabilities;
+    Widget line(WorkRunawayNotice? runaway) {
+      final stale =
+          controller.isConnected &&
+          (controller.permissionsError != null ||
+              controller.questionsError != null ||
+              (capabilities.forms && controller.formsError != null));
+      final notice = controller.locationNotice;
+      return WorkStatusLine(
+        controller: controller,
+        serverOnThisPhone: widget.serverOnThisPhone,
+        onRestartServer: widget.onRestartServer,
+        others: [
+          if (capabilities.projectManagement && _projectError != null)
+            WorkStatus(
+              id: 'projects',
+              icon: AppIconography.warning,
+              tone: AppStatusTone.attention,
+              message: l10n.workspaceProjectListUnavailable,
+              action: KitAction(
+                key: const ValueKey('work-status-projects-retry'),
+                label: l10n.workspaceRetryProjects,
+                onPressed: _load,
+              ),
+              more: [
+                if (capabilities.globalSessionSearch)
+                  KitAction(
+                    label: l10n.workspaceSearchAllSessions,
+                    onPressed: _openAllSessions,
+                  ),
+              ],
+            ),
+          if (capabilities.projectManagement && _workspaceError != null)
+            WorkStatus(
+              id: 'workspaces',
+              icon: AppIconography.warning,
+              tone: AppStatusTone.attention,
+              message: _workspaceError!,
+              action: KitAction(
+                label: l10n.commonRetry,
+                onPressed: _loadWorkspaces,
+              ),
+            ),
+          if (stale)
+            WorkStatus(
+              id: 'stale',
+              message: l10n.workStale,
+              action: KitAction(
+                key: const ValueKey('work-status-stale-refresh'),
+                label: l10n.workRefresh,
+                onPressed: () => unawaited(_refreshRequests()),
+              ),
+            ),
+          runaway?.status(l10n),
+          if (notice != null)
+            WorkStatus(
+              id: 'notice',
+              message: notice,
+              messageKey: const ValueKey('location-recovery-notice'),
+              onDismiss: controller.dismissLocationNotice,
+            ),
+        ],
+      );
+    }
+
+    final debugWatcher = WorkspaceScreen.debugRunawayWatcher;
+    if (debugWatcher != null) {
+      return debugWatcher(context, (context, notice) => line(notice));
+    }
+    // A leftover helper burning CPU on the phone's own server is watched
+    // only where there is a phone server to watch (TEAM-305).
+    if (platformCapabilities.supportsTermux &&
+        TermuxBridge.managesServerUrl(controller.profile?.baseUrl)) {
+      return TermuxRunawayWatcher(builder: (context, notice) => line(notice));
+    }
+    return line(null);
+  }
+
+  Future<void> _refreshRequests() async {
+    final controller = widget.controller;
+    await Future.wait<void>([
+      controller.refreshPendingPermissions(),
+      controller.refreshPendingQuestions(),
+      if (controller.capabilities.forms) controller.refreshPendingForms(),
+    ]);
   }
 
   Future<void> _showDirectoryDetails(String directory) => showDialog<void>(
@@ -1235,6 +1303,12 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             ),
           );
           return;
+        case 'review':
+          await _review(session);
+          return;
+        case 'reviewed':
+          await _markReviewed(session);
+          return;
         case 'rename':
           await _rename(session);
           break;
@@ -1270,6 +1344,64 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       await widget.controller.refreshSessions();
     } catch (error) {
       if (mounted) _showError(error);
+    }
+  }
+
+  /// The finished run [session] stands for, if it is still unreviewed.
+  ReturnBriefRun? _unreviewedRun(Session session) {
+    final controller = widget.controller;
+    return ReturnBrief.unreviewedRun(
+      session,
+      readStateKnown: controller.supportsSessionReadState,
+      isUnread: controller.isSessionUnread,
+      isBusy: controller.busySessions.contains,
+      ack: controller.returnBriefAcknowledgement,
+    );
+  }
+
+  /// Review results: the run's result screen, retired if the project or
+  /// server changes under it. Looking is not acknowledging; the mark stays
+  /// until the conversation is opened or marked reviewed.
+  Future<void> _review(Session session) async {
+    final controller = widget.controller;
+    final scope = controller.returnBriefScope;
+    bool current() =>
+        mounted &&
+        controller.returnBriefScope == scope &&
+        controller.isProfileReadable(scope.$1);
+    final routes = RequestRoutes(changes: controller, isPending: current);
+    try {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (context) {
+            routes.own(ModalRoute.of(context));
+            return RunResultScreen(
+              controller: controller,
+              sessionID: session.id,
+            );
+          },
+        ),
+      );
+    } finally {
+      routes.close();
+    }
+  }
+
+  /// Mark as reviewed: this device stops flagging the run. The conversation
+  /// stays unread on the server and nothing is answered, exactly what the
+  /// old card's "Dismiss shown items" did for one row.
+  Future<void> _markReviewed(Session session) async {
+    final controller = widget.controller;
+    final run = _unreviewedRun(session);
+    if (run == null) return;
+    final failed = _l10n(context).workMarkReviewedFailed;
+    try {
+      await controller.dismissReturnBrief(
+        ReturnBrief.single(run),
+        expectedScope: controller.returnBriefScope,
+      );
+    } catch (_) {
+      if (mounted) _showMessage(failed);
     }
   }
 
@@ -1344,9 +1476,10 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             onPressed: () => Navigator.pop(context),
             child: Text(_l10n(context).projectFolderCancel),
           ),
-          FilledButton(
+          KitButton.primary(
+            expand: false,
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(_l10n(context).fileSave),
+            label: _l10n(context).fileSave,
           ),
         ],
       ),
@@ -1557,6 +1690,11 @@ class _SessionRow extends StatelessWidget {
   /// What the run is blocked on (permission, question, form), already
   /// worded for the row; null when nothing is waiting.
   final String? blocker;
+
+  /// The finished, not yet reviewed run this row stands for: it carries the
+  /// Unreviewed mark, and its menu offers Review results and Mark as
+  /// reviewed.
+  final ReturnBriefRun? unreviewed;
   final ValueChanged<Session> onOpen;
   final Future<void> Function(String, Session) onAction;
 
@@ -1569,6 +1707,7 @@ class _SessionRow extends StatelessWidget {
     required this.session,
     required this.busy,
     this.blocker,
+    this.unreviewed,
     required this.onOpen,
     required this.onAction,
     this.sharingAvailable = true,
@@ -1582,6 +1721,7 @@ class _SessionRow extends StatelessWidget {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final pinned = controller.isSessionPinned(session.id);
     final needsAttention = blocker != null;
+    final isUnreviewed = !needsAttention && !busy && unreviewed != null;
     final location = controller.locationRevision;
     // The facts line wraps instead of cutting: one ellipsized line lost the
     // time and diff at 390dp and even "Working" at 320dp/2.5x. The status
@@ -1612,11 +1752,14 @@ class _SessionRow extends StatelessWidget {
       background: archiveAvailable
           ? const _SwipeArchiveBackground()
           : const SwipeDeleteBackground(),
-      child: ListTile(
-        minTileHeight: 64,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        minLeadingWidth: 32,
-        horizontalTitleGap: 12,
+      // A kit row (design standard §6) whose title and facts may wrap: a
+      // conversation title is the person's own words, and the facts line
+      // lost the time and diff at 390dp and even "Working" at 320dp/2.5x
+      // when cut to one line.
+      child: KitRow(
+        titleMaxLines: 2,
+        supportingMaxLines: largeText ? 3 : 2,
+        supportingKey: ValueKey('session-subtitle-${session.id}'),
         leading: SizedBox.square(
           dimension: 32,
           child: needsAttention
@@ -1631,49 +1774,44 @@ class _SessionRow extends StatelessWidget {
               : Icon(
                   pinned ? AppIconography.pin : AppIconography.chat,
                   size: 21,
+                  color: AppTheme.mutedOf(theme),
                   semanticLabel: pinned ? l10n.sessionPinned : null,
                 ),
         ),
-        title: Text(
-          presentedSessionTitle(
-            session,
-            fallback: _l10n(context).globalSessionsUntitled,
-            l10n: _l10n(context),
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+        title: presentedSessionTitle(
+          session,
+          fallback: _l10n(context).globalSessionsUntitled,
+          l10n: _l10n(context),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SessionUnreadBadge(controller: controller, session: session),
-            _SessionRowSubtitle(
-              // The blocker outranks "Working": a run waiting on an answer
-              // is not making progress, and the colour says so.
-              status: needsAttention
-                  ? blocker
-                  : session.compactingSince != null
-                  ? _l10n(context).e7WorkspaceCompacting
-                  : busy
-                  ? _l10n(context).globalSessionsWorking
-                  : null,
-              statusColor: needsAttention
-                  ? AppTheme.statusColor(theme, AppStatusTone.attention)
-                  : null,
-              maxLines: largeText ? 3 : 2,
-              rest: [
-                if (updated != null) relativeTimeLabel(updated, l10n: l10n),
-                // The folder only earns its place when it differs from the
-                // open project, e.g. a worktree; otherwise every row would
-                // repeat the header.
-                if (session.directory?.isNotEmpty == true &&
-                    !ConnectionController.sameDirectoryPath(
-                      session.directory,
-                      controller.directory,
-                    ))
-                  _basename(session.directory!),
-              ],
-            ),
+        supporting: _sessionFacts(
+          // The blocker outranks "Working": a run waiting on an answer is
+          // not making progress, and the colour says so. A finished result
+          // nobody has looked at says Unreviewed.
+          status: needsAttention
+              ? blocker
+              : session.compactingSince != null
+              ? _l10n(context).e7WorkspaceCompacting
+              : busy
+              ? _l10n(context).globalSessionsWorking
+              : isUnreviewed
+              ? l10n.workUnreviewed
+              : null,
+          statusColor: needsAttention
+              ? AppTheme.statusColor(theme, AppStatusTone.attention)
+              : isUnreviewed
+              ? theme.colorScheme.primary
+              : null,
+          rest: [
+            if (updated != null) relativeTimeLabel(updated, l10n: l10n),
+            // The folder only earns its place when it differs from the open
+            // project, e.g. a worktree; otherwise every row would repeat the
+            // header.
+            if (session.directory?.isNotEmpty == true &&
+                !ConnectionController.sameDirectoryPath(
+                  session.directory,
+                  controller.directory,
+                ))
+              _basename(session.directory!),
           ],
         ),
         trailing: PopupMenuButton<String>(
@@ -1681,6 +1819,19 @@ class _SessionRow extends StatelessWidget {
           onSelected: (value) =>
               value == 'pin' ? togglePin() : onAction(value, session),
           itemBuilder: (context) => [
+            if (isUnreviewed) ...[
+              PopupMenuItem(
+                key: ValueKey('session-review-${session.id}'),
+                value: 'review',
+                child: Text(l10n.returnBriefReview),
+              ),
+              PopupMenuItem(
+                key: ValueKey('session-mark-reviewed-${session.id}'),
+                value: 'reviewed',
+                child: Text(l10n.workMarkReviewed),
+              ),
+              const PopupMenuDivider(),
+            ],
             PopupMenuItem(value: 'details', child: Text(l10n.chatUiDetails)),
             if (controller.canPinSessions)
               PopupMenuItem(
@@ -1721,6 +1872,18 @@ class _SessionRow extends StatelessWidget {
     // mouse user actually reaches for. A pass-through off desktop.
     return ContextMenuRegion(
       actions: () => [
+        if (isUnreviewed) ...[
+          ContextMenuAction(
+            label: l10n.returnBriefReview,
+            icon: AppIconography.guide,
+            onSelected: () => unawaited(onAction('review', session)),
+          ),
+          ContextMenuAction(
+            label: l10n.workMarkReviewed,
+            icon: AppIconography.check,
+            onSelected: () => unawaited(onAction('reviewed', session)),
+          ),
+        ],
         ContextMenuAction(
           label: l10n.chatUiDetails,
           icon: AppIconography.info,
@@ -1780,45 +1943,28 @@ class _SessionRow extends StatelessWidget {
   }
 }
 
-/// The row subtitle: an optional status word first (tinted when it asks for
-/// attention), then the usual dot-separated facts, wrapping to [maxLines].
-class _SessionRowSubtitle extends StatelessWidget {
-  const _SessionRowSubtitle({
-    required this.status,
-    required this.statusColor,
-    required this.rest,
-    this.maxLines = 2,
-  });
-
-  final String? status;
-  final Color? statusColor;
-  final List<String> rest;
-  final int maxLines;
-
-  @override
-  Widget build(BuildContext context) {
-    final tail = rest.join(' · ');
-    return Text.rich(
-      TextSpan(
-        children: [
-          if (status case final status?)
-            TextSpan(
-              text: status,
-              style: statusColor == null
-                  ? null
-                  : TextStyle(color: statusColor, fontWeight: FontWeight.w600),
-            ),
-          if (status != null && tail.isNotEmpty) const TextSpan(text: ' · '),
-          if (tail.isNotEmpty) TextSpan(text: tail),
-        ],
-      ),
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
-      maxLines: maxLines,
-      overflow: TextOverflow.ellipsis,
-    );
-  }
+/// The row's facts: an optional status word first (tinted when it asks for
+/// attention), then the usual dot-separated facts. [KitRow] mutes the rest.
+InlineSpan? _sessionFacts({
+  required String? status,
+  required Color? statusColor,
+  required List<String> rest,
+}) {
+  final tail = rest.join(' · ');
+  if (status == null && tail.isEmpty) return null;
+  return TextSpan(
+    children: [
+      if (status != null)
+        TextSpan(
+          text: status,
+          style: statusColor == null
+              ? null
+              : TextStyle(color: statusColor, fontWeight: FontWeight.w600),
+        ),
+      if (status != null && tail.isNotEmpty) const TextSpan(text: ' · '),
+      if (tail.isNotEmpty) TextSpan(text: tail),
+    ],
+  );
 }
 
 /// One project entry opens the folder, workspace and management details.
@@ -2131,11 +2277,6 @@ class _QuickAskPill extends StatelessWidget {
   final VoidCallback? onIsolatedTask;
   final String? isolatedTaskLabel;
 
-  /// Gap between the pill and the bottom of the screen: the navigation
-  /// dock's published padding plus a small breathing space.
-  static double dockInset(BuildContext context) =>
-      6 + MediaQuery.paddingOf(context).bottom;
-
   /// Whether the isolated action is an icon beside the primary button
   /// (narrow phone or large text) rather than a labelled button beside it.
   static bool _compact(BuildContext context) =>
@@ -2255,25 +2396,15 @@ class _QuickAskPill extends StatelessWidget {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final compact = _compact(context);
     // Two labelled actions, not a faux text field: tapping here creates a
-    // session and leaves the page, so the control says so. The isolated
+    // conversation and leaves the page, so the control says so. The isolated
     // task keeps its own labelled target instead of an unexplained glyph.
-    final primary = FilledButton.icon(
+    // Two lines before an ellipsis: the primary action's name is never the
+    // thing cut.
+    final primary = KitButton.primary(
       onPressed: onTap,
-      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-      icon: creating
-          ? const SizedBox.square(
-              dimension: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(AppIconography.add),
-      // Two lines before an ellipsis: the primary action's name is never
-      // the thing to cut.
-      label: Text(
-        l10n.workspaceNewSession,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-      ),
+      working: creating,
+      icon: AppIconography.add,
+      label: l10n.workspaceNewSession,
     );
     return Material(
       key: const ValueKey('workspace-quick-ask'),
@@ -2399,82 +2530,50 @@ class _WorkspaceFolderChooser extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
-    return ListView(
+    final create = KitAction(
+      key: const ValueKey('workspace-create-folder'),
+      icon: AppIconography.folderAdd,
+      label: l10n.projectFolderCreate,
+      onPressed: onCreate,
+    );
+    final open = KitAction(
+      key: const ValueKey('workspace-open-folder'),
+      icon: AppIconography.folderOpen,
+      label: l10n.projectFolderOpen,
+      onPressed: onOpen,
+    );
+    final error = projectError;
+    return KitStateView(
       key: const ValueKey('workspace-folder-chooser'),
-      padding: EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        96 + MediaQuery.paddingOf(context).bottom,
-      ),
-      children: [
-        const SizedBox(height: 8),
-        Text(l10n.projectFolderChooserTitle, style: theme.textTheme.titleLarge),
-        const SizedBox(height: 8),
-        Text(
-          notice ?? l10n.e7WorkspaceChooseFolderToStart,
-          key: notice == null
-              ? null
-              : const ValueKey('location-recovery-notice'),
-          style: theme.textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 20),
-        if (canCreate)
-          FilledButton.icon(
-            key: const ValueKey('workspace-create-folder'),
-            onPressed: onCreate,
-            icon: const Icon(AppIconography.folderAdd),
-            label: Text(l10n.projectFolderCreate),
-          ),
-        if (canCreate) const SizedBox(height: 8),
-        FilledButton.tonalIcon(
-          key: const ValueKey('workspace-open-folder'),
-          onPressed: onOpen,
-          icon: const Icon(AppIconography.folderOpen),
-          label: Text(l10n.projectFolderOpen),
-        ),
-        const SizedBox(height: 8),
-        TextButton.icon(
+      icon: error == null ? AppIconography.folders : AppIconography.warning,
+      tone: error == null ? AppStatusTone.neutral : AppStatusTone.attention,
+      title: l10n.projectFolderChooserTitle,
+      body: notice ?? l10n.e7WorkspaceChooseFolderToStart,
+      bodyKey: notice == null
+          ? null
+          : const ValueKey('location-recovery-notice'),
+      primary: canCreate ? create : open,
+      secondary: canCreate ? open : null,
+      tertiary: [
+        KitAction(
           key: const ValueKey('workspace-browse-projects'),
+          label: l10n.projectFolderBrowse,
           onPressed: onBrowse,
-          icon: const Icon(AppIconography.folders),
-          label: Text(l10n.projectFolderBrowse),
         ),
-        if (!canCreate) ...[
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            shape: const Border(),
-            collapsedShape: const Border(),
-            title: Text(l10n.chatUiDetails),
-            children: [
-              Text(
-                l10n.projectFolderNoCreateHint,
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ],
-        if (projectError != null) ...[
-          const SizedBox(height: 16),
-          Text(projectError!, style: TextStyle(color: theme.colorScheme.error)),
-          TextButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(AppIconography.retry),
-            label: Text(l10n.workspaceRetryProjects),
-          ),
-        ],
-        if (onSearchAll != null) ...[
-          const Divider(height: 32),
-          TextButton.icon(
+        if (onSearchAll case final onSearchAll?)
+          KitAction(
             key: const ValueKey('workspace-chooser-search-all'),
+            label: l10n.workspaceSearchAllSessions,
             onPressed: onSearchAll,
-            icon: const Icon(AppIconography.searchList),
-            label: Text(l10n.workspaceSearchAllSessions),
           ),
-        ],
+        if (error != null)
+          KitAction(label: l10n.workspaceRetryProjects, onPressed: onRetry),
       ],
+      // Why there is no Create here, and a failed project list, are the
+      // technical part: under Details, below the actions.
+      detailNotes: [if (!canCreate) l10n.projectFolderNoCreateHint],
+      details: error,
     );
   }
 }

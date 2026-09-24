@@ -1,0 +1,293 @@
+// The chat's states and banners on the design kit
+// (docs/design/design-standard.md §9 step 5; docs/qa/design-standard-chat-
+// 2026-09-24/README.md): what the person sees while a conversation loads,
+// when it cannot load, when a message was not sent, while the connection is
+// away, and when the agent asks for permission.
+//
+// Only public ChatScreen behaviour and widget keys are used, so the same
+// file shows the old code failing (see the QA record).
+//
+// ignore_for_file: invalid_use_of_protected_member
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/api/models.dart';
+import 'package:opencode_mobile/domain/server_gateway.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
+import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../tool/capture/fixtures.dart';
+
+class _Api extends CaptureApi {
+  Object? sendError;
+
+  @override
+  Future<ServerPage<MessageWithParts>> messagePage(
+    String id, {
+    String? cursor,
+    int limit = 100,
+  }) async => ServerPage(items: cursor == null ? await messages(id) : const []);
+
+  @override
+  Future<void> promptAsync(
+    String sessionID, {
+    required String text,
+    ModelRef? model,
+    String? agent,
+    String? variant,
+    List<PromptAttachment> attachments = const [],
+    List<PromptAgentMention> agentMentions = const [],
+    PromptDelivery? delivery,
+  }) async {
+    if (sendError case final error?) throw error;
+    prompts.add(text);
+  }
+}
+
+List<MessageWithParts> _turn() {
+  final now = DateTime.now().millisecondsSinceEpoch;
+  return [
+    MessageWithParts(
+      info: messageInfo('msg_user', 'user', created: now - 9000),
+      parts: [
+        Part(
+          id: 'part_user',
+          messageID: 'msg_user',
+          type: 'text',
+          text: userPrompt,
+        ),
+      ],
+    ),
+    MessageWithParts(
+      info: messageInfo(
+        'msg_assistant',
+        'assistant',
+        created: now - 8000,
+        completed: now - 1000,
+      ),
+      parts: [textPart('part_intro', 'The checkout test is fixed.')],
+    ),
+  ];
+}
+
+Future<void> _frames(WidgetTester tester, [int count = 6]) async {
+  for (var i = 0; i < count; i++) {
+    await tester.pump(const Duration(milliseconds: 120));
+  }
+}
+
+Future<CaptureController> _chat(
+  WidgetTester tester,
+  _Api api, {
+  void Function(CaptureController controller)? setUp,
+}) async {
+  tester.view.physicalSize = const Size(412, 915);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  SharedPreferences.setMockInitialValues({});
+  final controller = await captureController(
+    prefs: await SharedPreferences.getInstance(),
+    api: api,
+  );
+  setUp?.call(controller);
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 1));
+    controller.dispose();
+  });
+  await tester.pumpWidget(
+    captureApp(
+      home: const ChatScreen(sessionID: checkoutSessionID),
+      boundaryKey: GlobalKey(),
+      controller: controller,
+    ),
+  );
+  await _frames(tester);
+  return controller;
+}
+
+final _bar = find.byKey(const ValueKey('kit-loading-bar'));
+final _connectionLine = find.byKey(const ValueKey('connection-status-banner'));
+
+void main() {
+  testWidgets('first load: one loading bar and placeholder turns, no text', (
+    tester,
+  ) async {
+    final hold = Completer<List<MessageWithParts>>();
+    await _chat(
+      tester,
+      _Api()
+        ..busy = {}
+        ..messagesHandler = (_) => hold.future,
+    );
+
+    expect(_bar, findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.byKey(const ValueKey('chat-loading')), findsOneWidget);
+    expect(find.byType(LoadingList), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    hold.complete(_turn());
+    await _frames(tester);
+    expect(_bar, findsNothing);
+    expect(find.byKey(const ValueKey('chat-loading')), findsNothing);
+    expect(find.text('The checkout test is fixed.'), findsOneWidget);
+  });
+
+  testWidgets('a conversation that could not load says so plainly, with Try '
+      'again, and the raw error only under Details', (tester) async {
+    var attempts = 0;
+    final api = _Api()..busy = {};
+    api.messagesHandler = (_) async {
+      attempts += 1;
+      if (attempts == 1) {
+        throw ApiException('Cannot reach http://192.168.1.20:4096: refused');
+      }
+      return _turn();
+    };
+    await _chat(tester, api);
+
+    expect(find.text("Couldn't open this conversation"), findsOneWidget);
+    expect(find.textContaining('192.168.1.20'), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('kit-state-details')));
+    await tester.pump();
+    expect(find.textContaining('192.168.1.20'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('chat-load-retry')));
+    await _frames(tester);
+    expect(find.text("Couldn't open this conversation"), findsNothing);
+    expect(find.text('The checkout test is fixed.'), findsOneWidget);
+  });
+
+  testWidgets('a message that was not sent stays on the status line, with its '
+      'text back in the box, until dismissed or sent again', (tester) async {
+    final api = _Api()
+      ..busy = {}
+      ..sendError = ApiException(
+        'Provider is overloaded. Please retry.',
+        statusCode: 503,
+      )
+      ..messagesHandler = (_) async => _turn();
+    await _chat(tester, api);
+    final field = find.byKey(const Key('chat-composer-field'));
+
+    await tester.enterText(field, 'Run the full test suite');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Send'));
+    await _frames(tester);
+
+    expect(find.text("Your message wasn't sent"), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+    expect(tester.widget<TextField>(field).controller!.text, contains('suite'));
+    // It does not leave on its own while the person reads it.
+    await tester.pump(const Duration(seconds: 10));
+    expect(find.text("Your message wasn't sent"), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('kit-status-dismiss')));
+    await tester.pump();
+    expect(find.text("Your message wasn't sent"), findsNothing);
+
+    // Sent again, and this time it goes: nothing is left on the line.
+    await tester.tap(find.byTooltip('Send'));
+    await _frames(tester);
+    expect(find.text("Your message wasn't sent"), findsOneWidget);
+    api.sendError = null;
+    await tester.enterText(field, 'Run the full test suite');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Send'));
+    await _frames(tester);
+    expect(find.text("Your message wasn't sent"), findsNothing);
+    expect(api.prompts, ['Run the full test suite']);
+  });
+
+  testWidgets('reconnecting: the loading bar at once, "isn\'t answering" only '
+      'after 8 s, both gone once connected', (tester) async {
+    final controller = await _chat(
+      tester,
+      _Api()
+        ..busy = {}
+        ..messagesHandler = (_) async => _turn(),
+    );
+    controller.status = StreamStatus.reconnecting;
+    controller.notifyListeners();
+    await tester.pump();
+    expect(_bar, findsOneWidget);
+    expect(_connectionLine, findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    await tester.pump(const Duration(seconds: 7));
+    expect(_connectionLine, findsNothing);
+    await tester.pump(const Duration(seconds: 2));
+    expect(_connectionLine, findsOneWidget);
+    expect(find.text("Laptop isn't answering"), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+
+    controller.status = StreamStatus.connected;
+    controller.notifyListeners();
+    await tester.pump();
+    expect(_bar, findsNothing);
+    expect(_connectionLine, findsNothing);
+  });
+
+  testWidgets('one status line: a lost connection outranks a prompt error, '
+      'which comes back when the connection does', (tester) async {
+    final controller = await _chat(
+      tester,
+      _Api()
+        ..busy = {}
+        ..messagesHandler = (_) async => [_turn().first],
+    );
+    controller.handleEventForTesting(
+      captureEvent('session.error', {
+        'sessionID': checkoutSessionID,
+        'error': {
+          'name': 'ProviderModelNotFoundError',
+          'data': {'message': 'Model not found: openai/gpt-5.6.'},
+        },
+      }),
+    );
+    await _frames(tester, 2);
+    expect(find.byKey(const ValueKey('prompt-error-banner')), findsOneWidget);
+
+    controller
+      ..status = StreamStatus.disconnected
+      ..lastError = 'Cannot reach http://192.168.1.20:4096';
+    controller.notifyListeners();
+    await tester.pump();
+    expect(find.byType(KitStatusLine), findsOneWidget);
+    expect(_connectionLine, findsOneWidget);
+    expect(find.byKey(const ValueKey('prompt-error-banner')), findsNothing);
+
+    controller.status = StreamStatus.connected;
+    controller.notifyListeners();
+    await tester.pump();
+    expect(find.byType(KitStatusLine), findsOneWidget);
+    expect(find.byKey(const ValueKey('prompt-error-banner')), findsOneWidget);
+  });
+
+  testWidgets('a permission request: Review is the one full-width primary', (
+    tester,
+  ) async {
+    await _chat(
+      tester,
+      _Api()..messagesHandler = (_) async => _turn(),
+      setUp: (controller) =>
+          controller.permissions = {samplePermission().id: samplePermission()},
+    );
+    final card = find.byKey(const ValueKey('kit-request-card'));
+    final review = find.byKey(const Key('permission-card-review'));
+    expect(card, findsOneWidget);
+    expect(find.descendant(of: card, matching: review), findsOneWidget);
+    // Full width inside the card (its 16 dp padding and 1 dp border), not a
+    // right-aligned chip.
+    expect(
+      tester.getSize(review).width,
+      moreOrLessEquals(tester.getSize(card).width - 34, epsilon: 1),
+    );
+    expect(
+      find.descendant(of: card, matching: find.byType(FilledButton)),
+      findsOneWidget,
+    );
+  });
+}

@@ -1,13 +1,16 @@
-/// The fleet row of 02-ux §5.1, shared by the AI Team home's Agents
-/// segment and a run's Agents tab (§4.3):
+/// One agent as a list row, shared by the AI Team's agents list and a
+/// task's Agents tab (02-ux §5.1), in the person's words
+/// (docs/design/aiteam-redesign-2026-09-24.md):
 ///
 /// ```
-/// [glyph] fox · gastown.polecat · opencode / gpt-x       ● Working
-///         Sync engine · ctx 63% · 12m ago
+/// [glyph] Worker
+///         Working · Sync engine · 1m ago
 /// ```
 ///
-/// Names, roles, providers and models are identifiers and stay LTR; the
-/// state word carries its glyph so status is never colour-only (§11).
+/// The agent is named by its role ([teamAgentRole]); its Gas City name,
+/// pool, provider, model and context use are on its own screen. The state
+/// word leads the line and carries its glyph, so status is never
+/// colour-only (§11).
 library;
 
 import 'package:flutter/material.dart';
@@ -15,13 +18,14 @@ import 'package:flutter/material.dart';
 import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import 'relative_time.dart';
 import 'team_vocabulary.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// "ctx 63%" with the tone of [teamContextTone], for rows and headers.
+/// "ctx 63%" with the tone of [teamContextTone], for the agent's header.
 class TeamContextNumber extends StatelessWidget {
   const TeamContextNumber({
     super.key,
@@ -33,8 +37,8 @@ class TeamContextNumber extends StatelessWidget {
   final int percent;
   final TextStyle? style;
 
-  /// Longer wording ("Context use 63%") for the detail header; the row
-  /// uses the short form.
+  /// Longer wording ("Context use 63%") for the detail header; the short
+  /// form otherwise.
   final String? label;
 
   @override
@@ -60,7 +64,29 @@ class TeamContextNumber extends StatelessWidget {
   }
 }
 
-/// One agent of the fleet. [keyPrefix] names the row and its state text
+/// "Working · Sync engine · 1m ago": the state word, the step the agent
+/// works on, and when it last did something.
+String teamAgentLine(
+  AppLocalizations l10n,
+  OrchestrationAgent agent,
+  WorkItem? work,
+  DateTime now,
+) {
+  final activity = agent.lastActivity == null
+      ? null
+      : relativeTimeLabel(
+          agent.lastActivity!.millisecondsSinceEpoch,
+          now: now,
+          l10n: l10n,
+        );
+  return [
+    teamAgentStateWord(l10n, agent.state),
+    ?work?.title,
+    ?activity,
+  ].join(teamUsageSeparator);
+}
+
+/// One agent of the team. [keyPrefix] names the row and its line
 /// (`<prefix>-<id>`, `<prefix>-state-<id>`) so each list keeps its keys.
 class TeamAgentRow extends StatelessWidget {
   const TeamAgentRow({
@@ -82,99 +108,21 @@ class TeamAgentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = _copy(context);
     final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
     final (icon, tone) = teamAgentGlyph(agent.state);
-    final color = AppTheme.statusColor(theme, tone);
-    final role = agent.pool ?? agent.pack;
-    final runtime = [
-      if (agent.provider case final provider? when provider.isNotEmpty)
-        provider,
-      if (agent.model case final model? when model.isNotEmpty) model,
-    ].join(' / ');
-    final identity = [
-      if (role != null && role.isNotEmpty) role,
-      if (runtime.isNotEmpty) runtime,
-    ].join(' · ');
-    final activity = agent.lastActivity == null
-        ? null
-        : relativeTimeLabel(
-            agent.lastActivity!.millisecondsSinceEpoch,
-            now: now,
-            l10n: l10n,
-          );
-    final percent = agent.contextPercent;
-    final stacked = AppTheme.stackedActions(context);
-    final smallMuted = theme.textTheme.bodySmall?.copyWith(color: muted);
-    final state = Text(
-      teamAgentStateWord(l10n, agent.state),
-      key: ValueKey('$keyPrefix-state-${agent.id}'),
-      style: theme.textTheme.bodySmall?.copyWith(color: color),
-    );
-    return InkWell(
+    return KitRow(
       key: ValueKey('$keyPrefix-${agent.id}'),
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 56),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Icon(icon, size: 18, color: color),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Agent names are identifiers: LTR in every locale.
-                    Text(
-                      agent.name,
-                      style: theme.textTheme.bodyMedium,
-                      textDirection: TextDirection.ltr,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (identity.isNotEmpty)
-                      Text(
-                        identity,
-                        style: smallMuted,
-                        textDirection: TextDirection.ltr,
-                      ),
-                    // Work · ctx · age: the current work first, the two
-                    // numbers after it, on one line that wraps.
-                    Wrap(
-                      spacing: 0,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          work?.title ?? l10n.teamUiHomeAgentNoWork,
-                          style: smallMuted,
-                        ),
-                        if (percent != null) ...[
-                          Text(' · ', style: smallMuted),
-                          TeamContextNumber(
-                            key: ValueKey('$keyPrefix-context-${agent.id}'),
-                            percent: percent,
-                          ),
-                        ],
-                        if (activity != null) ...[
-                          Text(' · ', style: smallMuted),
-                          Text(activity, style: smallMuted),
-                        ],
-                      ],
-                    ),
-                    if (stacked) ...[const SizedBox(height: 2), state],
-                  ],
-                ),
-              ),
-              if (!stacked) ...[const SizedBox(width: 12), state],
-            ],
-          ),
-        ),
+      leading: KitRow.icon(
+        context,
+        icon,
+        color: AppTheme.statusColor(theme, tone),
       ),
+      title: teamAgentRoleWord(l10n, teamAgentRole(agent)),
+      supporting: TextSpan(text: teamAgentLine(l10n, agent, work, now)),
+      supportingKey: ValueKey('$keyPrefix-state-${agent.id}'),
+      // The step's title is the person's own words: two lines before it
+      // ends, so the age is not cut off.
+      supportingMaxLines: 2,
+      onTap: onTap,
     );
   }
 }

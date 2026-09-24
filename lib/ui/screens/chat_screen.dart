@@ -76,6 +76,12 @@ import '../widgets/terminal_view.dart';
 import '../widgets/tool_card.dart';
 import '../widgets/transcript_display_toggles.dart';
 import '../../api2/models.dart' show Api2Delivery, Api2FormInfo, Api2InboxItem;
+import '../../builtin/builtin_server.dart' show builtinServerStarterProvider;
+import '../../feedback/bug_report.dart' show openBugReport;
+import '../kit/kit.dart';
+import '../widgets/grace_timer.dart';
+import '../widgets/phone_server_restart.dart';
+import '../widgets/work_status_line.dart' show confirmPhoneServerRestart;
 import '../permission_presentation.dart';
 import 'activity_screen.dart' show showQuestionSheet;
 import 'app_diagnostics_screen.dart';
@@ -116,6 +122,7 @@ part 'chat/read_aloud.dart';
 part 'chat/voice_conversation.dart';
 part 'chat/nudge_slot.dart';
 part 'chat/empty_chat.dart';
+part 'chat/chat_states.dart';
 
 const _maxAttachmentCount = 5;
 const _maxAttachmentBytes = 10 * 1024 * 1024;
@@ -505,6 +512,10 @@ class _ChatScreenState extends State<ChatScreen>
   bool _leavingProvisionalSession = false;
   String? _localShareUrl;
   String? _promptError;
+
+  /// The last send failed before the server took it; its text is back in
+  /// the composer. Shown on the status line until dismissed or sent again.
+  Object? _sendError;
   List<CommandInfo>? _serverCommands;
   Object? _serverCommandsError;
   bool _serverCommandsLoading = false;
@@ -2673,6 +2684,7 @@ class _ChatScreenState extends State<ChatScreen>
     // Optimistic user bubble.
     setState(() {
       _promptError = null;
+      _sendError = null;
       _pendingSends.add(pending);
       _messages.add(
         MessageWithParts(
@@ -2791,7 +2803,9 @@ class _ChatScreenState extends State<ChatScreen>
           offset: _composer.text.length,
         );
       }
-      showProductError(context, e);
+      // Said on the status line, where it stays until dismissed or sent
+      // again, not in a snackbar that leaves while the person reads it.
+      setState(() => _sendError = e);
     }
   }
 
@@ -7082,6 +7096,18 @@ class _ChatScreenState extends State<ChatScreen>
             : null,
         body: Column(
           children: [
+            // The screen's one loading bar (design standard §4): the
+            // conversation's first load, and a reconnect.
+            KitLoadingBar(
+              loading:
+                  (_loading && _messages.isEmpty) ||
+                  _ChatStatusLine.reconnecting(_conn),
+              label: _ChatStatusLine.reconnecting(_conn)
+                  ? _chatL10n(context).e7BannerReconnectingServerSemantic(
+                      _conn.profile?.name ?? 'OpenCode',
+                    )
+                  : _chatL10n(context).chatLoadingConversation,
+            ),
             if (!widget.showAppBar && _conn.isIsolated && _messages.isNotEmpty)
               Align(
                 alignment: AlignmentDirectional.centerEnd,
@@ -7094,63 +7120,57 @@ class _ChatScreenState extends State<ChatScreen>
                   ),
                 ),
               ),
-            if (!_conn.isIsolated && _conn.status != StreamStatus.connected)
-              ConnectionStatusBanner(controller: _conn, note: _queuedNote()),
-            // At most one contextual strip below the connection truth, so
-            // banners cannot stack three deep over the transcript: a prompt
-            // error outranks subagent context, which outranks the share
-            // notice (sharing stays visible in Session actions).
-            //
-            // The banner is for an error with no home in the transcript (a
-            // prompt the server refused, a session-level failure). One that
-            // a reply already carries is shown there, once, with its actions.
-            if (_promptError case final promptError?
-                when !_messages.any(
-                  (message) => _sameError(message.info.errorText, promptError),
-                ))
-              _PromptErrorBanner(
-                message: promptError,
-                onDismiss: () => setState(() => _promptError = null),
-                onChooseModel: _conn.isIsolated
-                    ? null
-                    : () => showModelPicker(
-                        context,
-                        applyScope: _modelApplyScope,
-                        sessionID: widget.sessionID,
-                      ),
-              )
-            else if (!_conn.isIsolated && parentID != null)
-              _SubagentContextBanner(
-                position: siblingIndex < 0 ? null : siblingIndex + 1,
-                total: siblings.isEmpty ? null : siblings.length,
-                onParent: _openParentSession,
-                onAll: _showSubagents,
-              )
-            else if (!_conn.isIsolated && shareUrl != null)
-              _SharedSessionBanner(url: shareUrl, onStop: _stopSharing),
-            if (!_conn.isIsolated &&
-                _conn.supportsStagedRevert &&
-                session?.reverted == true)
-              Material(
-                color: theme.colorScheme.secondaryContainer,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
+            // One status line (design standard §5), most urgent first: the
+            // connection, a message that was not sent, a prompt error with no
+            // home in the transcript (one a reply already carries is shown
+            // there, once, with its actions), a staged revert, the subagent
+            // context, sharing (also in the conversation menu).
+            _ChatStatusLine(
+              controller: _conn,
+              queuedNote: _queuedNote(),
+              others: [
+                if (_sendError case final error?)
+                  _sendErrorStatus(
+                    context,
+                    error: error,
+                    onDismiss: () => setState(() => _sendError = null),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(AppIconography.history, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(_chatL10n(context).revertStaged)),
-                      TextButton(
-                        onPressed: _reviewStagedRevert,
-                        child: Text(_chatL10n(context).revertReview),
-                      ),
-                    ],
+                if (_promptError case final promptError?
+                    when !_messages.any(
+                      (message) =>
+                          _sameError(message.info.errorText, promptError),
+                    ))
+                  _promptErrorStatus(
+                    context,
+                    message: promptError,
+                    onDismiss: () => setState(() => _promptError = null),
+                    onChooseModel: _conn.isIsolated
+                        ? null
+                        : () => showModelPicker(
+                            context,
+                            applyScope: _modelApplyScope,
+                            sessionID: widget.sessionID,
+                          ),
                   ),
-                ),
-              ),
+                if (!_conn.isIsolated &&
+                    _conn.supportsStagedRevert &&
+                    session?.reverted == true)
+                  _stagedRevertStatus(
+                    context,
+                    onReview: () => unawaited(_reviewStagedRevert()),
+                  ),
+                if (!_conn.isIsolated && parentID != null)
+                  _subagentStatus(
+                    context,
+                    position: siblingIndex < 0 ? null : siblingIndex + 1,
+                    total: siblings.isEmpty ? null : siblings.length,
+                    onParent: _openParentSession,
+                    onAll: _showSubagents,
+                  ),
+                if (!_conn.isIsolated && shareUrl != null)
+                  _sharedStatus(context, url: shareUrl, onStop: _stopSharing),
+              ],
+            ),
             Expanded(
               // Rehydrates and refreshes must not flash a skeleton or a
               // full-screen error over an already-visible transcript.
@@ -7159,7 +7179,7 @@ class _ChatScreenState extends State<ChatScreen>
               child: _loading && _messages.isEmpty
                   ? Column(
                       children: [
-                        const Expanded(child: LoadingList(rows: 6)),
+                        const Expanded(child: _ChatLoadingBody()),
                         _attentionRegion(reduceMotion, pendingPermissions),
                       ],
                     )
@@ -7167,9 +7187,9 @@ class _ChatScreenState extends State<ChatScreen>
                   ? Column(
                       children: [
                         Expanded(
-                          child: ProductErrorState(
-                            message: productErrorText(_error!),
-                            onRetry: _load,
+                          child: _ChatLoadError(
+                            error: _error!,
+                            onRetry: () => unawaited(_load()),
                           ),
                         ),
                         _attentionRegion(reduceMotion, pendingPermissions),
@@ -7821,9 +7841,11 @@ class _ChatScreenState extends State<ChatScreen>
                                   !_conn.busySessions.contains(
                                     widget.sessionID,
                                   ) &&
-                                  // A reply that failed is not the moment
-                                  // to offer "get told when it's done".
+                                  // A reply that failed (or a message that
+                                  // was not sent) is not the moment to offer
+                                  // "get told when it's done".
                                   _promptError == null &&
+                                  _sendError == null &&
                                   _messages.any(
                                     (message) =>
                                         message.info.role == 'assistant' &&
@@ -8070,86 +8092,5 @@ class _ChatScreenState extends State<ChatScreen>
     _backgroundSupportState.dispose();
     _voiceControlsScroll.dispose();
     super.dispose();
-  }
-}
-
-/// Compact attention card for a pending form of the open session (design
-/// doc §2): icon, form title, question count, and an Answer button that
-/// opens the shared form renderer.
-class _FormRequestCard extends StatelessWidget {
-  const _FormRequestCard({
-    super.key,
-    required this.form,
-    required this.onAnswer,
-  });
-
-  final Api2FormInfo form;
-  final VoidCallback onAnswer;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final count = form.fields.length;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 860),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 12, 2),
-          child: Material(
-            color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: onAnswer,
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 72),
-                padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 12, 10),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      AppIconography.checklist,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            form.title ??
-                                _chatL10n(context).chatUiInputRequested,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleSmall,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _chatL10n(context).chatUiQuestionCount(count),
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    FilledButton.tonal(
-                      key: ValueKey('form-request-answer-${form.id}'),
-                      onPressed: onAnswer,
-                      child: Text(_chatL10n(context).returnBriefAnswer),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

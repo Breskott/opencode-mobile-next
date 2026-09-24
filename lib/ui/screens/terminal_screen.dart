@@ -19,6 +19,7 @@ import '../../builtin/local_terminal.dart';
 import '../../state/connection.dart';
 import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
+import '../kit/kit_progress.dart';
 import '../widgets/product_states.dart';
 import 'local_terminal_screen.dart';
 
@@ -178,7 +179,13 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(_SourceChoice.height + 2),
               child: Column(
-                children: [choice, const LinearProgressIndicator(minHeight: 2)],
+                children: [
+                  choice,
+                  KitLoadingBar(
+                    loading: true,
+                    label: l10n.localTerminalStarting,
+                  ),
+                ],
               ),
             ),
           ),

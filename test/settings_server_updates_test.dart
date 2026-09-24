@@ -9,6 +9,7 @@ import 'package:opencode_mobile/background/live_background.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/offline_queue.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/saved_permissions_screen.dart';
@@ -306,7 +307,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     tester
-        .widget<ListTile>(find.byKey(const Key('server-updates-tile')))
+        .widget<KitRow>(find.byKey(const Key('server-updates-tile')))
         .onTap!();
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('confirm-server-upgrade')));
@@ -316,9 +317,7 @@ void main() {
     expect(controller.availableServerVersion, '1.19.0');
     expect(controller.installedServerVersion, isNull);
     expect(
-      tester
-          .widget<ListTile>(find.byKey(const Key('server-updates-tile')))
-          .onTap,
+      tester.widget<KitRow>(find.byKey(const Key('server-updates-tile'))).onTap,
       isNotNull,
     );
   });
@@ -363,7 +362,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     tester
-        .widget<ListTile>(find.byKey(const Key('server-updates-tile')))
+        .widget<KitRow>(find.byKey(const Key('server-updates-tile')))
         .onTap!();
     await tester.pumpAndSettle();
 
@@ -642,7 +641,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(tester.takeException(), isNull);
-    tester.widget<ListTile>(entry).onTap!();
+    tester.widget<KitRow>(entry).onTap!();
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
@@ -820,7 +819,7 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(tester.widget<ListTile>(clear).enabled, isTrue);
+      expect(tester.widget<KitRow>(clear).enabled, isTrue);
       expect(
         find.textContaining('number of queued prompts is unknown'),
         findsOneWidget,
@@ -841,7 +840,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.store.prefs.getString('oc.offlineQueue'), isNull);
       expect(controller.queuedPromptStorageReadable, isTrue);
-      expect(tester.widget<ListTile>(clear).enabled, isFalse);
+      expect(tester.widget<KitRow>(clear).enabled, isFalse);
     },
   );
 
@@ -871,13 +870,13 @@ void main() {
 
     expect(
       tester
-          .widget<ListTile>(find.byKey(const ValueKey('clear-queued-prompts')))
+          .widget<KitRow>(find.byKey(const ValueKey('clear-queued-prompts')))
           .enabled,
       isFalse,
     );
     expect(
       tester
-          .widget<ListTile>(find.byKey(const ValueKey('clear-session-drafts')))
+          .widget<KitRow>(find.byKey(const ValueKey('clear-session-drafts')))
           .enabled,
       isFalse,
     );

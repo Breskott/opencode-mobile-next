@@ -1,0 +1,80 @@
+# The new tests against the old code: commit dca366f1 exported with
+# `git archive`, the new test files and goldens copied in, then
+# `flutter test test/chat_states_standard_test.dart` and
+# `flutter test test/design_standard_test.dart test/goldens/chat_states_golden_test.dart`.
+# Failure lines only; all 6 behaviour tests, 2 of 6 scan tests and all 18
+# goldens fail.
+
+chat_states_standard_test | The following TestFailure was thrown running a test:
+chat_states_standard_test | Expected: exactly one matching candidate
+chat_states_standard_test |   Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'kit-loading-bar'>]: []>
+chat_states_standard_test | 00:02 +0 -1: first load: one loading bar and placeholder turns, no text [E]
+chat_states_standard_test | The following TestFailure was thrown running a test:
+chat_states_standard_test | Expected: exactly one matching candidate
+chat_states_standard_test |   Actual: _TextWidgetFinder:<Found 0 widgets with text "Couldn't open this conversation": []>
+chat_states_standard_test | 00:03 +0 -2: a conversation that could not load says so plainly, with Try again, and the raw error only under Details [E]
+chat_states_standard_test | The following TestFailure was thrown running a test:
+chat_states_standard_test | Expected: exactly one matching candidate
+chat_states_standard_test |   Actual: _TextWidgetFinder:<Found 0 widgets with text "Your message wasn't sent": []>
+chat_states_standard_test | 00:05 +0 -3: a message that was not sent stays on the status line, with its text back in the box, until dismissed or sent again [E]
+chat_states_standard_test | The following TestFailure was thrown running a test:
+chat_states_standard_test | Expected: exactly one matching candidate
+chat_states_standard_test |   Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'kit-loading-bar'>]: []>
+chat_states_standard_test | 00:06 +0 -4: reconnecting: the loading bar at once, "isn't answering" only after 8 s, both gone once connected [E]
+chat_states_standard_test | The following TestFailure was thrown running a test:
+chat_states_standard_test | Expected: exactly one matching candidate
+chat_states_standard_test |   Actual: _TypeWidgetFinder:<Found 0 widgets with type "KitStatusLine": []>
+chat_states_standard_test | 00:07 +0 -5: one status line: a lost connection outranks a prompt error, which comes back when the connection does [E]
+chat_states_standard_test | The following TestFailure was thrown running a test:
+chat_states_standard_test | Expected: exactly one matching candidate
+chat_states_standard_test |   Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'kit-request-card'>]: []>
+chat_states_standard_test | 00:08 +0 -6: a permission request: Review is the one full-width primary [E]
+design_standard + goldens | 00:00 +0 -1: test/design_standard_test.dart: migrated screens use the kit, not raw progress, cards or buttons [E]
+design_standard + goldens |   PathNotFoundException: Cannot open file, path = 'lib/ui/screens/chat/chat_states.dart' (OS Error: No such file or directory, errno = 2)
+design_standard + goldens | 00:00 +1 -2: test/design_standard_test.dart: raw parts a migrated screen gave up do not come back [E]
+design_standard + goldens |   Expected: empty
+design_standard + goldens |     Actual: [
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:07 +4 -3: test/goldens/chat_states_golden_test.dart: chat · empty · dark [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:07 +4 -4: test/goldens/chat_states_golden_test.dart: chat · loading · dark [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:08 +4 -5: test/goldens/chat_states_golden_test.dart: chat · could not load · dark [E]
+design_standard + goldens | The following TestFailure was thrown running a test:
+design_standard + goldens | Expected: exactly one matching candidate
+design_standard + goldens |   Actual: _TextWidgetFinder:<Found 0 widgets with text "Your message wasn't sent": []>
+design_standard + goldens | 00:10 +4 -6: test/goldens/chat_states_golden_test.dart: chat · send error · dark [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:11 +4 -7: test/goldens/chat_states_golden_test.dart: chat · model error in a reply · dark [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:12 +4 -8: test/goldens/chat_states_golden_test.dart: chat · permission request · dark [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:14 +4 -9: test/goldens/chat_states_golden_test.dart: chat · permission sheet · dark [E]
+design_standard + goldens | The following TestFailure was thrown running a test:
+design_standard + goldens | Expected: exactly one matching candidate
+design_standard + goldens |   Actual: _TextWidgetFinder:<Found 0 widgets with text "Laptop isn't answering": []>
+design_standard + goldens | 00:14 +4 -10: test/goldens/chat_states_golden_test.dart: chat · disconnected · dark [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:15 +4 -11: test/goldens/chat_states_golden_test.dart: chat · notify me · dark [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:16 +4 -12: test/goldens/chat_states_golden_test.dart: chat · empty · light [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:16 +4 -13: test/goldens/chat_states_golden_test.dart: chat · loading · light [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:17 +4 -14: test/goldens/chat_states_golden_test.dart: chat · could not load · light [E]
+design_standard + goldens | The following TestFailure was thrown running a test:
+design_standard + goldens | Expected: exactly one matching candidate
+design_standard + goldens |   Actual: _TextWidgetFinder:<Found 0 widgets with text "Your message wasn't sent": []>
+design_standard + goldens | 00:18 +4 -15: test/goldens/chat_states_golden_test.dart: chat · send error · light [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:18 +4 -16: test/goldens/chat_states_golden_test.dart: chat · model error in a reply · light [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:19 +4 -17: test/goldens/chat_states_golden_test.dart: chat · permission request · light [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:20 +4 -18: test/goldens/chat_states_golden_test.dart: chat · permission sheet · light [E]
+design_standard + goldens | The following TestFailure was thrown running a test:
+design_standard + goldens | Expected: exactly one matching candidate
+design_standard + goldens |   Actual: _TextWidgetFinder:<Found 0 widgets with text "Laptop isn't answering": []>
+design_standard + goldens | 00:21 +4 -19: test/goldens/chat_states_golden_test.dart: chat · disconnected · light [E]
+design_standard + goldens | The following assertion was thrown while running async test code:
+design_standard + goldens | 00:21 +4 -20: test/goldens/chat_states_golden_test.dart: chat · notify me · light [E]

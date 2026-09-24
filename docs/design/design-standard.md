@@ -45,6 +45,8 @@ It shows in two sizes:
 
 Cards are for content the person works with, not for wrapping a message.
 
+A message that belongs to one part of a form or list (a connection test's verdict, a save that failed, a credential the app can no longer read) is too small for a whole state: it uses `KitNotice`. Tinted icon, optional title, the words, optional note lines, at most two tertiary actions, optional dismiss. It sits on the content's rails with no filled block and no card, and it is one live region.
+
 ## 4. Progress and loading
 
 - **One loading bar per screen**: a 2 dp linear bar directly under the top bar or header, with a semantic label. Nothing else on the screen shows a bar.
@@ -63,6 +65,11 @@ Cards are for content the person works with, not for wrapping a message.
 
 - Section header: `SectionLabel`, sentence case, with an optional count or action on the right.
 - Rows: `KitRow`, with a leading icon or status dot, title (1 line), supporting line (1 line, muted), and a trailing value, chevron or single icon action.
+  - A list of steps (setup's checklist) leads each row with `KitStatusMark`: waiting, working, done, failed. The mark is a state, not a second bar.
+  - Only titles in the person's own words (conversation titles) may wrap, and app words may wrap at large text, so nothing is cut to a few letters.
+  - A setting whose supporting line explains what it does, or carries an error to act on, may take two lines (`supportingMaxLines: 2`). A list of things keeps one.
+  - An action that cannot run now dims (`enabled: false`) and its supporting line says why.
+  - A row that deletes something is `destructive: true`: error-coloured title and icon, and it confirms before acting.
 - State lives in the row (dot, mark, "Needs you"), not in extra cards above the list.
 - The same thing appears once per screen.
 

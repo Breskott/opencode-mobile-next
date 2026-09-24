@@ -130,7 +130,6 @@ class _PhoneSetupProgressScreenState extends State<PhoneSetupProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     return Scaffold(
       // Back just leaves; the job carries on in the background and the
@@ -138,49 +137,28 @@ class _PhoneSetupProgressScreenState extends State<PhoneSetupProgressScreen> {
       appBar: AppBar(),
       body: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-          child: ValueListenableBuilder<SetupProgress>(
-            valueListenable: _engine.progress,
-            builder: (context, progress, _) {
-              final ids = _defaultIds();
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Semantics(
-                    header: true,
-                    child: Text(
-                      progress.adding.isEmpty
-                          ? l10n.phoneSetupProgressTitle
-                          : setupAddingTitle(
-                              l10n,
-                              _engine.registry,
-                              progress.adding,
-                            ),
-                      style: theme.textTheme.headlineSmall,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  SetupProgressView(
-                    progress: progress,
-                    // Before the first poll the job's own list is not known
-                    // yet; the default selection is the best honest guess.
-                    components: progress.components.isNotEmpty
-                        ? _engine.registry
-                        : [
-                            for (final c in _engine.registry)
-                              if (ids.contains(c.id)) c,
-                          ],
-                    note: l10n.phoneSetupProgressLeaveHint,
-                    onCancel: progress.state == SetupState.running
-                        ? _cancel
-                        : null,
-                    onContinue: progress.canContinue ? _continue : null,
-                  ),
-                ],
-              );
-            },
-          ),
+        child: ValueListenableBuilder<SetupProgress>(
+          valueListenable: _engine.progress,
+          builder: (context, progress, _) {
+            final ids = _defaultIds();
+            return SetupProgressView(
+              progress: progress,
+              title: progress.adding.isEmpty
+                  ? l10n.phoneSetupProgressTitle
+                  : setupAddingTitle(l10n, _engine.registry, progress.adding),
+              // Before the first poll the job's own list is not known yet;
+              // the default selection is the best honest guess.
+              components: progress.components.isNotEmpty
+                  ? _engine.registry
+                  : [
+                      for (final c in _engine.registry)
+                        if (ids.contains(c.id)) c,
+                    ],
+              note: l10n.phoneSetupProgressLeaveHint,
+              onCancel: progress.state == SetupState.running ? _cancel : null,
+              onContinue: progress.canContinue ? _continue : null,
+            );
+          },
         ),
       ),
     );

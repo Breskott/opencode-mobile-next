@@ -1,5 +1,5 @@
 /// The "On this phone" rows of the Termux server settings (TEAM-304/305)
-/// and the Workspace's "Something is still running on this phone" line.
+/// and the watcher behind the Work tab's "OpenCode has been busy" line.
 ///
 /// Both read through `~/.oc/tools.sh` and swallow every bridge failure: a
 /// phone without the tools installed simply shows no numbers, and a desktop
@@ -17,6 +17,7 @@ import '../../termux/storage.dart';
 import '../app_theme.dart';
 import '../screens/termux_processes_screen.dart';
 import '../screens/termux_storage_screen.dart';
+import 'work_status_line.dart' show WorkRunawayNotice;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -152,25 +153,52 @@ class _TermuxPhoneToolsRowsState extends State<TermuxPhoneToolsRows> {
   }
 }
 
-/// The Workspace line for the managed phone server: present only while an
-/// orphaned helper has burned more than [threshold] of CPU. Polls the
-/// process list every [interval] while mounted; nothing pushes a
-/// notification (v1 keeps this in-app).
-class TermuxAttentionLine extends StatefulWidget {
-  const TermuxAttentionLine({
+/// The project a leftover process belongs to, by its working folder: the
+/// first folder under a `projects` folder (`/root/projects/FinanceHub/src`
+/// is FinanceHub). Null for the projects folder itself, a home folder or
+/// anything else, which the line calls "OpenCode" rather than show a path.
+String? runawayProjectName(String cwd) {
+  final parts = cwd.split('/').where((part) => part.isNotEmpty).toList();
+  final index = parts.lastIndexOf('projects');
+  if (index < 0 || index + 1 >= parts.length) return null;
+  final name = parts[index + 1];
+  return name.startsWith('.') ? null : name;
+}
+
+/// Watches the managed phone server for a helper that has burned more than
+/// [threshold] of CPU with nothing waiting on it, and hands the worst one to
+/// [builder] as a [WorkRunawayNotice] (null when there is none, or when the
+/// person dismissed this very process). Polls every [interval] while
+/// mounted; a phone without the tools simply never reports one.
+class TermuxRunawayWatcher extends StatefulWidget {
+  const TermuxRunawayWatcher({
     super.key,
+    required this.builder,
     this.interval = const Duration(seconds: 60),
     this.threshold = const Duration(minutes: 10),
+    this.scan,
   });
 
+  final Widget Function(BuildContext context, WorkRunawayNotice? notice)
+  builder;
   final Duration interval;
   final Duration threshold;
 
+  /// Test seam; defaults to [TermuxProcesses.scan] behind the bridge check.
+  final Future<TermuxProcessReport> Function()? scan;
+
+  /// Dismissed processes, by pid and name, for the life of the app: the line
+  /// comes back only for a different process.
+  static final _dismissed = <(int, String)>{};
+
+  @visibleForTesting
+  static void resetDismissedForTesting() => _dismissed.clear();
+
   @override
-  State<TermuxAttentionLine> createState() => _TermuxAttentionLineState();
+  State<TermuxRunawayWatcher> createState() => _TermuxRunawayWatcherState();
 }
 
-class _TermuxAttentionLineState extends State<TermuxAttentionLine> {
+class _TermuxRunawayWatcherState extends State<TermuxRunawayWatcher> {
   TermuxProcess? _worst;
   Timer? _timer;
 
@@ -188,9 +216,10 @@ class _TermuxAttentionLineState extends State<TermuxAttentionLine> {
   }
 
   Future<void> _check() async {
-    if (!TermuxBridge.supported) return;
+    final scan = widget.scan;
+    if (scan == null && !TermuxBridge.supported) return;
     try {
-      final report = await TermuxProcesses.scan();
+      final report = await (scan ?? TermuxProcesses.scan)();
       final orphans = report.orphansOver(widget.threshold)
         ..sort((a, b) => b.cpuSeconds.compareTo(a.cpuSeconds));
       if (mounted) {
@@ -205,36 +234,28 @@ class _TermuxAttentionLineState extends State<TermuxAttentionLine> {
   @override
   Widget build(BuildContext context) {
     final worst = _worst;
-    if (worst == null) return const SizedBox.shrink();
+    final identity = worst == null ? null : (worst.pid, worst.name);
+    if (worst == null || TermuxRunawayWatcher._dismissed.contains(identity)) {
+      return widget.builder(context, null);
+    }
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final attention = AppTheme.statusColor(theme, AppStatusTone.attention);
-    return ListTile(
-      key: const Key('termux-attention-line'),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      minLeadingWidth: 32,
-      horizontalTitleGap: 12,
-      leading: SizedBox.square(
-        dimension: 32,
-        child: Icon(AppIconography.warning, size: 24, color: attention),
+    return widget.builder(
+      context,
+      WorkRunawayNotice(
+        identity: identity!,
+        project: runawayProjectName(worst.cwd),
+        busyFor: formatTermuxDuration(l10n, worst.cpuSeconds),
+        onDismiss: () =>
+            setState(() => TermuxRunawayWatcher._dismissed.add(identity)),
+        onOpen: () async {
+          await Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const TermuxProcessesScreen(),
+            ),
+          );
+          unawaited(_check());
+        },
       ),
-      title: Text(l10n.termuxProcsAttentionLine),
-      subtitle: Text(
-        l10n.termuxProcsAttentionDetail(
-          worst.name,
-          formatTermuxDuration(l10n, worst.cpuSeconds),
-        ),
-        style: theme.textTheme.bodySmall,
-      ),
-      trailing: const Icon(AppIconography.chevronRight, size: 20),
-      onTap: () async {
-        await Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => const TermuxProcessesScreen(),
-          ),
-        );
-        unawaited(_check());
-      },
     );
   }
 }

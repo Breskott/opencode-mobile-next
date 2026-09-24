@@ -62,6 +62,11 @@ class BuiltinTeam {
   /// projects themselves.
   static const originsDir = '$home/origins';
 
+  /// What the phone-side origins' hook did with each merge, one line per
+  /// push to a project's branch (see [originHook]); the Plugins section
+  /// reads the newest line per project.
+  static const pullLog = '$home/pull.log';
+
   /// True for the plugin config [config] writes: the team inside this app.
   static bool isBuiltinConfig(OrchestrationConfig? config) =>
       config != null &&
@@ -127,23 +132,32 @@ class BuiltinTeam {
       '[[patches.agent]]\nname = "gastown.polecat"\ndir = "$rig"\n'
       'max_active_sessions = 1\n';
 
-  /// The environment of every team script and of the supervisor (so of its
-  /// agents too). The three programs send usage metrics by default; this
-  /// app sends nothing about its users' work anywhere, so all of them are
-  /// told not to.
   /// Gas City tuned for a phone. Android stops an app's child processes
   /// past 32 in all, oldest first, and the oldest is the OpenCode server
   /// (seen on the Android 14 emulator: a default team peaked at 40 and
   /// Android killed OpenCode and the team). The defaults poll every 30 s,
   /// run up to 8 store probes at once and give each session its own
   /// polling process; here:
-  /// - patrols every minute, the frequent health orders every two;
+  /// - patrols every minute;
   /// - one store probe and one session start at a time;
   /// - queued nudges delivered inside the supervisor, not by a process
   ///   per session;
+  /// - each agent's OpenCode replaces the shell that starts it (`exec`), one
+  ///   process per agent instead of two;
   /// - the maintenance orders a single phone project does not need are
   ///   left out, among them the two that wake an AI "dog" (a whole
-  ///   OpenCode session, and model usage) for digests and stale stores.
+  ///   OpenCode session, and model usage) for digests and stale stores;
+  /// - the upkeep orders it does need run one after another, in the
+  ///   `phone-upkeep` order ([upkeepOrder]), never side by side.
+  ///
+  /// Measured on the Android 15 emulator (docs/qa/aiteam-builtin-2026-09-24,
+  /// Run 3): at the tallest moment (37) the orders were 18 of the
+  /// processes, 11 of them `dolt-health` alone (a report nobody reads on a
+  /// phone; the supervisor's own watchdog keeps Dolt up), with
+  /// `nudge-on-route` and `cascade-nudge-on-blocker-close` firing on the
+  /// agents' own bead updates at the same moment. A task given with
+  /// "Send to an agent" goes straight to the project's worker, and the
+  /// worker wakes the merger itself, so those nudges add nothing here.
   static const phoneTuning =
       '[daemon]\n'
       'patrol_interval = "60s"\n'
@@ -157,14 +171,97 @@ class BuiltinTeam {
       'skip = ["digest-generate", "mol-dog-stale-db", "mol-dog-backup", '
       '"mol-dog-compactor", "mol-dog-phantom-db", "mol-dog-doctor", '
       '"spawn-storm-detect", "cross-rig-deps", "jsonl-export", '
-      '"dolt-remotes-patrol", "prune-branches", "wisp-compact"]\n'
-      '[[orders.overrides]]\nname = "dolt-health"\ninterval = "2m"\n'
-      // Three minutes, not two: dolt-health and beads-health firing on the
-      // same tick made the tallest spike (33 on the Android 15 emulator).
-      '[[orders.overrides]]\nname = "beads-health"\ninterval = "3m"\n'
-      '[[orders.overrides]]\nname = "gate-sweep"\ninterval = "1m"\n'
-      '[[orders.overrides]]\nname = "order-tracking-sweep"\ninterval = "2m"\n'
-      '[[orders.overrides]]\nname = "orphan-sweep"\ninterval = "10m"\n';
+      '"dolt-remotes-patrol", "prune-branches", "wisp-compact", '
+      '"dolt-health", "nudge-on-route", "cascade-nudge-on-blocker-close", '
+      // The controller runs this sweep itself every five minutes.
+      '"nudge-mail-sweep"]\n'
+      // Run by phone-upkeep, one at a time, not on their own schedules.
+      '[[orders.overrides]]\nname = "beads-health"\ntrigger = "manual"\n'
+      '[[orders.overrides]]\nname = "order-tracking-sweep"\n'
+      'trigger = "manual"\n'
+      '[[orders.overrides]]\nname = "gate-sweep"\ntrigger = "manual"\n'
+      '[[orders.overrides]]\nname = "orphan-sweep"\ntrigger = "manual"\n'
+      '[[orders.overrides]]\nname = "reaper"\ntrigger = "manual"\n';
+
+  /// Each agent's OpenCode replaces the shell Gas City starts it with
+  /// (`sh -c "<command>"`): one process per agent instead of two. A line of
+  /// the city's `[providers.opencode]` (Gas City 1.4.1 does not take it as
+  /// a `[[patches.provider]]`: "unknown field").
+  static const acpCommand = 'acp_command = "exec opencode"';
+
+  /// The city's own order that runs the core pack's upkeep orders the phone
+  /// keeps (store health, order tracking and gate sweeps every two minutes;
+  /// the orphan sweep every ten, the reaper every thirty) one after
+  /// another, as `gc order run` so each gets its own pack's settings,
+  /// instead of each on its own cooldown, where they fire on the same tick
+  /// and add up. It fails when the store's health check fails, like
+  /// `beads-health` on its own did.
+  static const upkeepOrder =
+      '[order]\n'
+      'description = "Phone upkeep: the core sweeps one at a time '
+      '(written by OpenCode Mobile)"\n'
+      'trigger = "cooldown"\n'
+      'interval = "2m"\n'
+      'timeout = "10m"\n'
+      'exec = "exec sh $cityDir/assets/phone-upkeep.sh"\n';
+
+  static const upkeepScript = r'''#!/bin/sh
+# Phone upkeep (written by OpenCode Mobile on every AI Team start).
+cd /root/aiteam/city || exit 1
+state=/root/aiteam/city/.gc/runtime/packs/phone
+mkdir -p "$state"
+# One run at a time: Gas City starts the next run on the cooldown even when
+# the last one is still going (a slow orphan sweep outlasts two minutes),
+# and two runs side by side is what this order exists to avoid. The lock
+# goes with the process, so a run killed at its timeout leaves none behind.
+exec 9>"$state/upkeep.lock"
+flock -n 9 || exit 0
+n=$(cat "$state/upkeep.count" 2>/dev/null || echo 0)
+case $n in *[!0-9]*|'') n=0 ;; esac
+n=$((n + 1))
+echo "$n" > "$state/upkeep.count"
+rc=0
+gc order run beads-health >/dev/null 2>&1 || rc=$?
+gc order run order-tracking-sweep >/dev/null 2>&1 || true
+gc order run gate-sweep >/dev/null 2>&1 || true
+if [ $((n % 5)) -eq 0 ]; then gc order run orphan-sweep >/dev/null 2>&1 || true; fi
+if [ $((n % 15)) -eq 0 ]; then gc order run reaper >/dev/null 2>&1 || true; fi
+exit "$rc"
+''';
+
+  /// Brings a team made by an older version up to [phoneTuning] and writes
+  /// the upkeep order; run before every supervisor start. The tuning's own
+  /// tables (`[daemon]`, `[orders]` and its overrides) are dropped from
+  /// `city.toml` and written again at the end, and `[providers.opencode]`
+  /// gets [acpCommand]; nothing else in it is touched. A team that has this
+  /// version's tuning is left as is.
+  static String get tuneScript =>
+      'mkdir -p $cityDir/orders $cityDir/assets\n'
+      "cat > $cityDir/orders/phone-upkeep.toml <<'OC_EOF'\n"
+      '${upkeepOrder}OC_EOF\n'
+      "cat > $cityDir/assets/phone-upkeep.sh <<'OC_EOF'\n"
+      '${upkeepScript}OC_EOF\n'
+      'if [ -f $cityDir/city.toml ] && '
+      '! grep -qx \'$acpCommand\' $cityDir/city.toml; then\n'
+      "  awk '/^[[:space:]]*\\[/ { h = \$0; gsub(/[[:space:]]/, \"\", h); "
+      'skip = (h == "[daemon]" || h == "[orders]" || '
+      'h == "[[orders.overrides]]" || h == "[[patches.provider]]"); '
+      'prov = (h == "[providers.opencode]") } '
+      'skip { next } '
+      'prov && /^[[:space:]]*acp_command[[:space:]]*=/ { next } '
+      '{ print } '
+      r'''prov && /^[[:space:]]*\[/ { print "acp_command = \"exec opencode\"" }' '''
+      '$cityDir/city.toml > $cityDir/city.toml.oc-new &&\n'
+      "  cat >> $cityDir/city.toml.oc-new <<'OC_EOF' &&\n"
+      '\n${phoneTuning}OC_EOF\n'
+      '  mv $cityDir/city.toml.oc-new $cityDir/city.toml || '
+      'rm -f $cityDir/city.toml.oc-new\n'
+      'fi\n';
+
+  /// The environment of every team script and of the supervisor (so of its
+  /// agents too). The three programs send usage metrics by default; this
+  /// app sends nothing about its users' work anywhere, so all of them are
+  /// told not to.
 
   static const _env =
       'export HOME=/root GC_BIN=/usr/local/bin/gc\n'
@@ -191,6 +288,7 @@ class BuiltinTeam {
       '[providers]\n'
       '[providers.opencode]\n'
       'base = "builtin:opencode"\n'
+      '$acpCommand\n'
       'ready_delay_ms = 0\n'
       '[defaults]\n'
       '[defaults.rig]\n'
@@ -283,15 +381,159 @@ class BuiltinTeam {
         // why (seen on the emulator). Once the team has merged work, the
         // origin is ahead of the project and the push is refused, which is
         // fine.
+        //
+        // An origin made here also gets the hook that brings the team's
+        // merged work into the project folder (rewritten on every run, so
+        // a project added by an older version gets it too), and the work
+        // merged before it existed is brought in once now.
         'case "\$(git -C "\$project" remote get-url origin)" in\n'
         '  $originsDir/*) git -C "\$project" push -q origin HEAD || true ;;\n'
         'esac\n'
+        '$_hookFunctions'
+        'oc_install_hook "\$project" "\$rig" || true\n'
         'gc import install\n'
         'grep -q \'name = "gastown.mayor"\' city.toml || '
         "printf '\\n%s' ${_quote(_cityPatches)} >> city.toml\n"
         'grep -qx "dir = \\"\$rig\\"" city.toml || '
         "printf '\\n%s' ${_quote(_rigPatches(rig))} >> city.toml\n"
         'echo rig-ready\n';
+  }
+
+  /// The `post-receive` hook of a phone-side origin (only the ones
+  /// [rigScript] makes): the refinery merges into the origin, and this
+  /// brings that merge into the project folder the person's own
+  /// conversations work in, so nobody has to `git pull`.
+  ///
+  /// It only ever fast-forwards the branch the project has checked out,
+  /// and leaves the project alone when that is not safe:
+  /// - `dirty`: the project has changes of its own to tracked files (the
+  ///   team's own bookkeeping, `.beads/` and the lines Gas City adds to
+  ///   `.gitignore`, does not count; git itself still refuses to overwrite
+  ///   any of it);
+  /// - `diverged`: the project has commits the origin does not;
+  /// - `skipped`: the project is not on a branch;
+  /// - `failed`: git refused (the reason is logged).
+  /// Otherwise `brought-in`, or `up-to-date`. Every outcome is one line in
+  /// [pullLog]: time, project, outcome, commit, detail (tab-separated).
+  ///
+  /// It never fails the push: the refs are in already when it runs, and it
+  /// always exits 0. The project and its team name come from the origin's
+  /// own settings (`oc-mobile.project`, `oc-mobile.rig`, written with the
+  /// hook) or from `OC_PROJECT` / `OC_RIG`. Run with `--now` (the app's
+  /// "Bring the team's work in", [bringInScript]) it acts without a push
+  /// and prints the line.
+  static const originHook =
+      '#!/bin/sh\n'
+      '# Written by OpenCode Mobile (AI Team) on every team start: brings\n'
+      '# the work merged here into the project folder.\n'
+      'log=$pullLog\n'
+      r'''project=${OC_PROJECT:-$(git config --get oc-mobile.project 2>/dev/null)}
+rig=${OC_RIG:-$(git config --get oc-mobile.rig 2>/dev/null)}
+[ -n "$project" ] && [ -n "$rig" ] || exit 0
+now=
+[ "${1:-}" = --now ] && now=1
+refs=
+[ -n "$now" ] || refs=$(cat)
+# A hook runs with the origin's GIT_DIR and friends set; the project is
+# another repository.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_QUARANTINE_PATH \
+  GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_PREFIX \
+  GIT_COMMON_DIR GIT_NAMESPACE 2>/dev/null || true
+oc_log() {
+  line=$(printf '%s\t%s\t%s\t%s\t%s' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    "$rig" "$1" "$2" "$(printf '%s' "$3" | tr '\t\n' '  ' | cut -c1-200)")
+  mkdir -p "$(dirname "$log")"
+  printf '%s\n' "$line" >> "$log"
+  if [ "$(wc -l < "$log")" -gt 400 ]; then
+    tail -n 200 "$log" > "$log.tmp" && mv "$log.tmp" "$log"
+  fi
+  [ -z "$now" ] || printf '%s\n' "$line"
+}
+g() { git -C "$project" "$@"; }
+if ! branch=$(g symbolic-ref -q --short HEAD 2>/dev/null); then
+  [ -n "$now" ] && oc_log skipped - "the project is not on a branch"
+  exit 0
+fi
+if [ -z "$now" ]; then
+  printf '%s\n' "$refs" | grep -q " refs/heads/$branch\$" || exit 0
+fi
+if ! out=$(g fetch -q origin "+refs/heads/$branch:refs/remotes/origin/$branch" 2>&1); then
+  oc_log failed - "could not read the team's copy: $out"
+  exit 0
+fi
+new=$(g rev-parse -q --verify "refs/remotes/origin/$branch^{commit}") || exit 0
+short=$(g rev-parse --short "$new")
+subject=$(g log -1 --format=%s "$new")
+if g merge-base --is-ancestor "$new" HEAD; then
+  oc_log up-to-date "$short" "$subject"
+  exit 0
+fi
+if ! g merge-base --is-ancestor HEAD "$new"; then
+  oc_log diverged "$short" "$branch has commits the team's copy does not"
+  exit 0
+fi
+changes=$(g status --porcelain --untracked-files=no -- . ':(exclude).beads' ':(exclude).gitignore' | cut -c4- | head -n 5 | tr '\n' ' ')
+if [ -n "$changes" ]; then
+  oc_log dirty "$short" "$changes"
+  exit 0
+fi
+if out=$(g merge -q --ff-only "$new" 2>&1); then
+  oc_log brought-in "$short" "$subject"
+else
+  oc_log failed "$short" "$out"
+fi
+exit 0
+''';
+
+  /// `oc_install_hook PROJECT RIG`: gives the project's origin [originHook]
+  /// when that origin is one of this phone's ([originsDir]; an origin of
+  /// the project's own is never touched), then brings in once whatever the
+  /// team merged before the hook was there. Idempotent.
+  static const _hookFunctions =
+      'oc_install_hook() {\n'
+      '  oc_origin=\$(git -C "\$1" remote get-url origin 2>/dev/null) '
+      '|| return 0\n'
+      '  case "\$oc_origin" in $originsDir/*) ;; *) return 0 ;; esac\n'
+      '  git -C "\$oc_origin" config oc-mobile.project "\$1" &&\n'
+      '  git -C "\$oc_origin" config oc-mobile.rig "\$2" &&\n'
+      '  mkdir -p "\$oc_origin/hooks" &&\n'
+      "  cat > \"\$oc_origin/hooks/post-receive\" <<'OC_HOOK' &&\n"
+      '${originHook}OC_HOOK\n'
+      '  chmod 755 "\$oc_origin/hooks/post-receive" || return 1\n'
+      '  OC_PROJECT="\$1" OC_RIG="\$2" '
+      'sh "\$oc_origin/hooks/post-receive" --now </dev/null >/dev/null 2>&1 '
+      '|| true\n'
+      '}\n';
+
+  /// Gives every project of the team its origin hook (a team made by an
+  /// older version has none); part of every start, from the projects Gas
+  /// City lists in `.gc/site.toml`.
+  static const hooksScript =
+      '$_hookFunctions'
+      'if [ -f $cityDir/.gc/site.toml ]; then\n'
+      "  awk '/^name = / { n = \$0; sub(/^name = \"/, \"\", n); "
+      'sub(/"\$/, "", n) } '
+      '/^path = / { p = \$0; sub(/^path = "/, "", p); sub(/"\$/, "", p); '
+      "if (n != \"\") print n \"\\t\" p; n = \"\" }' "
+      '$cityDir/.gc/site.toml |\n'
+      "  while IFS='\t' read -r oc_rig oc_project; do\n"
+      '    oc_install_hook "\$oc_project" "\$oc_rig" || true\n'
+      '  done\n'
+      'fi\n';
+
+  /// Brings the team's merged work into the project at [path] now, as the
+  /// origin's hook does after every merge; prints the outcome line.
+  static String bringInScript(String path, String rig) {
+    if (!path.startsWith('/') || path.contains('\n')) {
+      throw ArgumentError.value(path, 'path', 'Must be an absolute path.');
+    }
+    if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(rig)) {
+      throw ArgumentError.value(rig, 'rig', 'Letters, digits, - and _ only.');
+    }
+    return 'OC_PROJECT=${_quote(path)} OC_RIG=$rig\n'
+        'export OC_PROJECT OC_RIG\n'
+        'set -- --now\n'
+        '$originHook';
   }
 
   /// The supervisor, as the long-running service. `exec`, so stopping the
@@ -306,6 +548,8 @@ class BuiltinTeam {
       'mkdir -p /root/.gc\n'
       "cat > /root/.gc/supervisor.toml <<'OC_EOF'\n"
       '${supervisorConfig}OC_EOF\n'
+      '$tuneScript'
+      '$hooksScript'
       'exec gc supervisor run\n';
 
   /// Registers the team with the running supervisor; a team registered
@@ -341,6 +585,10 @@ class BuiltinTeam {
       "awk '/^\\[\\[rigs\\]\\]/ { r = 1; next } "
       "r && /^name = / { gsub(/\"/, \"\", \$3); print \"rig \" \$3; r = 0 }' "
       '$cityDir/city.toml\n'
+      // The newest bring-in outcome per project (originHook).
+      '[ -f $pullLog ] && '
+      "awk -F '\\t' 'NF >= 3 { last[\$2] = \$0 } "
+      "END { for (r in last) print \"pull\\t\" last[r] }' $pullLog\n"
       'exit 0\n';
 
   static BuiltinTeamState parseStatus(String output, {bool running = false}) {
@@ -352,6 +600,14 @@ class BuiltinTeam {
         for (final line in lines)
           if (line.startsWith('rig ')) line.substring(4).trim(),
       ],
+      bringIns: {
+        for (final pull in [
+          for (final line in lines)
+            if (line.startsWith('pull\t'))
+              ?BuiltinTeamBringIn.parse(line.substring(5)),
+        ])
+          pull.rig: pull,
+      },
       running: running,
     );
   }
@@ -446,6 +702,21 @@ class BuiltinTeam {
   }
 
   Future<void> stop() => _linux.stopService(serviceName);
+
+  /// Brings the team's merged work into the project at [path] now, on the
+  /// same terms as the origin's hook ([originHook]); null when the script
+  /// said nothing (the project has no phone-side origin).
+  Future<BuiltinTeamBringIn?> bringIn(String path) async {
+    final result = await _linux.run(
+      bringInScript(path, rigName(path)),
+      timeout: const Duration(minutes: 2),
+    );
+    BuiltinTeamBringIn? last;
+    for (final line in result.output.split('\n')) {
+      last = BuiltinTeamBringIn.parse(line.trim()) ?? last;
+    }
+    return last;
+  }
 
   Future<bool> supervisorAnswers() => _answersOk(Uri.parse('$url/health'));
 
@@ -548,6 +819,7 @@ class BuiltinTeamState {
     this.installed = false,
     this.hasCity = false,
     this.rigs = const [],
+    this.bringIns = const {},
     this.running = false,
   });
 
@@ -560,10 +832,79 @@ class BuiltinTeamState {
   /// The projects the team works on, by team name ([BuiltinTeam.rigName]).
   final List<String> rigs;
 
+  /// The newest bring-in outcome per project, by team name.
+  final Map<String, BuiltinTeamBringIn> bringIns;
+
   /// The supervisor runs as the app's service.
   final bool running;
 
   bool hasProject(String path) => rigs.contains(BuiltinTeam.rigName(path));
+
+  BuiltinTeamBringIn? bringInFor(String path) =>
+      bringIns[BuiltinTeam.rigName(path)];
+}
+
+/// What [BuiltinTeam.originHook] did with the team's merged work.
+enum BuiltinTeamBringInOutcome {
+  broughtIn('brought-in'),
+  upToDate('up-to-date'),
+  dirty('dirty'),
+  diverged('diverged'),
+  skipped('skipped'),
+  failed('failed');
+
+  const BuiltinTeamBringInOutcome(this.word);
+
+  /// The word in the log.
+  final String word;
+}
+
+/// One line of [BuiltinTeam.pullLog].
+class BuiltinTeamBringIn {
+  const BuiltinTeamBringIn({
+    required this.time,
+    required this.rig,
+    required this.outcome,
+    this.commit,
+    this.detail = '',
+  });
+
+  final DateTime? time;
+  final String rig;
+  final BuiltinTeamBringInOutcome outcome;
+
+  /// The short hash of the team's newest commit, when known.
+  final String? commit;
+
+  /// The commit's subject, the changes that kept it out, or git's reason.
+  final String detail;
+
+  /// The project was left behind the team's work.
+  bool get leftBehind => switch (outcome) {
+    BuiltinTeamBringInOutcome.dirty ||
+    BuiltinTeamBringInOutcome.diverged ||
+    BuiltinTeamBringInOutcome.failed => true,
+    _ => false,
+  };
+
+  /// A log line (time, project, outcome, commit, detail; tab-separated), or
+  /// null for anything else.
+  static BuiltinTeamBringIn? parse(String line) {
+    final parts = line.split('\t');
+    if (parts.length < 3) return null;
+    final outcome = BuiltinTeamBringInOutcome.values
+        .where((value) => value.word == parts[2].trim())
+        .firstOrNull;
+    if (outcome == null) return null;
+    final commit = parts.length > 3 ? parts[3].trim() : '';
+    return BuiltinTeamBringIn(
+      time: DateTime.tryParse(parts[0].trim()),
+      rig: parts[1].trim(),
+      outcome: outcome,
+      commit: commit.isEmpty || commit == '-' ? null : commit,
+      detail: parts.length > 4 ? parts.sublist(4).join(' ').trim() : '',
+    );
+  }
 }
 
 class BuiltinTeamException implements Exception {

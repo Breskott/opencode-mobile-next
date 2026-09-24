@@ -6,6 +6,7 @@ import '../../state/connection.dart';
 import '../../state/profile_monitor.dart' show ProfileMonitor;
 import '../../state/profiles.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import '../screens/profile_monitor_screen.dart' show openMonitoredRequest;
 
 /// The other agent running on this phone (or any other watched server), on
@@ -44,21 +45,11 @@ class OtherServersPanel extends StatelessWidget {
                 ),
         ];
         if (rows.isEmpty) return const SizedBox.shrink();
-        final theme = Theme.of(context);
         final l10n = lookupAppLocalizations(Localizations.localeOf(context));
         return Column(
           key: const ValueKey('other-servers-panel'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 2),
-              child: Text(
-                l10n.otherServersTitle,
-                style: theme.textTheme.titleSmall,
-              ),
-            ),
-            ...rows,
-          ],
+          children: [SectionLabel(l10n.otherServersTitle), ...rows],
         );
       },
     );
@@ -124,28 +115,27 @@ class _OtherServerRowState extends State<_OtherServerRow> {
       if (waiting > 0) l10n.otherServerNeedsYou,
       if (running > 0) l10n.otherServerWorking(running),
     ].join(' · ');
-    final tone = waiting > 0 ? AppStatusTone.attention : AppStatusTone.progress;
-    return ListTile(
+    // The same state colours as Other projects: needs you, else running.
+    final color = waiting > 0
+        ? AppTheme.statusColor(theme, AppStatusTone.attention)
+        : theme.colorScheme.primary;
+    // Opening shows on the screen's loading bar (the connection changes);
+    // the row only stops taking taps meanwhile.
+    return KitRow(
       key: ValueKey('other-server-${widget.profile.id}'),
-      contentPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 12, 0),
-      leading: _opening
-          ? const SizedBox.square(
-              dimension: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Icon(
-              AppIconography.statusDot,
-              size: 12,
-              color: AppTheme.statusColor(theme, tone),
-            ),
-      minLeadingWidth: 16,
-      title: Text(
-        widget.profile.name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      leading: SizedBox.square(
+        dimension: 32,
+        child: Icon(AppIconography.statusDot, size: 12, color: color),
       ),
-      subtitle: Text(status, maxLines: 1, overflow: TextOverflow.ellipsis),
-      trailing: const Icon(AppIconography.chevronRight),
+      title: widget.profile.name,
+      supporting: TextSpan(
+        text: status,
+        style: TextStyle(color: color, fontWeight: FontWeight.w600),
+      ),
+      trailing: const SizedBox.square(
+        dimension: 48,
+        child: Icon(AppIconography.chevronRight, size: 20),
+      ),
       onTap: _opening ? null : _open,
     );
   }

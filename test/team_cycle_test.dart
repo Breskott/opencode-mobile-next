@@ -1509,46 +1509,32 @@ void main() {
   // ---------------------------------------------------------------------
 
   group('placement', () {
-    testWidgets('the card shows the compact strip under its headline '
-        'batch row', (tester) async {
+    testWidgets('the card shows no strip: the task line says where it is '
+        '(AI Team redesign)', (tester) async {
       // The fixture convoy tracks oc-loy, routed and waiting for an agent.
-      // The recorded bead carries no `updated_at` (TEAM-117): the routing
-      // is reached at an unknown time, so the line names no time — never
-      // the moment the app looked — and, created the day before with no
-      // agent, the wait is a stall rather than the usual one.
       final (controller, gateway) = await boot();
       await tester.pumpWidget(
         app(TeamCard(controller: controller, onOpen: () {})),
       );
       await tester.pump();
-      expect(key('team-card-cycle'), findsOneWidget);
+      expect(key('team-card-cycle'), findsNothing);
+      expect(key('team-cycle-current'), findsNothing);
       expect(
-        tester.getTopLeft(key('team-card-cycle')).dy,
-        greaterThan(tester.getTopLeft(key('team-card-run-oc-xru')).dy),
+        tester
+            .widget<RichText>(
+              find
+                  .descendant(
+                    of: key('team-card-run-line-oc-xru'),
+                    matching: find.byType(RichText),
+                  )
+                  .first,
+            )
+            .text
+            .toPlainText(),
+        'Waiting for a worker',
       );
-      expect(key('team-cycle-current'), findsOneWidget);
-      expect(
-        tester.widget<Text>(key('team-cycle-current')).data,
-        'Agent starting',
-      );
-      expect(
-        find.descendant(
-          of: key('team-card-cycle'),
-          matching: find.textContaining(clockLabel(tester, clock)),
-        ),
-        findsNothing,
-      );
-      expect(
-        find.text('The host has not started an agent yet'),
-        findsOneWidget,
-      );
-      // Compact: dots, no chips, no buttons.
-      expect(key('team-cycle-dot-routed'), findsOneWidget);
-      expect(key('team-cycle-step-routed'), findsNothing);
-      expect(key('team-cycle-actions'), findsNothing);
-      expect(await semanticsOf(tester), 'Step 2 of 6, Agent starting');
 
-      // A completed batch shows no strip.
+      // A completed task leaves the card.
       gateway.runsOverride = [
         OrchestrationRun(
           id: 'oc-xru',
@@ -1562,11 +1548,11 @@ void main() {
       ];
       await controller.refresh();
       await tester.pump();
-      expect(key('team-card-cycle'), findsNothing);
+      expect(key('team-card-run-oc-xru'), findsNothing);
     });
 
-    testWidgets('the run Overview shows the full strip over the batch '
-        'line, and nothing for a formula run', (tester) async {
+    testWidgets('the run Overview shows the four stages and why it waits, '
+        'with no time it cannot know (TEAM-117)', (tester) async {
       tester.view.physicalSize = const Size(800, 1600);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -1579,45 +1565,40 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(key('team-run-cycle'), findsOneWidget);
-      expect(key('team-run-batch'), findsOneWidget);
-      expect(
-        tester.getTopLeft(key('team-run-cycle')).dy,
-        lessThan(tester.getTopLeft(key('team-run-batch')).dy),
-      );
-      expect(key('team-cycle-step-agentStarting'), findsOneWidget);
-      // TEAM-117: the routed step's check carries no time (the bead has
-      // no `updated_at`), and a day without an agent is a stall.
-      expect(key('team-cycle-step-routed'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: key('team-run-cycle'),
-          matching: find.textContaining(clockLabel(tester, clock)),
-        ),
-        findsNothing,
-      );
+      // The eight-step strip became four plain stages.
+      expect(key('team-run-cycle'), findsNothing);
+      expect(key('team-run-stage-line'), findsOneWidget);
+      for (final stage in ['Waiting', 'Working', 'Reviewing', 'Done']) {
+        expect(
+          find.descendant(
+            of: key('team-run-stage-line'),
+            matching: find.text(stage),
+          ),
+          findsOneWidget,
+          reason: stage,
+        );
+      }
+      // TEAM-117: routed a day ago with no agent is a stall, said in
+      // words; the routing time is unknown, so no time is invented.
+      expect(key('team-run-stall'), findsOneWidget);
       expect(
         find.text('The host has not started an agent yet'),
         findsOneWidget,
       );
-
-      final formula = (await controller.gateway!.runs())
-          .where((r) => r.kind == RunKind.formula)
-          .firstOrNull;
-      if (formula != null) {
-        await tester.pumpWidget(
-          app(
-            RunScreen(
-              controller: controller,
-              runId: formula.id,
-              now: () => clock,
+      expect(
+        find.descendant(
+          of: key('team-run-stall'),
+          matching: find.textContaining(
+            MaterialLocalizations.of(
+              tester.element(find.byType(RunScreen)),
+            ).formatTimeOfDay(
+              TimeOfDay.fromDateTime(clock.toLocal()),
+              alwaysUse24HourFormat: true,
             ),
-            scroll: false,
           ),
-        );
-        await tester.pump();
-        expect(key('team-run-cycle'), findsNothing);
-      }
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('the Work sheet shows the full strip at the top', (

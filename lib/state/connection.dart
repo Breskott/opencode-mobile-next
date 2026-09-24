@@ -1734,6 +1734,40 @@ class ConnectionController extends ChangeNotifier {
   @visibleForTesting
   bool get pendingLocationRevalidation => _pendingLocationRevalidation;
 
+  /// True while [connect] is still validating the saved project folder: the
+  /// folder is known (see [savedProjectDirectory]) but not open yet.
+  bool get restoringSavedLocation => _restoringSavedLocation;
+
+  /// The project folder saved for this server, while no folder is open:
+  /// the one a restore will open. Null once a folder is open, and for a
+  /// saved home folder or AI Team folder, which are never restored.
+  String? get savedProjectDirectory {
+    if (directory != null || workspace != null) return null;
+    final owner = profile;
+    if (owner == null || owner.usesAgentSocket) return null;
+    final saved = store.locationFor(owner.id)?.directory;
+    if (saved == null ||
+        isProtectedWorkspaceDirectory(saved) ||
+        isAiTeamDirectory(saved)) {
+      return null;
+    }
+    return saved;
+  }
+
+  /// Opens the saved project folder when a connection came up without it
+  /// (and nothing else is restoring it). The Work tab calls this instead of
+  /// offering the folder chooser to someone who already has a project.
+  Future<void> restoreSavedLocation() async {
+    if (_restoringSavedLocation) return;
+    final saved = savedProjectDirectory;
+    final owner = profile;
+    if (saved == null || owner == null) return;
+    await selectLocation(
+      directory: saved,
+      workspace: store.locationFor(owner.id)?.workspace,
+    );
+  }
+
   Future<void> _forgetSavedLocation(ServerProfile profile) async {
     try {
       await store.clearLocation(profile.id);

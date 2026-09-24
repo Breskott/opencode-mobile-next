@@ -1,7 +1,9 @@
-// TEAM-109: the run detail over the fixture gateway. The Overview answers
-// the five questions top to bottom, names blocked causes, shows the single
-// most urgent needs-you item read-only and says "Batch of N" for a convoy
-// (stages for a formula run); the Timeline is scoped to the run, newest
+// TEAM-109: the run detail over the fixture gateway. The Overview (as
+// redesigned 2026-09-24) answers the five questions top to bottom — the
+// title and status line, the four-stage line, the single most urgent
+// needs-you item (answered in place, or where to answer it when the app can
+// only watch), the steps with their blocked causes, and counts and usage
+// under Details; a formula run's stages are its steps; the Timeline is scoped to the run, newest
 // first, filters reduce its rows and events that arrive while scrolled
 // away wait behind a jump-to-latest pill; the missing, stale, loading and
 // error states; the home's run row pushes the screen.
@@ -22,8 +24,10 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/widgets/team_cycle_strip.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Directory _findFixtureRoot() {
@@ -51,11 +55,15 @@ class _Gateway implements OrchestrationGateway {
   List<OrchestrationAgent>? agentsOverride;
   List<OrchestrationGate>? gatesOverride;
 
+  /// A host the app can only watch: no `controlRespond`, for instance.
+  OrchestrationCapabilities? capabilitiesOverride;
+
   int count(String name) => calls[name] ?? 0;
   void _hit(String name) => calls[name] = count(name) + 1;
 
   @override
-  OrchestrationCapabilities get capabilities => inner.capabilities;
+  OrchestrationCapabilities get capabilities =>
+      capabilitiesOverride ?? inner.capabilities;
   @override
   OrchestrationHostIdentity? get host => inner.host;
   @override
@@ -488,81 +496,154 @@ void main() {
       ..gatesOverride = const [];
   }
 
+  /// The fixture's capabilities without `controlRespond`: the app can
+  /// watch the team's questions but not answer them.
+  const watchOnly = OrchestrationCapabilities(
+    projects: true,
+    runs: true,
+    runSteps: true,
+    workGraph: true,
+    workReady: true,
+    agents: true,
+    agentOutput: true,
+    sessionLink: true,
+    gatesInteractions: true,
+    gatesBeads: true,
+    usage: true,
+    eventStream: true,
+    eventReplay: true,
+  );
+
+  /// The supporting line of a KitRow (a Text.rich) by its key.
+  String line(WidgetTester tester, String name) =>
+      tester.widget<Text>(key(name)).textSpan!.toPlainText();
+
+  /// Counts, usage and the host's policy sit under the Overview's
+  /// collapsed Details row (the 2026-09-24 redesign); open it.
+  Future<void> openDetails(WidgetTester tester) async {
+    await tester.tap(key('team-run-summary'));
+    await tester.pumpAndSettle();
+    expect(key('team-run-summary-body'), findsOneWidget);
+  }
+
+  /// Technical details, from the app bar's overflow.
+  Future<Finder> openTechnical(WidgetTester tester) async {
+    await tester.tap(key('team-run-more'));
+    await tester.pumpAndSettle();
+    await tester.tap(key('team-run-details'));
+    await tester.pumpAndSettle();
+    return key('team-run-details-sheet');
+  }
+
   group('overview', () {
-    testWidgets('the fixture convoy: title, term, state, progress, batch', (
-      tester,
-    ) async {
+    testWidgets('the fixture convoy: title, status line, stage, step, '
+        'details; the Gas City term only in Technical details', (tester) async {
+      final handle = tester.ensureSemantics();
       final (controller, _) = await boot();
       await pumpRun(tester, controller, 'oc-xru');
       expect(key('team-run-data'), findsOneWidget);
       // TEAM-115: the batch is named by its work and, with nobody
-      // holding the bead, is waiting for an agent; the host's own
+      // holding the bead, is waiting for a worker; the host's own
       // `sling-` title is in Technical details only.
-      expect(find.text('Add subtract function to calc.py'), findsNWidgets(2));
+      expect(
+        tester.widget<Text>(key('team-run-objective-title')).data,
+        'Add subtract function to calc.py',
+      );
       expect(find.text('sling-oc-loy'), findsNothing);
-      expect(find.text('Run · convoy'), findsOneWidget);
-      expect(find.text('Waiting for an agent'), findsOneWidget);
+      expect(find.text('Task · convoy', findRichText: true), findsNothing);
+      expect(
+        tester.widget<Text>(key('team-run-state')).data,
+        'Waiting for a worker',
+      );
       expect(find.text('Planning'), findsNothing);
       // Created 2026-09-10T18:44:53Z, the clock is 12:30 the next day.
-      expect(find.text('17 h 45 min'), findsOneWidget);
-      expect(find.text('0 of 1 done'), findsOneWidget);
-      expect(find.text('Working 0'), findsOneWidget);
-      expect(find.text('Blocked 0'), findsOneWidget);
-      expect(find.text('Batch of 1 · 0 done'), findsOneWidget);
+      expect(tester.widget<Text>(key('team-run-elapsed')).data, '17 h 45 min');
+      // One step: no "0 of 1" on the status line; the step is a row.
+      expect(key('team-run-progress-label'), findsNothing);
+      expect(key('team-run-step-oc-loy'), findsOneWidget);
+      expect(find.bySemanticsLabel('Stage 1 of 4: Waiting'), findsOneWidget);
+      // The counts are under Details.
+      expect(key('team-run-counts'), findsNothing);
+      await openDetails(tester);
+      expect(
+        tester.widget<Text>(key('team-run-counts')).data,
+        '0 done · 0 working · 0 held up',
+      );
       expect(key('team-run-stages'), findsNothing);
-      expect(key('team-run-blocked'), findsNothing);
+      // Why it waits, in one sentence, from the step's dispatch strip.
+      expect(
+        tester.widget<KitNotice>(key('team-run-stall')).message,
+        teamCycleStallSentence(
+          lookupAppLocalizations(const Locale('en')),
+          controller.cycleFor('oc-loy').stallReason!,
+        ),
+      );
       expect(key('team-run-needs-you'), findsNothing);
       expect(key('team-run-stale'), findsNothing);
       expect(key('team-run-work-placeholder'), findsNothing);
+      final sheet = await openTechnical(tester);
+      expect(
+        find.descendant(
+          of: sheet,
+          matching: find.text('Task · convoy', findRichText: true),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: sheet, matching: find.text('sling-oc-loy')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
+      handle.dispose();
     });
 
-    testWidgets('TEAM-117: work in the refinery\'s hands is Waiting for '
-        'merge, timed from the hand-off, with Working and Blocked at 0', (
+    testWidgets('TEAM-117: work in the refinery\'s hands is Reviewing, '
+        'timed from the hand-off, with nothing working or held up', (
       tester,
     ) async {
       // The phone showed "Working · 20 h 19 min" beside "Working 0 ·
       // Blocked 0" for exactly this bead.
+      final handle = tester.ensureSemantics();
       final handedAt = clock.subtract(const Duration(hours: 20, minutes: 19));
       final (controller, _) = await boot(
         configure: (g) => handedToRefineryShape(g, updatedAt: handedAt),
       );
       await pumpRun(tester, controller, 'oc-xru');
-      expect(
-        tester.widget<Text>(key('team-run-state')).data,
-        'Waiting for merge',
-      );
+      expect(tester.widget<Text>(key('team-run-state')).data, 'Reviewing');
       expect(
         tester.widget<Text>(key('team-run-elapsed')).data,
         '20 h 19 min since hand-off',
       );
-      // ("Working" still names the strip's fourth step chip.)
-      expect(find.text('Waiting for an agent'), findsNothing);
-      expect(find.text('Working 0'), findsOneWidget);
-      expect(find.text('Blocked 0'), findsOneWidget);
-      expect(find.text('0 of 1 done'), findsOneWidget);
-      // The strip: every step reached at the hand-off time, the merge
-      // awaited past its window.
-      expect(key('team-run-cycle'), findsOneWidget);
-      expect(find.text('Waiting for the merge agent'), findsOneWidget);
+      expect(find.bySemanticsLabel('Stage 3 of 4: Reviewing'), findsOneWidget);
+      expect(find.text('Waiting for a worker'), findsNothing);
+      // Why it waits, in one sentence (the step's sheet has the strip).
+      expect(
+        tester.widget<KitNotice>(key('team-run-stall')).message,
+        'Waiting for the merge agent',
+      );
       final cycle = controller.cycleFor('oc-loy');
       expect(cycle.reachedAt[DispatchStep.handedToMerge], handedAt);
       expect(cycle.stallReason, DispatchStall.mergeWaiting);
+      await openDetails(tester);
+      expect(
+        tester.widget<Text>(key('team-run-counts')).data,
+        '0 done · 0 working · 0 held up',
+      );
       // Technical details agree with the header.
-      await tester.tap(key('team-run-details'));
-      await tester.pumpAndSettle();
-      expect(find.text('Waiting for merge'), findsNWidgets(2));
+      final sheet = await openTechnical(tester);
+      expect(
+        find.descendant(of: sheet, matching: find.text('Reviewing')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
+      handle.dispose();
     });
 
     testWidgets('TEAM-117: the recorded bead has no update time: the '
         'hand-off is counted from its creation, steps untimed', (tester) async {
       final (controller, _) = await boot(configure: handedToRefineryShape);
       await pumpRun(tester, controller, 'oc-xru');
-      expect(
-        tester.widget<Text>(key('team-run-state')).data,
-        'Waiting for merge',
-      );
+      expect(tester.widget<Text>(key('team-run-state')).data, 'Reviewing');
       // Created 2026-09-10T18:44:45Z, the clock is 12:30 the next day.
       expect(
         tester.widget<Text>(key('team-run-elapsed')).data,
@@ -573,20 +654,25 @@ void main() {
       expect(cycle.reachedAt[DispatchStep.handedToMerge], isNull);
       expect(cycle.since, isNull);
       expect(cycle.stallReason, DispatchStall.mergeWaiting);
-      expect(find.text('Waiting for the merge agent'), findsOneWidget);
+      expect(
+        tester.widget<KitNotice>(key('team-run-stall')).message,
+        'Waiting for the merge agent',
+      );
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('answers the five questions top to bottom', (tester) async {
       final (controller, _) = await boot(configure: richShape);
       await pumpRun(tester, controller, 'oc-xru');
+      // What it is and how it is doing; where it is; what needs me; why it
+      // is held up (on its step); then Details with the counts.
       const order = [
         'team-run-objective',
-        'team-run-progress',
-        'team-run-counts',
-        'team-run-blocked',
+        'team-run-stage-line',
         'team-run-needs-you',
-        'team-run-batch',
+        'team-run-steps',
+        'team-run-blocked-w3',
+        'team-run-summary',
       ];
       for (final name in order) {
         expect(key(name), findsOneWidget, reason: name);
@@ -598,13 +684,25 @@ void main() {
           reason: '${order[i - 1]} above ${order[i]}',
         );
       }
-      expect(find.text('Offline-first sessions'), findsNWidgets(2));
-      expect(find.text('Blocked'), findsOneWidget);
-      expect(find.text('34 min'), findsOneWidget);
-      expect(find.text('1 of 4 done'), findsOneWidget);
-      expect(find.text('Working 1'), findsOneWidget);
-      expect(find.text('Blocked 1'), findsOneWidget);
-      expect(find.text('Batch of 4 · 1 done'), findsOneWidget);
+      expect(
+        tester.widget<Text>(key('team-run-objective-title')).data,
+        'Offline-first sessions',
+      );
+      expect(tester.widget<Text>(key('team-run-state')).data, 'Blocked');
+      expect(tester.widget<Text>(key('team-run-elapsed')).data, '34 min');
+      expect(
+        tester.widget<Text>(key('team-run-progress-label')).data,
+        '1 of 4 steps done',
+      );
+      await openDetails(tester);
+      expect(
+        tester.widget<Text>(key('team-run-counts')).data,
+        '1 done · 1 working · 1 held up',
+      );
+      expect(
+        top(tester, key('team-run-summary')),
+        lessThan(top(tester, key('team-run-counts'))),
+      );
       expect(key('team-run-stages'), findsNothing);
       expect(tester.takeException(), isNull);
     });
@@ -612,12 +710,21 @@ void main() {
     testWidgets('names the blocked cause the host gave', (tester) async {
       final (controller, _) = await boot(configure: richShape);
       await pumpRun(tester, controller, 'oc-xru');
+      // On the held-up step's own row: its title, then the state word and
+      // the host's reason.
       expect(
-        find.text('Conflict policy: Tests failed: 2 of 18'),
+        find.descendant(
+          of: key('team-run-step-w3'),
+          matching: find.text('Conflict policy'),
+        ),
         findsOneWidget,
       );
-      expect(key('team-run-blocked-w3'), findsOneWidget);
+      expect(
+        line(tester, 'team-run-blocked-w3'),
+        'Blocked · Tests failed: 2 of 18',
+      );
       expect(key('team-run-blocked-w2'), findsNothing);
+      expect(key('team-run-step-line-w2'), findsOneWidget);
     });
 
     testWidgets('the blocked shape: cause from the open dependency', (
@@ -625,78 +732,162 @@ void main() {
     ) async {
       final (controller, _) = await boot(configure: blockedShape);
       await pumpRun(tester, controller, 'oc-xru');
-      expect(find.text('Blocked'), findsOneWidget);
-      expect(find.text('1 of 3 done'), findsOneWidget);
-      expect(find.text('Blocked 1'), findsOneWidget);
+      expect(tester.widget<Text>(key('team-run-state')).data, 'Blocked');
       expect(
-        find.text(
-          'Add subtract function to calc.py: waiting on one other item',
+        tester.widget<Text>(key('team-run-progress-label')).data,
+        '1 of 3 steps done',
+      );
+      expect(
+        find.descendant(
+          of: key('team-run-step-oc-loy'),
+          matching: find.text('Add subtract function to calc.py'),
         ),
         findsOneWidget,
       );
-      expect(find.text('Batch of 3 · 1 done'), findsOneWidget);
+      expect(
+        line(tester, 'team-run-blocked-oc-loy'),
+        'Blocked · waiting on one other step',
+      );
+      await openDetails(tester);
+      expect(
+        tester.widget<Text>(key('team-run-counts')).data,
+        '1 done · 0 working · 1 held up',
+      );
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a formula run with steps shows Stages, not a batch line', (
+    testWidgets('a formula run with stages lists them as its steps', (
       tester,
     ) async {
       final (controller, _) = await boot(configure: richShape);
       await pumpRun(tester, controller, 'run-ship');
-      expect(find.text('Run · formula'), findsOneWidget);
-      // The state word and the active stage.
-      expect(find.text('Working'), findsNWidgets(2));
-      expect(find.text('2 h 5 min'), findsOneWidget);
-      expect(find.text('Nothing counted yet'), findsOneWidget);
+      expect(tester.widget<Text>(key('team-run-state')).data, 'Working');
+      expect(tester.widget<Text>(key('team-run-elapsed')).data, '2 h 5 min');
+      // It tracks no work: nothing counted on the status line.
+      expect(key('team-run-progress-label'), findsNothing);
       expect(key('team-run-stages'), findsOneWidget);
-      expect(find.text('Stages'), findsOneWidget);
-      expect(find.text('Requirements'), findsOneWidget);
-      expect(find.text('Implementation'), findsOneWidget);
-      expect(find.text('Testing'), findsOneWidget);
-      expect(find.text('Done'), findsOneWidget);
-      expect(find.text('Planning'), findsOneWidget);
-      expect(key('team-run-batch'), findsNothing);
+      expect(
+        find.descendant(
+          of: key('team-run-stages'),
+          matching: find.text('Steps'),
+        ),
+        findsOneWidget,
+      );
+      for (final (index, (title, state)) in const [
+        ('Requirements', 'Done'),
+        ('Implementation', 'Working'),
+        ('Testing', 'Planning'),
+      ].indexed) {
+        final row = key('team-run-stage-$index');
+        expect(
+          find.descendant(of: row, matching: find.text(title)),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: row,
+            matching: find.text(state, findRichText: true),
+          ),
+          findsOneWidget,
+          reason: title,
+        );
+      }
+      expect(key('team-run-steps'), findsNothing);
       expect(key('team-run-needs-you'), findsNothing);
-      expect(key('team-run-blocked'), findsNothing);
+      expect(key('team-run-stall'), findsNothing);
+      // The formula's term and name are in Technical details.
+      expect(find.text('Task · formula', findRichText: true), findsNothing);
+      final sheet = await openTechnical(tester);
+      expect(
+        find.descendant(
+          of: sheet,
+          matching: find.text('Task · formula', findRichText: true),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: sheet, matching: find.text('ship')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('the most urgent needs-you item, read-only', (tester) async {
+    testWidgets('the most urgent needs-you item, answered in place', (
+      tester,
+    ) async {
       final (controller, _) = await boot(configure: richShape);
       await pumpRun(tester, controller, 'oc-xru');
       final card = key('team-run-needs-you');
       expect(card, findsOneWidget);
       // The decision outranks the gate bead; the other run's gate is absent.
-      expect(find.text('wolf needs you'), findsOneWidget);
-      expect(find.text('Which persistence strategy?'), findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.text('Decision')),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<Text>(key('team-run-needs-you-question')).data,
+        'Which persistence strategy?',
+      );
       expect(
         find.text('This choice controls how the tests store data.'),
         findsOneWidget,
       );
       expect(find.text('Approve the schema'), findsNothing);
       expect(find.text('Another run asks'), findsNothing);
-      expect(
-        find.text(
-          'Answer this on the computer. The phone can only watch for now.',
-        ),
-        findsOneWidget,
+      // The host lets the phone answer: the choices are here, no
+      // "answer on the computer" line.
+      for (final choice in const ['SQLite', 'Filesystem']) {
+        expect(
+          find.descendant(of: card, matching: find.text(choice)),
+          findsOneWidget,
+        );
+      }
+      expect(key('team-run-needs-you-watch-only'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a host the app can only watch says where to answer', (
+      tester,
+    ) async {
+      final (controller, _) = await boot(
+        configure: (g) {
+          richShape(g);
+          g.capabilitiesOverride = watchOnly;
+        },
       );
-      expect(find.widgetWithText(FilledButton, 'Decide'), findsNothing);
+      await pumpRun(tester, controller, 'oc-xru');
+      final card = key('team-run-needs-you');
+      expect(
+        tester.widget<Text>(key('team-run-needs-you-watch-only')).data,
+        'Answer this on the computer. The phone can only watch for now.',
+      );
+      expect(
+        tester.widget<Text>(key('team-run-needs-you-question')).data,
+        'Which persistence strategy?',
+      );
+      // Nothing to press but More (the Gate sheet), no choices to pick.
+      expect(
+        find.descendant(of: card, matching: find.text('SQLite')),
+        findsNothing,
+      );
+      expect(key('team-run-needs-you-send'), findsNothing);
+      expect(key('team-run-needs-you-answer'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('a phone host says where to answer', (tester) async {
       final (controller, _) = await boot(
-        configure: richShape,
+        configure: (g) {
+          richShape(g);
+          g.capabilitiesOverride = watchOnly;
+        },
         hostMode: OrchestrationHostMode.phone,
       );
       await pumpRun(tester, controller, 'oc-xru');
       expect(
-        find.text(
-          'Answer this in the host on this phone. The app can only watch '
-          'for now.',
-        ),
-        findsOneWidget,
+        tester.widget<Text>(key('team-run-needs-you-watch-only')).data,
+        'Answer this in the host on this phone. The app can only watch '
+        'for now.',
       );
     });
 
@@ -705,6 +896,8 @@ void main() {
     ) async {
       final (controller, _) = await boot(configure: richShape);
       await pumpRun(tester, controller, 'oc-xru');
+      await tester.tap(key('team-run-more'));
+      await tester.pumpAndSettle();
       await tester.tap(key('team-run-details'));
       await tester.pumpAndSettle();
       final sheet = key('team-run-details-sheet');
@@ -1034,7 +1227,7 @@ void main() {
       await tester.tap(key('open'));
       await tester.pumpAndSettle();
       expect(key('team-run-missing'), findsOneWidget);
-      expect(find.text('This run is no longer on the host'), findsOneWidget);
+      expect(find.text('This task is no longer on the host'), findsOneWidget);
       expect(key('team-run-data'), findsNothing);
       expect(key('team-run-details'), findsNothing);
       await tester.tap(find.widgetWithText(FilledButton, 'Back'));
@@ -1131,19 +1324,62 @@ void main() {
       await tester.tap(key('team-home-run-oc-xru'));
       await tester.pumpAndSettle();
       expect(key('team-run'), findsOneWidget);
-      expect(find.text('Run · convoy'), findsOneWidget);
+      // The task it opened, by its title; the Gas City term is in
+      // Technical details.
+      expect(
+        tester.widget<Text>(key('team-run-objective-title')).data,
+        'Add subtract function to calc.py',
+      );
+      final sheet = await openTechnical(tester);
+      expect(
+        find.descendant(
+          of: sheet,
+          matching: find.text('Task · convoy', findRichText: true),
+        ),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('reads in Arabic with the term and ids LTR', (tester) async {
+      final ar = lookupAppLocalizations(const Locale('ar'));
       final (controller, _) = await boot(configure: richShape);
       await pumpRun(tester, controller, 'oc-xru', locale: const Locale('ar'));
-      expect(find.text('تشغيل · convoy'), findsOneWidget);
-      expect(find.text('اكتمل 1 من 4'), findsOneWidget);
-      expect(find.text('دفعة من 4 · اكتمل 1'), findsOneWidget);
-      expect(find.text('wolf يحتاجك'), findsOneWidget);
+      expect(
+        tester.widget<Text>(key('team-run-progress-label')).data,
+        ar.teamUiTaskSteps(1, 4),
+      );
+      expect(
+        find.descendant(
+          of: key('team-run-needs-you'),
+          matching: find.text(ar.teamUiHomeGateKindChoice),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        Directionality.of(tester.element(key('team-run-objective'))),
+        TextDirection.rtl,
+      );
+      await openDetails(tester);
+      expect(
+        tester.widget<Text>(key('team-run-counts')).data,
+        ar.teamUiRunDetailsCounts(1, 1, 1),
+      );
+      expect(
+        find.text(ar.teamUiRunTermBatch, findRichText: true),
+        findsNothing,
+      );
+      await tester.tap(key('team-run-more'));
+      await tester.pumpAndSettle();
       await tester.tap(key('team-run-details'));
       await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: key('team-run-details-sheet'),
+          matching: find.text(ar.teamUiRunTermBatch, findRichText: true),
+        ),
+        findsOneWidget,
+      );
       final id = find.descendant(
         of: key('team-run-details-sheet'),
         matching: find.text('oc-xru'),

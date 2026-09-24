@@ -1,0 +1,82 @@
+616 samples 21:37:02..23:19:32: min 1, median 10, max 25
+samples at or over 29: 0
+
+--- 22:14:32 total=25
+by command: gc order×3, libproot.so×2, sh phone-upkeep.sh×2, opencode acp×2, sh -c for id in "$GC_SESSION_ID" "$GC_SESSI×2, io.github.eslamasabry.opencode_mobile×1, opencode serve×1, gc supervisor×1, gc __gc-managed-dolt-scope-watchdog×1, dolt×1, sh orphan-sweep.sh×1, bash orphan-sweep.sh×1, gc bd×1, gc hook×1, gc mail×1, sh -c gc order sweep-tracking --stale-after×1, sh -c sh -c 'for id in "$GC_SESSION_ID" "$G×1, bd query×1, jq×1
+  3255 385 37:35 io.github.eslamasabry.opencode_mobile
+  9298 3255 26:14 libproot.so --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=/data/user/0/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu --bind=/dev --bind=/
+  9301 9298 26:14 opencode serve --hostname 127.0.0.1 --port 4097
+  12018 3255 17:43 libproot.so --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=/data/user/0/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu --bind=/dev --bind=
+  12021 12018 17:43 gc supervisor run
+  12350 1 16:44 gc __gc-managed-dolt-scope-watchdog /root/aiteam/city/.gc/runtime/packs/dolt/dolt-config.yaml /root/aiteam/city/.gc/runtime/packs/dolt/dolt.log /root/aiteam/city
+  12357 12350 16:44 dolt sql-server --config /root/aiteam/city/.gc/runtime/packs/dolt/dolt-config.yaml
+  14777 12021 03:04 sh /root/aiteam/city/assets/phone-upkeep.sh
+  14797 12021 03:04 opencode acp
+  15218 12021 02:28 opencode acp
+  15492 14777 01:51 gc order run orphan-sweep
+  15597 15492 01:41 sh -c $PACK_DIR/assets/scripts/orphan-sweep.sh
+  15598 15597 01:41 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/orphan-sweep.sh
+  15971 12021 00:35 sh /root/aiteam/city/assets/phone-upkeep.sh
+  16027 15598 00:22 gc bd list --rig my-app --status=in_progress --json --limit=0
+  16074 15218 00:20 gc hook --claim --json
+  16142 15971 00:19 gc order run order-tracking-sweep
+  16149 14797 00:17 gc mail check --inject
+  16161 16142 00:11 sh -c gc order sweep-tracking --stale-after 10m --quiet
+  16162 16161 00:11 gc order sweep-tracking --stale-after 10m --quiet
+  16192 16074 00:04 sh -c sh -c 'for id in "$GC_SESSION_ID" "$GC_SESSION_NAME" "$GC_ALIAS"; do [ -z "$id" ] && continue; r=$(bd list --status in_progress --assignee="$id" --json --li
+  16193 16192 00:04 sh -c for id in "$GC_SESSION_ID" "$GC_SESSION_NAME" "$GC_ALIAS"; do [ -z "$id" ] && continue; r=$(bd list --status in_progress --assignee="$id" --json --limit=1 2
+  16323 16193 00:00 sh -c for id in "$GC_SESSION_ID" "$GC_SESSION_NAME" "$GC_ALIAS"; do [ -z "$id" ] && continue; r=$(bd list --status in_progress --assignee="$id" --json --limit=1 2
+  16324 16323 00:00 bd query --json ephemeral=true AND status=open --limit=0
+  16325 16323 00:00 jq --arg id gastown__polecat-ph-jq9 [.[] | select((.assignee // "") == $id) | select(((.issue_type // .type // "") != "epic")) | select(([ (.dependencies // [])[]
+
+--- 22:15:02 total=24
+by command: bash orphan-sweep.sh×3, libproot.so×2, sh phone-upkeep.sh×2, opencode acp×2, gc order×2, io.github.eslamasabry.opencode_mobile×1, opencode serve×1, gc supervisor×1, gc __gc-managed-dolt-scope-watchdog×1, dolt×1, sh orphan-sweep.sh×1, gc nudge×1, gc mail×1, sh gate-sweep.sh×1, bash gate-sweep.sh×1, gc bd×1, awk×1, gc config×1
+  3255 385 38:05 io.github.eslamasabry.opencode_mobile
+  9298 3255 26:44 libproot.so --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=/data/user/0/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu --bind=/dev --bind=/
+  9301 9298 26:44 opencode serve --hostname 127.0.0.1 --port 4097
+  12018 3255 18:13 libproot.so --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=/data/user/0/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu --bind=/dev --bind=
+  12021 12018 18:13 gc supervisor run
+  12350 1 17:14 gc __gc-managed-dolt-scope-watchdog /root/aiteam/city/.gc/runtime/packs/dolt/dolt-config.yaml /root/aiteam/city/.gc/runtime/packs/dolt/dolt.log /root/aiteam/city
+  12357 12350 17:14 dolt sql-server --config /root/aiteam/city/.gc/runtime/packs/dolt/dolt-config.yaml
+  14777 12021 03:34 sh /root/aiteam/city/assets/phone-upkeep.sh
+  14797 12021 03:34 opencode acp
+  15218 12021 02:58 opencode acp
+  15492 14777 02:21 gc order run orphan-sweep
+  15597 15492 02:11 sh -c $PACK_DIR/assets/scripts/orphan-sweep.sh
+  15598 15597 02:11 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/orphan-sweep.sh
+  15971 12021 01:05 sh /root/aiteam/city/assets/phone-upkeep.sh
+  16515 15971 00:26 gc order run gate-sweep
+  16602 15218 00:24 gc nudge drain --inject
+  16625 14797 00:24 gc mail inbox
+  16712 16515 00:16 sh -c $PACK_DIR/assets/scripts/gate-sweep.sh
+  16713 16712 00:16 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/gate-sweep.sh
+  16775 16713 00:07 gc bd gate check --type=gh --escalate
+  16797 15598 00:01 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/orphan-sweep.sh
+  16798 16797 00:01 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/orphan-sweep.sh
+  16799 16797 00:01 awk /^Agent: /{print $2}
+  16802 16798 00:01 gc config explain
+
+--- 22:14:42 total=22
+by command: libproot.so×2, sh phone-upkeep.sh×2, opencode acp×2, gc order×2, sh -c for id in "$GC_SESSION_ID" "$GC_SESSI×2, io.github.eslamasabry.opencode_mobile×1, opencode serve×1, gc supervisor×1, gc __gc-managed-dolt-scope-watchdog×1, dolt×1, sh orphan-sweep.sh×1, bash orphan-sweep.sh×1, gc bd×1, gc nudge×1, gc mail×1, bd query×1, jq×1
+  3255 385 37:45 io.github.eslamasabry.opencode_mobile
+  9298 3255 26:24 libproot.so --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=/data/user/0/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu --bind=/dev --bind=/
+  9301 9298 26:24 opencode serve --hostname 127.0.0.1 --port 4097
+  12018 3255 17:53 libproot.so --root-id --kill-on-exit --link2symlink -L --sysvipc --rootfs=/data/user/0/io.github.eslamasabry.opencode_mobile/files/linux/ubuntu --bind=/dev --bind=
+  12021 12018 17:53 gc supervisor run
+  12350 1 16:54 gc __gc-managed-dolt-scope-watchdog /root/aiteam/city/.gc/runtime/packs/dolt/dolt-config.yaml /root/aiteam/city/.gc/runtime/packs/dolt/dolt.log /root/aiteam/city
+  12357 12350 16:54 dolt sql-server --config /root/aiteam/city/.gc/runtime/packs/dolt/dolt-config.yaml
+  14777 12021 03:14 sh /root/aiteam/city/assets/phone-upkeep.sh
+  14797 12021 03:14 opencode acp
+  15218 12021 02:38 opencode acp
+  15492 14777 02:01 gc order run orphan-sweep
+  15597 15492 01:51 sh -c $PACK_DIR/assets/scripts/orphan-sweep.sh
+  15598 15597 01:51 bash /root/.gc/cache/repos/6fe2cc156f84fc349b1f4fcd3927e6b3d0781b572a3d9d980e1b6d65e1a66421/internal/bootstrap/packs/core/assets/scripts/orphan-sweep.sh
+  15971 12021 00:45 sh /root/aiteam/city/assets/phone-upkeep.sh
+  16027 15598 00:32 gc bd list --rig my-app --status=in_progress --json --limit=0
+  16515 15971 00:06 gc order run gate-sweep
+  16602 15218 00:04 gc nudge drain --inject
+  16613 14797 00:04 sh -c for id in "$GC_SESSION_ID" "$GC_SESSION_NAME" "$GC_ALIAS"; do [ -z "$id" ] && continue; r=$(bd list --status in_progress --assignee="$id" --json --limit=1 2
+  16625 14797 00:04 gc mail inbox
+  16683 16613 00:00 sh -c for id in "$GC_SESSION_ID" "$GC_SESSION_NAME" "$GC_ALIAS"; do [ -z "$id" ] && continue; r=$(bd list --status in_progress --assignee="$id" --json --limit=1 2
+  16684 16683 00:00 bd query --json ephemeral=true AND status=in_progress --limit=0
+  16685 16683 00:00 jq --arg id my-app/gastown.furiosa [.[] | select((.assignee // "") == $id)] | .[:1]

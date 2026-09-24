@@ -129,6 +129,142 @@ Also seen: the team's own agent conversations showed on the Work tab under
 "In other projects", one titled with raw `<tool_call>` text. Fixed afterwards
 on `fix/work-tab-team-sessions`: see `../work-tab-team-sessions-2026-09-24/`.
 
+## Run 3 (WIP): merged work reaches the project; the process peak (Android 15, emulator-5556, evening)
+
+Branch `fix/aiteam-runtime` (from `feat/phone-setup-v2` @ `59822303`). Two
+problems left by Run 2, fixed at the source and proven in the app:
+
+1. **The merge never reached the project folder.** The refinery merges into
+   the phone-side origin (`/root/aiteam/origins/my-app.git`), and
+   `/root/projects/my-app`, where the person's own conversations work, stayed
+   behind until someone ran `git pull` (Run 2 step 9).
+2. **The app's process count went past Android's phantom-process limit (32).**
+
+### What changed
+
+| Commit | What |
+|---|---|
+| `ecbe2f8d` | **The origin hook.** Every origin this app made gets a `post-receive` hook (`BuiltinTeam.originHook`), written by `rigScript` and again on every team start (`hooksScript`, from the projects in `.gc/site.toml`), so a team made by an older version gets it too; the project and team name sit in the origin's own git config (`oc-mobile.project`, `oc-mobile.rig`). When the branch the project has checked out is updated, it fetches and fast-forwards the project, and only then. It leaves the project alone and says why when the project has changes of its own to tracked files (`dirty`; the team's own bookkeeping, `.beads/` and Gas City's `.gitignore` lines, does not count, and git still refuses to overwrite any of it), has commits of its own (`diverged`), is not on a branch (`skipped`), or git refuses (`failed`). It never fails the push and always exits 0. Every outcome is one tab-separated line in `/root/aiteam/pull.log`. When the hook is (re)installed it brings in once whatever was merged before it existed. Settings › Plugins shows the newest outcome for the open project ("my-app has the team's latest work (…)" or why it was left as it is) and, after `dirty` or `failed`, a "Bring the team's work into my-app" button that runs the same script by hand (`BuiltinTeam.bringIn`). An origin of the project's own (GitHub etc.) is never touched. |
+| `3ff9522d` | **Phone tuning, from a per-process record.** `dolt-health`, `nudge-on-route`, `cascade-nudge-on-blocker-close` and `nudge-mail-sweep` are left out; `beads-health`, `order-tracking-sweep`, `gate-sweep`, `orphan-sweep` and `reaper` are switched to `trigger = "manual"` and run one after another by the city's own `phone-upkeep` order (`gc order run …` every 2 min; orphan sweep every 10, reaper every 30); agents start as `exec opencode acp` (one process per agent instead of `sh` + `opencode`). An older team is brought up to this on its next start (`tuneScript`: its `[daemon]`/`[orders]` tables are rewritten, `[providers.opencode]` gets `acp_command`, nothing else is touched). New tool `tool/qa/aiteam_builtin/procwatch.py` keeps every process row of every sample. |
+| `32276c37` | **Upkeep one run at a time.** Found in this run (see step 11): Gas City starts the next `phone-upkeep` on its cooldown even while the last one is still in a slow orphan sweep. The script now holds a `flock` and a second run exits at once. |
+
+Why these orders: at the 37-process peak **before** the change, 18 of the
+processes were orders and 11 of them `dolt-health` alone (a health report
+nothing reads on a phone; the supervisor's own watchdog keeps Dolt up);
+`nudge-on-route` fires on every bead update and `cascade-nudge-on-blocker-close`
+on every close, i.e. exactly when the agents hand work over. A task given with
+"Send to an agent" goes straight to the project's worker and the worker wakes
+the merger itself, so those nudges add nothing on a phone
+(`run3-before-peaks.txt`).
+
+**One agent session at a time is not possible with Gas City 1.4.1's knobs.**
+`[workspace] max_active_sessions` (and the rig-level one) cap pool sessions
+only: the refinery is a named `on_demand` session and is materialised outside
+the capped pool path (`cmd/gc/pool_desired_state.go`: named-session work is
+skipped by the cap; `compute_awake_set.go`: `on_demand` sessions with assigned
+work, which the refinery's own patrol wisp always is, stay awake). The polecat
+wakes the refinery itself before it drains (`mol-polecat-work`, steps 7–8), and
+in this run it lingered for ~20 min after the hand-off. So both agents do run
+side by side; the fix makes room for that instead of pretending otherwise.
+
+### Before: the Run 2 build, measured with a per-process record
+
+Same emulator, the Run 2 install (build `b17c67c7`), a second task
+("Create greet.txt containing the word hello", given through the team API
+the app uses) while the refinery from Run 2 still patrolled. Samples every
+10 s, 18:10–19:06 (`run3-before-process-samples.log`: time, total, children):
+
+| | |
+|---|---|
+| Samples | 337; min 10, median 15, max **37** (24 samples at 29 or more) |
+| At 37 (18:13:20) | app 1, OpenCode server 2, team proot + supervisor 2, Dolt + watchdog 2, **two agents** 4 (`sh -c opencode acp` + `opencode acp` each), the refinery's event watch 2, the polecat's work query 6, **orders 18**: `dolt-health` 11, `cascade-nudge-on-blocker-close` 4, `nudge-on-route` 3 (`run3-before-peaks.txt`) |
+| At the merge | 31 at 18:56:30 (orders: cascade-nudge 4, nudge-on-route 4, sweeps 4, `dolt-health` starting its 10), then at **18:56:33 Android killed the team**: `Killing PhantomProcessRecord … libproot.so … gc … gc: Trimming phantom processes`; the supervisor got signal 9 in the middle of the refinery's merge (`run3-before-logcat-kills.txt`) |
+| Earlier the same afternoon | 17:16:32 another `Killing PhantomProcessRecord` of a proot of this install, after Run 2 was recorded; the app then showed "Connection lost" |
+
+So Run 2's "max 37, no kill" was luck: the same build's next task was killed.
+
+### Build under test
+
+| | |
+|---|---|
+| Steps 1–13 | `3ff9522d`, `app-x86_64-release.apk` 33.4 MB, SHA-256 `0455fc437a1ece5ffeaf32af0ce6f0aed2174cb239710475691c3992ecc2e67d` |
+| Step 14 (not yet run) | `32276c37` (head of the branch), SHA-256 `a26acabd1900dd90b51fdb19613e2f25ce927407bbf3dae29c054fab21877574`, installed over the first (`adb install -r`) |
+| Device | emulator-5556, Android 15 (API 35) x86_64, 4 GB; `settings_enable_monitor_phantom_procs` and `max_phantom_processes` unset (defaults: on, 32); rebooted before the run (the PC ran out of memory at 21:27 and took the emulators down) |
+| Sampling | `procwatch.py sample emulator-5556 … 10` for the whole run: every 10 s, every process of the app's uid with PPID, elapsed time and arguments. "Total" includes the app's own process; Android's limit counts the others ("children") |
+
+### Steps and results
+
+| # | Step | Expected | Actual | Result |
+|---|---|---|---|---|
+| 1 | Fresh install (`3ff9522d`), On this phone › Customize › AI Team › Done | Totals include AI Team | "About 6 minutes and ~333 MB"; "Includes Git and SSH, Python, Node.js and AI Team" (`run3-01-customized.png`) | PASS |
+| 2 | Set up | Ready | 21:37:58 → 21:48:40, no failure (`run3-02-setup-done.png`). (An earlier attempt at 19:29 hit an Ubuntu mirror sync, "File has unexpected size … Mirror sync in progress?", which the app shows as "No internet connection"; not this change) | PASS |
+| 3 | Create my-app, Settings › Plugins › Turn on AI Team for my-app | Running | 21:52:20 → 22:00:27 (8.1 min): getting ready 2.0, adding my-app 2.6, starting 1.2, waiting 2.3 min; "my-app has the team's latest work (ab92be3 …)" right away (`run3-03-turn-on-offer.png`, `run3-04-team-running.png`) | PASS |
+| 4 | The team's config on the device | New tuning; exec'd agents; hook | `[providers.opencode]` has `acp_command = "exec opencode"`, 5 `trigger = "manual"` overrides, `orders/phone-upkeep.toml`; origin hook with `oc-mobile.project=/root/projects/my-app`; agents show as a single `opencode acp` process each (`run3-peaks.txt`) | PASS |
+| 5 | Work › AI Team › Open › Start a run › "Create greet.txt containing the word hello" › Send to an agent | Sent | 22:11 "Task sent to an agent · Confirmed" (`run3-05..07`) | PASS |
+| 6 | The work | Branch, hand-off | Claimed 22:15 (`ma-j19`), "Waiting for merge" 22:29:54 (`run3-08-waiting-for-merge.png`) | PASS |
+| 7 | **(a) The merge reaches the project folder, no pull** | `/root/projects/my-app` at the merged commit | Refinery closed the bead by 22:54; hook at 18:51:47Z (22:51 local): `brought-in ee82da7 Add greet.txt containing the word hello`; project `git log` = `ee82da7`, `greet.txt` = `hello`; Plugins: "my-app has the team's latest work (ee82da7 …)" (`run3-10-brought-in.png`, `run3-device-pull-log-and-git.txt`) | PASS |
+| 8 | Make the project dirty: `greet.txt` gets a second, uncommitted line (stands in for the person's own unsaved edit) | — | `M greet.txt` | — |
+| 9 | Second task "Create two.txt containing the word two" from the app | Merged on the origin | Sent 22:56:59, hand-off 23:11, closed 23:16; origin master `b593e1a Add two.txt …` | PASS |
+| 10 | **(b) A dirty project is left alone and the app says so** | Project not moved, edit kept, log + app say why | Hook 19:14:09Z: `dirty b593e1a greet.txt`; project still at `ee82da7`, `greet.txt` keeps the edit, no `two.txt`; Plugins: "The team's work (b593e1a) is not in my-app yet: my-app has changes of its own (greet.txt), so it was left as it is." with "Bring the team's work into my-app" (`run3-11-dirty-left-alone.png`) | PASS |
+| 11 | Tap "Bring the team's work into my-app" while still dirty | Still left alone | Log `dirty b593e1a greet.txt` again (19:17:57Z), message unchanged | PASS |
+| 12 | Processes, 21:37–23:19 (both tasks, both hand-offs, the refinery patrolling throughout task 2) | ≤ 28, no kill | 616 samples: min 1, median 10, max **25**, none at 29+; `Killing PhantomProcess` / SIGSYS in logcat: **0** (`run3-process-samples.log`, `run3-peaks.txt`, `run3-logcat-kills-and-sigsys.txt`) | PASS |
+| 13 | What the 25 was | — | 22:14:32: app 1, OpenCode server 2, team proot + supervisor 2, Dolt + watchdog 2, two agents 2, the polecat's work query 6, **two phone-upkeep runs side by side** 9 (an orphan sweep outlasted the 2-min cooldown). Fixed in `32276c37` | found, fixed |
+| 14 | **Not done yet (WIP)**: install `32276c37` over it, `git stash` the edit, tap "Bring the team's work into my-app" (expect `brought-in b593e1a`), `git stash pop`; a third task on `32276c37` sampled through its hand-off | | | TODO |
+
+### Process samples, after
+
+| | Before (Run 2 build, 18:10–19:06) | After (`3ff9522d`, 21:37–23:19) |
+|---|---|---|
+| Samples (every 10 s) | 337 | 616 |
+| min / median / max | 10 / 15 / **37** | 1 / 10 / **25** |
+| Samples at 29 or more | 24 | 0 |
+| Phantom-process kills | 1 in the sampled task (18:56:33, mid-merge), 1 earlier (17:16:32) | 0 |
+
+### An older install is brought up to date (upgrade path)
+
+Before the fresh install, the new APK (`3ff9522d` minus the provider fix,
+SHA-256 `06538775…d5fadd`) was installed over the Run 2 install whose team
+Android had just killed mid-merge. On the app's next start: `city.toml` got
+the new orders tuning, the `phone-upkeep` order was written, the origin got
+the hook (`oc-mobile.project=/root/projects/my-app`), and the catch-up logged
+`up-to-date 86759b9`. The refinery resumed the interrupted merge; at
+15:24:13Z the hook logged `brought-in 5bbdbb6 feat: add greet.txt with hello
+greeting (ma-b9d)` and `/root/projects/my-app` was at `5bbdbb6` with no pull
+(`run3-upgrade-brought-in.png`). Peak over those 20 minutes: 23, no kill.
+That build wrote `acp_command` as a `[[patches.provider]]`, which Gas City
+1.4.1 ignores ("unknown field"), so agents still ran as `sh` + `opencode`;
+`3ff9522d` writes it in `[providers.opencode]` instead, and step 5 checks it.
+
+### How to reproduce
+
+```sh
+D=emulator-5556; Q=tool/qa/aiteam_builtin
+# Build and install as in "How to reproduce" above; then, detached, for the whole run:
+python3 $Q/procwatch.py sample $D 14400 10 run3-procs.log
+# Setup with AI Team, create my-app, Plugins › Turn on AI Team for my-app (as above).
+# Work › AI Team › Open › Start a run › Task "Create greet.txt containing the word hello" › Send to an agent
+curl -s http://127.0.0.1:18473/v0/city/phone/bead/<id> | jq '{status,assignee}'   # until closed
+# Inside the app's Ubuntu (as the app's uid):
+cat /root/aiteam/pull.log; git -C /root/projects/my-app log --oneline -3
+# Dirty tree: change a tracked file in /root/projects/my-app, give a second task, wait for the merge,
+# then Settings › Plugins; put the change away (git stash), tap "Bring the team's work into my-app".
+python3 $Q/procwatch.py summary run3-procs.log 3     # min/median/max + breakdown of the 3 tallest samples
+python3 $Q/procwatch.py counts run3-procs.log > run3-process-samples.log
+python3 $Q/procwatch.py kills $D
+```
+
+Tests for this run's code: `test/builtin_team_bring_in_test.dart` (the hook
+and `rigScript` with real git: clean project fast-forwarded with bookkeeping
+changes aside; dirty project left alone and logged; diverged project never
+rewritten; a push to another branch does nothing; `rigScript` installs the
+hook and a re-run puts it back and brings in what was merged meanwhile; an
+origin of the project's own is left alone; the status script and the
+Plugins text), `test/builtin_team_test.dart` › "phone tuning" (the orders,
+the upkeep order, an older `city.toml` tuned once with everything else kept
+and still valid TOML, upkeep one run at a time). The `rigScript` test fails
+without the hook, the upkeep test fails without the lock (checked by
+reverting each).
+
 ## Android 14 (emulator-5554): the phantom-process kill, before tuning
 
 With Gas City's defaults (patrol every 30 s, 8 store probes at once, a
@@ -299,7 +435,11 @@ emulators' 1080×2400 screen.
   also needs Termux's ICU.
 - **The 32-process margin.** Peak 33 twice with no kill on Android 15 in the
   first proof, and 37 for a moment in Run 2, also with no kill; 40 was killed
-  on Android 14. Other apps' child processes (Termux, for one) count
+  on Android 14. Run 3: the Run 2 build *was* killed at its next merge
+  (18:56:33); after the tuning the peak was 25 over two tasks with no kill.
+  Still open: a third task on `32276c37` (upkeep lock) sampled through its
+  hand-off, and a real phone. Only one agent at a time is not possible with
+  Gas City 1.4.1's knobs (Run 3, "What changed"). Other apps' child processes (Termux, for one) count
   too. The staggered intervals in the follow-up commit aim lower but were not
   measured in the app. "Developer options › Disable child process
   restrictions" is explained in the section; the owner asked to test with the
@@ -307,9 +447,10 @@ emulators' 1080×2400 screen.
 - **Restart after Android or a reboot stops the app**: `ensureRunning` on the
   OpenCode start is unit-tested, not exercised on a device (Stop and Start
   from the Plugins section were, steps 13–14).
-- **The merge lands on the phone-side origin** (`/root/aiteam/origins/my-app.git`),
-  not in the project folder the person's conversations use; that folder needs a
-  `git pull`. Not addressed.
+- ~~The merge lands on the phone-side origin, not in the project folder.~~
+  Fixed and proven in Run 3 (steps 7, 10). Open: the "Bring the team's work"
+  button bringing work in after the tree is clean again (step 14), and a
+  real phone.
 - **Finished runs vanish** from the team home (step 12): fixed on
   `fix/aiteam-finished-runs`, see "Finished runs" below.
 - **No supervisor token / unix socket** (Security above).

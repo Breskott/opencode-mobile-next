@@ -16,6 +16,7 @@ import '../../state/profiles.dart';
 import '../../termux/bridge.dart';
 import '../../termux/managed_server_recovery.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import '../widgets/confirm_sheet.dart';
 import 'builtin_server_screen.dart';
 import '../widgets/safety_confirms.dart';
@@ -563,45 +564,38 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
           ),
         const SizedBox(height: 8),
         if (pending) ...[
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              FilledButton(
-                onPressed: _busy || _connecting
-                    ? null
-                    : () => _confirmRuntimeSwitch(status!.switchTarget!),
-                child: Text(
-                  l10n.setupSwitchRetry(_runtimeName(status!.switchTarget!)),
-                ),
-              ),
-              if (status.switchTarget != status.switchPrevious)
-                OutlinedButton(
-                  onPressed: _busy || _connecting
-                      ? null
-                      : () => _confirmRuntimeSwitch(status.switchPrevious!),
-                  child: Text(
-                    l10n.setupSwitchReturn(
+          // A half-done switch is the one thing to finish (§2): finish it,
+          // or go back.
+          KitActionBlock(
+            primary: KitAction(
+              label: l10n.setupSwitchRetry(_runtimeName(status!.switchTarget!)),
+              onPressed: _busy || _connecting
+                  ? null
+                  : () => _confirmRuntimeSwitch(status.switchTarget!),
+            ),
+            secondary: status.switchTarget != status.switchPrevious
+                ? KitAction(
+                    label: l10n.setupSwitchReturn(
                       _runtimeName(status.switchPrevious!),
                     ),
-                  ),
-                ),
-            ],
+                    onPressed: _busy || _connecting
+                        ? null
+                        : () => _confirmRuntimeSwitch(status.switchPrevious!),
+                  )
+                : null,
           ),
           const SizedBox(height: 8),
           Text(l10n.setupSwitchPending),
         ] else if (_runtime == TermuxRuntime.openCode1 || canReturn)
-          OutlinedButton.icon(
+          KitButton.secondary(
             key: const Key('switch-managed-runtime'),
             onPressed: _busy || _connecting
                 ? null
                 : () => _confirmRuntimeSwitch(target),
-            icon: const Icon(AppIconography.sync),
-            label: Text(
-              target == TermuxRuntime.openCode1
-                  ? l10n.setupSwitchReturn(_runtimeName(target))
-                  : l10n.setupSwitchUse(_runtimeName(target)),
-            ),
+            icon: AppIconography.sync,
+            label: target == TermuxRuntime.openCode1
+                ? l10n.setupSwitchReturn(_runtimeName(target))
+                : l10n.setupSwitchUse(_runtimeName(target)),
           )
         else
           Text(l10n.setupSwitchLegacyTwo),
@@ -1648,45 +1642,25 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
             ).setupScreenTitle,
           ),
         ),
-        body: SingleChildScrollView(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Padding(
-                key: const Key('termux-setup-unsupported'),
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      AppIconography.deviceOff,
-                      size: 40,
-                      color: AppTheme.mutedOf(theme),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupAndroidOnly,
-                      style: theme.textTheme.titleMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupUnsupportedSetup,
-                      style: theme.textTheme.bodySmall!.copyWith(
-                        color: AppTheme.mutedOf(theme),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    _existingServerChoice(),
-                  ],
-                ),
-              ),
-            ),
+        // Nothing here can complete off Android: one page state (§3) with
+        // the way that does work.
+        body: KitStateView(
+          key: const Key('termux-setup-unsupported'),
+          icon: AppIconography.deviceOff,
+          title: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupAndroidOnly,
+          body: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupUnsupportedSetup,
+          primary: KitAction(
+            label: lookupAppLocalizations(
+              Localizations.localeOf(context),
+            ).setupConnectExisting,
+            icon: AppIconography.link,
+            onPressed: _busy || _connecting
+                ? null
+                : () => Navigator.of(context).pushNamed('/servers'),
           ),
         ),
       );
@@ -1701,7 +1675,13 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
             ).setupScreenTitle,
           ),
         ),
-        body: SafeArea(child: _buildSetupProgress()),
+        body: SafeArea(
+          child: KitScreen(
+            loading: true,
+            loadingLabel: _setupProgressTitle(),
+            body: _buildSetupProgress(),
+          ),
+        ),
       );
     }
     if (_knownRuntime != null &&
@@ -1723,119 +1703,151 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
           ).setupScreenTitle,
         ),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: ListView(
-            padding: const EdgeInsets.all(20),
-            shrinkWrap: true,
-            children: [
-              if (_knownRuntime != null || _status?.switchPending == true) ...[
-                _runtimeSwitchChoices(),
-                const SizedBox(height: 20),
-              ],
-              Row(
-                children: [
-                  Icon(AppIconography.phone, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.setupChooseServerTitle,
-                      style: theme.textTheme.titleMedium,
+      // The checks this screen runs on its own show as the one loading bar
+      // (§4); the step that is being checked says so in words.
+      body: KitScreen(
+        loading: _phase == _Phase.checking || _checkingInstallation,
+        loadingLabel: _phase == _Phase.checking
+            ? lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupCheckingTermuxShort
+            : lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupCheckingInstall,
+        body: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                KitScreen.endPadding(context),
+              ),
+              // Every step is laid out, so a step's control is found
+              // wherever the list is scrolled.
+              shrinkWrap: true,
+              children: [
+                if (_knownRuntime != null ||
+                    _status?.switchPending == true) ...[
+                  _runtimeSwitchChoices(),
+                  const SizedBox(height: 20),
+                ],
+                Row(
+                  children: [
+                    Icon(
+                      AppIconography.phone,
+                      color: theme.colorScheme.primary,
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.setupChooseServerTitle,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  l10n.setupChooseServerDescription,
+                  style: theme.textTheme.bodySmall!.copyWith(
+                    color: AppTheme.mutedOf(theme),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Without Termux on the phone, running OpenCode inside the app
+                // is the shortest way in: offered first, not after three
+                // Termux steps the person would have to complete or skip.
+                if (_builtinFirst) ...[
+                  _builtinServerChoice(primary: true),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Divider(),
                   ),
                 ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                l10n.setupChooseServerDescription,
-                style: theme.textTheme.bodySmall!.copyWith(
-                  color: AppTheme.mutedOf(theme),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Without Termux on the phone, running OpenCode inside the app
-              // is the shortest way in: offered first, not after three
-              // Termux steps the person would have to complete or skip.
-              if (_builtinFirst) ...[
-                _builtinServerChoice(primary: true),
+                _existingServerChoice(),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Divider(),
                 ),
-              ],
-              _existingServerChoice(),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(),
-              ),
-              _stepTile(
-                n: 1,
-                title: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7SetupGetTermux,
-                state:
-                    const {_Phase.checking, _Phase.needTermux}.contains(_phase)
-                    ? _StepState.idle
-                    : _StepState.done,
-                body: _phase == _Phase.needTermux
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).e7SetupInstallTermuxDetail,
-                          ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              FilledButton.icon(
-                                onPressed: _getTermux,
-                                icon: const Icon(AppIconography.download),
-                                label: Text(
-                                  lookupAppLocalizations(
-                                    Localizations.localeOf(context),
-                                  ).e7SetupDownloadPage,
-                                ),
-                              ),
-                              OutlinedButton(
-                                onPressed: _refresh,
-                                child: Text(
-                                  lookupAppLocalizations(
+                _stepTile(
+                  n: 1,
+                  title: lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupGetTermux,
+                  state:
+                      const {
+                        _Phase.checking,
+                        _Phase.needTermux,
+                      }.contains(_phase)
+                      ? _StepState.idle
+                      : _StepState.done,
+                  body: _phase == _Phase.needTermux
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupInstallTermuxDetail,
+                            ),
+                            const SizedBox(height: 10),
+                            // One primary per screen (§2): when the in-app
+                            // setup leads, getting Termux is the other path.
+                            KitActionBlock(
+                              primary: _builtinFirst
+                                  ? null
+                                  : KitAction(
+                                      label: lookupAppLocalizations(
+                                        Localizations.localeOf(context),
+                                      ).e7SetupDownloadPage,
+                                      icon: AppIconography.download,
+                                      onPressed: _getTermux,
+                                    ),
+                              secondary: _builtinFirst
+                                  ? KitAction(
+                                      label: lookupAppLocalizations(
+                                        Localizations.localeOf(context),
+                                      ).e7SetupDownloadPage,
+                                      icon: AppIconography.download,
+                                      onPressed: _getTermux,
+                                    )
+                                  : null,
+                              tertiary: [
+                                KitAction(
+                                  label: lookupAppLocalizations(
                                     Localizations.localeOf(context),
                                   ).setupCheckAgain,
+                                  onPressed: _refresh,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      )
-                    : null,
-              ),
-              const SizedBox(height: 8),
-              _stepTile(
-                n: 2,
-                title: l10n.termuxGuideTitle,
-                state: _phase == _Phase.needUnlock
-                    ? _StepState.idle
-                    : _phase == _Phase.checking || _phase == _Phase.needTermux
-                    ? _StepState.idle
-                    : _StepState.done,
-                enabled: _phase != _Phase.needTermux,
-                body: _phase == _Phase.needUnlock
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(l10n.termuxGuideIntro),
-                          if (_error != null) ...[
-                            const SizedBox(height: 10),
-                            Semantics(
-                              liveRegion: true,
-                              child: Text(
-                                friendlyError(
+                              ],
+                            ),
+                          ],
+                        )
+                      : null,
+                ),
+                const SizedBox(height: 8),
+                _stepTile(
+                  n: 2,
+                  title: l10n.termuxGuideTitle,
+                  state: _phase == _Phase.needUnlock
+                      ? _StepState.idle
+                      : _phase == _Phase.checking || _phase == _Phase.needTermux
+                      ? _StepState.idle
+                      : _StepState.done,
+                  enabled: _phase != _Phase.needTermux,
+                  body: _phase == _Phase.needUnlock
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(l10n.termuxGuideIntro),
+                            if (_error != null) ...[
+                              const SizedBox(height: 10),
+                              KitNotice(
+                                tone: AppStatusTone.failure,
+                                message: friendlyError(
                                   setupUiMessage(
                                     lookupAppLocalizations(
                                       Localizations.localeOf(context),
@@ -1843,353 +1855,285 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                                     _error!,
                                   ),
                                 ),
-                                style: TextStyle(
-                                  color: theme.colorScheme.error,
-                                ),
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 10),
-                          // Before the round trip, opening Termux is the
-                          // next thing to do. After it, verifying is.
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              if (_returnedFromTermux) ...[
-                                FilledButton.icon(
-                                  key: const Key('termux-verify-unlock'),
-                                  onPressed: _busy || _connecting
-                                      ? null
-                                      : _verifyUnlock,
-                                  icon: _busy && !_copyingToTermux
-                                      ? const SizedBox.square(
-                                          dimension: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : const Icon(AppIconography.check),
-                                  label: Text(
-                                    _busy && !_copyingToTermux
-                                        ? lookupAppLocalizations(
-                                            Localizations.localeOf(context),
-                                          ).e7SetupVerifying
-                                        : lookupAppLocalizations(
-                                            Localizations.localeOf(context),
-                                          ).e7SetupVerifyContinue,
-                                  ),
-                                ),
-                                OutlinedButton.icon(
-                                  key: const Key('termux-copy-open'),
-                                  onPressed: _busy || _connecting
-                                      ? null
-                                      : _openTermuxAndCopy,
-                                  icon: const Icon(AppIconography.externalLink),
-                                  label: Text(
-                                    _copyingToTermux
-                                        ? l10n.termuxGuideOpening
-                                        : lookupAppLocalizations(
-                                            Localizations.localeOf(context),
-                                          ).e7SetupCopyOpenTermux,
-                                  ),
-                                ),
-                              ] else ...[
-                                FilledButton.icon(
-                                  key: const Key('termux-copy-open'),
-                                  onPressed: _busy || _connecting
-                                      ? null
-                                      : _openTermuxAndCopy,
-                                  icon: const Icon(AppIconography.externalLink),
-                                  label: Text(
-                                    _copyingToTermux
-                                        ? l10n.termuxGuideOpening
-                                        : lookupAppLocalizations(
-                                            Localizations.localeOf(context),
-                                          ).e7SetupCopyOpenTermux,
-                                  ),
-                                ),
-                                OutlinedButton(
-                                  key: const Key('termux-verify-unlock'),
-                                  onPressed: _busy || _connecting
-                                      ? null
-                                      : _verifyUnlock,
-                                  child: Text(
-                                    _busy && !_copyingToTermux
-                                        ? lookupAppLocalizations(
-                                            Localizations.localeOf(context),
-                                          ).e7SetupVerifying
-                                        : lookupAppLocalizations(
-                                            Localizations.localeOf(context),
-                                          ).e7SetupVerifyContinue,
-                                  ),
-                                ),
-                              ],
-                              TextButton(
-                                onPressed: _busy || _connecting
-                                    ? null
-                                    : TermuxBridge.openAppSettings,
-                                child: Text(
-                                  lookupAppLocalizations(
-                                    Localizations.localeOf(context),
-                                  ).e7SetupAppSettings,
-                                ),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 12),
-                          const _TermuxPasteGuide(),
-                          const SizedBox(height: 12),
-                          Text(l10n.termuxGuideAutomaticCheck),
-                          ExpansionTile(
-                            tilePadding: EdgeInsets.zero,
-                            title: Text(l10n.termuxGuideShowCommand),
-                            children: const [CmdPreview()],
-                          ),
-                        ],
-                      )
-                    : null,
-              ),
-              const SizedBox(height: 8),
-              _stepTile(
-                n: 3,
-                title: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7SetupChooseContinue,
-                state: switch (_phase) {
-                  _Phase.installing => _StepState.running,
-                  _Phase.connected => _StepState.done,
-                  _Phase.failed => _StepState.error,
-                  _ => _StepState.idle,
-                },
-                enabled: !const {
-                  _Phase.needTermux,
-                  _Phase.needUnlock,
-                  _Phase.checking,
-                }.contains(_phase),
-                body: switch (_phase) {
-                  _Phase.checking => _ProgressLine(
-                    text: lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7SetupCheckingTermuxShort,
-                  ),
-                  _Phase.ready => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (_error != null) ...[
-                        Text(
-                          friendlyError(
-                            setupUiMessage(
-                              lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ),
-                              _error!,
+                            const SizedBox(height: 10),
+                            // Before the round trip, opening Termux is the
+                            // next thing to do. After it, verifying is.
+                            // Before the round trip, opening Termux is the
+                            // next thing to do; after it, verifying is (§2).
+                            Builder(
+                              builder: (context) {
+                                final verifying = _busy && !_copyingToTermux;
+                                final verify = KitButton(
+                                  key: const Key('termux-verify-unlock'),
+                                  role: _returnedFromTermux
+                                      ? KitButtonRole.primary
+                                      : KitButtonRole.secondary,
+                                  onPressed: _busy || _connecting
+                                      ? null
+                                      : _verifyUnlock,
+                                  working: _returnedFromTermux && verifying,
+                                  icon: _returnedFromTermux
+                                      ? AppIconography.check
+                                      : null,
+                                  label: verifying
+                                      ? lookupAppLocalizations(
+                                          Localizations.localeOf(context),
+                                        ).e7SetupVerifying
+                                      : lookupAppLocalizations(
+                                          Localizations.localeOf(context),
+                                        ).e7SetupVerifyContinue,
+                                );
+                                final open = KitButton(
+                                  key: const Key('termux-copy-open'),
+                                  role: _returnedFromTermux
+                                      ? KitButtonRole.secondary
+                                      : KitButtonRole.primary,
+                                  onPressed: _busy || _connecting
+                                      ? null
+                                      : _openTermuxAndCopy,
+                                  icon: AppIconography.externalLink,
+                                  label: _copyingToTermux
+                                      ? l10n.termuxGuideOpening
+                                      : lookupAppLocalizations(
+                                          Localizations.localeOf(context),
+                                        ).e7SetupCopyOpenTermux,
+                                );
+                                return Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    if (_returnedFromTermux) verify else open,
+                                    const SizedBox(height: 8),
+                                    if (_returnedFromTermux) open else verify,
+                                    const SizedBox(height: 4),
+                                    KitInset(
+                                      child: KitButton.tertiary(
+                                        onPressed: _busy || _connecting
+                                            ? null
+                                            : TermuxBridge.openAppSettings,
+                                        label: lookupAppLocalizations(
+                                          Localizations.localeOf(context),
+                                        ).e7SetupAppSettings,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                      ],
-                      _setupChoices(),
-                    ],
-                  ),
-                  _Phase.installing => null,
-                  _Phase.connected => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            AppIconography.checkCircle,
-                            size: 18,
-                            color: AppTheme.statusColor(
-                              Theme.of(context),
-                              AppStatusTone.ok,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupRunningOnPhone,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _status?.version.isNotEmpty == true
-                            ? lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupVersionAddress(
-                                _status!.version,
-                                localUrl,
-                              )
-                            : localUrl,
-                        style: theme.textTheme.bodySmall!.copyWith(
-                          color: AppTheme.mutedOf(theme),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      if (ref.read(connProvider).profile?.id !=
-                              _localProfile()?.id &&
-                          _localProfile() != null) ...[
-                        Text(l10n.setupSwitchReady),
-                        TextButton(
-                          onPressed: _busy || _connecting
-                              ? null
-                              : () => _finishConnect(_localProfile()!),
-                          child: Text(
-                            l10n.setupSwitchConnect(_runtimeName(_runtime)),
-                          ),
-                        ),
-                      ],
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          FilledButton.icon(
-                            onPressed: _busy || _connecting
-                                ? null
-                                : _continueToApp,
-                            icon: const Icon(AppIconography.forward),
-                            label: Text(
-                              lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupContinueApp,
-                            ),
-                          ),
-                          OutlinedButton.icon(
-                            key: const Key('restart-managed-opencode'),
-                            onPressed: _busy || _connecting
-                                ? null
-                                : _confirmRestart,
-                            icon: const Icon(AppIconography.restart),
-                            label: Text(
-                              _restarting
-                                  ? l10n.termuxRestarting
-                                  : l10n.termuxRestartServer,
-                            ),
-                          ),
-                          OutlinedButton.icon(
-                            key: const Key('update-managed-opencode'),
-                            onPressed: _busy || _connecting
-                                ? null
-                                : _confirmUpdate,
-                            icon: const Icon(AppIconography.systemDownload),
-                            label: Text(
-                              lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupUpdateOpenCode,
-                            ),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: _busy || _connecting
-                                ? null
-                                : _stopServer,
-                            icon: const Icon(AppIcons.stop),
-                            label: Text(
-                              _busy
-                                  ? lookupAppLocalizations(
-                                      Localizations.localeOf(context),
-                                    ).e7SetupStopping
-                                  : lookupAppLocalizations(
-                                      Localizations.localeOf(context),
-                                    ).e7SetupStopLocal,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _localAgentBlock(),
-                      if (_localProfile() case final profile?) ...[
-                        const SizedBox(height: 16),
-                        _teamPhoneBlock(profile),
-                      ],
-                    ],
-                  ),
-                  _Phase.failed => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _error == null
-                            ? lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupSetupFailed
-                            : friendlyError(
-                                setupUiMessage(
-                                  lookupAppLocalizations(
-                                    Localizations.localeOf(context),
-                                  ),
-                                  _error!,
-                                ),
-                              ),
-                        style: TextStyle(color: theme.colorScheme.error),
-                      ),
-                      const SizedBox(height: 10),
-                      SetupTerminal(
-                        output: _setupOutput,
-                        running: false,
-                        controller: _outputScrollController,
-                        onCopy: _copyFailureReport,
-                        copyTooltip: lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7SetupCopyFailureReport,
-                      ),
-                      const SizedBox(height: 10),
-                      _setupChoices(showInstall: false),
-                      const SizedBox(height: 12),
-                      if (_status?.switchPending == true)
-                        const SizedBox.shrink()
-                      else if (_monitoringFailed)
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            FilledButton.icon(
-                              onPressed: _busy || _connecting
-                                  ? null
-                                  : _resumeLiveOutput,
-                              icon: const Icon(AppIconography.sync),
-                              label: Text(
-                                lookupAppLocalizations(
-                                  Localizations.localeOf(context),
-                                ).e7SetupResumeLive,
-                              ),
-                            ),
-                            OutlinedButton(
-                              onPressed: _busy || _connecting ? null : _retry,
-                              child: Text(
-                                lookupAppLocalizations(
-                                  Localizations.localeOf(context),
-                                ).e7SetupResumeSetup,
-                              ),
+                            const SizedBox(height: 12),
+                            const _TermuxPasteGuide(),
+                            const SizedBox(height: 12),
+                            Text(l10n.termuxGuideAutomaticCheck),
+                            ExpansionTile(
+                              tilePadding: EdgeInsets.zero,
+                              title: Text(l10n.termuxGuideShowCommand),
+                              children: const [CmdPreview()],
                             ),
                           ],
                         )
-                      else
-                        FilledButton.icon(
-                          onPressed: _busy || _connecting ? null : _retry,
-                          icon: const Icon(AppIconography.retry),
-                          label: Text(
-                            lookupAppLocalizations(
+                      : null,
+                ),
+                const SizedBox(height: 8),
+                _stepTile(
+                  n: 3,
+                  title: lookupAppLocalizations(
+                    Localizations.localeOf(context),
+                  ).e7SetupChooseContinue,
+                  state: switch (_phase) {
+                    _Phase.installing => _StepState.running,
+                    _Phase.connected => _StepState.done,
+                    _Phase.failed => _StepState.error,
+                    _ => _StepState.idle,
+                  },
+                  enabled: !const {
+                    _Phase.needTermux,
+                    _Phase.needUnlock,
+                    _Phase.checking,
+                  }.contains(_phase),
+                  body: switch (_phase) {
+                    _Phase.checking => _ProgressLine(
+                      text: lookupAppLocalizations(
+                        Localizations.localeOf(context),
+                      ).e7SetupCheckingTermuxShort,
+                    ),
+                    _Phase.ready => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_error != null) ...[
+                          KitNotice(
+                            tone: AppStatusTone.attention,
+                            message: friendlyError(
+                              setupUiMessage(
+                                lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ),
+                                _error!,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        _setupChoices(),
+                      ],
+                    ),
+                    _Phase.installing => null,
+                    _Phase.connected => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              AppIconography.checkCircle,
+                              size: 18,
+                              color: AppTheme.statusColor(
+                                Theme.of(context),
+                                AppStatusTone.ok,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).e7SetupRunningOnPhone,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _status?.version.isNotEmpty == true
+                              ? lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).e7SetupVersionAddress(
+                                  _status!.version,
+                                  localUrl,
+                                )
+                              : localUrl,
+                          style: theme.textTheme.bodySmall!.copyWith(
+                            color: AppTheme.mutedOf(theme),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        if (ref.read(connProvider).profile?.id !=
+                                _localProfile()?.id &&
+                            _localProfile() != null) ...[
+                          Text(l10n.setupSwitchReady),
+                          KitInset(
+                            child: KitButton.tertiary(
+                              onPressed: _busy || _connecting
+                                  ? null
+                                  : () => _finishConnect(_localProfile()!),
+                              label: l10n.setupSwitchConnect(
+                                _runtimeName(_runtime),
+                              ),
+                            ),
+                          ),
+                        ],
+                        _serverActions(
+                          primary: KitAction(
+                            label: lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7SetupContinueApp,
+                            icon: AppIconography.forward,
+                            onPressed: _busy || _connecting
+                                ? null
+                                : _continueToApp,
+                          ),
+                          stopLabel: _busy
+                              ? lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).e7SetupStopping
+                              : lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).e7SetupStopLocal,
+                          restartLabel: _restarting
+                              ? l10n.termuxRestarting
+                              : l10n.termuxRestartServer,
+                        ),
+                        const SizedBox(height: 16),
+                        _localAgentBlock(),
+                        if (_localProfile() case final profile?) ...[
+                          const SizedBox(height: 16),
+                          _teamPhoneBlock(profile),
+                        ],
+                      ],
+                    ),
+                    _Phase.failed => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        KitNotice(
+                          tone: AppStatusTone.failure,
+                          message: _error == null
+                              ? lookupAppLocalizations(
+                                  Localizations.localeOf(context),
+                                ).e7SetupSetupFailed
+                              : friendlyError(
+                                  setupUiMessage(
+                                    lookupAppLocalizations(
+                                      Localizations.localeOf(context),
+                                    ),
+                                    _error!,
+                                  ),
+                                ),
+                        ),
+                        const SizedBox(height: 10),
+                        SetupTerminal(
+                          output: _setupOutput,
+                          running: false,
+                          controller: _outputScrollController,
+                          onCopy: _copyFailureReport,
+                          copyTooltip: lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupCopyFailureReport,
+                        ),
+                        const SizedBox(height: 10),
+                        _setupChoices(showInstall: false),
+                        const SizedBox(height: 12),
+                        if (_status?.switchPending == true)
+                          const SizedBox.shrink()
+                        else if (_monitoringFailed)
+                          KitActionBlock(
+                            primary: KitAction(
+                              label: lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupResumeLive,
+                              icon: AppIconography.sync,
+                              onPressed: _busy || _connecting
+                                  ? null
+                                  : _resumeLiveOutput,
+                            ),
+                            secondary: KitAction(
+                              label: lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).e7SetupResumeSetup,
+                              onPressed: _busy || _connecting ? null : _retry,
+                            ),
+                          )
+                        else
+                          KitButton.primary(
+                            onPressed: _busy || _connecting ? null : _retry,
+                            icon: AppIconography.retry,
+                            label: lookupAppLocalizations(
                               Localizations.localeOf(context),
                             ).e7SetupResumeSetup,
                           ),
-                        ),
-                    ],
-                  ),
-                  _ => null,
-                },
-              ),
-              // Last, so the Termux steps keep their place; this is the
-              // alternative for a phone that cannot or will not use Termux.
-              if (BuiltinLinux.supported && !_builtinFirst) ...[
-                const Divider(height: 32),
-                _builtinServerChoice(),
+                      ],
+                    ),
+                    _ => null,
+                  },
+                ),
+                // Last, so the Termux steps keep their place; this is the
+                // alternative for a phone that cannot or will not use Termux.
+                if (BuiltinLinux.supported && !_builtinFirst) ...[
+                  const Divider(height: 32),
+                  _builtinServerChoice(),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -2213,197 +2157,219 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         : _installation?.openCodeVersion;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.setupScreenTitle)),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: ListView(
-            // Its own list element: the choose-server list this view
-            // replaces may have been scrolled down to its Install button,
-            // and that offset must not carry over and hide this heading.
-            key: const ValueKey('termux-installed-runtime'),
-            padding: const EdgeInsets.all(20),
-            children: [
-              // The app bar already says "On this phone"; no eyebrow above
-              // the server's name repeating it.
-              Text(
-                _runtimeName(_runtime),
-                style: theme.textTheme.headlineSmall,
+      body: KitScreen(
+        // Connecting to the phone's server is the one bar (§4).
+        loading: _connecting || _checkingInstallation,
+        loadingLabel: profile == null
+            ? l10n.e7SetupCheckingInstall
+            : l10n.e7SetupConnectingProfile(profile.name),
+        body: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: ListView(
+              // Its own list element: the choose-server list this view
+              // replaces may have been scrolled down to its Install button,
+              // and that offset must not carry over and hide this heading.
+              key: const ValueKey('termux-installed-runtime'),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                KitScreen.endPadding(context),
               ),
-              const SizedBox(height: 8),
-              Text(
-                running
-                    ? lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupRunningOnPhone
-                    : pending || _phase == _Phase.failed
-                    ? l10n.setupSwitchAttention
-                    : l10n.setupSwitchStopped,
-              ),
-              if (!pending && observedVersion?.isNotEmpty == true) ...[
-                const SizedBox(height: 4),
+              children: [
+                // The app bar already says "On this phone"; no eyebrow above
+                // the server's name repeating it.
                 Text(
-                  lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7SetupVersion(observedVersion!),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppTheme.mutedOf(theme),
-                  ),
+                  _runtimeName(_runtime),
+                  style: theme.textTheme.headlineSmall,
                 ),
-              ],
-              const SizedBox(height: 16),
-              if (running && profile != null)
-                FilledButton.icon(
-                  onPressed: activeHere && _connecting
-                      ? _continueToApp
-                      : _busy || _connecting
-                      ? null
-                      : activeHere
-                      ? _continueToApp
-                      : () => _finishConnect(profile),
-                  icon: const Icon(AppIconography.forward),
-                  label: Text(
-                    activeHere
+                const SizedBox(height: 8),
+                Text(
+                  running
+                      ? lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7SetupRunningOnPhone
+                      : pending || _phase == _Phase.failed
+                      ? l10n.setupSwitchAttention
+                      : l10n.setupSwitchStopped,
+                ),
+                if (!pending && observedVersion?.isNotEmpty == true) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupVersion(observedVersion!),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.mutedOf(theme),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                if (running && profile != null)
+                  KitButton.primary(
+                    onPressed: activeHere && _connecting
+                        ? _continueToApp
+                        : _busy || _connecting
+                        ? null
+                        : activeHere
+                        ? _continueToApp
+                        : () => _finishConnect(profile),
+                    icon: AppIconography.forward,
+                    label: activeHere
                         ? lookupAppLocalizations(
                             Localizations.localeOf(context),
                           ).e7SetupContinueApp
                         : l10n.setupSwitchConnect(_runtimeName(_runtime)),
+                  )
+                else if (!pending && profile != null)
+                  KitButton.primary(
+                    onPressed: _busy || _connecting ? null : _startInstalled,
+                    icon: AppIconography.play,
+                    label: l10n.setupStartInstalled,
+                  )
+                else if (!pending)
+                  Text(l10n.setupMissingCredential),
+                if (_connecting && profile != null) ...[
+                  const SizedBox(height: 12),
+                  _ProgressLine(
+                    text: l10n.e7SetupConnectingProfile(profile.name),
                   ),
-                )
-              else if (!pending && profile != null)
-                FilledButton.icon(
-                  onPressed: _busy || _connecting ? null : _startInstalled,
-                  icon: const Icon(AppIconography.play),
-                  label: Text(l10n.setupStartInstalled),
-                )
-              else if (!pending)
-                Text(l10n.setupMissingCredential),
-              if (_connecting && profile != null) ...[
-                const SizedBox(height: 12),
-                _ProgressLine(
-                  text: l10n.e7SetupConnectingProfile(profile.name),
-                ),
-                TextButton(
-                  onPressed: () => _cancelConnection(profile),
-                  child: Text(l10n.setupCancelConnection),
-                ),
-              ],
-              if (!pending) const SizedBox(height: 12),
-              // Switching between OpenCode 1 and 2 is rare and not why most
-              // people open this page: it stays one tap away, folded, unless a
-              // switch is half done and needs finishing.
-              if (pending)
-                _runtimeSwitchChoices(showHeading: false)
-              else
-                ExpansionTile(
-                  key: const Key('other-runtime-versions'),
-                  tilePadding: EdgeInsets.zero,
-                  childrenPadding: const EdgeInsets.only(bottom: 8),
-                  expandedCrossAxisAlignment: CrossAxisAlignment.start,
-                  title: Text(l10n.setupOtherVersions),
-                  children: [_runtimeSwitchChoices(showHeading: false)],
-                ),
-              if (_error != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  friendlyError(
-                    setupUiMessage(
-                      lookupAppLocalizations(Localizations.localeOf(context)),
-                      _error!,
+                  KitInset(
+                    child: KitButton.tertiary(
+                      onPressed: () => _cancelConnection(profile),
+                      label: l10n.setupCancelConnection,
                     ),
                   ),
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              ],
-              if (running) ...[
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    OutlinedButton.icon(
-                      key: const Key('restart-managed-opencode'),
-                      onPressed: _busy || _connecting ? null : _confirmRestart,
-                      icon: const Icon(AppIconography.restart),
-                      label: Text(l10n.termuxRestartServer),
-                    ),
-                    OutlinedButton.icon(
-                      key: const Key('update-managed-opencode'),
-                      onPressed: _busy || _connecting ? null : _confirmUpdate,
-                      icon: const Icon(AppIconography.systemDownload),
-                      label: Text(
-                        lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7SetupUpdateOpenCode,
+                ],
+                if (!pending) const SizedBox(height: 12),
+                // Switching between OpenCode 1 and 2 is rare and not why most
+                // people open this page: it stays one tap away, folded, unless a
+                // switch is half done and needs finishing.
+                if (pending)
+                  _runtimeSwitchChoices(showHeading: false)
+                else
+                  ExpansionTile(
+                    key: const Key('other-runtime-versions'),
+                    tilePadding: EdgeInsets.zero,
+                    childrenPadding: const EdgeInsets.only(bottom: 8),
+                    expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                    title: Text(l10n.setupOtherVersions),
+                    children: [_runtimeSwitchChoices(showHeading: false)],
+                  ),
+                if (_error != null) ...[
+                  const SizedBox(height: 16),
+                  KitNotice(
+                    tone: AppStatusTone.failure,
+                    message: friendlyError(
+                      setupUiMessage(
+                        lookupAppLocalizations(Localizations.localeOf(context)),
+                        _error!,
                       ),
                     ),
-                    OutlinedButton.icon(
-                      onPressed: _busy || _connecting ? null : _stopServer,
-                      icon: const Icon(AppIcons.stop),
-                      label: Text(
-                        lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7SetupStopLocal,
+                  ),
+                ],
+                if (running) ...[
+                  const SizedBox(height: 20),
+                  _serverActions(
+                    stopLabel: lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupStopLocal,
+                    restartLabel: l10n.termuxRestartServer,
+                  ),
+                ] else if (!pending) ...[
+                  const SizedBox(height: 12),
+                  KitButton.secondary(
+                    onPressed: _busy || _checkingInstallation
+                        ? null
+                        : _reviewInstallChoice,
+                    icon: AppIconography.tools,
+                    label: observedVersion == _runtime.pinnedVersion
+                        ? l10n.setupReinstallStart
+                        : l10n.setupInstallVersionStart(_runtime.pinnedVersion),
+                  ),
+                ],
+                // TEAM-304/305: what the phone server uses and what is running
+                // in it, with live summaries; both open their own screens.
+                const SizedBox(height: 16),
+                const TermuxPhoneToolsRows(),
+                // Ubuntu is installed here whether or not OpenCode is running,
+                // which is all Claude Code needs.
+                const SizedBox(height: 16),
+                _localAgentBlock(),
+                if (running && profile != null) ...[
+                  const SizedBox(height: 16),
+                  _teamPhoneBlock(profile),
+                ],
+                if (_phase == _Phase.failed) ...[
+                  const SizedBox(height: 16),
+                  SetupTerminal(
+                    output: _setupOutput,
+                    running: false,
+                    controller: _outputScrollController,
+                    onCopy: _copyFailureReport,
+                    copyTooltip: lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupCopyFailureReport,
+                  ),
+                ],
+                const SizedBox(height: 20),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: Text(l10n.setupSwitchHelp),
+                  children: [
+                    _existingServerChoice(),
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.e7SetupRuntimeInstallDetail(
+                        _runtimeName(_runtime),
+                        _runtime.pinnedVersion,
                       ),
                     ),
                   ],
                 ),
-              ] else if (!pending) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _busy || _checkingInstallation
-                      ? null
-                      : _reviewInstallChoice,
-                  icon: const Icon(AppIconography.tools),
-                  label: Text(
-                    observedVersion == _runtime.pinnedVersion
-                        ? l10n.setupReinstallStart
-                        : l10n.setupInstallVersionStart(_runtime.pinnedVersion),
-                  ),
-                ),
               ],
-              // TEAM-304/305: what the phone server uses and what is running
-              // in it, with live summaries; both open their own screens.
-              const SizedBox(height: 16),
-              const TermuxPhoneToolsRows(),
-              // Ubuntu is installed here whether or not OpenCode is running,
-              // which is all Claude Code needs.
-              const SizedBox(height: 16),
-              _localAgentBlock(),
-              if (running && profile != null) ...[
-                const SizedBox(height: 16),
-                _teamPhoneBlock(profile),
-              ],
-              if (_phase == _Phase.failed) ...[
-                const SizedBox(height: 16),
-                SetupTerminal(
-                  output: _setupOutput,
-                  running: false,
-                  controller: _outputScrollController,
-                  onCopy: _copyFailureReport,
-                  copyTooltip: lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7SetupCopyFailureReport,
-                ),
-              ],
-              const SizedBox(height: 20),
-              ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                title: Text(l10n.setupSwitchHelp),
-                children: [
-                  _existingServerChoice(),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.e7SetupRuntimeInstallDetail(
-                      _runtimeName(_runtime),
-                      _runtime.pinnedVersion,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  /// A running server's controls in the one hierarchy (§2): an optional
+  /// primary, Restart as the other likely path, then Update and Stop as
+  /// text buttons, Stop in the error colour (it confirms first).
+  Widget _serverActions({
+    KitAction? primary,
+    required String stopLabel,
+    required String restartLabel,
+  }) {
+    final blocked = _busy || _connecting;
+    return KitActionBlock(
+      primary: primary,
+      secondary: KitAction(
+        key: const Key('restart-managed-opencode'),
+        label: restartLabel,
+        icon: AppIconography.restart,
+        onPressed: blocked ? null : _confirmRestart,
+      ),
+      tertiary: [
+        KitAction(
+          key: const Key('update-managed-opencode'),
+          label: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupUpdateOpenCode,
+          icon: AppIconography.systemDownload,
+          onPressed: blocked ? null : _confirmUpdate,
+        ),
+        KitAction(
+          label: stopLabel,
+          icon: AppIcons.stop,
+          destructive: true,
+          onPressed: blocked ? null : _stopServer,
+        ),
+      ],
     );
   }
 
@@ -2481,15 +2447,18 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
             ).e7SetupCheckingInstall,
           )
         else if (_installationError != null) ...[
-          Text(_installationError!),
-          TextButton.icon(
-            onPressed: _busy || _connecting ? null : _checkInstallation,
-            icon: const Icon(AppIconography.retry),
-            label: Text(
-              lookupAppLocalizations(
-                Localizations.localeOf(context),
-              ).setupCheckAgain,
-            ),
+          KitNotice(
+            tone: AppStatusTone.attention,
+            message: _installationError!,
+            actions: [
+              KitAction(
+                label: lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).setupCheckAgain,
+                icon: AppIconography.retry,
+                onPressed: _busy || _connecting ? null : _checkInstallation,
+              ),
+            ],
           ),
         ] else if (installed != null) ...[
           Text(
@@ -2510,14 +2479,12 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
           ),
           const SizedBox(height: 8),
           if (installed.openCodeVersion != null && _localProfile() != null)
-            FilledButton.icon(
+            KitButton.primary(
               onPressed: _busy || _connecting ? null : _startInstalled,
-              icon: const Icon(AppIconography.play),
-              label: Text(
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).setupStartInstalled,
-              ),
+              icon: AppIconography.play,
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).setupStartInstalled,
             ),
           if (installed.openCodeVersion != null && _localProfile() == null)
             Text(
@@ -2595,32 +2562,30 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
           ),
           const SizedBox(height: 10),
           if (installed?.openCodeVersion != null)
-            OutlinedButton.icon(
+            KitButton.secondary(
               onPressed: _busy || _checkingInstallation
                   ? null
                   : _reviewInstallChoice,
-              icon: const Icon(AppIconography.tools),
-              label: Text(
-                installed?.openCodeVersion == _runtime.pinnedVersion
-                    ? lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).setupReinstallStart
-                    : lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).setupInstallVersionStart(_runtime.pinnedVersion),
-              ),
+              icon: AppIconography.tools,
+              label: installed?.openCodeVersion == _runtime.pinnedVersion
+                  ? lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).setupReinstallStart
+                  : lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).setupInstallVersionStart(_runtime.pinnedVersion),
             )
           else
-            FilledButton.icon(
+            // Rests while the installation check runs: the loading bar and
+            // "Checking installed environment…" above are why.
+            KitButton.primary(
               onPressed: _busy || _checkingInstallation
                   ? null
                   : _reviewInstallChoice,
-              icon: const Icon(AppIconography.launch),
-              label: Text(
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).setupInstallStart,
-              ),
+              icon: AppIconography.launch,
+              label: lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).setupInstallStart,
             ),
         ],
       ],
@@ -2676,13 +2641,14 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
           ).setupSwitchOwnDescription,
         ),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: _busy || _connecting
-              ? null
-              : () => Navigator.of(context).pushNamed('/servers'),
-          icon: const Icon(AppIconography.link),
-          label: Text(
-            lookupAppLocalizations(
+        // An escape hatch here, not this screen's job: a text button (§2).
+        KitInset(
+          child: KitButton.tertiary(
+            onPressed: _busy || _connecting
+                ? null
+                : () => Navigator.of(context).pushNamed('/servers'),
+            icon: AppIconography.link,
+            label: lookupAppLocalizations(
               Localizations.localeOf(context),
             ).setupConnectExisting,
           ),
@@ -2709,32 +2675,24 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
         Text(l10n.builtinServerEntryDetail),
         const SizedBox(height: 8),
         // It opens the steps; the download starts there, on its own button.
-        if (primary)
-          FilledButton.icon(
-            key: const Key('termux-setup-builtin-open'),
-            onPressed: _busy || _connecting
-                ? null
-                : () => openBuiltinServerScreen(context),
-            icon: const Icon(AppIconography.experiments),
-            label: Text(l10n.builtinServerEntryAction),
-          )
-        else
-          OutlinedButton.icon(
-            key: const Key('termux-setup-builtin-open'),
-            onPressed: _busy || _connecting
-                ? null
-                : () => openBuiltinServerScreen(context),
-            icon: const Icon(AppIconography.experiments),
-            label: Text(l10n.builtinServerEntryAction),
-          ),
+        KitButton(
+          key: const Key('termux-setup-builtin-open'),
+          role: primary ? KitButtonRole.primary : KitButtonRole.secondary,
+          onPressed: _busy || _connecting
+              ? null
+              : () => openBuiltinServerScreen(context),
+          icon: AppIconography.experiments,
+          label: l10n.builtinServerEntryAction,
+        ),
       ],
     );
   }
 
-  Widget _buildSetupProgress() {
-    final theme = Theme.of(context);
+  /// What the setup is doing now: the progress page's title and the label
+  /// of its loading bar.
+  String _setupProgressTitle() {
     final stage = _status?.phase;
-    final title = _status?.switchPending == true
+    return _status?.switchPending == true
         ? lookupAppLocalizations(
             Localizations.localeOf(context),
           ).setupSwitchProgressTitle(_runtimeName(_status!.switchTarget!))
@@ -2762,6 +2720,11 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
               Localizations.localeOf(context),
             ).e7SetupPreparingSetup,
           };
+  }
+
+  Widget _buildSetupProgress() {
+    final theme = Theme.of(context);
+    final title = _setupProgressTitle();
     final message = _launching
         ? _launchMessage ??
               lookupAppLocalizations(
@@ -2782,45 +2745,26 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
             Localizations.localeOf(context),
           ).e7SetupElapsedMinutes(elapsedSeconds ~/ 60, elapsedSeconds % 60);
     final summary = Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Semantics(
             liveRegion: true,
-            child: Text(
-              title,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: Text(title, style: theme.textTheme.titleLarge),
           ),
           const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(top: 3),
-                child: SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+          // The bar under the app bar is the progress (§4); this is what
+          // it is doing, in words.
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              setupUiMessage(
+                lookupAppLocalizations(Localizations.localeOf(context)),
+                message,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    setupUiMessage(
-                      lookupAppLocalizations(Localizations.localeOf(context)),
-                      message,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
           if (elapsed != null) ...[
             const SizedBox(height: 10),
@@ -2970,12 +2914,6 @@ class _TermuxSetupScreenState extends ConsumerState<TermuxSetupScreen>
                     Expanded(
                       child: Text(title, style: theme.textTheme.titleSmall),
                     ),
-                    if (state == _StepState.running)
-                      const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
                     if (!enabled)
                       Text(
                         lookupAppLocalizations(
@@ -3004,17 +2942,20 @@ class _ProgressLine extends StatelessWidget {
   const _ProgressLine({required this.text});
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      const SizedBox(
-        width: 14,
-        height: 14,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      ),
-      const SizedBox(width: 10),
-      Expanded(child: Text(text)),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(
+          AppIconography.sync,
+          size: 18,
+          color: AppTheme.statusColor(theme, AppStatusTone.progress),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text)),
+      ],
+    );
+  }
 }
 
 class _TermuxPasteGuide extends StatelessWidget {

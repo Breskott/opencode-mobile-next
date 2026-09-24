@@ -31,6 +31,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../state/orchestration.dart';
 import '../../../state/team_planning.dart';
 import '../../app_theme.dart';
+import '../../kit/kit.dart';
 import '../../widgets/team_host_form.dart';
 import '../../widgets/team_vocabulary.dart';
 import 'agent_output_screen.dart';
@@ -226,8 +227,10 @@ class _StartRunSheetState extends State<StartRunSheet> {
       final inset = MediaQuery.viewInsetsOf(context).bottom;
       final planner = teamPlannerAgent(widget.controller.snapshot.agents);
       final Widget body;
+      Widget? action;
       if (_direct) {
         body = _directForm(context);
+        action = _directAction(context);
       } else if (planner == null) {
         body = _PlannerOff(
           key: const ValueKey('team-start-run-planner-missing'),
@@ -242,30 +245,48 @@ class _StartRunSheetState extends State<StartRunSheet> {
         );
       } else {
         body = _form(context, planner);
+        action = _formAction(context, planner);
       }
+      final bottom = 16 + MediaQuery.paddingOf(context).bottom;
+      // The form scrolls; its action stays pinned under it, so Send is on
+      // screen however long the form or large the text (design standard
+      // §1: the primary is pinned, never scrolled away).
       return Padding(
         key: const ValueKey('team-start-run-sheet'),
         padding: EdgeInsets.only(bottom: inset),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            0,
-            16,
-            16 + MediaQuery.paddingOf(context).bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                l10n.teamUiStartRunTitle,
-                key: const ValueKey('team-start-run-title'),
-                style: theme.textTheme.titleLarge,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  0,
+                  16,
+                  action == null ? bottom : 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      l10n.teamUiStartRunTitle,
+                      key: const ValueKey('team-start-run-title'),
+                      style: theme.textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 12),
+                    body,
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              body,
-            ],
-          ),
+            ),
+            if (action != null)
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, bottom),
+                child: action,
+              ),
+          ],
         ),
       );
     },
@@ -276,12 +297,10 @@ class _StartRunSheetState extends State<StartRunSheet> {
     final theme = Theme.of(context);
     final muted = AppTheme.mutedOf(theme);
     final projects = widget.controller.snapshot.projects;
-    final labelStyle = theme.textTheme.labelLarge?.copyWith(color: muted);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(l10n.teamUiStartRunObjectiveLabel, style: labelStyle),
-        const SizedBox(height: 6),
+        SectionLabel.inline(l10n.teamUiStartRunObjectiveLabel),
         TextField(
           key: const ValueKey('team-start-run-objective'),
           controller: _objective,
@@ -300,8 +319,7 @@ class _StartRunSheetState extends State<StartRunSheet> {
         ),
         if (projects.isNotEmpty) ...[
           const SizedBox(height: 16),
-          Text(l10n.teamUiStartRunProjectLabel, style: labelStyle),
-          const SizedBox(height: 6),
+          SectionLabel.inline(l10n.teamUiStartRunProjectLabel),
           DropdownButtonFormField<String?>(
             key: const ValueKey('team-start-run-project'),
             initialValue: _projectId,
@@ -329,8 +347,7 @@ class _StartRunSheetState extends State<StartRunSheet> {
           ),
         ],
         const SizedBox(height: 16),
-        Text(l10n.teamUiStartRunSupervisionLabel, style: labelStyle),
-        const SizedBox(height: 4),
+        SectionLabel.inline(l10n.teamUiStartRunSupervisionLabel),
         for (final level in TeamSupervision.values)
           _SupervisionRow(
             key: ValueKey('team-start-run-supervision-${level.name}'),
@@ -341,8 +358,7 @@ class _StartRunSheetState extends State<StartRunSheet> {
                 : () => setState(() => _supervision = level),
           ),
         const SizedBox(height: 12),
-        Text(l10n.teamUiStartRunPlannerLabel, style: labelStyle),
-        const SizedBox(height: 4),
+        SectionLabel.inline(l10n.teamUiStartRunPlannerLabel),
         Row(
           key: const ValueKey('team-start-run-planner'),
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,11 +407,7 @@ class _StartRunSheetState extends State<StartRunSheet> {
             child: Row(
               key: const ValueKey('team-start-run-waking'),
               children: [
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+                Icon(AppIconography.waiting, size: 16, color: muted),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -406,15 +418,19 @@ class _StartRunSheetState extends State<StartRunSheet> {
               ],
             ),
           ),
-        FilledButton.icon(
-          key: const ValueKey('team-start-run-send'),
-          onPressed: _sending ? null : () => _send(planner),
-          icon: const Icon(AppIconography.send, size: 18),
-          label: Text(l10n.teamUiStartRunSend),
-        ),
       ],
     );
   }
+
+  /// The planner form's action, pinned under the scrolling form.
+  Widget _formAction(BuildContext context, OrchestrationAgent planner) =>
+      KitButton.primary(
+        key: const ValueKey('team-start-run-send'),
+        onPressed: _sending ? null : () => _send(planner),
+        working: _sending,
+        icon: AppIconography.send,
+        label: _copy(context).teamUiStartRunSend,
+      );
 
   /// The direct task (TEAM-306): intro, project, title, details, Send to
   /// an agent, the host's refusal when any, and the host guide below for
@@ -424,7 +440,6 @@ class _StartRunSheetState extends State<StartRunSheet> {
     final theme = Theme.of(context);
     final muted = AppTheme.mutedOf(theme);
     final projects = widget.controller.snapshot.projects;
-    final labelStyle = theme.textTheme.labelLarge?.copyWith(color: muted);
     final error = _directError;
     final failure = AppTheme.statusColor(theme, AppStatusTone.failure);
     return Column(
@@ -445,8 +460,7 @@ class _StartRunSheetState extends State<StartRunSheet> {
           ],
         ),
         const SizedBox(height: 16),
-        Text(l10n.teamUiStartRunProjectLabel, style: labelStyle),
-        const SizedBox(height: 6),
+        SectionLabel.inline(l10n.teamUiStartRunProjectLabel),
         DropdownButtonFormField<String>(
           key: const ValueKey('team-start-run-direct-project'),
           initialValue: _directProject,
@@ -469,8 +483,7 @@ class _StartRunSheetState extends State<StartRunSheet> {
               : (value) => setState(() => _directProjectId = value),
         ),
         const SizedBox(height: 16),
-        Text(l10n.teamUiStartRunDirectTitle, style: labelStyle),
-        const SizedBox(height: 6),
+        SectionLabel.inline(l10n.teamUiStartRunDirectTitle),
         TextField(
           key: const ValueKey('team-start-run-direct-title'),
           controller: _task,
@@ -487,8 +500,7 @@ class _StartRunSheetState extends State<StartRunSheet> {
           ),
         ),
         const SizedBox(height: 12),
-        Text(l10n.teamUiStartRunDirectDetails, style: labelStyle),
-        const SizedBox(height: 6),
+        SectionLabel.inline(l10n.teamUiStartRunDirectDetails),
         TextField(
           key: const ValueKey('team-start-run-direct-details'),
           controller: _details,
@@ -517,27 +529,33 @@ class _StartRunSheetState extends State<StartRunSheet> {
             ],
           ),
         ],
-        const SizedBox(height: 20),
-        FilledButton.icon(
+      ],
+    );
+  }
+
+  /// The direct task's actions, pinned under the scrolling form: Send is
+  /// the sheet's one primary; the host guide is the rare other path
+  /// (design standard §2).
+  Widget _directAction(BuildContext context) {
+    final l10n = _copy(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KitButton.primary(
           key: const ValueKey('team-start-run-direct-send'),
           onPressed: _sending ? null : _sendDirect,
-          icon: _sending
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(AppIconography.send, size: 18),
-          label: Text(l10n.teamUiStartRunDirectSend),
+          working: _sending,
+          icon: AppIconography.send,
+          label: l10n.teamUiStartRunDirectSend,
         ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: OutlinedButton.icon(
+        const SizedBox(height: 4),
+        KitInset(
+          child: KitButton.tertiary(
             key: const ValueKey('team-start-run-host-guide'),
             onPressed: () => showTeamHostGuideSheet(context),
-            icon: const Icon(AppIconography.guide, size: 18),
-            label: Text(l10n.teamUiStartRunHostGuide),
+            icon: AppIconography.guide,
+            label: l10n.teamUiStartRunHostGuide,
           ),
         ),
       ],
@@ -622,37 +640,20 @@ class _PlannerOff extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final color = AppTheme.statusColor(theme, AppStatusTone.attention);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(AppIconography.warning, size: 20, color: color),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(color: color),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Text(message, style: theme.textTheme.bodyMedium),
-        const SizedBox(height: 12),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: OutlinedButton.icon(
-            key: const ValueKey('team-start-run-host-guide'),
-            onPressed: () => showTeamHostGuideSheet(context),
-            icon: const Icon(AppIconography.guide, size: 18),
-            label: Text(l10n.teamUiStartRunHostGuide),
-          ),
-        ),
-      ],
+    // A state, not a form (design standard §3): what is wrong, and the
+    // one way on from here.
+    return KitStateView(
+      size: KitStateSize.inline,
+      icon: AppIconography.warning,
+      tone: AppStatusTone.attention,
+      title: title,
+      body: message,
+      secondary: KitAction(
+        key: const ValueKey('team-start-run-host-guide'),
+        label: l10n.teamUiStartRunHostGuide,
+        icon: AppIconography.guide,
+        onPressed: () => showTeamHostGuideSheet(context),
+      ),
     );
   }
 }
@@ -720,32 +721,16 @@ class TeamPlanningCard extends StatelessWidget {
         request.run?.title ?? request.objective,
       ),
     };
-    final color = AppTheme.statusColor(theme, tone);
-    return Container(
+    return KitPanel(
       key: ValueKey('team-planning-${request.key}'),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: .5)),
-      ),
+      tone: tone,
+      icon: icon,
+      title: title,
+      titleKey: const ValueKey('team-planning-title'),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  key: const ValueKey('team-planning-title'),
-                  style: theme.textTheme.labelLarge?.copyWith(color: color),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
           Text(
             request.objective,
             key: const ValueKey('team-planning-objective'),
@@ -753,34 +738,34 @@ class TeamPlanningCard extends StatelessWidget {
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
-          if (request.status == TeamPlanningStatus.planning) ...[
-            const SizedBox(height: 4),
+          const SizedBox(height: 4),
+          if (request.status == TeamPlanningStatus.planning)
             Text(
               l10n.teamUiStartRunPlanningHint,
               style: theme.textTheme.bodySmall?.copyWith(color: muted),
             ),
-          ],
-          const SizedBox(height: 4),
           Text(
             l10n.teamUiStartRunSentAt(teamClockLabel(context, request.sentAt)),
             style: theme.textTheme.bodySmall?.copyWith(color: muted),
           ),
           const SizedBox(height: 4),
-          Wrap(
-            spacing: 4,
-            children: [
-              TextButton.icon(
-                key: const ValueKey('team-planning-output'),
-                onPressed: () => _openPlannerOutput(context),
-                icon: const Icon(AppIconography.terminal, size: 18),
-                label: Text(l10n.teamUiStartRunPlannerOutput),
-              ),
-              TextButton(
-                key: const ValueKey('team-planning-dismiss'),
-                onPressed: () => controller.dismissPlanning(request.key),
-                child: Text(l10n.teamUiStartRunDismiss),
-              ),
-            ],
+          KitInset(
+            child: Wrap(
+              spacing: 4,
+              children: [
+                KitButton.tertiary(
+                  key: const ValueKey('team-planning-output'),
+                  onPressed: () => _openPlannerOutput(context),
+                  icon: AppIconography.terminal,
+                  label: l10n.teamUiStartRunPlannerOutput,
+                ),
+                KitButton.tertiary(
+                  key: const ValueKey('team-planning-dismiss'),
+                  onPressed: () => controller.dismissPlanning(request.key),
+                  label: l10n.teamUiStartRunDismiss,
+                ),
+              ],
+            ),
           ),
         ],
       ),

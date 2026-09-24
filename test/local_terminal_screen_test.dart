@@ -22,10 +22,8 @@ import 'support/fake_local_terminal.dart';
 // the source choice, the states, the key bar, and shells that outlive it.
 
 class _Linux extends BuiltinLinux {
-  _Linux({this.installed = true, this.services = const []});
-
-  bool installed;
-  List<String> services;
+  bool installed = true;
+  List<String> services = const [];
   bool fail = false;
 
   @override
@@ -110,13 +108,13 @@ void main() {
       await tester.pump();
       // One loading bar while the shell starts.
       expect(
-        find.byKey(const ValueKey('local-terminal-loading')),
+        find.byKey(const ValueKey('kit-loading-bar')),
         findsOneWidget,
       );
       backend.startGate!.complete();
       await tester.pumpAndSettle();
       expect(
-        find.byKey(const ValueKey('local-terminal-loading')),
+        find.byKey(const ValueKey('kit-loading-bar')),
         findsNothing,
       );
       expect(find.byType(xterm.TerminalView), findsOneWidget);

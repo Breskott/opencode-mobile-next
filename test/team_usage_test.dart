@@ -1,6 +1,7 @@
 // TEAM-113: usage surfaces. The shared formatter returns null when the
 // host reported neither cost nor tokens, writes tokens compactly and puts
-// "est." after every cost; the run Overview's "Team today" chip and the
+// "est." after every cost; the run Overview's "Team today" line (under
+// its Details row since the 2026-09-24 redesign) and the
 // agent Runtime's "Tokens / context / cost" line show over the fixture's
 // `/usage` and are absent when usage is empty or the capability is off;
 // the Gas City read capabilities now include `usage`.
@@ -392,12 +393,32 @@ void main() {
 
     Finder key(String name) => find.byKey(ValueKey(name));
 
-    String text(WidgetTester tester, Finder finder) => tester
-        .widget<Text>(find.descendant(of: finder, matching: find.byType(Text)))
-        .data!;
+    String text(WidgetTester tester, Finder finder) =>
+        tester.widget<Text>(finder).data!;
 
-    group('run Overview chip', () {
-      testWidgets('after the count chips with the fixture usage', (
+    /// The redesigned Overview keeps the counts, the usage and the
+    /// policy under one collapsed "Details" row; open it.
+    Future<void> openDetails(WidgetTester tester) async {
+      await tester.tap(find.text('Details'));
+      await tester.pumpAndSettle();
+      expect(key('team-run-summary-body'), findsOneWidget);
+    }
+
+    Future<void> pumpRun(
+      WidgetTester tester,
+      OrchestrationController controller, {
+      Locale locale = const Locale('en'),
+    }) async {
+      await pump(
+        tester,
+        RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
+        locale: locale,
+      );
+      await openDetails(tester);
+    }
+
+    group('run Overview Details usage', () {
+      testWidgets('under the step counts with the fixture usage', (
         tester,
       ) async {
         final (controller, _) = await boot(fixtureUsage: true);
@@ -405,6 +426,9 @@ void main() {
           tester,
           RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
         );
+        // Collapsed on open: the figure is one tap away, not on the page.
+        expect(key('team-run-usage'), findsNothing);
+        await openDetails(tester);
         // The recorded `/usage` counted nothing yet but reported it: an
         // honest zero, still estimated.
         expect(controller.snapshot.usage, isNotNull);
@@ -414,13 +438,17 @@ void main() {
           text(tester, key('team-run-usage')),
           r'Team today · $0.00 est. · 0 tokens',
         );
+        expect(find.text('Usage'), findsOneWidget);
         expect(
           tester.getTopLeft(key('team-run-usage')).dy,
           greaterThan(tester.getBottomLeft(key('team-run-counts')).dy - 1),
         );
         expect(
-          tester.getTopLeft(key('team-run-usage')).dy,
-          lessThan(tester.getTopLeft(key('team-run-batch')).dy),
+          find.descendant(
+            of: key('team-run-summary-body'),
+            matching: key('team-run-usage'),
+          ),
+          findsOneWidget,
         );
       });
 
@@ -428,10 +456,7 @@ void main() {
         tester,
       ) async {
         final (controller, _) = await boot();
-        await pump(
-          tester,
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        );
+        await pumpRun(tester, controller);
         expect(
           text(tester, key('team-run-usage')),
           r'Team today · $0.42 est. · 12.4k tokens',
@@ -440,10 +465,7 @@ void main() {
 
       testWidgets('is absent when /usage returned nothing', (tester) async {
         final (controller, _) = await boot(usage: null);
-        await pump(
-          tester,
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        );
+        await pumpRun(tester, controller);
         expect(controller.snapshot.usage, isNull);
         expect(key('team-run-counts'), findsOneWidget);
         expect(key('team-run-usage'), findsNothing);
@@ -452,10 +474,8 @@ void main() {
 
       testWidgets('is absent when usage carries only counts', (tester) async {
         final (controller, _) = await boot(usage: _countsOnly);
-        await pump(
-          tester,
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        );
+        await pumpRun(tester, controller);
+        expect(key('team-run-counts'), findsOneWidget);
         expect(key('team-run-usage'), findsNothing);
         expect(find.textContaining('est.'), findsNothing);
       });
@@ -472,11 +492,9 @@ void main() {
             gatesBeads: true,
           ),
         );
-        await pump(
-          tester,
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        );
+        await pumpRun(tester, controller);
         expect(controller.capabilities.usage, isFalse);
+        expect(key('team-run-counts'), findsOneWidget);
         expect(key('team-run-usage'), findsNothing);
       });
 
@@ -494,15 +512,12 @@ void main() {
             },
           ),
         );
-        await pump(
-          tester,
-          RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
-        );
+        await pumpRun(tester, controller);
         expect(text(tester, key('team-run-usage')), r'$0.07 est. · 950 tokens');
         expect(find.textContaining('Team today'), findsNothing);
       });
 
-      testWidgets('Arabic: the chip reads right to left with Latin figures', (
+      testWidgets('Arabic: the line reads right to left with Latin figures', (
         tester,
       ) async {
         final (controller, _) = await boot();
@@ -511,6 +526,8 @@ void main() {
           RunScreen(controller: controller, runId: 'oc-xru', now: () => clock),
           locale: const Locale('ar'),
         );
+        await tester.tap(find.text(ar.teamUiRunDetails));
+        await tester.pumpAndSettle();
         final label = text(tester, key('team-run-usage'));
         expect(label, ar.teamUiUsageChip(teamUsageLabel(ar, _richUsage)!));
         expect(label, contains(r'$0.42'));
@@ -519,15 +536,12 @@ void main() {
           Directionality.of(tester.element(key('team-run-usage'))),
           TextDirection.rtl,
         );
-        // The chip sits at the start edge: on the right in RTL.
-        final chip = tester.getRect(
-          find.descendant(
-            of: key('team-run-usage'),
-            matching: find.byType(Container),
-          ),
-        );
+        // The line sits at the start edge: on the right in RTL, aligned
+        // with the counts above it.
+        final usage = tester.getRect(key('team-run-usage'));
         final counts = tester.getRect(key('team-run-counts'));
-        expect(chip.right, moreOrLessEquals(counts.right, epsilon: 1));
+        expect(usage.right, moreOrLessEquals(counts.right, epsilon: 1));
+        expect(tester.takeException(), isNull);
       });
     });
 

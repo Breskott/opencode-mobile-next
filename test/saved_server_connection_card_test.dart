@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/widgets/saved_server_connection_card.dart';
 
 Widget _card({
@@ -58,7 +59,11 @@ void main() {
       ),
     );
     expect(find.text('Nothing is listening on this device'), findsOneWidget);
-    expect(find.byKey(const ValueKey('saved-server-checks')), findsOneWidget);
+    // What to check is under Details, below the actions (standard §3).
+    await tester.ensureVisible(find.byKey(const ValueKey('kit-state-details')));
+    await tester.tap(find.byKey(const ValueKey('kit-state-details')));
+    await tester.pumpAndSettle();
+    expect(find.text('What to check'), findsOneWidget);
     expect(find.textContaining('Termux'), findsWidgets);
     await tester.ensureVisible(
       find.byKey(const ValueKey('saved-server-open-termux')),
@@ -72,7 +77,7 @@ void main() {
     );
     expect(
       tester.widget(find.byKey(const ValueKey('saved-server-open-termux'))),
-      isA<TextButton>(),
+      isA<KitButton>().having((b) => b.role, 'role', KitButtonRole.tertiary),
     );
   });
 
@@ -103,18 +108,19 @@ void main() {
     await tester.pumpWidget(
       _card(error: 'Health check failed: connection refused'),
     );
-    expect(find.byKey(const ValueKey('saved-server-raw-error')), findsNothing);
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('saved-server-details')),
-    );
-    await tester.tap(find.byKey(const ValueKey('saved-server-details')));
+    expect(find.byKey(const ValueKey('kit-state-details-text')), findsNothing);
+    await tester.ensureVisible(find.byKey(const ValueKey('kit-state-details')));
+    await tester.tap(find.byKey(const ValueKey('kit-state-details')));
     await tester.pumpAndSettle();
     expect(
-      find.byKey(const ValueKey('saved-server-raw-error')),
+      find.byKey(const ValueKey('kit-state-details-text')),
       findsOneWidget,
     );
+    // The address, then the raw error, in mono.
     expect(
-      find.text('Health check failed: connection refused'),
+      find.text(
+        'http://127.0.0.1:4096\nHealth check failed: connection refused',
+      ),
       findsOneWidget,
     );
   });
@@ -287,5 +293,36 @@ void main() {
   ) async {
     await tester.pumpWidget(_card(attempts: 3));
     expect(find.text('Connecting again (attempt 3)'), findsOneWidget);
+  });
+
+  testWidgets('a stopped phone server that is starting says Starting, never '
+      'stopped, and no button stands in for the progress', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: SavedServerConnectionCard(
+            profileName: 'This device (Termux)',
+            baseUrl: 'http://127.0.0.1:4096',
+            error: 'Cannot reach http://127.0.0.1:4096: Connection refused',
+            attempts: 1,
+            supportsTermux: true,
+            onChangeServer: () {},
+            onRetry: () {},
+            onStartPhoneServer: () {},
+            startingPhoneServer: true,
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Starting OpenCode on this phone…'), findsOneWidget);
+    expect(find.textContaining('stopped'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('saved-server-connect-progress')),
+      findsOneWidget,
+    );
+    expect(find.byType(FilledButton), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text('Change server'), findsOneWidget);
   });
 }

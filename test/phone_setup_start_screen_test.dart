@@ -114,12 +114,11 @@ Iterable<String> _visibleTexts(WidgetTester tester) => [
 ];
 
 Future<void> _expandOtherWays(WidgetTester tester) async {
+  // A toggle like a state's Details (design standard §3), not a ListTile.
   final otherWays = find.byKey(const ValueKey('phone-setup-start-other-ways'));
   await tester.ensureVisible(otherWays);
   await tester.pumpAndSettle();
-  await tester.tap(
-    find.descendant(of: otherWays, matching: find.byType(ListTile)).first,
-  );
+  await tester.tap(otherWays);
   await tester.pumpAndSettle();
 }
 
@@ -533,7 +532,10 @@ void main() {
           const ValueKey('phone-setup-customize-totals'),
         );
         expect(tester.widget<Text>(totals).data, 'Nothing chosen yet');
-        final add = find.byKey(const ValueKey('phone-setup-customize-done'));
+        final add = find.descendant(
+          of: find.byKey(const ValueKey('phone-setup-customize-done')),
+          matching: find.byType(FilledButton),
+        );
         expect(tester.widget<FilledButton>(add).onPressed, isNull);
 
         // AI Team needs Git LFS, so choosing it turns that on too.

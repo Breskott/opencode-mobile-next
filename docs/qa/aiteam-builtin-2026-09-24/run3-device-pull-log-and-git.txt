@@ -1,0 +1,23 @@
+--- pull.log
+2026-09-24T17:56:20Z	my-app	up-to-date	ab92be3	bd init: initialize beads issue tracking
+2026-09-24T17:56:49Z	my-app	up-to-date	ab92be3	bd init: initialize beads issue tracking
+2026-09-24T18:51:47Z	my-app	brought-in	ee82da7	Add greet.txt containing the word hello
+2026-09-24T19:14:09Z	my-app	dirty	b593e1a	greet.txt 
+2026-09-24T19:17:57Z	my-app	dirty	b593e1a	greet.txt 
+--- origin
+b593e1a Add two.txt containing the word two
+ee82da7 Add greet.txt containing the word hello
+ab92be3 bd init: initialize beads issue tracking
+--- project
+ee82da7 Add greet.txt containing the word hello
+ab92be3 bd init: initialize beads issue tracking
+02c40be Start
+ M .beads/interactions.jsonl
+ M .beads/metadata.json
+ M .gitignore
+ M greet.txt
+?? .beads/identity.toml
+greet.txt:
+hello
+my own edit, not committed
+greet.txt
