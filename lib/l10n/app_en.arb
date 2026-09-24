@@ -19323,5 +19323,47 @@
   "phoneSetupStartChecking": "Checking what's installed…",
   "@phoneSetupStartChecking": {
     "description": "While the add-mode sheet reads which tools are installed"
+  },
+  "phoneSetupOpenWelcomeRunning": "Setting up OpenCode on this phone · {percent}%",
+  "@phoneSetupOpenWelcomeRunning": {
+    "description": "On the first-run welcome while a setup job runs; tapping shows its progress",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "phoneSetupOpenWelcomeStopped": "Setup on this phone is {percent}% done",
+  "@phoneSetupOpenWelcomeStopped": {
+    "description": "On the first-run welcome when a setup job was interrupted, failed or cancelled part way",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "phoneSetupOpenWelcomeStoppedDetail": "Continuing picks up where it left off.",
+  "@phoneSetupOpenWelcomeStoppedDetail": {
+    "description": "Under the stopped-setup line on the first-run welcome"
+  },
+  "phoneSetupOpenWelcomeShowProgress": "Show progress",
+  "@phoneSetupOpenWelcomeShowProgress": {
+    "description": "Button on the first-run welcome that opens the running setup"
+  },
+  "phoneSetupOpenWelcomeContinue": "Continue",
+  "@phoneSetupOpenWelcomeContinue": {
+    "description": "Button on the first-run welcome that resumes a stopped setup"
+  },
+  "phoneSetupOpenPhoneRuntime": "{name} · {runtime}",
+  "@phoneSetupOpenPhoneRuntime": {
+    "description": "The in-app server's name when OpenCode 1 and OpenCode 2 are both set up on this phone, e.g. 'This phone · OpenCode 2'",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "runtime": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -316,7 +316,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         appBar: AppBar(
           title: _WorkspaceAppBarTitle(
             onOpenSwitcher: () => unawaited(_openServerSwitcher(conn)),
-            profileName: serverDisplayName(conn.profile, _l10n(context)),
+            profileName: serverDisplayName(
+              conn.profile,
+              _l10n(context),
+              among: conn.store.profiles,
+            ),
             tabTitle: _titles[activeTab],
             status: conn.status,
             compact: MediaQuery.sizeOf(context).width < 600,

@@ -231,6 +231,7 @@ class SetupRunner private constructor(private val context: Context) {
                 context,
                 words.channel,
                 if (ended == "done") words.done else words.stopped,
+                done = ended == "done",
             )
         }
         synchronized(lock) {

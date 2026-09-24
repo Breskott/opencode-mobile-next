@@ -1038,7 +1038,15 @@ class MainActivity : FlutterActivity() {
         const val EXTRA_LAUNCH_ACTION = "oc.shortcut"
         // The static shortcut ids plus the Quick Settings tile's action
         // (AttentionTileService.LAUNCH_ACTION_ACTIVITY).
-        private val LAUNCH_ACTIONS = setOf("connect", "new_task", "activity")
+        private val LAUNCH_ACTIONS = setOf(
+            "connect",
+            "new_task",
+            "activity",
+            // The phone setup notifications: SetupService.LAUNCH_ACTION_PROGRESS
+            // and LAUNCH_ACTION_DONE.
+            "phone_setup",
+            "phone_setup_done",
+        )
         // Intent extras set by PinnedSessionShortcuts; a pinned-session tap
         // carries exactly these two IDs and nothing else.
         const val EXTRA_LAUNCH_PROFILE = "oc.shortcut.profile"

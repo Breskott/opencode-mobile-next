@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../l10n/app_localizations.dart';
 import 'setup_contract.dart';
 import 'setup_engine.dart';
@@ -12,6 +14,23 @@ class PhoneSetup {
   static SetupEngine get engine => _engine ??= ChannelSetupEngine();
 
   static set engine(SetupEngine value) => _engine = value;
+
+  /// Jobs whose "name your first project" screen has been shown in this run
+  /// of the app, so a later tap on the "ready" notification does not offer
+  /// it a second time. Kept in memory only: after the app was killed, a
+  /// first setup's ready notification leads to that screen again, which is
+  /// still a sensible place to land.
+  static final _readyShown = <String>{};
+
+  static bool readyShownFor(String? jobId) =>
+      jobId != null && _readyShown.contains(jobId);
+
+  static void markReadyShown(String? jobId) {
+    if (jobId != null) _readyShown.add(jobId);
+  }
+
+  @visibleForTesting
+  static void resetReadyShown() => _readyShown.clear();
 
   /// Called by the app shell once it can start and connect to the in-app
   /// server: the engine's last step goes through [finisher], and its words

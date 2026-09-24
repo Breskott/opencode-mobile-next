@@ -17807,4 +17807,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneSetupStartChecking => 'Checking what\'s installed…';
+
+  @override
+  String phoneSetupOpenWelcomeRunning(int percent) {
+    return 'Setting up OpenCode on this phone · $percent%';
+  }
+
+  @override
+  String phoneSetupOpenWelcomeStopped(int percent) {
+    return 'Setup on this phone is $percent% done';
+  }
+
+  @override
+  String get phoneSetupOpenWelcomeStoppedDetail =>
+      'Continuing picks up where it left off.';
+
+  @override
+  String get phoneSetupOpenWelcomeShowProgress => 'Show progress';
+
+  @override
+  String get phoneSetupOpenWelcomeContinue => 'Continue';
+
+  @override
+  String phoneSetupOpenPhoneRuntime(String name, String runtime) {
+    return '$name · $runtime';
+  }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'support/complete_message_history.dart';
+import 'support/fake_setup_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
+import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
+import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/main.dart';
 import 'package:opencode_mobile/platform/launch_shortcut.dart';
@@ -15,6 +18,7 @@ import 'package:opencode_mobile/platform/share_intent.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
+import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_progress_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/update/shorebird_update_notice.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -212,6 +216,53 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('a phone setup notification tap opens the setup progress, '
+      'first setup included, without touching the connection', (tester) async {
+    final engine = FakeSetupEngine()
+      ..emit(
+        const SetupProgress(
+          jobId: 'job-1',
+          state: SetupState.running,
+          overall: .4,
+          firstSetup: true,
+          components: [
+            ComponentProgress(id: 'linux', state: ComponentState.done),
+            ComponentProgress(id: 'node', state: ComponentState.running),
+          ],
+        ),
+      );
+    PhoneSetup.engine = engine;
+    final controller = await _controller(connected: true);
+    addTearDown(controller.dispose);
+    final api = controller.api! as _ShortcutApi;
+    final shortcut = _shortcut();
+    await tester.pumpWidget(_app(controller, shortcut));
+    await tester.pumpAndSettle();
+
+    shortcut.pending.value = LaunchAction.phoneSetup;
+    // The running row spins, so the screen never settles: pump through the
+    // route transition instead.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    final screen = tester.widget<PhoneSetupProgressScreen>(
+      find.byType(PhoneSetupProgressScreen),
+    );
+    expect(screen.firstSetup, isTrue);
+    expect(shortcut.pending.value, isNull);
+    expect(api.created, 0);
+    expect(controller.status, StreamStatus.connected);
+
+    // A second tap while it shows stacks nothing.
+    shortcut.pending.value = LaunchAction.phoneSetupDone;
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byType(PhoneSetupProgressScreen), findsOneWidget);
+    expect(shortcut.pending.value, isNull);
+  });
 
   testWidgets('connect opens server selection and keeps the connection', (
     tester,

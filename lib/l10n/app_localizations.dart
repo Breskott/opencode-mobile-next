@@ -28773,6 +28773,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checking what\'s installed…'**
   String get phoneSetupStartChecking;
+
+  /// On the first-run welcome while a setup job runs; tapping shows its progress
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up OpenCode on this phone · {percent}%'**
+  String phoneSetupOpenWelcomeRunning(int percent);
+
+  /// On the first-run welcome when a setup job was interrupted, failed or cancelled part way
+  ///
+  /// In en, this message translates to:
+  /// **'Setup on this phone is {percent}% done'**
+  String phoneSetupOpenWelcomeStopped(int percent);
+
+  /// Under the stopped-setup line on the first-run welcome
+  ///
+  /// In en, this message translates to:
+  /// **'Continuing picks up where it left off.'**
+  String get phoneSetupOpenWelcomeStoppedDetail;
+
+  /// Button on the first-run welcome that opens the running setup
+  ///
+  /// In en, this message translates to:
+  /// **'Show progress'**
+  String get phoneSetupOpenWelcomeShowProgress;
+
+  /// Button on the first-run welcome that resumes a stopped setup
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get phoneSetupOpenWelcomeContinue;
+
+  /// The in-app server's name when OpenCode 1 and OpenCode 2 are both set up on this phone, e.g. 'This phone · OpenCode 2'
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · {runtime}'**
+  String phoneSetupOpenPhoneRuntime(String name, String runtime);
 }
 
 class _AppLocalizationsDelegate

@@ -111,6 +111,10 @@ class ChannelSetupEngine implements SetupEngine {
   bool _starting = false;
   bool _cancelRequested = false;
 
+  /// Whether the job being started (before setup.json has it) is a first
+  /// setup, for the progress published while its checks run.
+  bool _localFirstSetup = false;
+
   /// The last job given to the native runner by this engine.
   String? _handedOver;
   String? _finishing;
@@ -140,12 +144,7 @@ class ChannelSetupEngine implements SetupEngine {
         _ensurePolling();
         return;
       }
-      // Continue keeps what the stopped job was for (OpenCode 2, a version)
-      // unless the caller says otherwise.
-      final effective = params.isEmpty && last != null && last.canContinue
-          ? last.params
-          : params;
-      await _start(ids, effective);
+      await _start(ids, effectiveJobParams(params, last));
     } finally {
       _starting = false;
     }
@@ -160,6 +159,7 @@ class ChannelSetupEngine implements SetupEngine {
     final job = expandSelection(all, ids);
     final jobId = 'setup-${_clock().microsecondsSinceEpoch}';
     _jobComponents = job;
+    _localFirstSetup = SetupJobParams.isFirstSetup(params);
     _resetFloors(jobId);
     final startedAt = _clock().millisecondsSinceEpoch;
     final checking = <String, ComponentProgress>{
@@ -350,6 +350,7 @@ class ChannelSetupEngine implements SetupEngine {
       components: list,
       overall: overallFraction(_jobComponents, list, floors: _floors),
       error: error,
+      firstSetup: _localFirstSetup,
     );
   }
 
@@ -549,6 +550,30 @@ class _WatchedProgress extends ValueNotifier<SetupProgress> {
 }
 
 // ---- pure parts, tested directly --------------------------------------------
+
+/// The params a new run gets. Continue keeps what the stopped job was for
+/// (OpenCode 2, a version) unless the caller asks for something else; job
+/// facts ([SetupJobParams], such as "first setup") are not a request for
+/// something else, so they are laid over the stopped job's params rather
+/// than replacing them. A stopped job's own facts carry over the same way.
+Map<String, Map<String, String>> effectiveJobParams(
+  Map<String, Map<String, String>> requested,
+  SetupJobRecord? last,
+) {
+  final facts = requested[SetupJobParams.key];
+  final components = {
+    for (final entry in requested.entries)
+      if (entry.key != SetupJobParams.key) entry.key: entry.value,
+  };
+  final base = components.isEmpty && last != null && last.canContinue
+      ? last.params
+      : components;
+  if (facts == null) return base;
+  return {
+    ...base,
+    SetupJobParams.key: {...?base[SetupJobParams.key], ...facts},
+  };
+}
 
 /// [ids] plus every required component, expanded by `dependsOn` and put in
 /// dependency order (registry order among equals).
@@ -895,6 +920,7 @@ SetupProgress progressFromRecord(
               )
         : null,
     logTail: record.logTail,
+    firstSetup: SetupJobParams.isFirstSetup(record.params),
   );
 }
 

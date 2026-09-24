@@ -49,6 +49,8 @@ import 'ui/screens/activity_screen.dart';
 import 'ui/screens/team/run_screen.dart';
 import 'ui/screens/termux_setup_screen.dart';
 import 'ui/screens/builtin_server_screen.dart';
+import 'ui/screens/phone_setup/phone_setup_routes.dart'
+    show openPhoneSetupFromNotification;
 import 'ui/screens/app_diagnostics_screen.dart';
 
 Future<void> main() async {
@@ -572,6 +574,15 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
             await _openNewTaskForLaunch(navigator, current);
           case LaunchAction.activity:
             _openActivityForLaunch(navigator, current);
+          case LaunchAction.phoneSetup:
+          case LaunchAction.phoneSetupDone:
+            // Never waits on the connection: setup has its own screens, and
+            // the job's state (read from setup.json) decides where to land.
+            _consumeLaunchAction(current);
+            await openPhoneSetupFromNotification(
+              navigator,
+              topRouteName: _routeTracker.topName,
+            );
         }
       } finally {
         _launchRouteScheduled = false;
@@ -1550,7 +1561,11 @@ class _RootState extends ConsumerState<_Root> {
     return Scaffold(
       body: SafeArea(
         child: SavedServerConnectionCard(
-          profileName: serverDisplayName(profile, l10n),
+          profileName: serverDisplayName(
+            profile,
+            l10n,
+            among: conn.store.profiles,
+          ),
           usesConnectionToken: conn.usesConnectionToken,
           requiresTokenReentry: profile.requiresCodexTokenReentry,
           baseUrl: profile.baseUrl,

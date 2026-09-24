@@ -18063,4 +18063,29 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get phoneSetupStartChecking => 'جارٍ التحقق مما هو مثبّت…';
+
+  @override
+  String phoneSetupOpenWelcomeRunning(int percent) {
+    return 'جارٍ إعداد OpenCode على هذا الهاتف · $percent٪';
+  }
+
+  @override
+  String phoneSetupOpenWelcomeStopped(int percent) {
+    return 'اكتمل الإعداد على هذا الهاتف بنسبة $percent٪';
+  }
+
+  @override
+  String get phoneSetupOpenWelcomeStoppedDetail =>
+      'المتابعة تبدأ من حيث توقّف.';
+
+  @override
+  String get phoneSetupOpenWelcomeShowProgress => 'عرض التقدّم';
+
+  @override
+  String get phoneSetupOpenWelcomeContinue => 'متابعة';
+
+  @override
+  String phoneSetupOpenPhoneRuntime(String name, String runtime) {
+    return '$name · $runtime';
+  }
 }

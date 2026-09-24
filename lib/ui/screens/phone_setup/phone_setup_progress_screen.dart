@@ -86,6 +86,8 @@ class _PhoneSetupProgressScreenState extends State<PhoneSetupProgressScreen> {
     }
     final navigator = Navigator.of(context);
     final route = ModalRoute.of(context);
+    // The "ready" notification must not offer screen C again for this job.
+    PhoneSetup.markReadyShown(_engine.progress.value.jobId);
     unawaited(widget.openReady(context));
     // Screen C replaces this one, so Back from C does not land on a
     // finished progress screen. Removed after C is pushed (a frame later)

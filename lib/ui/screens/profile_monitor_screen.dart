@@ -6,6 +6,7 @@ import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../../state/profile_monitor.dart' show ProfileMonitor;
 import '../app_theme.dart';
+import '../widgets/phone_server_card.dart' show serverDisplayName;
 import 'activity_screen.dart' show showQuestionSheet;
 import 'chat/form_flow.dart';
 import 'chat/permission_sheet.dart';
@@ -270,7 +271,7 @@ class _MonitorRequestRow extends StatelessWidget {
         ),
         subtitle: Text(
           l10n.monitorRequestSummary(
-            profile.name,
+            serverDisplayName(profile, l10n, among: controller.store.profiles),
             switch (request.kind) {
               MonitoredRequestKind.permission => l10n.monitorPermission,
               MonitoredRequestKind.question => l10n.monitorQuestion,
@@ -355,7 +356,7 @@ class _MonitorProfile extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           leading: ServerAttentionDot(current: snapshot.isCurrent),
           title: Text(
-            profile.name,
+            serverDisplayName(profile, l10n, among: controller.store.profiles),
             style: Theme.of(context).textTheme.titleMedium,
           ),
           subtitle: Text(
