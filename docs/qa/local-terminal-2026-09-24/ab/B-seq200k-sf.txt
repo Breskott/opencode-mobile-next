@@ -1,0 +1,1 @@
+io.github.eslamasabry.opencode_mobile/io.github.eslamasabry.opencode_mobile.MainActivity#213: 127 frames, frame gap ms p50 85.1 p90 119.3 p99 166.8 max 167.7, >33ms 124

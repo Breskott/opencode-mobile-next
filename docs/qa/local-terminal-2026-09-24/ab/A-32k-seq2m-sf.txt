@@ -1,0 +1,1 @@
+SurfaceView[io.github.eslamasabry.opencode_mobile/io.github.eslamasabry.opencode_mobile.MainActivity](BLAST)#270: 121 frames, frame gap ms p50 83.6 p90 129.6 p99 201.4 max 363.6, >33ms 114
