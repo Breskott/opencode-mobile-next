@@ -204,6 +204,10 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
         (_status == null && _statusFailure == null) ||
         (installed &&
             (shell == null || shell.state == LocalShellState.starting));
+    // Landscape with the keyboard up leaves a strip: the source choice goes
+    // and the key bar folds into one row, so the shell keeps some lines.
+    final compact = _compact(context);
+    final header = compact ? null : widget.header;
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
@@ -267,11 +271,11 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
         ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(
-            (widget.header == null ? 0 : _headerHeight) + 2,
+            (header == null ? 0 : _headerHeight) + 2,
           ),
           child: Column(
             children: [
-              ?widget.header,
+              ?header,
               SizedBox(
                 height: 2,
                 child: starting
@@ -293,6 +297,14 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
   }
 
   static const _headerHeight = 56.0;
+
+  /// Less than this much height above the keyboard makes the screen compact.
+  static const compactHeight = 420.0;
+
+  static bool _compact(BuildContext context) =>
+      MediaQuery.sizeOf(context).height -
+          MediaQuery.viewInsetsOf(context).bottom <
+      compactHeight;
 
   Widget _body(BuildContext context) {
     final l10n = _l10n;
@@ -379,7 +391,7 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
               child: ColoredBox(
                 color: xterm.TerminalThemes.defaultTheme.background,
                 child: Semantics(
-                  label: l10n.e7SetupTerminalSemantics,
+                  label: l10n.localTerminalSemantics,
                   child: Directionality(
                     textDirection: TextDirection.ltr,
                     child: xterm.TerminalView(
@@ -424,6 +436,7 @@ class _LocalTerminalViewState extends ConsumerState<LocalTerminalView> {
                 top: false,
                 child: TerminalKeyBar(
                   key: const ValueKey('local-terminal-keys'),
+                  compact: _compact(context),
                   controller: _keys,
                   enabled: shell.running,
                   onKey: (key, {required ctrl, required alt}) =>

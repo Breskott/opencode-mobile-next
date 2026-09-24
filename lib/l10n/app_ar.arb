@@ -4865,5 +4865,6 @@
   "localTerminalKeyEnd": "End",
   "localTerminalKeyPageUp": "صفحة لأعلى",
   "localTerminalKeyPageDown": "صفحة لأسفل",
-  "phoneServerCardTerminal": "الطرفية"
+  "phoneServerCardTerminal": "الطرفية",
+  "localTerminalSemantics": "الطرفية على هذا الهاتف. انقر للكتابة، والمس مطولًا لتحديد النص."
 }

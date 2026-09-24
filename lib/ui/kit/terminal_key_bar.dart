@@ -164,6 +164,7 @@ class TerminalKeyBar extends StatelessWidget {
     required this.controller,
     required this.onKey,
     this.enabled = true,
+    this.compact = false,
   });
 
   final TerminalKeyBarController controller;
@@ -175,7 +176,14 @@ class TerminalKeyBar extends StatelessWidget {
   onKey;
   final bool enabled;
 
+  /// One row that scrolls sideways instead of two, for a short screen
+  /// (landscape with the keyboard up).
+  final bool compact;
+
   static const keyHeight = 44.0;
+
+  /// A key's width in the one-row form.
+  static const compactKeyWidth = 56.0;
 
   String _label(AppLocalizations l10n, TerminalBarKey key) => switch (key) {
     TerminalBarKey.esc => l10n.e7SetupEscapeKey,
@@ -193,6 +201,25 @@ class TerminalKeyBar extends StatelessWidget {
     _ => key.face,
   };
 
+  static const _compactOrder = [
+    TerminalBarKey.esc,
+    TerminalBarKey.ctrl,
+    TerminalBarKey.alt,
+    TerminalBarKey.tab,
+    TerminalBarKey.left,
+    TerminalBarKey.up,
+    TerminalBarKey.down,
+    TerminalBarKey.right,
+    TerminalBarKey.slash,
+    TerminalBarKey.dash,
+    TerminalBarKey.pipe,
+    TerminalBarKey.tilde,
+    TerminalBarKey.home,
+    TerminalBarKey.end,
+    TerminalBarKey.pageUp,
+    TerminalBarKey.pageDown,
+  ];
+
   void _tap(TerminalBarKey key) {
     HapticFeedback.selectionClick();
     if (key.isModifier) {
@@ -207,6 +234,18 @@ class TerminalKeyBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     final theme = Theme.of(context);
+    Widget keyOf(TerminalBarKey key) => _Key(
+      key: ValueKey('terminal-key-${key.name}'),
+      face: key.face,
+      label: _label(l10n, key),
+      latched: switch (key) {
+        TerminalBarKey.ctrl => controller.ctrl,
+        TerminalBarKey.alt => controller.alt,
+        _ => null,
+      },
+      onTap: enabled ? () => _tap(key) : null,
+      theme: theme,
+    );
     return Semantics(
       container: true,
       label: l10n.localTerminalKeysLabel,
@@ -215,34 +254,33 @@ class TerminalKeyBar extends StatelessWidget {
         builder: (context, _) => Directionality(
           // Keys sit where a keyboard has them in every language.
           textDirection: TextDirection.ltr,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final row in TerminalBarKey.rows)
-                SizedBox(
+          child: compact
+              ? SizedBox(
                   height: keyHeight,
-                  child: Row(
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
                     children: [
-                      for (final key in row)
-                        Expanded(
-                          child: _Key(
-                            key: ValueKey('terminal-key-${key.name}'),
-                            face: key.face,
-                            label: _label(l10n, key),
-                            latched: switch (key) {
-                              TerminalBarKey.ctrl => controller.ctrl,
-                              TerminalBarKey.alt => controller.alt,
-                              _ => null,
-                            },
-                            onTap: enabled ? () => _tap(key) : null,
-                            theme: theme,
-                          ),
-                        ),
+                      // Modifiers and arrows first: what a short screen
+                      // needs most.
+                      for (final key in _compactOrder)
+                        SizedBox(width: compactKeyWidth, child: keyOf(key)),
                     ],
                   ),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final row in TerminalBarKey.rows)
+                      SizedBox(
+                        height: keyHeight,
+                        child: Row(
+                          children: [
+                            for (final key in row) Expanded(child: keyOf(key)),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
         ),
       ),
     );

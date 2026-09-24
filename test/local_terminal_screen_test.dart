@@ -303,6 +303,35 @@ void main() {
       expect(sessions.shells, hasLength(1));
     });
 
+    testWidgets('landscape with the keyboard up: no choice, one row of keys', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(915, 412)
+        ..devicePixelRatio = 1
+        ..viewInsets = const FakeViewPadding(bottom: 250);
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        app(TerminalPage(controller: connection, localSupported: true)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(LocalTerminalView), findsOneWidget);
+      expect(find.byKey(const ValueKey('terminal-source')), findsNothing);
+      final esc = tester.getRect(
+        find.byKey(const ValueKey('terminal-key-esc')),
+      );
+      final ctrl = tester.getRect(
+        find.byKey(const ValueKey('terminal-key-ctrl')),
+      );
+      expect(ctrl.top, esc.top, reason: 'one row');
+      // The shell still has lines to show.
+      expect(
+        tester.getSize(find.byType(xterm.TerminalView)).height,
+        greaterThan(40),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('off Android there is no choice, only the server', (
       tester,
     ) async {

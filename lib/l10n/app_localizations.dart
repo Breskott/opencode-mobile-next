@@ -29349,6 +29349,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Terminal'**
   String get phoneServerCardTerminal;
+
+  /// Accessibility label of the local terminal's screen
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal on this phone. Tap to type; touch and hold to select text.'**
+  String get localTerminalSemantics;
 }
 
 class _AppLocalizationsDelegate

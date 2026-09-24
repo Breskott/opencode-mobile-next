@@ -18166,4 +18166,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneServerCardTerminal => 'Terminal';
+
+  @override
+  String get localTerminalSemantics =>
+      'Terminal on this phone. Tap to type; touch and hold to select text.';
 }

@@ -19923,5 +19923,9 @@
   "phoneServerCardTerminal": "Terminal",
   "@phoneServerCardTerminal": {
     "description": "Menu item that opens a shell in this phone's Linux"
+  },
+  "localTerminalSemantics": "Terminal on this phone. Tap to type; touch and hold to select text.",
+  "@localTerminalSemantics": {
+    "description": "Accessibility label of the local terminal's screen"
   }
 }
