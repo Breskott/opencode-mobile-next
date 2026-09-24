@@ -189,7 +189,7 @@ class LocalShell extends ChangeNotifier {
   LocalShell._(this._backend, this.number, {int? id, int pid = 0})
     : _id = id,
       _pid = pid {
-    terminal = _WideWrapTerminal(
+    terminal = _LocalTerminalScreen(
       maxLines: scrollbackLines,
       onOutput: send,
       onResize: (cols, rows, _, _) => _resized(rows: rows, cols: cols),
@@ -295,13 +295,18 @@ class LocalShell extends ChangeNotifier {
   }
 }
 
-/// xterm 4.0.0 puts a double-width character (CJK, most emoji) that meets
-/// the last column into that column, half of it past the edge, and starts
-/// the next line with its empty second half. A terminal wraps the whole
-/// character to the next line instead, leaving the last column blank; this
-/// does that, after the fact, so every line keeps its width.
-class _WideWrapTerminal extends xterm.Terminal {
-  _WideWrapTerminal({super.maxLines, super.onOutput, super.onResize});
+/// The xterm screen with two of its 4.0.0 faults fixed, both seen on the
+/// emulator (docs/qa/local-terminal-2026-09-24/README.md):
+///
+/// - a double-width character (CJK, most emoji) that meets the last column
+///   went into that column, half past the edge, and the next line began with
+///   its empty second half; a terminal wraps the whole character instead,
+///   leaving the last column blank;
+/// - clearing the scrollback (`clear` sends `ESC [3J`) left every line's
+///   index counting the lines removed, so a selection landed that many lines
+///   too far down and Copy copied nothing.
+class _LocalTerminalScreen extends xterm.Terminal {
+  _LocalTerminalScreen({super.maxLines, super.onOutput, super.onResize});
 
   @override
   void writeChar(int char) {
@@ -322,6 +327,19 @@ class _WideWrapTerminal extends xterm.Terminal {
     after.setCell(0, char, 2, cursor);
     after.setCell(1, 0, 0, cursor);
     buffer.setCursorX(2);
+  }
+
+  @override
+  void eraseScrollbackOnly() {
+    final buffer = this.buffer;
+    if (buffer.height <= buffer.viewHeight) return;
+    // The library trims the list without renumbering what stays; taking the
+    // screen's lines out and putting them back numbers them from 0.
+    final screen = [
+      for (var i = buffer.scrollBack; i < buffer.height; i++) buffer.lines[i],
+    ];
+    buffer.lines.clear();
+    screen.forEach(buffer.lines.push);
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/local_terminal.dart';
 import 'package:opencode_mobile/ui/kit/terminal_key_bar.dart';
+import 'package:xterm/xterm.dart' as xterm;
 
 import 'support/fake_local_terminal.dart';
 
@@ -91,6 +92,23 @@ void main() {
       expect(lines[1].getText(), startsWith('中文😀'));
       expect(lines[1].isWrapped, isTrue);
       expect(shell.terminal.buffer.cursorX, 6);
+    });
+
+    test('after clear, a selection copies the words it covers', () async {
+      final shell = sessions.startShell(rows: 5, cols: 20);
+      await pumpEventQueue();
+      backend.output(1, List.generate(50, (i) => 'line $i\r\n').join());
+      // What `clear` sends: home, erase the screen, erase the scrollback.
+      backend.output(1, '\x1b[H\x1b[2J\x1b[3Jpick me');
+      await pumpEventQueue();
+      final buffer = shell.terminal.buffer;
+      final y = buffer.absoluteCursorY;
+      final selection = xterm.TerminalController()
+        ..setSelection(
+          buffer.createAnchorFromOffset(xterm.CellOffset(0, y)),
+          buffer.createAnchorFromOffset(xterm.CellOffset(4, y)),
+        );
+      expect(buffer.getText(selection.selection), 'pick');
     });
 
     test(
