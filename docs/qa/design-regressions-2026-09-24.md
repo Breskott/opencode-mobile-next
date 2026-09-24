@@ -13,6 +13,10 @@ Every place where a redesign made something worse, or an owner complaint is stil
 | 7 | Work tab | "Isolated task" still sits beside New conversation; the standard would move it into the Recent section's menu. | `work-tab-cleanup-2026-09-24/after-4-loaded.png` | Work tab agent | **Owner decision.** |
 | 8 | Work tab and connection screen | The owner: "a mess"; the chooser flashed, three loading bars, the endless "Connecting…". | `work-tab-cleanup-2026-09-24/before-phone-*.jpg` → `after-*.png` | Owner | **Fixed** (merged `dca366f1`). Not yet seen on a device. |
 | 9 | Stopped-server card | Four button styles, and a disabled button standing in for "Starting…". | `work-tab-cleanup-2026-09-24/before-phone-5-stopped-card.jpg` → `after-8/9-*.png` | Owner | **Fixed** (merged). Not yet seen on a device. |
+| 10 | Settings › Plugins | Internal plugin IDs (`opencode.tool.input.repair`…), "Link commands" repeated on every row, "Clear personal links"; never put on the kit (the Settings pass skipped it). | `design-regressions-2026-09-24/phone-1-plugins.jpg` (owner's phone, build 2051) | Owner: "Wttf is this shiit" | **Open** |
+| 11 | On this phone (Termux screen) | Two big buttons, then "Update OpenCode" and a red-square "Stop local server" crammed on one line; not built to the standard. | `design-regressions-2026-09-24/phone-2-on-this-phone-termux.jpg` | Owner | **Open** |
+| 12 | Servers list | The phone server is shown three times: the "Server found on this phone" card (three big buttons over two rows), the "This device (Termux)" row, and an "On-device server" block with a recovery toggle and an attempt counter. | `design-regressions-2026-09-24/phone-3-servers.jpg` | Owner | **Open** |
+| 13 | Terminal | Closing a terminal whose shell had already ended showed the raw server error `DELETE /pty/… failed (HTTP 404)`, and the list still said Running. | `design-regressions-2026-09-24/phone-4-terminal-404.jpg` | Owner | **Fix in progress:** a 404 on close counts as done, in both gateways (`test/terminal_close_gone_test.dart`). |
 
 ## How rows get added
 
