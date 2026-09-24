@@ -19535,6 +19535,26 @@
   "@chatStartTip": {
     "description": "Tip under the header of a new conversation, shown only while the keyboard is down"
   },
+  "chatLoadingConversation": "Loading the conversation",
+  "@chatLoadingConversation": {
+    "description": "Screen reader label of the chat's loading bar while the conversation first loads"
+  },
+  "chatLoadFailedTitle": "Couldn't open this conversation",
+  "@chatLoadFailedTitle": {
+    "description": "Chat state title when the conversation could not be loaded"
+  },
+  "chatLoadFailedBody": "Nothing is lost. Try again when OpenCode answers.",
+  "@chatLoadFailedBody": {
+    "description": "Chat state body when the conversation could not be loaded; the raw error is under Details"
+  },
+  "chatSendFailed": "Your message wasn't sent",
+  "@chatSendFailed": {
+    "description": "Chat status line when sending a message failed; the text is back in the message box"
+  },
+  "chatSendFailedKept": "It's back in the message box.",
+  "@chatSendFailedKept": {
+    "description": "Chat status line supporting sentence when a send failed with no plain reason"
+  },
   "chatStartSuggestionsLabel": "Ways to start",
   "@chatStartSuggestionsLabel": {
     "description": "Screen reader label for the row of starter chips above the composer"

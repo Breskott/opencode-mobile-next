@@ -287,9 +287,11 @@ class _ChatStartHeaderState extends State<_ChatStartHeader> {
               ),
             ],
           );
+    // The standard's 16 dp side rails (design standard §1), like every
+    // other screen's body.
     final padding = widget.compact
-        ? const EdgeInsetsDirectional.fromSTEB(20, 6, 20, 6)
-        : const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 12);
+        ? const EdgeInsetsDirectional.fromSTEB(16, 6, 16, 6)
+        : const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 12);
     // One line of the name plus its padding: below this the compact header
     // would be clipped, so it is left out instead.
     final compactHeight = textScaler.scale(fontSize) * 1.5 + 12;
@@ -409,7 +411,7 @@ class _ChatStarters extends StatelessWidget {
       child: SingleChildScrollView(
         key: const ValueKey('chat-starters'),
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 2, 12, 0),
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 2, 16, 0),
         child: Row(
           // Keyed by the set, so a new set (the folder's facts arrived)
           // fades in again instead of silently swapping words.

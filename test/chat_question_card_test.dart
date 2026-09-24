@@ -211,7 +211,12 @@ void main() {
 
     final send = find.byKey(const Key('question-card-send'));
     expect(send, findsOneWidget);
-    expect(tester.widget<FilledButton>(send).onPressed, isNull);
+    // A kit button (design standard §2): the FilledButton is inside it.
+    final sendButton = find.descendant(
+      of: send,
+      matching: find.byType(FilledButton),
+    );
+    expect(tester.widget<FilledButton>(sendButton).onPressed, isNull);
 
     await tester.tap(find.byKey(const ValueKey('question-option-Staging')));
     await tester.pump();
@@ -219,7 +224,7 @@ void main() {
     expect(repository.answered, isEmpty);
     await tester.tap(find.byKey(const ValueKey('question-option-Production')));
     await tester.pump();
-    expect(tester.widget<FilledButton>(send).onPressed, isNotNull);
+    expect(tester.widget<FilledButton>(sendButton).onPressed, isNotNull);
 
     await tester.tap(send);
     await tester.pumpAndSettle();

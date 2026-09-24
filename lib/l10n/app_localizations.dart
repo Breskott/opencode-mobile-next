@@ -28918,6 +28918,36 @@ abstract class AppLocalizations {
   /// **'Type / for commands · long-press a message for its actions'**
   String get chatStartTip;
 
+  /// Screen reader label of the chat's loading bar while the conversation first loads
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the conversation'**
+  String get chatLoadingConversation;
+
+  /// Chat state title when the conversation could not be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open this conversation'**
+  String get chatLoadFailedTitle;
+
+  /// Chat state body when the conversation could not be loaded; the raw error is under Details
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is lost. Try again when OpenCode answers.'**
+  String get chatLoadFailedBody;
+
+  /// Chat status line when sending a message failed; the text is back in the message box
+  ///
+  /// In en, this message translates to:
+  /// **'Your message wasn\'t sent'**
+  String get chatSendFailed;
+
+  /// Chat status line supporting sentence when a send failed with no plain reason
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s back in the message box.'**
+  String get chatSendFailedKept;
+
   /// Screen reader label for the row of starter chips above the composer
   ///
   /// In en, this message translates to:

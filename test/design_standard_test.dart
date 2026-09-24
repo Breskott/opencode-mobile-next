@@ -7,13 +7,20 @@
 // an entry in [_allowed] with its reason.
 //
 // Each migrated screen also has golden renders at 412x915, dark and light,
-// in test/goldens/ (made by test/goldens/work_tab_golden_test.dart).
+// in test/goldens/ (made by test/goldens/work_tab_golden_test.dart and
+// test/goldens/chat_states_golden_test.dart).
+//
+// A file too mixed to list whole (the chat's transcript file, where only the
+// error card is a state) lists its migrated classes in [_migratedClasses]:
+// the scan then covers each class's source. A file that gave up a raw part
+// for a kit one lists it in [_retired] so it cannot come back.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
 /// Screen files built on the kit, with the golden renders that show them.
-/// Only grows (§9 migration order: connection states, then the Work tab).
+/// Only grows (§9 migration order: connection states, the Work tab, then
+/// the chat's states).
 const _migrated = <String, List<String>>{
   // §9 step 1: connecting, starting, not answering, stopped, failed.
   'lib/ui/widgets/saved_server_connection_card.dart': [
@@ -38,6 +45,46 @@ const _migrated = <String, List<String>>{
     'work_not_answering',
     'work_runaway',
   ],
+  // §9 step 5: the chat's states and banners (not the transcript's
+  // messages). Loading, could not load, the one status line (connection,
+  // a message not sent, a prompt error, staged revert, subagent, sharing).
+  'lib/ui/screens/chat/chat_states.dart': [
+    'chat_loading',
+    'chat_load_error',
+    'chat_send_error',
+    'chat_disconnected',
+  ],
+  // The request cards above the composer: permission, question, form, retry.
+  'lib/ui/screens/chat/attention_card.dart': ['chat_permission'],
+  'lib/ui/screens/chat/permission_sheet.dart': ['chat_permission_sheet'],
+  'lib/ui/screens/chat/empty_chat.dart': ['chat_empty'],
+  'lib/ui/widgets/first_reply_notify_card.dart': ['chat_notify'],
+};
+
+/// file -> classes migrated inside a file too mixed to list whole, with the
+/// golden renders that show them. Only grows.
+const _migratedClasses = <String, Map<String, List<String>>>{
+  // The transcript file: only the error a reply carries is a state; the
+  // messages themselves are not part of the standard's step 5.
+  'lib/ui/screens/chat/message_view.dart': {
+    '_AssistantErrorRow': ['chat_model_error'],
+    '_ErrorActionCard': ['chat_model_error'],
+  },
+};
+
+/// file -> (pattern, reason) of raw parts a migrated screen gave up. They
+/// must not come back.
+const _retired = <String, Map<String, String>>{
+  'lib/ui/screens/chat_screen.dart': {
+    'LoadingList(': 'first load is KitSkeletonTranscript + the loading bar',
+    'ProductErrorState(': 'a conversation that could not load is KitStateView',
+    'ConnectionStatusBanner(': 'the connection is the one KitStatusLine',
+  },
+  'lib/ui/screens/chat/message_view.dart': {
+    '_PromptErrorBanner': 'a prompt error is the one KitStatusLine',
+    '_SubagentContextBanner': 'the subagent context is the one KitStatusLine',
+    '_SharedSessionBanner': 'sharing is the one KitStatusLine',
+  },
 };
 
 /// file -> (pattern, reason) exceptions. Keep it short.
@@ -60,18 +107,66 @@ String _code(String path) => File(path)
     .where((line) => !line.trimLeft().startsWith('//'))
     .join('\n');
 
+/// The source of top-level class [name] in [code]: from its declaration to
+/// the next top-level declaration (a line starting with a letter or `@`).
+String _classCode(String code, String name) {
+  final lines = code.split('\n');
+  final start = lines.indexWhere(
+    (line) => RegExp(
+      '^(abstract |final )?class ${RegExp.escape(name)}\\b',
+    ).hasMatch(line),
+  );
+  if (start < 0) return '';
+  var end = start + 1;
+  while (end < lines.length && !RegExp(r'^[A-Za-z@]').hasMatch(lines[end])) {
+    end++;
+  }
+  return lines.sublist(start, end).join('\n');
+}
+
+List<String> _problems(String label, String code, Map<String, String>? allow) {
+  final problems = <String>[];
+  for (final MapEntry(key: name, value: pattern) in _forbidden.entries) {
+    if (allow?.containsKey(name) ?? false) continue;
+    final count = pattern.allMatches(code).length;
+    if (count > 0) problems.add('$label: $name x$count');
+  }
+  return problems;
+}
+
 void main() {
   test('migrated screens use the kit, not raw progress, cards or buttons', () {
     final problems = <String>[];
     for (final path in _migrated.keys) {
+      problems.addAll(_problems(path, _code(path), _allowed[path]));
+    }
+    expect(problems, isEmpty, reason: 'use lib/ui/kit/ (design standard §8)');
+  });
+
+  test('migrated classes in mixed files use the kit', () {
+    final problems = <String>[];
+    for (final MapEntry(key: path, value: classes)
+        in _migratedClasses.entries) {
       final code = _code(path);
-      for (final MapEntry(key: name, value: pattern) in _forbidden.entries) {
-        if (_allowed[path]?.containsKey(name) ?? false) continue;
-        final count = pattern.allMatches(code).length;
-        if (count > 0) problems.add('$path: $name x$count');
+      for (final name in classes.keys) {
+        final source = _classCode(code, name);
+        expect(source, isNotEmpty, reason: '$path has no class $name');
+        problems.addAll(_problems('$path#$name', source, null));
       }
     }
     expect(problems, isEmpty, reason: 'use lib/ui/kit/ (design standard §8)');
+  });
+
+  test('raw parts a migrated screen gave up do not come back', () {
+    final problems = <String>[];
+    for (final MapEntry(key: path, value: patterns) in _retired.entries) {
+      final code = _code(path);
+      for (final MapEntry(key: pattern, value: reason) in patterns.entries) {
+        expect(reason.trim().length, greaterThan(10), reason: pattern);
+        if (code.contains(pattern)) problems.add('$path: $pattern ($reason)');
+      }
+    }
+    expect(problems, isEmpty);
   });
 
   test('every allowlist entry names a migrated file and gives a reason', () {
@@ -86,7 +181,11 @@ void main() {
 
   test('each migrated screen has dark and light goldens at 412x915', () {
     final missing = <String>[];
-    for (final names in _migrated.values) {
+    final goldens = [
+      ..._migrated.values,
+      for (final classes in _migratedClasses.values) ...classes.values,
+    ];
+    for (final names in goldens) {
       for (final name in names) {
         for (final mode in ['dark', 'light']) {
           final file = File('test/goldens/${name}_$mode.png');

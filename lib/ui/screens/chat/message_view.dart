@@ -1,145 +1,5 @@
 part of '../chat_screen.dart';
 
-class _PromptErrorBanner extends StatelessWidget {
-  final String message;
-  final VoidCallback onDismiss;
-  final VoidCallback? onChooseModel;
-
-  const _PromptErrorBanner({
-    required this.message,
-    required this.onDismiss,
-    this.onChooseModel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    // Servers may attach a stack trace; the user reads one line and can open
-    // the rest. A "model not found" answer gets the button that fixes it.
-    final words = agentErrorWords(message, _chatL10n(context));
-    final headline = words.headline;
-    // The server's exact words stay one tap away whenever the sentence shown
-    // is not theirs.
-    final hasDetails = words.humanized || errorHasDetails(message);
-    final kind = MessageErrorKind.refineFromText(
-      MessageErrorKind.unknown,
-      message,
-    );
-    return Semantics(
-      container: true,
-      liveRegion: true,
-      child: Container(
-        key: const ValueKey('prompt-error-banner'),
-        margin: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 10, 4, 6),
-        decoration: BoxDecoration(
-          color: scheme.errorContainer,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  AppIconography.error,
-                  size: 20,
-                  color: scheme.onErrorContainer,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        headline,
-                        key: const ValueKey('prompt-error-headline'),
-                        style: TextStyle(
-                          color: scheme.onErrorContainer,
-                          height: 1.35,
-                        ),
-                      ),
-                      if (words.hint case final hint?)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            hint,
-                            key: const ValueKey('prompt-error-hint'),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: scheme.onErrorContainer.withValues(
-                                alpha: .8,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: _chatL10n(context).chatUiDismissPromptError,
-                  visualDensity: VisualDensity.compact,
-                  onPressed: onDismiss,
-                  icon: Icon(
-                    AppIconography.close,
-                    size: 19,
-                    color: scheme.onErrorContainer,
-                  ),
-                ),
-              ],
-            ),
-            if (hasDetails ||
-                (kind == MessageErrorKind.modelNotFound &&
-                    onChooseModel != null))
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (hasDetails)
-                    TextButton(
-                      key: const ValueKey('prompt-error-details'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: scheme.onErrorContainer,
-                      ),
-                      onPressed: () => showDialog<void>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text(_chatL10n(context).chatUiErrorDetails),
-                          content: SingleChildScrollView(
-                            child: SelectableText(
-                              message,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                fontFamily: AppTheme.monoFamily,
-                              ),
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: Text(_chatL10n(context).isolatedTaskClose),
-                            ),
-                          ],
-                        ),
-                      ),
-                      child: Text(_chatL10n(context).chatUiDetails),
-                    ),
-                  if (kind == MessageErrorKind.modelNotFound &&
-                      onChooseModel != null)
-                    FilledButton.tonal(
-                      key: const ValueKey('prompt-error-choose-model'),
-                      onPressed: onChooseModel,
-                      child: Text(_chatL10n(context).chatUiChooseModel),
-                    ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// A floating affordance shown when the transcript is scrolled away from the
 /// newest message; tapping returns to the live end of the conversation.
 class _JumpToLatestButton extends StatelessWidget {
@@ -2437,26 +2297,8 @@ class _ErrorActionCard extends StatelessWidget {
   /// null when the headline is the whole message.
   final String? details;
 
-  Future<void> _showDetails(BuildContext context) => showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(_chatL10n(context).chatUiErrorDetails),
-      content: SingleChildScrollView(
-        child: SelectableText(
-          details ?? text,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(fontFamily: AppTheme.monoFamily),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(_chatL10n(context).isolatedTaskClose),
-        ),
-      ],
-    ),
-  );
+  Future<void> _showDetails(BuildContext context) =>
+      _showChatErrorDetails(context, details ?? text);
 
   @override
   Widget build(BuildContext context) {
@@ -2520,37 +2362,49 @@ class _ErrorActionCard extends StatelessWidget {
                   ],
                 ),
               ),
+              // Details alone sits at the end of the sentence's line
+              // instead of costing a row (as a status line's action does).
               if (onAction == null && details != null)
-                TextButton(
-                  key: const Key('error-action-details'),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    foregroundColor: recovered ? scheme.onSurfaceVariant : null,
+                // A problem the turn got over keeps even its Details quiet.
+                Theme(
+                  data: recovered
+                      ? theme.copyWith(
+                          colorScheme: scheme.copyWith(
+                            primary: scheme.onSurfaceVariant,
+                          ),
+                        )
+                      : theme,
+                  child: KitButton.tertiary(
+                    key: const Key('error-action-details'),
+                    label: _chatL10n(context).chatUiDetails,
+                    onPressed: () => _showDetails(context),
                   ),
-                  onPressed: () => _showDetails(context),
-                  child: Text(_chatL10n(context).chatUiDetails),
                 ),
             ],
           ),
-          // With an action to take, both buttons get a row. Details alone
-          // sits at the end of the sentence's line instead of costing one.
+          // With an action to take, the actions get their own row under the
+          // words, start-aligned, the fix first (design standard §2).
           if (onAction != null)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (details != null)
-                  TextButton(
-                    key: const Key('error-action-details'),
-                    onPressed: () => _showDetails(context),
-                    child: Text(_chatL10n(context).chatUiDetails),
-                  ),
-                if (onAction != null)
-                  TextButton(
-                    key: actionKey,
-                    onPressed: onAction,
-                    child: Text(actionLabel),
-                  ),
-              ],
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 24),
+              child: KitInset(
+                child: Wrap(
+                  spacing: 4,
+                  children: [
+                    KitButton.tertiary(
+                      key: actionKey,
+                      label: actionLabel,
+                      onPressed: onAction,
+                    ),
+                    if (details != null)
+                      KitButton.tertiary(
+                        key: const Key('error-action-details'),
+                        label: _chatL10n(context).chatUiDetails,
+                        onPressed: () => _showDetails(context),
+                      ),
+                  ],
+                ),
+              ),
             ),
         ],
       ),
@@ -3020,111 +2874,6 @@ class _ReasoningState extends State<_Reasoning> {
                 ),
         );
       },
-    );
-  }
-}
-
-class _SubagentContextBanner extends StatelessWidget {
-  final int? position;
-  final int? total;
-  final Future<void> Function() onParent;
-  final Future<void> Function() onAll;
-
-  const _SubagentContextBanner({
-    required this.position,
-    required this.total,
-    required this.onParent,
-    required this.onAll,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final count = position != null && total != null
-        ? _chatL10n(context).chatUiPositionOfTotal(position!, total!)
-        : _chatL10n(context).chatUiDelegatedSession;
-    return Material(
-      color: theme.colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 16),
-        child: Row(
-          children: [
-            Icon(AppIconography.nested, color: theme.colorScheme.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                _chatL10n(context).chatUiSubagentCount(count),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium,
-              ),
-            ),
-            IconButton(
-              key: const ValueKey('subagent-parent-session'),
-              tooltip: _chatL10n(context).chatUiOpenParentSession,
-              onPressed: onParent,
-              icon: const Icon(AppIconography.send),
-            ),
-            IconButton(
-              key: const ValueKey('subagent-session-list'),
-              tooltip: _chatL10n(context).chatUiShowAllSubagentSessions,
-              onPressed: onAll,
-              icon: const Icon(AppIconography.branch),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SharedSessionBanner extends StatelessWidget {
-  final String url;
-  final VoidCallback onStop;
-
-  const _SharedSessionBanner({required this.url, required this.onStop});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).colorScheme.tertiaryContainer,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 8, 8),
-        child: Row(
-          children: [
-            const Icon(AppIconography.globe, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_chatL10n(context).chatUiSharedAnyoneWithTheLinkCanView),
-                  Semantics(
-                    label: _chatL10n(context).chatUiSharedLink(url),
-                    child: SelectableText(
-                      url,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        fontFamily: AppTheme.monoFamily,
-                        fontSize: AppTheme.captionFontSize,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              tooltip: _chatL10n(context).chatUiCopyShareLink,
-              onPressed: () => Clipboard.setData(ClipboardData(text: url)),
-              icon: const Icon(AppIcons.copy),
-            ),
-            TextButton(
-              onPressed: onStop,
-              child: Text(_chatL10n(context).chatUiStopSharing),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

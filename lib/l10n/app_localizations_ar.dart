@@ -18169,6 +18169,22 @@ class AppLocalizationsAr extends AppLocalizations {
       'اكتب / للأوامر · اضغط مطولًا على رسالة لإجراءاتها';
 
   @override
+  String get chatLoadingConversation => 'جارٍ تحميل المحادثة';
+
+  @override
+  String get chatLoadFailedTitle => 'تعذّر فتح هذه المحادثة';
+
+  @override
+  String get chatLoadFailedBody =>
+      'لم يضِع شيء. حاول مرة أخرى عندما يستجيب OpenCode.';
+
+  @override
+  String get chatSendFailed => 'لم تُرسَل رسالتك';
+
+  @override
+  String get chatSendFailedKept => 'أُعيدت إلى مربع الرسالة.';
+
+  @override
   String get chatStartSuggestionsLabel => 'طرق للبدء';
 
   @override

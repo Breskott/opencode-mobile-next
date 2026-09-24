@@ -1663,6 +1663,10 @@ void main() {
       find.byKey(const ValueKey('subagent-parent-session')),
       findsOneWidget,
     );
+    // The chat's one status line (design standard §5): the siblings are
+    // under its More menu.
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('subagent-session-list')));
     await tester.pumpAndSettle();
 
@@ -1700,9 +1704,14 @@ void main() {
       find.byKey(const ValueKey('connection-status-banner')),
       findsOneWidget,
     );
-    expect(find.text('Connection lost'), findsOneWidget);
+    // The Work tab's words (design standard §5): the last attempt failed,
+    // so the line says so at once.
+    expect(find.text("OpenCode isn't answering"), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
-    // The raw error and the secondary action live behind Details.
+    // The raw error and the secondary action live behind Details, under the
+    // line's More menu.
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -4573,6 +4582,9 @@ void main() {
       find.byKey(const ValueKey('prompt-error-choose-model')),
       findsOneWidget,
     );
+    // Choose model is the line's action; Details is under its More menu.
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('prompt-error-details')));
     await tester.pumpAndSettle();
     expect(find.textContaining('at <anonymous>'), findsOneWidget);
