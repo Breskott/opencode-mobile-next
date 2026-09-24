@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/models.dart';
 import '../platform/platform_capabilities.dart';
+import '../domain/session_title_text.dart';
 
 /// Persists a compact recent-sessions snapshot for the Android home-screen
 /// widget and asks native to redraw it.
@@ -63,8 +64,8 @@ class WidgetSessionSnapshot {
       for (final session in sessions.take(maxSessions))
         {
           'id': session.id,
-          'title': session.title?.trim().isNotEmpty == true
-              ? session.title!.trim()
+          'title': displaySessionTitleText(session.title).isNotEmpty
+              ? displaySessionTitleText(session.title)
               : 'Untitled conversation',
           'busy': busySessions.contains(session.id),
           'updatedAt': session.time?.updated ?? session.time?.created ?? 0,

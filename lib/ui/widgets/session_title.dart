@@ -1,4 +1,5 @@
 import '../../api/models.dart' show Session;
+import '../../domain/session_title_text.dart';
 import '../../l10n/app_localizations.dart';
 
 /// The placeholder the server assigns before it names a session, e.g.
@@ -9,15 +10,16 @@ final RegExp _placeholderTitle = RegExp(
 );
 
 /// The session title as the app presents it: the server's own title, with
-/// the ISO-stamped placeholder collapsed to "New conversation", or [fallback] when
-/// the session has no title at all. Every session list and the chat app bar
+/// leaked model markup cut off ([displaySessionTitleText]), the ISO-stamped
+/// placeholder collapsed to "New conversation", or [fallback] when the
+/// session has no title at all. Every session list and the chat app bar
 /// share this so a session reads the same wherever it appears.
 String presentedSessionTitle(
   Session? session, {
   String fallback = 'New conversation',
   AppLocalizations? l10n,
 }) {
-  final title = session?.title?.trim() ?? '';
+  final title = displaySessionTitleText(session?.title);
   if (title.isEmpty) {
     return fallback == 'New conversation'
         ? l10n?.workspaceNewSession ?? fallback

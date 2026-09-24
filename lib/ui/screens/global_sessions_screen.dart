@@ -15,6 +15,7 @@ import '../widgets/session_read_state.dart';
 import '../widgets/session_title.dart';
 import '../widgets/session_handoff.dart';
 import 'session_relations_screen.dart';
+import '../../domain/team_directories.dart';
 
 class GlobalSessionsScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -287,7 +288,10 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
       setState(() {
         final seen = <String>{};
         _results = results.items
-            .where((result) => seen.add(result.session.id))
+            .where(
+              (result) =>
+                  !isAiTeamConversation(result) && seen.add(result.session.id),
+            )
             .toList();
         _nextCursor = results.hasMore ? results.nextCursor : null;
         _usedCursors.clear();
@@ -342,7 +346,11 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
       if (!_requestIsCurrent(generation, scope, repository)) return;
       final existing = _results.map((result) => result.session.id).toSet();
       final added = page.items
-          .where((result) => existing.add(result.session.id))
+          .where(
+            (result) =>
+                !isAiTeamConversation(result) &&
+                existing.add(result.session.id),
+          )
           .toList();
       final nextCursor = page.hasMore ? page.nextCursor : null;
       if (nextCursor != null &&

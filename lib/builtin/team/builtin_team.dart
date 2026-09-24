@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import '../../domain/team_directories.dart' show aiTeamHome;
 import '../../state/profiles.dart'
     show
         OrchestrationConfig,
@@ -50,7 +51,10 @@ class BuiltinTeam {
   static const port = 8472;
   static const url = 'http://127.0.0.1:$port';
   static const city = 'phone';
-  static const home = '/root/aiteam';
+
+  /// Also the rule that keeps the team's own sessions out of the person's
+  /// lists (team_directories.dart), so the two cannot drift apart.
+  static const home = aiTeamHome;
   static const cityDir = '$home/city';
 
   /// Bare repositories on the phone that stand in for `origin` when a

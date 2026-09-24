@@ -5,6 +5,7 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import 'product_states.dart';
 import 'session_inventory_footer.dart';
+import 'session_title.dart';
 
 /// Opens review only. Execution requires the user's Run action.
 Future<String?> showRunCommandDialog(
@@ -168,9 +169,11 @@ class _RunCommandDialogState extends State<_RunCommandDialog> {
                   DropdownMenuItem(
                     value: session.id,
                     child: Text(
-                      session.title?.isNotEmpty == true
-                          ? session.title!
-                          : l10n.commandUntitledChat,
+                      presentedSessionTitle(
+                        session,
+                        fallback: l10n.commandUntitledChat,
+                        l10n: l10n,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

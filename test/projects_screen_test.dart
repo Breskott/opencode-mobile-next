@@ -352,6 +352,47 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('the project list leaves out the AI Team\'s own folders', (
+    tester,
+  ) async {
+    final repository = _ProjectsRepository()
+      ..projects = const [
+        WorkspaceProject(
+          id: 'team-refinery',
+          name: 'refinery',
+          directory: '/root/aiteam/city/.gc/worktrees/my-app/refinery',
+          worktrees: [],
+          updatedAt: 9,
+        ),
+        WorkspaceProject(
+          id: 'team-origin',
+          name: 'my-app.git',
+          directory: '/root/aiteam/origins/my-app.git',
+          worktrees: [],
+          updatedAt: 8,
+        ),
+        WorkspaceProject(
+          id: 'my-app',
+          name: 'my-app',
+          directory: '/root/projects/my-app',
+          worktrees: [
+            '/root/aiteam/city/.gc/worktrees/my-app/polecats/gastown.furiosa',
+          ],
+          updatedAt: 1,
+        ),
+      ];
+    final controller = await _controller(repository);
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _direct(ProjectsScreen(controller: controller, selectedProjectID: null)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('project-my-app')), findsOneWidget);
+    expect(find.byKey(const ValueKey('project-team-refinery')), findsNothing);
+    expect(find.byKey(const ValueKey('project-team-origin')), findsNothing);
+  });
+
   testWidgets('project search and reset-name use server project truth', (
     tester,
   ) async {

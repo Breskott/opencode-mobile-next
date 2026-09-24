@@ -9,6 +9,7 @@ import '../../state/connection.dart';
 import '../widgets/product_states.dart';
 import 'project_folder_actions.dart';
 import '../app_iconography.dart';
+import '../../domain/team_directories.dart';
 
 class ProjectsScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -77,9 +78,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   /// Real project folders only. The server's catch-all root and any home
-  /// folder are never offered: they are not workspaces.
+  /// folder are never offered: they are not workspaces. Nor are the AI
+  /// Team's own folders: its work is on the AI Team screen.
   List<WorkspaceProject> get _usableProjects => (_projects ?? const [])
-      .where((project) => !isProtectedWorkspaceDirectory(project.directory))
+      .where(
+        (project) =>
+            !isProtectedWorkspaceDirectory(project.directory) &&
+            !isAiTeamDirectory(project.directory),
+      )
       .toList(growable: false);
 
   List<WorkspaceProject> get _visibleProjects {

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../api/models.dart' show EventEnvelope;
+import '../domain/team_directories.dart';
 
 /// What is going on in a project other than the selected one.
 @immutable
@@ -78,6 +79,9 @@ class ElsewhereAttention extends ChangeNotifier {
   void handle(EventEnvelope event) {
     final directory = event.directory;
     if (directory == null || directory.isEmpty) return;
+    // The AI Team's agents run and ask in their own folders; their work is
+    // shown on the AI Team screen, not as the person's other projects.
+    if (isAiTeamDirectory(directory)) return;
     final props = event.properties;
     final sessionID = props['sessionID']?.toString();
     var changed = false;

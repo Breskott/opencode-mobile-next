@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../agent_error_words.dart';
 import '../app_theme.dart';
 import 'tool_card.dart';
+import '../../domain/session_title_text.dart';
 
 /// Pure presentation of one [RunResult]. Every line is either copied from a
 /// server record or an explicit "unknown"; the only actions are opening the
@@ -41,8 +42,11 @@ class RunResultView extends StatelessWidget {
       key: const Key('run-result-view'),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        if (sessionTitle?.trim().isNotEmpty == true)
-          Text(sessionTitle!, style: theme.textTheme.titleMedium),
+        if (displaySessionTitleText(sessionTitle).isNotEmpty)
+          Text(
+            displaySessionTitleText(sessionTitle),
+            style: theme.textTheme.titleMedium,
+          ),
         const SizedBox(height: 4),
         _identity(context, l10n, muted),
         if (!result.boundaryKnown) ...[
