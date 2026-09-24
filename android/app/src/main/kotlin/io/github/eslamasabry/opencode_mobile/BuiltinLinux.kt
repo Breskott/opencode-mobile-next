@@ -116,41 +116,87 @@ class BuiltinLinux(private val context: Context) {
      * stops everything the script started.
      */
     fun start(script: String, log: File?): Process {
-        val tmp = File(context.cacheDir, "proot-tmp").apply { mkdirs() }
-        val command = listOf(
-            "$nativeDir/libproot.so",
-            "--root-id",
-            "--kill-on-exit",
-            // Android does not let apps make hard links; dpkg and git do.
-            "--link2symlink",
-            "-L",
-            "--sysvipc",
-            "--rootfs=${rootfs.absolutePath}",
-            "--bind=/dev",
-            "--bind=/proc",
-            "--bind=/sys",
-            "--bind=${File(rootfs, "tmp").absolutePath}:/dev/shm",
-            "--cwd=/root",
-            "/usr/bin/env", "-i",
-            "HOME=/root",
-            "LANG=C.UTF-8",
-            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-            "TERM=xterm-256color",
-            "TMPDIR=/tmp",
-            "/bin/sh", "-c", script,
-        )
-        return ProcessBuilder(command)
+        return ProcessBuilder(prootCommand(listOf("/bin/sh", "-c", script)))
             .redirectErrorStream(true)
             .apply {
-                environment()["PROOT_LOADER"] = "$nativeDir/libproot-loader.so"
-                environment()["PROOT_TMP_DIR"] = tmp.absolutePath
-                environment()["LD_LIBRARY_PATH"] = nativeDir
+                environment().putAll(prootEnvironment())
                 if (log != null) {
                     log.parentFile?.mkdirs()
                     redirectOutput(ProcessBuilder.Redirect.appendTo(log))
                 }
             }
             .start()
+    }
+
+    /** proot's own path: the program a terminal session (LocalTerminal.kt) starts. */
+    val prootPath: String get() = "$nativeDir/libproot.so"
+
+    /**
+     * The proot command line that runs [program] inside Ubuntu as root, with
+     * a clean environment. [start] and the local terminal (LocalTerminal.kt)
+     * both use it, so a shell sees exactly what the app's scripts see.
+     */
+    fun prootCommand(program: List<String>): List<String> = listOf(
+        prootPath,
+        "--root-id",
+        "--kill-on-exit",
+        // Android does not let apps make hard links; dpkg and git do.
+        "--link2symlink",
+        "-L",
+        "--sysvipc",
+        "--rootfs=${rootfs.absolutePath}",
+        "--bind=/dev",
+        "--bind=/proc",
+        "--bind=/sys",
+        "--bind=${File(rootfs, "tmp").absolutePath}:/dev/shm",
+    ) + fakeProcBinds + listOf(
+        "--cwd=/root",
+        "/usr/bin/env", "-i",
+        "HOME=/root",
+        "LANG=C.UTF-8",
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "TERM=xterm-256color",
+        "TMPDIR=/tmp",
+    ) + program
+
+    /**
+     * Stand-ins for the /proc files Android keeps from apps (stat, loadavg,
+     * uptime, version, vmstat: "Permission denied" on Android 8 and later),
+     * bound over the real ones as proot-distro does. Without them `top` and
+     * `htop` stop at "Cannot open /proc/stat". The numbers are fixed, so CPU
+     * use and load read as idle; only files the app cannot read are
+     * replaced.
+     */
+    private val fakeProcBinds: List<String> by lazy {
+        val dir = File(home, "proc")
+        FAKE_PROC.mapNotNull { (name, content) ->
+            val readable = try {
+                File("/proc/$name").inputStream().use { it.read() }
+                true
+            } catch (_: Exception) {
+                false
+            }
+            if (readable) return@mapNotNull null
+            val fake = File(dir, name)
+            try {
+                dir.mkdirs()
+                fake.writeText(content())
+            } catch (error: Exception) {
+                Log.w(TAG, "no stand-in for /proc/$name", error)
+                return@mapNotNull null
+            }
+            "--bind=${fake.absolutePath}:/proc/$name"
+        }
+    }
+
+    /** What proot itself needs in its environment, on top of the app's own. */
+    fun prootEnvironment(): Map<String, String> {
+        val tmp = File(context.cacheDir, "proot-tmp").apply { mkdirs() }
+        return mapOf(
+            "PROOT_LOADER" to "$nativeDir/libproot-loader.so",
+            "PROOT_TMP_DIR" to tmp.absolutePath,
+            "LD_LIBRARY_PATH" to nativeDir,
+        )
     }
 
     // ---- long-running services ---------------------------------------------
@@ -477,6 +523,31 @@ class BuiltinLinux(private val context: Context) {
         }
     }
 
+    /**
+     * Gives the app's Android groups (inet, everybody, its cache group…) a
+     * name in Ubuntu's /etc/group. A login shell runs `groups`, which
+     * otherwise prints "cannot find name for group ID 3003" once per group;
+     * proot-distro adds the same lines. The group ids are per install, so
+     * this is checked each time a terminal starts and costs one read.
+     */
+    fun nameAndroidGroups() {
+        val file = File(rootfs, "etc/group")
+        if (!file.isFile) return
+        val gids = try {
+            File("/proc/self/status").readLines()
+                .firstOrNull { it.startsWith("Groups:") }
+                ?.substringAfter(':')?.trim()?.split(Regex("\\s+"))
+                ?.mapNotNull { it.toIntOrNull() }
+                .orEmpty()
+        } catch (_: Exception) {
+            return
+        }
+        val existing = file.readLines().mapNotNull { it.split(':').getOrNull(2)?.toIntOrNull() }.toSet()
+        val missing = gids.filter { it !in existing }.distinct()
+        if (missing.isEmpty()) return
+        file.appendText(missing.joinToString("") { "aid_$it:x:$it:\n" })
+    }
+
     /** What proot-distro does after unpacking, trimmed to what Ubuntu needs. */
     private fun configure() {
         val etc = File(rootfs, "etc")
@@ -532,6 +603,39 @@ class BuiltinLinux(private val context: Context) {
             process.waitFor(graceMs, TimeUnit.MILLISECONDS)
         }
 
+        /**
+         * [stopTree] for a process the app knows only by [root] pid (a
+         * terminal session started through a PTY). [exited] waits up to the
+         * given milliseconds for it to end and says whether it did.
+         *
+         * An interactive shell ignores SIGTERM, so the programs inside get
+         * SIGHUP too, as when a terminal closes; SIGKILL follows after
+         * [graceMs], proot last.
+         */
+        fun stopPidTree(root: Int, exited: (Long) -> Boolean, graceMs: Long = 2000) {
+            for (pid in descendants(root)) {
+                signal(pid, OsConstants.SIGHUP)
+                signal(pid, OsConstants.SIGTERM)
+            }
+            if (exited(graceMs)) return
+            for (pid in descendants(root)) signal(pid, OsConstants.SIGKILL)
+            signal(root, OsConstants.SIGKILL)
+            exited(graceMs)
+        }
+
+        /** How many processes run as this app's user now, the app itself included. */
+        fun appProcessCount(): Int {
+            val uid = android.os.Process.myUid()
+            return File("/proc").listFiles()?.count { dir ->
+                dir.name.toIntOrNull() != null &&
+                    try {
+                        Os.stat(dir.absolutePath).st_uid == uid
+                    } catch (_: Exception) {
+                        false
+                    }
+            } ?: 0
+        }
+
         private fun signal(pid: Int, signal: Int) {
             try {
                 Os.kill(pid, signal)
@@ -575,6 +679,32 @@ class BuiltinLinux(private val context: Context) {
             }
             return found
         }
+
+        /** The /proc stand-ins of [fakeProcBinds], by file name. */
+        private val FAKE_PROC: List<Pair<String, () -> String>> = listOf(
+            "stat" to {
+                val cpus = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
+                buildString {
+                    append("cpu  ${cpus * 100} 0 ${cpus * 100} ${cpus * 10000} 0 0 0 0 0 0\n")
+                    for (i in 0 until cpus) append("cpu$i 100 0 100 10000 0 0 0 0 0 0\n")
+                    append("intr 0\nctxt 0\nbtime ${System.currentTimeMillis() / 1000 - 7200}\n")
+                    append("processes 1\nprocs_running 1\nprocs_blocked 0\n")
+                    append("softirq 0 0 0 0 0 0 0 0 0 0 0\n")
+                }
+            },
+            "loadavg" to { "0.12 0.07 0.02 1/100 100\n" },
+            "uptime" to { "7200.00 7000.00\n" },
+            "version" to {
+                "Linux version ${System.getProperty("os.version") ?: "unknown"} (android) #1 SMP PREEMPT\n"
+            },
+            "vmstat" to {
+                listOf(
+                    "nr_free_pages", "nr_inactive_anon", "nr_active_anon", "nr_inactive_file",
+                    "nr_active_file", "nr_dirty", "nr_writeback", "pgpgin", "pgpgout",
+                    "pswpin", "pswpout", "pgfault", "pgmajfault",
+                ).joinToString("") { "$it 0\n" }
+            },
+        )
 
         const val TAG = "OcLinux"
         private const val OUTPUT_CAP = 64 * 1024

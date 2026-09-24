@@ -7,6 +7,7 @@ import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/server_probe.dart';
 import 'package:opencode_mobile/builtin/builtin_linux.dart';
 import 'package:opencode_mobile/builtin/builtin_server.dart';
+import 'package:opencode_mobile/builtin/local_terminal.dart';
 import 'package:opencode_mobile/builtin/setup/phone_setup.dart';
 import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -14,12 +15,14 @@ import 'package:opencode_mobile/l10n/app_localizations_ar.dart';
 import 'package:opencode_mobile/l10n/app_localizations_en.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/screens/local_terminal_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'package:opencode_mobile/ui/widgets/phone_server_card.dart';
 import 'package:opencode_mobile/ui/widgets/server_switcher_sheet.dart';
 import 'package:opencode_mobile/ui/widgets/terminal_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/fake_local_terminal.dart';
 import 'support/fake_setup_engine.dart';
 
 // Screen D (docs/design/phone-setup-v2-2026-09-24.md): "This phone", the one
@@ -138,6 +141,7 @@ void main() {
   late _Connection connection;
   late _Linux linux;
   late FakeSetupEngine engine;
+  late FakeLocalTerminalBackend terminalBackend;
   late int progressOpened;
   late int startOpened;
   Set<String>? customizeAnswer;
@@ -167,6 +171,7 @@ void main() {
     connection = _Connection(store);
     linux = _Linux();
     engine = FakeSetupEngine();
+    terminalBackend = FakeLocalTerminalBackend();
     PhoneSetup.engine = engine;
     progressOpened = 0;
     startOpened = 0;
@@ -198,6 +203,11 @@ void main() {
       bootstrapProvider.overrideWithValue(AppBootstrap(store)),
       connProvider.overrideWithValue(connection),
       builtinLinuxProvider.overrideWithValue(linux),
+      localTerminalProvider.overrideWith((ref) {
+        final sessions = LocalTerminalSessions(backend: terminalBackend);
+        ref.onDispose(sessions.dispose);
+        return sessions;
+      }),
       builtinServerStarterProvider.overrideWith((ref) {
         final starter = BuiltinServerStarter(
           linux: linux,
@@ -526,6 +536,49 @@ void main() {
       expect(linux.calls, isEmpty);
       expect(connection.deleted, isEmpty);
     });
+
+    testWidgets(
+      'Terminal opens a shell on this phone with the server stopped',
+      (tester) async {
+        linux.running = false;
+        await mountCard(tester);
+        expect(status(tester), 'Stopped');
+        await choose(tester, 'phone-server-terminal');
+        expect(find.byType(LocalTerminalView), findsOneWidget);
+        expect(terminalBackend.calls, contains(startsWith('start')));
+        // The server was left alone: the shell does not need it.
+        expect(linux.calls, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'Terminal stays in the menu while a server start does not answer',
+      (tester) async {
+        linux.running = false;
+        linux.startGate = Completer<void>();
+        await mountCard(tester);
+        await tester.tap(find.byKey(const ValueKey('phone-server-start')));
+        await tester.pump();
+        await tester.pump();
+        expect(status(tester), 'Starting');
+        await tester.tap(find.byKey(const ValueKey('phone-server-menu')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        // Only the way in: nothing that would change the server mid-start.
+        expect(
+          find.byKey(const ValueKey('phone-server-terminal')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('phone-server-remove')), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('phone-server-terminal')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(LocalTerminalView), findsOneWidget);
+        expect(terminalBackend.calls, contains(startsWith('start')));
+        linux.startGate!.complete();
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets('a host that must close first receives the action instead', (
       tester,

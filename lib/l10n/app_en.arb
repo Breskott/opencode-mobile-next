@@ -20289,5 +20289,175 @@
   "pluginsDetailsId": "ID",
   "@pluginsDetailsId": {
     "description": "Label above a plugin's raw id in its details"
+  },
+  "localTerminalSourcePhone": "This phone",
+  "@localTerminalSourcePhone": {
+    "description": "Terminal source: a shell in this phone's built-in Linux"
+  },
+  "localTerminalSourceServer": "OpenCode server",
+  "@localTerminalSourceServer": {
+    "description": "Terminal source: the connected OpenCode server's terminals"
+  },
+  "localTerminalShellName": "Shell {number}",
+  "@localTerminalShellName": {
+    "description": "Name of a local shell, numbered in the order it was opened",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "localTerminalShellEnded": "{name} · ended",
+  "@localTerminalShellEnded": {
+    "description": "Menu entry of a shell that has ended",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "localTerminalNewShell": "New shell",
+  "@localTerminalNewShell": {
+    "description": "Menu item that opens another shell"
+  },
+  "localTerminalPaste": "Paste",
+  "@localTerminalPaste": {
+    "description": "Menu item that pastes the clipboard into the shell"
+  },
+  "localTerminalCopy": "Copy",
+  "@localTerminalCopy": {
+    "description": "Top bar action that copies the selected terminal text"
+  },
+  "localTerminalMenu": "Shells and more",
+  "@localTerminalMenu": {
+    "description": "Tooltip of the terminal's overflow menu"
+  },
+  "localTerminalStopShell": "Stop this shell",
+  "@localTerminalStopShell": {
+    "description": "Menu item that stops the current shell"
+  },
+  "localTerminalCloseShell": "Close this shell",
+  "@localTerminalCloseShell": {
+    "description": "Menu item that removes an ended shell"
+  },
+  "localTerminalStopTitle": "Stop this shell?",
+  "@localTerminalStopTitle": {
+    "description": "Confirmation title before stopping a shell"
+  },
+  "localTerminalStopBody": "Programs running in it stop too.",
+  "@localTerminalStopBody": {
+    "description": "Confirmation body before stopping a shell"
+  },
+  "localTerminalStop": "Stop",
+  "@localTerminalStop": {
+    "description": "Confirm button that stops the shell"
+  },
+  "localTerminalStarting": "Starting the shell",
+  "@localTerminalStarting": {
+    "description": "Accessibility label of the loading bar while a shell starts"
+  },
+  "localTerminalNotSetUpTitle": "Linux isn't set up on this phone",
+  "@localTerminalNotSetUpTitle": {
+    "description": "State title when the built-in Linux is not installed"
+  },
+  "localTerminalNotSetUpBody": "The terminal runs in the Linux that phone setup installs.",
+  "@localTerminalNotSetUpBody": {
+    "description": "State body when the built-in Linux is not installed"
+  },
+  "localTerminalSetUp": "Set up",
+  "@localTerminalSetUp": {
+    "description": "Button that opens phone setup"
+  },
+  "localTerminalEndedTitle": "The shell ended",
+  "@localTerminalEndedTitle": {
+    "description": "State title after the shell exits"
+  },
+  "localTerminalEndedBody": "It exited with code {code}.",
+  "@localTerminalEndedBody": {
+    "description": "State body with the shell's exit code",
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "localTerminalRestart": "Restart",
+  "@localTerminalRestart": {
+    "description": "Button that starts a new shell in place of the ended one"
+  },
+  "localTerminalFailedTitle": "The shell didn't start",
+  "@localTerminalFailedTitle": {
+    "description": "State title when the shell could not start"
+  },
+  "localTerminalFailedBody": "Try again. If it keeps failing, Details says why.",
+  "@localTerminalFailedBody": {
+    "description": "State body when the shell could not start"
+  },
+  "localTerminalTryAgain": "Try again",
+  "@localTerminalTryAgain": {
+    "description": "Button that tries to start the shell again"
+  },
+  "localTerminalCost": "Each shell runs {perShell} programs. With AI Team on, Android may stop the app's programs past {limit}.",
+  "@localTerminalCost": {
+    "description": "Status line on what a shell costs while AI Team runs",
+    "placeholders": {
+      "perShell": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "localTerminalCostNow": "Each shell runs {perShell} programs. With AI Team on, the app runs {count}; Android may stop them past {limit}.",
+  "@localTerminalCostNow": {
+    "description": "Status line on what a shell costs while AI Team runs, with the current count",
+    "placeholders": {
+      "perShell": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "localTerminalKeysLabel": "Terminal keys",
+  "@localTerminalKeysLabel": {
+    "description": "Accessibility label of the terminal key bar"
+  },
+  "localTerminalKeyCtrl": "Control",
+  "@localTerminalKeyCtrl": {
+    "description": "Accessibility label of the sticky Ctrl key"
+  },
+  "localTerminalKeyAlt": "Alt",
+  "@localTerminalKeyAlt": {
+    "description": "Accessibility label of the sticky Alt key"
+  },
+  "localTerminalKeyHome": "Home",
+  "@localTerminalKeyHome": {
+    "description": "Accessibility label of the Home key"
+  },
+  "localTerminalKeyEnd": "End",
+  "@localTerminalKeyEnd": {
+    "description": "Accessibility label of the End key"
+  },
+  "localTerminalKeyPageUp": "Page up",
+  "@localTerminalKeyPageUp": {
+    "description": "Accessibility label of the Page up key"
+  },
+  "localTerminalKeyPageDown": "Page down",
+  "@localTerminalKeyPageDown": {
+    "description": "Accessibility label of the Page down key"
+  },
+  "phoneServerCardTerminal": "Terminal",
+  "@phoneServerCardTerminal": {
+    "description": "Menu item that opens a shell in this phone's Linux"
+  },
+  "localTerminalSemantics": "Terminal on this phone. Tap to type; touch and hold to select text.",
+  "@localTerminalSemantics": {
+    "description": "Accessibility label of the local terminal's screen"
   }
 }

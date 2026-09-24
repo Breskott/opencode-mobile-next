@@ -144,6 +144,25 @@ ML Kit is additionally covered by Google's ML Kit terms of service. None of
 these are used anywhere else in the app: the camera is opened only by the
 pairing scanner, only while that screen is on top, and no frame is stored.
 
+### Termux terminal-emulator (the local terminal's PTY)
+
+- Component: `terminal-emulator` library of Termux, used unmodified as the
+  published artifact `com.github.termux.termux-app:terminal-emulator`
+- Version: v0.118.3 (JitPack build of that release tag)
+- Project: https://github.com/termux/termux-app/tree/v0.118.3/terminal-emulator
+- Copyright: Fredrik Fornwall and the Termux contributors; derived from Jack
+  Palevich's Android Terminal Emulator
+- License: Apache License 2.0; see `LICENSES/Apache-2.0.txt`
+
+The terminal on "This phone" starts its shell on a pseudoterminal through
+this library's native `libtermux.so` (`termux.c`), called from
+`android/app/src/main/java/com/termux/terminal/PtyAccess.java`. The
+termux-app repository as a whole is GPLv3; its `LICENSE.md` names
+`terminal-emulator` and `terminal-view` as the Apache 2.0 exceptions. No
+other Termux code (the app, its extra-keys view, `termux-shared`) is used:
+the key bar and the screen are this app's own. The upstream library ships
+no NOTICE file of its own. See also `NOTICE`.
+
 ### JetBrains Mono
 
 - Component: JetBrains Mono font files bundled under `assets/fonts/`

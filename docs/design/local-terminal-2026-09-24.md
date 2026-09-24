@@ -46,6 +46,7 @@ Decide with evidence, and record the decision and the numbers.
 - **Option A:** keep the `xterm` Dart display and feed it the local PTY over a MethodChannel plus EventChannel. It fits the app's look and the design standard (`docs/design/design-standard.md`).
 - **Option B:** embed Termux's `terminal-view` as an Android platform view.
 - Try A first. Test both on the device with the checks in the proof section below. Switch to B only if A fails on correctness or feel: IME, speed, redraw, selection. B must still sit inside the app's design-standard chrome (top bar, key bar, states).
+- **Decided 2026-09-25: A.** Same emulator, `seq 1 200000`: A 2.3 s, B 28.8 s, with frames as frequent (SurfaceFlinger gap p50 84 ms vs 85 ms). Two correctness faults of the `xterm` package (wide characters at the last column, selection after `clear`) are fixed in the app. Numbers and evidence: `docs/qa/local-terminal-2026-09-24/README.md`.
 
 ### 3. Key bar
 

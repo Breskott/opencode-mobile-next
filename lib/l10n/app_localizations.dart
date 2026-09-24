@@ -29722,6 +29722,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ID'**
   String get pluginsDetailsId;
+
+  /// Terminal source: a shell in this phone's built-in Linux
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get localTerminalSourcePhone;
+
+  /// Terminal source: the connected OpenCode server's terminals
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode server'**
+  String get localTerminalSourceServer;
+
+  /// Name of a local shell, numbered in the order it was opened
+  ///
+  /// In en, this message translates to:
+  /// **'Shell {number}'**
+  String localTerminalShellName(int number);
+
+  /// Menu entry of a shell that has ended
+  ///
+  /// In en, this message translates to:
+  /// **'{name} · ended'**
+  String localTerminalShellEnded(String name);
+
+  /// Menu item that opens another shell
+  ///
+  /// In en, this message translates to:
+  /// **'New shell'**
+  String get localTerminalNewShell;
+
+  /// Menu item that pastes the clipboard into the shell
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get localTerminalPaste;
+
+  /// Top bar action that copies the selected terminal text
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get localTerminalCopy;
+
+  /// Tooltip of the terminal's overflow menu
+  ///
+  /// In en, this message translates to:
+  /// **'Shells and more'**
+  String get localTerminalMenu;
+
+  /// Menu item that stops the current shell
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this shell'**
+  String get localTerminalStopShell;
+
+  /// Menu item that removes an ended shell
+  ///
+  /// In en, this message translates to:
+  /// **'Close this shell'**
+  String get localTerminalCloseShell;
+
+  /// Confirmation title before stopping a shell
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this shell?'**
+  String get localTerminalStopTitle;
+
+  /// Confirmation body before stopping a shell
+  ///
+  /// In en, this message translates to:
+  /// **'Programs running in it stop too.'**
+  String get localTerminalStopBody;
+
+  /// Confirm button that stops the shell
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get localTerminalStop;
+
+  /// Accessibility label of the loading bar while a shell starts
+  ///
+  /// In en, this message translates to:
+  /// **'Starting the shell'**
+  String get localTerminalStarting;
+
+  /// State title when the built-in Linux is not installed
+  ///
+  /// In en, this message translates to:
+  /// **'Linux isn\'t set up on this phone'**
+  String get localTerminalNotSetUpTitle;
+
+  /// State body when the built-in Linux is not installed
+  ///
+  /// In en, this message translates to:
+  /// **'The terminal runs in the Linux that phone setup installs.'**
+  String get localTerminalNotSetUpBody;
+
+  /// Button that opens phone setup
+  ///
+  /// In en, this message translates to:
+  /// **'Set up'**
+  String get localTerminalSetUp;
+
+  /// State title after the shell exits
+  ///
+  /// In en, this message translates to:
+  /// **'The shell ended'**
+  String get localTerminalEndedTitle;
+
+  /// State body with the shell's exit code
+  ///
+  /// In en, this message translates to:
+  /// **'It exited with code {code}.'**
+  String localTerminalEndedBody(int code);
+
+  /// Button that starts a new shell in place of the ended one
+  ///
+  /// In en, this message translates to:
+  /// **'Restart'**
+  String get localTerminalRestart;
+
+  /// State title when the shell could not start
+  ///
+  /// In en, this message translates to:
+  /// **'The shell didn\'t start'**
+  String get localTerminalFailedTitle;
+
+  /// State body when the shell could not start
+  ///
+  /// In en, this message translates to:
+  /// **'Try again. If it keeps failing, Details says why.'**
+  String get localTerminalFailedBody;
+
+  /// Button that tries to start the shell again
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get localTerminalTryAgain;
+
+  /// Status line on what a shell costs while AI Team runs
+  ///
+  /// In en, this message translates to:
+  /// **'Each shell runs {perShell} programs. With AI Team on, Android may stop the app\'s programs past {limit}.'**
+  String localTerminalCost(int perShell, int limit);
+
+  /// Status line on what a shell costs while AI Team runs, with the current count
+  ///
+  /// In en, this message translates to:
+  /// **'Each shell runs {perShell} programs. With AI Team on, the app runs {count}; Android may stop them past {limit}.'**
+  String localTerminalCostNow(int perShell, int count, int limit);
+
+  /// Accessibility label of the terminal key bar
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal keys'**
+  String get localTerminalKeysLabel;
+
+  /// Accessibility label of the sticky Ctrl key
+  ///
+  /// In en, this message translates to:
+  /// **'Control'**
+  String get localTerminalKeyCtrl;
+
+  /// Accessibility label of the sticky Alt key
+  ///
+  /// In en, this message translates to:
+  /// **'Alt'**
+  String get localTerminalKeyAlt;
+
+  /// Accessibility label of the Home key
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get localTerminalKeyHome;
+
+  /// Accessibility label of the End key
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get localTerminalKeyEnd;
+
+  /// Accessibility label of the Page up key
+  ///
+  /// In en, this message translates to:
+  /// **'Page up'**
+  String get localTerminalKeyPageUp;
+
+  /// Accessibility label of the Page down key
+  ///
+  /// In en, this message translates to:
+  /// **'Page down'**
+  String get localTerminalKeyPageDown;
+
+  /// Menu item that opens a shell in this phone's Linux
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal'**
+  String get phoneServerCardTerminal;
+
+  /// Accessibility label of the local terminal's screen
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal on this phone. Tap to type; touch and hold to select text.'**
+  String get localTerminalSemantics;
 }
 
 class _AppLocalizationsDelegate
