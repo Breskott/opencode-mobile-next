@@ -1201,6 +1201,9 @@ void main() {
       expect(find.textContaining('First-time setup'), findsNothing);
       expect(reopened.switchCalls, 0);
       await tester.pumpWidget(const SizedBox.shrink());
+      // Their server monitors keep refresh timers until disposed.
+      fixture.connection.dispose();
+      reopened.connection.dispose();
     },
   );
 

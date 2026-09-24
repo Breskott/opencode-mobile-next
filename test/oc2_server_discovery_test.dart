@@ -217,7 +217,6 @@ void main() {
             flavor: ServerFlavor.v2,
           ),
       ]);
-      addTearDown(conn.dispose);
       await tester.pumpWidget(_app(store, conn));
       await tester.pumpAndSettle();
       await tester.tap(find.text('OpenCode one'));
@@ -231,6 +230,10 @@ void main() {
       if (mode != 'single-local') {
         expect(store.saved.last.flavor, ServerFlavor.v2);
       }
+      // The connection's server monitor keeps a refresh timer; the tree goes
+      // first, then the connection, before the test's timer check.
+      await tester.pumpWidget(const SizedBox());
+      conn.dispose();
     });
   }
 
