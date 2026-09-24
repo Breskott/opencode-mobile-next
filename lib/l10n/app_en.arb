@@ -2075,7 +2075,7 @@
   "codexTextOnlyPrompt": "This server supports text only. Remove attachments before sending.",
   "codexOfflineDraftSaved": "Reconnect before sending. Your draft is kept on this device.",
   "codexReconnectBeforeSending": "Reconnect before sending.",
-  "connectionTypeLabel": "CONNECTION TYPE",
+  "connectionTypeLabel": "Connection type",
   "openCodeConnectionLabel": "OpenCode",
   "paseoExperimentalLabel": "Paseo: Claude Code, Pi (experimental)",
   "paseoAddressHint": "ws://100.64.0.1:6767 or wss://paseo.example",
@@ -19909,5 +19909,13 @@
   "connectStartingBody": "Your conversations are kept. This can take a minute.",
   "@connectStartingBody": {
     "description": "Connecting screen body while the phone's own server starts"
+  },
+  "settingsAboutLoading": "Loading the notices…",
+  "@settingsAboutLoading": {
+    "description": "Label of the About screen loading bar while its documents load"
+  },
+  "settingsAboutLoadFailed": "The notices didn't load",
+  "@settingsAboutLoadFailed": {
+    "description": "Title of the About screen state when its documents could not be read"
   }
 }

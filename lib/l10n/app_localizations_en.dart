@@ -3701,7 +3701,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get codexReconnectBeforeSending => 'Reconnect before sending.';
 
   @override
-  String get connectionTypeLabel => 'CONNECTION TYPE';
+  String get connectionTypeLabel => 'Connection type';
 
   @override
   String get openCodeConnectionLabel => 'OpenCode';
@@ -18169,4 +18169,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get connectStartingBody =>
       'Your conversations are kept. This can take a minute.';
+
+  @override
+  String get settingsAboutLoading => 'Loading the notices…';
+
+  @override
+  String get settingsAboutLoadFailed => 'The notices didn\'t load';
 }

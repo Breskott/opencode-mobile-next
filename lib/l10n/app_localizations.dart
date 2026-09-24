@@ -6178,7 +6178,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectionTypeLabel.
   ///
   /// In en, this message translates to:
-  /// **'CONNECTION TYPE'**
+  /// **'Connection type'**
   String get connectionTypeLabel;
 
   /// No description provided for @openCodeConnectionLabel.
@@ -29337,6 +29337,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your conversations are kept. This can take a minute.'**
   String get connectStartingBody;
+
+  /// Label of the About screen loading bar while its documents load
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the notices…'**
+  String get settingsAboutLoading;
+
+  /// Title of the About screen state when its documents could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'The notices didn\'t load'**
+  String get settingsAboutLoadFailed;
 }
 
 class _AppLocalizationsDelegate

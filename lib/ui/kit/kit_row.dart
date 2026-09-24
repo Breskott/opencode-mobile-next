@@ -25,6 +25,8 @@ class KitRow extends StatelessWidget {
     this.titleKey,
     this.supportingKey,
     this.padding,
+    this.enabled = true,
+    this.destructive = false,
   });
 
   final Widget? leading;
@@ -57,6 +59,16 @@ class KitRow extends StatelessWidget {
   /// content) passes its own, usually no side padding.
   final EdgeInsetsGeometry? padding;
 
+  /// False for an action that cannot run now: the row dims and ignores
+  /// taps. Its supporting line says why (§2: a disabled control needs a
+  /// visible reason).
+  final bool enabled;
+
+  /// An action that deletes or ends something: an error-coloured title
+  /// (tint the leading icon to match), and it always confirms before
+  /// acting (§2).
+  final bool destructive;
+
   /// A leading icon at the row's size, muted unless [color] is given.
   static Widget icon(BuildContext context, IconData icon, {Color? color}) =>
       SizedBox.square(
@@ -72,9 +84,10 @@ class KitRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final supporting = this.supporting;
-    return InkWell(
-      onTap: onTap,
-      onLongPress: onLongPress,
+    final titleColor = destructive ? theme.colorScheme.error : null;
+    final Widget row = InkWell(
+      onTap: enabled ? onTap : null,
+      onLongPress: enabled ? onLongPress : null,
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 56),
         child: Padding(
@@ -102,7 +115,9 @@ class KitRow extends StatelessWidget {
                       key: titleKey,
                       maxLines: titleMaxLines,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyLarge,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: titleColor,
+                      ),
                     ),
                     if (supporting != null) ...[
                       const SizedBox(height: 2),
@@ -129,5 +144,7 @@ class KitRow extends StatelessWidget {
         ),
       ),
     );
+    if (enabled) return row;
+    return Opacity(opacity: .5, child: row);
   }
 }

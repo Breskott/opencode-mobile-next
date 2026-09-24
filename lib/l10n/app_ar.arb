@@ -4863,5 +4863,7 @@
   "workRunawayInProject": "OpenCode مشغول في {project} منذ {duration} دون عمل ينتظره",
   "workRunawaySee": "عرض ما يعمل",
   "connectStartingPhone": "جارٍ تشغيل OpenCode على هذا الهاتف…",
-  "connectStartingBody": "تبقى محادثاتك محفوظة. قد يستغرق هذا دقيقة."
+  "connectStartingBody": "تبقى محادثاتك محفوظة. قد يستغرق هذا دقيقة.",
+  "settingsAboutLoading": "جارٍ تحميل الإشعارات…",
+  "settingsAboutLoadFailed": "لم تُحمَّل الإشعارات"
 }

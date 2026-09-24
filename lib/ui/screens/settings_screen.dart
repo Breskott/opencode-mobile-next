@@ -17,6 +17,7 @@ import '../../termux/bridge.dart';
 import '../app_theme.dart';
 import '../desktop/desktop_interaction.dart';
 import '../early_l10n.dart';
+import '../kit/kit.dart';
 import '../theme_packs.dart';
 import '../widgets/appearance_picker.dart';
 import '../widgets/confirm_sheet.dart';
@@ -209,23 +210,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         : copy.e7SettingsVersion(controller.version ?? copy.e7SettingsUi17);
     return KeyedSubtree(
       key: const ValueKey('settings-connection-summary'),
-      child: ListTile(
+      child: KitRow(
         key: const ValueKey('settings-category-server'),
-        minTileHeight: 72,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-        minLeadingWidth: 32,
-        horizontalTitleGap: 12,
-        leading: _CategoryIcon(
-          icon: AppIconography.server,
+        leading: KitRow.icon(
+          context,
+          AppIconography.server,
           color: healthy
               ? AppTheme.successOf(theme)
               : _healthError != null
               ? theme.colorScheme.error
               : null,
         ),
-        title: Text(copy.settingsHubThisServer),
-        subtitle: Text(
-          copy.settingsHubThisServerStatus(
+        title: copy.settingsHubThisServer,
+        supporting: TextSpan(
+          text: copy.settingsHubThisServerStatus(
             controller.profile == null
                 ? copy.e7SettingsUi9
                 : serverDisplayName(
@@ -236,21 +234,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             status,
           ),
         ),
+        supportingMaxLines: 2,
         // A failed probe offers the one fix in place; otherwise the row is a
-        // plain door like its neighbours.
-        trailing: _checking
-            ? const SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : _healthError != null
+        // plain door like its neighbours. The check itself shows as the
+        // screen's one loading bar (§4), not a spinner in the row.
+        trailing: _healthError != null
             ? IconButton(
                 key: const ValueKey('settings-server-try-again'),
                 tooltip: copy.commonRetry,
                 onPressed: _checkHealth,
                 icon: const Icon(AppIconography.retry),
               )
-            : const Icon(AppIconography.chevronRight, size: 20),
+            : const _Chevron(),
         onTap: () => _open(ServerSettingsScreen(controller: controller)),
       ),
     );
@@ -303,17 +298,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         // the doors above (plan 5.7).
         row(
           'settings-disconnect',
+          // Error-coloured text, never a primary; the entry confirms first
+          // (design standard §2).
           builder: (context) => Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(4, 12, 4, 0),
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
+            child: KitInset(
+              child: KitButton.tertiary(
+                key: const ValueKey('settings-disconnect'),
+                destructive: true,
+                onPressed: () =>
+                    _openEntry(entries['settings-disconnect']!, scope),
+                icon: AppIconography.unlink,
+                label: copy.e7SettingsUi8,
               ),
-              key: const ValueKey('settings-disconnect'),
-              onPressed: () =>
-                  _openEntry(entries['settings-disconnect']!, scope),
-              icon: const Icon(AppIconography.unlink),
-              label: Text(copy.e7SettingsUi8),
             ),
           ),
         ),
@@ -499,115 +496,90 @@ class _SettingsScreenState extends State<SettingsScreen> {
         others.length;
     // Not a lazy list: every group must exist for an entry point to scroll
     // to it, and the hub is a few dozen plain rows.
-    final body = DesktopScrollbarArea(
-      builder: (scrollController) => SingleChildScrollView(
-        controller: scrollController,
-        padding: EdgeInsetsDirectional.fromSTEB(
-          12,
-          8,
-          12,
-          24 + MediaQuery.paddingOf(context).bottom,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 4),
-              child: TextField(
-                key: const Key('library-search'),
-                controller: _search,
-                onChanged: (value) =>
-                    setState(() => _query = value.trim().toLowerCase()),
-                decoration: InputDecoration(
-                  hintText: l10n.librarySearchHint,
-                  prefixIcon: const Icon(AppIconography.search),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: l10n.commonClearSearch,
-                          icon: const Icon(AppIconography.close),
-                          onPressed: () {
-                            _search.clear();
-                            setState(() => _query = '');
-                          },
-                        ),
+    final body = KitScreen(
+      // The health check of "This server" is the one thing that loads here.
+      loading: _checking,
+      loadingLabel: copy.e7SettingsUi11,
+      body: DesktopScrollbarArea(
+        builder: (scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: EdgeInsets.only(bottom: KitScreen.endPadding(context)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
+                child: TextField(
+                  key: const Key('library-search'),
+                  controller: _search,
+                  onChanged: (value) =>
+                      setState(() => _query = value.trim().toLowerCase()),
+                  decoration: InputDecoration(
+                    hintText: l10n.librarySearchHint,
+                    prefixIcon: const Icon(AppIconography.search),
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: l10n.commonClearSearch,
+                            icon: const Icon(AppIconography.close),
+                            onPressed: () {
+                              _search.clear();
+                              setState(() => _query = '');
+                            },
+                          ),
+                  ),
                 ),
               ),
-            ),
-            for (final entry in groups)
-              KeyedSubtree(
-                key: _groupKeys[entry.group.group],
-                child: Column(
-                  key: ValueKey('settings-group-${entry.group.group.slug}'),
+              for (final entry in groups)
+                KeyedSubtree(
+                  key: _groupKeys[entry.group.group],
+                  child: Column(
+                    key: ValueKey('settings-group-${entry.group.group.slug}'),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _GroupLabel(entry.group.title),
+                      for (final row in entry.rows) row.build(context),
+                    ],
+                  ),
+                ),
+              for (final section in resultSections)
+                Column(
+                  key: ValueKey('search-results-${section.slug}'),
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                        4,
-                        20,
-                        4,
-                        4,
+                    _GroupLabel(section.title),
+                    for (final entry in section.entries)
+                      _CategoryRow(
+                        rowKey: 'search-result-${entry.id}',
+                        icon: entry.icon,
+                        title: entry.title,
+                        subtitle: entry.parent == null
+                            ? null
+                            : copy.discoverSearchIn(entry.parent!),
+                        onTap: () => _openEntry(entry, scope),
                       ),
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          entry.group.title,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: AppTheme.mutedOf(theme),
-                          ),
-                        ),
-                      ),
-                    ),
-                    for (final row in entry.rows) row.build(context),
                   ],
                 ),
-              ),
-            for (final section in resultSections)
-              Column(
-                key: ValueKey('search-results-${section.slug}'),
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(4, 20, 4, 4),
-                    child: Semantics(
-                      header: true,
-                      child: Text(
-                        section.title,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: AppTheme.mutedOf(theme),
-                        ),
-                      ),
+              if (_query.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    matchCount == 0
+                        ? _settingsCopy(
+                            context,
+                          ).settingsHubNoResults(_search.text.trim())
+                        : l10n.librarySearchResults(
+                            matchCount,
+                            _search.text.trim(),
+                          ),
+                    key: const Key('library-search-summary'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.mutedOf(theme),
                     ),
                   ),
-                  for (final entry in section.entries)
-                    _CategoryRow(
-                      rowKey: 'search-result-${entry.id}',
-                      icon: entry.icon,
-                      title: entry.title,
-                      subtitle: entry.parent == null
-                          ? null
-                          : copy.discoverSearchIn(entry.parent!),
-                      onTap: () => _openEntry(entry, scope),
-                    ),
-                ],
-              ),
-            if (_query.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  matchCount == 0
-                      ? _settingsCopy(
-                          context,
-                        ).settingsHubNoResults(_search.text.trim())
-                      : l10n.librarySearchResults(
-                          matchCount,
-                          _search.text.trim(),
-                        ),
-                  key: const Key('library-search-summary'),
-                  style: theme.textTheme.bodySmall,
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -663,15 +635,44 @@ class _HubRow {
       );
 }
 
+/// A group or result-section header: the kit's section label, announced as
+/// a heading.
+class _GroupLabel extends StatelessWidget {
+  final String text;
+  const _GroupLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) =>
+      Semantics(header: true, child: SectionLabel(text));
+}
+
+/// The trailing mark of a row that opens another screen.
+class _Chevron extends StatelessWidget {
+  const _Chevron();
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: 48,
+    child: Icon(
+      AppIconography.chevronRight,
+      size: 20,
+      color: AppTheme.mutedOf(Theme.of(context)),
+    ),
+  );
+}
+
+/// One settings row on the kit (design standard §6): an icon, the title, an
+/// explanation of up to two lines, and a chevron when it opens a screen.
 class _CategoryRow extends StatelessWidget {
   final String rowKey;
   final IconData icon;
   final String title;
   final String? subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   /// False for a row that acts in place instead of opening something.
   final bool chevron;
+  final bool enabled;
 
   const _CategoryRow({
     required this.rowKey,
@@ -680,40 +681,21 @@ class _CategoryRow extends StatelessWidget {
     required this.onTap,
     this.subtitle,
     this.chevron = true,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    final subtitle = this.subtitle;
+    return KitRow(
       key: ValueKey(rowKey),
-      minTileHeight: subtitle == null ? 56 : 72,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      minLeadingWidth: 32,
-      horizontalTitleGap: 12,
-      leading: _CategoryIcon(icon: icon),
-      title: Text(title),
-      subtitle: subtitle == null ? null : Text(subtitle!),
-      trailing: chevron
-          ? const Icon(AppIconography.chevronRight, size: 20)
-          : null,
+      leading: KitRow.icon(context, icon),
+      title: title,
+      supporting: subtitle == null ? null : TextSpan(text: subtitle),
+      supportingMaxLines: 2,
+      trailing: chevron ? const _Chevron() : null,
+      enabled: enabled,
       onTap: onTap,
-    );
-  }
-}
-
-class _CategoryIcon extends StatelessWidget {
-  final IconData icon;
-  final Color? color;
-
-  const _CategoryIcon({required this.icon, this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tint = color ?? theme.colorScheme.onSurfaceVariant;
-    return SizedBox.square(
-      dimension: 32,
-      child: Icon(icon, size: 24, color: tint),
     );
   }
 }

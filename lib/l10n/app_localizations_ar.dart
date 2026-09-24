@@ -18432,4 +18432,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get connectStartingBody =>
       'تبقى محادثاتك محفوظة. قد يستغرق هذا دقيقة.';
+
+  @override
+  String get settingsAboutLoading => 'جارٍ تحميل الإشعارات…';
+
+  @override
+  String get settingsAboutLoadFailed => 'لم تُحمَّل الإشعارات';
 }

@@ -14,6 +14,7 @@
 /// | [KitRow], [SectionLabel] | §6 rows and sections |
 /// | [KitPanel] | §3 a block of content the person works with |
 /// | [KitStatusMark] | §6 a step's leading state mark (waiting, working, done, failed) |
+/// | [KitNotice] | §3 a message inside one part of a form or list |
 ///
 /// The older shared states in `product_states.dart` are re-exported here so
 /// a screen imports one library; new screens use [KitStateView] for them.
@@ -30,6 +31,7 @@ export '../widgets/product_states.dart'
 export 'kit_ask_line.dart';
 export 'kit_buttons.dart';
 export 'kit_panel.dart';
+export 'kit_notice.dart';
 export 'kit_progress.dart';
 export 'kit_request_card.dart';
 export 'kit_row.dart';

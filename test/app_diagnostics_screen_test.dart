@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -85,7 +86,7 @@ void main() {
     expect(find.text('No captured app errors'), findsOneWidget);
     expect(
       tester
-          .widget<FilledButton>(find.byKey(const Key('send-app-diagnostics')))
+          .widget<KitButton>(find.byKey(const Key('send-app-diagnostics')))
           .onPressed,
       isNull,
     );

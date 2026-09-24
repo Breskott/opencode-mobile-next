@@ -18,6 +18,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/desktop/shortcuts.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/project_hub_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/search/search_index.dart';
@@ -664,7 +665,7 @@ void main() {
           scrollable: scrollable,
         );
         expect(tester.takeException(), isNull);
-        for (final tile in tester.widgetList<ListTile>(find.byType(ListTile))) {
+        for (final tile in tester.widgetList<KitRow>(find.byType(KitRow))) {
           final box = tester.renderObject<RenderBox>(find.byWidget(tile));
           expect(box.size.width, lessThanOrEqualTo(phone.width));
         }

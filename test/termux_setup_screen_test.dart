@@ -11,6 +11,7 @@ import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/bridge.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:opencode_mobile/ui/app_iconography.dart';
@@ -948,7 +949,7 @@ void main() {
       await tester.tap(copyOpen);
       await tester.pump();
       expect(fixture.handoffCalls, ['permission']);
-      expect(tester.widget<FilledButton>(copyOpen).onPressed, isNull);
+      expect(tester.widget<KitButton>(copyOpen).onPressed, isNull);
       // Android permission dialogs can also pause/resume the activity.
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -1129,7 +1130,7 @@ void main() {
       expect(fixture.bridgeChecks, 1);
       expect(find.textContaining('Termux did not answer'), findsOneWidget);
       final verify = find.byKey(const Key('termux-verify-unlock'));
-      expect(tester.widget<FilledButton>(verify).onPressed, isNotNull);
+      expect(tester.widget<KitButton>(verify).onPressed, isNotNull);
       fixture.bridgeUnlocked = true;
       await _revealGuideTarget(tester, verify);
       await tester.tap(verify);
@@ -1833,7 +1834,7 @@ void main() {
         DateTime.now().millisecondsSinceEpoch ~/ 1000;
     fixture.inventoryOutput = 'ubuntu=installed\nversion=1.18.29\n';
     await fixture.mount(tester);
-    final reinstall = find.widgetWithText(OutlinedButton, 'Reinstall & start');
+    final reinstall = find.widgetWithText(KitButton, 'Reinstall & start');
     await tester.scrollUntilVisible(reinstall.hitTestable(), 200);
     await tester.tap(reinstall.hitTestable());
     await tester.pumpAndSettle();
@@ -2177,6 +2178,13 @@ pid=
       expect(
         find.textContaining('Recovery settings could not be fully cleared'),
         findsOneWidget,
+      );
+      // The controls are stacked now (design standard §2), so Stop sat lower
+      // and the list is scrolled past the new primary at its top.
+      await tester.scrollUntilVisible(
+        find.text('Start installed OpenCode'),
+        -200,
+        scrollable: find.byType(Scrollable).first,
       );
       expect(find.text('Start installed OpenCode'), findsOneWidget);
       expect(find.text('Install & start'), findsNothing);
