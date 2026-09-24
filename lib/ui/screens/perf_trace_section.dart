@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../../diagnostics/perf_trace.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
-import '../widgets/product_states.dart';
+import '../kit/kit.dart';
 
 /// The "Performance" part of App diagnostics: where time went in this run
 /// of the app, from [PerfTrace]. Steps grouped by name (slowest first), the
@@ -49,27 +49,27 @@ class PerfTraceSection extends StatelessWidget {
               style: theme.textTheme.bodyMedium?.copyWith(color: muted),
             ),
             const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  key: const ValueKey('perf-trace-copy'),
-                  onPressed: empty ? null : () => _copy(context),
-                  icon: const Icon(AppIcons.copy),
-                  label: Text(copy.perfTraceCopy),
-                ),
-                TextButton.icon(
-                  key: const ValueKey('perf-trace-clear'),
-                  onPressed: empty ? null : PerfTrace.clear,
-                  icon: const Icon(AppIconography.delete),
-                  label: Text(copy.perfTraceClear),
-                ),
-              ],
+            // The kit's hierarchy (§2): Copy report is the other path of
+            // this block, Clear a start-aligned text button under it. With
+            // nothing measured they rest; the line below says so.
+            KitButton.secondary(
+              key: const ValueKey('perf-trace-copy'),
+              onPressed: empty ? null : () => _copy(context),
+              icon: AppIcons.copy,
+              label: copy.perfTraceCopy,
+            ),
+            const SizedBox(height: 4),
+            KitInset(
+              child: KitButton.tertiary(
+                key: const ValueKey('perf-trace-clear'),
+                onPressed: empty ? null : PerfTrace.clear,
+                icon: AppIconography.delete,
+                label: copy.perfTraceClear,
+              ),
             ),
             if (empty)
               Padding(
-                padding: const EdgeInsets.only(top: 14),
+                padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   copy.perfTraceEmpty,
                   style: theme.textTheme.bodyMedium?.copyWith(color: muted),

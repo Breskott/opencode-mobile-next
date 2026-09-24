@@ -15,6 +15,7 @@ import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/nudges.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -114,9 +115,7 @@ void main() {
   });
   tearDown(() => debugPlatformCapabilities = null);
 
-  testWidgets('the five groups appear in order, each keyed', (
-    tester,
-  ) async {
+  testWidgets('the five groups appear in order, each keyed', (tester) async {
     final controller = await _controller();
     addTearDown(controller.dispose);
     await tester.pumpWidget(_app(controller));
@@ -156,7 +155,7 @@ void main() {
     );
     final tiles = find.descendant(
       of: connection,
-      matching: find.byType(ListTile),
+      matching: find.byType(KitRow),
     );
     final lastTileBottom = tester.getBottomLeft(tiles.last).dy;
     // Below every door of the group, with a gap that sets it apart.
@@ -381,7 +380,7 @@ void main() {
     await tester.enterText(search, 'not-a-real-tool');
     await tester.pumpAndSettle();
     expect(find.textContaining('not-a-real-tool'), findsWidgets);
-    expect(find.byType(ListTile), findsNothing);
+    expect(find.byType(KitRow), findsNothing);
     for (final group in SettingsGroup.values) {
       expect(_row('settings-group-${group.slug}'), findsNothing);
     }
@@ -626,7 +625,7 @@ void main() {
           expect(tester.takeException(), isNull, reason: group.slug);
         }
         // No row is wider than the phone.
-        for (final tile in tester.widgetList<ListTile>(find.byType(ListTile))) {
+        for (final tile in tester.widgetList<KitRow>(find.byType(KitRow))) {
           final box = tester.renderObject<RenderBox>(find.byWidget(tile));
           expect(box.size.width, lessThanOrEqualTo(phone.width));
         }

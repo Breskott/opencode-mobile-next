@@ -7,7 +7,8 @@
 // an entry in [_allowed] with its reason.
 //
 // Each migrated screen also has golden renders at 412x915, dark and light,
-// in test/goldens/ (made by test/goldens/work_tab_golden_test.dart).
+// in test/goldens/ (made by test/goldens/work_tab_golden_test.dart and
+// test/goldens/settings_golden_test.dart).
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -38,6 +39,31 @@ const _migrated = <String, List<String>>{
     'work_not_answering',
     'work_runaway',
   ],
+  // §9 step 6: Settings (goldens: test/goldens/settings_golden_test.dart).
+  'lib/ui/screens/settings_screen.dart': ['settings_hub'],
+  'lib/ui/screens/settings/default_shell_row.dart': ['settings_hub'],
+  'lib/ui/screens/settings/server_settings_screen.dart': [
+    'settings_this_server',
+  ],
+  'lib/ui/screens/settings/notifications_settings_screen.dart': [
+    'settings_notifications',
+  ],
+  'lib/ui/screens/settings/personal_settings_screens.dart': [
+    'settings_appearance',
+    'settings_privacy',
+  ],
+  'lib/ui/screens/app_diagnostics_screen.dart': [
+    'settings_diagnostics',
+    'settings_diagnostics_empty',
+  ],
+  'lib/ui/screens/perf_trace_section.dart': ['settings_diagnostics'],
+  'lib/ui/screens/about_screen.dart': ['settings_about'],
+  'lib/ui/screens/servers_screen.dart': [
+    'servers_list',
+    'servers_add',
+    'servers_add_failed',
+  ],
+  'lib/ui/screens/termux_setup_screen.dart': ['termux_setup'],
 };
 
 /// file -> (pattern, reason) exceptions. Keep it short.

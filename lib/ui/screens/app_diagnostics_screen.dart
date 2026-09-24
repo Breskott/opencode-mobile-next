@@ -7,8 +7,8 @@ import 'package:flutter/services.dart';
 import '../../api/product_repository.dart';
 import '../../diagnostics/app_diagnostics.dart';
 import '../../state/connection.dart';
+import '../kit/kit.dart';
 import '../widgets/confirm_sheet.dart';
-import '../widgets/product_states.dart';
 import '../app_theme.dart';
 import 'perf_trace_section.dart';
 
@@ -89,14 +89,17 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final copy = _screenCopy(context);
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(_screenCopy(context).e7SettingsUi88)),
-      body: SafeArea(
-        child: ListenableBuilder(
-          listenable: _diagnostics,
-          builder: (context, _) {
-            final entries = _diagnostics.entries.reversed.toList();
-            return CustomScrollView(
+      appBar: AppBar(title: Text(copy.e7SettingsUi88)),
+      body: ListenableBuilder(
+        listenable: _diagnostics,
+        builder: (context, _) {
+          final entries = _diagnostics.entries.reversed.toList();
+          final gated = !widget.controller.capabilities.clientDiagnostics;
+          return KitScreen(
+            body: CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
@@ -105,114 +108,83 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          _screenCopy(context).e7SettingsDetailUi7,
-                          style: Theme.of(context).textTheme.titleMedium,
+                          copy.e7SettingsDetailUi7,
+                          style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          _screenCopy(context).e7SettingsDetailUi8,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
+                          copy.e7SettingsDetailUi8,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.mutedOf(theme),
+                          ),
                         ),
-                        const SizedBox(height: 14),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            FilledButton.icon(
-                              key: const ValueKey('send-app-diagnostics'),
-                              // §7 row 24: the control stays, visibly dead,
-                              // with the explainer directly beneath it.
-                              onPressed:
-                                  entries.isEmpty ||
-                                      _sending ||
-                                      !widget
-                                          .controller
-                                          .capabilities
-                                          .clientDiagnostics
-                                  ? null
-                                  : _send,
-                              icon: _sending
-                                  ? const SizedBox.square(
-                                      dimension: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Icon(AppIconography.send),
-                              label: Text(
-                                _sending
-                                    ? _screenCopy(context).queuedSending
-                                    : _screenCopy(context).e7SettingsDetailUi10,
-                              ),
-                            ),
-                            OutlinedButton.icon(
-                              key: const ValueKey('copy-app-diagnostics'),
-                              onPressed: entries.isEmpty ? null : _copy,
-                              icon: const Icon(AppIcons.copy),
-                              label: Text(_screenCopy(context).fileCopy),
-                            ),
-                            TextButton.icon(
-                              key: const ValueKey('clear-app-diagnostics'),
-                              onPressed: entries.isEmpty ? null : _clear,
-                              icon: const Icon(AppIconography.delete),
-                              label: Text(
-                                _screenCopy(context).e7SettingsDetailUi5,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: 16),
+                        // One block in the one hierarchy (§2): Send is what
+                        // this screen is for, Copy the other path, Clear the
+                        // destructive one, confirmed first. With nothing
+                        // captured they rest; the empty state below says so.
+                        KitButton.primary(
+                          key: const ValueKey('send-app-diagnostics'),
+                          // §7 row 24: the control stays, visibly dead,
+                          // with the explainer directly beneath it.
+                          onPressed: entries.isEmpty || _sending || gated
+                              ? null
+                              : _send,
+                          working: _sending,
+                          icon: AppIconography.send,
+                          label: _sending
+                              ? copy.queuedSending
+                              : copy.e7SettingsDetailUi10,
                         ),
-                        if (!widget.controller.capabilities.clientDiagnostics)
+                        if (gated)
                           Padding(
                             key: const ValueKey('gated-client-diagnostics'),
-                            padding: const EdgeInsets.only(top: 10),
+                            padding: const EdgeInsets.only(top: 8),
                             child: Text(
-                              _screenCopy(context).e7SettingsDetailUi12,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
+                              copy.e7SettingsDetailUi12,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: AppTheme.mutedOf(theme),
+                              ),
                             ),
                           ),
+                        const SizedBox(height: 8),
+                        KitButton.secondary(
+                          key: const ValueKey('copy-app-diagnostics'),
+                          onPressed: entries.isEmpty ? null : _copy,
+                          icon: AppIcons.copy,
+                          label: copy.fileCopy,
+                        ),
+                        const SizedBox(height: 4),
+                        KitInset(
+                          child: KitButton.tertiary(
+                            key: const ValueKey('clear-app-diagnostics'),
+                            destructive: true,
+                            onPressed: entries.isEmpty ? null : _clear,
+                            icon: AppIconography.delete,
+                            label: copy.e7SettingsDetailUi5,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
                 // Not SliverFillRemaining: that would push the performance
                 // section below a screen of empty space.
-                if (entries.isEmpty)
+                if (entries.isEmpty) ...[
                   SliverToBoxAdapter(
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(AppIconography.privacy, size: 38),
-                            SizedBox(height: 14),
-                            Text(_screenCopy(context).e7SettingsDetailUi13),
-                            SizedBox(height: 6),
-                            Text(
-                              _screenCopy(context).e7SettingsDetailUi14,
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
+                    child: KitStateView(
+                      size: KitStateSize.inline,
+                      icon: AppIconography.privacy,
+                      title: copy.e7SettingsDetailUi13,
+                      body: copy.e7SettingsDetailUi14,
+                      liveRegion: false,
                     ),
-                  )
-                else ...[
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                ] else ...[
                   SliverToBoxAdapter(
                     child: SectionLabel(
-                      _screenCopy(
-                        context,
-                      ).e7SettingsDiagnosticTotal(entries.length),
+                      copy.e7SettingsDiagnosticTotal(entries.length),
                     ),
                   ),
                   SliverList.separated(
@@ -222,7 +194,13 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                       final entry = entries[index];
                       return ExpansionTile(
                         key: ValueKey('diagnostic-entry-${entry.id}'),
-                        leading: const Icon(AppIconography.error),
+                        shape: const Border(),
+                        collapsedShape: const Border(),
+                        leading: KitRow.icon(
+                          context,
+                          AppIconography.error,
+                          color: theme.colorScheme.error,
+                        ),
                         title: Text(
                           entry.message,
                           maxLines: 2,
@@ -230,7 +208,10 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                         ),
                         subtitle: Text(
                           '\u2066${entry.source} · ${_time(entry.timestamp)}\u2069'
-                          '${entry.occurrences > 1 ? ' · ${_screenCopy(context).e7SettingsDiagnosticOccurrences(entry.occurrences)}' : ''}',
+                          '${entry.occurrences > 1 ? ' · ${copy.e7SettingsDiagnosticOccurrences(entry.occurrences)}' : ''}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.mutedOf(theme),
+                          ),
                         ),
                         childrenPadding: const EdgeInsets.fromLTRB(
                           16,
@@ -257,19 +238,24 @@ class _AppDiagnosticsScreenState extends State<AppDiagnosticsScreen> {
                       );
                     },
                   ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
                 ],
                 const SliverToBoxAdapter(child: Divider(height: 1)),
-                const SliverToBoxAdapter(
+                SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(16, 16, 16, 32),
-                    child: PerfTraceSection(),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      KitScreen.endPadding(context),
+                    ),
+                    child: const PerfTraceSection(),
                   ),
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -47,26 +47,30 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
       // Not a lazy list: a dozen rows, and a search result that means one
       // part must find it laid out.
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: EdgeInsets.only(bottom: KitScreen.endPadding(context)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ValueListenableBuilder<AppAppearance>(
               key: _sectionKeys[AppearanceSection.mode],
               valueListenable: controller.appearance,
-              builder: (context, appearance, _) => ListTile(
-                key: const ValueKey('appearance-settings-entry'),
-                leading: const Icon(AppIconography.contrast),
-                title: Text(_settingsCopy(context).e7SettingsUi69),
-                subtitle: Text(appearanceLabel(appearance, context)),
-                trailing: const Icon(AppIconography.chevronRight),
+              builder: (context, appearance, _) => _CategoryRow(
+                rowKey: 'appearance-settings-entry',
+                icon: AppIconography.contrast,
+                title: _settingsCopy(context).e7SettingsUi69,
+                subtitle: appearanceLabel(appearance, context),
                 onTap: () =>
                     showAppearancePicker(context, controller: controller),
               ),
             ),
             KeyedSubtree(
               key: _sectionKeys[AppearanceSection.language],
-              child: LanguageSettingsTile(controller: controller),
+              // The kit row's geometry: a 32 dp icon, 12 dp to the title.
+              child: ListTileTheme.merge(
+                horizontalTitleGap: 12,
+                minLeadingWidth: 32,
+                child: LanguageSettingsTile(controller: controller),
+              ),
             ),
             KeyedSubtree(
               key: _sectionKeys[AppearanceSection.theme],
@@ -330,7 +334,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(_settingsCopy(context).settingsHubPrivacyRow)),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: EdgeInsets.only(bottom: KitScreen.endPadding(context)),
         children: [
           ListenableBuilder(
             listenable: _controller,
@@ -371,11 +375,9 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                   if (_readPreferenceFailed)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        l10n.shareSessionViewsSaveError,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+                      child: KitNotice(
+                        tone: AppStatusTone.failure,
+                        message: l10n.shareSessionViewsSaveError,
                       ),
                     ),
                 ],
@@ -401,12 +403,12 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ListTile(
+                  KitRow(
                     key: const ValueKey('local-storage-usage'),
-                    leading: const Icon(Icons.sd_storage_outlined),
-                    title: Text(_settingsCopy(context).e7SettingsUi77),
-                    subtitle: Text(
-                      !queueReadable
+                    leading: KitRow.icon(context, Icons.sd_storage_outlined),
+                    title: _settingsCopy(context).e7SettingsUi77,
+                    supporting: TextSpan(
+                      text: !queueReadable
                           ? l10n.queueStorageCountUnknown
                           : _settingsCopy(context).e7SettingsStorageSummary(
                               formatBytes(queuedBytes + draftBytes),
@@ -417,20 +419,23 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                               OfflineQueueStore.maxAge.inDays,
                             ),
                     ),
+                    // A readout, not a door: the whole sentence stays.
+                    supportingMaxLines: 4,
                   ),
-                  ListTile(
-                    key: const ValueKey('clear-queued-prompts'),
-                    leading: const Icon(AppIconography.outbox),
-                    title: Text(_settingsCopy(context).e7SettingsUi78),
-                    subtitle: Text(
-                      !queueReadable
-                          ? l10n.queueStorageUnreadable
-                          : queued == 0
-                          ? _settingsCopy(context).e7SettingsUi79
-                          : _settingsCopy(
-                              context,
-                            ).e7SettingsQueueDeleteSummary(queued),
-                    ),
+                  // Destructive (§2): error-coloured, confirmed first, never
+                  // primary. With nothing to clear the row rests, and its
+                  // own line says so.
+                  _DestructiveRow(
+                    rowKey: 'clear-queued-prompts',
+                    icon: AppIconography.outbox,
+                    title: _settingsCopy(context).e7SettingsUi78,
+                    subtitle: !queueReadable
+                        ? l10n.queueStorageUnreadable
+                        : queued == 0
+                        ? _settingsCopy(context).e7SettingsUi79
+                        : _settingsCopy(
+                            context,
+                          ).e7SettingsQueueDeleteSummary(queued),
                     enabled: (queued > 0 || !queueReadable) && !_busy,
                     onTap: () => _confirmAndClear(
                       title: _settingsCopy(context).e7SettingsUi80,
@@ -444,17 +449,15 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                       failed: _settingsCopy(context).e7SettingsUi82,
                     ),
                   ),
-                  ListTile(
-                    key: const ValueKey('clear-session-drafts'),
-                    leading: const Icon(AppIconography.editNote),
-                    title: Text(_settingsCopy(context).e7SettingsUi83),
-                    subtitle: Text(
-                      drafts == 0
-                          ? _settingsCopy(context).e7SettingsUi84
-                          : _settingsCopy(
-                              context,
-                            ).e7SettingsDraftDeleteSummary(drafts),
-                    ),
+                  _DestructiveRow(
+                    rowKey: 'clear-session-drafts',
+                    icon: AppIconography.editNote,
+                    title: _settingsCopy(context).e7SettingsUi83,
+                    subtitle: drafts == 0
+                        ? _settingsCopy(context).e7SettingsUi84
+                        : _settingsCopy(
+                            context,
+                          ).e7SettingsDraftDeleteSummary(drafts),
                     enabled: drafts > 0 && !_busy,
                     onTap: () => _confirmAndClear(
                       title: _settingsCopy(context).e7SettingsUi85,
@@ -474,6 +477,42 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
       ),
     );
   }
+}
+
+/// A row that deletes something this device holds (design standard §2):
+/// error-coloured, always confirmed by its action, never a primary button.
+class _DestructiveRow extends StatelessWidget {
+  const _DestructiveRow({
+    required this.rowKey,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String rowKey;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => KitRow(
+    key: ValueKey(rowKey),
+    leading: KitRow.icon(
+      context,
+      icon,
+      color: Theme.of(context).colorScheme.error,
+    ),
+    title: title,
+    supporting: TextSpan(text: subtitle),
+    supportingMaxLines: 2,
+    destructive: true,
+    enabled: enabled,
+    onTap: onTap,
+  );
 }
 
 String? _themeDescription(BuildContext context, ThemePackId id) => switch (id) {

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/attention_overview_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
 import 'package:opencode_mobile/ui/screens/projects_screen.dart';
@@ -231,7 +232,7 @@ void main() {
         final l10n = AppLocalizations.of(
           tester.element(find.byType(NotificationsSettingsScreen)),
         );
-        final start = find.widgetWithText(ListTile, l10n.monitorQuietStart);
+        final start = find.widgetWithText(KitRow, l10n.monitorQuietStart);
         await _reveal(tester, start);
         await _captureScreen(tester, 'monitor-quiet-${direction.name}');
         await tester.tap(start.hitTestable());

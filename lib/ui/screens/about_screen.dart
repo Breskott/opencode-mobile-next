@@ -8,8 +8,8 @@ import '../../feedback/bug_report.dart';
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import '../widgets/markdown.dart';
-import '../widgets/product_states.dart';
 
 /// Upstream OpenCode asks third-party projects that use the OpenCode name to
 /// say plainly that they are not the official project. This is that statement,
@@ -91,26 +91,29 @@ class AboutScreen extends StatelessWidget {
         body: FutureBuilder<List<String>>(
           future: _loadDocuments(context),
           builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const LoadingList(rows: 6);
-            }
-            if (snapshot.hasError) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    _screenCopy(context).e7SettingsInformationFailed,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              );
-            }
-            final documents = snapshot.data!;
-            return TabBarView(
-              children: [
-                _DocumentView(data: documents[0]),
-                _DocumentView(data: documents[1], showAppSummary: true),
-              ],
+            final loading = snapshot.connectionState != ConnectionState.done;
+            final documents = snapshot.data;
+            return KitScreen(
+              loading: loading,
+              loadingLabel: _screenCopy(context).settingsAboutLoading,
+              body: loading
+                  ? const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: KitSkeletonRows(count: 6),
+                    )
+                  : snapshot.hasError || documents == null
+                  ? KitStateView(
+                      icon: AppIconography.error,
+                      tone: AppStatusTone.failure,
+                      title: _screenCopy(context).settingsAboutLoadFailed,
+                      body: _screenCopy(context).e7SettingsInformationFailed,
+                    )
+                  : TabBarView(
+                      children: [
+                        _DocumentView(data: documents[0]),
+                        _DocumentView(data: documents[1], showAppSummary: true),
+                      ],
+                    ),
             );
           },
         ),
@@ -126,58 +129,26 @@ class _BuildData {
   final String? signer;
 }
 
+/// Provenance, stated plainly with its one action (a message, not a card:
+/// design standard §3).
 class _BuildProvenanceNotice extends StatelessWidget {
   const _BuildProvenanceNotice();
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  AppIconography.experiments,
-                  size: 18,
-                  color: AppTheme.successOf(theme),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _screenCopy(context).e7SettingsDetailUi19,
-                    style: theme.textTheme.titleSmall,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _screenCopy(context).e7SettingsAlphaBody,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.mutedOf(theme),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: TextButton.icon(
-                key: const ValueKey('about-alpha-report-bug'),
-                onPressed: () => unawaited(openBugReport(context)),
-                icon: const Icon(AppIconography.bug, size: 18),
-                label: Text(_screenCopy(context).e7SettingsDetailUi16),
-              ),
-            ),
-          ],
-        ),
+  Widget build(BuildContext context) => KitNotice(
+    icon: AppIconography.experiments,
+    title: _screenCopy(context).e7SettingsDetailUi19,
+    message: _screenCopy(context).e7SettingsAlphaBody,
+    liveRegion: false,
+    actions: [
+      KitAction(
+        key: const ValueKey('about-alpha-report-bug'),
+        label: _screenCopy(context).e7SettingsDetailUi16,
+        icon: AppIconography.bug,
+        onPressed: () => unawaited(openBugReport(context)),
       ),
-    );
-  }
+    ],
+  );
 }
 
 class _DocumentView extends StatelessWidget {
@@ -190,21 +161,26 @@ class _DocumentView extends StatelessWidget {
   Widget build(BuildContext context) {
     return SelectionArea(
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          8,
+          16,
+          KitScreen.endPadding(context) + 16,
+        ),
         children: [
-          const _BuildIdentityCard(),
-          const SizedBox(height: 16),
+          const _BuildIdentity(),
+          const SizedBox(height: 12),
           const _NonAffiliationNotice(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           // Scrolls with the document rather than sitting as fixed chrome:
           // at 2x text a fixed notice would squeeze (or overflow) the very
           // content the reader came for.
           const _BuildProvenanceNotice(),
-          const SizedBox(height: 16),
+          const Divider(height: 32),
           if (showAppSummary) ...[
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(AppIconography.terminal, size: 34),
+              leading: KitRow.icon(context, AppIconography.terminal),
               // The desktop bundle is the same app, but naming it "for
               // Android" and promising local voice recognition describes a
               // build the reader is not running.
@@ -240,8 +216,8 @@ class _DocumentView extends StatelessWidget {
   }
 }
 
-class _BuildIdentityCard extends StatelessWidget {
-  const _BuildIdentityCard();
+class _BuildIdentity extends StatelessWidget {
+  const _BuildIdentity();
 
   static const _platform = MethodChannel('oc/termux');
 
@@ -275,41 +251,63 @@ class _BuildIdentityCard extends StatelessWidget {
         if (package == null) return const SizedBox.shrink();
         final signer = data?.signer;
         final l10n = AppLocalizations.of(context);
-        return Card(
-          margin: EdgeInsets.zero,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.aboutBuildVersion(package.version, package.buildNumber),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  package.packageName,
-                  textDirection: TextDirection.ltr,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                if (signer != null && signer.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+        final theme = Theme.of(context);
+        // The build's identity is plain text on the page's rails, not a
+        // card around a message (design standard §3).
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(
+                AppIconography.phone,
+                size: 20,
+                color: AppTheme.mutedOf(theme),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    l10n.aboutSigningCertificate,
-                    style: Theme.of(context).textTheme.labelMedium,
+                    l10n.aboutBuildVersion(
+                      package.version,
+                      package.buildNumber,
+                    ),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    signer,
+                    package.packageName,
                     textDirection: TextDirection.ltr,
-                    key: const ValueKey('about-signing-certificate'),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontFamily: 'JetBrainsMono',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.mutedOf(theme),
                     ),
                   ),
+                  if (signer != null && signer.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.aboutSigningCertificate,
+                      style: theme.textTheme.labelMedium,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      signer,
+                      textDirection: TextDirection.ltr,
+                      key: const ValueKey('about-signing-certificate'),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontFamily: AppTheme.monoFamily,
+                        color: AppTheme.mutedOf(theme),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
+          ],
         );
       },
     );
@@ -320,36 +318,11 @@ class _NonAffiliationNotice extends StatelessWidget {
   const _NonAffiliationNotice();
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      key: const Key('about-non-affiliation'),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            AppIconography.info,
-            size: 20,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              _screenCopy(context).e7SettingsNonAffiliation,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => KitNotice(
+    key: const Key('about-non-affiliation'),
+    message: _screenCopy(context).e7SettingsNonAffiliation,
+    liveRegion: false,
+  );
 }
 
 AppLocalizations _screenCopy(BuildContext context) =>

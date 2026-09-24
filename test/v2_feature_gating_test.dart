@@ -24,6 +24,7 @@ import 'package:opencode_mobile/api2/gateway_mappers.dart'
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/app_diagnostics_screen.dart';
 import 'package:opencode_mobile/ui/screens/capabilities_screen.dart';
 import 'package:opencode_mobile/ui/screens/project_health_screen.dart';
@@ -604,7 +605,7 @@ void main() {
 
       final send = find.byKey(const ValueKey('send-app-diagnostics'));
       expect(send, findsOneWidget);
-      expect(tester.widget<FilledButton>(send).onPressed, isNull);
+      expect(tester.widget<KitButton>(send).onPressed, isNull);
       expect(
         find.byKey(const ValueKey('gated-client-diagnostics')),
         findsOneWidget,

@@ -9,6 +9,7 @@ import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
 import 'package:opencode_mobile/state/profiles.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 
@@ -138,14 +139,12 @@ void main() {
         'v1': 'OpenCode 1',
         'v2': 'OpenCode 2',
       }.entries) {
-        final finder = find.byKey(ValueKey('server-generation-${entry.key}'));
+        // The generation leads the row's supporting line (standard §6).
+        final finder = find.byKey(ValueKey('server-row-${entry.key}'));
         await _reveal(tester, finder);
-        expect(tester.widget<Text>(finder).data, entry.value);
+        expect(_supporting(tester, entry.key), startsWith('${entry.value} · '));
       }
-      expect(
-        find.byKey(const ValueKey('server-generation-codex')),
-        findsNothing,
-      );
+      expect(_supporting(tester, 'codex'), isNot(contains('OpenCode')));
       expect(store.saved.first.flavor, ServerFlavor.v1);
     },
   );
@@ -268,10 +267,10 @@ void main() {
         final saved = store.saved.single;
         expect(saved.flavor, changed ? ServerFlavor.v1 : ServerFlavor.v2);
         expect(saved.serverVersion, changed ? isNull : '0.0.0-beta');
-        final label = tester.widget<Text>(
-          find.byKey(const ValueKey('server-generation-server')),
+        expect(
+          _supporting(tester, 'server'),
+          startsWith(changed ? 'OpenCode · ' : 'OpenCode 2 · '),
         );
-        expect(label.data, changed ? 'OpenCode' : 'OpenCode 2');
       },
     );
   }
@@ -318,3 +317,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 }
+
+/// The saved server row's supporting line: generation · address.
+String _supporting(WidgetTester tester, String id) => tester
+    .widget<KitRow>(find.byKey(ValueKey('server-row-$id')))
+    .supporting!
+    .toPlainText();

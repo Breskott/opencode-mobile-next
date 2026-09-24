@@ -204,32 +204,18 @@ class _DefaultShellRowState extends State<DefaultShellRow>
   Widget build(BuildContext context) {
     final copy = _settingsCopy(context);
     final busy = _loadingShell || _savingShell;
-    return ListTile(
-      key: const ValueKey('default-shell-settings-entry'),
-      minTileHeight: 72,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      minLeadingWidth: 32,
-      horizontalTitleGap: 12,
-      leading: const _CategoryIcon(icon: AppIconography.terminal),
-      title: Text(copy.e7SettingsUi35),
-      subtitle: Text(
-        _shellError != null
-            ? copy.e7SettingsRetryError(_shellError!)
-            : _shellSettings == null
-            ? copy.e7SettingsUi41
-            : _selectedShellLabel(_shellSettings!),
-      ),
-      trailing: busy
-          ? const SizedBox.square(
-              dimension: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(AppIconography.chevronRight, size: 20),
-      onTap: busy
-          ? null
-          : _shellError != null
-          ? _loadShellSettings
-          : _chooseShell,
+    // Loading and saving read in the row's own words; no spinner (§4).
+    return _CategoryRow(
+      rowKey: 'default-shell-settings-entry',
+      icon: AppIconography.terminal,
+      title: copy.e7SettingsUi35,
+      subtitle: _shellError != null
+          ? copy.e7SettingsRetryError(_shellError!)
+          : _shellSettings == null
+          ? copy.e7SettingsUi41
+          : _selectedShellLabel(_shellSettings!),
+      enabled: !busy,
+      onTap: _shellError != null ? _loadShellSettings : _chooseShell,
     );
   }
 

@@ -20,6 +20,7 @@ import '../../state/external_agents.dart';
 import '../../state/first_run.dart';
 import '../../termux/bridge.dart';
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import '../setup_commands.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/first_run_choice.dart';
@@ -725,286 +726,252 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                 profile.usesAgentSocket &&
                 profile.requiresCodexTokenReentry,
           );
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            children: [
-              SectionLabel.inline(
-                lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).e7SetupServers,
-              ),
-              if (needsCredential) ...[
-                Semantics(
-                  container: true,
-                  liveRegion: true,
-                  excludeSemantics: true,
-                  label: needsToken
-                      ? lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7SetupTokenBanner
-                      : lookupAppLocalizations(
-                          Localizations.localeOf(context),
-                        ).e7SetupPasswordBanner,
-                  child: Container(
-                    key: const Key('password-reentry-banner'),
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.lock_reset_rounded,
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _connectionL10n(
-                              context,
-                            ).connectionCredentialUnavailable,
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onErrorContainer,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              if (_listFailure case final failure?) ...[
-                _InlineFailureCard(
-                  key: const ValueKey('server-connect-failure'),
-                  message: failure,
-                  onDismiss: () => setState(() => _listFailure = null),
-                ),
-                const SizedBox(height: 10),
-              ],
-              if (_busy)
-                Semantics(
-                  label: lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7SetupServerOperation,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: LinearProgressIndicator(
-                      key: Key('server-operation-progress'),
-                    ),
-                  ),
-                ),
-              _runningServerEntry(store.profiles, accountConnection),
-              // OpenCode inside this app is "This phone", managed in place;
-              // its saved entries are how the app reaches it, so they are
-              // not listed again below.
-              if (phoneServer != null) ...[
-                PhoneServerCard(
-                  key: ValueKey('phone-server-card-${phoneServer.id}'),
-                  connection: accountConnection,
-                  profile: phoneServer,
-                  connected:
-                      accountConnection.api != null &&
-                      accountConnection.profile?.id == phoneServer.id,
-                  onOpen: _busy ? null : () => _connect(phoneServer),
-                  onRemoved: () {
-                    if (mounted) setState(() {});
-                  },
-                ),
-                const Divider(height: 17),
-              ],
-              for (final p in store.profiles)
-                if (!looksLikeInAppServer(p))
-                  Card.filled(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    color: p.id == activeId
-                        ? Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer.withValues(alpha: .35)
-                        : null,
-                    child: ListTile(
-                      enabled: !_busy,
-                      onTap: _busy ? null : () => _connect(p),
-                      isThreeLine:
-                          p.requiresPasswordReentry ||
-                          p.requiresCodexTokenReentry,
-                      leading: CircleAvatar(
-                        backgroundColor: p.id == activeId
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                        child: Icon(
-                          isLoopbackHost(Uri.tryParse(p.baseUrl)?.host ?? '')
-                              ? AppIconography.phone
-                              : AppIconography.server,
-                          size: 18,
-                          color: p.id == activeId
-                              ? Theme.of(context).colorScheme.onPrimary
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      title: Text(
-                        p.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            p.baseUrl,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontFamily: AppTheme.monoFamily,
-                              fontSize: AppTheme.captionFontSize,
-                            ),
-                          ),
-                          if (p.backend == ServerBackend.openCode)
-                            Text(
-                              _knownOpenCodeGeneration(p),
-                              key: ValueKey('server-generation-${p.id}'),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          if (p.requiresPasswordReentry)
-                            Text(
-                              lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupPasswordRequired,
-                              key: ValueKey('password-reentry-${p.id}'),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          if (p.usesAgentSocket)
-                            Text(
-                              '${p.backend == ServerBackend.paseo ? 'Paseo' : 'Codex'}${p.codexDirectory.isEmpty ? '' : ' · ${p.codexDirectory}'}',
-                              key: ValueKey('codex-profile-${p.id}'),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          if (p.requiresCodexTokenReentry)
-                            Text(
-                              lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupTokenRequired,
-                              key: ValueKey('codex-token-reentry-${p.id}'),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                        ],
-                      ),
-                      trailing: PopupMenuButton<String>(
-                        enabled: !_busy,
-                        onSelected: (v) {
-                          if (v == 'edit') _edit(existing: p);
-                          if (v == 'del') _delete(p);
-                          if (v == 'conn') _connect(p);
-                          if (v == 'account') {
-                            Navigator.of(context).push<void>(
-                              MaterialPageRoute(
-                                builder: (_) => AgentAccountScreen(
-                                  connection: accountConnection,
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        itemBuilder: (_) => [
-                          if (p.id == activeId &&
-                              accountConnection.isConnected &&
-                              accountConnection.capabilities.agentAccount)
-                            PopupMenuItem(
-                              value: 'account',
-                              child: Text(
-                                _connectionL10n(context).agentAccountTitle,
-                              ),
-                            ),
-                          PopupMenuItem(
-                            value: 'conn',
-                            child: Text(
-                              lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupConnect,
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: Text(
-                              lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).e7SetupEdit,
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'del',
-                            child: Text(
-                              lookupAppLocalizations(
-                                Localizations.localeOf(context),
-                              ).capsuleRemove,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              const SizedBox(height: 16),
-              if (platformCapabilities.supportsTermux &&
-                  store.profiles.any(
-                    (p) => TermuxBridge.managesServerUrl(p.baseUrl),
-                  ))
-                ManagedServerHealth(
-                  prefs: store.prefs,
-                  profileID: store.profiles
-                      .firstWhere(
-                        (p) => TermuxBridge.managesServerUrl(p.baseUrl),
-                      )
-                      .id,
-                  onManage: _openTermuxSetup,
-                ),
-              OutlinedButton.icon(
+          final copy = lookupAppLocalizations(Localizations.localeOf(context));
+          return KitScreen(
+            // One bar for a connect, save or removal in flight (standard §4).
+            loading: _busy,
+            loadingLabel: copy.e7SetupServerOperation,
+            // Adding a server is what this screen offers beyond its rows:
+            // the one primary, pinned below the list (§1, §2).
+            bottom: KitActionBlock(
+              primary: KitAction(
+                key: const ValueKey('servers-add'),
+                label: copy.e7SetupAddServer,
+                icon: AppIconography.add,
                 onPressed: _busy ? null : () => _edit(),
-                icon: const Icon(AppIconography.add),
-                label: Text(
-                  lookupAppLocalizations(
-                    Localizations.localeOf(context),
-                  ).e7SetupAddServer,
+              ),
+              tertiary: [
+                KitAction(
+                  key: const ValueKey('servers-try-demo'),
+                  label: DemoCopy.tryDemo,
+                  icon: AppIconography.playCircle,
+                  onPressed: _busy ? null : _demo,
                 ),
-              ),
-              const SizedBox(height: 8),
-              _OpenCode2Entry(
-                onTap: _busy ? null : () => _edit(openCode2Intent: true),
-              ),
-              TextButton.icon(
-                onPressed: _busy ? null : _demo,
-                icon: const Icon(AppIconography.playCircle),
-                label: const Text(DemoCopy.tryDemo),
-              ),
-              const SizedBox(height: 16),
-              if (platformCapabilities.supportsTermux)
-                _PhoneSetupEntry(
-                  key: const ValueKey('quick-add-phone-card'),
-                  onTap: _busy ? null : _openPhoneSetup,
+              ],
+            ),
+            body: ListView(
+              padding: const EdgeInsets.only(bottom: 16),
+              children: [
+                SectionLabel(copy.e7SetupServers),
+                if (needsCredential)
+                  _Rails(
+                    child: Semantics(
+                      container: true,
+                      liveRegion: true,
+                      excludeSemantics: true,
+                      label: needsToken
+                          ? copy.e7SetupTokenBanner
+                          : copy.e7SetupPasswordBanner,
+                      child: KitNotice(
+                        key: const Key('password-reentry-banner'),
+                        tone: AppStatusTone.attention,
+                        icon: Icons.lock_reset_rounded,
+                        message: _connectionL10n(
+                          context,
+                        ).connectionCredentialUnavailable,
+                        liveRegion: false,
+                      ),
+                    ),
+                  ),
+                if (_listFailure case final failure?)
+                  _Rails(
+                    child: KitNotice(
+                      key: const ValueKey('server-connect-failure'),
+                      tone: AppStatusTone.failure,
+                      message: failure,
+                      onDismiss: () => setState(() => _listFailure = null),
+                    ),
+                  ),
+                _Rails(
+                  child: _runningServerEntry(store.profiles, accountConnection),
                 ),
-              _SetupOptions(
-                busy: _busy,
-                onTailscale: _tailscale,
-                onGuide: () => Navigator.pushNamed(context, '/guide'),
-                onExternalAgents: _externalAgents,
-              ),
-            ],
+                // OpenCode inside this app is "This phone", managed in place;
+                // its saved entries are how the app reaches it, so they are
+                // not listed again below.
+                if (phoneServer != null) ...[
+                  _Rails(
+                    child: PhoneServerCard(
+                      key: ValueKey('phone-server-card-${phoneServer.id}'),
+                      connection: accountConnection,
+                      profile: phoneServer,
+                      connected:
+                          accountConnection.api != null &&
+                          accountConnection.profile?.id == phoneServer.id,
+                      onOpen: _busy ? null : () => _connect(phoneServer),
+                      onRemoved: () {
+                        if (mounted) setState(() {});
+                      },
+                    ),
+                  ),
+                  const Divider(height: 17),
+                ],
+                for (final p in store.profiles)
+                  if (!looksLikeInAppServer(p))
+                    _ServerRow(
+                      profile: p,
+                      active: p.id == activeId,
+                      busy: _busy,
+                      showAccount:
+                          p.id == activeId &&
+                          accountConnection.isConnected &&
+                          accountConnection.capabilities.agentAccount,
+                      onConnect: () => _connect(p),
+                      onEdit: () => _edit(existing: p),
+                      onRemove: () => _delete(p),
+                      onAccount: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              AgentAccountScreen(connection: accountConnection),
+                        ),
+                      ),
+                    ),
+                if (platformCapabilities.supportsTermux &&
+                    store.profiles.any(
+                      (p) => TermuxBridge.managesServerUrl(p.baseUrl),
+                    ))
+                  _Rails(
+                    child: ManagedServerHealth(
+                      prefs: store.prefs,
+                      profileID: store.profiles
+                          .firstWhere(
+                            (p) => TermuxBridge.managesServerUrl(p.baseUrl),
+                          )
+                          .id,
+                      onManage: _openTermuxSetup,
+                    ),
+                  ),
+                // Other ways in, as rows (§6): the OpenCode 2 shortcut, this
+                // phone, and the rarer setups folded under one row.
+                const SizedBox(height: 8),
+                _OpenCode2Entry(
+                  onTap: _busy ? null : () => _edit(openCode2Intent: true),
+                ),
+                if (platformCapabilities.supportsTermux)
+                  _PhoneSetupEntry(
+                    key: const ValueKey('quick-add-phone-card'),
+                    onTap: _busy ? null : _openPhoneSetup,
+                  ),
+                _SetupOptions(
+                  busy: _busy,
+                  onTailscale: _tailscale,
+                  onGuide: () => Navigator.pushNamed(context, '/guide'),
+                  onExternalAgents: _externalAgents,
+                ),
+              ],
+            ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// The page's 16 dp side rails for a part that does not pad itself (the
+/// kit's rows and section labels do).
+class _Rails extends StatelessWidget {
+  const _Rails({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    child: child,
+  );
+}
+
+/// One saved server as a kit row (design standard §6): its kind as the
+/// icon (tinted when it is the active one), the name, then what it runs and
+/// its address, with a credential that must be re-entered said first, in
+/// the error colour. Its actions are behind the row's menu.
+class _ServerRow extends StatelessWidget {
+  const _ServerRow({
+    required this.profile,
+    required this.active,
+    required this.busy,
+    required this.showAccount,
+    required this.onConnect,
+    required this.onEdit,
+    required this.onRemove,
+    required this.onAccount,
+  });
+
+  final ServerProfile profile;
+  final bool active;
+  final bool busy;
+  final bool showAccount;
+  final VoidCallback onConnect;
+  final VoidCallback onEdit;
+  final VoidCallback onRemove;
+  final VoidCallback onAccount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
+    final p = profile;
+    final error = theme.colorScheme.error;
+    final kind = p.usesAgentSocket
+        ? '${p.backend == ServerBackend.paseo ? 'Paseo' : 'Codex'}${p.codexDirectory.isEmpty ? '' : ' · ${p.codexDirectory}'}'
+        : p.backend == ServerBackend.openCode
+        ? _knownOpenCodeGeneration(p)
+        : null;
+    final reentry = p.requiresPasswordReentry
+        ? copy.e7SetupPasswordRequired
+        : p.requiresCodexTokenReentry
+        ? copy.e7SetupTokenRequired
+        : null;
+    return KitRow(
+      key: ValueKey('server-row-${p.id}'),
+      leading: KitRow.icon(
+        context,
+        isLoopbackHost(Uri.tryParse(p.baseUrl)?.host ?? '')
+            ? AppIconography.phone
+            : AppIconography.server,
+        color: active ? theme.colorScheme.primary : null,
+      ),
+      title: p.name,
+      supporting: TextSpan(
+        children: [
+          if (reentry != null)
+            TextSpan(
+              text: '$reentry · ',
+              style: TextStyle(color: error, fontWeight: FontWeight.w600),
+            ),
+          if (kind != null) TextSpan(text: '$kind · '),
+          TextSpan(
+            text: p.baseUrl,
+            style: const TextStyle(fontFamily: AppTheme.monoFamily),
+          ),
+        ],
+      ),
+      supportingMaxLines: 2,
+      enabled: !busy,
+      onTap: onConnect,
+      trailing: PopupMenuButton<String>(
+        key: ValueKey('server-menu-${p.id}'),
+        enabled: !busy,
+        iconColor: AppTheme.mutedOf(theme),
+        onSelected: (v) {
+          if (v == 'edit') onEdit();
+          if (v == 'del') onRemove();
+          if (v == 'conn') onConnect();
+          if (v == 'account') onAccount();
+        },
+        itemBuilder: (_) => [
+          if (showAccount)
+            PopupMenuItem(
+              value: 'account',
+              child: Text(_connectionL10n(context).agentAccountTitle),
+            ),
+          PopupMenuItem(value: 'conn', child: Text(copy.e7SetupConnect)),
+          PopupMenuItem(value: 'edit', child: Text(copy.e7SetupEdit)),
+          // Destructive: error-coloured, confirmed by the sheet it opens.
+          PopupMenuItem(
+            value: 'del',
+            child: Text(copy.capsuleRemove, style: TextStyle(color: error)),
+          ),
+        ],
       ),
     );
   }
@@ -1154,19 +1121,34 @@ String _knownOpenCodeGeneration(ServerProfile profile) =>
       _ => 'OpenCode',
     };
 
+/// The trailing mark of a row that opens another screen.
+class _Chevron extends StatelessWidget {
+  const _Chevron();
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: 48,
+    child: Icon(
+      AppIconography.chevronRight,
+      size: 20,
+      color: AppTheme.mutedOf(Theme.of(context)),
+    ),
+  );
+}
+
 /// A discovery shortcut into the same autodetecting editor, not a flavor override.
 class _OpenCode2Entry extends StatelessWidget {
   const _OpenCode2Entry({required this.onTap});
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => ListTile(
+  Widget build(BuildContext context) => KitRow(
     key: const ValueKey('connect-existing-opencode2'),
-    contentPadding: EdgeInsets.zero,
-    leading: const Icon(AppIconography.server),
-    title: Text(_connectionL10n(context).oc2DiscoveryConnect),
-    subtitle: Text(_connectionL10n(context).oc2DiscoveryExisting),
-    trailing: const Icon(AppIconography.chevronRight),
+    leading: KitRow.icon(context, AppIconography.server),
+    title: _connectionL10n(context).oc2DiscoveryConnect,
+    supporting: TextSpan(text: _connectionL10n(context).oc2DiscoveryExisting),
+    supportingMaxLines: 2,
+    trailing: const _Chevron(),
     onTap: onTap,
   );
 }
@@ -1180,12 +1162,14 @@ class _PhoneSetupEntry extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    leading: const Icon(AppIconography.phone),
-    title: Text(_connectionL10n(context).onboardingTermuxSetup),
-    subtitle: Text(_connectionL10n(context).phoneSetupStartEntryDetail),
-    trailing: const Icon(AppIconography.chevronRight),
+  Widget build(BuildContext context) => KitRow(
+    leading: KitRow.icon(context, AppIconography.phone),
+    title: _connectionL10n(context).onboardingTermuxSetup,
+    supporting: TextSpan(
+      text: _connectionL10n(context).phoneSetupStartEntryDetail,
+    ),
+    supportingMaxLines: 2,
+    trailing: const _Chevron(),
     onTap: onTap,
   );
 }
@@ -1204,33 +1188,43 @@ class _SetupOptions extends StatelessWidget {
   final VoidCallback onExternalAgents;
 
   @override
-  Widget build(BuildContext context) => ExpansionTile(
-    title: Text(_connectionL10n(context).onboardingMoreSetup),
-    tilePadding: EdgeInsets.zero,
+  Widget build(BuildContext context) => ListTileTheme(
+    // The kit row's geometry: a 32 dp icon, 12 dp to the title.
+    data: const ListTileThemeData(horizontalTitleGap: 12, minLeadingWidth: 32),
+    child: _setupOptions(context),
+  );
+
+  Widget _setupOptions(BuildContext context) => ExpansionTile(
+    leading: KitRow.icon(context, AppIconography.tools),
+    title: Text(
+      _connectionL10n(context).onboardingMoreSetup,
+      style: Theme.of(context).textTheme.bodyLarge,
+    ),
+    tilePadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
     childrenPadding: EdgeInsets.zero,
     shape: const Border(),
     collapsedShape: const Border(),
     children: [
       if (platformCapabilities.supportsTailscaleHandoff)
-        ListTile(
+        KitRow(
           key: const ValueKey('welcome-tailscale-card'),
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(AppIconography.secureNetwork),
-          title: Text(_connectionL10n(context).tailscaleTitle),
-          subtitle: Text(_connectionL10n(context).onboardingPrivateNetwork),
+          leading: KitRow.icon(context, AppIconography.secureNetwork),
+          title: _connectionL10n(context).tailscaleTitle,
+          supporting: TextSpan(
+            text: _connectionL10n(context).onboardingPrivateNetwork,
+          ),
+          supportingMaxLines: 2,
           onTap: busy ? null : onTailscale,
         ),
-      ListTile(
+      KitRow(
         key: const ValueKey('welcome-guide-card'),
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(AppIconography.guide),
-        title: Text(_connectionL10n(context).onboardingSetupGuide),
+        leading: KitRow.icon(context, AppIconography.guide),
+        title: _connectionL10n(context).onboardingSetupGuide,
         onTap: busy ? null : onGuide,
       ),
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(AppIconography.network),
-        title: Text(_connectionL10n(context).a2aTitle),
+      KitRow(
+        leading: KitRow.icon(context, AppIconography.network),
+        title: _connectionL10n(context).a2aTitle,
         onTap: busy ? null : onExternalAgents,
       ),
     ],
@@ -1932,16 +1926,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
         !platformCapabilities.supportsTailscaleHandoff) {
       return null;
     }
-    return Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: TextButton(
+    return KitInset(
+      child: KitButton.tertiary(
         key: const ValueKey('connect-not-same-network'),
-        style: TextButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          padding: EdgeInsets.zero,
-        ),
         onPressed: _submitting ? null : () => unawaited(_notSameNetwork()),
-        child: Text(_connectionL10n(context).firstRunNotSameNetwork),
+        label: _connectionL10n(context).firstRunNotSameNetwork,
       ),
     );
   }
@@ -2209,50 +2198,16 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
 
   Widget _buildCodexProbeVerdict(ThemeData theme) {
     final result = _codexTestResult!;
-    return Semantics(
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
+    // A verdict is a notice on the form's rails, not a filled block (§3).
+    return KeyedSubtree(
       key: const ValueKey('codex-probe-verdict'),
-      container: true,
-      liveRegion: true,
-      child: Container(
+      child: KitNotice(
         key: ValueKey(result.ok ? 'codex-test-success' : 'codex-test-failure'),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: result.ok
-              ? AppTheme.successOf(theme).withValues(alpha: .14)
-              : theme.colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              result.ok ? AppIconography.checkCircle : AppIconography.error,
-              size: 20,
-              color: result.ok
-                  ? AppTheme.successOf(theme)
-                  : theme.colorScheme.onErrorContainer,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                result.ok
-                    ? lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).codexConnectionVerified
-                    : setupUiMessage(
-                        lookupAppLocalizations(Localizations.localeOf(context)),
-                        result.message,
-                      ),
-                style: TextStyle(
-                  color: result.ok
-                      ? theme.colorScheme.onSurface
-                      : theme.colorScheme.onErrorContainer,
-                  height: 1.35,
-                ),
-              ),
-            ),
-          ],
-        ),
+        tone: result.ok ? AppStatusTone.ok : AppStatusTone.failure,
+        message: result.ok
+            ? copy.codexConnectionVerified
+            : setupUiMessage(copy, result.message),
       ),
     );
   }
@@ -2306,20 +2261,21 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
               16,
               12 + MediaQuery.viewInsetsOf(context).bottom,
             ),
-            child: FilledButton(
+            // The one primary (§2), pinned under the form. Its tap runs the
+            // save and the connect; the spinner is that tap in flight.
+            child: KitButton.primary(
               key: const ValueKey('save-server-profile'),
               onPressed: _submitting ? null : _save,
-              child: Text(
-                _submitting
-                    ? lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupSaving
-                    : _isCodex ||
-                          widget.existing == null ||
-                          widget.reconnectOnSave
-                    ? _connectionL10n(context).onboardingSaveConnect
-                    : _connectionL10n(context).onboardingSaveChanges,
-              ),
+              working: _submitting,
+              label: _submitting
+                  ? lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).e7SetupSaving
+                  : _isCodex ||
+                        widget.existing == null ||
+                        widget.reconnectOnSave
+                  ? _connectionL10n(context).onboardingSaveConnect
+                  : _connectionL10n(context).onboardingSaveChanges,
             ),
           ),
         ),
@@ -2336,10 +2292,12 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                 children: [
                   if (widget.tailscale) ...[
                     Text(_connectionL10n(context).tailscaleEditorDetail),
-                    TextButton.icon(
-                      onPressed: _tailscaleHelp,
-                      icon: const Icon(AppIconography.secureNetwork),
-                      label: Text(_connectionL10n(context).tailscaleHelp),
+                    KitInset(
+                      child: KitButton.tertiary(
+                        onPressed: _tailscaleHelp,
+                        icon: AppIconography.secureNetwork,
+                        label: _connectionL10n(context).tailscaleHelp,
+                      ),
                     ),
                     if (_testResult?.ok == false || _submitFailure != null)
                       Text(_connectionL10n(context).tailscaleRecovery),
@@ -2355,14 +2313,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                   if (widget.existing == null &&
                       !widget.tailscale &&
                       widget.presetBackend == null) ...[
-                    Text(
+                    SectionLabel.inline(
                       _connectionL10n(context).connectionTypeLabel,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        letterSpacing: 1,
-                      ),
                     ),
-                    const SizedBox(height: 8),
                     Wrap(
                       key: const ValueKey('server-backend-selector'),
                       spacing: 8,
@@ -2415,15 +2368,17 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                   // seen without scrolling, in the same verdict style as Test
                   // connection.
                   if (_submitFailure case final failure?) ...[
-                    _InlineFailureCard(
+                    KitNotice(
                       key: const ValueKey('server-save-failure'),
+                      tone: AppStatusTone.failure,
                       message: failure,
                     ),
                     const SizedBox(height: 12),
                   ],
                   if (_secureStorageNotice case final notice?) ...[
-                    _InlineFailureCard(
+                    KitNotice(
                       key: const ValueKey('server-secure-storage-notice'),
+                      tone: AppStatusTone.attention,
                       message: notice,
                     ),
                     const SizedBox(height: 12),
@@ -2437,20 +2392,13 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                       label: lookupAppLocalizations(
                         Localizations.localeOf(context),
                       ).e7SetupMissingPasswordLong,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7SetupMissingPasswordShort,
-                          style: TextStyle(
-                            color: theme.colorScheme.onErrorContainer,
-                          ),
-                        ),
+                      child: KitNotice(
+                        tone: AppStatusTone.attention,
+                        icon: Icons.lock_reset_rounded,
+                        liveRegion: false,
+                        message: lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).e7SetupMissingPasswordShort,
                       ),
                     ),
                   ],
@@ -2599,24 +2547,20 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                     ),
                     const SizedBox(height: 24),
                   ],
-                  FilledButton.tonalIcon(
+                  // The form's one secondary (§2); its spinner is only the
+                  // test in flight, the verdict below says what it found.
+                  KitButton.secondary(
                     key: const ValueKey('test-server-connection'),
                     onPressed: _testing ? null : _testConnection,
-                    icon: _testing
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(AppIconography.networkCheck),
-                    label: Text(
-                      _testing
-                          ? lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).e7SetupTesting
-                          : lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).e7SetupTestConnection,
-                    ),
+                    working: _testing,
+                    icon: AppIconography.networkCheck,
+                    label: _testing
+                        ? lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupTesting
+                        : lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).e7SetupTestConnection,
                   ),
                   if (_isCodex && _codexTestResult != null) ...[
                     const SizedBox(height: 12),
@@ -2624,166 +2568,9 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                   ],
                   if (_testResult case final result?) ...[
                     const SizedBox(height: 12),
-                    Semantics(
+                    KeyedSubtree(
                       key: const ValueKey('server-probe-verdict'),
-                      container: true,
-                      liveRegion: true,
-                      child: Container(
-                        key: ValueKey(
-                          result.ok
-                              ? 'server-test-success'
-                              : 'server-test-failure',
-                        ),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: result.ok
-                              ? AppTheme.successOf(theme).withValues(alpha: .14)
-                              : theme.colorScheme.errorContainer,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              result.ok
-                                  ? AppIconography.checkCircle
-                                  : AppIconography.error,
-                              size: 20,
-                              color: result.ok
-                                  ? AppTheme.successOf(theme)
-                                  : theme.colorScheme.onErrorContainer,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (result.ok) ...[
-                                    Text(
-                                      result.flavor == ServerFlavor.v2
-                                          ? lookupAppLocalizations(
-                                              Localizations.localeOf(context),
-                                            ).e7SetupProbeV2(
-                                              result.version ??
-                                                  lookupAppLocalizations(
-                                                    Localizations.localeOf(
-                                                      context,
-                                                    ),
-                                                  ).e7SetupUnknownVersion,
-                                            )
-                                          : lookupAppLocalizations(
-                                              Localizations.localeOf(context),
-                                            ).e7SetupProbeV1(
-                                              result.version ??
-                                                  lookupAppLocalizations(
-                                                    Localizations.localeOf(
-                                                      context,
-                                                    ),
-                                                  ).e7SetupUnknownVersion,
-                                            ),
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            height: 1.35,
-                                          ),
-                                    ),
-                                    if (result.flavor == ServerFlavor.v1) ...[
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        lookupAppLocalizations(
-                                          Localizations.localeOf(context),
-                                        ).e7SetupV1Limited,
-                                        style: theme.textTheme.labelSmall
-                                            ?.copyWith(
-                                              color: theme
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
-                                              height: 1.35,
-                                            ),
-                                      ),
-                                    ],
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      lookupAppLocalizations(
-                                        Localizations.localeOf(context),
-                                      ).e7SetupSaveToFinish,
-                                      style: TextStyle(
-                                        color: theme.colorScheme.onSurface,
-                                        height: 1.35,
-                                      ),
-                                    ),
-                                  ] else ...[
-                                    // A missing password answers 401 on
-                                    // OpenCode 1 and 2 alike; which one it
-                                    // is shows once the password is in.
-                                    if (result.flavor == ServerFlavor.v2 &&
-                                        !result.needsPassword) ...[
-                                      Text(
-                                        lookupAppLocalizations(
-                                          Localizations.localeOf(context),
-                                        ).e7SetupIsV2,
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              color: theme
-                                                  .colorScheme
-                                                  .onErrorContainer,
-                                              fontWeight: FontWeight.w600,
-                                              height: 1.35,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                    ],
-                                    Text(
-                                      setupUiMessage(
-                                        lookupAppLocalizations(
-                                          Localizations.localeOf(context),
-                                        ),
-                                        result.message!,
-                                      ),
-                                      style: TextStyle(
-                                        color:
-                                            theme.colorScheme.onErrorContainer,
-                                        height: 1.35,
-                                      ),
-                                    ),
-                                  ],
-                                  if (!result.ok &&
-                                      result.suggestsMissingServer) ...[
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      lookupAppLocalizations(
-                                        Localizations.localeOf(context),
-                                      ).e7SetupNoServerGuide,
-                                      style: TextStyle(
-                                        color:
-                                            theme.colorScheme.onErrorContainer,
-                                        height: 1.35,
-                                      ),
-                                    ),
-                                    TextButton(
-                                      key: const ValueKey('server-test-guide'),
-                                      style: TextButton.styleFrom(
-                                        padding: EdgeInsets.zero,
-                                        foregroundColor:
-                                            theme.colorScheme.onErrorContainer,
-                                      ),
-                                      onPressed: () => Navigator.pushNamed(
-                                        context,
-                                        '/guide',
-                                      ),
-                                      child: Text(
-                                        lookupAppLocalizations(
-                                          Localizations.localeOf(context),
-                                        ).e7SetupOpenSetupGuide,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      child: _ProbeVerdict(result: result),
                     ),
                   ],
                   if (!_isCodex) ...[
@@ -2855,30 +2642,32 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                               height: 1.35,
                             ),
                           ),
-                          Wrap(
-                            spacing: 4,
-                            children: [
-                              TextButton(
-                                key: const ValueKey('server-editor-team-learn'),
-                                onPressed: _submitting
-                                    ? null
-                                    : () => showTeamHostGuideSheet(context),
-                                child: Text(
-                                  _connectionL10n(context).teamUiLearnHow,
+                          KitInset(
+                            child: Wrap(
+                              spacing: 4,
+                              children: [
+                                KitButton.tertiary(
+                                  key: const ValueKey(
+                                    'server-editor-team-learn',
+                                  ),
+                                  onPressed: _submitting
+                                      ? null
+                                      : () => showTeamHostGuideSheet(context),
+                                  label: _connectionL10n(
+                                    context,
+                                  ).teamUiLearnHow,
                                 ),
-                              ),
-                              TextButton(
-                                key: const ValueKey('server-editor-team-add'),
-                                onPressed: _submitting ? null : _addTeamHost,
-                                child: Text(
-                                  _orchestration == null
+                                KitButton.tertiary(
+                                  key: const ValueKey('server-editor-team-add'),
+                                  onPressed: _submitting ? null : _addTeamHost,
+                                  label: _orchestration == null
                                       ? _connectionL10n(
                                           context,
                                         ).teamUiAddManually
                                       : _connectionL10n(context).teamUiChange,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -3016,22 +2805,21 @@ class _PairingActions extends StatelessWidget {
             height: 1.35,
           ),
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            FilledButton.tonalIcon(
-              key: const ValueKey('server-pairing-paste'),
-              onPressed: onPaste,
-              icon: busy
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(AppIconography.paste, size: 18),
-              label: Text(
-                busy
+        // Two text buttons (§2 tertiary): pairing is a shortcut into the
+        // fields below, not the form's action. The spinner is only the paste
+        // being checked; the notice under them says what was found.
+        KitInset(
+          child: Wrap(
+            spacing: 4,
+            children: [
+              KitButton(
+                key: const ValueKey('server-pairing-paste'),
+                role: KitButtonRole.tertiary,
+                expand: false,
+                onPressed: onPaste,
+                working: busy,
+                icon: AppIconography.paste,
+                label: busy
                     ? lookupAppLocalizations(
                         Localizations.localeOf(context),
                       ).e7SetupPairing
@@ -3039,80 +2827,34 @@ class _PairingActions extends StatelessWidget {
                         Localizations.localeOf(context),
                       ).e7SetupPastePairing,
               ),
-            ),
-            if (onScan case final scan?)
-              OutlinedButton.icon(
-                key: const ValueKey('server-pairing-scan'),
-                onPressed: busy ? null : scan,
-                icon: const Icon(AppIconography.qrCode, size: 18),
-                label: Text(
-                  lookupAppLocalizations(
+              if (onScan case final scan?)
+                KitButton.tertiary(
+                  key: const ValueKey('server-pairing-scan'),
+                  onPressed: busy ? null : scan,
+                  icon: AppIconography.qrCode,
+                  label: lookupAppLocalizations(
                     Localizations.localeOf(context),
                   ).e7SetupScan,
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
         if (notice != null) ...[
-          const SizedBox(height: 10),
-          Semantics(
+          const SizedBox(height: 4),
+          KitNotice(
             key: const ValueKey('server-pairing-notice'),
-            container: true,
-            liveRegion: true,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  AppIconography.checkCircle,
-                  size: 18,
-                  color: AppTheme.successOf(theme),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    notice,
-                    style: theme.textTheme.bodySmall?.copyWith(height: 1.35),
-                  ),
-                ),
-              ],
-            ),
+            tone: AppStatusTone.ok,
+            message: notice,
           ),
         ],
         if (failure != null) ...[
-          const SizedBox(height: 10),
-          Semantics(
+          const SizedBox(height: 4),
+          KitNotice(
             key: const ValueKey('server-pairing-failure'),
-            container: true,
-            liveRegion: true,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.errorContainer,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    AppIconography.error,
-                    size: 18,
-                    color: theme.colorScheme.onErrorContainer,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      setupUiMessage(
-                        lookupAppLocalizations(Localizations.localeOf(context)),
-                        failure,
-                      ),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onErrorContainer,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            tone: AppStatusTone.failure,
+            message: setupUiMessage(
+              lookupAppLocalizations(Localizations.localeOf(context)),
+              failure,
             ),
           ),
         ],
@@ -3121,61 +2863,47 @@ class _PairingActions extends StatelessWidget {
   }
 }
 
-/// The verdict-card treatment for a save or connect that failed, shared by
-/// the editor and the servers list so a failure looks the same wherever it
-/// lands: error container, leading glyph, live region — and product copy
-/// only, never a raw exception.
-class _InlineFailureCard extends StatelessWidget {
-  const _InlineFailureCard({super.key, required this.message, this.onDismiss});
+/// What Test connection found (design standard §3, a notice on the form's
+/// rails, never a filled block): which OpenCode answered and what to do next,
+/// or why it did not, with the setup guide when nothing seems to be there.
+class _ProbeVerdict extends StatelessWidget {
+  const _ProbeVerdict({required this.result});
 
-  final String message;
-  final VoidCallback? onDismiss;
+  final ServerProbeResult result;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Semantics(
-      container: true,
-      liveRegion: true,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              AppIconography.error,
-              size: 20,
-              color: theme.colorScheme.onErrorContainer,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 1),
-                child: Text(
-                  message,
-                  style: TextStyle(
-                    color: theme.colorScheme.onErrorContainer,
-                    height: 1.35,
-                  ),
-                ),
-              ),
-            ),
-            if (onDismiss != null)
-              IconButton(
-                tooltip: lookupAppLocalizations(
-                  Localizations.localeOf(context),
-                ).workspaceDismissNotice,
-                onPressed: onDismiss,
-                color: theme.colorScheme.onErrorContainer,
-                icon: const Icon(AppIconography.close, size: 20),
-              ),
-          ],
-        ),
-      ),
+    final copy = lookupAppLocalizations(Localizations.localeOf(context));
+    if (result.ok) {
+      final version = result.version ?? copy.e7SetupUnknownVersion;
+      return KitNotice(
+        key: const ValueKey('server-test-success'),
+        tone: AppStatusTone.ok,
+        title: result.flavor == ServerFlavor.v2
+            ? copy.e7SetupProbeV2(version)
+            : copy.e7SetupProbeV1(version),
+        message: copy.e7SetupSaveToFinish,
+        notes: [if (result.flavor == ServerFlavor.v1) copy.e7SetupV1Limited],
+      );
+    }
+    return KitNotice(
+      key: const ValueKey('server-test-failure'),
+      tone: AppStatusTone.failure,
+      // A missing password answers 401 on OpenCode 1 and 2 alike; which one
+      // it is shows once the password is in.
+      title: result.flavor == ServerFlavor.v2 && !result.needsPassword
+          ? copy.e7SetupIsV2
+          : null,
+      message: setupUiMessage(copy, result.message!),
+      notes: [if (result.suggestsMissingServer) copy.e7SetupNoServerGuide],
+      actions: [
+        if (result.suggestsMissingServer)
+          KitAction(
+            key: const ValueKey('server-test-guide'),
+            label: copy.e7SetupOpenSetupGuide,
+            onPressed: () => Navigator.pushNamed(context, '/guide'),
+          ),
+      ],
     );
   }
 }

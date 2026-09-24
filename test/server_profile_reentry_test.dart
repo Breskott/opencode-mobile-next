@@ -172,7 +172,10 @@ void main() {
     );
     await tester.pump();
     expect(connection.connectCalls, 0);
-    expect(find.text('Connection token re-entry required'), findsOneWidget);
+    expect(
+      find.textContaining('Connection token re-entry required'),
+      findsOneWidget,
+    );
     expect(find.text('Nothing is listening on this device'), findsNothing);
     await tester.tap(find.text('Workstation'));
     await tester.pumpAndSettle();
@@ -206,7 +209,7 @@ void main() {
 
       expect(connection.connectCalls, 0);
       expect(find.byKey(const Key('password-reentry-banner')), findsOneWidget);
-      expect(find.text('Password re-entry required'), findsOneWidget);
+      expect(find.textContaining('Password re-entry required'), findsOneWidget);
       expect(
         find.bySemanticsLabel(
           RegExp('Password re-entry required for the active server'),
