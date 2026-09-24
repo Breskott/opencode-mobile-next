@@ -1633,7 +1633,10 @@ void main() {
 
       // A location change refreshes the runtime; the filesystem root is no
       // longer a selectable workspace, so use a project folder.
+      // It runs once the folder is open, just before the catalog.
       await controller.selectLocation(directory: '/root/projects/app');
+      await tester.pump();
+      await tester.pump();
       expect(repository.runtimeRefreshCalls, 2);
       expect(
         store.providerRuntimeWasRefreshed(

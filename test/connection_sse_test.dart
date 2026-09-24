@@ -173,6 +173,25 @@ class _TestRepository extends SdkProductRepository {
   Future<List<IntegrationInfo>> listIntegrations() async => const [];
 }
 
+/// Integrations answer only when the test completes [integrations]; counts
+/// catalog loads, so a test can see what waits for what.
+class _SlowIntegrationsRepository extends _TestRepository {
+  _SlowIntegrationsRepository(super.api, this.integrations, this.catalogLoads);
+
+  final Completer<List<IntegrationInfo>>? integrations;
+  final List<String> catalogLoads;
+
+  @override
+  Future<List<IntegrationInfo>> listIntegrations() =>
+      integrations?.future ?? Future.value(const []);
+
+  @override
+  Future<CatalogSnapshot> loadCatalog() {
+    catalogLoads.add('catalog');
+    return super.loadCatalog();
+  }
+}
+
 class _LocationRepository extends _TestRepository {
   _LocationRepository(
     super.api, {
@@ -1577,6 +1596,60 @@ void main() {
     expect(controller.locationLoading, isFalse);
     expect(controller.directory, '/work/other');
     expect(controller.providers, same(shownBefore));
+    controller.dispose();
+  });
+
+  testWidgets('a new folder opens before the one-time provider runtime '
+      'refresh, and its catalog loads after it', (tester) async {
+    // Android 15 run, 2026-09-24: creating a project took 7.6 s, 6.8 s of it
+    // this refresh (/api/integration, then /provider) that only the model
+    // list needs.
+    final apis = <_ControlledApi>[];
+    final integrations = Completer<List<IntegrationInfo>>();
+    final catalogLoads = <String>[];
+    final controller = ConnectionController(
+      await _store(),
+      apiFactory: (profile) {
+        final api = _ControlledApi('${profile.id}-${apis.length}');
+        apis.add(api);
+        return api;
+      },
+      repositoryFactory: (api) => _SlowIntegrationsRepository(
+        api,
+        apis.length > 1 ? integrations : null,
+        catalogLoads,
+      ),
+      eventStreamFactory: _streamFactory([]),
+    );
+    final connect = controller.connect(_profile('server'));
+    await tester.pump();
+    apis.single.healthResult.complete(Health(healthy: true, version: '1'));
+    await connect;
+    await tester.pump();
+
+    var opened = false;
+    unawaited(
+      controller
+          .selectLocation(directory: '/work/new-project')
+          .then((_) => opened = true),
+    );
+    for (var i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+    apis.last.healthResult.complete(Health(healthy: true, version: '1'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+    expect(opened, isTrue);
+    expect(controller.locationLoading, isFalse);
+    expect(controller.directory, '/work/new-project');
+    final before = catalogLoads.length;
+
+    integrations.complete(const []);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+    expect(catalogLoads.length, greaterThan(before));
     controller.dispose();
   });
 

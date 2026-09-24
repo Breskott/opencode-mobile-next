@@ -8063,13 +8063,6 @@ class ConnectionController extends ChangeNotifier {
         _deletingReadProfiles.contains(profile.id)) {
       return;
     }
-    await _refreshPreexistingProviderRuntime(
-      generation: generation,
-      currentApi: currentApi,
-      currentRepository: currentRepository,
-      profile: profile,
-    );
-    if (!_isCurrent(generation, currentApi)) return;
     _markDataRefreshReady(generation, currentApi);
 
     // The folder is open once its conversations and waiting requests are in.
@@ -8084,7 +8077,19 @@ class ConnectionController extends ChangeNotifier {
     if (!_isCurrent(generation, currentApi)) return;
     locationLoading = false;
     notifyListeners();
-    unawaited(_loadCatalog());
+    // The one-time provider runtime refresh only matters for the model list,
+    // so it runs after the folder is open and before the catalog (it held a
+    // new project's open for 6.8 s on the phone).
+    unawaited(
+      _refreshPreexistingProviderRuntime(
+        generation: generation,
+        currentApi: currentApi,
+        currentRepository: currentRepository,
+        profile: profile,
+      ).then((_) {
+        if (_isCurrent(generation, currentApi)) return _loadCatalog();
+      }),
+    );
     if (_pendingLocationRevalidation) unawaited(revalidateRestoredLocation());
   }
 
