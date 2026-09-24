@@ -19,6 +19,10 @@ class KitStatusLine extends StatelessWidget {
     this.more = const [],
     this.onDismiss,
     this.messageKey,
+    this.supporting,
+    this.supportingKey,
+    this.supportingSemanticsLabel,
+    this.dismissTooltip,
   });
 
   final IconData icon;
@@ -32,6 +36,21 @@ class KitStatusLine extends StatelessWidget {
   /// Only when dismissing changes nothing real (§5).
   final VoidCallback? onDismiss;
   final Key? messageKey;
+
+  /// Optional: one short muted sentence under [message], for what to do
+  /// next ("Send it again") or a fact that belongs to the same condition
+  /// ("2 drafts will send when connected"). Never the raw error: that goes
+  /// behind a Details action.
+  final String? supporting;
+  final Key? supportingKey;
+
+  /// What a screen reader says for [supporting] when its words alone would
+  /// not (a bare link: "Shared conversation link …").
+  final String? supportingSemanticsLabel;
+
+  /// The dismiss button's tooltip when "Dismiss" is not the word (for
+  /// example "Not now"); defaults to the shared dismiss label.
+  final String? dismissTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +140,23 @@ class KitStatusLine extends StatelessWidget {
                           key: messageKey,
                           style: theme.textTheme.bodyMedium,
                         ),
+                        if (supporting case final supporting?)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Semantics(
+                              label: supportingSemanticsLabel,
+                              excludeSemantics:
+                                  supportingSemanticsLabel != null,
+                              child: Text(
+                                supporting,
+                                key: supportingKey,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.mutedOf(theme),
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ),
                         // At large text the action moves under the words
                         // instead of squeezing them.
                         if (stacked && action != null)
@@ -155,7 +191,7 @@ class KitStatusLine extends StatelessWidget {
                 if (dismiss != null)
                   IconButton(
                     key: const ValueKey('kit-status-dismiss'),
-                    tooltip: l10n.workspaceDismissNotice,
+                    tooltip: dismissTooltip ?? l10n.workspaceDismissNotice,
                     onPressed: dismiss,
                     icon: const Icon(AppIconography.close, size: 18),
                   ),

@@ -7,7 +7,10 @@
 /// | [KitButton], [KitActionBlock], [KitAction] | §2 one button hierarchy |
 /// | [KitStateView] | §3 every not-normal state, page or inline |
 /// | [KitLoadingBar], [KitSkeletonRows], [KitProgress] | §4 progress |
+/// | [KitSkeletonTranscript] | §4 a conversation loading |
 /// | [KitStatusLine] | §5 one status line |
+/// | [KitAskLine] | §2, §5 a one-time question with its two answers |
+/// | [KitRequestCard] | §2, §3 a request the person answers (permission, question) |
 /// | [KitRow], [SectionLabel] | §6 rows and sections |
 ///
 /// The older shared states in `product_states.dart` are re-exported here so
@@ -22,9 +25,12 @@ export '../widgets/product_states.dart'
         ProductErrorState,
         ProductInlineEmpty,
         SectionLabel;
+export 'kit_ask_line.dart';
 export 'kit_buttons.dart';
 export 'kit_progress.dart';
+export 'kit_request_card.dart';
 export 'kit_row.dart';
 export 'kit_screen.dart';
+export 'kit_skeleton_transcript.dart';
 export 'kit_state_view.dart';
 export 'kit_status_line.dart';

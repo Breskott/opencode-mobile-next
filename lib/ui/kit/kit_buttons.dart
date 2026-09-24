@@ -14,6 +14,7 @@ class KitAction {
     this.icon,
     this.key,
     this.destructive = false,
+    this.working = false,
   });
 
   final String label;
@@ -26,6 +27,11 @@ class KitAction {
 
   /// Error-coloured. Confirm before acting; never primary.
   final bool destructive;
+
+  /// This action's own tap is in flight (see [KitButton.working]): its
+  /// button keeps its label and shows a small spinner. Pair it with a null
+  /// [onPressed] so it cannot be sent twice.
+  final bool working;
 }
 
 enum KitButtonRole { primary, secondary, tertiary }
@@ -94,6 +100,7 @@ class KitButton extends StatelessWidget {
     onPressed: action.onPressed,
     icon: action.icon,
     destructive: action.destructive,
+    working: action.working,
     expand: role != KitButtonRole.tertiary && expand,
   );
 
