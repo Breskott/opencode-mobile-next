@@ -1,0 +1,6 @@
+00:00 +0 -1: the Termux server browses its folders through Termux [E]
+00:01 +0 -2: a new project is made in Termux in the folder shown [E]
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'kit-skeleton-rows'>]: []>
+00:01 +0 -3: a slow Termux shows skeleton rows, then says it took too long [E]
+00:01 +2 -3: Some tests failed.

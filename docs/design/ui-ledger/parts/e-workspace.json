@@ -1565,7 +1565,7 @@
       "presentedBy": [
         "ProjectFolderActions.createFolder"
       ],
-      "line": 215,
+      "line": 292,
       "purpose": "Ask for a folder name to create under the managed projects directory on the app-managed Termux server.",
       "reachedFrom": [
         {
@@ -1586,7 +1586,7 @@
           "type": "text-field",
           "label": "Folder name",
           "key": "new-folder-name",
-          "line": 253,
+          "line": 330,
           "action": "submit",
           "target": null,
           "targetWidget": null,
@@ -1599,7 +1599,7 @@
           "type": "button",
           "label": "Cancel",
           "key": null,
-          "line": 272,
+          "line": 350,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
@@ -1612,7 +1612,7 @@
           "type": "button",
           "label": "Create",
           "key": "new-folder-create",
-          "line": 276,
+          "line": 353,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -1631,7 +1631,7 @@
       "presentedBy": [
         "ProjectFolderActions.openFolder"
       ],
-      "line": 285,
+      "line": 362,
       "purpose": "Ask for an absolute server path, check it (inside the app's Ubuntu for OpenCode inside the app, on the server otherwise) and open it as the active project folder. From the folder browser the path starts at the folder it showed, and a missing folder can be created.",
       "reachedFrom": [
         {
@@ -1654,7 +1654,7 @@
           "type": "text-field",
           "label": "Folder path",
           "key": "open-folder-path",
-          "line": 385,
+          "line": 462,
           "action": "submit",
           "target": null,
           "targetWidget": null,
@@ -1669,7 +1669,7 @@
           "type": "button",
           "label": "Cancel",
           "key": null,
-          "line": 416,
+          "line": 494,
           "action": "dismiss",
           "target": null,
           "targetWidget": null,
@@ -1684,7 +1684,7 @@
           "type": "button",
           "label": "Open",
           "key": "open-folder-confirm",
-          "line": 431,
+          "line": 508,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -1706,7 +1706,7 @@
         "ProjectFolderActions.openFolder"
       ],
       "line": 50,
-      "purpose": "OpenCode inside the app: browse the built-in Ubuntu's folders (read from its files on the phone, so it works with the server stopped) from /root/projects up to /. A project (git repository, a project OpenCode knows, or any folder straight in /root/projects) opens with a tap; other folders are gone into. One primary opens the folder shown (never the home folder, / or the projects folder itself); New project makes a folder inside the folder shown; Enter a path opens the path dialog. Other servers skip this sheet and go straight to the path dialog.",
+      "purpose": "A server on this phone: OpenCode inside the app (folders read from the built-in Ubuntu's files, so it works with the server stopped) or the OpenCode server this app runs in Termux (a short read-only script run inside Termux's Ubuntu through TermuxBridge.run, the path passed base64-encoded, bounded to 15 s in Termux and 25 s in the app). Browses from /root/projects up to /. A project (git repository, a project OpenCode knows, or any folder straight in /root/projects) opens with a tap; other folders are gone into. One primary opens the folder shown (never the home folder, / or the projects folder itself); New project makes a folder inside the folder shown (the app's Ubuntu: mkdir + git init; Termux: mkdir -p); Enter a path opens the path dialog. Remote servers, and Termux when it cannot run the app's commands, skip this sheet and go straight to the path dialog.",
       "reachedFrom": [
         {
           "page": "workspace-folder-chooser",
@@ -1718,7 +1718,8 @@
         }
       ],
       "gates": [
-        "isInAppServer(controller.profile, linux)"
+        "isInAppServer(controller.profile, linux)",
+        "or isManagedPhoneProfile(profile) and TermuxBridge.capabilities(): installed, service available, protocol supported, permission granted"
       ],
       "elements": [
         {
@@ -1769,7 +1770,7 @@
           "label": "Try again",
           "key": "folder-browser-retry",
           "file": "lib/ui/widgets/folder_browser.dart",
-          "line": 355,
+          "line": 356,
           "action": "other",
           "target": null,
           "targetWidget": null,
@@ -1783,7 +1784,7 @@
           "label": "Open <folder>",
           "key": "folder-browser-open",
           "file": "lib/ui/widgets/folder_browser.dart",
-          "line": 408,
+          "line": 409,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
@@ -1799,7 +1800,7 @@
           "label": "Project name",
           "key": "in-app-new-project-name",
           "file": "lib/ui/widgets/folder_browser.dart",
-          "line": 375,
+          "line": 376,
           "action": "submit",
           "target": null,
           "targetWidget": null,
@@ -1813,11 +1814,11 @@
           "label": "Create",
           "key": "in-app-new-project-create",
           "file": "lib/ui/widgets/folder_browser.dart",
-          "line": 394,
+          "line": 395,
           "action": "mutate",
           "target": null,
           "targetWidget": null,
-          "effect": "_create(): projectFolderNameProblem and workspaceDirectoryProblem, then pops FolderBrowserCreate(<folder shown>/<name>) (or FolderBrowserOpen when it is already there); openFolder() makes it in Ubuntu (git init) and selects it.",
+          "effect": "_create(): projectFolderNameProblem and workspaceDirectoryProblem, then pops FolderBrowserCreate(<folder shown>/<name>) (or FolderBrowserOpen when it is already there); openFolder() makes it (the app's Ubuntu: git init; Termux: TermuxFolders.create, mkdir -p) and selects it.",
           "gates": [],
           "destructive": false
         },
@@ -1827,7 +1828,7 @@
           "label": "Enter a path",
           "key": "in-app-enter-path",
           "file": "lib/ui/widgets/folder_browser.dart",
-          "line": 450,
+          "line": 451,
           "action": "open-dialog",
           "target": "project-folder-open-dialog",
           "targetWidget": "_OpenFolderDialog",
