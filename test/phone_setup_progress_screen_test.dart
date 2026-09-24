@@ -113,6 +113,14 @@ Future<_Harness> _pump(
   return h;
 }
 
+/// The page is one scrolling state (design standard §3): its actions sit
+/// under the checklist, below the fold of the 800x600 test surface.
+Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pump();
+  await tester.tap(finder);
+}
+
 /// Spinners and indeterminate lines never settle, so time is stepped
 /// instead of pumpAndSettle.
 Future<void> _settle(WidgetTester tester) async {
@@ -135,8 +143,8 @@ void main() {
         initial: _job(done: {'linux', 'essentials'}, current: _nodeDownloading),
       );
       expect(find.text('Downloading · 18 of 30 MB'), findsOneWidget);
-      // A measured row has no indeterminate line.
-      expect(find.byKey(const Key('setup-progress-stage-line')), findsNothing);
+      // One bar on the screen (design standard §4): the overall one.
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
@@ -157,7 +165,7 @@ void main() {
       expect(find.text('Installing packages · 62%'), findsOneWidget);
     });
 
-    testWidgets('a stage alone shows its label and an indeterminate line', (
+    testWidgets('a stage alone shows its label and no second bar', (
       tester,
     ) async {
       await _pump(
@@ -172,10 +180,9 @@ void main() {
         ),
       );
       expect(find.text('Installing OpenCode'), findsOneWidget);
-      final line = tester.widget<LinearProgressIndicator>(
-        find.byKey(const Key('setup-progress-stage-line')),
-      );
-      expect(line.value, isNull);
+      // The design standard (§4) keeps one bar per screen: the row says the
+      // stage and its mark spins; no indeterminate line of its own.
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
       // No invented figure anywhere in the rows.
       expect(find.textContaining('%'), findsNothing);
       expect(find.textContaining(' MB'), findsNothing);
@@ -237,11 +244,12 @@ void main() {
         find.byKey(const Key('setup-progress-overall')),
       );
       final theme = Theme.of(tester.element(find.text('Node.js')));
-      expect(bar.color, theme.colorScheme.error.withValues(alpha: .75));
+      // The failure tone of the design kit (standard §3).
+      expect(bar.color, AppTheme.statusColor(theme, AppStatusTone.failure));
       expect(find.byKey(const Key('setup-progress-cancel')), findsNothing);
-      expect(find.text('Show details'), findsOneWidget);
+      expect(find.text('Details'), findsOneWidget);
 
-      await tester.tap(find.text('Continue setup'));
+      await _tapVisible(tester, find.text('Continue setup'));
       await tester.pump();
       expect(h.engine.runs, [_ids.toSet()]);
     });
@@ -299,7 +307,7 @@ void main() {
         find.text("Setup stopped. What's finished stays installed."),
         findsOneWidget,
       );
-      await tester.tap(find.text('Continue setup'));
+      await _tapVisible(tester, find.text('Continue setup'));
       await tester.pump();
       expect(h.engine.runs.single, _ids.toSet());
     });
@@ -389,7 +397,7 @@ void main() {
 
     testWidgets('Cancel confirms before stopping', (tester) async {
       final h = await _pump(tester, initial: _job(current: _nodeDownloading));
-      await tester.tap(find.byKey(const Key('setup-progress-cancel')));
+      await _tapVisible(tester, find.byKey(const Key('setup-progress-cancel')));
       await _settle(tester);
       expect(find.text('Stop setup?'), findsOneWidget);
       expect(find.text("What's finished stays installed."), findsOneWidget);
@@ -397,7 +405,7 @@ void main() {
       await _settle(tester);
       expect(h.engine.cancels, 0);
 
-      await tester.tap(find.byKey(const Key('setup-progress-cancel')));
+      await _tapVisible(tester, find.byKey(const Key('setup-progress-cancel')));
       await _settle(tester);
       await tester.tap(
         find.byKey(const Key('phone-setup-progress-stop-confirm')),
@@ -473,7 +481,8 @@ void main() {
       ),
     );
     expect(find.byType(TerminalView), findsNothing);
-    await tester.tap(find.text('Show details'));
+    // The kit's collapsed Details row (standard §3).
+    await _tapVisible(tester, find.text('Details'));
     await _settle(tester);
     expect(find.byType(TerminalView), findsOneWidget);
     expect(find.textContaining('noble InRelease'), findsOneWidget);
@@ -485,7 +494,7 @@ void main() {
     expect(find.textContaining('line 79'), findsOneWidget);
     expect(find.textContaining('line 0\n'), findsNothing);
 
-    await tester.tap(find.text('Hide details'));
+    await _tapVisible(tester, find.text('Hide details'));
     await _settle(tester);
     expect(find.byType(TerminalView), findsNothing);
   });
@@ -513,9 +522,7 @@ void main() {
         await _settle(tester);
         expect(tester.getSize(cancel).height, greaterThanOrEqualTo(48));
         expect(
-          tester
-              .getSize(find.byKey(const Key('setup-progress-details')))
-              .height,
+          tester.getSize(find.byKey(const Key('kit-state-details'))).height,
           greaterThanOrEqualTo(48),
         );
 
@@ -533,7 +540,10 @@ void main() {
           ),
         );
         await _settle(tester);
-        await tester.tap(find.text('Show details'));
+        final details = find.byKey(const Key('kit-state-details'));
+        await tester.ensureVisible(details);
+        await _settle(tester);
+        await tester.tap(details);
         await _settle(tester);
         expect(tester.takeException(), isNull);
         final cont = find.text('Continue setup');
@@ -603,7 +613,7 @@ void main() {
     );
     // Everything settles: no looping animation is left running.
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('setup-progress-stage-line')), findsOneWidget);
+    expect(find.text('Installing OpenCode'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
 

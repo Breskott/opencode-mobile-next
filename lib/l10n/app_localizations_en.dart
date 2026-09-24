@@ -17521,6 +17521,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneServerCardStopping => 'Stopping';
 
   @override
+  String get phoneServerCardRemoving => 'Removing';
+
+  @override
   String get phoneServerCardChecking => 'Checking';
 
   @override

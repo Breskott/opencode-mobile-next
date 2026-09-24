@@ -13,8 +13,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Screen files built on the kit, with the golden renders that show them.
-/// Only grows (§9 migration order: connection states, the Work tab, then the
-/// AI Team).
+/// Only grows (§9 migration order: connection states, the Work tab, phone
+/// setup, the AI Team).
 const _migrated = <String, List<String>>{
   // §9 step 1: connecting, starting, not answering, stopped, failed.
   'lib/ui/widgets/saved_server_connection_card.dart': [
@@ -33,11 +33,51 @@ const _migrated = <String, List<String>>{
     'work_not_answering',
     'work_runaway',
     'work_chooser',
+    // Step 2 leftovers: conversation rows on KitRow, the parts below.
+    'work_team',
+    'work_nudge',
+    'work_other_servers',
   ],
   'lib/ui/widgets/other_projects_panel.dart': ['work_loaded'],
   'lib/ui/widgets/work_status_line.dart': [
     'work_not_answering',
     'work_runaway',
+  ],
+  // Step 2 leftovers (test/goldens/work_parts_golden_test.dart): the AI
+  // Team section, the one-time tip, the other servers and the shell's
+  // connection line on the other tabs.
+  'lib/ui/widgets/team_card.dart': ['work_team', 'team_card'],
+  'lib/ui/widgets/nudge_card.dart': ['work_nudge'],
+  'lib/ui/widgets/other_servers_panel.dart': ['work_other_servers'],
+  'lib/ui/widgets/connection_status_banner.dart': ['shell_reconnecting'],
+  // §9 step 3: phone setup (start, customize, progress, ready, the welcome's
+  // setup line) and the "This phone" card.
+  'lib/ui/screens/phone_setup/phone_setup_start_screen.dart': [
+    'setup_start',
+    'setup_start_progress',
+    'setup_start_stopped',
+    'setup_start_ready',
+    'setup_start_termux',
+  ],
+  'lib/ui/screens/phone_setup/phone_setup_customize_sheet.dart': [
+    'setup_customize',
+  ],
+  'lib/ui/screens/phone_setup/phone_setup_progress_screen.dart': [
+    'setup_progress_running',
+    'setup_progress_failed',
+  ],
+  'lib/ui/widgets/setup_progress_view.dart': [
+    'setup_progress_running',
+    'setup_progress_failed',
+  ],
+  'lib/ui/screens/phone_setup/phone_setup_ready_screen.dart': ['setup_ready'],
+  'lib/ui/screens/phone_setup/phone_setup_welcome_entry.dart': [
+    'setup_welcome_entry',
+  ],
+  'lib/ui/widgets/phone_server_card.dart': [
+    'phone_card_running',
+    'phone_card_stopped',
+    'phone_card_setting_up',
   ],
   // §9 step 4: AI Team home and run (test/goldens/team_golden_test.dart,
   // team_agent_golden_test.dart, team_sheets_golden_test.dart).
@@ -53,7 +93,6 @@ const _migrated = <String, List<String>>{
   ],
   'lib/ui/screens/team/run_screen.dart': ['team_run_overview', 'team_run_work'],
   'lib/ui/screens/team/start_run_sheet.dart': ['team_start_run'],
-  'lib/ui/widgets/team_card.dart': ['team_card'],
   'lib/ui/screens/team/agent_screen.dart': [
     'team_agent',
     'team_agent_controls',

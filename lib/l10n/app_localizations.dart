@@ -28306,6 +28306,12 @@ abstract class AppLocalizations {
   /// **'Stopping'**
   String get phoneServerCardStopping;
 
+  /// Status of the server on this phone while Remove deletes it
+  ///
+  /// In en, this message translates to:
+  /// **'Removing'**
+  String get phoneServerCardRemoving;
+
   /// Status before the server on this phone has been read
   ///
   /// In en, this message translates to:

@@ -14,6 +14,7 @@ class KitAction {
     this.icon,
     this.key,
     this.destructive = false,
+    this.working = false,
   });
 
   final String label;
@@ -26,6 +27,11 @@ class KitAction {
 
   /// Error-coloured. Confirm before acting; never primary.
   final bool destructive;
+
+  /// This action's own tap is in flight (a second or two): a primary or
+  /// secondary button shows a small spinner in place of its icon. Never a
+  /// status display (see [KitButton.working]).
+  final bool working;
 }
 
 enum KitButtonRole { primary, secondary, tertiary }
@@ -94,6 +100,7 @@ class KitButton extends StatelessWidget {
     onPressed: action.onPressed,
     icon: action.icon,
     destructive: action.destructive,
+    working: role != KitButtonRole.tertiary && action.working,
     expand: role != KitButtonRole.tertiary && expand,
   );
 
@@ -191,13 +198,19 @@ class KitActionBlock extends StatelessWidget {
     this.primary,
     this.secondary,
     this.tertiary = const [],
+    this.menu,
   });
 
   final KitAction? primary;
   final KitAction? secondary;
   final List<KitAction> tertiary;
 
-  bool get isEmpty => primary == null && secondary == null && tertiary.isEmpty;
+  /// The caller's own overflow menu (its own keys, items and colours), shown
+  /// where the built "More" menu goes, after the tertiary buttons.
+  final Widget? menu;
+
+  bool get isEmpty =>
+      primary == null && secondary == null && tertiary.isEmpty && menu == null;
 
   @override
   Widget build(BuildContext context) {
@@ -237,6 +250,7 @@ class KitActionBlock extends StatelessWidget {
               for (final action in shown)
                 KitButton.fromAction(action, role: KitButtonRole.tertiary),
               ?more,
+              ?menu,
               const SizedBox(width: 8),
               if (secondary case final secondary?) ...[
                 KitButton.fromAction(
@@ -264,7 +278,7 @@ class KitActionBlock extends StatelessWidget {
             if (primary != null && secondary != null) const SizedBox(height: 8),
             if (secondary case final secondary?)
               KitButton.fromAction(secondary, role: KitButtonRole.secondary),
-            if (shown.isNotEmpty || more != null) ...[
+            if (shown.isNotEmpty || more != null || menu != null) ...[
               if (primary != null || secondary != null)
                 const SizedBox(height: 4),
               KitInset(
@@ -278,6 +292,7 @@ class KitActionBlock extends StatelessWidget {
                         role: KitButtonRole.tertiary,
                       ),
                     ?more,
+                    ?menu,
                   ],
                 ),
               ),

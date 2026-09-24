@@ -12,6 +12,7 @@ import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../../termux/bridge.dart' show TermuxRuntime;
 import '../app_theme.dart';
+import '../kit/kit.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import 'confirm_sheet.dart';
 import 'product_states.dart';
@@ -495,36 +496,42 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
     final settingUp = job?.state == SetupState.running;
     final canContinue = job?.canContinue == true;
     final locked = _removing || state == _Status.starting || _stopping;
-    const touch = Size(48, 48);
 
-    final (label, dot) = settingUp
-        ? (l10n.phoneServerCardSettingUp, theme.colorScheme.primary)
+    // The status word says what is going on, so no button stands in for it
+    // (standard §2): while it starts, stops or goes away there is simply no
+    // Start, Stop or menu to press.
+    final (label, tone) = _removing
+        ? (l10n.phoneServerCardRemoving, AppStatusTone.progress)
+        : settingUp
+        ? (l10n.phoneServerCardSettingUp, AppStatusTone.progress)
         : switch (state) {
             _Status.checking => (
               l10n.phoneServerCardChecking,
-              theme.colorScheme.outline,
+              AppStatusTone.neutral,
             ),
             _Status.notSetUp => (
               l10n.phoneServerCardNotSetUp,
-              theme.colorScheme.outline,
+              AppStatusTone.neutral,
             ),
             _Status.stopped => (
               l10n.phoneServerCardStopped,
-              theme.colorScheme.outline,
+              AppStatusTone.neutral,
             ),
             _Status.starting => (
               l10n.phoneServerCardStarting,
-              theme.colorScheme.primary,
+              AppStatusTone.progress,
             ),
             _Status.stopping => (
               l10n.phoneServerCardStopping,
-              theme.colorScheme.primary,
+              AppStatusTone.progress,
             ),
-            _Status.running => (
-              l10n.phoneServerCardRunning,
-              AppTheme.successOf(theme),
-            ),
+            _Status.running => (l10n.phoneServerCardRunning, AppStatusTone.ok),
           };
+    final dot = tone == AppStatusTone.neutral
+        ? theme.colorScheme.outline
+        : tone == AppStatusTone.progress
+        ? theme.colorScheme.primary
+        : AppTheme.statusColor(theme, tone);
 
     final runtime = _runtimeOf(widget.profile);
     final version = widget.profile.serverVersion?.trim();
@@ -544,195 +551,176 @@ class _PhoneServerCardState extends ConsumerState<PhoneServerCard> {
     final canOpen = running && !widget.connected && widget.onOpen != null;
     final hasEngine = _engine() != null;
 
-    final buttons = <Widget>[
-      if (settingUp)
-        FilledButton(
-          key: const ValueKey('phone-server-progress'),
-          style: FilledButton.styleFrom(minimumSize: touch),
-          onPressed: () => PhoneServerCardRoutes.openProgress(context),
-          child: Text(l10n.phoneServerCardShowProgress),
-        )
-      else if (state == _Status.notSetUp)
-        FilledButton(
-          key: const ValueKey('phone-server-set-up'),
-          style: FilledButton.styleFrom(minimumSize: touch),
-          onPressed: locked
-              ? null
-              : () => PhoneServerCardRoutes.openStart(context),
-          child: Text(l10n.phoneServerCardSetUp),
-        )
-      else if (state == _Status.stopped || state == _Status.starting)
-        FilledButton(
-          key: const ValueKey('phone-server-start'),
-          style: FilledButton.styleFrom(minimumSize: touch),
-          onPressed: locked ? null : _start,
-          child: Text(l10n.phoneServerCardStart),
-        )
-      else if (canOpen) ...[
-        FilledButton(
-          key: const ValueKey('phone-server-open'),
-          style: FilledButton.styleFrom(minimumSize: touch),
-          onPressed: locked ? null : widget.onOpen,
-          child: Text(l10n.phoneServerCardOpen),
-        ),
-        TextButton(
+    // One filled button at most: the one thing this server needs now.
+    final KitAction? primary = locked
+        ? null
+        : settingUp
+        ? KitAction(
+            key: const ValueKey('phone-server-progress'),
+            label: l10n.phoneServerCardShowProgress,
+            onPressed: () => PhoneServerCardRoutes.openProgress(context),
+          )
+        : state == _Status.notSetUp
+        ? KitAction(
+            key: const ValueKey('phone-server-set-up'),
+            label: l10n.phoneServerCardSetUp,
+            onPressed: () => PhoneServerCardRoutes.openStart(context),
+          )
+        : state == _Status.stopped
+        ? KitAction(
+            key: const ValueKey('phone-server-start'),
+            label: l10n.phoneServerCardStart,
+            onPressed: _start,
+          )
+        : canOpen
+        ? KitAction(
+            key: const ValueKey('phone-server-open'),
+            label: l10n.phoneServerCardOpen,
+            onPressed: widget.onOpen,
+          )
+        : null;
+    // A setup that stopped part way leads when nothing else does.
+    final continueSetup = canContinue && !settingUp
+        ? KitAction(
+            key: const ValueKey('phone-server-continue'),
+            label: l10n.phoneServerCardContinueSetup,
+            onPressed: () => PhoneServerCardRoutes.openProgress(context),
+          )
+        : null;
+    final lead = primary ?? (locked ? null : continueSetup);
+    final tertiary = <KitAction>[
+      if (running && !locked && !settingUp)
+        KitAction(
           key: const ValueKey('phone-server-stop'),
-          style: TextButton.styleFrom(minimumSize: touch),
-          onPressed: locked ? null : _stop,
-          child: Text(l10n.phoneServerCardStop),
+          label: l10n.phoneServerCardStop,
+          onPressed: _stop,
         ),
-      ] else if (running || state == _Status.stopping)
-        OutlinedButton(
-          key: const ValueKey('phone-server-stop'),
-          style: OutlinedButton.styleFrom(minimumSize: touch),
-          onPressed: locked ? null : _stop,
-          child: Text(l10n.phoneServerCardStop),
-        ),
-      if (canContinue && !settingUp)
-        TextButton(
-          key: const ValueKey('phone-server-continue'),
-          style: TextButton.styleFrom(minimumSize: touch),
-          onPressed: () => PhoneServerCardRoutes.openProgress(context),
-          child: Text(l10n.phoneServerCardContinueSetup),
-        ),
+      if (continueSetup != null && lead != continueSetup) continueSetup,
       if (installed)
-        TextButton(
+        KitAction(
           key: const ValueKey('phone-server-show-log'),
-          style: TextButton.styleFrom(minimumSize: touch),
+          label: l10n.phoneServerCardShowLog,
           onPressed: _showLog,
-          child: Text(l10n.phoneServerCardShowLog),
         ),
-      PopupMenuButton<PhoneServerAction>(
-        key: const ValueKey('phone-server-menu'),
-        tooltip: l10n.phoneServerCardMore,
-        enabled: !locked && state != _Status.checking,
-        icon: const Icon(AppIconography.more),
-        onSelected: (action) => unawaited(_menu(action)),
-        itemBuilder: (context) => [
-          // Installing while a job runs would only queue behind it.
-          if (hasEngine && installed && !settingUp) ...[
-            PopupMenuItem(
-              key: const ValueKey('phone-server-switch'),
-              value: PhoneServerAction.switchRuntime,
-              child: Text(
-                l10n.phoneServerCardSwitchTo(
-                  runtime == TermuxRuntime.openCode2
-                      ? l10n.setupRuntimeOne
-                      : l10n.setupRuntimeTwo,
-                ),
+    ];
+    final menu = PopupMenuButton<PhoneServerAction>(
+      key: const ValueKey('phone-server-menu'),
+      tooltip: l10n.phoneServerCardMore,
+      enabled: !locked && state != _Status.checking,
+      icon: const Icon(AppIconography.more),
+      onSelected: (action) => unawaited(_menu(action)),
+      itemBuilder: (context) => [
+        // Installing while a job runs would only queue behind it.
+        if (hasEngine && installed && !settingUp) ...[
+          PopupMenuItem(
+            key: const ValueKey('phone-server-switch'),
+            value: PhoneServerAction.switchRuntime,
+            child: Text(
+              l10n.phoneServerCardSwitchTo(
+                runtime == TermuxRuntime.openCode2
+                    ? l10n.setupRuntimeOne
+                    : l10n.setupRuntimeTwo,
               ),
             ),
-            PopupMenuItem(
-              key: const ValueKey('phone-server-add-tools'),
-              value: PhoneServerAction.addTools,
-              child: Text(l10n.phoneServerCardAddTools),
-            ),
-            PopupMenuItem(
-              key: const ValueKey('phone-server-update'),
-              value: PhoneServerAction.update,
-              child: Text(l10n.phoneServerCardUpdate),
-            ),
-          ],
+          ),
           PopupMenuItem(
-            key: const ValueKey('phone-server-remove'),
-            value: PhoneServerAction.remove,
-            enabled: !settingUp,
+            key: const ValueKey('phone-server-add-tools'),
+            value: PhoneServerAction.addTools,
+            child: Text(l10n.phoneServerCardAddTools),
+          ),
+          PopupMenuItem(
+            key: const ValueKey('phone-server-update'),
+            value: PhoneServerAction.update,
+            child: Text(l10n.phoneServerCardUpdate),
+          ),
+        ],
+        PopupMenuItem(
+          key: const ValueKey('phone-server-remove'),
+          value: PhoneServerAction.remove,
+          enabled: !settingUp,
+          child: Text(
+            l10n.phoneServerCardRemove,
+            style: TextStyle(color: theme.colorScheme.error),
+          ),
+        ),
+      ],
+    );
+
+    final large = AppTheme.stackedActions(context);
+    final status = Semantics(
+      liveRegion: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            key: const ValueKey('phone-server-dot'),
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
             child: Text(
-              l10n.phoneServerCardRemove,
-              style: TextStyle(color: theme.colorScheme.error),
+              label,
+              key: const ValueKey('phone-server-status'),
+              style: theme.textTheme.bodyMedium,
             ),
           ),
         ],
       ),
-    ];
+    );
 
     return Padding(
       key: const ValueKey('phone-server-card'),
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // A row like every other (standard §6): what it is, what runs, and
+          // its state at the line's end.
           MergeSemantics(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    phoneServerDisplayName(
-                      widget.profile,
-                      l10n,
-                      among: widget.connection.store.profiles,
-                    ),
-                    key: const ValueKey('phone-server-title'),
-                    style: theme.textTheme.titleMedium,
+            child: KitRow(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              leading: KitRow.icon(context, AppIconography.phone),
+              title: phoneServerDisplayName(
+                widget.profile,
+                l10n,
+                among: widget.connection.store.profiles,
+              ),
+              titleKey: const ValueKey('phone-server-title'),
+              titleMaxLines: large ? 3 : 1,
+              supporting: TextSpan(text: detail),
+              supportingKey: const ValueKey('phone-server-detail'),
+              supportingMaxLines: large ? 3 : 1,
+              // The status never takes the name's room at large text.
+              trailing: Padding(
+                padding: const EdgeInsetsDirectional.only(start: 12),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.sizeOf(context).width * .4,
                   ),
+                  child: status,
                 ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Semantics(
-                    liveRegion: true,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          key: const ValueKey('phone-server-dot'),
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: dot,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            label,
-                            key: const ValueKey('phone-server-status'),
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            detail,
-            key: const ValueKey('phone-server-detail'),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.mutedOf(theme),
-            ),
-          ),
-          if (locked && !settingUp)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: LinearProgressIndicator(minHeight: 2),
-            ),
           if (_failure != null)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.only(top: 4),
               child: Semantics(
                 liveRegion: true,
                 child: Text(
                   _failure!,
                   key: const ValueKey('phone-server-failure'),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
+                    color: AppTheme.statusColor(theme, AppStatusTone.failure),
                   ),
                 ),
               ),
             ),
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: buttons,
-          ),
+          const SizedBox(height: 8),
+          KitActionBlock(primary: lead, tertiary: tertiary, menu: menu),
         ],
       ),
     );

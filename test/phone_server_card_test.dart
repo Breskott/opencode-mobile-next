@@ -271,9 +271,14 @@ void main() {
       .widget<Text>(find.byKey(const ValueKey('phone-server-status')))
       .data!;
 
-  String detail(WidgetTester tester) => tester
-      .widget<Text>(find.byKey(const ValueKey('phone-server-detail')))
-      .data!;
+  // The detail is the card row's supporting line (design standard §6), a
+  // Text.rich.
+  String detail(WidgetTester tester) {
+    final text = tester.widget<Text>(
+      find.byKey(const ValueKey('phone-server-detail')),
+    );
+    return text.data ?? text.textSpan!.toPlainText();
+  }
 
   Future<void> choose(WidgetTester tester, String key) async {
     await tester.tap(find.byKey(const ValueKey('phone-server-menu')));

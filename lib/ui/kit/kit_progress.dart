@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../app_theme.dart';
+
 /// The screen's one loading indicator (design standard §4): a 2 dp bar
 /// directly under the top bar or header while anything on the screen loads
 /// for the first time. It always takes its 2 dp, so the page does not jump
@@ -102,8 +104,19 @@ class KitSkeletonRows extends StatelessWidget {
 /// Progress inside a [KitStateView] (§4): indeterminate while waiting, or
 /// determinate with one line under it ("29 of 30 MB · about 1 min left").
 class KitProgress {
-  const KitProgress.waiting({this.caption, this.key}) : value = null;
-  const KitProgress.known(double this.value, {this.caption, this.key});
+  const KitProgress.waiting({
+    this.caption,
+    this.key,
+    this.tone,
+    this.semanticsLabel,
+  }) : value = null;
+  const KitProgress.known(
+    double this.value, {
+    this.caption,
+    this.key,
+    this.tone,
+    this.semanticsLabel,
+  });
 
   /// 0..1, or null while the amount is unknown.
   final double? value;
@@ -111,6 +124,13 @@ class KitProgress {
 
   /// Key of the bar itself, for tests.
   final Key? key;
+
+  /// The bar's colour: the accent when null (it is moving); neutral for a
+  /// stopped job (muted), failure for a failed one.
+  final AppStatusTone? tone;
+
+  /// What a screen reader calls the bar ("Setup progress").
+  final String? semanticsLabel;
 }
 
 /// Renders a [KitProgress]: a 4 dp rounded bar and its optional caption.
@@ -123,6 +143,11 @@ class KitProgressView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final caption = progress.caption;
+    final color = switch (progress.tone) {
+      null => null,
+      AppStatusTone.neutral => AppTheme.mutedOf(theme),
+      final tone => AppTheme.statusColor(theme, tone),
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -132,6 +157,8 @@ class KitProgressView extends StatelessWidget {
           value: progress.value,
           minHeight: 4,
           borderRadius: const BorderRadius.all(Radius.circular(2)),
+          color: color,
+          semanticsLabel: progress.semanticsLabel,
         ),
         if (caption != null) ...[
           const SizedBox(height: 8),

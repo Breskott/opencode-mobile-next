@@ -10,6 +10,7 @@
 /// | [KitStatusLine] | §5 one status line |
 /// | [KitRow], [SectionLabel] | §6 rows and sections |
 /// | [KitPanel] | §3 a block of content the person works with |
+/// | [KitStatusMark] | §6 a step's leading state mark (waiting, working, done, failed) |
 ///
 /// The older shared states in `product_states.dart` are re-exported here so
 /// a screen imports one library; new screens use [KitStateView] for them.
@@ -30,3 +31,4 @@ export 'kit_row.dart';
 export 'kit_screen.dart';
 export 'kit_state_view.dart';
 export 'kit_status_line.dart';
+export 'kit_status_mark.dart';

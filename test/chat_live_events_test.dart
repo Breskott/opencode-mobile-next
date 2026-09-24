@@ -1702,7 +1702,10 @@ void main() {
     );
     expect(find.text('Connection lost'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
-    // The raw error and the secondary action live behind Details.
+    // The raw error and the secondary action live behind Details, in the
+    // status line's menu (design standard §5: one action per line).
+    await tester.tap(find.byKey(const ValueKey('kit-status-more')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));

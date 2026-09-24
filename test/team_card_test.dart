@@ -20,7 +20,6 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
-import 'package:opencode_mobile/ui/kit/kit.dart' show KitButton;
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
 import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -943,8 +942,15 @@ void main() {
         findsOneWidget,
       );
       expect(
+        // Open is a kit button (design standard §2): the Material button
+        // is inside it.
         tester
-            .widget<KitButton>(find.byKey(const ValueKey('team-card-open')))
+            .widget<FilledButton>(
+              find.descendant(
+                of: find.byKey(const ValueKey('team-card-open')),
+                matching: find.byWidgetPredicate((w) => w is FilledButton),
+              ),
+            )
             .onPressed,
         isNull,
       );
@@ -970,7 +976,12 @@ void main() {
       expect(opened, 0);
       expect(
         tester
-            .widget<KitButton>(find.byKey(const ValueKey('team-card-refresh')))
+            .widget<TextButton>(
+              find.descendant(
+                of: find.byKey(const ValueKey('team-card-refresh')),
+                matching: find.byWidgetPredicate((w) => w is TextButton),
+              ),
+            )
             .onPressed,
         isNotNull,
       );

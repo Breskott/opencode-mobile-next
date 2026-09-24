@@ -19,6 +19,9 @@ class KitStatusLine extends StatelessWidget {
     this.more = const [],
     this.onDismiss,
     this.messageKey,
+    this.dismissKey,
+    this.dismissTooltip,
+    this.controlsTogether = false,
   });
 
   final IconData icon;
@@ -32,6 +35,16 @@ class KitStatusLine extends StatelessWidget {
   /// Only when dismissing changes nothing real (§5).
   final VoidCallback? onDismiss;
   final Key? messageKey;
+
+  /// The close button's key and tooltip, when the caller names them.
+  final Key? dismissKey;
+  final String? dismissTooltip;
+
+  /// When the line stacks (large text), keep the action, More and close on
+  /// one row under the words instead of leaving close at the top: a
+  /// height-limited slot that scrolls to its end then shows every control
+  /// together (a one-time tip above the composer).
+  final bool controlsTogether;
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +101,31 @@ class KitStatusLine extends StatelessWidget {
     final theme = Theme.of(context);
     final action = this.action;
     final dismiss = onDismiss;
+    final moreMenu = more.isEmpty
+        ? null
+        : PopupMenuButton<int>(
+            key: const ValueKey('kit-status-more'),
+            tooltip: l10n.chatUiMore,
+            icon: const Icon(AppIconography.more, size: 20),
+            onSelected: (index) => more[index].onPressed?.call(),
+            itemBuilder: (_) => [
+              for (var i = 0; i < more.length; i++)
+                PopupMenuItem(
+                  key: more[i].key,
+                  value: i,
+                  enabled: more[i].onPressed != null,
+                  child: Text(more[i].label),
+                ),
+            ],
+          );
+    final dismissButton = dismiss == null
+        ? null
+        : IconButton(
+            key: dismissKey ?? const ValueKey('kit-status-dismiss'),
+            tooltip: dismissTooltip ?? l10n.workspaceDismissNotice,
+            onPressed: dismiss,
+            icon: const Icon(AppIconography.close, size: 18),
+          );
     return Semantics(
       container: true,
       liveRegion: true,
@@ -123,7 +161,24 @@ class KitStatusLine extends StatelessWidget {
                         ),
                         // At large text the action moves under the words
                         // instead of squeezing them.
-                        if (stacked && action != null)
+                        if (stacked && controlsTogether)
+                          Row(
+                            children: [
+                              Expanded(
+                                child: action == null
+                                    ? const SizedBox.shrink()
+                                    : KitInset(
+                                        child: KitButton.fromAction(
+                                          action,
+                                          role: KitButtonRole.tertiary,
+                                        ),
+                                      ),
+                              ),
+                              ?moreMenu,
+                              ?dismissButton,
+                            ],
+                          )
+                        else if (stacked && action != null)
                           KitInset(
                             child: KitButton.fromAction(
                               action,
@@ -136,29 +191,10 @@ class KitStatusLine extends StatelessWidget {
                 ),
                 if (!stacked && action != null)
                   KitButton.fromAction(action, role: KitButtonRole.tertiary),
-                if (more.isNotEmpty)
-                  PopupMenuButton<int>(
-                    key: const ValueKey('kit-status-more'),
-                    tooltip: l10n.chatUiMore,
-                    icon: const Icon(AppIconography.more, size: 20),
-                    onSelected: (index) => more[index].onPressed?.call(),
-                    itemBuilder: (_) => [
-                      for (var i = 0; i < more.length; i++)
-                        PopupMenuItem(
-                          key: more[i].key,
-                          value: i,
-                          enabled: more[i].onPressed != null,
-                          child: Text(more[i].label),
-                        ),
-                    ],
-                  ),
-                if (dismiss != null)
-                  IconButton(
-                    key: const ValueKey('kit-status-dismiss'),
-                    tooltip: l10n.workspaceDismissNotice,
-                    onPressed: dismiss,
-                    icon: const Icon(AppIconography.close, size: 18),
-                  ),
+                if (!(stacked && controlsTogether)) ...[
+                  ?moreMenu,
+                  ?dismissButton,
+                ],
               ],
             ),
           ),
