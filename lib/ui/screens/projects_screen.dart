@@ -10,6 +10,8 @@ import '../widgets/product_states.dart';
 import 'project_folder_actions.dart';
 import '../app_iconography.dart';
 import '../../domain/team_directories.dart';
+import '../kit/motion/kit_animated_rows.dart';
+import '../kit/motion/kit_refresh.dart';
 
 class ProjectsScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -267,7 +269,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: KitRefresh(
         onRefresh: _load,
         child: ListView(
           key: const ValueKey('projects-list'),
@@ -339,14 +341,25 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 message: l10n.e7ProjectProjectsNoMatchDetail,
               )
             else
-              for (final project in visible)
-                _ProjectTile(
-                  project: project,
-                  active: project.id == widget.selectedProjectID,
-                  busy: _busyProjectID == project.id,
-                  onOpen: () => _select(project),
-                  onRename: () => _rename(project),
-                ),
+              // A project made or removed while the list is open unfolds in
+              // or folds away (design standard §10). Typing a search shows
+              // its matches at once: the rows restart with each query.
+              KitAnimatedRows(
+                key: ValueKey('projects-rows-${_search.text.trim()}'),
+                children: [
+                  for (final project in visible)
+                    KeyedSubtree(
+                      key: ValueKey('project-row-${project.id}'),
+                      child: _ProjectTile(
+                        project: project,
+                        active: project.id == widget.selectedProjectID,
+                        busy: _busyProjectID == project.id,
+                        onOpen: () => _select(project),
+                        onRename: () => _rename(project),
+                      ),
+                    ),
+                ],
+              ),
             if (_error != null && projects != null)
               ListTile(
                 key: const ValueKey('project-refresh-error'),

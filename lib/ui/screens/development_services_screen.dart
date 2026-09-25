@@ -12,6 +12,7 @@ import '../../state/development_services.dart';
 import '../app_theme.dart';
 import '../widgets/confirm_sheet.dart';
 import '../widgets/external_link.dart';
+import '../kit/motion/kit_refresh.dart';
 
 class DevelopmentServicesScreen extends StatefulWidget {
   const DevelopmentServicesScreen({super.key, required this.controller});
@@ -264,7 +265,7 @@ class _DevelopmentServicesScreenState extends State<DevelopmentServicesScreen>
                 child: Text(l.servicesScopeChanged),
               ),
             )
-          : RefreshIndicator(
+          : KitRefresh(
               onRefresh: _refresh,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),

@@ -10,6 +10,7 @@ import '../../feedback/bug_report.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/profiles.dart' show SecureStorageUnavailable;
 import '../app_theme.dart';
+import '../kit/motion/kit_reveal.dart';
 
 /// Maps any thrown object onto copy that is safe to show users.
 ///
@@ -77,15 +78,25 @@ class ProductRefreshBody extends StatelessWidget {
     final l10n =
         Localizations.of<AppLocalizations>(context, AppLocalizations) ??
         lookupAppLocalizations(Localizations.localeOf(context));
+    final message = this.message;
     return Column(
       children: [
-        if (message != null)
-          MaterialBanner(
-            content: Text('${l10n.refreshFailed}\n$message'),
-            actions: [
-              TextButton(onPressed: onRetry, child: Text(l10n.refreshRetry)),
-            ],
-          ),
+        // The failure unfolds over the kept content and folds away once a
+        // retry works (design standard §10), instead of pushing the list
+        // down in one frame.
+        KitReveal(
+          child: message == null
+              ? null
+              : MaterialBanner(
+                  content: Text('${l10n.refreshFailed}\n$message'),
+                  actions: [
+                    TextButton(
+                      onPressed: onRetry,
+                      child: Text(l10n.refreshRetry),
+                    ),
+                  ],
+                ),
+        ),
         Expanded(key: const ValueKey('refresh-content'), child: child),
       ],
     );

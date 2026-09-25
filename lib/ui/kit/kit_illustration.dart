@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../app_theme.dart';
+import 'kit_effects.dart';
 import 'kit_motion.dart';
 
 /// The app's drawings (design standard §10): line art in the brand's
@@ -255,10 +256,16 @@ class _KitIllustrationState extends State<KitIllustration>
   );
   bool _started = false;
 
+  /// A celebration (its entrance at least [KitMotion.celebration]) the
+  /// person turned off in Settings › Appearance shows finished at once.
+  bool get _skipCelebration =>
+      widget.entranceDuration >= KitMotion.celebration &&
+      !KitEffects.of(context).celebrations;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (KitMotion.reduced(context)) {
+    if (KitMotion.reduced(context) || _skipCelebration) {
       _entrance.value = 1;
       _loop
         ..stop()

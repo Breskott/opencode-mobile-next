@@ -141,6 +141,66 @@ void main() {
     semantics.dispose();
   });
 
+  group('Settings › Appearance effects', () {
+    Widget scoped(KitEffects effects, Widget child) =>
+        _host(KitEffectsScope(effects: effects, child: child));
+
+    testWidgets('Animations: Calm draws in but never loops', (tester) async {
+      KitMotion.loops = true;
+      final frames = <KitSceneFrame>[];
+      await tester.pumpWidget(
+        scoped(
+          const KitEffects(motion: KitMotionLevel.calm),
+          KitIllustration(scene: _Probe(frames), ambient: true),
+        ),
+      );
+      expect(frames.first.entrance, 0);
+      await tester.pumpAndSettle();
+      expect(frames.last.entrance, 1);
+      expect(frames.last.looping, isFalse);
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+
+    testWidgets('Animations: Off shows the finished drawing at once', (
+      tester,
+    ) async {
+      final frames = <KitSceneFrame>[];
+      await tester.pumpWidget(
+        scoped(
+          const KitEffects(motion: KitMotionLevel.off),
+          KitIllustration(scene: _Probe(frames)),
+        ),
+      );
+      expect(frames.last.entrance, 1);
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+
+    testWidgets('Celebrations off: a celebration shows finished at once', (
+      tester,
+    ) async {
+      final frames = <KitSceneFrame>[];
+      final plain = <KitSceneFrame>[];
+      await tester.pumpWidget(
+        scoped(
+          const KitEffects(celebrations: false),
+          Column(
+            children: [
+              KitIllustration(
+                scene: _Probe(frames),
+                entranceDuration: KitMotion.celebration,
+              ),
+              KitIllustration(scene: _Probe(plain)),
+            ],
+          ),
+        ),
+      );
+      expect(frames.last.entrance, 1);
+      // An ordinary drawing still draws itself in.
+      expect(plain.first.entrance, 0);
+      await tester.pumpAndSettle();
+    });
+  });
+
   group('portal scene', () {
     for (final (name, theme) in [
       ('dark', AppTheme.dark()),

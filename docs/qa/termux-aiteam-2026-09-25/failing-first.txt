@@ -1,0 +1,37 @@
+# test/termux_aiteam_upstream_test.dart, run on the code before the fix
+# (feat/phone-setup-v2 @ 2730891b plus only the byte-identical aiteam_scripts.dart
+# refactor), pinned Flutter 3.47.1:
+#   flutter test test/termux_aiteam_upstream_test.dart
+# The dispatched script (~940 lines of aiteam.sh) is cut to the lines that matter.
+
+00:00 +0: Set up dispatches the upstream builds, never aiteam-assets-1
+00:00 +0 -1: Set up dispatches the upstream builds, never aiteam-assets-1 [E]
+  Expected: not contains 'aiteam-assets-1'
+    Actual: 'set -eu\n'
+              'OC_DIR="$HOME/.oc"\n'
+              ...
+              'manifest_tmp="$OC_DIR/aiteam-manifest.json.tmp.$$"\n'
+              'cat > "$manifest_tmp" <<\'OC_AITEAM_MANIFEST_EOF\'\n'
+              '{\n'
+              '  "schema": 1,\n'
+              '  "base_url": "https://github.com/Eslamasabry/opencode-mobile-next/releases/download/aiteam-assets-1/",\n'
+              ...
+              '    "gc": {\n'
+              '      "name": "gc-1.4.1-android-arm64",\n'
+              ...
+              'OC_AITEAM_MANIFEST_EOF\n'
+              'mv "$manifest_tmp" "$OC_DIR/aiteam-manifest.json"\n'
+              'bash "$AITEAM" queue \'install\' || exit $?\n'
+              'set -m\n'
+              'nohup bash "$AITEAM" \'install\' \'/data/data/com.termux/files/home/.oc/aiteam-manifest.json\' >/dev/null 2>&1 </dev/null &\n'
+              'echo "aiteam-started:$!"\n'
+              ''
+
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/termux_aiteam_upstream_test.dart 30:5          main.<fn>
+
+00:00 +0 -1: Some tests failed.
+
+Failing tests:
+  test/termux_aiteam_upstream_test.dart: Set up dispatches the upstream builds, never aiteam-assets-1

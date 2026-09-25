@@ -19,6 +19,8 @@
 /// | [KitTaskMark] | §6 a task's leading mark: a step's four, needs you, stopped |
 /// | [KitNotice] | §3 a message inside one part of a form or list |
 /// | [KitMotion] | §10 the timings, curves and when things may loop |
+/// | [KitEffects], [KitEffectsScope] | §10 the person's glass, motion, celebration and vibration choices (Settings › Appearance) |
+/// | [KitGlass] | §10 glass: a bounded surface floating over content (liquid, frosted or solid) |
 /// | [KitIllustration], [KitScene], [KitDraw], [KitPortalScene] | §10 drawings in the brand's line, drawn in code, that can move |
 ///
 /// The older shared states in `product_states.dart` are re-exported here so
@@ -36,6 +38,7 @@ export '../widgets/product_states.dart'
 export 'kit_action_stack.dart';
 export 'kit_ask_line.dart';
 export 'kit_buttons.dart';
+export 'kit_effects.dart';
 export 'kit_illustration.dart';
 export 'kit_motion.dart';
 export 'kit_panel.dart';
@@ -57,3 +60,4 @@ export 'motion/kit_page_transitions.dart';
 export 'motion/kit_refresh.dart';
 export 'motion/kit_reveal.dart';
 export 'motion/kit_tab_switcher.dart';
+export 'glass/kit_glass.dart';

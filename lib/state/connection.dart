@@ -39,6 +39,8 @@ import '../platform/platform_capabilities.dart';
 import '../diagnostics/app_diagnostics.dart';
 import '../diagnostics/perf_trace.dart';
 import '../termux/bridge.dart';
+// A plain value type (no widgets): the person's effect choices.
+import 'effects.dart' show KitEffects;
 import '../builtin/builtin_linux.dart';
 import 'isolated_task_launch.dart';
 import 'model_library.dart';
@@ -605,6 +607,10 @@ class ConnectionController extends ChangeNotifier {
   late final ValueNotifier<Locale?> appLocale;
   late final ValueNotifier<AppAppearance> appearance;
   late final ValueNotifier<ThemePackId> themePack;
+
+  /// Settings › Appearance › Effects, provided to the app by
+  /// `KitEffectsScope` in `main.dart`.
+  late final ValueNotifier<KitEffects> effects;
   final OpenCodeApiFactory _apiFactory;
   final ProductRepositoryFactory _repositoryFactory;
   final V2GatewayPairFactory _v2GatewayFactory;
@@ -1093,6 +1099,7 @@ class ConnectionController extends ChangeNotifier {
     appLocale = ValueNotifier(_localeStore.value);
     appearance = ValueNotifier(store.appearance);
     themePack = ValueNotifier(store.themePack);
+    effects = ValueNotifier(store.effects);
     transcriptReasoningExpanded = store.transcriptReasoningExpanded;
     transcriptTimestampsVisible = store.transcriptTimestampsVisible;
     this.backgroundLive.addListener(_backgroundLiveChanged);
@@ -1290,6 +1297,19 @@ class ConnectionController extends ChangeNotifier {
     await store.setAppearance(value);
     if (_disposed) return;
     appearance.value = value;
+  }
+
+  /// Shows the new choice at once and saves it; a refused save puts the
+  /// saved choice back and rethrows.
+  Future<void> setEffects(KitEffects value) async {
+    final before = effects.value;
+    effects.value = value;
+    try {
+      await store.setEffects(value);
+    } catch (_) {
+      if (!_disposed) effects.value = before;
+      rethrow;
+    }
   }
 
   void _backgroundLiveChanged() {
@@ -9172,6 +9192,7 @@ class ConnectionController extends ChangeNotifier {
     appLocale.dispose();
     appearance.dispose();
     themePack.dispose();
+    effects.dispose();
     unawaited(_eventBus.close());
     super.dispose();
   }

@@ -1,0 +1,458 @@
+Resolving dependencies...
+Downloading packages...
+Got dependencies!
+52 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading test/glass_surface_test.dart
+00:00 +0: test/glass_surface_test.dart: high contrast uses opaque navigation without decorative depth
+00:00 +1: test/glass_surface_test.dart: accessible navigation uses opaque navigation without decorative depth
+00:00 +2: test/glass_surface_test.dart: reduced motion uses opaque navigation without decorative depth
+00:00 +3: test/glass_surface_test.dart: the dock turned to solid by Settings › Appearance › Glass
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: no matching candidates
+  Actual: _TypeWidgetFinder:<Found 1 widget with type "BackdropFilter": [
+            BackdropFilter(filter: ImageFilter.blur(12.0, 12.0, unspecified), blendMode: srcOver,
+enabled, renderObject: RenderBackdropFilter#6b3ad),
+          ]>
+   Which: means one was found but none were expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file://test/glass_surface_test.dart:59:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/glass_surface_test.dart line 59
+The test description was:
+  the dock turned to solid by Settings › Appearance › Glass
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +3 -1: test/glass_surface_test.dart: the dock turned to solid by Settings › Appearance › Glass [E]
+  Test failed. See exception logs above.
+  The test description was: the dock turned to solid by Settings › Appearance › Glass
+  
+00:00 +3 -1: test/glass_surface_test.dart: frosted material clips a single backdrop filter
+00:00 +4 -1: test/glass_surface_test.dart: frosted foreground contrast opencode light
+Glass contrast opencode light: 7.92
+00:00 +5 -1: test/glass_surface_test.dart: frosted foreground contrast opencode dark
+Glass contrast opencode dark: 5.96
+00:00 +6 -1: test/glass_surface_test.dart: frosted foreground contrast catppuccin light
+Glass contrast catppuccin light: 7.35
+00:01 +7 -1: test/glass_surface_test.dart: frosted foreground contrast catppuccin dark
+Glass contrast catppuccin dark: 5.46
+00:01 +8 -1: test/glass_surface_test.dart: frosted foreground contrast gruvbox light
+Glass contrast gruvbox light: 7.06
+00:01 +9 -1: test/glass_surface_test.dart: frosted foreground contrast gruvbox dark
+Glass contrast gruvbox dark: 5.72
+00:01 +10 -1: test/glass_surface_test.dart: frosted foreground contrast solarized light
+Glass contrast solarized light: 7.45
+00:01 +11 -1: test/glass_surface_test.dart: frosted foreground contrast solarized dark
+Glass contrast solarized dark: 5.83
+00:01 +12 -1: test/glass_surface_test.dart: frosted foreground contrast dracula light
+Glass contrast dracula light: 7.86
+00:01 +13 -1: test/glass_surface_test.dart: frosted foreground contrast dracula dark
+Glass contrast dracula dark: 4.92
+00:01 +14 -1: test/glass_surface_test.dart: frosted foreground contrast nord light
+Glass contrast nord light: 7.66
+00:01 +15 -1: test/glass_surface_test.dart: frosted foreground contrast nord dark
+Glass contrast nord dark: 5.19
+00:01 +16 -1: test/glass_surface_test.dart: frosted foreground contrast tokyoNight light
+Glass contrast tokyoNight light: 8.67
+00:01 +17 -1: test/glass_surface_test.dart: frosted foreground contrast tokyoNight dark
+Glass contrast tokyoNight dark: 7.09
+00:01 +18 -1: test/glass_surface_test.dart: frosted foreground contrast oneDark light
+Glass contrast oneDark light: 8.43
+00:01 +19 -1: test/glass_surface_test.dart: frosted foreground contrast oneDark dark
+Glass contrast oneDark dark: 6.23
+00:01 +20 -1: test/glass_surface_test.dart: frosted foreground contrast monokai light
+Glass contrast monokai light: 8.02
+00:01 +21 -1: test/glass_surface_test.dart: frosted foreground contrast monokai dark
+Glass contrast monokai dark: 5.01
+00:01 +22 -1: test/glass_surface_test.dart: frosted foreground contrast rosePine light
+Glass contrast rosePine light: 9.16
+00:01 +23 -1: test/glass_surface_test.dart: frosted foreground contrast rosePine dark
+Glass contrast rosePine dark: 5.82
+00:01 +24 -1: test/glass_surface_test.dart: frosted foreground contrast everforest light
+Glass contrast everforest light: 9.02
+00:01 +25 -1: test/glass_surface_test.dart: frosted foreground contrast everforest dark
+Glass contrast everforest dark: 5.84
+00:01 +26 -1: test/glass_surface_test.dart: frosted foreground contrast kanagawa light
+Glass contrast kanagawa light: 8.51
+00:01 +27 -1: test/glass_surface_test.dart: frosted foreground contrast kanagawa dark
+Glass contrast kanagawa dark: 6.41
+00:01 +28 -1: test/glass_surface_test.dart: frosted foreground contrast ayu light
+Glass contrast ayu light: 9.23
+00:01 +29 -1: test/glass_surface_test.dart: frosted foreground contrast ayu dark
+Glass contrast ayu dark: 7.41
+00:01 +30 -1: test/glass_surface_test.dart: frosted foreground contrast nightOwl light
+Glass contrast nightOwl light: 8.66
+00:01 +31 -1: test/glass_surface_test.dart: frosted foreground contrast nightOwl dark
+Glass contrast nightOwl dark: 6.01
+00:01 +32 -1: test/glass_surface_test.dart: frosted foreground contrast github light
+Glass contrast github light: 8.19
+00:01 +33 -1: test/glass_surface_test.dart: frosted foreground contrast github dark
+Glass contrast github dark: 6.65
+00:01 +34 -1: test/glass_surface_test.dart: frosted foreground contrast palenight light
+Glass contrast palenight light: 8.60
+00:01 +35 -1: test/glass_surface_test.dart: frosted foreground contrast palenight dark
+Glass contrast palenight dark: 6.19
+00:01 +36 -1: test/glass_surface_test.dart: frosted foreground contrast synthwave light
+Glass contrast synthwave light: 7.41
+00:01 +37 -1: test/glass_surface_test.dart: frosted foreground contrast synthwave dark
+Glass contrast synthwave dark: 5.46
+00:01 +38 -1: test/glass_surface_test.dart: frosted foreground contrast cobalt light
+Glass contrast cobalt light: 7.71
+00:01 +39 -1: test/glass_surface_test.dart: frosted foreground contrast cobalt dark
+Glass contrast cobalt dark: 5.19
+00:01 +40 -1: test/glass_surface_test.dart: frosted foreground contrast midnight light
+Glass contrast midnight light: 7.96
+00:01 +41 -1: test/glass_surface_test.dart: frosted foreground contrast midnight dark
+Glass contrast midnight dark: 6.95
+00:01 +42 -1: test/glass_surface_test.dart: frosted foreground contrast paper light
+Glass contrast paper light: 7.33
+00:01 +43 -1: test/glass_surface_test.dart: frosted foreground contrast paper dark
+Glass contrast paper dark: 5.55
+00:01 +44 -1: test/glass_surface_test.dart: frosted foreground contrast forest light
+Glass contrast forest light: 7.84
+00:01 +45 -1: test/glass_surface_test.dart: frosted foreground contrast forest dark
+Glass contrast forest dark: 5.52
+00:01 +46 -1: test/glass_surface_test.dart: frosted foreground contrast ocean light
+Glass contrast ocean light: 7.88
+00:01 +47 -1: test/glass_surface_test.dart: frosted foreground contrast ocean dark
+Glass contrast ocean dark: 5.62
+00:01 +48 -1: test/glass_surface_test.dart: frosted foreground contrast sunset light
+Glass contrast sunset light: 7.78
+00:01 +49 -1: test/glass_surface_test.dart: frosted foreground contrast sunset dark
+Glass contrast sunset dark: 5.92
+00:01 +50 -1: test/glass_surface_test.dart: frosted foreground contrast sakura light
+Glass contrast sakura light: 7.37
+00:01 +51 -1: test/glass_surface_test.dart: frosted foreground contrast sakura dark
+Glass contrast sakura dark: 5.67
+00:01 +52 -1: test/glass_surface_test.dart: frosted foreground contrast lavender light
+Glass contrast lavender light: 7.71
+00:01 +53 -1: test/glass_surface_test.dart: frosted foreground contrast lavender dark
+Glass contrast lavender dark: 5.76
+00:01 +54 -1: test/glass_surface_test.dart: frosted foreground contrast mint light
+Glass contrast mint light: 7.92
+00:01 +55 -1: test/glass_surface_test.dart: frosted foreground contrast mint dark
+Glass contrast mint dark: 5.15
+00:01 +56 -1: test/glass_surface_test.dart: frosted foreground contrast coffee light
+Glass contrast coffee light: 7.80
+00:01 +57 -1: test/glass_surface_test.dart: frosted foreground contrast coffee dark
+Glass contrast coffee dark: 5.91
+00:01 +58 -1: test/glass_surface_test.dart: frosted foreground contrast slate light
+Glass contrast slate light: 7.92
+00:01 +59 -1: test/glass_surface_test.dart: frosted foreground contrast slate dark
+Glass contrast slate dark: 5.78
+00:01 +60 -1: test/glass_surface_test.dart: frosted foreground contrast amber light
+Glass contrast amber light: 8.22
+00:01 +61 -1: test/glass_surface_test.dart: frosted foreground contrast amber dark
+Glass contrast amber dark: 5.26
+00:01 +62 -1: test/glass_surface_test.dart: frosted foreground contrast highContrast light
+Glass contrast highContrast light: 7.38
+00:01 +63 -1: test/glass_surface_test.dart: frosted foreground contrast highContrast dark
+Glass contrast highContrast dark: 5.89
+00:02 +64 -1: test/glass_surface_test.dart: error snackbar has readable light text
+00:02 +65 -1: test/glass_surface_test.dart: error snackbar has readable dark text
+00:02 +66 -1: test/appearance_effects_test.dart: stored everything is on until the person chooses
+00:02 +67 -1: test/appearance_effects_test.dart: stored a choice survives a restart and is app-wide
+00:02 +68 -1: test/appearance_effects_test.dart: stored an unknown stored motion reads as Full
+00:02 +69 -1: test/appearance_effects_test.dart: the Effects section shows the four choices, with glass honest about the phone
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.element (package:flutter_test/src/controller.dart:888:30)
+#2      WidgetController.dragUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2489:38)
+<asynchronous suspension>
+#3      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#4      WidgetController.scrollUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2439:7)
+<asynchronous suspension>
+#5      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#6      _show (file://test/appearance_effects_test.dart:92:3)
+<asynchronous suspension>
+#7      main.<anonymous closure>.<anonymous closure> (file://test/appearance_effects_test.dart:173:7)
+<asynchronous suspension>
+#8      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#9      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  shows the four choices, with glass honest about the phone
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:04 +69 -2: test/appearance_effects_test.dart: the Effects section shows the four choices, with glass honest about the phone [E]
+  Test failed. See exception logs above.
+  The test description was: shows the four choices, with glass honest about the phone
+  
+00:04 +69 -2: test/appearance_effects_test.dart: the Effects section glass off turns the glass solid and is saved
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.element (package:flutter_test/src/controller.dart:888:30)
+#2      WidgetController.dragUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2489:38)
+<asynchronous suspension>
+#3      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#4      WidgetController.scrollUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2439:7)
+<asynchronous suspension>
+#5      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#6      _show (file://test/appearance_effects_test.dart:92:3)
+<asynchronous suspension>
+#7      main.<anonymous closure>.<anonymous closure> (file://test/appearance_effects_test.dart:192:7)
+<asynchronous suspension>
+#8      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#9      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  glass off turns the glass solid and is saved
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:05 +69 -3: test/appearance_effects_test.dart: the Effects section glass off turns the glass solid and is saved [E]
+  Test failed. See exception logs above.
+  The test description was: glass off turns the glass solid and is saved
+  
+00:05 +69 -3: test/appearance_effects_test.dart: the Effects section Animations: Calm and Off are chosen and saved
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.element (package:flutter_test/src/controller.dart:888:30)
+#2      WidgetController.dragUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2489:38)
+<asynchronous suspension>
+#3      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#4      WidgetController.scrollUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2439:7)
+<asynchronous suspension>
+#5      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#6      _show (file://test/appearance_effects_test.dart:92:3)
+<asynchronous suspension>
+#7      main.<anonymous closure>.<anonymous closure> (file://test/appearance_effects_test.dart:225:7)
+<asynchronous suspension>
+#8      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#9      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  Animations: Calm and Off are chosen and saved
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:05 +69 -4: test/appearance_effects_test.dart: the Effects section Animations: Calm and Off are chosen and saved [E]
+  Test failed. See exception logs above.
+  The test description was: Animations: Calm and Off are chosen and saved
+  
+00:05 +69 -4: test/appearance_effects_test.dart: the Effects section Celebrations and Vibration switch off and are saved
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.element (package:flutter_test/src/controller.dart:888:30)
+#2      WidgetController.dragUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2489:38)
+<asynchronous suspension>
+#3      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#4      WidgetController.scrollUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2439:7)
+<asynchronous suspension>
+#5      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#6      _show (file://test/appearance_effects_test.dart:92:3)
+<asynchronous suspension>
+#7      main.<anonymous closure>.<anonymous closure> (file://test/appearance_effects_test.dart:249:7)
+<asynchronous suspension>
+#8      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#9      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  Celebrations and Vibration switch off and are saved
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:06 +69 -5: test/appearance_effects_test.dart: the Effects section Celebrations and Vibration switch off and are saved [E]
+  Test failed. See exception logs above.
+  The test description was: Celebrations and Vibration switch off and are saved
+  
+00:06 +69 -5: test/appearance_effects_test.dart: the Effects section the system Remove animations wins and the page says so
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.element (package:flutter_test/src/controller.dart:888:30)
+#2      WidgetController.dragUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2489:38)
+<asynchronous suspension>
+#3      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#4      WidgetController.scrollUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2439:7)
+<asynchronous suspension>
+#5      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#6      _show (file://test/appearance_effects_test.dart:92:3)
+<asynchronous suspension>
+#7      main.<anonymous closure>.<anonymous closure> (file://test/appearance_effects_test.dart:268:7)
+<asynchronous suspension>
+#8      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#9      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  the system Remove animations wins and the page says so
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:06 +69 -6: test/appearance_effects_test.dart: the Effects section the system Remove animations wins and the page says so [E]
+  Test failed. See exception logs above.
+  The test description was: the system Remove animations wins and the page says so
+  
+00:06 +69 -6: test/appearance_effects_test.dart: the Effects section a refused save puts the choice back and says so
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.single (dart:core/iterable.dart:694:25)
+#1      WidgetController.element (package:flutter_test/src/controller.dart:888:30)
+#2      WidgetController.dragUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2489:38)
+<asynchronous suspension>
+#3      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#4      WidgetController.scrollUntilVisible.<anonymous closure> (package:flutter_test/src/controller.dart:2439:7)
+<asynchronous suspension>
+#5      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#6      _show (file://test/appearance_effects_test.dart:92:3)
+<asynchronous suspension>
+#7      main.<anonymous closure>.<anonymous closure> (file://test/appearance_effects_test.dart:289:7)
+<asynchronous suspension>
+#8      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#9      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  a refused save puts the choice back and says so
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:07 +69 -7: test/appearance_effects_test.dart: the Effects section a refused save puts the choice back and says so [E]
+  Test failed. See exception logs above.
+  The test description was: a refused save puts the choice back and says so
+  
+00:07 +69 -7: test/appearance_effects_test.dart: the app obeys the stored choice every route reads the choices and follows a change
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: KitMotionLevel:<KitMotionLevel.calm>
+  Actual: KitMotionLevel:<KitMotionLevel.full>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/appearance_effects_test.dart:325:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/appearance_effects_test.dart line 325
+The test description was:
+  every route reads the choices and follows a change
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:07 +69 -8: test/appearance_effects_test.dart: the app obeys the stored choice every route reads the choices and follows a change [E]
+  Test failed. See exception logs above.
+  The test description was: every route reads the choices and follows a change
+  
+00:07 +69 -8: test/appearance_effects_test.dart: the app obeys the stored choice Vibration off never reaches the platform
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: an object with length of <2>
+  Actual: [
+            'HapticFeedbackType.lightImpact',
+            'HapticFeedbackType.lightImpact',
+            'HapticFeedbackType.lightImpact',
+            'HapticFeedbackType.lightImpact',
+            'HapticFeedbackType.successNotification'
+          ]
+   Which: has length of <5>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/appearance_effects_test.dart:361:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/appearance_effects_test.dart line 361
+The test description was:
+  Vibration off never reaches the platform
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:07 +69 -9: test/appearance_effects_test.dart: the app obeys the stored choice Vibration off never reaches the platform [E]
+  Test failed. See exception logs above.
+  The test description was: Vibration off never reaches the platform
+  
+00:07 +69 -9: test/appearance_effects_test.dart: the app obeys the stored choice glass off: glass anywhere in the app is solid
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: KitGlassLook:<KitGlassLook.solid>
+  Actual: KitGlassLook:<KitGlassLook.frosted>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/appearance_effects_test.dart:371:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/appearance_effects_test.dart line 371
+The test description was:
+  glass off: glass anywhere in the app is solid
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:08 +69 -10: test/appearance_effects_test.dart: the app obeys the stored choice glass off: glass anywhere in the app is solid [E]
+  Test failed. See exception logs above.
+  The test description was: glass off: glass anywhere in the app is solid
+  
+00:08 +69 -10: Some tests failed.
+
+Failing tests:
+  test/appearance_effects_test.dart: the Effects section Animations: Calm and Off are chosen and saved
+  test/appearance_effects_test.dart: the Effects section Celebrations and Vibration switch off and are saved
+  test/appearance_effects_test.dart: the Effects section a refused save puts the choice back and says so
+  test/appearance_effects_test.dart: the Effects section glass off turns the glass solid and is saved
+  ... and 6 more

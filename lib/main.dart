@@ -35,6 +35,8 @@ import 'update/shorebird_update_notice.dart';
 import 'ui/app_theme.dart';
 import 'ui/desktop/desktop_interaction.dart';
 import 'ui/desktop/shortcuts.dart';
+import 'ui/kit/kit_effects.dart';
+import 'ui/kit/motion/kit_haptics.dart';
 import 'ui/theme_packs.dart';
 import 'ui/navigation/chat_route.dart';
 import 'ui/screens/settings_screen.dart';
@@ -1289,7 +1291,21 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
                           onOpenSettings: _openSettings,
                           paletteCommands: _shellCommands,
                         ),
-                        child: child ?? const SizedBox.shrink(),
+                        // Settings › Appearance › Effects, above the
+                        // navigator so every route and its transitions read
+                        // the same choices. Calls without a context (a send
+                        // from a controller) obey Vibration via the flag.
+                        child: ValueListenableBuilder<KitEffects>(
+                          valueListenable: _controller.effects,
+                          builder: (context, effects, navigator) {
+                            KitHaptics.enabled = effects.haptics;
+                            return KitEffectsScope(
+                              effects: effects,
+                              child: navigator!,
+                            );
+                          },
+                          child: child ?? const SizedBox.shrink(),
+                        ),
                       ),
                     ),
                   ),

@@ -24776,7 +24776,7 @@ abstract class AppLocalizations {
   /// On-device AI Team block: download size line
   ///
   /// In en, this message translates to:
-  /// **'Downloads about {size} MB (Gas City, beads and Dolt, built for Android).'**
+  /// **'Downloads about {size} MB (Gas City, beads and Dolt, from each project\'s own releases).'**
   String teamUiPhoneOfferSize(int size);
 
   /// On-device AI Team block: lifecycle warning
@@ -24848,7 +24848,7 @@ abstract class AppLocalizations {
   /// On-device setup: project picker body
   ///
   /// In en, this message translates to:
-  /// **'The team works on one project folder of the phone server. The first agent commits to a git origin created next to it.'**
+  /// **'The team works on one project folder of the phone server. A project without a git origin gets one on the phone, and the team\'s merged work comes back into the folder by itself.'**
   String get teamUiPhoneChooseProjectBody;
 
   /// On-device setup: project picker when the server has no folders
@@ -24980,7 +24980,7 @@ abstract class AppLocalizations {
   /// On-device setup: package install failure
   ///
   /// In en, this message translates to:
-  /// **'Termux could not install the prerequisites (libicu, git, jq, tmux). The output below says which.'**
+  /// **'Ubuntu could not install the prerequisites (tmux, jq, lsof, procps). The output below says which.'**
   String get teamUiPhoneFailedPackages;
 
   /// On-device setup: project failure
@@ -29225,6 +29225,30 @@ abstract class AppLocalizations {
   /// **'Waiting for AI Team to answer'**
   String get aiteamComponentStageWaiting;
 
+  /// While AI Team is being turned on for a project: how long it takes, and that leaving the screen does not stop it
+  ///
+  /// In en, this message translates to:
+  /// **'This takes about 5 to 10 minutes the first time. You can leave this screen; it keeps going.'**
+  String get aiteamComponentTurnOnExpectation;
+
+  /// While AI Team starts again: how long it takes, and that leaving the screen does not stop it
+  ///
+  /// In en, this message translates to:
+  /// **'This takes a few minutes. You can leave this screen; it keeps going.'**
+  String get aiteamComponentStartExpectation;
+
+  /// Under the turn-on stage in progress: how long it has run, as minutes:seconds
+  ///
+  /// In en, this message translates to:
+  /// **'{time} so far'**
+  String aiteamComponentStageSoFar(String time);
+
+  /// Under a finished turn-on stage: how long it took, as minutes:seconds
+  ///
+  /// In en, this message translates to:
+  /// **'Took {time}'**
+  String aiteamComponentStageTook(String time);
+
   /// Status line of a running in-app team
   ///
   /// In en, this message translates to:
@@ -30184,6 +30208,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save anyway'**
   String get addServerSaveAnyway;
+
+  /// Settings › Appearance: section label over light/dark and language.
+  ///
+  /// In en, this message translates to:
+  /// **'Display'**
+  String get appearanceDisplaySection;
+
+  /// Settings › Appearance: section label over glass, animations, celebrations and vibration.
+  ///
+  /// In en, this message translates to:
+  /// **'Effects'**
+  String get effectsSection;
+
+  /// Settings › Appearance › Effects: switch for the see-through glass on the dock and the message box.
+  ///
+  /// In en, this message translates to:
+  /// **'Glass effects'**
+  String get effectsGlass;
+
+  /// Glass effects row, supporting line when the phone draws glass.
+  ///
+  /// In en, this message translates to:
+  /// **'The dock and message box float as glass over what scrolls beneath'**
+  String get effectsGlassOn;
+
+  /// Glass effects row, supporting line when the phone cannot draw liquid glass and falls back to a frosted blur.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses a frosted surface on this phone'**
+  String get effectsGlassFrosted;
+
+  /// Glass effects row, supporting line when a system accessibility setting makes glass solid.
+  ///
+  /// In en, this message translates to:
+  /// **'Solid while high contrast, a screen reader or Remove animations is on'**
+  String get effectsGlassSystem;
+
+  /// Settings › Appearance › Effects: how much the app moves.
+  ///
+  /// In en, this message translates to:
+  /// **'Animations'**
+  String get effectsAnimations;
+
+  /// Animations choice: everything moves.
+  ///
+  /// In en, this message translates to:
+  /// **'Full'**
+  String get effectsMotionFull;
+
+  /// Animations: one line explaining Full.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawings move and waiting screens breathe'**
+  String get effectsMotionFullHint;
+
+  /// Animations choice: drawings appear, nothing loops.
+  ///
+  /// In en, this message translates to:
+  /// **'Calm'**
+  String get effectsMotionCalm;
+
+  /// Animations: one line explaining Calm.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawings appear, nothing keeps moving'**
+  String get effectsMotionCalmHint;
+
+  /// Animations choice: nothing moves.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get effectsMotionOff;
+
+  /// Animations: one line explaining Off.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything shows at once'**
+  String get effectsMotionOffHint;
+
+  /// Animations: note when the system setting overrides the choice.
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone’s Remove animations is on, so nothing moves whatever you choose here'**
+  String get effectsMotionSystemOff;
+
+  /// Settings › Appearance › Effects: switch for the short finished moments.
+  ///
+  /// In en, this message translates to:
+  /// **'Celebrations'**
+  String get effectsCelebrations;
+
+  /// Celebrations row, supporting line.
+  ///
+  /// In en, this message translates to:
+  /// **'A short moment when setup finishes or a task is merged'**
+  String get effectsCelebrationsHint;
+
+  /// Settings › Appearance › Effects: switch for haptic feedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibration'**
+  String get effectsVibration;
+
+  /// Vibration row, supporting line.
+  ///
+  /// In en, this message translates to:
+  /// **'A light tick when you send, a soft one when something finishes'**
+  String get effectsVibrationHint;
+
+  /// Effects: a choice could not be saved; it was put back.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save this choice on this device. Try again.'**
+  String get effectsSaveFailed;
 
   /// Work tab and AI Team intro: the one line that says what the AI Team is for, while it is off
   ///

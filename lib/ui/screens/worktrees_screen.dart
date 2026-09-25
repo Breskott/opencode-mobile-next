@@ -11,6 +11,7 @@ import '../desktop/context_menu.dart';
 import '../widgets/info_label.dart';
 import '../widgets/product_states.dart';
 import '../app_iconography.dart';
+import '../kit/motion/kit_refresh.dart';
 
 class WorktreesScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -466,7 +467,7 @@ class _WorktreesScreenState extends State<WorktreesScreen> {
               ),
             )
           : null,
-      body: RefreshIndicator(
+      body: KitRefresh(
         onRefresh: _load,
         child: ListView(
           key: const ValueKey('worktrees-list'),

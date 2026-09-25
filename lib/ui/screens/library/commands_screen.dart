@@ -84,7 +84,7 @@ class _CommandsScreenState extends State<CommandsScreen> {
               ),
               Expanded(
                 child: commands.isEmpty
-                    ? RefreshIndicator(
+                    ? KitRefresh(
                         onRefresh: _load,
                         child: ProductEmptyState(
                           icon: AppIcons.run,
@@ -96,7 +96,7 @@ class _CommandsScreenState extends State<CommandsScreen> {
                           ).e7LibraryCommandsFromYourProjectAndSkillsAppear,
                         ),
                       )
-                    : RefreshIndicator(
+                    : KitRefresh(
                         onRefresh: _load,
                         child: ListView.separated(
                           physics: const AlwaysScrollableScrollPhysics(),

@@ -37,7 +37,7 @@ class BuiltinTeam {
   BuiltinTeam({
     BuiltinLinux? linux,
     Future<String?> Function(Uri url)? httpGet,
-    this.pollInterval = const Duration(seconds: 2),
+    this.pollInterval = const Duration(seconds: 1),
   }) : _linux = linux ?? BuiltinLinux(),
        _get = httpGet ?? _loopbackGet;
 
@@ -637,6 +637,10 @@ exit 0
     Duration healthTimeout = const Duration(minutes: 6),
   }) async {
     onStage?.call(BuiltinTeamStage.preparing);
+    // A store [prepare] is making: wait for it rather than make a second
+    // one beside it. Made, the script below finds it and returns at once.
+    final preparing = _preparing;
+    if (preparing != null) await preparing;
     await _script(
       BuiltinTeamStage.preparing,
       cityScript,
@@ -650,6 +654,28 @@ exit 0
     );
     await start(notice: notice, onStage: onStage, healthTimeout: healthTimeout);
   }
+
+  Future<void>? _preparing;
+
+  /// Makes the team's store now, in the background, when AI Team is
+  /// installed and has none yet, so that turning it on for a project later
+  /// skips that step (2 to 3 of the ~9 minutes on the emulator). One at a
+  /// time; [turnOn] waits for it. A failure is left for [turnOn] to meet
+  /// again, with its own retries and its own message. The store is not the
+  /// team: nothing is started or registered, and nothing keeps running.
+  Future<void> prepare() => _preparing ??= () async {
+    try {
+      await _script(
+        BuiltinTeamStage.preparing,
+        cityScript,
+        const Duration(minutes: 5),
+      );
+    } catch (_) {
+      // turnOn runs the same script again and says what went wrong.
+    } finally {
+      _preparing = null;
+    }
+  }();
 
   /// Starts the supervisor unless it runs, registers the team and waits for
   /// it to answer. A supervisor that runs but does not answer is restarted

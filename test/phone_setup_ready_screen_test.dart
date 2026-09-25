@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/api/models.dart';
@@ -358,6 +359,45 @@ void main() {
     await mount(tester);
     // Reduced motion: the finished drawing at once, nothing to wait for.
     expect(tester.hasRunningAnimations, isFalse);
+  });
+
+  testWidgets('the finish is celebrated: the longer entrance and one soft '
+      'confirmation', (tester) async {
+    final haptics = <Object?>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'HapticFeedback.vibrate') {
+          haptics.add(call.arguments);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    final drawing = find.byWidgetPredicate(
+      (w) => w is KitIllustration && w.scene is SetupReadyScene,
+    );
+
+    await mount(tester, reduceMotion: false);
+    expect(
+      tester.widget<KitIllustration>(drawing).entranceDuration,
+      KitMotion.celebration,
+    );
+    // Once, as the screen arrives; typing or rebuilding does not repeat it.
+    await tester.enterText(field(), 'other-name');
+    await tester.pumpAndSettle();
+    expect(haptics, ['HapticFeedbackType.successNotification']);
+    await tester.pumpWidget(const SizedBox());
+
+    // Reduced motion: the finished frame, and no haptic either.
+    haptics.clear();
+    await mount(tester);
+    expect(haptics, isEmpty);
   });
 
   for (final locale in const [Locale('en'), Locale('ar')]) {

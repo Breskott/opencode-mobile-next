@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 
 import '../domain/phone_agent_context.dart';
 import '../domain/workspace_paths.dart';
 import '../platform/platform_capabilities.dart';
 import 'opencode_ubuntu_setup.dart';
+import 'team_scripts.dart';
 
 /// The runtime selected for the one app-managed Ubuntu server. It is separate
 /// from a server's reported version and survives restarts in the manager state.
@@ -2455,7 +2457,7 @@ storage_scan_body() {
     add_path "$i_team" "$dir"
   done
   if [ -n "$rootfs" ]; then
-    for dir in "$rootfs"/root/aiteam*; do
+    for dir in "$rootfs"/root/aiteam* "$rootfs/opt/aiteam"; do
       add_path "$i_team" "$dir"
     done
   fi
@@ -2997,14 +2999,15 @@ esac
   // AI Team on this phone (TEAM-301): ~/.oc/aiteam.sh next to manager.sh.
   // ---------------------------------------------------------------------------
 
-  /// Where the bridge writes [_aiteamScript].
+  /// Where the bridge writes `aiteam.sh` ([TermuxTeamScripts.aiteamScript]).
   static const aiteamPath = '$termuxHome/.oc/aiteam.sh';
 
-  /// Where an install dispatched with the bundled manifest writes it.
-  static const aiteamManifestPath = '$termuxHome/.oc/aiteam-manifest.json';
+  /// Where every dispatch writes the pinned downloads `aiteam.sh install`
+  /// reads ([TermuxTeamScripts.pinsFile]).
+  static const aiteamPinsPath = '$termuxHome/.oc/aiteam-pins';
 
-  /// The loopback supervisor every phone-hosted city listens on.
-  static const aiteamSupervisorUrl = 'http://127.0.0.1:8372';
+  /// The loopback supervisor of the Termux team.
+  static const aiteamSupervisorUrl = TermuxTeamScripts.supervisorUrl;
 
   /// The verbs `aiteam.sh` runs detached from the bridge shell (their
   /// progress is read back through `status`).
@@ -3016,7 +3019,7 @@ esac
     'remove',
   };
 
-  static String aiteamScriptForTesting() => _aiteamScript;
+  static String aiteamScriptForTesting() => TermuxTeamScripts.aiteamScript;
 
   static String aiteamStatusScript() => aiteamVerbScript('status');
 
@@ -3050,17 +3053,19 @@ for rootfs in "\$base/containers/opencode-ubuntu/rootfs" "\$base/installed-rootf
 done
 ''';
 
-  /// The bridge shell for one `aiteam.sh` verb: rewrites the script from
-  /// this build, then either runs the verb inline (`status`, `log`) or
-  /// queues it and launches it detached in its own process group, printing
-  /// `aiteam-started:<pid>` (or `aiteam-busy:<verb>:<pid>` with exit 75
-  /// while another verb still runs). [manifestJson], when given, is written
-  /// to [aiteamManifestPath] first so an install can read the bundled
-  /// manifest as a local path.
+  /// The bridge shell for one `aiteam.sh` verb: rewrites the script and the
+  /// pinned downloads from this build, then either runs the verb inline
+  /// (`status`, `log`) or queues it and launches it detached in its own
+  /// process group, printing `aiteam-started:<pid>` (or
+  /// `aiteam-busy:<verb>:<pid>` with exit 75 while another verb still runs).
+  ///
+  /// `init <project>` also gets the team's script for that project
+  /// ([TermuxTeamScripts.rigFile]; `--rig` names it), written to
+  /// `~/.oc/aiteam/rig.sh`. [pinsFile] replaces the pins in tests.
   static String aiteamVerbScript(
     String verb, {
     List<String> args = const [],
-    String? manifestJson,
+    @visibleForTesting String? pinsFile,
   }) {
     if (!RegExp(r'^[a-z]+$').hasMatch(verb)) {
       throw ArgumentError.value(verb, 'verb');
@@ -3070,20 +3075,36 @@ done
         throw ArgumentError.value(arg, 'args', 'Must be a single line.');
       }
     }
-    if (manifestJson != null &&
-        manifestJson.contains('OC_AITEAM_MANIFEST_EOF')) {
-      throw ArgumentError.value(manifestJson, 'manifestJson');
+    final pins = pinsFile ?? TermuxTeamScripts.pinsFile();
+    String? rig;
+    if (verb == 'init' && args.isNotEmpty) {
+      final project = TermuxTeamScripts.ubuntuPath(args.first);
+      final named = args.indexOf('--rig');
+      if (project.startsWith('/')) {
+        rig = TermuxTeamScripts.rigFile(
+          project,
+          rig: named >= 0 && named + 1 < args.length ? args[named + 1] : null,
+        );
+      }
+    }
+    for (final (text, end) in [
+      (pins, 'OC_AITEAM_PINS_EOF'),
+      (rig ?? '', 'OC_AITEAM_RIG_EOF'),
+    ]) {
+      if (text.split('\n').contains(end)) {
+        throw ArgumentError.value(text, 'script', 'Holds $end.');
+      }
     }
     final quotedArgs = args.map(_shellQuote).join(' ');
     final buffer = StringBuffer('''
 set -eu
 OC_DIR="\$HOME/.oc"
 AITEAM="\$OC_DIR/aiteam.sh"
-mkdir -p "\$OC_DIR"
+mkdir -p "\$OC_DIR/aiteam"
 umask 077
 aiteam_tmp="\$AITEAM.tmp.\$\$"
 cat > "\$aiteam_tmp" <<'OC_AITEAM_EOF'
-$_aiteamScript
+${TermuxTeamScripts.aiteamScript}
 OC_AITEAM_EOF
 chmod 700 "\$aiteam_tmp"
 mv "\$aiteam_tmp" "\$AITEAM"
@@ -3091,14 +3112,17 @@ mv "\$aiteam_tmp" "\$AITEAM"
   echo 'aiteam-install-failed' >&2
   exit 74
 }
+pins_tmp="\$OC_DIR/aiteam-pins.tmp.\$\$"
+cat > "\$pins_tmp" <<'OC_AITEAM_PINS_EOF'
+${pins}OC_AITEAM_PINS_EOF
+mv "\$pins_tmp" "\$OC_DIR/aiteam-pins"
 ''');
-    if (manifestJson != null) {
+    if (rig != null) {
       buffer.write('''
-manifest_tmp="\$OC_DIR/aiteam-manifest.json.tmp.\$\$"
-cat > "\$manifest_tmp" <<'OC_AITEAM_MANIFEST_EOF'
-$manifestJson
-OC_AITEAM_MANIFEST_EOF
-mv "\$manifest_tmp" "\$OC_DIR/aiteam-manifest.json"
+rig_tmp="\$OC_DIR/aiteam/rig.sh.tmp.\$\$"
+cat > "\$rig_tmp" <<'OC_AITEAM_RIG_EOF'
+${rig}OC_AITEAM_RIG_EOF
+mv "\$rig_tmp" "\$OC_DIR/aiteam/rig.sh"
 ''');
     }
     if (!aiteamDetachedVerbs.contains(verb)) {
@@ -3118,889 +3142,14 @@ echo "aiteam-started:\$!"
   static Future<String> aiteam(
     String verb, {
     List<String> args = const [],
-    String? manifestJson,
     Duration timeout = const Duration(seconds: 30),
   }) async {
     final result = await run(
-      aiteamVerbScript(verb, args: args, manifestJson: manifestJson),
+      aiteamVerbScript(verb, args: args),
       timeout: timeout,
     );
     return result.stdout;
   }
-
-  static const _aiteamScript = r'''#!/data/data/com.termux/files/usr/bin/bash
-# AI Team on this phone (TEAM-301): the managed Gas City runtime in the
-# hybrid native layout (docs/qa/ai-team/spike-phone-2026-09.md §3f).
-# gc, bd and dolt run natively in Termux; only the OpenCode agent process
-# runs inside the glibc rootfs through the `opencode` wrapper.
-#
-# Verbs: install <manifest> | init <project> [--city n] [--rig n] | start |
-#        stop | status | remove | log
-# Every verb except status/log appends to ~/.oc/aiteam/aiteam.log and to the
-# OpenCode install live output (~/.oc/install.log via manager.sh write-log).
-set -Eeuo pipefail
-
-OC_DIR="$HOME/.oc"
-AITEAM_DIR="$OC_DIR/aiteam"
-STATE="$AITEAM_DIR/state"
-CONFIG="$AITEAM_DIR/config"
-LOG="$AITEAM_DIR/aiteam.log"
-VERB_LOCK="$AITEAM_DIR/verb.lock"
-CITY_DIR="$AITEAM_DIR/city"
-CITY_TOML="$AITEAM_DIR/city.toml"
-SUPERVISOR_PID="$AITEAM_DIR/supervisor.pid"
-SUPERVISOR_LOG="$AITEAM_DIR/supervisor.log"
-REMOVED_FILE="$OC_DIR/aiteam-removed"
-MANAGER="$OC_DIR/manager.sh"
-PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
-BIN_DIR="$PREFIX/bin"
-# Downloads live under the AI Team directory, not $PREFIX/tmp: the Termux
-# service clears its tmp directory asynchronously when it starts, which
-# raced the first verb after a Termux restart and deleted the folder
-# between mkdir and the first copy.
-TMP_DIR="$AITEAM_DIR/tmp"
-GC_URL="${AITEAM_URL:-http://127.0.0.1:8372}"
-HEALTH_TIMEOUT="${AITEAM_HEALTH_TIMEOUT:-120}"
-DEFAULT_CITY=phone
-INSTALL_NAMES='gc bd dolt wrapper'
-
-# Process environment the Gas City pack scripts need on Android
-# (docs/qa/ai-team/spike-phone-2026-09.md §3h). The pack's `#!/bin/sh`
-# scripts must resolve to Termux's shell, not Android's mksh: mksh marks
-# `exec 9>lockfile` close-on-exec, so the Dolt start lock (`flock -n 9`)
-# fails with EBADF and `gc init` ends in "exec beads start: context deadline
-# exceeded". termux-exec's LD_PRELOAD rewrites the shebang. Its system-linker
-# exec mode must stay off, otherwise the pack resolves the gc helper as
-# /apex/.../linker64. GC_BIN pins the helper explicitly either way.
-export TERMUX_EXEC__SYSTEM_LINKER_EXEC__MODE=disable
-export GC_BIN="$BIN_DIR/gc"
-if [ -z "${LD_PRELOAD:-}" ] && [ "$(uname -o 2>/dev/null)" = Android ]; then
-  for lib in "$PREFIX/lib/libtermux-exec.so" "$PREFIX/lib/libtermux-exec-ld-preload.so"; do
-    if [ -f "$lib" ]; then
-      export LD_PRELOAD="$lib"
-      break
-    fi
-  done
-fi
-
-# ---------------------------------------------------------------------------
-# state, config, logging
-# ---------------------------------------------------------------------------
-
-read_kv() {
-  local file="$1" key="$2" name value
-  [ -f "$file" ] || return 0
-  while IFS='=' read -r name value; do
-    if [ "$name" = "$key" ]; then
-      printf '%s' "$value"
-      return 0
-    fi
-  done < "$file"
-}
-
-state_value() { read_kv "$STATE" "$1"; }
-config_value() { read_kv "$CONFIG" "$1"; }
-
-# write_state <phase> <message> [supervisor_pid]
-# Phases: idle downloading verifying installing-packages installed
-# creating-city city-ready starting ready stopping stopped removing
-# failed:<reason>. Keeps the verb name and pid of the running verb.
-write_state() {
-  local phase="$1" message="$2" supervisor="${3-$(state_value supervisor_pid)}"
-  mkdir -p "$AITEAM_DIR"
-  local tmp="$STATE.tmp.$$"
-  printf 'phase=%s\nmessage=%s\nverb=%s\npid=%s\nsupervisor_pid=%s\nupdated_at=%s\n' \
-    "$phase" "$message" "${CURRENT_VERB:-}" "${CURRENT_PID:-}" "$supervisor" "$(date +%s)" > "$tmp"
-  mv "$tmp" "$STATE"
-}
-
-set_config() {
-  local key="$1" value="$2"
-  mkdir -p "$AITEAM_DIR"
-  local tmp="$CONFIG.tmp.$$"
-  { [ ! -f "$CONFIG" ] || grep -v "^$key=" "$CONFIG" || true; printf '%s=%s\n' "$key" "$value"; } > "$tmp"
-  mv "$tmp" "$CONFIG"
-}
-
-log() { printf '[aiteam] %s\n' "$*"; }
-
-# The managed Ubuntu rootfs, in either proot-distro layout; empty when it is
-# not installed.
-rootfs_dir() {
-  local base="$PREFIX/var/lib/proot-distro"
-  if [ -d "$base/containers/opencode-ubuntu/rootfs" ]; then
-    printf '%s' "$base/containers/opencode-ubuntu/rootfs"
-  elif [ -d "$base/installed-rootfs/opencode-ubuntu" ]; then
-    printf '%s' "$base/installed-rootfs/opencode-ubuntu"
-  else
-    return 1
-  fi
-}
-
-# A project the app names by its path inside the rootfs (/root/projects/x)
-# lives natively under the rootfs directory; resolve it there when the
-# path does not exist on the Termux side.
-resolve_project() {
-  local project="$1" rootfs
-  if [ ! -d "$project" ]; then
-    case "$project" in
-      /root/*)
-        if rootfs=$(rootfs_dir) && [ -d "$rootfs$project" ]; then
-          project="$rootfs$project"
-        fi ;;
-    esac
-  fi
-  printf '%s' "$project"
-}
-
-live_sink() {
-  if [ -x "$MANAGER" ]; then "$MANAGER" write-log install; else cat > /dev/null; fi
-}
-
-# Mirror everything a verb prints into aiteam.log and the OpenCode install
-# live output so the setup screen's panel shows it.
-attach_log() {
-  mkdir -p "$AITEAM_DIR"
-  touch "$LOG"
-  chmod 600 "$LOG"
-  # fd 3 keeps the original stdout (the terminal when run by hand over SSH;
-  # /dev/null when the bridge dispatched the verb).
-  exec 3>&1
-  exec > >(tee -a "$LOG" >(live_sink) >&3) 2>&1
-}
-
-fail() {
-  local reason="$1"
-  shift
-  local message="${*:-$reason}"
-  trap - ERR
-  write_state "failed:$reason" "$message"
-  log "ERROR: $message"
-  release_verb_lock
-  exit "${FAIL_CODE:-1}"
-}
-
-on_verb_error() {
-  local code=$?
-  local line="${BASH_LINENO[0]:-unknown}"
-  local stage
-  stage=$(state_value message)
-  [ -n "$stage" ] || stage="$CURRENT_VERB"
-  fail "${CURRENT_VERB}-error" "$stage failed (exit $code; line $line)"
-}
-
-# ---------------------------------------------------------------------------
-# processes
-# ---------------------------------------------------------------------------
-
-process_group() {
-  local stat_line
-  stat_line=$(cat "/proc/$1/stat" 2>/dev/null) || return 1
-  stat_line=${stat_line##*) }
-  set -- $stat_line
-  printf '%s' "${3:-}"
-}
-
-process_alive() {
-  case "${1:-}" in ''|*[!0-9]*) return 1 ;; esac
-  kill -0 "$1" 2>/dev/null
-}
-
-process_cmdline() { { tr '\0' ' ' < "/proc/$1/cmdline"; } 2>/dev/null || true; }
-
-# Long verbs own their process group so a Stop can take the whole tree down
-# and so the bridge's shell exiting never takes the verb with it.
-ensure_isolated() {
-  [ "$(process_group "$$" 2>/dev/null || true)" = "$$" ] && return 0
-  [ "${AITEAM_ISOLATED:-}" != 1 ] || return 0
-  AITEAM_ISOLATED=1 exec setsid "${BASH:-bash}" "$0" "$@"
-}
-
-claim_verb_lock() {
-  mkdir -p "$AITEAM_DIR"
-  if mkdir "$VERB_LOCK" 2>/dev/null; then
-    printf '%s %s\n' "$$" "$CURRENT_VERB" > "$VERB_LOCK/owner"
-    return 0
-  fi
-  local owner_pid='' owner_verb=''
-  [ -f "$VERB_LOCK/owner" ] && { read -r owner_pid owner_verb < "$VERB_LOCK/owner" || true; }
-  if process_alive "$owner_pid"; then
-    echo "aiteam-busy:${owner_verb:-unknown}:$owner_pid" >&2
-    return 75
-  fi
-  rm -rf "$VERB_LOCK"
-  mkdir "$VERB_LOCK" 2>/dev/null || return 75
-  printf '%s %s\n' "$$" "$CURRENT_VERB" > "$VERB_LOCK/owner"
-}
-
-release_verb_lock() {
-  local owner_pid=''
-  [ -f "$VERB_LOCK/owner" ] && { read -r owner_pid _ < "$VERB_LOCK/owner" || true; }
-  [ "$owner_pid" = "$$" ] || return 0
-  rm -f "$VERB_LOCK/owner"
-  rmdir "$VERB_LOCK" 2>/dev/null || true
-}
-
-begin_verb() {
-  CURRENT_VERB="$1"
-  CURRENT_PID="$$"
-  claim_verb_lock || exit 75
-  trap on_verb_error ERR
-  trap release_verb_lock EXIT
-  attach_log
-  write_state queued "Starting $CURRENT_VERB"
-  printf '\n[aiteam] %s started at %s\n' "$CURRENT_VERB" "$(date -Iseconds 2>/dev/null || date)"
-}
-
-# queue <verb>: the dispatcher's synchronous gate. Refuses while another
-# verb owns the lock (aiteam-busy:<verb>:<pid>, exit 75), else records the
-# queued verb so a status read between dispatch and the verb's first write
-# already reports it as busy.
-queue_verb() {
-  local next="${1:-}"
-  case "$next" in install|init|start|stop|remove) ;; *) exit 64 ;; esac
-  local owner_pid='' owner_verb=''
-  [ -f "$VERB_LOCK/owner" ] && { read -r owner_pid owner_verb < "$VERB_LOCK/owner" || true; }
-  if process_alive "$owner_pid"; then
-    echo "aiteam-busy:${owner_verb:-unknown}:$owner_pid" >&2
-    exit 75
-  fi
-  CURRENT_VERB="$next" CURRENT_PID='' write_state queued "Queued $next"
-  echo "aiteam-queued:$next"
-}
-
-verb_alive() {
-  process_alive "${1:-}" || return 1
-  case "$(process_cmdline "$1")" in *aiteam*) return 0 ;; esac
-  return 1
-}
-
-supervisor_alive() {
-  local pid
-  pid=$(cat "$SUPERVISOR_PID" 2>/dev/null || true)
-  process_alive "$pid" || return 1
-  case "$(process_cmdline "$pid")" in *supervisor*) return 0 ;; esac
-  return 1
-}
-
-health_json() {
-  local city="${1:-}"
-  if [ -n "$city" ]; then
-    curl -s -m 5 "$GC_URL/v0/city/$city/health" 2>/dev/null || true
-  else
-    curl -s -m 5 "$GC_URL/health" 2>/dev/null || true
-  fi
-}
-
-health_status() {
-  local body
-  body=$(health_json "$@")
-  [ -n "$body" ] || { printf unreachable; return 0; }
-  printf '%s' "$body" | sed -n 's/.*"status":"\([^"]*\)".*/\1/p' | head -1
-}
-
-# ---------------------------------------------------------------------------
-# manifest (schema 1, tool/host/aiteam-manifest-*.json)
-# ---------------------------------------------------------------------------
-
-manifest_str() { printf '%s' "$MANIFEST" | sed -n "s/.*\"$1\":\"\([^\"]*\)\".*/\1/p" | head -1; }
-
-manifest_file_field() {
-  local object
-  object=$(printf '%s' "$MANIFEST" | sed -n "s/.*\"$1\":{\([^}]*\)}.*/\1/p" | head -1)
-  case "$2" in
-    bytes) printf '%s' "$object" | sed -n 's/.*"bytes":\([0-9]*\).*/\1/p' | head -1 ;;
-    *) printf '%s' "$object" | sed -n "s/.*\"$2\":\"\([^\"]*\)\".*/\1/p" | head -1 ;;
-  esac
-}
-
-manifest_packages() {
-  printf '%s' "$MANIFEST" | sed -n 's/.*"termux_packages":\[\([^]]*\)\].*/\1/p' | tr -d '"' | tr ',' ' '
-}
-
-install_target() {
-  case "$1" in
-    gc) printf '%s' "$BIN_DIR/gc" ;;
-    bd) printf '%s' "$BIN_DIR/bd" ;;
-    dolt) printf '%s' "$BIN_DIR/dolt" ;;
-    wrapper) printf '%s' "$BIN_DIR/opencode" ;;
-    *) return 64 ;;
-  esac
-}
-
-# url_host <url>: the host a URL names, for the failure sentence.
-url_host() {
-  local host="${1#*://}"
-  host=${host%%/*}
-  host=${host##*@}
-  printf '%s' "${host:-unknown}"
-}
-
-# fetch <source> <target> [expected bytes]: copies a local path, or downloads
-# a URL with curl. --location matters: GitHub release assets answer with a
-# redirect to their CDN. A partial file an earlier attempt left behind is
-# resumed, and a complete one is kept as it is, so Try again after a network
-# failure does not start the 300 MB over; the checksum step still checks
-# every byte. On failure DOWNLOAD_FAILURE holds "<kind> <host> <code>" (the
-# HTTP status for kind http, curl's exit code otherwise) and
-# DOWNLOAD_DETAIL a plain sentence of the same.
-fetch() {
-  local source="$1" target="$2" bytes="${3:-}" have code=0 http='' kind
-  DOWNLOAD_FAILURE=''
-  DOWNLOAD_DETAIL=''
-  case "$source" in
-    http://*|https://*|file://*) ;;
-    *) cp "$source" "$target"; return ;;
-  esac
-  local resume=()
-  if [ -n "$bytes" ] && [ -f "$target" ]; then
-    have=$(wc -c < "$target" | tr -d ' ')
-    if [ "$have" = "$bytes" ]; then
-      log "already downloaded $(basename "$target" .part)"
-      return 0
-    elif [ "$have" -gt 0 ] && [ "$have" -lt "$bytes" ]; then
-      log "resuming at $have of $bytes bytes"
-      resume=(--continue-at -)
-    else
-      rm -f "$target"
-    fi
-  fi
-  http=$(curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
-    --connect-timeout 20 ${resume[@]+"${resume[@]}"} -w '%{http_code}' \
-    -o "$target" "$source") || code=$?
-  if [ "$code" = 33 ]; then
-    # The server does not do ranges: start this file over.
-    log 'the server cannot resume; downloading the whole file again'
-    rm -f "$target"
-    code=0
-    http=$(curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
-      --connect-timeout 20 -w '%{http_code}' -o "$target" "$source") || code=$?
-  fi
-  [ "$code" = 0 ] && return 0
-  local host
-  host=$(url_host "$source")
-  case "$code" in
-    6) kind=dns; DOWNLOAD_DETAIL="could not find $host (DNS)" ;;
-    7) kind=connect; DOWNLOAD_DETAIL="could not connect to $host" ;;
-    28) kind=timeout; DOWNLOAD_DETAIL="$host did not answer in time" ;;
-    22) kind=http; code="${http:-000}"; DOWNLOAD_DETAIL="$host answered HTTP $code" ;;
-    35|51|53|54|58|59|60|64|66|77|80|82|83|90|91)
-      kind=tls; DOWNLOAD_DETAIL="the secure connection to $host failed (curl $code)" ;;
-    16|18|52|55|56|92)
-      kind=interrupted; DOWNLOAD_DETAIL="the connection to $host broke off (curl $code)" ;;
-    23) kind=write; DOWNLOAD_DETAIL="the file could not be written on this phone (curl $code)" ;;
-    *) kind=other; DOWNLOAD_DETAIL="curl failed with exit $code for $host" ;;
-  esac
-  DOWNLOAD_FAILURE="$kind $host $code"
-  log "download failed: $DOWNLOAD_DETAIL"
-  return 1
-}
-
-# ---------------------------------------------------------------------------
-# install <manifest-path-or-url>
-# ---------------------------------------------------------------------------
-
-# free_mb <path>: megabytes free on the filesystem holding <path> (0 when unknown).
-free_mb() {
-  local kb
-  # No df or awk on PATH (test fixtures, odd Termux installs): do not guess,
-  # let the install proceed and fail honestly later.
-  command -v df >/dev/null 2>&1 && command -v awk >/dev/null 2>&1 || { echo 999999; return 0; }
-  kb=$(df -Pk "$1" 2>/dev/null | awk 'NR==2 {print $4}') || kb=''
-  case "$kb" in ''|*[!0-9]*) echo 999999 ;; *) echo $((kb / 1024)) ;; esac
-}
-
-# require_space <mb> <what>: fail no-space with an honest sentence when the
-# phone cannot hold <what>. Dolt and gc misbehave in confusing ways on a
-# full disk (a start that only "times out"), so check up front.
-require_space() {
-  local need="$1" what="$2" have
-  have=$(free_mb "$HOME")
-  [ "$have" -ge "$need" ] || fail no-space "Not enough space on this phone for $what: $have MB free, $need MB needed"
-}
-
-install_runtime() {
-  local source="${1:-}"
-  [ -n "$source" ] || { echo 'usage: aiteam.sh install <manifest-path-or-url>' >&2; exit 64; }
-  begin_verb install
-  rm -f "$REMOVED_FILE"
-  local arch="${AITEAM_ARCH:-$(uname -m)}"
-  local want_arch
-  case "$arch" in
-    aarch64|arm64) want_arch=arm64 ;;
-    x86_64|amd64) want_arch=x86_64 ;;
-    *) fail unsupported-arch "AI Team needs a 64-bit phone (this one reports $arch)" ;;
-  esac
-  require_space 900 'the AI Team runtime (three binaries plus packages)'
-  write_state downloading 'Downloading the AI Team manifest'
-  mkdir -p "$TMP_DIR"
-  chmod 700 "$TMP_DIR"
-  local manifest_path="$TMP_DIR/manifest.json"
-  rm -f "$manifest_path"
-  fetch "$source" "$manifest_path" ||
-    fail manifest-download "Could not download the manifest from $source: ${DOWNLOAD_DETAIL:-copy failed}"
-  MANIFEST=$(tr -d '\n\r\t ' < "$manifest_path")
-  local base_url
-  base_url=$(manifest_str base_url)
-  [ -n "$base_url" ] || fail manifest-invalid 'The manifest has no base_url'
-  [ "$(manifest_str arch)" = "$want_arch" ] || fail manifest-invalid "The manifest is not a $want_arch build"
-
-  local name file bytes sha target
-  for name in $INSTALL_NAMES; do
-    file=$(manifest_file_field "$name" name)
-    bytes=$(manifest_file_field "$name" bytes)
-    sha=$(manifest_file_field "$name" sha256)
-    [ -n "$file" ] && [ -n "$bytes" ] && [ -n "$sha" ] ||
-      fail manifest-invalid "The manifest has no complete entry for $name"
-    write_state downloading "Downloading $file ($((bytes / 1048576)) MB)"
-    log "downloading $base_url$file"
-    if ! fetch "$base_url$file" "$TMP_DIR/$file.part" "$bytes"; then
-      # A write error on a full disk is a space problem, not a network one.
-      if [ "${DOWNLOAD_FAILURE%% *}" = write ]; then
-        require_space $((bytes / 1048576 + 50)) "$file"
-      fi
-      fail "download ${DOWNLOAD_FAILURE:-other unknown 0}" \
-        "Could not download $file: ${DOWNLOAD_DETAIL:-unknown error}"
-    fi
-  done
-
-  write_state verifying 'Verifying checksums'
-  for name in $INSTALL_NAMES; do
-    file=$(manifest_file_field "$name" name)
-    bytes=$(manifest_file_field "$name" bytes)
-    sha=$(manifest_file_field "$name" sha256)
-    local actual_bytes actual_sha
-    actual_bytes=$(wc -c < "$TMP_DIR/$file.part" | tr -d ' ')
-    actual_sha=$(sha256sum "$TMP_DIR/$file.part" | cut -d' ' -f1)
-    if [ "$actual_bytes" != "$bytes" ] || [ "$actual_sha" != "$sha" ]; then
-      rm -f "$TMP_DIR"/*.part
-      echo "checksum-mismatch $name"
-      FAIL_CODE=65 fail "checksum-mismatch $name" \
-        "$file did not match the pinned checksum (got $actual_bytes bytes, $actual_sha)"
-    fi
-    log "verified $file ($bytes bytes)"
-  done
-
-  write_state installing-packages 'Installing Termux packages'
-  local packages
-  packages=$(manifest_packages)
-  [ -n "$packages" ] || packages='libicu git jq tmux'
-  # shellcheck disable=SC2086
-  pkg install -y $packages || fail packages "Could not install Termux packages: $packages"
-
-  write_state installing-packages 'Installing gc, bd, dolt and the opencode wrapper'
-  mkdir -p "$BIN_DIR"
-  for name in $INSTALL_NAMES; do
-    file=$(manifest_file_field "$name" name)
-    target=$(install_target "$name")
-    chmod 755 "$TMP_DIR/$file.part"
-    mv -f "$TMP_DIR/$file.part" "$target"
-    log "installed $target"
-  done
-  rm -rf "$TMP_DIR"
-
-  # Dolt and beads refuse to run without an identity and a maintainer role.
-  dolt config --global --add user.name 'OpenCode Mobile' >/dev/null 2>&1 || true
-  dolt config --global --add user.email 'aiteam@opencode-mobile.local' >/dev/null 2>&1 || true
-  git config --global user.name >/dev/null 2>&1 || git config --global user.name 'OpenCode Mobile'
-  git config --global user.email >/dev/null 2>&1 || git config --global user.email 'aiteam@opencode-mobile.local'
-  git config --global beads.role maintainer
-
-  set_config gascity "$(manifest_str gascity)"
-  set_config beads "$(manifest_str beads)"
-  set_config dolt "$(manifest_str dolt)"
-  set_config pack "$(manifest_str pack)"
-  set_config manifest "$source"
-  set_config installed_at "$(date +%s)"
-  write_state installed 'AI Team runtime installed' ''
-  log 'install finished'
-}
-
-# ---------------------------------------------------------------------------
-# init <project-path> [--city name] [--rig name]
-# ---------------------------------------------------------------------------
-
-safe_name() {
-  printf '%s' "$1" | tr -c 'A-Za-z0-9_-' '-' | sed 's/^-*//; s/-*$//' | cut -c1-40
-}
-
-init_city() {
-  local project='' city='' rig=''
-  while [ $# -gt 0 ]; do
-    case "$1" in
-      --city) city="${2:-}"; shift 2 ;;
-      --rig) rig="${2:-}"; shift 2 ;;
-      *) project="$1"; shift ;;
-    esac
-  done
-  [ -n "$project" ] || { echo 'usage: aiteam.sh init <project-path> [--city name] [--rig name]' >&2; exit 64; }
-  begin_verb init
-  require_space 150 'the team city and its store'
-  [ -x "$BIN_DIR/gc" ] || fail not-installed 'Install the AI Team runtime first'
-  project=${project%/}
-  project=$(resolve_project "$project")
-  [ -d "$project" ] || fail project-missing "Project folder not found: $project"
-  git -C "$project" rev-parse --git-dir >/dev/null 2>&1 ||
-    fail project-not-git "$project is not a git repository"
-  [ -n "$city" ] || city="$DEFAULT_CITY"
-  [ -n "$rig" ] || rig=$(safe_name "$(basename "$project")")
-  [ -n "$rig" ] || rig=project
-  city=$(safe_name "$city")
-  [ -n "$city" ] || city="$DEFAULT_CITY"
-
-  write_state creating-city "Preparing $project"
-  local origin
-  if ! origin=$(git -C "$project" remote get-url origin 2>/dev/null); then
-    origin="$project.git"
-    log "no origin remote; creating a bare origin at $origin"
-    [ -d "$origin" ] || git init -q --bare "$origin"
-    git -C "$project" remote add origin "$origin"
-    git -C "$project" push -q origin HEAD || fail project-push "Could not push $project to its new origin"
-  fi
-
-  write_state creating-city "Creating city $city"
-  local pack pack_source pack_version
-  pack=$(config_value pack)
-  pack_source='https://github.com/gastownhall/gascity-packs/tree/main/gastown'
-  pack_version=${pack#gastown@}
-  [ -n "$pack_version" ] && [ "$pack_version" != "$pack" ] || pack_version='sha:33d3a430a67d1782ad364556cb566bdb01d0afe3'
-  cat > "$CITY_TOML" <<CITY_TOML_EOF
-[workspace]
-provider = "opencode"
-install_agent_hooks = ["opencode"]
-[providers]
-[providers.opencode]
-base = "builtin:opencode"
-ready_delay_ms = 0
-[defaults]
-[defaults.rig]
-[defaults.rig.imports]
-[defaults.rig.imports.gastown]
-source = "$pack_source"
-version = "$pack_version"
-[daemon]
-patrol_interval = "30s"
-max_restarts = 5
-restart_window = "1h"
-shutdown_timeout = "5s"
-CITY_TOML_EOF
-  # A city from an earlier attempt may still have its supervisor or its
-  # managed Dolt server up; take them down before the directory goes, or
-  # the new city inherits a server whose store was just deleted.
-  stop_supervisor
-  rm -rf "$CITY_DIR"
-  (cd "$AITEAM_DIR" && gc init --file ./city.toml --name "$city" --no-start city) ||
-    fail gc-init 'gc init failed'
-  [ -d "$CITY_DIR" ] || fail gc-init 'gc init produced no city directory'
-  # A project that still carries the bead store of an earlier city (a team
-  # removed and set up again) cannot be initialised over or adopted: that
-  # store's Dolt database lived in the old city. It is moved aside, never
-  # deleted, and the rig starts fresh.
-  if [ -e "$project/.beads" ]; then
-    local aside="$project/.beads.before-aiteam-$(date +%Y%m%d-%H%M%S)"
-    log "project already has a bead store from an earlier city; keeping it at $aside"
-    mv "$project/.beads" "$aside" || fail gc-rig-add 'could not move the old bead store aside'
-  fi
-  (cd "$CITY_DIR" && gc rig add "$project" --name "$rig") || fail gc-rig-add 'gc rig add failed'
-  (cd "$CITY_DIR" && gc import install) || fail gc-import 'gc import install failed'
-  # Lean profile: one polecat, the patrol agents suspended; must come after
-  # `gc import install` or the pack's agents are not known yet.
-  printf '\n[[patches.agent]]\nname = "gastown.mayor"\nsuspended = true\n[[patches.agent]]\nname = "gastown.deacon"\nsuspended = true\n[[patches.agent]]\nname = "gastown.boot"\nsuspended = true\n[[patches.agent]]\nname = "gastown.witness"\ndir = "%s"\nsuspended = true\n[[patches.agent]]\nname = "gastown.polecat"\ndir = "%s"\nmax_active_sessions = 1\n' \
-    "$rig" "$rig" >> "$CITY_DIR/city.toml"
-  # The Termux exec shim does not rewrite `#!/usr/bin/env bash`.
-  sed -i 's|#!/usr/bin/env bash|#!/bin/bash|' "$HOME"/.gc/cache/repos/*/gastown/assets/scripts/*.sh 2>/dev/null || true
-
-  set_config city "$city"
-  set_config rig "$rig"
-  set_config project "$project"
-  set_config origin "$origin"
-  set_config city_dir "$CITY_DIR"
-  write_state city-ready "City $city created for $rig" ''
-  log "init finished: city=$city rig=$rig project=$project"
-}
-
-# ---------------------------------------------------------------------------
-# start / stop
-# ---------------------------------------------------------------------------
-
-start_runtime() {
-  begin_verb start
-  [ -x "$BIN_DIR/gc" ] || fail not-installed 'Install the AI Team runtime first'
-  local city
-  city=$(config_value city)
-  [ -n "$city" ] && [ -d "$CITY_DIR" ] || fail no-city 'Create a city first (init)'
-  write_state starting 'Starting the AI Team supervisor'
-  termux-wake-lock >/dev/null 2>&1 || true
-  if supervisor_alive && [ "$(health_status "$city")" = ok ]; then
-    write_state ready 'AI Team is running on this phone'
-    log 'supervisor already running'
-    return 0
-  fi
-  rm -f "$SUPERVISOR_PID"
-  # Its own session with none of this verb's descriptors (the log tee's
-  # pipe included): the verb exits, the supervisor keeps running (§3f).
-  (
-    cd "$CITY_DIR"
-    for fd in /proc/$BASHPID/fd/*; do
-      fd=${fd##*/}
-      [ "$fd" -gt 2 ] 2>/dev/null && eval "exec $fd>&-"
-    done
-    nohup setsid gc supervisor run > "$SUPERVISOR_LOG" 2>&1 < /dev/null &
-    echo $! > "$SUPERVISOR_PID"
-  )
-  local pid
-  pid=$(cat "$SUPERVISOR_PID")
-  log "supervisor pid $pid"
-  local waited=0
-  while [ "$(health_status)" != ok ]; do
-    process_alive "$pid" || fail supervisor-exited 'The supervisor exited before it became healthy'
-    [ "$waited" -lt 30 ] || break
-    sleep 1
-    waited=$((waited + 1))
-  done
-  write_state starting "Registering city $city" "$pid"
-  (cd "$CITY_DIR" && timeout -k 5 60 gc register "$CITY_DIR" --name "$city" --yes) ||
-    log 'gc register did not confirm; waiting on health anyway'
-  write_state starting "Waiting for city $city" "$pid"
-  waited=0
-  while [ "$(health_status "$city")" != ok ]; do
-    process_alive "$pid" || fail supervisor-exited 'The supervisor exited before the city became healthy'
-    [ "$waited" -lt "$HEALTH_TIMEOUT" ] || fail health-timeout "City $city did not become healthy in $HEALTH_TIMEOUT s"
-    sleep 1
-    waited=$((waited + 1))
-  done
-  write_state ready 'AI Team is running on this phone' "$pid"
-  log "city $city healthy"
-}
-
-# Kills every process of ours that works inside the city (gc/bd/dolt agents,
-# proot-distro logins for agent worktrees) — never anything else.
-kill_city_processes() {
-  local city_dir="$1" signal="$2" entry pid cwd cmdline
-  [ -n "$city_dir" ] || return 0
-  for entry in /proc/[0-9]*; do
-    pid=${entry#/proc/}
-    [ "$pid" != "$$" ] && [ "$pid" != "$PPID" ] || continue
-    cwd=$(readlink "$entry/cwd" 2>/dev/null || true)
-    cmdline=$(process_cmdline "$pid")
-    case "$cwd" in
-      "$city_dir"|"$city_dir"/*) ;;
-      *) case "$cmdline" in
-           *"$city_dir"*) ;;
-           *) continue ;;
-         esac ;;
-    esac
-    case "$cmdline" in
-      *aiteam.sh*) continue ;;
-    esac
-    log "$signal pid $pid (${cmdline:0:60})"
-    kill "-$signal" "$pid" 2>/dev/null || true
-  done
-}
-
-stop_supervisor() {
-  local pid
-  pid=$(cat "$SUPERVISOR_PID" 2>/dev/null || true)
-  if [ -d "$CITY_DIR" ]; then
-    (cd "$CITY_DIR" && timeout -k 5 30 gc supervisor stop) >/dev/null 2>&1 || true
-  fi
-  if process_alive "$pid"; then
-    kill -TERM "$pid" 2>/dev/null || true
-    local waited=0
-    while process_alive "$pid" && [ "$waited" -lt 10 ]; do sleep 1; waited=$((waited + 1)); done
-    process_alive "$pid" && kill -KILL "$pid" 2>/dev/null || true
-  fi
-  kill_city_processes "$CITY_DIR" TERM
-  sleep 1
-  kill_city_processes "$CITY_DIR" KILL
-  rm -f "$SUPERVISOR_PID"
-}
-
-stop_runtime() {
-  begin_verb stop
-  write_state stopping 'Stopping the AI Team'
-  stop_supervisor
-  termux-wake-unlock >/dev/null 2>&1 || true
-  write_state stopped 'AI Team stopped' ''
-  log 'stopped'
-}
-
-# ---------------------------------------------------------------------------
-# remove: binaries, ~/.oc/aiteam (city + Dolt store), ~/.gc, ~/.dolt.
-# Never the project folder or its bare origin.
-# ---------------------------------------------------------------------------
-
-remove_runtime() {
-  begin_verb remove
-  write_state removing 'Removing the AI Team from this phone'
-  stop_supervisor
-  termux-wake-unlock >/dev/null 2>&1 || true
-  local removed=() path
-  for path in "$BIN_DIR/gc" "$BIN_DIR/bd" "$BIN_DIR/dolt"; do
-    [ -e "$path" ] || continue
-    rm -f "$path"
-    removed+=("$path")
-  done
-  if [ -f "$BIN_DIR/opencode" ] && grep -q 'AI Team' "$BIN_DIR/opencode" 2>/dev/null; then
-    rm -f "$BIN_DIR/opencode"
-    removed+=("$BIN_DIR/opencode")
-  fi
-  for path in "$HOME/.gc" "$HOME/.dolt" "$TMP_DIR" "$PREFIX/tmp/aiteam"; do
-    [ -e "$path" ] || continue
-    rm -rf "$path"
-    removed+=("$path")
-  done
-  # Printed before the log itself goes: aiteam.log lives in $AITEAM_DIR.
-  for path in "${removed[@]}" "$AITEAM_DIR"; do log "removed $path"; done
-  rm -rf "$AITEAM_DIR"
-  removed+=("$AITEAM_DIR")
-  printf '%s\n' "${removed[@]}" > "$REMOVED_FILE"
-  trap - EXIT
-  exit 0
-}
-
-# ---------------------------------------------------------------------------
-# status (JSON) and log
-# ---------------------------------------------------------------------------
-
-json_str() {
-  local value="$1"
-  value=${value//\\/\\\\}
-  value=${value//\"/\\\"}
-  value=${value//$'\n'/\\n}
-  value=${value//$'\t'/\\t}
-  value=${value//$'\r'/}
-  printf '"%s"' "$value"
-}
-
-json_or_null() { if [ -n "$1" ]; then json_str "$1"; else printf null; fi; }
-json_num_or_null() { case "$1" in ''|*[!0-9]*) printf null ;; *) printf '%s' "$1" ;; esac; }
-
-binary_version() {
-  local binary="$1" out
-  [ -x "$BIN_DIR/$binary" ] || return 0
-  # gc, bd and dolt all answer `<binary> version` (gc rejects --version).
-  # Never let a probe failure abort a status read under set -e.
-  out=$(timeout 5 "$BIN_DIR/$binary" version 2>/dev/null | grep -v '^time=' | head -1 || true)
-  printf '%s' "$out" | sed 's/^[a-z]* version //; s/ (.*$//' | tr -d '\r\n' || true
-  return 0
-}
-
-agents_count() {
-  local city="$1" body
-  [ -n "$city" ] || return 0
-  body=$(curl -s -m 5 "$GC_URL/v0/city/$city/agents" 2>/dev/null || true)
-  [ -n "$body" ] || return 0
-  if command -v jq >/dev/null 2>&1; then
-    printf '%s' "$body" | jq -r '(.items // []) | length' 2>/dev/null || true
-  else
-    printf '%s' "$body" | grep -o '"id":' | wc -l | tr -d ' '
-  fi
-}
-
-status_json() {
-  local phase message verb pid supervisor city rig project url installed
-  phase=$(state_value phase)
-  message=$(state_value message)
-  verb=$(state_value verb)
-  pid=$(state_value pid)
-  supervisor=$(state_value supervisor_pid)
-  city=$(config_value city)
-  rig=$(config_value rig)
-  project=$(config_value project)
-  local last_error='' busy=false killed=false health='' agents='' gc_v bd_v dolt_v
-  gc_v=$(binary_version gc)
-  bd_v=$(binary_version bd)
-  dolt_v=$(binary_version dolt)
-  if [ -x "$BIN_DIR/gc" ] && [ -x "$BIN_DIR/bd" ] && [ -x "$BIN_DIR/dolt" ]; then installed=true; else installed=false; fi
-  [ -n "$phase" ] || phase=idle
-  if verb_alive "$pid"; then
-    busy=true
-  else
-    pid=''
-  fi
-  local age=0 updated
-  updated=$(state_value updated_at)
-  case "$updated" in ''|*[!0-9]*) ;; *) age=$(( $(date +%s) - updated )) ;; esac
-  local state_phase="$phase" reason=''
-  case "$phase" in
-    failed:*)
-      reason=${phase#failed:}
-      last_error="${message:-$reason}"
-      phase=failed ;;
-    queued)
-      # Dispatched but not yet running: busy for a grace period, then a
-      # launch that never happened.
-      if [ "$busy" = false ] && [ "$age" -lt 30 ]; then busy=true; fi
-      if [ "$busy" = false ]; then
-        last_error="$verb never started"
-        CURRENT_VERB="$verb" CURRENT_PID='' write_state "failed:interrupted" "$last_error"
-        phase=failed; reason=interrupted; state_phase=failed:interrupted
-      fi ;;
-    downloading|verifying|installing-packages|creating-city|starting|stopping|removing)
-      # A verb's pid can be momentarily unobservable between two of its own
-      # writes (the detached shell re-execs under setsid); only a phase that
-      # has sat unowned for a while is a real interruption.
-      if [ "$busy" = false ] && [ "$age" -lt 10 ]; then busy=true; fi
-      if [ "$busy" = false ]; then
-        last_error="$verb stopped unexpectedly while $phase"
-        CURRENT_VERB="$verb" CURRENT_PID='' write_state "failed:interrupted" "$last_error"
-        phase=failed; reason=interrupted; state_phase=failed:interrupted
-      fi ;;
-  esac
-  local supervisor_live=false
-  if supervisor_alive; then supervisor_live=true; else supervisor=''; fi
-  if [ "$phase" = ready ]; then
-    if [ "$supervisor_live" = true ]; then
-      health=$(health_status "$city")
-      agents=$(agents_count "$city")
-    else
-      killed=true
-      health=unreachable
-    fi
-  elif [ "$supervisor_live" = true ]; then
-    health=$(health_status "$city")
-  fi
-  local removed='[]'
-  if [ -f "$REMOVED_FILE" ]; then
-    removed='['
-    local first=1 line
-    while IFS= read -r line; do
-      [ -n "$line" ] || continue
-      [ "$first" = 1 ] || removed="$removed,"
-      removed="$removed$(json_str "$line")"
-      first=0
-    done < "$REMOVED_FILE"
-    removed="$removed]"
-  fi
-  printf '{"installed":%s,"versions":{"gc":%s,"bd":%s,"dolt":%s},"phase":%s,"state_phase":%s,"reason":%s,"message":%s,"verb":%s,"busy":%s,"pid":%s,"supervisor_pid":%s,"health":%s,"agents":%s,"city":%s,"rig":%s,"project":%s,"url":%s,"last_error":%s,"killed_by_android":%s,"removed":%s,"log":%s,"updated_at":%s}\n' \
-    "$installed" "$(json_or_null "$gc_v")" "$(json_or_null "$bd_v")" "$(json_or_null "$dolt_v")" \
-    "$(json_str "$phase")" "$(json_str "$state_phase")" "$(json_or_null "$reason")" \
-    "$(json_or_null "$message")" "$(json_or_null "$verb")" "$busy" \
-    "$(json_num_or_null "$pid")" "$(json_num_or_null "$supervisor")" "$(json_or_null "$health")" \
-    "$(json_num_or_null "$agents")" "$(json_or_null "$city")" "$(json_or_null "$rig")" \
-    "$(json_or_null "$project")" "$(json_str "$GC_URL")" "$(json_or_null "$last_error")" "$killed" \
-    "$removed" "$(json_str "$LOG")" "$(json_num_or_null "$(state_value updated_at)")"
-}
-
-verb="${1:-status}"
-case "$verb" in
-  install|init|start|stop|remove)
-    ensure_isolated "$@"
-    shift
-    case "$verb" in
-      install) install_runtime "$@" ;;
-      init) init_city "$@" ;;
-      start) start_runtime ;;
-      stop) stop_runtime ;;
-      remove) remove_runtime ;;
-    esac ;;
-  queue) shift; queue_verb "$@" ;;
-  status) status_json ;;
-  log) printf '%s\n' "$LOG" ;;
-  *) echo "usage: $0 {install|init|start|stop|status|remove|log}" >&2; exit 64 ;;
-esac
-''';
 
   // ---------------------------------------------------------------------------
   // Claude Code on this phone: ~/.oc/claude.sh next to manager.sh. It installs

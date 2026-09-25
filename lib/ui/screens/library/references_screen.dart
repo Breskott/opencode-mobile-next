@@ -80,7 +80,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
       : _error != null && _references == null
       ? ProductErrorState(message: _error!, onRetry: _load)
       : _references!.isEmpty
-      ? RefreshIndicator(
+      ? KitRefresh(
           onRefresh: _load,
           child: ProductEmptyState(
             icon: AppIconography.bookmarks,
@@ -92,7 +92,7 @@ class _ReferencesScreenState extends State<ReferencesScreen> {
             ).e7LibraryReferencesAttachedToThisProjectAppearHere,
           ),
         )
-      : RefreshIndicator(
+      : KitRefresh(
           onRefresh: _load,
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),

@@ -15,7 +15,7 @@ import '../desktop/desktop_interaction.dart';
 import '../widgets/file_preview.dart';
 import '../widgets/reader_preferences.dart';
 import '../../feedback/bug_report.dart';
-import '../kit/kit.dart' show KitAction, KitStateView;
+import '../kit/kit.dart' show KitAction, KitStateView, KitRefresh;
 import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart';
 import 'review_workspace.dart';
@@ -1009,7 +1009,7 @@ class _FilesScreenState extends State<FilesScreen> {
       return const LoadingList(rows: 8);
     }
     if (_error != null) {
-      return RefreshIndicator(
+      return KitRefresh(
         onRefresh: _refreshFiles,
         child: _loadFailed(
           readerL10n(context).filesLoadFailedTitle,
@@ -1020,7 +1020,7 @@ class _FilesScreenState extends State<FilesScreen> {
     }
     if (_entries != null && entries.isEmpty) {
       final searching = _search.text.isNotEmpty;
-      return RefreshIndicator(
+      return KitRefresh(
         onRefresh: _refreshFiles,
         // An empty folder is the open folder; a filter that matched nothing
         // is the magnifier (one drawing per kind of state).
@@ -1039,7 +1039,7 @@ class _FilesScreenState extends State<FilesScreen> {
         ),
       );
     }
-    return RefreshIndicator(
+    return KitRefresh(
       onRefresh: _refreshFiles,
       child: DesktopScrollbarArea(
         builder: (scrollController) => ListView.builder(
@@ -1470,7 +1470,7 @@ class _FilesScreenState extends State<FilesScreen> {
       return const LoadingList(rows: 6);
     }
     if (_error != null) {
-      return RefreshIndicator(
+      return KitRefresh(
         onRefresh: () => _searchSymbols(_search.text),
         child: _loadFailed(
           readerL10n(context).filesSymbolsFailedTitle,
@@ -1487,7 +1487,7 @@ class _FilesScreenState extends State<FilesScreen> {
       );
     }
     if (_symbols?.isEmpty == true) {
-      return RefreshIndicator(
+      return KitRefresh(
         onRefresh: () => _searchSymbols(_search.text),
         child: KitStateView(
           key: const ValueKey('files-no-symbols'),
@@ -1498,7 +1498,7 @@ class _FilesScreenState extends State<FilesScreen> {
         ),
       );
     }
-    return RefreshIndicator(
+    return KitRefresh(
       onRefresh: () => _searchSymbols(_search.text),
       child: DesktopScrollbarArea(
         builder: (scrollController) => ListView.builder(
