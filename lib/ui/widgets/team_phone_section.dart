@@ -301,7 +301,7 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
       final running = status?.isReady ?? false;
       final killed = status?.killedByAndroid ?? false;
       final working = _busy || (status?.busy ?? false);
-      final canStart = status != null && !working && !running && status.hasCity;
+      final canStart = status != null && !running && status.hasCity;
       final versions = status?.versions ?? const {};
       final tone = status == null || working
           ? AppStatusTone.progress
@@ -389,17 +389,21 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            if (killed)
+            // While a step runs the status line says what it is doing; no
+            // disabled buttons beside it (design standard §2).
+            if (working)
+              ...const <Widget>[]
+            else if (killed)
               FilledButton.icon(
                 key: const ValueKey('team-phone-start-again'),
-                onPressed: working ? null : _start,
+                onPressed: _start,
                 icon: const Icon(AppIconography.play),
                 label: Text(l10n.teamUiPhoneStartAgain),
               )
             else if (running)
               OutlinedButton.icon(
                 key: const ValueKey('team-phone-stop'),
-                onPressed: working ? null : _stop,
+                onPressed: _stop,
                 icon: const Icon(AppIcons.stop),
                 label: Text(l10n.teamUiPhoneStop),
               )
@@ -410,7 +414,7 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
                 icon: const Icon(AppIconography.play),
                 label: Text(l10n.teamUiPhoneStart),
               )
-            else if (status != null && !working)
+            else if (status != null)
               FilledButton.tonalIcon(
                 key: const ValueKey('team-phone-open-setup'),
                 onPressed: _openSetup,
@@ -434,7 +438,7 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
           trailing: const Icon(AppIconography.chevronRight, size: 20),
           onTap: () => showTeamPhoneTipsSheet(context),
         ),
-        if (installed)
+        if (installed && !working)
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: TextButton.icon(
@@ -442,7 +446,7 @@ class _TeamPhoneSectionState extends State<TeamPhoneSection> {
               style: TextButton.styleFrom(
                 foregroundColor: theme.colorScheme.error,
               ),
-              onPressed: working ? null : _remove,
+              onPressed: _remove,
               icon: const Icon(AppIconography.delete, size: 18),
               label: Text(l10n.teamUiPhoneRemove),
             ),

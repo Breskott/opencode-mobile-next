@@ -279,6 +279,11 @@ write_state() {
   printf 'phase=%s\nmessage=%s\nverb=%s\npid=%s\nsupervisor_pid=%s\nupdated_at=%s\n' \
     "$phase" "$message" "${CURRENT_VERB:-}" "${CURRENT_PID:-}" "$supervisor" "$(date +%s)" > "$tmp"
   mv "$tmp" "$STATE"
+  # Inside a verb, each stage goes to the log with the seconds since the
+  # verb began, so a slow phone shows where its minutes go.
+  if [ -n "${CURRENT_PID:-}" ]; then
+    printf '[aiteam] %s: %s (at %ss)\n' "$phase" "$message" "$SECONDS"
+  fi
 }
 
 set_config() {
@@ -449,6 +454,7 @@ release_verb_lock() {
 begin_verb() {
   CURRENT_VERB="$1"
   CURRENT_PID="$$"
+  SECONDS=0
   claim_verb_lock || exit 75
   trap on_verb_error ERR
   trap release_verb_lock EXIT

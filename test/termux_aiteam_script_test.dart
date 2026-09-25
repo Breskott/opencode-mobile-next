@@ -676,6 +676,21 @@ void main() {
       );
       expect(File('${fx.bin}/gc').existsSync(), isFalse);
       expect(fx.read('${fx.aiteamDir}/config'), contains('source=upstream'));
+      // Each stage is logged with the seconds since the verb began.
+      expect(
+        fx.log,
+        matches(
+          RegExp(r'\[aiteam\] verifying: Verifying checksums \(at \d+s\)'),
+        ),
+      );
+      expect(
+        fx.log,
+        matches(
+          RegExp(
+            r'\[aiteam\] installed: AI Team programs installed \(at \d+s\)',
+          ),
+        ),
+      );
     });
 
     test('a second install downloads and installs nothing', () async {
@@ -935,6 +950,12 @@ void main() {
         BuiltinTeam.upkeepScript,
       );
       expect(fx.read('${fx.ocDir}/wake.log').trim(), 'termux-wake-lock');
+      expect(
+        fx.log,
+        matches(
+          RegExp(r'\[aiteam\] starting: Waiting for team phone \(at \d+s\)'),
+        ),
+      );
       // The runner outlives the start verb, in a session of its own.
       final stat = File(
         '/proc/${status.supervisorPid}/stat',

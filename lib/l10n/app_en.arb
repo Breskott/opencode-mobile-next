@@ -16571,7 +16571,7 @@
   "@teamUiPhoneOfferBody": {
     "description": "On-device AI Team block: body"
   },
-  "teamUiPhoneOfferSize": "Downloads about {size} MB (Gas City, beads and Dolt, built for Android).",
+  "teamUiPhoneOfferSize": "Downloads about {size} MB (Gas City, beads and Dolt, from each project's own releases).",
   "@teamUiPhoneOfferSize": {
     "description": "On-device AI Team block: download size line",
     "placeholders": {
@@ -16629,7 +16629,7 @@
   "@teamUiPhoneChooseProjectTitle": {
     "description": "On-device setup: project picker title"
   },
-  "teamUiPhoneChooseProjectBody": "The team works on one project folder of the phone server. The first agent commits to a git origin created next to it.",
+  "teamUiPhoneChooseProjectBody": "The team works on one project folder of the phone server. A project without a git origin gets one on the phone, and the team's merged work comes back into the folder by itself.",
   "@teamUiPhoneChooseProjectBody": {
     "description": "On-device setup: project picker body"
   },
@@ -16773,7 +16773,7 @@
       }
     }
   },
-  "teamUiPhoneFailedPackages": "Termux could not install the prerequisites (libicu, git, jq, tmux). The output below says which.",
+  "teamUiPhoneFailedPackages": "Ubuntu could not install the prerequisites (tmux, jq, lsof, procps). The output below says which.",
   "@teamUiPhoneFailedPackages": {
     "description": "On-device setup: package install failure"
   },
@@ -19779,6 +19779,34 @@
   "aiteamComponentStageWaiting": "Waiting for AI Team to answer",
   "@aiteamComponentStageWaiting": {
     "description": "Turn-on stage: waiting until the team answers"
+  },
+  "aiteamComponentTurnOnExpectation": "This takes about 5 to 10 minutes the first time. You can leave this screen; it keeps going.",
+  "@aiteamComponentTurnOnExpectation": {
+    "description": "While AI Team is being turned on for a project: how long it takes, and that leaving the screen does not stop it"
+  },
+  "aiteamComponentStartExpectation": "This takes a few minutes. You can leave this screen; it keeps going.",
+  "@aiteamComponentStartExpectation": {
+    "description": "While AI Team starts again: how long it takes, and that leaving the screen does not stop it"
+  },
+  "aiteamComponentStageSoFar": "{time} so far",
+  "@aiteamComponentStageSoFar": {
+    "description": "Under the turn-on stage in progress: how long it has run, as minutes:seconds",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "2:05"
+      }
+    }
+  },
+  "aiteamComponentStageTook": "Took {time}",
+  "@aiteamComponentStageTook": {
+    "description": "Under a finished turn-on stage: how long it took, as minutes:seconds",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "2:05"
+      }
+    }
   },
   "aiteamComponentRunning": "AI Team · Running",
   "@aiteamComponentRunning": {
