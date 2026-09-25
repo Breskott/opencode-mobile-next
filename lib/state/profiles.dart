@@ -14,6 +14,8 @@ import '../domain/orchestration_gateway.dart' show OrchestrationHostMode;
 import '../orchestration/adapters/gascity/gascity_probe.dart'
     show isTailnetHost;
 import '../platform/platform_capabilities.dart';
+// A plain value type (no widgets): the person's effect choices.
+import '../ui/kit/kit_effects.dart' show KitEffects, KitMotionLevel;
 import 'model_library.dart';
 
 export '../api/server_probe.dart' show ServerFlavor;
@@ -686,6 +688,11 @@ class ProfileStore {
   static const _transcriptTimestampsKey = 'oc.transcript.timestampsVisible';
   static const _appearanceKey = 'oc.appearance';
   static const _themePackKey = 'oc.themePack';
+  // App-wide (no profile id segment, so the deletion sweep never matches).
+  static const _effectsGlassKey = 'oc.effectsGlass';
+  static const _effectsMotionKey = 'oc.effectsMotion';
+  static const _effectsCelebrationsKey = 'oc.effectsCelebrations';
+  static const _effectsHapticsKey = 'oc.effectsHaptics';
   static const _providerRuntimeRefreshVersion = 'v1';
 
   final SharedPreferences prefs;
@@ -1276,6 +1283,45 @@ class ProfileStore {
         appearance.name,
         'Could not save the appearance preference',
       );
+
+  /// Settings › Appearance › Effects: glass, animations, celebrations and
+  /// vibration. Anything never chosen is on ([KitEffects.defaults]).
+  KitEffects get effects {
+    final motion = prefs.getString(_effectsMotionKey);
+    return KitEffects(
+      glass: prefs.getBool(_effectsGlassKey) ?? true,
+      motion: KitMotionLevel.values.firstWhere(
+        (level) => level.name == motion,
+        orElse: () => KitMotionLevel.full,
+      ),
+      celebrations: prefs.getBool(_effectsCelebrationsKey) ?? true,
+      haptics: prefs.getBool(_effectsHapticsKey) ?? true,
+    );
+  }
+
+  Future<void> setEffects(KitEffects effects) async {
+    const error = 'Could not save the effects preference';
+    final saved = effects;
+    final before = this.effects;
+    if (saved.motion != before.motion) {
+      await _saveDisplayPreference(_effectsMotionKey, saved.motion.name, error);
+    }
+    for (final (key, value, old) in [
+      (_effectsGlassKey, saved.glass, before.glass),
+      (_effectsCelebrationsKey, saved.celebrations, before.celebrations),
+      (_effectsHapticsKey, saved.haptics, before.haptics),
+    ]) {
+      if (value == old) continue;
+      try {
+        if (!await prefs.setBool(key, value)) throw StateError(error);
+      } catch (_) {
+        try {
+          await prefs.reload();
+        } catch (_) {}
+        rethrow;
+      }
+    }
+  }
 
   Future<void> _saveDisplayPreference(
     String key,

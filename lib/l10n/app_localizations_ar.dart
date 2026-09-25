@@ -18956,4 +18956,67 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get addServerSaveAnyway => 'احفظ على أي حال';
+
+  @override
+  String get appearanceDisplaySection => 'الشاشة';
+
+  @override
+  String get effectsSection => 'المؤثرات';
+
+  @override
+  String get effectsGlass => 'تأثيرات الزجاج';
+
+  @override
+  String get effectsGlassOn =>
+      'يطفو الشريط السفلي ومربع الرسالة كزجاج فوق ما يمر تحتهما';
+
+  @override
+  String get effectsGlassFrosted => 'يستخدم هذا الهاتف سطحًا مصنفرًا';
+
+  @override
+  String get effectsGlassSystem =>
+      'سطح مصمت ما دام التباين العالي أو قارئ الشاشة أو «إزالة الرسوم المتحركة» مفعّلًا';
+
+  @override
+  String get effectsAnimations => 'الحركة';
+
+  @override
+  String get effectsMotionFull => 'كاملة';
+
+  @override
+  String get effectsMotionFullHint => 'تتحرك الرسوم وتتنفس شاشات الانتظار';
+
+  @override
+  String get effectsMotionCalm => 'هادئة';
+
+  @override
+  String get effectsMotionCalmHint => 'تظهر الرسوم ولا يبقى شيء متحركًا';
+
+  @override
+  String get effectsMotionOff => 'متوقفة';
+
+  @override
+  String get effectsMotionOffHint => 'يظهر كل شيء فورًا';
+
+  @override
+  String get effectsMotionSystemOff =>
+      'خيار «إزالة الرسوم المتحركة» مفعّل في هاتفك، لذا لا يتحرك شيء أيًّا كان اختيارك هنا';
+
+  @override
+  String get effectsCelebrations => 'الاحتفالات';
+
+  @override
+  String get effectsCelebrationsHint =>
+      'لحظة قصيرة عند اكتمال الإعداد أو دمج مهمة';
+
+  @override
+  String get effectsVibration => 'الاهتزاز';
+
+  @override
+  String get effectsVibrationHint =>
+      'نقرة خفيفة عند الإرسال وأخرى ناعمة عند انتهاء شيء';
+
+  @override
+  String get effectsSaveFailed =>
+      'تعذّر حفظ هذا الاختيار على هذا الجهاز. حاول مرة أخرى.';
 }
