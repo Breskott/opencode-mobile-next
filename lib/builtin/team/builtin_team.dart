@@ -158,6 +158,15 @@ class BuiltinTeam {
   /// agents' own bead updates at the same moment. A task given with
   /// "Send to an agent" goes straight to the project's worker, and the
   /// worker wakes the merger itself, so those nudges add nothing here.
+  ///
+  /// And an agent's first start is given time: Gas City gives `opencode acp`
+  /// 30 s to answer its handshake and 60 s to start, then kills it and tries
+  /// again from nothing on a later tick. A cold OpenCode under proot needs
+  /// about that long (22 s when it got through on the owner's phone,
+  /// 2026-09-25), so a task waited two minutes while three starts were cut
+  /// off before the fourth got through (docs/qa/team-hot-2026-09-26). Three
+  /// minutes to answer and four to start cost nothing while a start goes
+  /// well; a start that truly hangs is found later.
   static const phoneTuning =
       '[daemon]\n'
       'patrol_interval = "60s"\n'
@@ -181,7 +190,15 @@ class BuiltinTeam {
       'trigger = "manual"\n'
       '[[orders.overrides]]\nname = "gate-sweep"\ntrigger = "manual"\n'
       '[[orders.overrides]]\nname = "orphan-sweep"\ntrigger = "manual"\n'
-      '[[orders.overrides]]\nname = "reaper"\ntrigger = "manual"\n';
+      '[[orders.overrides]]\nname = "reaper"\ntrigger = "manual"\n'
+      '[session]\n'
+      'startup_timeout = "4m"\n'
+      '[session.acp]\n'
+      '$handshakeTimeout\n';
+
+  /// The line of [phoneTuning] a team tuned by this version has; see
+  /// [tuneScript].
+  static const handshakeTimeout = 'handshake_timeout = "3m"';
 
   /// Each agent's OpenCode replaces the shell Gas City starts it with
   /// (`sh -c "<command>"`): one process per agent instead of two. A line of
@@ -231,10 +248,12 @@ exit "$rc"
 
   /// Brings a team made by an older version up to [phoneTuning] and writes
   /// the upkeep order; run before every supervisor start. The tuning's own
-  /// tables (`[daemon]`, `[orders]` and its overrides) are dropped from
-  /// `city.toml` and written again at the end, and `[providers.opencode]`
-  /// gets [acpCommand]; nothing else in it is touched. A team that has this
-  /// version's tuning is left as is.
+  /// tables (`[daemon]`, `[orders]` and its overrides, `[session]` and
+  /// `[session.acp]`) are dropped from `city.toml` and written again at the
+  /// end, and `[providers.opencode]` gets [acpCommand]; nothing else in it
+  /// is touched. A team that has this version's tuning ([acpCommand] and
+  /// [handshakeTimeout]) is left as is. `gc` itself writes none of those
+  /// tables; the phone's `city.toml` is the app's.
   static String get tuneScript =>
       'mkdir -p $cityDir/orders $cityDir/assets\n'
       "cat > $cityDir/orders/phone-upkeep.toml <<'OC_EOF'\n"
@@ -242,10 +261,12 @@ exit "$rc"
       "cat > $cityDir/assets/phone-upkeep.sh <<'OC_EOF'\n"
       '${upkeepScript}OC_EOF\n'
       'if [ -f $cityDir/city.toml ] && '
-      '! grep -qx \'$acpCommand\' $cityDir/city.toml; then\n'
+      '{ ! grep -qx \'$acpCommand\' $cityDir/city.toml || '
+      '! grep -qx \'$handshakeTimeout\' $cityDir/city.toml; }; then\n'
       "  awk '/^[[:space:]]*\\[/ { h = \$0; gsub(/[[:space:]]/, \"\", h); "
       'skip = (h == "[daemon]" || h == "[orders]" || '
-      'h == "[[orders.overrides]]" || h == "[[patches.provider]]"); '
+      'h == "[[orders.overrides]]" || h == "[[patches.provider]]" || '
+      'h == "[session]" || h == "[session.acp]"); '
       'prov = (h == "[providers.opencode]") } '
       'skip { next } '
       'prov && /^[[:space:]]*acp_command[[:space:]]*=/ { next } '
@@ -550,6 +571,7 @@ exit 0
       '${supervisorConfig}OC_EOF\n'
       '$tuneScript'
       '$hooksScript'
+      '${AiTeamScripts.refreshAgentWrapperScript}'
       'exec gc supervisor run\n';
 
   /// Registers the team with the running supervisor; a team registered
@@ -744,6 +766,22 @@ exit 0
     return last;
   }
 
+  /// The supervisor's own account of its latest agent starts, oldest first,
+  /// from the end of its log: how long each start took and why one failed.
+  /// Empty when the log says nothing about starts or cannot be read. For the
+  /// Team screens ("the worker took 24 s to start") and for measuring a
+  /// phone (docs/qa/team-hot-2026-09-26).
+  Future<List<BuiltinTeamAgentStart>> agentStarts({
+    int tailBytes = 64 * 1024,
+  }) async {
+    try {
+      final log = await _linux.serviceLog(serviceName, tailBytes: tailBytes);
+      return BuiltinTeamAgentStart.parseLog(log);
+    } on BuiltinLinuxException {
+      return const [];
+    }
+  }
+
   Future<bool> supervisorAnswers() => _answersOk(Uri.parse('$url/health'));
 
   Future<bool> cityAnswers() =>
@@ -930,6 +968,90 @@ class BuiltinTeamBringIn {
       commit: commit.isEmpty || commit == '-' ? null : commit,
       detail: parts.length > 4 ? parts.sublist(4).join(' ').trim() : '',
     );
+  }
+}
+
+/// One agent start, as Gas City logs it (`session lifecycle: op=start …`).
+class BuiltinTeamAgentStart {
+  const BuiltinTeamAgentStart({
+    required this.session,
+    required this.template,
+    required this.outcome,
+    this.duration,
+    this.startCall,
+    this.error,
+  });
+
+  /// The runtime session name, e.g. `gastown__polecat-ph-yqt`.
+  final String session;
+
+  /// The agent it starts, e.g. `demo-app/gastown.polecat`.
+  final String template;
+
+  /// Gas City's word: `success`, `deadline_exceeded`, `provider_error`, …
+  final String outcome;
+
+  /// The whole start, when logged.
+  final Duration? duration;
+
+  /// Of which the agent's own start (for OpenCode: the process and its
+  /// handshake).
+  final Duration? startCall;
+
+  /// Gas City's reason for a failed start, with the agent's own last words
+  /// when it gave any.
+  final String? error;
+
+  bool get succeeded => outcome == 'success';
+
+  /// Cut off because it took too long (the case the phone tuning's longer
+  /// start and handshake times are for).
+  bool get timedOut =>
+      outcome == 'deadline_exceeded' ||
+      (error?.contains('context deadline exceeded') ?? false);
+
+  static final _line = RegExp(
+    r'session lifecycle: op=start wave=\d+ session=(\S+) template=(\S+) '
+    r'outcome=(\S+)(?: duration=(\S+))?(?: phases=\[([^\]]*)\])?(?: err=(.*))?$',
+  );
+
+  /// Every start line of [log], oldest first.
+  static List<BuiltinTeamAgentStart> parseLog(String log) => [
+    for (final line in log.split('\n'))
+      if (_line.firstMatch(line.trim()) case final match?)
+        BuiltinTeamAgentStart(
+          session: match[1]!,
+          template: match[2]!,
+          outcome: match[3]!,
+          duration: parseGoDuration(match[4]),
+          startCall: parseGoDuration(
+            RegExp(r'start_call=(\S+)').firstMatch(match[5] ?? '')?[1],
+          ),
+          error: match[6]?.replaceAll(r'\n', '\n'),
+        ),
+  ];
+
+  /// A Go duration as Gas City prints it (`850ms`, `22.345s`, `1m2.5s`,
+  /// `1h0m0s`); null for anything else.
+  static Duration? parseGoDuration(String? value) {
+    if (value == null || value.isEmpty) return null;
+    final parts = RegExp(
+      r'(\d+(?:\.\d+)?)(h|ms|us|µs|ns|m|s)',
+    ).allMatches(value).toList();
+    if (parts.isEmpty || parts.map((m) => m[0]).join() != value) return null;
+    var micros = 0.0;
+    for (final part in parts) {
+      final number = double.parse(part[1]!);
+      micros += switch (part[2]) {
+        'h' => number * Duration.microsecondsPerHour,
+        'm' => number * Duration.microsecondsPerMinute,
+        's' => number * Duration.microsecondsPerSecond,
+        'ms' => number * Duration.microsecondsPerMillisecond,
+        'ns' => number / 1000,
+        _ => number,
+      };
+    }
+    return Duration(microseconds: micros.round());
   }
 }
 

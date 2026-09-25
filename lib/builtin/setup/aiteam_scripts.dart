@@ -148,6 +148,25 @@ abstract final class AiTeamScripts {
   /// worktree of the project (seen in the Termux spike), so the agent would
   /// start in an empty folder. This makes it one (idempotent), then runs the
   /// real OpenCode.
+  ///
+  /// It also makes each agent's start faster (docs/qa/team-hot-2026-09-26):
+  /// - OpenCode adds `@opencode-ai/plugin` from npm to every `.opencode`
+  ///   folder it meets (the agent's holds Gas City's `gascity.js`) and waits
+  ///   for that before it loads the folder's plugins, so every new work
+  ///   folder paid a network install under proot on its first start (seen
+  ///   on the owner's phone: `.opencode/node_modules` in the worker's
+  ///   folder, three starts cut off before one got through). The phone's
+  ///   own OpenCode server has that package already, in its config folder:
+  ///   a folder with no `package.json` and no `node_modules` of its own
+  ///   gets a link to those and the two small files that tell OpenCode it
+  ///   is there (its skip rule: `node_modules` exists and every declared
+  ///   package is in `package-lock.json`). A project's own `.opencode`
+  ///   with a `package.json` is never touched. `gascity.js` itself needs no
+  ///   package.
+  /// - The model list: the phone's server keeps the shared cache fresh, so
+  ///   an agent reads it and does not fetch it again at start and hourly.
+  ///
+  /// Costs no process of its own: `sed` and `ln` run once, before `exec`.
   static const agentWrapperScript = r'''#!/bin/sh
 case "$PWD" in */.gc/worktrees/*) in_worktree=1 ;; *) in_worktree= ;; esac
 if [ -n "${GC_RIG_ROOT:-}" ] && [ -n "$in_worktree" ] && [ ! -e "$PWD/.git" ]; then
@@ -156,8 +175,39 @@ if [ -n "${GC_RIG_ROOT:-}" ] && [ -n "$in_worktree" ] && [ ! -e "$PWD/.git" ]; t
     bash "$setup" "$GC_RIG_ROOT" "$PWD" "${GC_ALIAS##*/}" --sync >> "$HOME/aiteam/agent-worktrees.log" 2>&1 || true
   fi
 fi
+oc_global="$HOME/.config/opencode"
+oc_plugin="$oc_global/node_modules/@opencode-ai/plugin/package.json"
+if [ -d "$PWD/.opencode" ] && [ ! -e "$PWD/.opencode/node_modules" ] &&
+  [ ! -L "$PWD/.opencode/node_modules" ] && [ ! -e "$PWD/.opencode/package.json" ] &&
+  [ -f "$oc_plugin" ]; then
+  oc_version=$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$oc_plugin" | head -n 1)
+  if [ -n "$oc_version" ]; then
+    (
+      cd "$PWD/.opencode" &&
+        { [ -e .gitignore ] || printf '%s\n' node_modules package.json package-lock.json bun.lock .gitignore > .gitignore; } &&
+        printf '{\n  "dependencies": {\n    "@opencode-ai/plugin": "%s"\n  }\n}\n' "$oc_version" > package.json &&
+        printf '{\n  "name": ".opencode",\n  "lockfileVersion": 3,\n  "requires": true,\n  "packages": {\n    "": {\n      "dependencies": {\n        "@opencode-ai/plugin": "%s"\n      }\n    }\n  }\n}\n' "$oc_version" > package-lock.json &&
+        ln -s "$oc_global/node_modules" node_modules
+    ) || rm -f "$PWD/.opencode/package.json" "$PWD/.opencode/package-lock.json"
+  fi
+fi
+export OPENCODE_DISABLE_MODELS_FETCH=1
 exec /usr/local/bin/opencode "$@"
 ''';
+
+  /// Writes [agentWrapperScript] over the installed one when AI Team is
+  /// installed; part of every team start, so a phone installed by an older
+  /// version gets this version's wrapper without installing again. Running
+  /// agents are not affected (their wrapper already `exec`ed OpenCode). A
+  /// failed write keeps the old wrapper, which still works.
+  static const refreshAgentWrapperScript =
+      'if [ -d $agentBin ]; then\n'
+      "  { cat > $agentBin/opencode.oc-new <<'OC_EOF'\n"
+      '${agentWrapperScript}OC_EOF\n'
+      '  } && chmod 755 $agentBin/opencode.oc-new && '
+      'mv -f $agentBin/opencode.oc-new $agentBin/opencode || '
+      'rm -f $agentBin/opencode.oc-new\n'
+      'fi\n';
 
   /// Passes only when all three programs answer with their pinned version
   /// and the tools the team uses are there, so a pin bump finds something
