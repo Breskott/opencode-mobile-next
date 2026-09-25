@@ -1,0 +1,793 @@
+{
+ "area": "h-termux",
+ "renderedAt": "2026-09-25T21:21:47.818768Z",
+ "declaredShots": [
+  {
+   "page": "termux-setup",
+   "state": "switch-pending"
+  },
+  {
+   "page": "termux-setup",
+   "state": "setup-help-open"
+  },
+  {
+   "page": "termux-setup-unsupported",
+   "state": "default"
+  },
+  {
+   "page": "termux-setup-checking",
+   "state": "default"
+  },
+  {
+   "page": "termux-setup-get-termux",
+   "state": "default"
+  },
+  {
+   "page": "termux-setup-connect-termux",
+   "state": "first-visit"
+  },
+  {
+   "page": "termux-setup-connect-termux",
+   "state": "no-answer"
+  },
+  {
+   "page": "termux-setup-connect-termux",
+   "state": "paste-guide"
+  },
+  {
+   "page": "termux-setup-choose",
+   "state": "fresh-phone"
+  },
+  {
+   "page": "termux-setup-choose",
+   "state": "opencode2-picked"
+  },
+  {
+   "page": "termux-setup-choose",
+   "state": "ubuntu-only"
+  },
+  {
+   "page": "termux-setup-choose",
+   "state": "check-failed"
+  },
+  {
+   "page": "termux-setup-installing",
+   "state": "setting-up-ubuntu"
+  },
+  {
+   "page": "termux-setup-installing",
+   "state": "getting-models-ready"
+  },
+  {
+   "page": "termux-setup-installing",
+   "state": "switching"
+  },
+  {
+   "page": "termux-setup-connected",
+   "state": "default"
+  },
+  {
+   "page": "termux-setup-failed",
+   "state": "install-failed"
+  },
+  {
+   "page": "termux-setup-failed",
+   "state": "termux-too-old"
+  },
+  {
+   "page": "termux-setup-installed",
+   "state": "running"
+  },
+  {
+   "page": "termux-setup-installed",
+   "state": "stopped"
+  },
+  {
+   "page": "termux-setup-installed",
+   "state": "needs-attention"
+  },
+  {
+   "page": "termux-setup-installed",
+   "state": "other-versions-open"
+  },
+  {
+   "page": "termux-setup-switch-runtime-sheet",
+   "state": "default"
+  },
+  {
+   "page": "termux-setup-update-sheet",
+   "state": "default"
+  },
+  {
+   "page": "termux-setup-restart-sheet",
+   "state": "default"
+  },
+  {
+   "page": "termux-setup-start-installed-sheet",
+   "state": "default"
+  },
+  {
+   "page": "termux-setup-replace-installed-sheet",
+   "state": "default"
+  },
+  {
+   "page": "termux-setup-unchecked-install-sheet",
+   "state": "default"
+  },
+  {
+   "page": "termux-processes",
+   "state": "loaded"
+  },
+  {
+   "page": "termux-processes",
+   "state": "empty"
+  },
+  {
+   "page": "termux-processes-details-sheet",
+   "state": "stoppable"
+  },
+  {
+   "page": "termux-processes-details-sheet",
+   "state": "orphan"
+  },
+  {
+   "page": "termux-processes-stop-one-sheet",
+   "state": "default"
+  },
+  {
+   "page": "termux-processes-stop-group-sheet",
+   "state": "default"
+  },
+  {
+   "page": "termux-storage",
+   "state": "intro"
+  },
+  {
+   "page": "termux-storage",
+   "state": "scanning"
+  },
+  {
+   "page": "termux-storage",
+   "state": "report"
+  },
+  {
+   "page": "termux-storage",
+   "state": "category-open"
+  },
+  {
+   "page": "termux-storage-clean-sheet",
+   "state": "default"
+  },
+  {
+   "page": "development-services",
+   "state": "empty"
+  },
+  {
+   "page": "development-services",
+   "state": "registered"
+  },
+  {
+   "page": "development-services",
+   "state": "running"
+  },
+  {
+   "page": "development-services",
+   "state": "unsupported"
+  },
+  {
+   "page": "development-services-editor-sheet",
+   "state": "default"
+  },
+  {
+   "page": "development-services-logs-sheet",
+   "state": "default"
+  },
+  {
+   "page": "development-services-confirm-sheet",
+   "state": "start"
+  },
+  {
+   "page": "development-services-confirm-sheet",
+   "state": "remove"
+  },
+  {
+   "page": "embedded-termux-running-server-entry",
+   "state": "running"
+  },
+  {
+   "page": "embedded-termux-running-server-entry",
+   "state": "menu-open"
+  },
+  {
+   "page": "embedded-termux-running-server-entry",
+   "state": "stopped"
+  },
+  {
+   "page": "embedded-termux-attention-line",
+   "state": "default"
+  },
+  {
+   "page": "embedded-setup-terminal",
+   "state": "live-output"
+  },
+  {
+   "page": "embedded-setup-terminal",
+   "state": "last-output"
+  },
+  {
+   "page": "local-agent-page",
+   "state": "offer"
+  },
+  {
+   "page": "local-agent-page",
+   "state": "installing"
+  },
+  {
+   "page": "local-agent-page",
+   "state": "sign-in"
+  },
+  {
+   "page": "local-agent-page",
+   "state": "ready"
+  },
+  {
+   "page": "embedded-local-agent-onboarding-block",
+   "state": "needs-ubuntu"
+  },
+  {
+   "page": "embedded-local-agent-onboarding-block",
+   "state": "failed"
+  },
+  {
+   "page": "embedded-local-agent-onboarding-block",
+   "state": "menu-open"
+  },
+  {
+   "page": "local-agent-project-sheet",
+   "state": "default"
+  },
+  {
+   "page": "remove-local-agents-confirm-sheet",
+   "state": "default"
+  },
+  {
+   "page": "embedded-local-agent-server-entry",
+   "state": "running"
+  },
+  {
+   "page": "embedded-local-agent-server-entry",
+   "state": "stopped"
+  },
+  {
+   "page": "embedded-local-agent-server-entry",
+   "state": "menu-open"
+  },
+  {
+   "page": "stop-local-agents-confirm-sheet",
+   "state": "default"
+  },
+  {
+   "page": "restart-local-agents-sheet",
+   "state": "default"
+  },
+  {
+   "page": "builtin-server-setup",
+   "state": "fresh"
+  },
+  {
+   "page": "builtin-server-setup",
+   "state": "ubuntu-ready"
+  },
+  {
+   "page": "builtin-server-setup",
+   "state": "running"
+  },
+  {
+   "page": "builtin-server-log-sheet",
+   "state": "default"
+  },
+  {
+   "page": "builtin-server-remove-confirm-sheet",
+   "state": "default"
+  },
+  {
+   "page": "phone-setup-start",
+   "state": "first-time"
+  },
+  {
+   "page": "phone-setup-start",
+   "state": "stopped-part-way"
+  },
+  {
+   "page": "phone-setup-start",
+   "state": "ready-in-app"
+  },
+  {
+   "page": "phone-setup-start",
+   "state": "termux-other-ways"
+  },
+  {
+   "page": "phone-setup-customize-sheet",
+   "state": "first-setup"
+  },
+  {
+   "page": "phone-setup-customize-sheet",
+   "state": "add-tools"
+  },
+  {
+   "page": "phone-setup-progress",
+   "state": "running"
+  },
+  {
+   "page": "phone-setup-progress",
+   "state": "details-open"
+  },
+  {
+   "page": "phone-setup-progress",
+   "state": "failed"
+  },
+  {
+   "page": "phone-setup-progress-stop-sheet",
+   "state": "default"
+  },
+  {
+   "page": "phone-setup-ready",
+   "state": "default"
+  }
+ ],
+ "notRendered": {
+  "embedded-managed-server-health": "Unreachable in the current code: ManagedServerHealth (lib/ui/widgets/managed_server_health.dart) no longer exists and Servers no longer embeds it; its recovery switch lives on as ManagedServerRecoveryOption under On this phone › Options (see termux-setup-installed--options)."
+ },
+ "shots": [
+  {
+   "page": "termux-setup",
+   "state": "switch-pending",
+   "image": "h-termux/termux-setup--switch-pending.png",
+   "note": "A switch from OpenCode 1 to OpenCode 2 beta stopped half way: the shared runtime-switch control (Retry / Return to) at the top."
+  },
+  {
+   "page": "termux-setup",
+   "state": "setup-help-open",
+   "image": "h-termux/termux-setup--setup-help-open.png",
+   "note": "Installed and running, scrolled to the bottom with \"Setup help\" unfolded: the shared \"Connect existing server\" control."
+  },
+  {
+   "page": "termux-setup-unsupported",
+   "state": "default",
+   "image": "h-termux/termux-setup-unsupported.png",
+   "note": "Reached on a desktop build (platform capabilities: Linux)."
+  },
+  {
+   "page": "termux-setup-checking",
+   "state": "default",
+   "image": "h-termux/termux-setup-checking.png",
+   "note": "Termux has not answered the capability check yet."
+  },
+  {
+   "page": "termux-setup-get-termux",
+   "state": "default",
+   "image": "h-termux/termux-setup-get-termux.png",
+   "note": "Termux is not installed. On Android the in-app server leads (BuiltinLinux.supported), so \"Download page\" is the secondary."
+  },
+  {
+   "page": "termux-setup-connect-termux",
+   "state": "first-visit",
+   "image": "h-termux/termux-setup-connect-termux--first-visit.png",
+   "note": "Termux is installed; the RUN_COMMAND permission is not granted."
+  },
+  {
+   "page": "termux-setup-connect-termux",
+   "state": "no-answer",
+   "image": "h-termux/termux-setup-connect-termux--no-answer.png",
+   "note": "Permission granted but the unlock line was never pasted: the bridge probe times out."
+  },
+  {
+   "page": "termux-setup-connect-termux",
+   "state": "paste-guide",
+   "image": "h-termux/termux-setup-connect-termux--paste-guide.png",
+   "note": "The same step scrolled to the illustrated paste guide."
+  },
+  {
+   "page": "termux-setup-choose",
+   "state": "fresh-phone",
+   "image": "h-termux/termux-setup-choose--fresh-phone.png",
+   "note": "Termux connected, nothing installed: the runtime choice."
+  },
+  {
+   "page": "termux-setup-choose",
+   "state": "opencode2-picked",
+   "image": "h-termux/termux-setup-choose--opencode2-picked.png",
+   "note": "The same step with OpenCode 2 chosen: the install line names it."
+  },
+  {
+   "page": "termux-setup-choose",
+   "state": "ubuntu-only",
+   "image": "h-termux/termux-setup-choose--ubuntu-only.png",
+   "note": "Ubuntu is installed in Termux, OpenCode is not."
+  },
+  {
+   "page": "termux-setup-choose",
+   "state": "check-failed",
+   "image": "h-termux/termux-setup-choose--check-failed.png",
+   "note": "The installation inventory timed out."
+  },
+  {
+   "page": "termux-setup-installing",
+   "state": "setting-up-ubuntu",
+   "image": "h-termux/termux-setup-installing--setting-up-ubuntu.png"
+  },
+  {
+   "page": "termux-setup-installing",
+   "state": "getting-models-ready",
+   "image": "h-termux/termux-setup-installing--getting-models-ready.png"
+  },
+  {
+   "page": "termux-setup-installing",
+   "state": "switching",
+   "image": "h-termux/termux-setup-installing--switching.png",
+   "note": "Switching the phone from OpenCode 1 to OpenCode 2 beta."
+  },
+  {
+   "page": "termux-setup-connected",
+   "state": "default",
+   "image": "h-termux/termux-setup-connected.png",
+   "note": "Server ready with no version reported, another server in use: the wizard's step 3 connected state."
+  },
+  {
+   "page": "termux-setup-failed",
+   "state": "install-failed",
+   "image": "h-termux/termux-setup-failed--install-failed.png"
+  },
+  {
+   "page": "termux-setup-failed",
+   "state": "termux-too-old",
+   "image": "h-termux/termux-setup-failed--termux-too-old.png",
+   "note": "Termux is installed but cannot return command results."
+  },
+  {
+   "page": "termux-setup-installed",
+   "state": "running",
+   "image": "h-termux/termux-setup-installed--running.png"
+  },
+  {
+   "page": "termux-setup-installed",
+   "state": "stopped",
+   "image": "h-termux/termux-setup-installed--stopped.png"
+  },
+  {
+   "page": "termux-setup-installed",
+   "state": "needs-attention",
+   "image": "h-termux/termux-setup-installed--needs-attention.png"
+  },
+  {
+   "page": "termux-setup-installed",
+   "state": "other-versions-open",
+   "image": "h-termux/termux-setup-installed--other-versions-open.png",
+   "note": "Running, with \"Other OpenCode versions\" unfolded."
+  },
+  {
+   "page": "termux-setup-switch-runtime-sheet",
+   "state": "default",
+   "image": "h-termux/termux-setup-switch-runtime-sheet.png"
+  },
+  {
+   "page": "termux-setup-update-sheet",
+   "state": "default",
+   "image": "h-termux/termux-setup-update-sheet.png"
+  },
+  {
+   "page": "termux-setup-restart-sheet",
+   "state": "default",
+   "image": "h-termux/termux-setup-restart-sheet.png"
+  },
+  {
+   "page": "termux-setup-start-installed-sheet",
+   "state": "default",
+   "image": "h-termux/termux-setup-start-installed-sheet.png"
+  },
+  {
+   "page": "termux-setup-replace-installed-sheet",
+   "state": "default",
+   "image": "h-termux/termux-setup-replace-installed-sheet.png"
+  },
+  {
+   "page": "termux-setup-unchecked-install-sheet",
+   "state": "default",
+   "image": "h-termux/termux-setup-unchecked-install-sheet.png",
+   "note": "Opened from \"Install & start\" after the inventory timed out."
+  },
+  {
+   "page": "termux-processes",
+   "state": "loaded",
+   "image": "h-termux/termux-processes--loaded.png"
+  },
+  {
+   "page": "termux-processes",
+   "state": "empty",
+   "image": "h-termux/termux-processes--empty.png"
+  },
+  {
+   "page": "termux-processes-details-sheet",
+   "state": "stoppable",
+   "image": "h-termux/termux-processes-details-sheet--stoppable.png"
+  },
+  {
+   "page": "termux-processes-details-sheet",
+   "state": "orphan",
+   "image": "h-termux/termux-processes-details-sheet--orphan.png",
+   "note": "An orphaned helper (Stop without a second confirm). The protected form of this sheet (\"Protected · open the server controls\") is unreachable: a protected row's tap opens On this phone directly (_ProcessRow.onTap)."
+  },
+  {
+   "page": "termux-processes-stop-one-sheet",
+   "state": "default",
+   "image": "h-termux/termux-processes-stop-one-sheet.png"
+  },
+  {
+   "page": "termux-processes-stop-group-sheet",
+   "state": "default",
+   "image": "h-termux/termux-processes-stop-group-sheet.png"
+  },
+  {
+   "page": "termux-storage",
+   "state": "intro",
+   "image": "h-termux/termux-storage--intro.png"
+  },
+  {
+   "page": "termux-storage",
+   "state": "scanning",
+   "image": "h-termux/termux-storage--scanning.png"
+  },
+  {
+   "page": "termux-storage",
+   "state": "report",
+   "image": "h-termux/termux-storage--report.png"
+  },
+  {
+   "page": "termux-storage",
+   "state": "category-open",
+   "image": "h-termux/termux-storage--category-open.png"
+  },
+  {
+   "page": "termux-storage-clean-sheet",
+   "state": "default",
+   "image": "h-termux/termux-storage-clean-sheet.png"
+  },
+  {
+   "page": "development-services",
+   "state": "empty",
+   "image": "h-termux/development-services--empty.png"
+  },
+  {
+   "page": "development-services",
+   "state": "registered",
+   "image": "h-termux/development-services--registered.png"
+  },
+  {
+   "page": "development-services",
+   "state": "running",
+   "image": "h-termux/development-services--running.png"
+  },
+  {
+   "page": "development-services",
+   "state": "unsupported",
+   "image": "h-termux/development-services--unsupported.png",
+   "note": "A server without tracked commands: saving works, Start hides."
+  },
+  {
+   "page": "development-services-editor-sheet",
+   "state": "default",
+   "image": "h-termux/development-services-editor-sheet.png"
+  },
+  {
+   "page": "development-services-logs-sheet",
+   "state": "default",
+   "image": "h-termux/development-services-logs-sheet.png"
+  },
+  {
+   "page": "development-services-confirm-sheet",
+   "state": "start",
+   "image": "h-termux/development-services-confirm-sheet--start.png"
+  },
+  {
+   "page": "development-services-confirm-sheet",
+   "state": "remove",
+   "image": "h-termux/development-services-confirm-sheet--remove.png",
+   "note": "The destructive form of the same sheet."
+  },
+  {
+   "page": "embedded-termux-running-server-entry",
+   "state": "running",
+   "image": "h-termux/embedded-termux-running-server-entry--running.png",
+   "note": "Host: Servers, with a remote server in use."
+  },
+  {
+   "page": "embedded-termux-running-server-entry",
+   "state": "menu-open",
+   "image": "h-termux/embedded-termux-running-server-entry--menu-open.png",
+   "note": "Host: Servers; the card's More menu."
+  },
+  {
+   "page": "embedded-termux-running-server-entry",
+   "state": "stopped",
+   "image": "h-termux/embedded-termux-running-server-entry--stopped.png",
+   "note": "Host: Servers."
+  },
+  {
+   "page": "embedded-termux-attention-line",
+   "state": "default",
+   "image": "h-termux/embedded-termux-attention-line.png",
+   "note": "Host: Work. An orphaned MCP helper has used an hour of CPU (the scan is faked through WorkspaceScreen.debugRunawayWatcher)."
+  },
+  {
+   "page": "embedded-setup-terminal",
+   "state": "live-output",
+   "image": "h-termux/embedded-setup-terminal--live-output.png",
+   "note": "Host: On this phone while setup installs OpenCode."
+  },
+  {
+   "page": "embedded-setup-terminal",
+   "state": "last-output",
+   "image": "h-termux/embedded-setup-terminal--last-output.png",
+   "note": "Host: On this phone after setup failed."
+  },
+  {
+   "page": "local-agent-page",
+   "state": "offer",
+   "image": "h-termux/local-agent-page--offer.png"
+  },
+  {
+   "page": "local-agent-page",
+   "state": "installing",
+   "image": "h-termux/local-agent-page--installing.png"
+  },
+  {
+   "page": "local-agent-page",
+   "state": "sign-in",
+   "image": "h-termux/local-agent-page--sign-in.png"
+  },
+  {
+   "page": "local-agent-page",
+   "state": "ready",
+   "image": "h-termux/local-agent-page--ready.png"
+  },
+  {
+   "page": "embedded-local-agent-onboarding-block",
+   "state": "needs-ubuntu",
+   "image": "h-termux/embedded-local-agent-onboarding-block--needs-ubuntu.png",
+   "note": "Host: the Claude Code page, before phone setup ran."
+  },
+  {
+   "page": "embedded-local-agent-onboarding-block",
+   "state": "failed",
+   "image": "h-termux/embedded-local-agent-onboarding-block--failed.png",
+   "note": "Host: the Claude Code page, after the install failed."
+  },
+  {
+   "page": "embedded-local-agent-onboarding-block",
+   "state": "menu-open",
+   "image": "h-termux/embedded-local-agent-onboarding-block--menu-open.png",
+   "note": "Host: the Claude Code page; the block's More menu."
+  },
+  {
+   "page": "local-agent-project-sheet",
+   "state": "default",
+   "image": "h-termux/local-agent-project-sheet.png"
+  },
+  {
+   "page": "remove-local-agents-confirm-sheet",
+   "state": "default",
+   "image": "h-termux/remove-local-agents-confirm-sheet.png"
+  },
+  {
+   "page": "embedded-local-agent-server-entry",
+   "state": "running",
+   "image": "h-termux/embedded-local-agent-server-entry--running.png",
+   "note": "Host: Servers, under the phone's OpenCode card."
+  },
+  {
+   "page": "embedded-local-agent-server-entry",
+   "state": "stopped",
+   "image": "h-termux/embedded-local-agent-server-entry--stopped.png",
+   "note": "Host: Servers."
+  },
+  {
+   "page": "embedded-local-agent-server-entry",
+   "state": "menu-open",
+   "image": "h-termux/embedded-local-agent-server-entry--menu-open.png",
+   "note": "Host: Servers; the row's More menu."
+  },
+  {
+   "page": "stop-local-agents-confirm-sheet",
+   "state": "default",
+   "image": "h-termux/stop-local-agents-confirm-sheet.png"
+  },
+  {
+   "page": "restart-local-agents-sheet",
+   "state": "default",
+   "image": "h-termux/restart-local-agents-sheet.png"
+  },
+  {
+   "page": "builtin-server-setup",
+   "state": "fresh",
+   "image": "h-termux/builtin-server-setup--fresh.png"
+  },
+  {
+   "page": "builtin-server-setup",
+   "state": "ubuntu-ready",
+   "image": "h-termux/builtin-server-setup--ubuntu-ready.png"
+  },
+  {
+   "page": "builtin-server-setup",
+   "state": "running",
+   "image": "h-termux/builtin-server-setup--running.png"
+  },
+  {
+   "page": "builtin-server-log-sheet",
+   "state": "default",
+   "image": "h-termux/builtin-server-log-sheet.png"
+  },
+  {
+   "page": "builtin-server-remove-confirm-sheet",
+   "state": "default",
+   "image": "h-termux/builtin-server-remove-confirm-sheet.png"
+  },
+  {
+   "page": "phone-setup-start",
+   "state": "first-time",
+   "image": "h-termux/phone-setup-start--first-time.png"
+  },
+  {
+   "page": "phone-setup-start",
+   "state": "stopped-part-way",
+   "image": "h-termux/phone-setup-start--stopped-part-way.png"
+  },
+  {
+   "page": "phone-setup-start",
+   "state": "ready-in-app",
+   "image": "h-termux/phone-setup-start--ready-in-app.png",
+   "note": "OpenCode is already installed inside the app."
+  },
+  {
+   "page": "phone-setup-start",
+   "state": "termux-other-ways",
+   "image": "h-termux/phone-setup-start--termux-other-ways.png",
+   "note": "OpenCode already runs in Termux; \"Other ways\" unfolded."
+  },
+  {
+   "page": "phone-setup-customize-sheet",
+   "state": "first-setup",
+   "image": "h-termux/phone-setup-customize-sheet--first-setup.png"
+  },
+  {
+   "page": "phone-setup-customize-sheet",
+   "state": "add-tools",
+   "image": "h-termux/phone-setup-customize-sheet--add-tools.png",
+   "note": "Add mode, from the \"This phone\" card on Servers."
+  },
+  {
+   "page": "phone-setup-progress",
+   "state": "running",
+   "image": "h-termux/phone-setup-progress--running.png"
+  },
+  {
+   "page": "phone-setup-progress",
+   "state": "details-open",
+   "image": "h-termux/phone-setup-progress--details-open.png"
+  },
+  {
+   "page": "phone-setup-progress",
+   "state": "failed",
+   "image": "h-termux/phone-setup-progress--failed.png"
+  },
+  {
+   "page": "phone-setup-progress-stop-sheet",
+   "state": "default",
+   "image": "h-termux/phone-setup-progress-stop-sheet.png"
+  },
+  {
+   "page": "phone-setup-ready",
+   "state": "default",
+   "image": "h-termux/phone-setup-ready.png"
+  }
+ ]
+}
