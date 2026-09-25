@@ -58,7 +58,7 @@ None. Widget tests and rendered frames only (pinned Shorebird Flutter
 | 2 | `test/home_navigation_test.dart` (+1 test: the real shell fades through; dock indicator on `KitMotion.standard`; nothing running at rest) | pass | PASS (26) |
 | 3 | Same two files on the pre-change kit/theme/shell | the new behaviours fail | FAIL, 11 tests (`failing-first-without-change.txt`) |
 | 4 | Discovery run of the whole suite (406 files, 8 chunks, `-j 2`) | pass | 2 files failed, both fixed: **`work_tab_golden_test.dart`**, 4 goldens: the "not answering" state appears during a 9 s pump and was captured on the first frame of its arrival (blank); the golden now pumps `KitMotion.standard` after its `before` step, and the 4 images were re-recorded after looking at them: identical except the indeterminate bar's phase and the status dot (still dot, 10 dp, instead of a spinning 12 dp wheel). **`phone_setup_ready_screen_test.dart`**, 3 tests: a product bug — under reduced motion the working button's zero-duration `AnimatedSize` re-dirtied itself during layout; fixed (no `AnimatedSize` under reduced motion) and guarded by a new test that fails without the fix. |
-| 5 | Final gate on the committed candidate | pass | GATE_PLACEHOLDER |
+| 5 | Final gate on the committed candidate | pass | PASS: `flutter analyze lib test` clean; all 406 test files (8 chunks, `-j 2`, every chunk exit 0, 775 s) on `1377c6e7` (code as of `4fee2153`) |
 
 ## Evidence
 
