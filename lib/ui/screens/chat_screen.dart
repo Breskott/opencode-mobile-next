@@ -2558,7 +2558,7 @@ class _ChatScreenState extends State<ChatScreen>
             !hasStagedReferences)) {
       return;
     }
-    if (!_conn.isIsolated) KitHaptics.send();
+    if (!_conn.isIsolated) KitHaptics.send(context);
     if (!_conn.isIsolated &&
         _attachments.isEmpty &&
         _composer.text.trimLeft().startsWith('/') &&
