@@ -15358,7 +15358,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String teamUiPhoneOfferSize(int size) {
-    return 'Downloads about $size MB (Gas City, beads and Dolt, built for Android).';
+    return 'Downloads about $size MB (Gas City, beads and Dolt, from each project\'s own releases).';
   }
 
   @override
@@ -15400,7 +15400,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiPhoneChooseProjectBody =>
-      'The team works on one project folder of the phone server. The first agent commits to a git origin created next to it.';
+      'The team works on one project folder of the phone server. A project without a git origin gets one on the phone, and the team\'s merged work comes back into the folder by itself.';
 
   @override
   String teamUiPhoneNoProjects(String directory) {
@@ -15497,7 +15497,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get teamUiPhoneFailedPackages =>
-      'Termux could not install the prerequisites (libicu, git, jq, tmux). The output below says which.';
+      'Ubuntu could not install the prerequisites (tmux, jq, lsof, procps). The output below says which.';
 
   @override
   String get teamUiPhoneFailedProject =>
@@ -18090,6 +18090,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiteamComponentStageWaiting => 'Waiting for AI Team to answer';
+
+  @override
+  String get aiteamComponentTurnOnExpectation =>
+      'This takes about 5 to 10 minutes the first time. You can leave this screen; it keeps going.';
+
+  @override
+  String get aiteamComponentStartExpectation =>
+      'This takes a few minutes. You can leave this screen; it keeps going.';
+
+  @override
+  String aiteamComponentStageSoFar(String time) {
+    return '$time so far';
+  }
+
+  @override
+  String aiteamComponentStageTook(String time) {
+    return 'Took $time';
+  }
 
   @override
   String get aiteamComponentRunning => 'AI Team · Running';

@@ -15618,7 +15618,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String teamUiPhoneOfferSize(int size) {
-    return 'يُنزّل نحو $size م.ب (Gas City وbeads وDolt مبنية لأندرويد).';
+    return 'يُنزّل نحو $size م.ب (Gas City وbeads وDolt من الإصدارات الرسمية لكل مشروع).';
   }
 
   @override
@@ -15660,7 +15660,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiPhoneChooseProjectBody =>
-      'يعمل الفريق على مجلد مشروع واحد من خادم الهاتف. يُودِع الوكيل الأول تغييراته في أصل git يُنشأ بجواره.';
+      'يعمل الفريق على مجلد مشروع واحد من خادم الهاتف. المشروع الذي ليس له أصل git يحصل على أصل على الهاتف، ويعود عمل الفريق المدمج إلى المجلد تلقائيًا.';
 
   @override
   String teamUiPhoneNoProjects(String directory) {
@@ -15761,7 +15761,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiPhoneFailedPackages =>
-      'لم يتمكن Termux من تثبيت المتطلبات (libicu وgit وjq وtmux). يوضح المخرج أدناه أيها.';
+      'لم يتمكن Ubuntu من تثبيت المتطلبات (tmux وjq وlsof وprocps). يوضح المخرج أدناه أيها.';
 
   @override
   String get teamUiPhoneFailedProject =>
@@ -18354,6 +18354,24 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get aiteamComponentStageWaiting => 'انتظار رد الفريق الذكي';
+
+  @override
+  String get aiteamComponentTurnOnExpectation =>
+      'يستغرق هذا من 5 إلى 10 دقائق في المرة الأولى. يمكنك مغادرة هذه الشاشة؛ يستمر العمل.';
+
+  @override
+  String get aiteamComponentStartExpectation =>
+      'يستغرق هذا بضع دقائق. يمكنك مغادرة هذه الشاشة؛ يستمر العمل.';
+
+  @override
+  String aiteamComponentStageSoFar(String time) {
+    return '$time حتى الآن';
+  }
+
+  @override
+  String aiteamComponentStageTook(String time) {
+    return 'استغرق $time';
+  }
 
   @override
   String get aiteamComponentRunning => 'الفريق الذكي · يعمل';

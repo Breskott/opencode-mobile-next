@@ -24776,7 +24776,7 @@ abstract class AppLocalizations {
   /// On-device AI Team block: download size line
   ///
   /// In en, this message translates to:
-  /// **'Downloads about {size} MB (Gas City, beads and Dolt, built for Android).'**
+  /// **'Downloads about {size} MB (Gas City, beads and Dolt, from each project\'s own releases).'**
   String teamUiPhoneOfferSize(int size);
 
   /// On-device AI Team block: lifecycle warning
@@ -24848,7 +24848,7 @@ abstract class AppLocalizations {
   /// On-device setup: project picker body
   ///
   /// In en, this message translates to:
-  /// **'The team works on one project folder of the phone server. The first agent commits to a git origin created next to it.'**
+  /// **'The team works on one project folder of the phone server. A project without a git origin gets one on the phone, and the team\'s merged work comes back into the folder by itself.'**
   String get teamUiPhoneChooseProjectBody;
 
   /// On-device setup: project picker when the server has no folders
@@ -24980,7 +24980,7 @@ abstract class AppLocalizations {
   /// On-device setup: package install failure
   ///
   /// In en, this message translates to:
-  /// **'Termux could not install the prerequisites (libicu, git, jq, tmux). The output below says which.'**
+  /// **'Ubuntu could not install the prerequisites (tmux, jq, lsof, procps). The output below says which.'**
   String get teamUiPhoneFailedPackages;
 
   /// On-device setup: project failure
@@ -29224,6 +29224,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for AI Team to answer'**
   String get aiteamComponentStageWaiting;
+
+  /// While AI Team is being turned on for a project: how long it takes, and that leaving the screen does not stop it
+  ///
+  /// In en, this message translates to:
+  /// **'This takes about 5 to 10 minutes the first time. You can leave this screen; it keeps going.'**
+  String get aiteamComponentTurnOnExpectation;
+
+  /// While AI Team starts again: how long it takes, and that leaving the screen does not stop it
+  ///
+  /// In en, this message translates to:
+  /// **'This takes a few minutes. You can leave this screen; it keeps going.'**
+  String get aiteamComponentStartExpectation;
+
+  /// Under the turn-on stage in progress: how long it has run, as minutes:seconds
+  ///
+  /// In en, this message translates to:
+  /// **'{time} so far'**
+  String aiteamComponentStageSoFar(String time);
+
+  /// Under a finished turn-on stage: how long it took, as minutes:seconds
+  ///
+  /// In en, this message translates to:
+  /// **'Took {time}'**
+  String aiteamComponentStageTook(String time);
 
   /// Status line of a running in-app team
   ///

@@ -7,9 +7,12 @@
 ///   Add tools with AI Team switched on (the reusable setup engine installs
 ///   it, with its own progress screen).
 /// - Installed, not on for the open project: "Turn on AI Team for
-///   {project}", which runs [BuiltinTeam.turnOn] with its stage shown here,
+///   {project}", which runs [BuiltinTeam.turnOn] as the app's one
+///   [BuiltinTeamJob] (it goes on when the person leaves the screen), shown
+///   here as its stages with the current one marked and how long each took,
 ///   then gives the profile the team's plugin config, so the Team card and
-///   the rest of the AI Team screens light up.
+///   the rest of the AI Team screens light up. While it runs no action is
+///   offered: the stages say what is happening.
 /// - On: running or stopped, with Start / Stop, and the plain explanation
 ///   of Android's limit on an app's child processes.
 library;
@@ -24,11 +27,14 @@ import '../../builtin/setup/components.dart' show SetupComponentIds;
 import '../../builtin/setup/phone_setup.dart';
 import '../../builtin/setup/setup_contract.dart';
 import '../../builtin/team/builtin_team.dart';
+import '../../builtin/team/builtin_team_job.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/profiles.dart';
 import '../app_theme.dart';
 import '../kit/kit_illustration.dart';
+import '../kit/kit_row.dart';
+import '../kit/kit_status_mark.dart';
 import '../kit/scenes/team_scenes.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/phone_setup/phone_setup_selection.dart' show setupSizeText;
@@ -114,6 +120,12 @@ String builtinTeamBringInText(
   };
 }
 
+/// A stage's time as minutes and seconds ("2:05").
+String builtinTeamElapsedText(Duration elapsed) {
+  final seconds = elapsed.inSeconds < 0 ? 0 : elapsed.inSeconds;
+  return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
+}
+
 /// The project's folder name, as the person named it.
 String builtinTeamProjectName(String path) {
   final trimmed = path.endsWith('/')
@@ -144,14 +156,22 @@ class BuiltinTeamSection extends StatefulWidget {
 
 class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
   BuiltinTeam get _team => _sharedTeam;
+  BuiltinTeamJob get _job => BuiltinTeamJob.shared;
 
   BuiltinTeamState? _state;
   bool _loading = true;
+
+  /// A quick action of this section (stop, bring in) runs.
   bool _busy = false;
-  BuiltinTeamStage? _stage;
   String? _error;
   String? _detail;
   bool _showDetail = false;
+  bool _jobWasRunning = false;
+
+  /// Moves the stage times on while the job runs.
+  Timer? _ticker;
+
+  bool get _working => _busy || _job.running;
 
   String? get _project {
     final directory = widget.connection.directory;
@@ -165,7 +185,37 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
   @override
   void initState() {
     super.initState();
+    _jobWasRunning = _job.running;
+    _job.addListener(_onJob);
+    _syncTicker();
     unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    _job.removeListener(_onJob);
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  void _syncTicker() {
+    if (_job.running) {
+      _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    } else {
+      _ticker?.cancel();
+      _ticker = null;
+    }
+  }
+
+  void _onJob() {
+    if (!mounted) return;
+    final finished = _jobWasRunning && !_job.running;
+    _jobWasRunning = _job.running;
+    _syncTicker();
+    setState(() {});
+    if (finished) unawaited(_load());
   }
 
   Future<void> _load() async {
@@ -174,6 +224,11 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
       state = await _team.status();
     } catch (_) {
       state = const BuiltinTeamState();
+    }
+    // Installed without a store yet (just added): make it now, quietly, so
+    // Turn on skips its longest first step. Turn on waits for it.
+    if (state.installed && !state.hasCity && !_job.running) {
+      unawaited(_team.prepare());
     }
     if (!mounted) return;
     setState(() {
@@ -189,8 +244,9 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
     if (mounted) await _load();
   }
 
+  /// A quick action; the long ones go through [_job].
   Future<void> _run(Future<void> Function() work) async {
-    if (_busy) return;
+    if (_working) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -212,35 +268,48 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _busy = false;
-          _stage = null;
-        });
+        setState(() => _busy = false);
         await _load();
       }
     }
   }
 
-  Future<void> _turnOn(String project) => _run(() async {
-    await _team.turnOn(
-      project,
-      notice: _notice,
-      onStage: (stage) {
-        if (mounted) setState(() => _stage = stage);
+  /// Turns the team on for [project] as the app's one job: it goes on, and
+  /// gives the profile its config, even when this screen is left.
+  Future<void> _turnOn(String project) {
+    if (_working) return Future.value();
+    final notice = _notice;
+    final team = _team;
+    final connection = widget.connection;
+    final profile = widget.profile;
+    setState(() => _error = null);
+    return _job.run(
+      stages: BuiltinTeamStage.values,
+      project: project,
+      work: (onStage) async {
+        await team.turnOn(project, notice: notice, onStage: onStage);
+        await _enable(connection, profile);
       },
     );
-    await _enable();
-  });
+  }
 
-  Future<void> _start() => _run(() async {
-    await _team.start(
-      notice: _notice,
-      onStage: (stage) {
-        if (mounted) setState(() => _stage = stage);
+  Future<void> _start() {
+    if (_working) return Future.value();
+    final notice = _notice;
+    final team = _team;
+    final connection = widget.connection;
+    final profile = widget.profile;
+    setState(() => _error = null);
+    return _job.run(
+      stages: const [BuiltinTeamStage.starting, BuiltinTeamStage.waiting],
+      work: (onStage) async {
+        await team.start(notice: notice, onStage: onStage);
+        if (!BuiltinTeam.isBuiltinConfig(profile.orchestration)) {
+          await _enable(connection, profile);
+        }
       },
     );
-    if (!_configured) await _enable();
-  });
+  }
 
   Future<void> _stop() => _run(_team.stop);
 
@@ -251,9 +320,10 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
   /// Gives the in-app profile the team's plugin config and lets the
   /// connection build its controller: the Team card, Inbox gates and the
   /// AI Team screens then read this team.
-  Future<void> _enable() async {
-    final connection = widget.connection;
-    final profile = widget.profile;
+  static Future<void> _enable(
+    ConnectionController connection,
+    ServerProfile profile,
+  ) async {
     profile.orchestration = BuiltinTeam.config();
     await connection.store.upsert(profile);
     connection.syncOrchestration();
@@ -315,7 +385,9 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
     } else {
       children.addAll(_installed(context, l10n, state, muted));
     }
-    if (_busy && _stage != null) {
+    final job = _job;
+    final jobError = job.running ? null : job.error;
+    if (job.running) {
       children
         ..add(const SizedBox(height: 10))
         ..add(
@@ -331,12 +403,10 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  builtinTeamStageText(
-                    l10n,
-                    _stage!,
-                    builtinTeamProjectName(_project ?? ''),
-                  ),
-                  key: const ValueKey('builtin-team-stage'),
+                  job.stages.contains(BuiltinTeamStage.preparing)
+                      ? l10n.aiteamComponentTurnOnExpectation
+                      : l10n.aiteamComponentStartExpectation,
+                  key: const ValueKey('builtin-team-expectation'),
                   style: muted,
                 ),
               ),
@@ -346,7 +416,23 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
         ..add(const SizedBox(height: 6))
         ..add(const LinearProgressIndicator());
     }
-    final error = _error;
+    if (job.stages.isNotEmpty && (job.running || jobError != null)) {
+      children
+        ..add(const SizedBox(height: 4))
+        ..addAll(_stageRows(l10n, job, failed: jobError != null));
+    }
+    final error =
+        _error ??
+        switch (jobError) {
+          null => null,
+          final BuiltinTeamException e => builtinTeamFailureText(l10n, e),
+          final other => l10n.aiteamComponentFailed('$other'),
+        };
+    final detail = _error != null
+        ? _detail
+        : jobError is BuiltinTeamException
+        ? jobError.detail
+        : null;
     if (error != null) {
       children
         ..add(const SizedBox(height: 10))
@@ -359,7 +445,6 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
             ),
           ),
         );
-      final detail = _detail;
       if (detail != null && detail.trim().isNotEmpty) {
         children.add(
           Align(
@@ -393,6 +478,57 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
         ),
       ),
     );
+  }
+
+  /// The job's stages, each with its mark: done with how long it took, the
+  /// current one with its time so far (or failed), the rest waiting.
+  List<Widget> _stageRows(
+    AppLocalizations l10n,
+    BuiltinTeamJob job, {
+    required bool failed,
+  }) {
+    final project = builtinTeamProjectName(job.project ?? _project ?? '');
+    final current = job.stage;
+    final rows = <Widget>[];
+    var reached = false;
+    for (final stage in job.stages) {
+      final took = job.took(stage);
+      final isCurrent = stage == current;
+      final KitMarkState mark;
+      String? supporting;
+      if (isCurrent) {
+        reached = true;
+        final elapsed = job.elapsed(stage);
+        mark = failed ? KitMarkState.failed : KitMarkState.working;
+        if (!failed && elapsed != null) {
+          supporting = l10n.aiteamComponentStageSoFar(
+            builtinTeamElapsedText(elapsed),
+          );
+        }
+      } else if (took != null) {
+        mark = KitMarkState.done;
+        supporting = l10n.aiteamComponentStageTook(
+          builtinTeamElapsedText(took),
+        );
+      } else {
+        // A stage the job skipped (a store made during setup) reads as
+        // done once a later one began.
+        mark = reached || current == null
+            ? KitMarkState.waiting
+            : KitMarkState.done;
+      }
+      rows.add(
+        KitRow(
+          key: ValueKey('builtin-team-stage-${stage.name}'),
+          padding: EdgeInsets.zero,
+          leading: KitStatusMark(state: mark),
+          title: builtinTeamStageText(l10n, stage, project),
+          supporting: supporting == null ? null : TextSpan(text: supporting),
+          titleKey: isCurrent ? const ValueKey('builtin-team-stage') : null,
+        ),
+      );
+    }
+    return rows;
   }
 
   List<Widget> _installed(
@@ -448,37 +584,41 @@ class _BuiltinTeamSectionState extends State<BuiltinTeamSection> {
           ),
         );
     }
+    // While something runs, its stages say what is happening; no action is
+    // offered beside them, never a disabled one (design standard §2).
     final actions = <Widget>[
-      if (bringIn != null &&
-          (bringIn.outcome == BuiltinTeamBringInOutcome.dirty ||
-              bringIn.outcome == BuiltinTeamBringInOutcome.failed))
-        TextButton(
-          key: const ValueKey('builtin-team-bring-in-action'),
-          onPressed: _busy ? null : () => _bringIn(project!),
-          child: Text(
-            l10n.aiteamBringInAction(builtinTeamProjectName(project!)),
+      if (!_working) ...[
+        if (bringIn != null &&
+            (bringIn.outcome == BuiltinTeamBringInOutcome.dirty ||
+                bringIn.outcome == BuiltinTeamBringInOutcome.failed))
+          TextButton(
+            key: const ValueKey('builtin-team-bring-in-action'),
+            onPressed: () => _bringIn(project),
+            child: Text(
+              l10n.aiteamBringInAction(builtinTeamProjectName(project!)),
+            ),
           ),
-        ),
-      if (on && state.running)
-        TextButton(
-          key: const ValueKey('builtin-team-stop'),
-          onPressed: _busy ? null : _stop,
-          child: Text(l10n.aiteamComponentStop),
-        ),
-      if (on && !state.running)
-        FilledButton.tonal(
-          key: const ValueKey('builtin-team-start'),
-          onPressed: _busy ? null : _start,
-          child: Text(l10n.aiteamComponentStart),
-        ),
-      if (project != null && !(on && projectOn))
-        FilledButton.tonal(
-          key: const ValueKey('builtin-team-turn-on'),
-          onPressed: _busy ? null : () => _turnOn(project),
-          child: Text(
-            l10n.aiteamComponentTurnOn(builtinTeamProjectName(project)),
+        if (on && state.running)
+          TextButton(
+            key: const ValueKey('builtin-team-stop'),
+            onPressed: _stop,
+            child: Text(l10n.aiteamComponentStop),
           ),
-        ),
+        if (on && !state.running)
+          FilledButton.tonal(
+            key: const ValueKey('builtin-team-start'),
+            onPressed: _start,
+            child: Text(l10n.aiteamComponentStart),
+          ),
+        if (project != null && !(on && projectOn))
+          FilledButton.tonal(
+            key: const ValueKey('builtin-team-turn-on'),
+            onPressed: () => _turnOn(project),
+            child: Text(
+              l10n.aiteamComponentTurnOn(builtinTeamProjectName(project)),
+            ),
+          ),
+      ],
     ];
     if (actions.isNotEmpty) {
       widgets
