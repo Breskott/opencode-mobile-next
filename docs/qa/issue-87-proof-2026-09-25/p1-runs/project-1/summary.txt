@@ -1,0 +1,5 @@
+frames 62 duration 12.0
+first_change 1.5
+settled 2.6
+settle_time 1.1
+changes 1.5 1.6 2.0 2.6

@@ -1,0 +1,7 @@
+Starting: Intent { cmp=io.github.eslamasabry.opencode_mobile/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: io.github.eslamasabry.opencode_mobile/.MainActivity
+TotalTime: 1383
+WaitTime: 1384
+Complete
