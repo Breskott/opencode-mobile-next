@@ -5087,5 +5087,10 @@
   "teamOutputSilent": "لا مخرجات بعد · قد يستغرق البدء دقيقة",
   "teamAgentTitle": "{role} · {name}",
   "teamAgentWorksOn": "على «{title}»",
-  "teamOutputStartingPhone": "يبدأ التشغيل · منذ {age} · قد يستغرق ذلك بضع دقائق على الهاتف"
+  "teamOutputStartingPhone": "يبدأ التشغيل · منذ {age} · قد يستغرق ذلك بضع دقائق على الهاتف",
+  "teamNewModeSolo": "منفرد",
+  "teamNewModeTeam": "فريق",
+  "teamNewModeLabel": "محادثة جديدة مع",
+  "teamNewTask": "مهمة فريق جديدة",
+  "teamTaskMark": "فريق"
 }

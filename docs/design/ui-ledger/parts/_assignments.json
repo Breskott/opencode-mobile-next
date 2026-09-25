@@ -138,7 +138,10 @@
   "lib/ui/widgets/team_receipt.dart",
   "lib/ui/widgets/team_controls.dart",
   "lib/ui/screens/team/team_intro_screen.dart",
-  "lib/ui/widgets/team_discover.dart"
+  "lib/ui/widgets/team_discover.dart",
+  "lib/ui/screens/team/team_conversation_stub.dart",
+  "lib/ui/widgets/team_task_row.dart",
+  "lib/ui/widgets/team_now.dart"
  ],
  "i2-team-sheets": [
   "lib/ui/screens/team/gate_sheet.dart",

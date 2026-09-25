@@ -76,6 +76,30 @@ Future<bool> teamTermuxSupported(TermuxTeamRuntime? runtime) async {
   }
 }
 
+/// Whether [profile]'s kind of server can run a team at all: always, but
+/// on a Termux phone only when its runtime can.
+Future<bool> teamPossibleOn(
+  ServerProfile profile, {
+  TermuxTeamRuntime? runtime,
+}) async => teamServerKindOf(profile) == TeamServerKind.termux
+    ? teamTermuxSupported(runtime)
+    : true;
+
+/// New conversation's Solo · Team choice, remembered per server
+/// (`oc.newConversationMode.<profileId>`, swept with the profile).
+abstract final class TeamNewMode {
+  static String key(String profileId) => 'oc.newConversationMode.$profileId';
+
+  static bool isTeam(SharedPreferences prefs, String profileId) =>
+      prefs.getString(key(profileId)) == 'team';
+
+  static Future<void> set(
+    SharedPreferences prefs,
+    String profileId, {
+    required bool team,
+  }) => prefs.setString(key(profileId), team ? 'team' : 'solo');
+}
+
 /// Whether [progress] is a setup job that installs the AI Team (Add tools
 /// with AI Team, on OpenCode inside the app).
 bool teamSetupRunning(SetupProgress progress) =>

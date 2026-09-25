@@ -170,6 +170,7 @@ String teamTaskLine(
   bool explainWait = false,
   Duration? checkEvery,
   bool paused = false,
+  bool showWaitAge = true,
 }) {
   final finishedAt = run.finishedAt;
   if (finishedAt != null &&
@@ -195,6 +196,7 @@ String teamTaskLine(
       now: now,
       every: checkEvery,
       paused: paused,
+      showAge: showWaitAge,
       cycleOf: cycleOf,
     );
     if (wait != null) return wait;

@@ -510,8 +510,12 @@ void main() {
         expect(team.snapshot.hasData, isTrue);
         expect(team.snapshot.agents, isNotEmpty);
         expect(team.snapshot.runs, isNotEmpty);
-        expect(find.byType(TeamCard), findsOneWidget);
-        expect(find.byKey(const ValueKey('team-card-data')), findsOneWidget);
+        // The team's page door and its tasks are in the Work tab
+        // (docs/design/team-conversation-2026-09-26.md).
+        expect(
+          find.byKey(const ValueKey('team-work-door'), skipOffstage: false),
+          findsOneWidget,
+        );
         // The predicate the plugin-off tests rely on does see the plugin's
         // keys when they exist.
         expect(_pluginKeys(), findsWidgets);
@@ -573,7 +577,10 @@ void main() {
         expect(on, same(plugged));
         await team.start();
         await settle(tester);
-        expect(find.byType(TeamCard), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('team-work-door'), skipOffstage: false),
+          findsOneWidget,
+        );
 
         // Activity too: it reads the plugin's gates and agents for its
         // AI Team rows (none in the fixture's normal run, so no rows).

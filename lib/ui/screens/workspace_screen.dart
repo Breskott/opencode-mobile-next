@@ -11,6 +11,7 @@ import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
 import '../../state/nudges.dart';
+import '../../domain/orchestration_gateway.dart' show OrchestrationRun;
 import '../../state/orchestration.dart';
 import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
@@ -28,8 +29,11 @@ import '../widgets/relative_time.dart';
 import '../widgets/session_title.dart';
 import '../widgets/request_routes.dart';
 import '../widgets/session_inventory_footer.dart';
-import '../widgets/team_card.dart';
 import '../widgets/team_discover.dart';
+import '../widgets/team_task_row.dart';
+import '../widgets/team_vocabulary.dart' show teamGatedRuns, teamHostPhrase;
+import 'team/team_conversation_stub.dart';
+import 'team/team_intro_screen.dart';
 import '../widgets/termux_phone_tools.dart';
 import '../widgets/work_status_line.dart';
 import '../../termux/bridge.dart';
@@ -111,6 +115,11 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
 
   /// A project picked on a fresh connection is being opened.
   bool _selectingInitial = false;
+
+  /// Whether this server can run an AI Team (a Termux phone asks its
+  /// runtime once), for New conversation's Solo · Team choice.
+  String? _teamAskedFor;
+  bool _teamPossible = false;
 
   /// Opening the saved project was tried and left no folder open: the
   /// folder chooser may show.
@@ -566,6 +575,30 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
             ack: acknowledged,
           );
     final archived = controller.archivedSessions();
+    // The team's open tasks are conversations too (docs/design/team-
+    // conversation-2026-09-26.md): what needs the person under Needs you,
+    // the rest under Running, each with the team's mark.
+    final team = controller.orchestration;
+    final teamTasks = team == null
+        ? const <OrchestrationRun>[]
+        : teamOpenTasks(team);
+    final teamGated = team == null
+        ? const <String>{}
+        : teamGatedRuns(team.snapshot);
+    final teamNeedsYou = [
+      for (final run in teamTasks)
+        if (teamGated.contains(run.id)) run,
+    ];
+    final teamRunning = [
+      for (final run in teamTasks)
+        if (!teamGated.contains(run.id)) run,
+    ];
+    Widget teamRow(OrchestrationRun run) => TeamTaskRow(
+      key: ValueKey('team-work-${run.id}'),
+      team: team!,
+      run: run,
+      onOpen: () => _openTeamTask(team, run.id),
+    );
     final capabilities = controller.capabilities;
     final pinNudge = controller.nudges.activeFor(NudgeRegistry.workScope);
     _queuePinNudge(
@@ -647,6 +680,8 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         _pendingArchive.isEmpty;
     final showEmpty = recent.isEmpty && !partial && !firstLoad;
     final headerDirectory = _headerDirectory;
+    final teamPossible = _teamPossibleNow();
+    final teamMode = teamPossible && _teamMode;
 
     Widget row(Session session, {bool busy = false, String? blocker}) =>
         _SessionRow(
@@ -746,18 +781,18 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
               // 2. Work waiting on the user, first: the persona's top
               // job is seeing what needs them, and a blocked run reads
               // as "Working" anywhere else.
-              if (attention.isNotEmpty)
+              if (attention.isNotEmpty || teamNeedsYou.isNotEmpty)
                 SliverToBoxAdapter(
                   child: SectionLabel(
                     _l10n(context).e7WorkspaceNeedsYou,
                     key: const ValueKey('workspace-needs-you'),
-                    trailing: Text('${attention.length}'),
+                    trailing: Text('${attention.length + teamNeedsYou.length}'),
                   ),
                 ),
               // The short sections move gently as conversations come and
               // go between them (design standard §10); Recent may be long,
               // so it stays a lazy list.
-              if (attention.isNotEmpty)
+              if (attention.isNotEmpty || teamNeedsYou.isNotEmpty)
                 SliverToBoxAdapter(
                   child: KitAnimatedRows(
                     children: [
@@ -770,19 +805,20 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                             blocker: blockers[session.id],
                           ),
                         ),
+                      for (final run in teamNeedsYou) teamRow(run),
                     ],
                   ),
                 ),
               // 3. Running work, with its live state; then pins.
-              if (active.isNotEmpty)
+              if (active.isNotEmpty || teamRunning.isNotEmpty)
                 SliverToBoxAdapter(
                   child: SectionLabel(
                     l10n.workRunning,
                     key: const ValueKey('workspace-running'),
-                    trailing: Text('${active.length}'),
+                    trailing: Text('${active.length + teamRunning.length}'),
                   ),
                 ),
-              if (active.isNotEmpty)
+              if (active.isNotEmpty || teamRunning.isNotEmpty)
                 SliverToBoxAdapter(
                   child: KitAnimatedRows(
                     children: [
@@ -791,6 +827,7 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                           key: ValueKey('work-running-${session.id}'),
                           child: row(session, busy: true),
                         ),
+                      for (final run in teamRunning) teamRow(run),
                     ],
                   ),
                 ),
@@ -897,11 +934,21 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
               // off the same place holds its door (TeamDiscoverEntry): a
               // small drawing and one line the first time, one quiet row
               // once seen, never above the person's own work.
-              if (controller.orchestration case final team?)
+              // With the team on, its tasks are in the lists above; here is
+              // one quiet door to the team's own page (agents, where it
+              // runs, on/off).
+              if (team != null)
                 SliverToBoxAdapter(
-                  child: TeamCard(
-                    controller: team,
-                    onOpen: () => _openTeamHome(team),
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: KitRow(
+                      key: const ValueKey('team-work-door'),
+                      leading: KitRow.icon(context, AppIconography.agent),
+                      title: l10n.teamUiHomeTitle,
+                      supporting: TextSpan(text: teamHostPhrase(l10n, team)),
+                      trailing: const KitChevron(),
+                      onTap: () => _openTeamHome(team),
+                    ),
                   ),
                 )
               else
@@ -960,11 +1007,15 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
         creating: _creating,
         onTap: _creating || controller.workspaceChoiceRequired
             ? null
+            : teamMode
+            ? _createTeamTask
             : _createSession,
-        onIsolatedTask: _isolatedTaskProject == null
+        onIsolatedTask: _isolatedTaskProject == null || teamMode
             ? null
             : _startIsolatedTask,
         isolatedTaskLabel: l10n.isolatedTaskAction,
+        teamMode: teamPossible ? teamMode : null,
+        onTeamMode: _setTeamMode,
       ),
     );
   }
@@ -1139,6 +1190,56 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       MaterialPageRoute<void>(builder: (_) => TeamHomeScreen(controller: team)),
     );
   }
+
+  /// Asks once per server whether it can run a team; the answer shows or
+  /// hides the Solo · Team choice.
+  bool _teamPossibleNow() {
+    final profile = widget.controller.profile;
+    if (profile == null) return false;
+    if (widget.controller.orchestration != null) return true;
+    final asked = '${profile.id}|${profile.baseUrl}';
+    if (_teamAskedFor != asked) {
+      _teamAskedFor = asked;
+      _teamPossible = false;
+      unawaited(() async {
+        final possible = await teamPossibleOn(profile);
+        if (!mounted || _teamAskedFor != asked) return;
+        if (possible != _teamPossible) setState(() => _teamPossible = possible);
+      }());
+    }
+    return _teamPossible;
+  }
+
+  bool get _teamMode {
+    final profile = widget.controller.profile;
+    return profile != null &&
+        TeamNewMode.isTeam(widget.controller.store.prefs, profile.id);
+  }
+
+  Future<void> _setTeamMode(bool team) async {
+    final profile = widget.controller.profile;
+    if (profile == null) return;
+    await TeamNewMode.set(
+      widget.controller.store.prefs,
+      profile.id,
+      team: team,
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// New team task: the team's conversation when it is on, else its intro
+  /// ("Set it up" for this kind of server).
+  Future<void> _createTeamTask() async {
+    final team = widget.controller.orchestration;
+    if (team == null) {
+      await openTeamIntro(context, widget.controller);
+    } else {
+      await TeamConversation.start(context, team);
+    }
+  }
+
+  void _openTeamTask(OrchestrationController team, String runId) =>
+      unawaited(TeamConversation.open(context, team, runId: runId));
 
   void _openBackgroundSettings() {
     Navigator.of(context).push(
@@ -2332,10 +2433,18 @@ class _QuickAskPill extends StatelessWidget {
     required this.onTap,
     this.onIsolatedTask,
     this.isolatedTaskLabel,
+    this.teamMode,
+    this.onTeamMode,
   });
 
   final bool creating;
   final VoidCallback? onTap;
+
+  /// New conversation's Solo · Team choice (docs/design/team-conversation-
+  /// 2026-09-26.md): null hides it (this server cannot run a team), else
+  /// whether Team is chosen.
+  final bool? teamMode;
+  final ValueChanged<bool>? onTeamMode;
 
   /// Explicit fresh-worktree launch, shown as its own 48dp target beside the
   /// plain quick-ask tap. Null hides it (capability or project missing).
@@ -2465,13 +2574,16 @@ class _QuickAskPill extends StatelessWidget {
     // task keeps its own labelled target instead of an unexplained glyph.
     // Two lines before an ellipsis: the primary action's name is never the
     // thing cut.
+    final team = teamMode == true;
     final primary = KitButton.primary(
+      key: const ValueKey('workspace-new'),
       onPressed: onTap,
       working: creating,
-      icon: AppIconography.add,
-      label: l10n.workspaceNewSession,
+      icon: team ? AppIconography.agent : AppIconography.add,
+      label: team ? l10n.teamNewTask : l10n.workspaceNewSession,
     );
-    return Material(
+    final choice = teamMode;
+    final dock = Material(
       key: const ValueKey('workspace-quick-ask'),
       // Opaque backing protects the controls from scrolling session text.
       // The button fill shares the page rail without an invisible inner tray.
@@ -2544,6 +2656,54 @@ class _QuickAskPill extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+    if (choice == null) return dock;
+    // Solo · Team above the button it changes: small, remembered per
+    // server, never a second primary.
+    return Material(
+      color: theme.scaffoldBackgroundColor,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Semantics(
+              label: l10n.teamNewModeLabel,
+              container: true,
+              child: SegmentedButton<bool>(
+                key: const ValueKey('workspace-new-mode'),
+                showSelectedIcon: false,
+                // 48 dp targets (accessibility guideline).
+                style: const ButtonStyle(
+                  minimumSize: WidgetStatePropertyAll(Size(64, 48)),
+                ),
+                segments: [
+                  ButtonSegment(
+                    value: false,
+                    label: Text(
+                      l10n.teamNewModeSolo,
+                      key: const ValueKey('workspace-new-mode-solo'),
+                    ),
+                  ),
+                  ButtonSegment(
+                    value: true,
+                    icon: const Icon(AppIconography.agent, size: 16),
+                    label: Text(
+                      l10n.teamNewModeTeam,
+                      key: const ValueKey('workspace-new-mode-team'),
+                    ),
+                  ),
+                ],
+                selected: {choice},
+                onSelectionChanged: (value) => onTeamMode?.call(value.first),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          dock,
+        ],
       ),
     );
   }

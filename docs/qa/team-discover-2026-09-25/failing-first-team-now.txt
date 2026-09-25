@@ -1,0 +1,24 @@
+Expected: 'On this phone'
+  Actual: 'On this phone · Paused'
+00:01 +0 -1: asleep is not paused agents asleep: no "Paused", and the row says they wake [E]
+00:01 +0 -2: asleep is not paused agents switched off on purpose: Paused, with Resume [E]
+Expected: 'Waiting for a worker · the team checks every minute'
+  Actual: 'Waiting for a worker'
+00:01 +0 -3: a waiting task says when a worker starts fresh: how often the team checks, and the Now line [E]
+Expected: 'Waiting for a worker · 1 min · a worker starts at the team\'s next check'
+  Actual: 'Waiting for a worker'
+00:01 +0 -4: a waiting task says when a worker starts on a computer: what starts a worker, not a made-up time [E]
+Expected: 'Waiting for a worker · 6 min · no worker has started'
+  Actual: 'Waiting for a worker'
+00:01 +0 -5: a waiting task says when a worker starts stuck: how long, no worker started, Start a worker wakes one [E]
+00:01 +0 -6: a waiting task says when a worker starts stuck without controls: Why? opens the technical details [E]
+Expected: 'Worker · furiosa'
+  Actual: 'demo-app/gastown.furiosa'
+00:02 +0 -7: the agent screen named by role; engine names only under details; no "Not reported" rows; a worker that did not start says so [E]
+Expected: 'furiosa isn\'t running, so there is no output'
+  Actual: 'Connecting to the session…'
+00:02 +1 -8: live output never spins forever not running: says so at once, with the action [E]
+Expected: a string starting with 'Starting up · '
+  Actual: 'Connecting to the session…'
+00:02 +1 -9: live output never spins forever running and silent on a phone: starting up after 8 s [E]
+exit 1

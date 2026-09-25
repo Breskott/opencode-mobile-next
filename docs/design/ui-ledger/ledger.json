@@ -1,5 +1,5 @@
 {
- "generatedFrom": "2730891b1ee794b2d7417e4b3132f27b01d0e848",
+ "generatedFrom": "81fa7fd99c19e414a6e9df5bc109c074b3cd96db",
  "pages": [
   {
    "id": "system",
@@ -15158,10 +15158,26 @@
      "targetWidget": "TeamHomeScreen",
      "effect": "Embeds TeamCard(controller: team, onOpen: () => _openTeamHome(team)) after Recent and its load-more footer and before Archived; onOpen pushes TeamHomeScreen(controller: team). What the team needs from the person reaches Inbox; the card's other controls belong to the widget's owner.",
      "gates": [
-      "widget.controller.orchestration != null (AI Team plugin configured on the profile)"
+      "retired from the Work tab (docs/design/team-conversation-2026-09-26.md): the team's tasks are rows in its lists (workspace-team-task-row) and workspace-team-door opens the team page; TeamCard stays a widget"
      ],
      "destructive": false,
      "widgetFile": "lib/ui/widgets/team_card.dart"
+    },
+    {
+     "id": "workspace-team-door",
+     "type": "list-tile",
+     "label": "AI Team · <where it runs>",
+     "key": "work-team-door",
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 943,
+     "action": "navigate",
+     "target": "team-home",
+     "targetWidget": "TeamHomeScreen",
+     "effect": "The quiet door to the team's own page, where the TeamCard was.",
+     "gates": [
+      "controller.orchestration != null"
+     ],
+     "destructive": false
     },
     {
      "id": "workspace-archive-undo",
@@ -15585,6 +15601,38 @@
      "effect": "_createSession(): controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()), then refreshSessions(); docked quick-ask pill replacing a FAB.",
      "gates": [
       "disabled while _creating"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "workspace-new-mode",
+     "type": "toggle",
+     "label": "Solo | Team",
+     "key": "workspace-new-mode",
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 2673,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "New conversation's choice, remembered per server (oc.newConversationMode.<profileId>). Team turns the primary into 'New team task': TeamConversation.start with the team on, else the AI Team intro.",
+     "gates": [
+      "the server can run a team (teamPossibleOn: a Termux phone asks its runtime)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "workspace-team-task-row",
+     "type": "list-tile",
+     "label": "<team task title>",
+     "key": "work-team-task-<runId>",
+     "file": "lib/ui/widgets/team_task_row.dart",
+     "line": 64,
+     "action": "navigate",
+     "target": "team-run",
+     "targetWidget": "TeamConversation.open (stub: RunScreen)",
+     "effect": "A team task in Needs you or Running with the team mark and 'Team · <state line>'; opens the task's team conversation.",
+     "gates": [
+      "controller.orchestration != null; open tasks only"
      ],
      "destructive": false
     }
@@ -28780,6 +28828,10 @@
     {
      "page": "system",
      "element": "system-entry-team-link-run"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-team-task-row"
     }
    ],
    "gates": [
@@ -29578,6 +29630,10 @@
     {
      "page": "workspace",
      "element": "workspace-team-card"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-team-door"
     },
     {
      "page": "embedded-team-card",
@@ -30696,7 +30752,7 @@
    "file": "lib/ui/widgets/team_discover.dart",
    "widget": "TeamDiscoverEntry",
    "presentedBy": [],
-   "line": 132,
+   "line": 156,
    "purpose": "The Work tab's door to the AI Team while it is off, where the TeamCard goes when it is on (after the person's conversations): a small drawing and one line of value the first time, one quiet row once opened or hidden.",
    "reachedFrom": [
     {
@@ -30723,7 +30779,7 @@
      "label": "AI Team · Off · A team of agents for bigger jobs",
      "key": "team-discover-row",
      "file": "lib/ui/widgets/team_discover.dart",
-     "line": 216,
+     "line": 240,
      "action": "navigate",
      "target": "team-intro",
      "targetWidget": "TeamIntroScreen",
@@ -30739,7 +30795,7 @@
      "label": "Give a bigger job to a team",
      "key": "team-discover-open",
      "file": "lib/ui/widgets/team_discover.dart",
-     "line": 233,
+     "line": 257,
      "action": "navigate",
      "target": "team-intro",
      "targetWidget": "TeamIntroScreen",
@@ -30755,7 +30811,7 @@
      "label": "[Not now]",
      "key": "team-discover-hide",
      "file": "lib/ui/widgets/team_discover.dart",
-     "line": 246,
+     "line": 270,
      "action": "toggle-setting",
      "target": null,
      "targetWidget": null,
@@ -40172,6 +40228,16 @@
     "to": "embedded-session-inventory-footer"
    },
    {
+    "from": "workspace",
+    "element": "workspace-team-task-row",
+    "to": "team-run"
+   },
+   {
+    "from": "workspace",
+    "element": "workspace-team-door",
+    "to": "team-home"
+   },
+   {
     "from": "workspace-folder-chooser",
     "element": "workspace-folder-chooser-create",
     "to": "project-folder-new-dialog"
@@ -43366,6 +43432,11 @@
   {
    "file": "lib/ui/screens/team/policy_block.dart",
    "reason": "TeamPolicyBlock is a read-only rendering block (supervision line + boundary chips) embedded in the run Overview (run_screen.dart:775) only when `controller.policy != null`; no surface and no interactive element.",
+   "part": "i1-team-core"
+  },
+  {
+   "file": "lib/ui/screens/team/team_conversation_stub.dart",
+   "reason": "Stub of TeamConversation.start/open (feat/team-agent-chat replaces it at merge): opens the existing start sheet and RunScreen; no surface of its own.",
    "part": "i1-team-core"
   },
   {

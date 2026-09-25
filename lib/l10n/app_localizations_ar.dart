@@ -19256,4 +19256,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String teamOutputStartingPhone(String age) {
     return 'يبدأ التشغيل · منذ $age · قد يستغرق ذلك بضع دقائق على الهاتف';
   }
+
+  @override
+  String get teamNewModeSolo => 'منفرد';
+
+  @override
+  String get teamNewModeTeam => 'فريق';
+
+  @override
+  String get teamNewModeLabel => 'محادثة جديدة مع';
+
+  @override
+  String get teamNewTask => 'مهمة فريق جديدة';
+
+  @override
+  String get teamTaskMark => 'فريق';
 }

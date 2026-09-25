@@ -2145,7 +2145,7 @@
       "file": "lib/ui/widgets/team_discover.dart",
       "widget": "TeamDiscoverEntry",
       "presentedBy": [],
-      "line": 132,
+      "line": 156,
       "purpose": "The Work tab's door to the AI Team while it is off, where the TeamCard goes when it is on (after the person's conversations): a small drawing and one line of value the first time, one quiet row once opened or hidden.",
       "reachedFrom": [],
       "gates": [
@@ -2162,7 +2162,7 @@
           "type": "list-tile",
           "label": "Give a bigger job to a team",
           "key": "team-discover-open",
-          "line": 233,
+          "line": 257,
           "action": "navigate",
           "target": "team-intro",
           "targetWidget": "TeamIntroScreen",
@@ -2177,7 +2177,7 @@
           "type": "icon-button",
           "label": "[Not now]",
           "key": "team-discover-hide",
-          "line": 246,
+          "line": 270,
           "action": "toggle-setting",
           "target": null,
           "targetWidget": null,
@@ -2192,7 +2192,7 @@
           "type": "list-tile",
           "label": "AI Team · Off · A team of agents for bigger jobs",
           "key": "team-discover-row",
-          "line": 216,
+          "line": 240,
           "action": "navigate",
           "target": "team-intro",
           "targetWidget": "TeamIntroScreen",
@@ -2225,6 +2225,10 @@
     {
       "file": "lib/ui/kit/scenes/team_scenes.dart",
       "reason": "Drawings (KitScene, design standard §10), not pages: the AI Team's cast (board, planning, waking, merged, nudge, rest, idle) shown on team-home (no tasks, Needs you, the planning card, the host starting), team-run-overview-tab, team-agents (no agents), embedded-team-card (Nothing running) and the in-app and Termux AI Team sections while the team starts."
+    },
+    {
+      "file": "lib/ui/screens/team/team_conversation_stub.dart",
+      "reason": "Stub of TeamConversation.start/open (feat/team-agent-chat replaces it at merge): opens the existing start sheet and RunScreen; no surface of its own."
     }
   ],
   "notes": [

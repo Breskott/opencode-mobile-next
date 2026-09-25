@@ -440,7 +440,9 @@ void main() {
       expect(find.byType(TeamCard), findsNothing);
     });
 
-    testWidgets('with a config the card sits in the Work tab', (tester) async {
+    testWidgets('with a config the Work tab lists the team, not the card', (
+      tester,
+    ) async {
       final (controller, _) = await boot();
       final connection = _Connection(ProfileStore(prefs: prefs))
         ..team = controller;
@@ -449,9 +451,14 @@ void main() {
         app(WorkspaceScreen(controller: connection), scroll: false),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(TeamCard), findsOneWidget);
-      expect(find.byKey(const ValueKey('team-card-data')), findsOneWidget);
-      expect(titleOf(tester), startsWith('AI Team · '));
+      // docs/design/team-conversation-2026-09-26.md: the team's tasks are
+      // rows in the Work tab's lists and its page is one quiet door.
+      expect(find.byType(TeamCard), findsNothing);
+      expect(find.byKey(const ValueKey('team-work-door')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('team-work-task-oc-xru')),
+        findsOneWidget,
+      );
     });
   });
 

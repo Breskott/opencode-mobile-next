@@ -322,6 +322,8 @@ class _DataBody extends StatelessWidget {
               explainWait: true,
               checkEvery: teamCheckInterval(controller),
               paused: teamRest(snapshot.agents) == TeamRest.paused,
+              // No clock of the team's here: no age drawn from it.
+              showWaitAge: false,
             ),
           ),
           supportingKey: ValueKey('team-card-run-line-${run.id}'),

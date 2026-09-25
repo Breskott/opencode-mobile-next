@@ -172,6 +172,7 @@ String? teamWaitLine(
   required DateTime now,
   Duration? every,
   bool paused = false,
+  bool showAge = true,
   DispatchCycle? Function(String workId)? cycleOf,
 }) {
   if (!teamRunWaitsForWorker(run, work, cycleOf: cycleOf)) return null;
@@ -186,7 +187,7 @@ String? teamWaitLine(
   );
   return [
     l10n.teamUiCardRunStateWaiting,
-    if (age != null && age >= const Duration(minutes: 1))
+    if (showAge && age != null && age >= const Duration(minutes: 1))
       teamElapsedLabel(l10n, age),
     stuck ? l10n.teamNowNoWorkerStarted : teamCheckPhrase(l10n, every),
   ].join(teamUsageSeparator);

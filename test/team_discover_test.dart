@@ -1,7 +1,11 @@
 // Finding the AI Team while it is off (docs/qa/team-discover-2026-09-25):
 // the Work tab's entry and its folded row, the intro and where its one
 // primary action leads for each kind of server, Settings' AI Team row, the
-// empty home's drawing and the merged celebration's length.
+// empty home's drawing and the merged celebration's length; New
+// conversation's Solo · Team and the team's tasks in the Work tab's lists
+// (docs/design/team-conversation-2026-09-26.md).
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,14 +15,17 @@ import 'package:opencode_mobile/builtin/setup/setup_contract.dart';
 import 'package:opencode_mobile/builtin/team/builtin_team.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/orchestration/adapters/fixture/fixture_gateway.dart';
 import 'package:opencode_mobile/platform/platform_capabilities.dart';
 import 'package:opencode_mobile/state/connection.dart';
+import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/termux/team_runtime.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/screens/settings_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
@@ -159,6 +166,44 @@ void _tallScreen(WidgetTester tester) {
   addTearDown(tester.view.reset);
 }
 
+String _fixturePath() {
+  var dir = Directory.current;
+  for (var i = 0; i < 5; i++) {
+    final candidate = Directory('${dir.path}/tool/qa/gascity_fixture');
+    if (candidate.existsSync()) return candidate.path;
+    dir = dir.parent;
+  }
+  throw StateError('tool/qa/gascity_fixture not found');
+}
+
+/// The recorded Gas City fixture as the Work tab's team.
+Future<OrchestrationController> _fixtureTeam() async {
+  final prefs = await SharedPreferences.getInstance();
+  final config = OrchestrationConfig(
+    provider: OrchestrationProvider.fixture,
+    url: _fixturePath(),
+    city: 'bright-lights',
+    hostMode: OrchestrationHostMode.computer,
+    enabledAt: DateTime.utc(2026, 9, 10),
+  );
+  final team = OrchestrationController(
+    profile: ServerProfile(
+      id: 'phone',
+      name: 'pop-os',
+      baseUrl: 'http://100.100.1.2:4096',
+      orchestration: config,
+    ),
+    config: config,
+    store: OrchestrationStore(prefs),
+    gatewayFactory: (_, _) => FixtureOrchestrationGateway(
+      fixturePath: _fixturePath(),
+      hostMode: OrchestrationHostMode.computer,
+    ),
+  );
+  await team.start();
+  return team;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late _Probe probe;
@@ -254,6 +299,90 @@ void main() {
       await tester.tap(_key('team-discover-row'));
       await _settle(tester);
       expect(find.byType(TeamIntroScreen), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
+  group('New conversation: Solo · Team', () {
+    Future<WorkController> pumpWork(
+      WidgetTester tester, {
+      OrchestrationController? team,
+    }) async {
+      _tallScreen(tester);
+      _mockChannels();
+      final controller = await workController(
+        name: 'pop-os',
+        baseUrl: 'http://100.100.1.2:4096',
+      );
+      controller.team = team;
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _app(Scaffold(body: WorkspaceScreen(controller: controller))),
+      );
+      await _settle(tester);
+      return controller;
+    }
+
+    testWidgets('Team is offered, remembered per server, and with the team '
+        'off it opens the intro', (tester) async {
+      final controller = await pumpWork(tester);
+      expect(_key('workspace-new-mode'), findsOneWidget);
+      expect(find.text(_en.workspaceNewSession), findsOneWidget);
+      await tester.tap(_key('workspace-new-mode-team'));
+      await _settle(tester);
+      expect(find.text(_en.teamNewTask), findsOneWidget);
+      expect(
+        controller.store.prefs.getString(TeamNewMode.key('phone')),
+        'team',
+      );
+      // Remembered: a fresh Work tab opens on Team.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(
+        _app(Scaffold(body: WorkspaceScreen(controller: controller))),
+      );
+      await _settle(tester);
+      expect(find.text(_en.teamNewTask), findsOneWidget);
+      // Swept with the server.
+      expect(
+        controller.store.profileScopedPreferenceKeys('phone'),
+        contains(TeamNewMode.key('phone')),
+      );
+      await tester.tap(_key('workspace-new'));
+      await _settle(tester);
+      expect(find.byType(TeamIntroScreen), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('with the team on: its tasks are in the lists with the '
+        'team mark, and Team starts a team task', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final team = await _fixtureTeam();
+      addTearDown(team.dispose);
+      await pumpWork(tester, team: team);
+      // The recorded convoy waits for a worker: under Running, marked.
+      expect(_key('workspace-running'), findsOneWidget);
+      expect(_key('team-work-task-oc-xru'), findsOneWidget);
+      expect(_key('team-work-task-mark-oc-xru'), findsOneWidget);
+      expect(
+        tester
+            .widget<Text>(_key('team-work-task-line-oc-xru'))
+            .textSpan!
+            .toPlainText(),
+        startsWith('${_en.teamTaskMark} · ${_en.teamUiCardRunStateWaiting}'),
+      );
+      // No separate card; one quiet door to the team's page.
+      expect(_key('team-card'), findsNothing);
+      expect(_key('team-work-door'), findsOneWidget);
+      await tester.tap(_key('team-work-task-oc-xru'));
+      await _settle(tester);
+      expect(find.byType(RunScreen), findsOneWidget);
+      await tester.pageBack();
+      await _settle(tester);
+      await tester.tap(_key('workspace-new-mode-team'));
+      await _settle(tester);
+      await tester.tap(_key('workspace-new'));
+      await _settle(tester);
+      expect(_key('team-start-run-sheet'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });

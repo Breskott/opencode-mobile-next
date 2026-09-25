@@ -21075,5 +21075,25 @@
         "type": "String"
       }
     }
+  },
+  "teamNewModeSolo": "Solo",
+  "@teamNewModeSolo": {
+    "description": "Work tab: the new-conversation choice for a chat with one agent (today's conversation)"
+  },
+  "teamNewModeTeam": "Team",
+  "@teamNewModeTeam": {
+    "description": "Work tab: the new-conversation choice that gives the task to the AI Team"
+  },
+  "teamNewModeLabel": "New conversation with",
+  "@teamNewModeLabel": {
+    "description": "Work tab: what the Solo · Team choice is about, for screen readers"
+  },
+  "teamNewTask": "New team task",
+  "@teamNewTask": {
+    "description": "Work tab: the primary button while Team is chosen"
+  },
+  "teamTaskMark": "Team",
+  "@teamTaskMark": {
+    "description": "Work tab: the word before a team task's state line, so a team task reads apart from a conversation"
   }
 }

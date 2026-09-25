@@ -30676,6 +30676,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Starting up · {age} so far · this can take a few minutes on a phone'**
   String teamOutputStartingPhone(String age);
+
+  /// Work tab: the new-conversation choice for a chat with one agent (today's conversation)
+  ///
+  /// In en, this message translates to:
+  /// **'Solo'**
+  String get teamNewModeSolo;
+
+  /// Work tab: the new-conversation choice that gives the task to the AI Team
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get teamNewModeTeam;
+
+  /// Work tab: what the Solo · Team choice is about, for screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation with'**
+  String get teamNewModeLabel;
+
+  /// Work tab: the primary button while Team is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'New team task'**
+  String get teamNewTask;
+
+  /// Work tab: the word before a team task's state line, so a team task reads apart from a conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get teamTaskMark;
 }
 
 class _AppLocalizationsDelegate

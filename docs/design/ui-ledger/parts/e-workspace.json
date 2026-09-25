@@ -164,7 +164,7 @@
           "targetWidget": "TeamHomeScreen",
           "effect": "Embeds TeamCard(controller: team, onOpen: () => _openTeamHome(team)) after Recent and its load-more footer and before Archived; onOpen pushes TeamHomeScreen(controller: team). What the team needs from the person reaches Inbox; the card's other controls belong to the widget's owner.",
           "gates": [
-            "widget.controller.orchestration != null (AI Team plugin configured on the profile)"
+            "retired from the Work tab (docs/design/team-conversation-2026-09-26.md): the team's tasks are rows in its lists (workspace-team-task-row) and workspace-team-door opens the team page; TeamCard stays a widget"
           ],
           "destructive": false
         },
@@ -552,6 +552,21 @@
           "destructive": false
         },
         {
+          "id": "workspace-new-mode",
+          "type": "toggle",
+          "label": "Solo | Team",
+          "key": "workspace-new-mode",
+          "line": 2673,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "New conversation's choice, remembered per server (oc.newConversationMode.<profileId>). Team turns the primary into 'New team task': TeamConversation.start with the team on, else the AI Team intro.",
+          "gates": [
+            "the server can run a team (teamPossibleOn: a Termux phone asks its runtime)"
+          ],
+          "destructive": false
+        },
+        {
           "id": "workspace-new-session",
           "type": "fab",
           "label": "New session",
@@ -629,6 +644,37 @@
           "effect": "controller.nudges.dismiss(NudgeId.pinConversations).",
           "gates": [
             "same as workspace-nudge-pin-got-it"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-team-task-row",
+          "type": "list-tile",
+          "label": "<team task title>",
+          "key": "work-team-task-<runId>",
+          "file": "lib/ui/widgets/team_task_row.dart",
+          "line": 64,
+          "action": "navigate",
+          "target": "team-run",
+          "targetWidget": "TeamConversation.open (stub: RunScreen)",
+          "effect": "A team task in Needs you or Running with the team mark and 'Team · <state line>'; opens the task's team conversation.",
+          "gates": [
+            "controller.orchestration != null; open tasks only"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "workspace-team-door",
+          "type": "list-tile",
+          "label": "AI Team · <where it runs>",
+          "key": "work-team-door",
+          "line": 943,
+          "action": "navigate",
+          "target": "team-home",
+          "targetWidget": "TeamHomeScreen",
+          "effect": "The quiet door to the team's own page, where the TeamCard was.",
+          "gates": [
+            "controller.orchestration != null"
           ],
           "destructive": false
         }

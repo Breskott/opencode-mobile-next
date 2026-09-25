@@ -1200,7 +1200,7 @@ void main() {
   });
 
   group('workspace wiring', () {
-    testWidgets('the card follows Recent and precedes Archived', (
+    testWidgets('the team door follows Recent and precedes Archived', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(390, 2400);
@@ -1229,15 +1229,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // UX plan 5.5 and 5.7: the person's own conversations come first.
+      // The team's tasks are rows in the lists now (docs/design/team-
+      // conversation-2026-09-26.md); its page is one quiet door here.
       double top(Finder finder) => tester.getTopLeft(finder).dy;
-      final card = find.byType(TeamCard);
+      final card = find.byKey(const ValueKey('team-work-door'));
       expect(card, findsOneWidget);
+      expect(find.byType(TeamCard), findsNothing);
       expect(top(card), greaterThan(top(find.text('Recent conversations'))));
       expect(top(card), greaterThan(top(find.text('recent conversation'))));
       expect(top(card), lessThan(top(find.text('Archived conversations'))));
     });
 
-    testWidgets('Open on the card pushes the home', (tester) async {
+    testWidgets('the team door pushes the home', (tester) async {
       final (controller, _) = await boot();
       final connection = _Connection(ProfileStore(prefs: prefs))
         ..team = controller;
@@ -1246,9 +1249,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(TeamHomeScreen), findsNothing);
       // The card follows the person's own conversations (UX plan 5.7).
-      await tester.ensureVisible(find.byKey(const ValueKey('team-card-open')));
+      await tester.ensureVisible(find.byKey(const ValueKey('team-work-door')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('team-card-open')));
+      await tester.tap(find.byKey(const ValueKey('team-work-door')));
       await tester.pumpAndSettle();
       expect(find.byType(TeamHomeScreen), findsOneWidget);
       expect(find.byKey(const ValueKey('team-home-data')), findsOneWidget);

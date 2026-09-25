@@ -18992,4 +18992,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String teamOutputStartingPhone(String age) {
     return 'Starting up · $age so far · this can take a few minutes on a phone';
   }
+
+  @override
+  String get teamNewModeSolo => 'Solo';
+
+  @override
+  String get teamNewModeTeam => 'Team';
+
+  @override
+  String get teamNewModeLabel => 'New conversation with';
+
+  @override
+  String get teamNewTask => 'New team task';
+
+  @override
+  String get teamTaskMark => 'Team';
 }

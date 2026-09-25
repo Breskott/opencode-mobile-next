@@ -28,7 +28,6 @@ import 'package:opencode_mobile/termux/team_runtime.dart';
 import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
 import 'package:opencode_mobile/ui/screens/termux_setup_screen.dart';
 import 'package:opencode_mobile/ui/screens/workspace_screen.dart';
-import 'package:opencode_mobile/ui/widgets/team_card.dart';
 import 'package:opencode_mobile/ui/widgets/team_phone_onboarding.dart';
 import 'package:opencode_mobile/ui/widgets/team_phone_section.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -852,7 +851,9 @@ void main() {
           ),
         );
         await settle(tester);
-        expect(find.byType(TeamCard), findsOneWidget);
+        // The team's door (its tasks are rows in the lists; docs/design/
+        // team-conversation-2026-09-26.md).
+        expect(find.byKey(const ValueKey('team-work-door')), findsOneWidget);
         expect(tester.takeException(), isNull);
         await teardown(tester, controller);
       },

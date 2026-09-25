@@ -1,0 +1,20 @@
+Expected: exactly one matching candidate
+  Actual: _KeyWidgetFinder:<Found 0 widgets with key [<'team-discover-open'>]: []>
+00:00 +0 -1: the Work tab shows the AI Team while it is off, below the work [E]
+00:01 +0 -2: the Work tab hiding it folds it to one quiet row that stays folded [E]
+00:01 +0 -3: the Work tab opening it shows the intro; back, it is folded [E]
+00:02 +9 -4: Settings has an AI Team row that reads Off and what it is for, and opens the intro [E]
+00:03 +9 -5: Settings reads On · the server once it is on [E]
+Expected: no matching candidates
+  Actual: _KeyWidgetFinder:<Found 1 widget with key [<'plugins-ai-team-row'>]: [
+00:03 +9 -6: one AI Team per page (OpenCode inside the app) no contradicting AI Team rows while turning on [E]
+Expected: no matching candidates
+  Actual: _KeyWidgetFinder:<Found 1 widget with key [<'plugins-ai-team-row'>]: [
+00:03 +9 -7: one AI Team per page (OpenCode inside the app) once the phone team is on, one state: On · This phone [E]
+Expected: a value greater than or equal to <160>
+  Actual: <88.0>
+00:03 +9 -8: the team screens the empty home gives its drawing room [E]
+Expected: Duration:<0:00:01.400000>
+  Actual: Duration:<0:00:00.900000>
+00:03 +9 -9: the team screens the merged celebration plays for a celebration [E]
+exit 1
