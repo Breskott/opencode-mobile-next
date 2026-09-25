@@ -17,6 +17,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../kit/kit_illustration.dart';
+import '../kit/kit_motion.dart';
+import '../kit/motion/kit_reveal.dart';
 import '../kit/scenes/team_scenes.dart';
 import 'product_states.dart' show SectionLabel;
 
@@ -109,17 +111,23 @@ class _TeamMergedCelebrationState extends State<TeamMergedCelebration> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_show) return const SizedBox.shrink();
-    return const Padding(
-      padding: EdgeInsets.only(bottom: 12),
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: KitIllustration(
-          key: ValueKey('team-run-celebration'),
-          scene: TeamMergedScene(),
-          width: 176,
-        ),
-      ),
+    // It unfolds into place when the task merges while the Overview is
+    // open, then plays for a celebration's length (design standard §10).
+    return KitReveal(
+      child: !_show
+          ? null
+          : const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: KitIllustration(
+                  key: ValueKey('team-run-celebration'),
+                  scene: TeamMergedScene(),
+                  width: 176,
+                  entranceDuration: KitMotion.celebration,
+                ),
+              ),
+            ),
     );
   }
 }

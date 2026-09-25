@@ -304,7 +304,7 @@ class _AgentScreenState extends State<AgentScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: child,
     );
-    final body = RefreshIndicator(
+    final body = KitRefresh(
       key: const ValueKey('team-agent-pull'),
       onRefresh: _refresh,
       child: ListView(

@@ -2047,6 +2047,162 @@
         "ActivityGateTile"
       ],
       "hostNotes": "Host: lib/ui/screens/activity_screen.dart:868 (ActivityGateTile inside ActivityScreen). The same widget on the AI Team home is recorded as team-home-needs-you-gate-receipt-chip."
+    },
+    {
+      "id": "team-intro",
+      "title": "AI Team",
+      "kind": "screen",
+      "file": "lib/ui/screens/team/team_intro_screen.dart",
+      "widget": "TeamIntroScreen",
+      "presentedBy": [],
+      "line": 59,
+      "purpose": "The AI Team's intro while it is off: a drawing of a task going from agent to agent, what the team does in four steps (plans, works, checks, merges), what it needs on this kind of server, and one primary action that hands over to that kind's own set-up (docs/qa/team-discover-2026-09-25).",
+      "reachedFrom": [
+        {
+          "page": "embedded-team-discover",
+          "element": "embedded-team-discover-open"
+        },
+        {
+          "page": "embedded-team-discover",
+          "element": "embedded-team-discover-row"
+        },
+        {
+          "page": "settings",
+          "element": "settings-ai-team"
+        }
+      ],
+      "gates": [
+        "openTeamIntro(context, controller) from TeamDiscoverEntry (team off) or the Settings AI Team row when `controller.profile?.orchestration == null`",
+        "the server kind (teamServerKindOf): OpenCode inside the app, OpenCode in Termux (the phone's runtime supportsAiTeam decides between set-up and 'cannot run it'), or a computer (TeamDiscovery probes the host)"
+      ],
+      "elements": [
+        {
+          "id": "team-intro-set-up",
+          "type": "button",
+          "label": "Set it up",
+          "key": "team-intro-set-up",
+          "line": 239,
+          "action": "navigate",
+          "target": "plugins-settings",
+          "targetWidget": "PluginsSettingsScreen",
+          "effect": "The one primary. OpenCode inside the app: pushReplacement(PluginsSettingsScreen), where BuiltinTeamSection adds, turns on and starts the team. Termux: reopens the phone offer (PhoneOffer.open) and pushReplacementNamed('/termux-setup'), whose TeamPhoneOnboardingBlock installs it. A computer without Gas City found: showTeamHostGuideSheet, then looks again when it closes.",
+          "gates": [
+            "in-app: always; Termux: supportsAiTeam; a computer: TeamDiscovery found nothing (yet)"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-intro-turn-on",
+          "type": "button",
+          "label": "Turn on",
+          "key": "team-intro-turn-on",
+          "line": 255,
+          "action": "mutate",
+          "target": null,
+          "targetWidget": null,
+          "effect": "TeamDiscovery.turnOn(): saves the found host's config on the profile and syncs the plugin, then pops back (the Work tab's TeamCard takes the entry's place).",
+          "gates": [
+            "a computer, and TeamDiscovery found Gas City on the server's host"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-intro-address",
+          "type": "button",
+          "label": "Enter its address",
+          "key": "team-intro-address",
+          "line": 267,
+          "action": "open-sheet",
+          "target": null,
+          "targetWidget": "showTeamHostSheet",
+          "effect": "The manual-add form (address, city, kind of computer; probes on submit). A found host's config is saved on the profile and the intro pops.",
+          "gates": [
+            "a computer, and nothing found"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "team-intro-on-computer",
+          "type": "button",
+          "label": "Run it on a computer",
+          "key": "team-intro-on-computer",
+          "line": 399,
+          "action": "open-sheet",
+          "target": null,
+          "targetWidget": "showTeamHostGuideSheet",
+          "effect": "The host guide: how to run Gas City on a computer.",
+          "gates": [
+            "Termux on a phone whose runtime cannot run a team (the 'This phone can't run the AI Team' notice)"
+          ],
+          "destructive": false
+        }
+      ]
+    },
+    {
+      "id": "embedded-team-discover",
+      "title": "AI Team (off)",
+      "kind": "overlay",
+      "file": "lib/ui/widgets/team_discover.dart",
+      "widget": "TeamDiscoverEntry",
+      "presentedBy": [],
+      "line": 132,
+      "purpose": "The Work tab's door to the AI Team while it is off, where the TeamCard goes when it is on (after the person's conversations): a small drawing and one line of value the first time, one quiet row once opened or hidden.",
+      "reachedFrom": [],
+      "gates": [
+        "WorkspaceScreen: `controller.orchestration == null` (else TeamCard)",
+        "absent without a profile, with an AI Team config, and on a Termux phone whose runtime cannot run a team",
+        "folded when the global preference oc.teamDiscover.folded is true (TeamDiscoverMemory)"
+      ],
+      "embeddedIn": [
+        "WorkspaceScreen"
+      ],
+      "elements": [
+        {
+          "id": "embedded-team-discover-open",
+          "type": "list-tile",
+          "label": "Give a bigger job to a team",
+          "key": "team-discover-open",
+          "line": 233,
+          "action": "navigate",
+          "target": "team-intro",
+          "targetWidget": "TeamIntroScreen",
+          "effect": "Folds the entry (seen) and opens the intro.",
+          "gates": [
+            "not folded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-team-discover-hide",
+          "type": "icon-button",
+          "label": "[Not now]",
+          "key": "team-discover-hide",
+          "line": 246,
+          "action": "toggle-setting",
+          "target": null,
+          "targetWidget": null,
+          "effect": "TeamDiscoverMemory.fold: the entry folds to the quiet row, for good.",
+          "gates": [
+            "not folded"
+          ],
+          "destructive": false
+        },
+        {
+          "id": "embedded-team-discover-row",
+          "type": "list-tile",
+          "label": "AI Team · Off · A team of agents for bigger jobs",
+          "key": "team-discover-row",
+          "line": 216,
+          "action": "navigate",
+          "target": "team-intro",
+          "targetWidget": "TeamIntroScreen",
+          "effect": "Opens the intro.",
+          "gates": [
+            "folded"
+          ],
+          "destructive": false
+        }
+      ]
     }
   ],
   "notPages": [

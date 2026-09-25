@@ -20656,5 +20656,173 @@
   "addServerSaveAnyway": "Save anyway",
   "@addServerSaveAnyway": {
     "description": "Add server: action on a failed connection check that saves the server even though it did not answer now."
+  },
+  "teamDiscoverEntryTitle": "Give a bigger job to a team",
+  "@teamDiscoverEntryTitle": {
+    "description": "Work tab and AI Team intro: the one line that says what the AI Team is for, while it is off"
+  },
+  "teamDiscoverEntryBody": "Agents plan it, work on it, check it and merge it. You step in when they ask.",
+  "@teamDiscoverEntryBody": {
+    "description": "Work tab: the AI Team entry's supporting line while it is off"
+  },
+  "teamDiscoverRowLine": "Off · A team of agents for bigger jobs",
+  "@teamDiscoverRowLine": {
+    "description": "Work tab: the folded AI Team row's supporting line, after the person has seen the entry"
+  },
+  "teamDiscoverIntroBody": "Describe what you want done. A team of agents splits it into steps, works on them side by side and brings the finished work into your project.",
+  "@teamDiscoverIntroBody": {
+    "description": "AI Team intro: what the team does, in one or two sentences"
+  },
+  "teamDiscoverHowHeading": "How it works",
+  "@teamDiscoverHowHeading": {
+    "description": "AI Team intro: heading of the four steps"
+  },
+  "teamDiscoverStepPlanTitle": "It plans",
+  "@teamDiscoverStepPlanTitle": {
+    "description": "AI Team intro: step 1 title"
+  },
+  "teamDiscoverStepPlanBody": "A planner splits your job into steps.",
+  "@teamDiscoverStepPlanBody": {
+    "description": "AI Team intro: step 1 line"
+  },
+  "teamDiscoverStepWorkTitle": "It works",
+  "@teamDiscoverStepWorkTitle": {
+    "description": "AI Team intro: step 2 title"
+  },
+  "teamDiscoverStepWorkBody": "Workers take the steps, each on its own copy of the project.",
+  "@teamDiscoverStepWorkBody": {
+    "description": "AI Team intro: step 2 line"
+  },
+  "teamDiscoverStepCheckTitle": "It checks",
+  "@teamDiscoverStepCheckTitle": {
+    "description": "AI Team intro: step 3 title"
+  },
+  "teamDiscoverStepCheckBody": "A reviewer looks over each step's work.",
+  "@teamDiscoverStepCheckBody": {
+    "description": "AI Team intro: step 3 line"
+  },
+  "teamDiscoverStepMergeTitle": "It merges",
+  "@teamDiscoverStepMergeTitle": {
+    "description": "AI Team intro: step 4 title"
+  },
+  "teamDiscoverStepMergeBody": "Finished work lands in your project. When it needs a decision, it asks you.",
+  "@teamDiscoverStepMergeBody": {
+    "description": "AI Team intro: step 4 line"
+  },
+  "teamDiscoverNeedsPhone": "What it needs on this phone",
+  "@teamDiscoverNeedsPhone": {
+    "description": "AI Team intro: heading of what the team needs when it runs on this phone"
+  },
+  "teamDiscoverNeedsServer": "What it needs on {server}",
+  "@teamDiscoverNeedsServer": {
+    "description": "AI Team intro: heading of what the team needs on a computer; {server} is the server's name",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "teamDiscoverDownloadTitle": "About {size} to download",
+  "@teamDiscoverDownloadTitle": {
+    "description": "AI Team intro: download size row; {size} is like 180 MB",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "teamDiscoverInAppDownloadBody": "Installed once, next to OpenCode on this phone.",
+  "@teamDiscoverInAppDownloadBody": {
+    "description": "AI Team intro, OpenCode inside the app: where the download goes"
+  },
+  "teamDiscoverTermuxDownloadBody": "Installed into Termux, next to OpenCode.",
+  "@teamDiscoverTermuxDownloadBody": {
+    "description": "AI Team intro, OpenCode in Termux: where the download goes"
+  },
+  "teamDiscoverBatteryTitle": "More battery while it works",
+  "@teamDiscoverBatteryTitle": {
+    "description": "AI Team intro: the battery row's title"
+  },
+  "teamDiscoverInAppBatteryBody": "Several agents run at once, and Android may stop some if it runs too many.",
+  "@teamDiscoverInAppBatteryBody": {
+    "description": "AI Team intro, OpenCode inside the app: why it costs battery"
+  },
+  "teamDiscoverTermuxBatteryBody": "Keep Termux open while it works; Android may stop it in the background. Nothing is lost.",
+  "@teamDiscoverTermuxBatteryBody": {
+    "description": "AI Team intro, OpenCode in Termux: why it costs battery"
+  },
+  "teamDiscoverProjectTitle": "You choose the projects",
+  "@teamDiscoverProjectTitle": {
+    "description": "AI Team intro, on this phone: the per-project row's title"
+  },
+  "teamDiscoverProjectBody": "Turn it on for each project you want it to work on.",
+  "@teamDiscoverProjectBody": {
+    "description": "AI Team intro, on this phone: the per-project row's line"
+  },
+  "teamDiscoverUnsupportedTitle": "This phone can't run the AI Team",
+  "@teamDiscoverUnsupportedTitle": {
+    "description": "AI Team intro, OpenCode in Termux on a phone that cannot run the team: the notice title"
+  },
+  "teamDiscoverUnsupportedBody": "It needs a 64-bit phone and an app build that carries the team's programs. A computer can run it for you instead.",
+  "@teamDiscoverUnsupportedBody": {
+    "description": "AI Team intro, phone that cannot run the team: what is possible instead"
+  },
+  "teamDiscoverComputerTitle": "Runs on {server}",
+  "@teamDiscoverComputerTitle": {
+    "description": "AI Team intro, a computer: the row that says where the team runs; {server} is the server's name",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "teamDiscoverComputerBody": "Install Gas City there once; the app finds it by itself.",
+  "@teamDiscoverComputerBody": {
+    "description": "AI Team intro, a computer: what to install"
+  },
+  "teamDiscoverSpeedTitle": "As fast as your computer",
+  "@teamDiscoverSpeedTitle": {
+    "description": "AI Team intro, a computer: the speed row's title"
+  },
+  "teamDiscoverSpeedBody": "Keep it awake while the team works.",
+  "@teamDiscoverSpeedBody": {
+    "description": "AI Team intro, a computer: the speed row's line"
+  },
+  "teamDiscoverLooking": "Looking for it on {server}…",
+  "@teamDiscoverLooking": {
+    "description": "AI Team intro, a computer: the loading bar's label while the app looks for the team",
+    "placeholders": {
+      "server": {
+        "type": "String"
+      }
+    }
+  },
+  "teamDiscoverFoundBody": "It is ready to turn on.",
+  "@teamDiscoverFoundBody": {
+    "description": "AI Team intro, a computer where the team was found: the notice line under 'Found on {server}'"
+  },
+  "teamDiscoverSetUp": "Set it up",
+  "@teamDiscoverSetUp": {
+    "description": "AI Team intro: the primary action that goes to the set-up for this kind of server"
+  },
+  "teamDiscoverEnterAddress": "Enter its address",
+  "@teamDiscoverEnterAddress": {
+    "description": "AI Team intro, a computer: the secondary action that adds the team by its address"
+  },
+  "teamDiscoverOnComputer": "Run it on a computer",
+  "@teamDiscoverOnComputer": {
+    "description": "AI Team intro, a phone that cannot run the team: what is possible instead"
+  },
+  "teamDiscoverTurningOn": "Turning on…",
+  "@teamDiscoverTurningOn": {
+    "description": "Settings and Plugins: the AI Team's state while the phone installs or turns it on"
+  },
+  "teamDiscoverComputerChoiceTitle": "A team on a computer",
+  "@teamDiscoverComputerChoiceTitle": {
+    "description": "Plugins, OpenCode inside the app: the secondary choice to connect a team that runs on a computer instead of this phone"
+  },
+  "teamDiscoverComputerChoiceBody": "Use Gas City on a computer instead",
+  "@teamDiscoverComputerChoiceBody": {
+    "description": "Plugins, OpenCode inside the app: the line under 'A team on a computer'"
   }
 }

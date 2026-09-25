@@ -29,6 +29,7 @@ import '../widgets/session_title.dart';
 import '../widgets/request_routes.dart';
 import '../widgets/session_inventory_footer.dart';
 import '../widgets/team_card.dart';
+import '../widgets/team_discover.dart';
 import '../widgets/termux_phone_tools.dart';
 import '../widgets/work_status_line.dart';
 import '../../termux/bridge.dart';
@@ -708,7 +709,8 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
       // One bar for everything loading the first time (item 3).
       loading: loading,
       loadingLabel: l10n.workLoadingLabel,
-      body: RefreshIndicator(
+      // Pull to refresh draws the brand's portal (design standard §10).
+      body: KitRefresh(
         onRefresh: _refreshWorkspace,
         child: DesktopScrollbarArea(
           builder: (scrollController) => CustomScrollView(
@@ -752,13 +754,23 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                     trailing: Text('${attention.length}'),
                   ),
                 ),
+              // The short sections move gently as conversations come and
+              // go between them (design standard §10); Recent may be long,
+              // so it stays a lazy list.
               if (attention.isNotEmpty)
-                SliverList.builder(
-                  itemCount: attention.length,
-                  itemBuilder: (context, index) => row(
-                    attention[index],
-                    busy: controller.busySessions.contains(attention[index].id),
-                    blocker: blockers[attention[index].id],
+                SliverToBoxAdapter(
+                  child: KitAnimatedRows(
+                    children: [
+                      for (final session in attention)
+                        KeyedSubtree(
+                          key: ValueKey('work-needs-you-${session.id}'),
+                          child: row(
+                            session,
+                            busy: controller.busySessions.contains(session.id),
+                            blocker: blockers[session.id],
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               // 3. Running work, with its live state; then pins.
@@ -771,10 +783,16 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   ),
                 ),
               if (active.isNotEmpty)
-                SliverList.builder(
-                  itemCount: active.length,
-                  itemBuilder: (context, index) =>
-                      row(active[index], busy: true),
+                SliverToBoxAdapter(
+                  child: KitAnimatedRows(
+                    children: [
+                      for (final session in active)
+                        KeyedSubtree(
+                          key: ValueKey('work-running-${session.id}'),
+                          child: row(session, busy: true),
+                        ),
+                    ],
+                  ),
                 ),
               if (pinned.isNotEmpty)
                 SliverToBoxAdapter(
@@ -784,11 +802,18 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                   ),
                 ),
               if (pinned.isNotEmpty)
-                SliverList.builder(
-                  itemCount: pinned.length,
-                  itemBuilder: (context, index) => row(
-                    pinned[index],
-                    busy: controller.busySessions.contains(pinned[index].id),
+                SliverToBoxAdapter(
+                  child: KitAnimatedRows(
+                    children: [
+                      for (final session in pinned)
+                        KeyedSubtree(
+                          key: ValueKey('work-pinned-${session.id}'),
+                          child: row(
+                            session,
+                            busy: controller.busySessions.contains(session.id),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               // The pin tip sits on the list it is about.
@@ -868,14 +893,20 @@ class _WorkspaceScreenState extends State<WorkspaceScreen> {
                 ),
               // The AI Team plugin's card follows the person's own
               // conversations (UX plan 5.5, 5.7); what its agents need
-              // from the person already reaches Inbox. It is not in the
-              // tree at all while the profile has no plugin config.
+              // from the person already reaches Inbox. While the team is
+              // off the same place holds its door (TeamDiscoverEntry): a
+              // small drawing and one line the first time, one quiet row
+              // once seen, never above the person's own work.
               if (controller.orchestration case final team?)
                 SliverToBoxAdapter(
                   child: TeamCard(
                     controller: team,
                     onOpen: () => _openTeamHome(team),
                   ),
+                )
+              else
+                SliverToBoxAdapter(
+                  child: TeamDiscoverEntry(controller: controller),
                 ),
               if (archived.isNotEmpty)
                 SliverToBoxAdapter(

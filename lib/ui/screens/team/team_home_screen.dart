@@ -460,6 +460,9 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           // The team gathered at an empty board, its one slot waiting;
           // not while a task is being planned, whose card has the drawing.
           illustration: planning.isEmpty ? const TeamBoardScene() : null,
+          // Room for the board and its three agents to read (88 dp, the
+          // inline default, cramped them).
+          illustrationWidth: 168,
           title: l10n.teamUiCardEmptyTitle,
           // One sentence that teaches; the pinned button is the action, so
           // the state never repeats it.
@@ -481,7 +484,9 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
           l10n.teamUiHomeTasksHeading,
           key: const ValueKey('team-home-tasks'),
         ),
-        for (final run in open) row(run),
+        // A task added or finished slides in or folds away where it was
+        // (design standard §10).
+        KitAnimatedRows(children: [for (final run in open) row(run)]),
       ],
       if (done.isNotEmpty) ...[
         label(
@@ -534,7 +539,7 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
 
     return KeyedSubtree(
       key: const ValueKey('team-home-data'),
-      child: RefreshIndicator(
+      child: KitRefresh(
         key: const ValueKey('team-home-pull'),
         onRefresh: _refresh,
         child: ListView(

@@ -371,6 +371,21 @@
           "destructive": false
         },
         {
+          "id": "settings-ai-team",
+          "type": "list-tile",
+          "label": "AI Team",
+          "key": "settings-ai-team",
+          "line": 347,
+          "action": "navigate",
+          "target": "team-intro",
+          "targetWidget": "TeamIntroScreen",
+          "effect": "The search index entry 'settings-ai-team': off, openTeamIntro; on, pushes PluginsSettingsScreen. Subtitle from teamStateLine, the same words as the Plugins row: 'Turning on…' while this phone installs it (PhoneSetup.engine), 'On · This phone', or 'Off · A team of agents for bigger jobs'.",
+          "gates": [
+            "controller.profile != null"
+          ],
+          "destructive": false
+        },
+        {
           "id": "settings-category-plugins",
           "type": "list-tile",
           "label": "Plugins",
@@ -1507,6 +1522,21 @@
       ],
       "elements": [
         {
+          "id": "plugins-team-other",
+          "type": "list-tile",
+          "label": "A team on a computer | Technical details",
+          "key": "plugins-team-other",
+          "line": 160,
+          "action": "open-sheet",
+          "target": "team-plugin-sheet",
+          "targetWidget": "TeamPluginSheet",
+          "effect": "OpenCode inside the app, where the phone's card (BuiltinTeamSection) is the AI Team: while it is off, the secondary choice to connect a computer's Gas City (the sheet's Add manually); once the phone's team is on, its technical details and Turn off. Replaces the 'In this app › AI Team' row there, so the page has one AI Team in one state.",
+          "gates": [
+            "BuiltinTeamSection.appliesTo(profile) && (profile.orchestration == null || BuiltinTeam.isBuiltinConfig(profile.orchestration))"
+          ],
+          "destructive": false
+        },
+        {
           "id": "plugins-settings-ai-team-row",
           "type": "list-tile",
           "label": "AI Team · Gas City",
@@ -1515,9 +1545,10 @@
           "action": "open-sheet",
           "target": "team-plugin-sheet",
           "targetWidget": "TeamPluginSheet",
-          "effect": "_openSheet(): showModalBottomSheet(TeamPluginSheet). Subtitle (key plugins-ai-team-subtitle) from teamRowSubtitle per orchestration state.",
+          "effect": "_openSheet(): showModalBottomSheet(TeamPluginSheet). Subtitle (key plugins-ai-team-subtitle) from teamStateLine per orchestration state ('Turning on…' while this phone installs it).",
           "gates": [
-            "profile != null (else text \"Connect to a server to use plugins.\", key plugins-no-server)"
+            "profile != null (else text \"Connect to a server to use plugins.\", key plugins-no-server)",
+            "absent on OpenCode inside the app unless a computer's team is connected there (plugins-team-other instead)"
           ],
           "destructive": false
         },

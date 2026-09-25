@@ -18950,4 +18950,135 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get addServerSaveAnyway => 'احفظ على أي حال';
+
+  @override
+  String get teamDiscoverEntryTitle => 'كلّف فريقًا بمهمة أكبر';
+
+  @override
+  String get teamDiscoverEntryBody =>
+      'يخطّط الوكلاء لها وينجزونها ويراجعونها ويدمجونها. تتدخّل حين يسألونك.';
+
+  @override
+  String get teamDiscoverRowLine => 'متوقف · فريق من الوكلاء للمهام الأكبر';
+
+  @override
+  String get teamDiscoverIntroBody =>
+      'صِف ما تريد إنجازه. يقسّمه فريق من الوكلاء إلى خطوات، ويعمل عليها جنبًا إلى جنب، ثم يضيف العمل المنجز إلى مشروعك.';
+
+  @override
+  String get teamDiscoverHowHeading => 'كيف يعمل';
+
+  @override
+  String get teamDiscoverStepPlanTitle => 'يخطّط';
+
+  @override
+  String get teamDiscoverStepPlanBody => 'يقسّم المخطِّط مهمتك إلى خطوات.';
+
+  @override
+  String get teamDiscoverStepWorkTitle => 'يعمل';
+
+  @override
+  String get teamDiscoverStepWorkBody =>
+      'يتولّى العاملون الخطوات، كلٌّ على نسخته من المشروع.';
+
+  @override
+  String get teamDiscoverStepCheckTitle => 'يراجع';
+
+  @override
+  String get teamDiscoverStepCheckBody => 'يراجع المراجِع عمل كل خطوة.';
+
+  @override
+  String get teamDiscoverStepMergeTitle => 'يدمج';
+
+  @override
+  String get teamDiscoverStepMergeBody =>
+      'يصل العمل المنجز إلى مشروعك. وحين يحتاج إلى قرار يسألك.';
+
+  @override
+  String get teamDiscoverNeedsPhone => 'ما يحتاجه على هذا الهاتف';
+
+  @override
+  String teamDiscoverNeedsServer(String server) {
+    return 'ما يحتاجه على $server';
+  }
+
+  @override
+  String teamDiscoverDownloadTitle(String size) {
+    return 'تنزيل بنحو $size';
+  }
+
+  @override
+  String get teamDiscoverInAppDownloadBody =>
+      'يُثبَّت مرة واحدة بجوار OpenCode على هذا الهاتف.';
+
+  @override
+  String get teamDiscoverTermuxDownloadBody =>
+      'يُثبَّت داخل Termux بجوار OpenCode.';
+
+  @override
+  String get teamDiscoverBatteryTitle => 'بطارية أكثر أثناء عمله';
+
+  @override
+  String get teamDiscoverInAppBatteryBody =>
+      'يعمل عدة وكلاء معًا، وقد يوقف Android بعضهم إن كثروا.';
+
+  @override
+  String get teamDiscoverTermuxBatteryBody =>
+      'أبقِ Termux مفتوحًا أثناء عمله؛ قد يوقفه Android في الخلفية. لا يضيع شيء.';
+
+  @override
+  String get teamDiscoverProjectTitle => 'أنت تختار المشاريع';
+
+  @override
+  String get teamDiscoverProjectBody => 'شغّله لكل مشروع تريده أن يعمل عليه.';
+
+  @override
+  String get teamDiscoverUnsupportedTitle =>
+      'لا يستطيع هذا الهاتف تشغيل فريق الذكاء الاصطناعي';
+
+  @override
+  String get teamDiscoverUnsupportedBody =>
+      'يحتاج إلى هاتف 64 بت وإصدار من التطبيق يحمل برامج الفريق. يمكن لحاسوب أن يشغّله لك بدلًا من ذلك.';
+
+  @override
+  String teamDiscoverComputerTitle(String server) {
+    return 'يعمل على $server';
+  }
+
+  @override
+  String get teamDiscoverComputerBody =>
+      'ثبّت Gas City هناك مرة واحدة، وسيعثر عليه التطبيق بنفسه.';
+
+  @override
+  String get teamDiscoverSpeedTitle => 'بسرعة حاسوبك';
+
+  @override
+  String get teamDiscoverSpeedBody => 'أبقِه مستيقظًا أثناء عمل الفريق.';
+
+  @override
+  String teamDiscoverLooking(String server) {
+    return 'جارٍ البحث عنه على $server…';
+  }
+
+  @override
+  String get teamDiscoverFoundBody => 'إنه جاهز للتشغيل.';
+
+  @override
+  String get teamDiscoverSetUp => 'إعداده';
+
+  @override
+  String get teamDiscoverEnterAddress => 'أدخِل عنوانه';
+
+  @override
+  String get teamDiscoverOnComputer => 'شغّله على حاسوب';
+
+  @override
+  String get teamDiscoverTurningOn => 'جارٍ التشغيل…';
+
+  @override
+  String get teamDiscoverComputerChoiceTitle => 'فريق على حاسوب';
+
+  @override
+  String get teamDiscoverComputerChoiceBody =>
+      'استخدم Gas City على حاسوب بدلًا من ذلك';
 }

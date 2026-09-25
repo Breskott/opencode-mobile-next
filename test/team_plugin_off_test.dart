@@ -51,13 +51,16 @@ Directory _findFixtureRoot() {
 /// plugin is off. The Plugins settings entry (`settings-category-plugins`,
 /// `plugins-ai-team-*`) and the server editor's "Add AI Team" section
 /// (`server-editor-team-*`) are the entry points for turning it on and are
-/// meant to exist regardless (TEAM-106).
+/// meant to exist regardless (TEAM-106). So is the Work tab's door to the
+/// team while it is off (`team-discover-*`, docs/qa/team-discover-2026-09-25):
+/// it holds no plugin state and makes no call.
 const _pluginKeyPrefixes = ['team-', 'activity-team-'];
+const _entryPointPrefixes = ['team-discover-'];
 
 bool _isPluginKey(Key? key) => switch (key) {
-  ValueKey<String>(:final value) => _pluginKeyPrefixes.any(
-    (prefix) => value.startsWith(prefix),
-  ),
+  ValueKey<String>(:final value) =>
+    _pluginKeyPrefixes.any((prefix) => value.startsWith(prefix)) &&
+        !_entryPointPrefixes.any((prefix) => value.startsWith(prefix)),
   _ => false,
 };
 
