@@ -594,6 +594,13 @@ abstract final class AppIconography {
     fontFamily: 'AppPhosphorRegular',
     matchTextDirection: false,
   );
+
+  /// The AI Team's board (columns of cards).
+  static const kanban = IconData(
+    0xeb54,
+    fontFamily: 'AppPhosphorRegular',
+    matchTextDirection: false,
+  );
   static const launch = IconData(
     0xe3fe,
     fontFamily: 'AppPhosphorRegular',

@@ -20760,5 +20760,370 @@
   "effectsSaveFailed": "Could not save this choice on this device. Try again.",
   "@effectsSaveFailed": {
     "description": "Effects: a choice could not be saved; it was put back."
+  },
+  "teamBoardTitle": "Board",
+  "@teamBoardTitle": {
+    "description": "AI Team board: top bar title"
+  },
+  "teamBoardOpenTooltip": "Board",
+  "@teamBoardOpenTooltip": {
+    "description": "AI Team page: top bar action that opens the board"
+  },
+  "teamBoardViewRow": "View board",
+  "@teamBoardViewRow": {
+    "description": "AI Team page: row that opens the board"
+  },
+  "teamBoardViewRowSupporting": "Every task by where it stands",
+  "@teamBoardViewRowSupporting": {
+    "description": "AI Team page: the board row's supporting line"
+  },
+  "teamBoardColumnBacklog": "Backlog",
+  "@teamBoardColumnBacklog": {
+    "description": "Board column: tasks nobody has been given yet"
+  },
+  "teamBoardColumnReady": "Ready",
+  "@teamBoardColumnReady": {
+    "description": "Board column: tasks given to the team, waiting for a worker"
+  },
+  "teamBoardColumnWorking": "Working",
+  "@teamBoardColumnWorking": {
+    "description": "Board column: tasks a worker is on"
+  },
+  "teamBoardColumnReview": "Review",
+  "@teamBoardColumnReview": {
+    "description": "Board column: finished work waiting for its check and merge"
+  },
+  "teamBoardColumnDone": "Done",
+  "@teamBoardColumnDone": {
+    "description": "Board column: merged, done or cancelled in the last 7 days"
+  },
+  "teamBoardColumnSemantics": "{column}, {count, plural, =0{no tasks} =1{1 task} other{{count} tasks}}",
+  "@teamBoardColumnSemantics": {
+    "description": "Board: screen reader label of a column tab",
+    "placeholders": {
+      "column": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamBoardColumnNeedsYouSemantics": "something here needs you",
+  "@teamBoardColumnNeedsYouSemantics": {
+    "description": "Board: added to a column tab's label when a card in it needs the person"
+  },
+  "teamBoardEmptyBacklogTitle": "Nothing waiting",
+  "@teamBoardEmptyBacklogTitle": {
+    "description": "Board: empty Backlog column title"
+  },
+  "teamBoardEmptyBacklogBody": "Tasks you add but haven't started wait here.",
+  "@teamBoardEmptyBacklogBody": {
+    "description": "Board: empty Backlog column body"
+  },
+  "teamBoardEmptyReadyTitle": "Nothing queued",
+  "@teamBoardEmptyReadyTitle": {
+    "description": "Board: empty Ready column title"
+  },
+  "teamBoardEmptyReadyBody": "Tasks given to the team wait here for a worker.",
+  "@teamBoardEmptyReadyBody": {
+    "description": "Board: empty Ready column body"
+  },
+  "teamBoardEmptyWorkingTitle": "Nobody is working",
+  "@teamBoardEmptyWorkingTitle": {
+    "description": "Board: empty Working column title"
+  },
+  "teamBoardEmptyWorkingBody": "A task moves here when a worker picks it up.",
+  "@teamBoardEmptyWorkingBody": {
+    "description": "Board: empty Working column body"
+  },
+  "teamBoardEmptyReviewTitle": "Nothing to review",
+  "@teamBoardEmptyReviewTitle": {
+    "description": "Board: empty Review column title"
+  },
+  "teamBoardEmptyReviewBody": "Finished work waits here for its check and merge.",
+  "@teamBoardEmptyReviewBody": {
+    "description": "Board: empty Review column body"
+  },
+  "teamBoardEmptyDoneTitle": "Nothing finished this week",
+  "@teamBoardEmptyDoneTitle": {
+    "description": "Board: empty Done column title"
+  },
+  "teamBoardEmptyDoneBody": "Merged, done and cancelled tasks from the last 7 days show here.",
+  "@teamBoardEmptyDoneBody": {
+    "description": "Board: empty Done column body"
+  },
+  "teamBoardEmptyTitle": "No tasks yet",
+  "@teamBoardEmptyTitle": {
+    "description": "Board: nothing in any column"
+  },
+  "teamBoardEmptyBody": "Tasks you give the team show up here, by where they stand.",
+  "@teamBoardEmptyBody": {
+    "description": "Board: nothing in any column, body"
+  },
+  "teamBoardPriorityUrgent": "Urgent",
+  "@teamBoardPriorityUrgent": {
+    "description": "Board: priority 0"
+  },
+  "teamBoardPriorityHigh": "High",
+  "@teamBoardPriorityHigh": {
+    "description": "Board: priority 1"
+  },
+  "teamBoardPriorityNormal": "Normal",
+  "@teamBoardPriorityNormal": {
+    "description": "Board: priority 2 (the default)"
+  },
+  "teamBoardPriorityLow": "Low",
+  "@teamBoardPriorityLow": {
+    "description": "Board: priority 3"
+  },
+  "teamBoardPrioritySomeday": "Someday",
+  "@teamBoardPrioritySomeday": {
+    "description": "Board: priority 4"
+  },
+  "teamBoardTypeBug": "Bug",
+  "@teamBoardTypeBug": {
+    "description": "Board: card type"
+  },
+  "teamBoardTypeFeature": "Feature",
+  "@teamBoardTypeFeature": {
+    "description": "Board: card type"
+  },
+  "teamBoardTypeEpic": "Epic",
+  "@teamBoardTypeEpic": {
+    "description": "Board: card type: a large task with child tasks"
+  },
+  "teamBoardTypeChore": "Chore",
+  "@teamBoardTypeChore": {
+    "description": "Board: card type"
+  },
+  "teamBoardEpicProgress": "{done} of {total} done",
+  "@teamBoardEpicProgress": {
+    "description": "Board: an epic card's progress",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "teamBoardFlagNeedsYou": "Needs you",
+  "@teamBoardFlagNeedsYou": {
+    "description": "Board: card flag, a question waits on the person"
+  },
+  "teamBoardFlagBlocked": "Blocked",
+  "@teamBoardFlagBlocked": {
+    "description": "Board: card flag, the task waits on something"
+  },
+  "teamBoardFlagBlockedBy": "Blocked by {title}",
+  "@teamBoardFlagBlockedBy": {
+    "description": "Board: card flag naming the task it waits on",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamBoardFlagBlockedByMore": "Blocked by {title} + {count} more",
+  "@teamBoardFlagBlockedByMore": {
+    "description": "Board: card flag naming the first of several tasks it waits on",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamBoardFlagFailed": "Stopped with an error",
+  "@teamBoardFlagFailed": {
+    "description": "Board: card flag, the worker stopped with an error"
+  },
+  "teamBoardFlagInEpic": "In {epic}",
+  "@teamBoardFlagInEpic": {
+    "description": "Board: card flag naming its epic",
+    "placeholders": {
+      "epic": {
+        "type": "String"
+      }
+    }
+  },
+  "teamBoardFlagMoving": "Moving to {column}…",
+  "@teamBoardFlagMoving": {
+    "description": "Board: card flag while the host confirms the person's move",
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "teamBoardFlagCancelled": "Cancelled",
+  "@teamBoardFlagCancelled": {
+    "description": "Board: a cancelled task in Done"
+  },
+  "teamBoardAgeJustNow": "just now",
+  "@teamBoardAgeJustNow": {
+    "description": "Board: a card changed less than a minute ago"
+  },
+  "teamBoardAgeMinutes": "{count} min ago",
+  "@teamBoardAgeMinutes": {
+    "description": "Board: minutes since a card last changed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamBoardAgeHours": "{count} h ago",
+  "@teamBoardAgeHours": {
+    "description": "Board: hours since a card last changed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamBoardAgeDays": "{count} d ago",
+  "@teamBoardAgeDays": {
+    "description": "Board: days since a card last changed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teamBoardMoveMenuTooltip": "Move or change",
+  "@teamBoardMoveMenuTooltip": {
+    "description": "Board: a card's overflow button"
+  },
+  "teamBoardMoveSheetWhere": "In {column}",
+  "@teamBoardMoveSheetWhere": {
+    "description": "Board: the move sheet's line under the task title",
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "teamBoardMoveStartNow": "Start now",
+  "@teamBoardMoveStartNow": {
+    "description": "Board move: Backlog to Ready"
+  },
+  "teamBoardMoveStartNowHint": "Give it to the team's workers",
+  "@teamBoardMoveStartNowHint": {
+    "description": "Board move: Start now, supporting line"
+  },
+  "teamBoardMoveBackToBacklog": "Move back to Backlog",
+  "@teamBoardMoveBackToBacklog": {
+    "description": "Board move: Ready to Backlog"
+  },
+  "teamBoardMoveBackToBacklogHint": "The team won't pick it up until you start it",
+  "@teamBoardMoveBackToBacklogHint": {
+    "description": "Board move: Move back to Backlog, supporting line"
+  },
+  "teamBoardMovePriority": "Priority",
+  "@teamBoardMovePriority": {
+    "description": "Board move: change priority"
+  },
+  "teamBoardMoveCancel": "Cancel task",
+  "@teamBoardMoveCancel": {
+    "description": "Board move: close as cancelled (destructive, confirmed)"
+  },
+  "teamBoardMoveCancelHint": "Moves it to Done as cancelled",
+  "@teamBoardMoveCancelHint": {
+    "description": "Board move: Cancel task, supporting line"
+  },
+  "teamBoardMoveReopen": "Put back in Backlog",
+  "@teamBoardMoveReopen": {
+    "description": "Board move: a cancelled task back to Backlog"
+  },
+  "teamBoardMoveReopenHint": "Nobody works on it until you start it",
+  "@teamBoardMoveReopenHint": {
+    "description": "Board move: Put back in Backlog, supporting line"
+  },
+  "teamBoardOpenConversation": "Open conversation",
+  "@teamBoardOpenConversation": {
+    "description": "Board: open the task's team conversation"
+  },
+  "teamBoardOpenDetails": "Open details",
+  "@teamBoardOpenDetails": {
+    "description": "Board: open a task that has no conversation yet"
+  },
+  "teamBoardTeamMoves": "The team moves this task. Open its conversation to message the team or stop it.",
+  "@teamBoardTeamMoves": {
+    "description": "Board: the move sheet of a task only the team moves"
+  },
+  "teamBoardReadOnlyNote": "This host doesn't let the app change tasks, so the board is read-only here.",
+  "@teamBoardReadOnlyNote": {
+    "description": "Board: the move sheet on a read-only host"
+  },
+  "teamBoardStatusReadOnly": "Read-only here · this host doesn't let the app change tasks",
+  "@teamBoardStatusReadOnly": {
+    "description": "Board: the one status line on a read-only host"
+  },
+  "teamBoardCancelTitle": "Cancel “{title}”?",
+  "@teamBoardCancelTitle": {
+    "description": "Board: confirm before cancelling a task",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamBoardCancelBody": "The team won't work on it. It moves to Done as cancelled, and you can put it back in the Backlog later.",
+  "@teamBoardCancelBody": {
+    "description": "Board: confirm cancel, body"
+  },
+  "teamBoardCancelKeep": "Keep it",
+  "@teamBoardCancelKeep": {
+    "description": "Board: confirm cancel, the safe answer"
+  },
+  "teamBoardMoveFailedTitle": "Couldn't change “{title}”",
+  "@teamBoardMoveFailedTitle": {
+    "description": "Board: a move the host refused",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "teamBoardMoveFailedBody": "The team's host said no, so it stays where it was.",
+  "@teamBoardMoveFailedBody": {
+    "description": "Board: a move the host refused, body"
+  },
+  "teamBoardPriorityTitle": "Priority",
+  "@teamBoardPriorityTitle": {
+    "description": "Board: the priority sheet's title"
+  },
+  "teamBoardAddTooltip": "Add to backlog",
+  "@teamBoardAddTooltip": {
+    "description": "Board: top bar action that adds a task to the backlog"
+  },
+  "teamBoardAddHint": "What should the team do?",
+  "@teamBoardAddHint": {
+    "description": "Board: add-to-backlog field hint"
+  },
+  "teamBoardAddButton": "Add to backlog",
+  "@teamBoardAddButton": {
+    "description": "Board: add-to-backlog primary button"
+  },
+  "teamBoardAddNote": "It waits in the Backlog until you start it.",
+  "@teamBoardAddNote": {
+    "description": "Board: add-to-backlog sheet, what happens next"
+  },
+  "teamBoardAddFailed": "Couldn't add it. The team's host said no.",
+  "@teamBoardAddFailed": {
+    "description": "Board: add-to-backlog refused"
+  },
+  "teamBoardProjectTooltip": "Choose project",
+  "@teamBoardProjectTooltip": {
+    "description": "Board: the project switcher under the title"
+  },
+  "teamBoardCardHint": "long press for moves",
+  "@teamBoardCardHint": {
+    "description": "Board: screen reader hint on a card that has moves"
   }
 }

@@ -63,6 +63,8 @@ const _teamSurfacePrefixes = <String>[
   'teamUiAgentRole',
   'teamUiAgentsList',
   'teamUiHostPhrase',
+  // The board (docs/design/team-board-2026-09-26.md): tasks, not beads.
+  'teamBoard',
 ];
 
 final _engineWords = RegExp(

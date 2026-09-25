@@ -45,6 +45,7 @@ import '../../widgets/team_vocabulary.dart';
 import 'gate_sheet.dart';
 import 'run_screen.dart';
 import 'start_run_sheet.dart';
+import 'team_board_screen.dart';
 import 'team_agents_screen.dart';
 import 'team_needs_you.dart';
 import 'team_states.dart';
@@ -258,6 +259,15 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
                   icon: Icon(
                     _searchOpen ? AppIconography.close : AppIconography.search,
                   ),
+                ),
+              // The board (docs/design/team-board-2026-09-26.md).
+              if (ready)
+                IconButton(
+                  key: const ValueKey('team-home-board'),
+                  tooltip: l10n.teamBoardOpenTooltip,
+                  onPressed: () =>
+                      openTeamBoard(context, controller, now: widget.now),
+                  icon: const Icon(AppIconography.kanban),
                 ),
               IconButton(
                 key: const ValueKey('team-home-info'),
@@ -529,6 +539,15 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         live: live.length,
         working: working,
         onTap: _openAgents,
+      ),
+      // Every task by where it stands (docs/design/team-board-2026-09-26.md).
+      KitRow(
+        key: const ValueKey('team-home-board-row'),
+        leading: KitRow.icon(context, AppIconography.kanban),
+        title: l10n.teamBoardViewRow,
+        supporting: TextSpan(text: l10n.teamBoardViewRowSupporting),
+        trailing: const KitChevron(),
+        onTap: () => openTeamBoard(context, controller, now: widget.now),
       ),
     ];
 
