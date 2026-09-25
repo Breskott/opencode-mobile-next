@@ -1,10 +1,11 @@
 part of '../settings_screen.dart';
 
 /// The parts of Appearance a search result can mean.
-enum AppearanceSection { mode, language, theme }
+enum AppearanceSection { mode, language, effects, theme }
 
-/// Appearance category: light/dark mode plus the theme-pack picker with
-/// live swatch previews.
+/// Appearance category: light/dark mode and language, the effects the
+/// person controls (glass, animations, celebrations, vibration; design
+/// standard §10) and the theme-pack picker with live swatch previews.
 class AppearanceSettingsScreen extends StatefulWidget {
   final ConnectionController controller;
 
@@ -51,6 +52,7 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            SectionLabel(_settingsCopy(context).appearanceDisplaySection),
             ValueListenableBuilder<AppAppearance>(
               key: _sectionKeys[AppearanceSection.mode],
               valueListenable: controller.appearance,
@@ -71,6 +73,10 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
                 minLeadingWidth: 32,
                 child: LanguageSettingsTile(controller: controller),
               ),
+            ),
+            KeyedSubtree(
+              key: _sectionKeys[AppearanceSection.effects],
+              child: _EffectsSection(controller: controller),
             ),
             KeyedSubtree(
               key: _sectionKeys[AppearanceSection.theme],
@@ -113,6 +119,242 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Settings › Appearance › Effects (design standard §10): what moves, what
+/// is glass, what celebrates and what vibrates. A choice shows at once and
+/// is saved; a refused save puts it back and says so. The system's
+/// accessibility settings always win, and the rows say when they do.
+class _EffectsSection extends StatefulWidget {
+  const _EffectsSection({required this.controller});
+
+  final ConnectionController controller;
+
+  @override
+  State<_EffectsSection> createState() => _EffectsSectionState();
+}
+
+class _EffectsSectionState extends State<_EffectsSection> {
+  bool _failed = false;
+
+  Future<void> _choose(KitEffects next) async {
+    setState(() => _failed = false);
+    try {
+      await widget.controller.setEffects(next);
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = _settingsCopy(context);
+    return ValueListenableBuilder<KitEffects>(
+      valueListenable: widget.controller.effects,
+      builder: (context, effects, _) {
+        // The page shows the choices in force as the person makes them,
+        // even where it sits above the app's own scope (tests, previews).
+        return KitEffectsScope(
+          effects: effects,
+          child: Builder(
+            builder: (context) {
+              final systemStill = MediaQuery.disableAnimationsOf(context);
+              final glassSupporting = KitGlass.reduceEffects(context)
+                  ? copy.effectsGlassSystem
+                  : KitGlassShader.supported
+                  ? copy.effectsGlassOn
+                  : copy.effectsGlassFrosted;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SectionLabel(copy.effectsSection),
+                  _EffectsPreview(effects: effects),
+                  KitReveal(
+                    child: _failed
+                        ? Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                            child: KitNotice(
+                              tone: AppStatusTone.failure,
+                              message: copy.effectsSaveFailed,
+                            ),
+                          )
+                        : null,
+                  ),
+                  KitSwitchRow(
+                    key: const ValueKey('effects-glass'),
+                    leading: KitRow.icon(context, AppIconography.layers),
+                    title: copy.effectsGlass,
+                    supporting: glassSupporting,
+                    value: effects.glass,
+                    onChanged: (value) =>
+                        _choose(effects.copyWith(glass: value)),
+                  ),
+                  KitRow(
+                    key: const ValueKey('effects-motion'),
+                    leading: KitRow.icon(context, AppIconography.playCircle),
+                    title: copy.effectsAnimations,
+                    supporting: TextSpan(
+                      text: switch (effects.motion) {
+                        KitMotionLevel.full => copy.effectsMotionFullHint,
+                        KitMotionLevel.calm => copy.effectsMotionCalmHint,
+                        KitMotionLevel.off => copy.effectsMotionOffHint,
+                      },
+                    ),
+                    supportingMaxLines: 2,
+                    below: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 10),
+                        SegmentedButton<KitMotionLevel>(
+                          showSelectedIcon: false,
+                          segments: [
+                            for (final (level, label) in [
+                              (KitMotionLevel.full, copy.effectsMotionFull),
+                              (KitMotionLevel.calm, copy.effectsMotionCalm),
+                              (KitMotionLevel.off, copy.effectsMotionOff),
+                            ])
+                              ButtonSegment(
+                                value: level,
+                                label: Text(
+                                  label,
+                                  key: ValueKey('effects-motion-${level.name}'),
+                                ),
+                              ),
+                          ],
+                          selected: {effects.motion},
+                          onSelectionChanged: (choice) =>
+                              _choose(effects.copyWith(motion: choice.single)),
+                        ),
+                        if (systemStill)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              copy.effectsMotionSystemOff,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppTheme.mutedOf(Theme.of(context)),
+                                  ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  KitSwitchRow(
+                    key: const ValueKey('effects-celebrations'),
+                    leading: KitRow.icon(context, AppIconography.sparkle),
+                    title: copy.effectsCelebrations,
+                    supporting: copy.effectsCelebrationsHint,
+                    value: effects.celebrations,
+                    onChanged: (value) =>
+                        _choose(effects.copyWith(celebrations: value)),
+                  ),
+                  KitSwitchRow(
+                    key: const ValueKey('effects-vibration'),
+                    leading: KitRow.icon(context, AppIconography.touch),
+                    title: copy.effectsVibration,
+                    supporting: copy.effectsVibrationHint,
+                    value: effects.haptics,
+                    onChanged: (value) =>
+                        _choose(effects.copyWith(haptics: value)),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A small live sample of the effects: the brand's portal drawing itself in
+/// (again on each Animations change; finished at once under Off) beside a
+/// chip of the app's glass floating over colour. Decorative: the rows say
+/// everything in words. No loop, so the page rests.
+class _EffectsPreview extends StatelessWidget {
+  const _EffectsPreview({required this.effects});
+
+  final KitEffects effects;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ExcludeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        child: SizedBox(
+          height: 96,
+          child: Row(
+            children: [
+              KitIllustration(
+                key: ValueKey('effects-preview-${effects.motion.name}'),
+                scene: const KitPortalScene(),
+                width: 96,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              scheme.primaryContainer,
+                              scheme.tertiaryContainer,
+                              scheme.secondaryContainer,
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Stripes for the glass to bend at its edge.
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var i = 0; i < 9; i++)
+                            Expanded(
+                              child: ColoredBox(
+                                color: i.isEven
+                                    ? Colors.transparent
+                                    : scheme.surface.withValues(alpha: .4),
+                              ),
+                            ),
+                        ],
+                      ),
+                      Center(
+                        child: SizedBox(
+                          width: 112,
+                          height: 44,
+                          child: KitGlass(
+                            key: const ValueKey('effects-preview-glass'),
+                            borderRadius: BorderRadius.circular(22),
+                            shadow: false,
+                            child: Center(
+                              child: Icon(
+                                AppIconography.layers,
+                                size: 20,
+                                color: KitGlass.foregroundColor(
+                                  Theme.of(context),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

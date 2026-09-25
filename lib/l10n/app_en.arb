@@ -20656,5 +20656,81 @@
   "addServerSaveAnyway": "Save anyway",
   "@addServerSaveAnyway": {
     "description": "Add server: action on a failed connection check that saves the server even though it did not answer now."
+  },
+  "appearanceDisplaySection": "Display",
+  "@appearanceDisplaySection": {
+    "description": "Settings \u203a Appearance: section label over light/dark and language."
+  },
+  "effectsSection": "Effects",
+  "@effectsSection": {
+    "description": "Settings \u203a Appearance: section label over glass, animations, celebrations and vibration."
+  },
+  "effectsGlass": "Glass effects",
+  "@effectsGlass": {
+    "description": "Settings \u203a Appearance \u203a Effects: switch for the see-through glass on the dock and the message box."
+  },
+  "effectsGlassOn": "The dock and message box float as glass over what scrolls beneath",
+  "@effectsGlassOn": {
+    "description": "Glass effects row, supporting line when the phone draws glass."
+  },
+  "effectsGlassFrosted": "Uses a frosted surface on this phone",
+  "@effectsGlassFrosted": {
+    "description": "Glass effects row, supporting line when the phone cannot draw liquid glass and falls back to a frosted blur."
+  },
+  "effectsGlassSystem": "Solid while high contrast, a screen reader or Remove animations is on",
+  "@effectsGlassSystem": {
+    "description": "Glass effects row, supporting line when a system accessibility setting makes glass solid."
+  },
+  "effectsAnimations": "Animations",
+  "@effectsAnimations": {
+    "description": "Settings \u203a Appearance \u203a Effects: how much the app moves."
+  },
+  "effectsMotionFull": "Full",
+  "@effectsMotionFull": {
+    "description": "Animations choice: everything moves."
+  },
+  "effectsMotionFullHint": "Drawings move and waiting screens breathe",
+  "@effectsMotionFullHint": {
+    "description": "Animations: one line explaining Full."
+  },
+  "effectsMotionCalm": "Calm",
+  "@effectsMotionCalm": {
+    "description": "Animations choice: drawings appear, nothing loops."
+  },
+  "effectsMotionCalmHint": "Drawings appear, nothing keeps moving",
+  "@effectsMotionCalmHint": {
+    "description": "Animations: one line explaining Calm."
+  },
+  "effectsMotionOff": "Off",
+  "@effectsMotionOff": {
+    "description": "Animations choice: nothing moves."
+  },
+  "effectsMotionOffHint": "Everything shows at once",
+  "@effectsMotionOffHint": {
+    "description": "Animations: one line explaining Off."
+  },
+  "effectsMotionSystemOff": "Your phone’s Remove animations is on, so nothing moves whatever you choose here",
+  "@effectsMotionSystemOff": {
+    "description": "Animations: note when the system setting overrides the choice."
+  },
+  "effectsCelebrations": "Celebrations",
+  "@effectsCelebrations": {
+    "description": "Settings \u203a Appearance \u203a Effects: switch for the short finished moments."
+  },
+  "effectsCelebrationsHint": "A short moment when setup finishes or a task is merged",
+  "@effectsCelebrationsHint": {
+    "description": "Celebrations row, supporting line."
+  },
+  "effectsVibration": "Vibration",
+  "@effectsVibration": {
+    "description": "Settings \u203a Appearance \u203a Effects: switch for haptic feedback."
+  },
+  "effectsVibrationHint": "A light tick when you send, a soft one when something finishes",
+  "@effectsVibrationHint": {
+    "description": "Vibration row, supporting line."
+  },
+  "effectsSaveFailed": "Could not save this choice on this device. Try again.",
+  "@effectsSaveFailed": {
+    "description": "Effects: a choice could not be saved; it was put back."
   }
 }

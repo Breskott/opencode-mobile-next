@@ -18687,4 +18687,68 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addServerSaveAnyway => 'Save anyway';
+
+  @override
+  String get appearanceDisplaySection => 'Display';
+
+  @override
+  String get effectsSection => 'Effects';
+
+  @override
+  String get effectsGlass => 'Glass effects';
+
+  @override
+  String get effectsGlassOn =>
+      'The dock and message box float as glass over what scrolls beneath';
+
+  @override
+  String get effectsGlassFrosted => 'Uses a frosted surface on this phone';
+
+  @override
+  String get effectsGlassSystem =>
+      'Solid while high contrast, a screen reader or Remove animations is on';
+
+  @override
+  String get effectsAnimations => 'Animations';
+
+  @override
+  String get effectsMotionFull => 'Full';
+
+  @override
+  String get effectsMotionFullHint =>
+      'Drawings move and waiting screens breathe';
+
+  @override
+  String get effectsMotionCalm => 'Calm';
+
+  @override
+  String get effectsMotionCalmHint => 'Drawings appear, nothing keeps moving';
+
+  @override
+  String get effectsMotionOff => 'Off';
+
+  @override
+  String get effectsMotionOffHint => 'Everything shows at once';
+
+  @override
+  String get effectsMotionSystemOff =>
+      'Your phone’s Remove animations is on, so nothing moves whatever you choose here';
+
+  @override
+  String get effectsCelebrations => 'Celebrations';
+
+  @override
+  String get effectsCelebrationsHint =>
+      'A short moment when setup finishes or a task is merged';
+
+  @override
+  String get effectsVibration => 'Vibration';
+
+  @override
+  String get effectsVibrationHint =>
+      'A light tick when you send, a soft one when something finishes';
+
+  @override
+  String get effectsSaveFailed =>
+      'Could not save this choice on this device. Try again.';
 }
