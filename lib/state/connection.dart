@@ -40,7 +40,7 @@ import '../diagnostics/app_diagnostics.dart';
 import '../diagnostics/perf_trace.dart';
 import '../termux/bridge.dart';
 // A plain value type (no widgets): the person's effect choices.
-import '../ui/kit/kit_effects.dart' show KitEffects;
+import 'effects.dart' show KitEffects;
 import '../builtin/builtin_linux.dart';
 import 'isolated_task_launch.dart';
 import 'model_library.dart';

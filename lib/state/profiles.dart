@@ -15,7 +15,7 @@ import '../orchestration/adapters/gascity/gascity_probe.dart'
     show isTailnetHost;
 import '../platform/platform_capabilities.dart';
 // A plain value type (no widgets): the person's effect choices.
-import '../ui/kit/kit_effects.dart' show KitEffects, KitMotionLevel;
+import 'effects.dart' show KitEffects, KitMotionLevel;
 import 'model_library.dart';
 
 export '../api/server_probe.dart' show ServerFlavor;
