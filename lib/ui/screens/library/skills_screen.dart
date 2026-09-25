@@ -118,7 +118,7 @@ class _SkillsScreenState extends State<SkillsScreen> {
       : _error != null && _skills == null
       ? ProductErrorState(message: _error!, onRetry: _load)
       : _skills!.isEmpty
-      ? RefreshIndicator(
+      ? KitRefresh(
           onRefresh: _load,
           child: ProductEmptyState(
             icon: Icons.extension_off_outlined,
@@ -130,7 +130,7 @@ class _SkillsScreenState extends State<SkillsScreen> {
             ).emptyTeachSkillsMessage,
           ),
         )
-      : RefreshIndicator(
+      : KitRefresh(
           onRefresh: _load,
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),

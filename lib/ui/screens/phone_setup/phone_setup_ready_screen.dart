@@ -61,6 +61,12 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
       baseOffset: 0,
       extentOffset: _name.text.length,
     );
+    // The finish arrives on a screen of its own, so no working → finished
+    // state view is there to confirm it: this screen does, once, as the
+    // celebration starts (skipped under reduced motion).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) KitHaptics.done(context);
+    });
   }
 
   @override
@@ -240,6 +246,8 @@ class _PhoneSetupReadyScreenState extends ConsumerState<PhoneSetupReadyScreen> {
           // that exists, which opens the folder sheet only when asked.
           child: PhoneSetupHero(
             scene: const SetupReadyScene(),
+            // A finished moment: the longer celebration entrance (§10).
+            entranceDuration: KitMotion.celebration,
             title: l10n.phoneSetupReadyTitle,
             titleKey: const ValueKey('phone-setup-ready-title'),
             body: l10n.phoneSetupReadyNameTitle,

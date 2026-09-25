@@ -8,6 +8,7 @@ import '../../domain/server_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../widgets/run_result_view.dart';
+import '../kit/motion/kit_refresh.dart';
 
 /// Loads a session's newest history pages and shows the latest run's
 /// server-recorded outcome and tool evidence. Nothing is persisted: after a
@@ -211,7 +212,7 @@ class _RunResultScreenState extends State<RunResultScreen> {
     }
     return Scaffold(
       appBar: AppBar(title: Text(l10n.runResultsTitle)),
-      body: RefreshIndicator(
+      body: KitRefresh(
         onRefresh: _load,
         child: Column(
           children: [

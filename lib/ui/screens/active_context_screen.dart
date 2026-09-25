@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../widgets/product_states.dart';
 import '../app_iconography.dart';
+import '../kit/motion/kit_refresh.dart';
 
 class ActiveContextScreen extends StatefulWidget {
   const ActiveContextScreen({
@@ -173,7 +174,7 @@ class _ActiveContextScreenState extends State<ActiveContextScreen> {
                     onRetry: _load,
                   )
                 : const LoadingList()
-          : RefreshIndicator(
+          : KitRefresh(
               onRefresh: _load,
               child: CustomScrollView(
                 key: const ValueKey('active-context-list'),

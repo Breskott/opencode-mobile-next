@@ -586,7 +586,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
             ),
         ],
       ),
-      body: RefreshIndicator(
+      body: KitRefresh(
         onRefresh: _load,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),

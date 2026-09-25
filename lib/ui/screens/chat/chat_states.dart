@@ -440,7 +440,10 @@ class _ChatStatusLine extends StatelessWidget {
             }
           }
         }
-        return status?.line() ?? const SizedBox.shrink();
+        // The one status line comes and goes smoothly (design standard
+        // §10): it unfolds over the transcript's foot and folds away once
+        // the server answers again; a change of status shows in place.
+        return KitReveal(child: status?.line());
       },
     );
   }

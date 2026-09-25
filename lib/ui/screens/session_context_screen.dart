@@ -12,6 +12,7 @@ import '../../domain/session_history.dart';
 import '../widgets/product_states.dart';
 import '../app_theme.dart';
 import 'active_context_screen.dart';
+import '../kit/motion/kit_refresh.dart';
 
 enum SessionContextBreakdownKind { user, assistant, tool, other }
 
@@ -438,7 +439,7 @@ class _SessionContextScreenState extends State<SessionContextScreen> {
       );
     }
 
-    return RefreshIndicator(
+    return KitRefresh(
       onRefresh: _load,
       child: ListView(
         key: const ValueKey('session-context-list'),

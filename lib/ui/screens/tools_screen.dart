@@ -13,6 +13,7 @@ import '../../state/connection.dart';
 import '../widgets/pickers.dart';
 import '../widgets/product_states.dart';
 import '../app_theme.dart';
+import '../kit/motion/kit_refresh.dart';
 
 class ToolsScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -383,7 +384,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
               ).e7LibraryTryAToolIDOrAWord,
       );
     }
-    return RefreshIndicator(
+    return KitRefresh(
       onRefresh: _load,
       child: ListView(
         key: const Key('coding-tools-list'),

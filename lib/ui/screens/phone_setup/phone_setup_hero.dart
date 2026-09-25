@@ -20,6 +20,7 @@ class PhoneSetupHero extends StatelessWidget {
     required this.scene,
     required this.title,
     this.ambient = false,
+    this.entranceDuration = KitMotion.entrance,
     this.titleKey,
     this.body,
     this.bodyKey,
@@ -38,6 +39,10 @@ class PhoneSetupHero extends StatelessWidget {
   /// Keep the drawing moving after its entrance: only while the person
   /// waits (setup running, OpenCode starting).
   final bool ambient;
+
+  /// How long the drawing takes to draw itself in: [KitMotion.celebration]
+  /// for a finished moment (setup ready), [KitMotion.entrance] otherwise.
+  final Duration entranceDuration;
 
   final String title;
   final Key? titleKey;
@@ -89,6 +94,7 @@ class PhoneSetupHero extends StatelessWidget {
                     scene: scene,
                     width: math.min(heroWidth, constraints.maxWidth - 32),
                     ambient: ambient,
+                    entranceDuration: entranceDuration,
                   ),
                 ),
                 const SizedBox(height: 20),

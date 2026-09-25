@@ -19,6 +19,7 @@ import '../widgets/confirm_sheet.dart';
 import '../widgets/safety_confirms.dart';
 import '../widgets/product_states.dart';
 import 'termux_setup_screen.dart';
+import '../kit/motion/kit_refresh.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -286,7 +287,7 @@ class _TermuxProcessesScreenState extends State<TermuxProcessesScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
+          : KitRefresh(
               onRefresh: _refresh,
               child: DesktopScrollbarArea(
                 builder: (controller) => ListView(

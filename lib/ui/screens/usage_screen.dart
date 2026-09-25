@@ -11,6 +11,7 @@ import '../../state/usage_overview.dart';
 import '../../state/usage_budgets.dart';
 import '../widgets/product_states.dart';
 import '../app_iconography.dart';
+import '../kit/motion/kit_refresh.dart';
 
 AppLocalizations _strings(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -99,7 +100,7 @@ class _UsageScreenState extends State<UsageScreen> {
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 860),
-            child: RefreshIndicator(
+            child: KitRefresh(
               onRefresh: _overview.refresh,
               child: ListView(
                 key: const ValueKey('usage-content'),

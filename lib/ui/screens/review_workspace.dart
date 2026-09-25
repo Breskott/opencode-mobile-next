@@ -11,6 +11,7 @@ import '../app_theme.dart';
 import '../desktop/desktop_interaction.dart';
 import '../widgets/product_states.dart';
 import '../widgets/reader_preferences.dart';
+import '../kit/motion/kit_refresh.dart';
 
 typedef ReviewDiffLoader = Future<List<FileDiff>> Function();
 
@@ -396,10 +397,7 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
           : _ReviewErrorState(error: _error!, onRetry: _load);
     }
     if (_diffs!.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _load,
-        child: const _ReviewEmptyState(),
-      );
+      return KitRefresh(onRefresh: _load, child: const _ReviewEmptyState());
     }
 
     final diffs = _diffs!;
@@ -506,7 +504,7 @@ class _ReviewWorkspaceState extends State<ReviewWorkspace> {
         Expanded(
           // Pull-to-refresh mirrors the app-wide idiom; the top-right refresh
           // icon remains for pointer users.
-          child: RefreshIndicator(
+          child: KitRefresh(
             onRefresh: _load,
             notificationPredicate: (notification) =>
                 notification.metrics.axis == Axis.vertical,

@@ -2558,7 +2558,7 @@ class _ChatScreenState extends State<ChatScreen>
             !hasStagedReferences)) {
       return;
     }
-    if (!_conn.isIsolated) unawaited(HapticFeedback.lightImpact());
+    if (!_conn.isIsolated) KitHaptics.send();
     if (!_conn.isIsolated &&
         _attachments.isEmpty &&
         _composer.text.trimLeft().startsWith('/') &&
@@ -4851,16 +4851,16 @@ class _ChatScreenState extends State<ChatScreen>
     });
   }
 
-  /// A light haptic when this session goes from busy to idle. Keep the
-  /// editor in place and respect reduced motion.
+  /// The finish haptic ([KitHaptics.done]) when this session goes from
+  /// busy to idle: the reply the person waited for is in. Keeps the editor
+  /// in place; skipped under reduced motion.
   void _noteRunFinished() {
     if (_conn.isIsolated) return;
     final busy = _conn.busySessions.contains(widget.sessionID);
     final finished = _wasBusy && !busy;
     _wasBusy = busy;
     if (!finished) return;
-    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) return;
-    unawaited(HapticFeedback.lightImpact());
+    KitHaptics.done(context);
   }
 
   /// Shows a composer-local note above the field for three seconds. Used
@@ -7677,39 +7677,32 @@ class _ChatScreenState extends State<ChatScreen>
                               ),
                             // The offline-draft half of the strip is v1-safe;
                             // only the inbox bubbles are v2-only (§7 rule 5).
-                            if ((
-                                  drafts: _conn.queuedPromptsFor(
-                                    widget.sessionID,
-                                  ),
-                                  inbox: _conn.capabilities.inbox
-                                      // What you sent and is waiting. The
-                                      // server's own pending context
-                                      // updates are a standing fact and
-                                      // live in the chip strip.
-                                      ? _conn
-                                            .inboxItemsFor(widget.sessionID)
-                                            .where(
-                                              (item) => item.type == 'user',
-                                            )
-                                            .toList()
-                                      : const <Api2InboxItem>[],
-                                )
-                                case final pendingSends
-                                when pendingSends.drafts.isNotEmpty ||
-                                    pendingSends.inbox.isNotEmpty)
-                              _PendingSendsStrip(
-                                drafts: pendingSends.drafts,
-                                inboxItems: pendingSends.inbox,
-                                isSending: (entry) =>
-                                    _conn.queuedPromptSending(entry.id),
-                                isAcceptedUnrecorded: (entry) => _conn
-                                    .queuedPromptAcceptedUnrecorded(entry.id),
-                                onEdit: _editQueuedPrompt,
-                                onResend: _resendQueuedPrompt,
-                                onDiscard: _discardQueuedPrompt,
-                                onCancelInbox: _cancelInboxSend,
-                                onFlipDelivery: _flipInboxDelivery,
-                              ),
+                            // Always in place, empty when nothing waits, so
+                            // the first queued message unfolds in and the
+                            // last one folds away (design standard §10).
+                            _PendingSendsStrip(
+                              key: const ValueKey('pending-sends-strip'),
+                              drafts: _conn.queuedPromptsFor(widget.sessionID),
+                              inboxItems: _conn.capabilities.inbox
+                                  // What you sent and is waiting. The
+                                  // server's own pending context updates
+                                  // are a standing fact and live in the
+                                  // chip strip.
+                                  ? _conn
+                                        .inboxItemsFor(widget.sessionID)
+                                        .where((item) => item.type == 'user')
+                                        .toList()
+                                  : const <Api2InboxItem>[],
+                              isSending: (entry) =>
+                                  _conn.queuedPromptSending(entry.id),
+                              isAcceptedUnrecorded: (entry) => _conn
+                                  .queuedPromptAcceptedUnrecorded(entry.id),
+                              onEdit: _editQueuedPrompt,
+                              onResend: _resendQueuedPrompt,
+                              onDiscard: _discardQueuedPrompt,
+                              onCancelInbox: _cancelInboxSend,
+                              onFlipDelivery: _flipInboxDelivery,
+                            ),
                             if (!_conn.isIsolated)
                               if (_conn.promptPhotos.pending case final photo?
                                   when photo.profileID == _draftProfileID &&
