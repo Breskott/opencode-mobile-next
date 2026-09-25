@@ -58,7 +58,12 @@ Future<void> _golden(
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
-    await before?.call();
+    if (before != null) {
+      await before();
+      // A state that changed during `before` arrives with a short fade
+      // (design standard §10); capture it once it has arrived.
+      await tester.pump(KitMotion.standard);
+    }
     expect(tester.takeException(), isNull);
     await expectLater(
       find.byKey(boundary),

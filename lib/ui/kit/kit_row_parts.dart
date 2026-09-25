@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
+import 'kit_motion.dart';
 import 'kit_row.dart';
+import 'motion/kit_reveal.dart';
 
 /// A [KitRow]'s leading icon with an optional current mark (design
 /// standard §6, "state lives in the row"): the thing the person is using
@@ -179,7 +181,8 @@ class KitSwitchRow extends StatelessWidget {
 
 /// A row that unfolds what it stands for in place (§6): a group of rows
 /// (the built-in plugins) or a rare choice (other OpenCode versions). Its
-/// chevron points down when folded and up when open.
+/// chevron points down when folded and turns up when open, while the rows
+/// unfold under it ([KitReveal], §10); reduced motion makes both instant.
 class KitExpandRow extends StatefulWidget {
   const KitExpandRow({
     super.key,
@@ -225,15 +228,30 @@ class _KitExpandRowState extends State<KitExpandRow> {
             onTap: () => setState(() => _open = !_open),
             trailing: SizedBox.square(
               dimension: 48,
-              child: Icon(
-                _open ? AppIconography.chevronUp : AppIconography.chevronDown,
-                size: 20,
-                color: AppTheme.mutedOf(theme),
+              child: AnimatedRotation(
+                turns: _open ? .5 : 0,
+                duration: KitMotion.reduced(context)
+                    ? Duration.zero
+                    : KitMotion.standard,
+                curve: KitMotion.emphasized,
+                child: Icon(
+                  AppIconography.chevronDown,
+                  size: 20,
+                  color: AppTheme.mutedOf(theme),
+                ),
               ),
             ),
           ),
         ),
-        if (_open) ...widget.children,
+        KitReveal(
+          child: !_open
+              ? null
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: widget.children,
+                ),
+        ),
       ],
     );
   }

@@ -3,12 +3,18 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import 'kit_buttons.dart';
+import 'motion/kit_reveal.dart';
 
 /// A condition on an otherwise working screen (design standard §5):
 /// offline, out of date, something running. One row: an icon, the words,
 /// an optional action, and further actions behind a small menu. At most one
 /// per screen (the caller picks the most important), not a card, and one
 /// live region so a screen reader announces a new status once.
+///
+/// Motion (§10): it fades and rises into place when it appears and again
+/// when it becomes a different condition (its icon or tone changes); new
+/// words for the same condition change in place. To have it fold away when
+/// it goes, the host shows it through a [KitReveal].
 class KitStatusLine extends StatelessWidget {
   const KitStatusLine({
     super.key,
@@ -67,12 +73,15 @@ class KitStatusLine extends StatelessWidget {
     final tint = tone == AppStatusTone.neutral
         ? AppTheme.mutedOf(theme)
         : AppTheme.statusColor(theme, tone);
-    return LayoutBuilder(
-      builder: (context, constraints) => _line(
-        context,
-        stacked: _stacks(context, constraints.maxWidth),
-        tint: tint,
-        l10n: l10n,
+    return KitEntrance(
+      trigger: (tone, icon),
+      child: LayoutBuilder(
+        builder: (context, constraints) => _line(
+          context,
+          stacked: _stacks(context, constraints.maxWidth),
+          tint: tint,
+          l10n: l10n,
+        ),
       ),
     );
   }
