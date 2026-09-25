@@ -37,3 +37,16 @@ Issue: https://github.com/Eslamasabry/opencode-mobile-next/issues/87. The report
 - **Item 4, slow loading:** the first-connect wait was also removed (`787fa137`). Nothing is re-measured on a device.
 - **Infrastructure:** the PC ran out of memory at 21:27 with two emulators and six agents running. Nothing was lost. Heavy jobs now run one at a time.
 - **Unchanged to close:** the integrated device run with the timings, a real arm64 phone, the Termux AI Team decision, and the release plus reply.
+
+## Closing plan (2026-09-25, owner's decisions)
+
+The owner: "let's super focus on closing ticket 87". Decisions: on his phone he installs the candidate APK himself and pastes Settings › App diagnostics › Performance › Copy report (no adb on his phone); once the proof passes, push, release and reply on #87 (reply text shown to him first).
+
+| # | Complaint | State on `feat/phone-setup-v2` | Proof still to take |
+|---|---|---|---|
+| 1 | Can't download AI Team | Built-in path proven (Android 15 emulator, task merged, merged work in the project folder). Termux path being moved off the unpublished `aiteam-assets-1` to the upstream releases inside Termux's Ubuntu (`fix/termux-aiteam-upstream`). AI Team made discoverable (`ds/team-discover`). | Termux AI Team end to end on an emulator with Termux installed; the built-in path again on the candidate; the owner's phone report. |
+| 2 | Choppy, ugly UI | Design standard on every screen group; AI Team redesign; motion and drawings (§10); page/tab/part motion; liquid glass with an Appearance switch (in progress). | `gfxinfo` janky %/p50/p90/p99 while a reply streams and while scrolling, 1.0.44+50 vs the candidate, same emulator; the owner's phone report. |
+| 3 | Built-in terminal | Local terminal in the built-in Ubuntu, proven on Android 14 emulator (ten checks). | Re-run on the candidate; the owner's phone. |
+| 4 | 20 s loads | Catalog, provider refresh and first-connect waits removed; OCTRACE everywhere. | Cold start → Work tab, open project, open Settings, send → first token: 1.0.44+50 vs candidate on the same emulator; the owner's phone report. |
+
+Order: baseline 1.0.44+50 and a Termux emulator (`docs/qa/issue-87-proof-2026-09-25/`, running) → merge the four open branches → candidate APKs (x86_64 for emulators, arm64 local-key for the owner) → integrated runs with video → owner's phone report → push `dev`, CI quality gate, fast-forward `master`, tag, CI release build (public key `842284B2`), `scripts/release.sh github --publish` → reply on #87 with numbers and video.
