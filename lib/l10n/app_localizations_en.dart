@@ -18769,4 +18769,241 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get effectsSaveFailed =>
       'Could not save this choice on this device. Try again.';
+
+  @override
+  String get chatWatchEmptyTitle => 'Nothing here yet';
+
+  @override
+  String get chatWatchEmptyBody =>
+      'This conversation fills in as the agent works.';
+
+  @override
+  String teamWatchBanner(String name, String role) {
+    return 'Watching $name · $role · AI Team';
+  }
+
+  @override
+  String teamWatchBannerRole(String role) {
+    return 'Watching the $role · AI Team';
+  }
+
+  @override
+  String get teamWatchNote =>
+      'You\'re watching. Your message goes to it through the AI Team, never into this conversation.';
+
+  @override
+  String get teamWatchNoteNoMessage =>
+      'You\'re watching. This team can\'t be messaged from here.';
+
+  @override
+  String get teamWatchMessageWorker => 'Message the worker';
+
+  @override
+  String get teamWatchMessageAgent => 'Message this agent';
+
+  @override
+  String get teamWatchFallbackUnreadable =>
+      'Its conversation can\'t be read from the server this app is connected to, so this is the team\'s live output.';
+
+  @override
+  String get teamWatchFallbackNotFound =>
+      'Its conversation isn\'t on the server this app is connected to yet (it may still be starting, or the team runs on another computer), so this is the team\'s live output.';
+
+  @override
+  String get teamOpenConversation => 'Open conversation';
+
+  @override
+  String teamOpenConversationHint(String name) {
+    return 'Watch $name\'s work in the chat';
+  }
+
+  @override
+  String get teamOpenConversationFinding => 'Finding its conversation…';
+
+  @override
+  String get teamChatUntitled => 'Team task';
+
+  @override
+  String teamChatSubtitle(String host) {
+    return 'AI Team · $host';
+  }
+
+  @override
+  String get teamChatOpenTeam => 'AI Team';
+
+  @override
+  String get teamChatTaskDetails => 'Task details';
+
+  @override
+  String get teamChatLoading => 'Loading the task';
+
+  @override
+  String get teamChatLeadName => 'The team';
+
+  @override
+  String get teamChatLeadSent => 'Sent to the team';
+
+  @override
+  String get teamChatLeadNothingYet =>
+      'Nothing yet. The team has not planned this task.';
+
+  @override
+  String teamChatLeadPlanned(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Planned $count steps',
+      one: 'Planned 1 step',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamChatLeadRouted(String title) {
+    return 'Sent “$title” to the workers';
+  }
+
+  @override
+  String teamChatLeadStarting(String title) {
+    return 'Started a worker on “$title”';
+  }
+
+  @override
+  String teamChatLeadClaimed(String name, String title) {
+    return '$name took “$title”';
+  }
+
+  @override
+  String teamChatLeadClaimedWorker(String title) {
+    return 'A worker took “$title”';
+  }
+
+  @override
+  String teamChatLeadPushed(String title) {
+    return 'Changes for “$title” are on a branch';
+  }
+
+  @override
+  String teamChatLeadReview(String title) {
+    return 'Handed “$title” to review';
+  }
+
+  @override
+  String teamChatLeadMerged(String title) {
+    return 'Merged “$title”';
+  }
+
+  @override
+  String teamChatLeadStepFailed(String title) {
+    return '“$title” failed';
+  }
+
+  @override
+  String teamChatLeadStepCancelled(String title) {
+    return '“$title” was cancelled';
+  }
+
+  @override
+  String teamChatLeadNeedsYou(String question) {
+    return 'Needs you: $question';
+  }
+
+  @override
+  String get teamChatLeadTaskMerged => 'Merged. The task is done.';
+
+  @override
+  String get teamChatLeadTaskFinished => 'The task is done.';
+
+  @override
+  String get teamChatLeadTaskFailed => 'The task failed.';
+
+  @override
+  String get teamChatLeadTaskCancelled => 'The task was cancelled.';
+
+  @override
+  String get teamChatAWorker => 'A worker';
+
+  @override
+  String get teamChatNowNotAnswering => 'The team isn\'t answering';
+
+  @override
+  String teamChatNowPending(String elapsed) {
+    return 'Waiting for the team to pick it up · $elapsed';
+  }
+
+  @override
+  String get teamChatNowFinished => 'Finished';
+
+  @override
+  String teamChatNowNeedsYou(String question) {
+    return 'Needs you · $question';
+  }
+
+  @override
+  String teamChatNowWaitingForWorker(String elapsed) {
+    return 'Waiting for a worker · waited $elapsed';
+  }
+
+  @override
+  String teamChatNowStartingPhone(String name, String elapsed) {
+    return '$name is starting · can take a few minutes on a phone · $elapsed';
+  }
+
+  @override
+  String teamChatNowStarting(String name, String elapsed) {
+    return '$name is starting · $elapsed';
+  }
+
+  @override
+  String teamChatNowWorking(String name, String title, String elapsed) {
+    return '$name is working on “$title” · $elapsed';
+  }
+
+  @override
+  String teamChatNowReview(String elapsed) {
+    return 'Waiting for review · $elapsed';
+  }
+
+  @override
+  String get teamChatFamilyRunning => 'running';
+
+  @override
+  String get teamChatFamilyWaiting => 'waiting';
+
+  @override
+  String get teamChatFamilyDone => 'done';
+
+  @override
+  String get teamChatFamilyFailed => 'failed';
+
+  @override
+  String teamChatStepsSummary(int count, int done) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count steps',
+      one: '1 step',
+    );
+    return '$_temp0 · $done done';
+  }
+
+  @override
+  String get teamChatComposerHint => 'Message the team…';
+
+  @override
+  String teamChatComposerGoesTo(String name) {
+    return 'Goes to $name through the AI Team';
+  }
+
+  @override
+  String get teamChatComposerNobody =>
+      'No agent is on this task to message yet.';
+
+  @override
+  String get teamChatComposerCannot =>
+      'This team can\'t be messaged from here.';
+
+  @override
+  String get teamOpenTaskConversationHint =>
+      'The task and its workers, in the chat';
 }

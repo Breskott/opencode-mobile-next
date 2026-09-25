@@ -19037,4 +19037,246 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get effectsSaveFailed =>
       'تعذّر حفظ هذا الاختيار على هذا الجهاز. حاول مرة أخرى.';
+
+  @override
+  String get chatWatchEmptyTitle => 'لا شيء هنا بعد';
+
+  @override
+  String get chatWatchEmptyBody => 'تمتلئ هذه المحادثة بينما يعمل الوكيل.';
+
+  @override
+  String teamWatchBanner(String name, String role) {
+    return 'تشاهد $name · $role · فريق الذكاء';
+  }
+
+  @override
+  String teamWatchBannerRole(String role) {
+    return 'تشاهد $role · فريق الذكاء';
+  }
+
+  @override
+  String get teamWatchNote =>
+      'أنت تشاهد. تصل رسالتك إليه عبر فريق الذكاء، ولا تُكتب في هذه المحادثة أبدًا.';
+
+  @override
+  String get teamWatchNoteNoMessage =>
+      'أنت تشاهد. لا يمكن مراسلة هذا الفريق من هنا.';
+
+  @override
+  String get teamWatchMessageWorker => 'راسل العامل';
+
+  @override
+  String get teamWatchMessageAgent => 'راسل هذا الوكيل';
+
+  @override
+  String get teamWatchFallbackUnreadable =>
+      'لا يمكن قراءة محادثته من الخادم المتصل به التطبيق، لذا هذا هو الناتج المباشر للفريق.';
+
+  @override
+  String get teamWatchFallbackNotFound =>
+      'محادثته ليست بعد على الخادم المتصل به التطبيق (قد يكون ما زال يبدأ، أو أن الفريق يعمل على حاسوب آخر)، لذا هذا هو الناتج المباشر للفريق.';
+
+  @override
+  String get teamOpenConversation => 'افتح المحادثة';
+
+  @override
+  String teamOpenConversationHint(String name) {
+    return 'شاهد عمل $name في المحادثة';
+  }
+
+  @override
+  String get teamOpenConversationFinding => 'جارٍ العثور على محادثته…';
+
+  @override
+  String get teamChatUntitled => 'مهمة الفريق';
+
+  @override
+  String teamChatSubtitle(String host) {
+    return 'فريق الذكاء · $host';
+  }
+
+  @override
+  String get teamChatOpenTeam => 'فريق الذكاء';
+
+  @override
+  String get teamChatTaskDetails => 'تفاصيل المهمة';
+
+  @override
+  String get teamChatLoading => 'جارٍ تحميل المهمة';
+
+  @override
+  String get teamChatLeadName => 'الفريق';
+
+  @override
+  String get teamChatLeadSent => 'أُرسلت إلى الفريق';
+
+  @override
+  String get teamChatLeadNothingYet =>
+      'لا شيء بعد. لم يخطط الفريق لهذه المهمة.';
+
+  @override
+  String teamChatLeadPlanned(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'خُططت $count خطوة',
+      many: 'خُططت $count خطوة',
+      few: 'خُططت $count خطوات',
+      two: 'خُططت خطوتان',
+      one: 'خُططت خطوة واحدة',
+      zero: 'لا خطوات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String teamChatLeadRouted(String title) {
+    return 'أُرسلت «$title» إلى العمال';
+  }
+
+  @override
+  String teamChatLeadStarting(String title) {
+    return 'بدأ عامل على «$title»';
+  }
+
+  @override
+  String teamChatLeadClaimed(String name, String title) {
+    return 'تولّى $name «$title»';
+  }
+
+  @override
+  String teamChatLeadClaimedWorker(String title) {
+    return 'تولّى عامل «$title»';
+  }
+
+  @override
+  String teamChatLeadPushed(String title) {
+    return 'تغييرات «$title» على فرع';
+  }
+
+  @override
+  String teamChatLeadReview(String title) {
+    return 'سُلّمت «$title» للمراجعة';
+  }
+
+  @override
+  String teamChatLeadMerged(String title) {
+    return 'دُمجت «$title»';
+  }
+
+  @override
+  String teamChatLeadStepFailed(String title) {
+    return 'فشلت «$title»';
+  }
+
+  @override
+  String teamChatLeadStepCancelled(String title) {
+    return 'أُلغيت «$title»';
+  }
+
+  @override
+  String teamChatLeadNeedsYou(String question) {
+    return 'يحتاجك: $question';
+  }
+
+  @override
+  String get teamChatLeadTaskMerged => 'دُمجت. انتهت المهمة.';
+
+  @override
+  String get teamChatLeadTaskFinished => 'انتهت المهمة.';
+
+  @override
+  String get teamChatLeadTaskFailed => 'فشلت المهمة.';
+
+  @override
+  String get teamChatLeadTaskCancelled => 'أُلغيت المهمة.';
+
+  @override
+  String get teamChatAWorker => 'عامل';
+
+  @override
+  String get teamChatNowNotAnswering => 'الفريق لا يجيب';
+
+  @override
+  String teamChatNowPending(String elapsed) {
+    return 'بانتظار أن يتولاها الفريق · $elapsed';
+  }
+
+  @override
+  String get teamChatNowFinished => 'انتهت';
+
+  @override
+  String teamChatNowNeedsYou(String question) {
+    return 'يحتاجك · $question';
+  }
+
+  @override
+  String teamChatNowWaitingForWorker(String elapsed) {
+    return 'بانتظار عامل · مضى $elapsed';
+  }
+
+  @override
+  String teamChatNowStartingPhone(String name, String elapsed) {
+    return '$name يبدأ · قد يستغرق بضع دقائق على الهاتف · $elapsed';
+  }
+
+  @override
+  String teamChatNowStarting(String name, String elapsed) {
+    return '$name يبدأ · $elapsed';
+  }
+
+  @override
+  String teamChatNowWorking(String name, String title, String elapsed) {
+    return '$name يعمل على «$title» · $elapsed';
+  }
+
+  @override
+  String teamChatNowReview(String elapsed) {
+    return 'بانتظار المراجعة · $elapsed';
+  }
+
+  @override
+  String get teamChatFamilyRunning => 'يعمل';
+
+  @override
+  String get teamChatFamilyWaiting => 'بانتظار';
+
+  @override
+  String get teamChatFamilyDone => 'انتهى';
+
+  @override
+  String get teamChatFamilyFailed => 'فشل';
+
+  @override
+  String teamChatStepsSummary(int count, int done) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count خطوة',
+      many: '$count خطوة',
+      few: '$count خطوات',
+      two: 'خطوتان',
+      one: 'خطوة واحدة',
+      zero: 'لا خطوات',
+    );
+    return '$_temp0 · $done منتهية';
+  }
+
+  @override
+  String get teamChatComposerHint => 'راسل الفريق…';
+
+  @override
+  String teamChatComposerGoesTo(String name) {
+    return 'تصل إلى $name عبر فريق الذكاء';
+  }
+
+  @override
+  String get teamChatComposerNobody =>
+      'لا يوجد وكيل على هذه المهمة لمراسلته بعد.';
+
+  @override
+  String get teamChatComposerCannot => 'لا يمكن مراسلة هذا الفريق من هنا.';
+
+  @override
+  String get teamOpenTaskConversationHint => 'المهمة وعمالها، في المحادثة';
 }

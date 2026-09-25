@@ -26,10 +26,15 @@ class AgentOutputScreen extends StatefulWidget {
     super.key,
     required this.controller,
     required this.agentId,
+    this.note,
   });
 
   final OrchestrationController controller;
   final String agentId;
+
+  /// Why this page and not the agent's own conversation (it opened as the
+  /// fallback of "Open conversation"); shown under the status line.
+  final String? note;
 
   @override
   State<AgentOutputScreen> createState() => _AgentOutputScreenState();
@@ -175,6 +180,16 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
               tone: tone,
               message: status,
             ),
+            if (widget.note case final note?)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                child: KitNotice(
+                  key: const ValueKey('team-agent-output-note'),
+                  icon: AppIconography.info,
+                  message: note,
+                  liveRegion: false,
+                ),
+              ),
             SwitchListTile.adaptive(
               key: const ValueKey('team-agent-output-follow'),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),

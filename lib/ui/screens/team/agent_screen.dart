@@ -40,6 +40,7 @@ import '../../widgets/team_agent_row.dart';
 import '../../widgets/team_controls.dart';
 import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
+import '../team_conversation/team_conversation.dart';
 import 'agent_output_screen.dart';
 import 'team_states.dart';
 
@@ -412,7 +413,10 @@ class _AgentScreenState extends State<AgentScreen> {
             key: const ValueKey('team-agent-output'),
             title: l10n.teamUiAgentSectionOutput,
             flush: true,
-            children: [_OutputRow(tail: _tail, onTap: _openOutput)],
+            children: [
+              TeamOpenConversationRow(team: controller, agent: agent),
+              _OutputRow(tail: _tail, onTap: _openOutput),
+            ],
           ),
           if (controller.capabilities.controlMessage ||
               controller.capabilities.controlAgent ||

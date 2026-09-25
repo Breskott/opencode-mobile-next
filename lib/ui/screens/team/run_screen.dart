@@ -61,6 +61,7 @@ import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_cycle_strip.dart';
 import '../../widgets/team_moments.dart';
 import '../../widgets/team_vocabulary.dart';
+import '../team_conversation/team_conversation.dart';
 import 'agent_screen.dart';
 import 'gate_sheet.dart';
 import 'merge_section.dart';
@@ -754,6 +755,7 @@ class _Overview extends StatelessWidget {
             elapsed: elapsedLabel,
           ),
         ),
+        TeamTaskConversationRow(team: controller, runId: run.id),
         if (receipt case final record?)
           rails(
             top: 10,
