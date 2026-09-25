@@ -9,6 +9,7 @@ import '../../state/connection.dart';
 import '../permission_presentation.dart';
 import '../widgets/product_states.dart';
 import '../app_theme.dart';
+import '../kit/motion/kit_refresh.dart';
 
 typedef SavedPermissionRepositoryResolver =
     Future<ServerOperationsGateway?> Function();
@@ -264,7 +265,7 @@ class _SavedPermissionsScreenState extends State<SavedPermissionsScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: KitRefresh(
         onRefresh: _load,
         child: permissions == null && _error == null
             ? const LoadingList(rows: 4)

@@ -21,7 +21,8 @@ import '../desktop/context_menu.dart';
 import '../desktop/desktop_interaction.dart';
 import '../kit/kit_progress.dart';
 import '../../feedback/bug_report.dart';
-import '../kit/kit.dart' show KitAction, KitStateView;
+import '../kit/kit.dart'
+    show KitAction, KitAnimatedRows, KitRefresh, KitReveal, KitStateView;
 import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart';
 import 'local_terminal_screen.dart';
@@ -533,6 +534,116 @@ class _TerminalScreenState extends State<TerminalScreen> {
     child: _body(context),
   );
 
+  /// One terminal session's row: open on tap, rename or remove from its
+  /// menu (or a right click on desktop).
+  Widget _processRow(BuildContext context, TerminalProcess process) {
+    final tile = ListTile(
+      minTileHeight: 68,
+      leading: _ProcessIndicator(running: process.running),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              process.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          _ProcessStatusChip(running: process.running),
+        ],
+      ),
+      subtitle: Text(
+        process.running
+            ? lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupProcessRunning(process.command, process.pid)
+            : lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupProcessExited(
+                process.command,
+                process.exitCode?.toString() ?? '',
+              ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontFamily: AppTheme.monoFamily,
+          fontSize: AppTheme.codeFontSize,
+        ),
+      ),
+      trailing: PopupMenuButton<String>(
+        tooltip: lookupAppLocalizations(
+          Localizations.localeOf(context),
+        ).e7SetupTerminalActions,
+        onSelected: (value) {
+          if (value == 'rename') _rename(process);
+          if (value == 'remove') _remove(process);
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 'rename',
+            child: Text(
+              lookupAppLocalizations(
+                Localizations.localeOf(context),
+              ).e7SetupRename,
+            ),
+          ),
+          PopupMenuItem(
+            value: 'remove',
+            child: Text(
+              process.running
+                  ? lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).voiceConversationStopReply
+                  : lookupAppLocalizations(
+                      Localizations.localeOf(context),
+                    ).capsuleRemove,
+            ),
+          ),
+        ],
+      ),
+      onTap: () => _open(process),
+    );
+    // The overflow menu's entries, on a right click. A
+    // pass-through off desktop.
+    return ContextMenuRegion(
+      actions: () => [
+        ContextMenuAction(
+          menuKey: const ValueKey('terminal-menu-open'),
+          label: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).globalSessionsOpen,
+          icon: AppIconography.terminal,
+          onSelected: () => unawaited(_open(process)),
+        ),
+        ContextMenuAction(
+          menuKey: const ValueKey('terminal-menu-rename'),
+          label: lookupAppLocalizations(
+            Localizations.localeOf(context),
+          ).e7SetupRename,
+          icon: AppIconography.edit,
+          onSelected: () => unawaited(_rename(process)),
+        ),
+        ContextMenuAction(
+          menuKey: const ValueKey('terminal-menu-remove'),
+          label: process.running
+              ? lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).voiceConversationStopReply
+              : lookupAppLocalizations(
+                  Localizations.localeOf(context),
+                ).capsuleRemove,
+          icon: process.running
+              ? AppIconography.stopCircle
+              : AppIconography.delete,
+          destructive: true,
+          onSelected: () => unawaited(_remove(process)),
+        ),
+      ],
+      child: tile,
+    );
+  }
+
   Widget _body(BuildContext context) {
     if (_processes == null && _error == null) return const LoadingList();
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
@@ -561,7 +672,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
     return Stack(
       children: [
         if (_processes!.isEmpty)
-          RefreshIndicator(
+          KitRefresh(
             onRefresh: _load,
             // The terminal window with its prompt: the same drawing as
             // This phone's terminal before it is set up.
@@ -578,121 +689,32 @@ class _TerminalScreenState extends State<TerminalScreen> {
             ),
           )
         else
-          RefreshIndicator(
+          KitRefresh(
             onRefresh: _load,
-            child: ListView.separated(
+            child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.only(top: 8, bottom: 92),
-              itemCount: _processes!.length,
-              separatorBuilder: (_, _) => const Divider(height: 1, indent: 68),
-              itemBuilder: (context, index) {
-                final process = _processes![index];
-                final tile = ListTile(
-                  minTileHeight: 68,
-                  leading: _ProcessIndicator(running: process.running),
-                  title: Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          process.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+              children: [
+                // A session started or removed while the list is open
+                // unfolds in or folds away where it was (design standard
+                // §10); the first paint shows the rows at once. A handful
+                // of rows, so building them all is cheap.
+                KitAnimatedRows(
+                  key: const ValueKey('terminal-session-rows'),
+                  children: [
+                    for (final (index, process) in _processes!.indexed)
+                      Column(
+                        key: ValueKey('terminal-session-${process.id}'),
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (index > 0) const Divider(height: 1, indent: 68),
+                          _processRow(context, process),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      _ProcessStatusChip(running: process.running),
-                    ],
-                  ),
-                  subtitle: Text(
-                    process.running
-                        ? lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7SetupProcessRunning(process.command, process.pid)
-                        : lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7SetupProcessExited(
-                            process.command,
-                            process.exitCode?.toString() ?? '',
-                          ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: AppTheme.monoFamily,
-                      fontSize: AppTheme.codeFontSize,
-                    ),
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    tooltip: lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7SetupTerminalActions,
-                    onSelected: (value) {
-                      if (value == 'rename') _rename(process);
-                      if (value == 'remove') _remove(process);
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'rename',
-                        child: Text(
-                          lookupAppLocalizations(
-                            Localizations.localeOf(context),
-                          ).e7SetupRename,
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'remove',
-                        child: Text(
-                          process.running
-                              ? lookupAppLocalizations(
-                                  Localizations.localeOf(context),
-                                ).voiceConversationStopReply
-                              : lookupAppLocalizations(
-                                  Localizations.localeOf(context),
-                                ).capsuleRemove,
-                        ),
-                      ),
-                    ],
-                  ),
-                  onTap: () => _open(process),
-                );
-                // The overflow menu's entries, on a right click. A
-                // pass-through off desktop.
-                return ContextMenuRegion(
-                  actions: () => [
-                    ContextMenuAction(
-                      menuKey: const ValueKey('terminal-menu-open'),
-                      label: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).globalSessionsOpen,
-                      icon: AppIconography.terminal,
-                      onSelected: () => unawaited(_open(process)),
-                    ),
-                    ContextMenuAction(
-                      menuKey: const ValueKey('terminal-menu-rename'),
-                      label: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).e7SetupRename,
-                      icon: AppIconography.edit,
-                      onSelected: () => unawaited(_rename(process)),
-                    ),
-                    ContextMenuAction(
-                      menuKey: const ValueKey('terminal-menu-remove'),
-                      label: process.running
-                          ? lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).voiceConversationStopReply
-                          : lookupAppLocalizations(
-                              Localizations.localeOf(context),
-                            ).capsuleRemove,
-                      icon: process.running
-                          ? AppIconography.stopCircle
-                          : AppIconography.delete,
-                      destructive: true,
-                      onSelected: () => unawaited(_remove(process)),
-                    ),
                   ],
-                  child: tile,
-                );
-              },
+                ),
+              ],
             ),
           ),
         PositionedDirectional(
@@ -1228,26 +1250,31 @@ class _TerminalSurfaceState extends State<TerminalSurface>
             ),
           ),
           if (_connecting) const LinearProgressIndicator(minHeight: 2),
-          if (_error != null)
-            MaterialBanner(
-              forceActionsBelow: true,
-              content: Text(
-                setupUiMessage(
-                  lookupAppLocalizations(Localizations.localeOf(context)),
-                  _error!,
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: _connect,
-                  child: Text(
-                    lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).isolatedTaskRetryOpen,
+          // A lost connection unfolds over the terminal and folds away once
+          // it is back (design standard §10).
+          KitReveal(
+            child: _error == null
+                ? null
+                : MaterialBanner(
+                    forceActionsBelow: true,
+                    content: Text(
+                      setupUiMessage(
+                        lookupAppLocalizations(Localizations.localeOf(context)),
+                        _error!,
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: _connect,
+                        child: Text(
+                          lookupAppLocalizations(
+                            Localizations.localeOf(context),
+                          ).isolatedTaskRetryOpen,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
+          ),
           Expanded(
             child: _accessibleMode
                 ? _AccessibleTerminal(

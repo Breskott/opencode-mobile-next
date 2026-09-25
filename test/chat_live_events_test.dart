@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart' show KitMotion;
 import 'package:opencode_mobile/api/models.dart';
 import 'package:opencode_mobile/api/opencode_api.dart';
 import 'package:opencode_mobile/api/product_repository.dart';
@@ -1710,6 +1711,8 @@ void main() {
     expect(find.text('Try again'), findsOneWidget);
     // The raw error and the secondary action live behind Details, in the
     // status line's menu (design standard §5: one action per line).
+    // The status line unfolds first (design standard §10).
+    await tester.pump(KitMotion.standard);
     await tester.tap(find.byKey(const ValueKey('kit-status-more')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('connection-banner-details')));
@@ -4494,6 +4497,8 @@ void main() {
     expect(find.textContaining('ECONNRESET'), findsNothing);
     expect(find.textContaining('fetch()'), findsNothing);
     // The server's exact words are one tap away.
+    // The status line unfolds first (design standard §10).
+    await tester.pump(KitMotion.standard);
     await tester.tap(find.byKey(const ValueKey('prompt-error-details')));
     await tester.pumpAndSettle();
     expect(find.textContaining('ECONNRESET'), findsOneWidget);
@@ -4519,6 +4524,9 @@ void main() {
       }),
     );
     await _pumpEvent(tester);
+    // The status line folds away (design standard §10), leaving the reply.
+    await tester.pump(KitMotion.standard);
+    await tester.pump(KitMotion.standard);
     expect(find.text('The connection to the model dropped.'), findsOneWidget);
 
     // The agent carries on: the error becomes a quiet line of the turn and
@@ -4583,6 +4591,8 @@ void main() {
       findsOneWidget,
     );
     // Choose model is the line's action; Details is under its More menu.
+    // The status line unfolds first (design standard §10).
+    await tester.pump(KitMotion.standard);
     await tester.tap(find.byKey(const ValueKey('kit-status-more')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('prompt-error-details')));

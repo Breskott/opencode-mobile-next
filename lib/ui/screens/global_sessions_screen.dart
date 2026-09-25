@@ -10,7 +10,8 @@ import '../app_theme.dart';
 import '../desktop/context_menu.dart';
 import '../widgets/confirm_sheet.dart';
 import '../../feedback/bug_report.dart';
-import '../kit/kit.dart' show KitAction, KitStateView;
+import '../kit/kit.dart'
+    show KitAction, KitAnimatedRows, KitRefresh, KitStateView;
 import '../kit/scenes/states_scenes.dart';
 import '../widgets/product_states.dart';
 import '../widgets/relative_time.dart';
@@ -137,6 +138,12 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
   String? _openingSessionID;
   String? _stealingSessionID;
   int _queryGeneration = 0;
+
+  /// Bumped when the rows are replaced or a page is added below: those
+  /// show at once. Between bumps, a conversation that appears on a
+  /// refresh unfolds in and one that is gone folds away (design standard
+  /// §10).
+  int _rowsEpoch = 0;
   int _dataRefreshRevision = 0;
   ServerOperationsGateway? _activeRepository;
   String? _profileID;
@@ -238,6 +245,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     // Invalidate in-flight pages immediately, before the debounce expires.
     setState(() {
       _queryGeneration++;
+      _rowsEpoch++;
       _loading = true;
       _loadingMore = false;
       _nextCursor = null;
@@ -363,6 +371,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
       }
       setState(() {
         _results = [..._results, ...added];
+        _rowsEpoch++;
         _usedCursors.add(cursor);
         _nextCursor = nextCursor;
       });
@@ -739,7 +748,7 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
     // 3. One card per working directory, newest folder first, each row a
     // conversation newest first. The card header carries the folder, so
     // rows keep only what differs between them.
-    return RefreshIndicator(
+    return KitRefresh(
       onRefresh: _reload,
       child: ListView(
         key: const PageStorageKey('global-sessions-list'),
@@ -752,9 +761,11 @@ class _GlobalSessionsScreenState extends State<GlobalSessionsScreen> {
               key: ValueKey('global-session-group-${group.directory}'),
               group: group,
               unknownLocation: l10n.globalSessionsUnknownLocation,
+              rowsEpoch: _rowsEpoch,
               rows: [
                 for (final result in group.results)
                   Focus(
+                    key: ValueKey('global-session-row-${result.session.id}'),
                     focusNode: _rowFocus.putIfAbsent(
                       result.session.id,
                       FocusNode.new,
@@ -871,11 +882,15 @@ class _FolderCard extends StatelessWidget {
     super.key,
     required this.group,
     required this.unknownLocation,
+    required this.rowsEpoch,
     required this.rows,
   });
 
   final _GlobalGroup group;
   final String unknownLocation;
+
+  /// A new epoch shows [rows] at once instead of animating the change.
+  final int rowsEpoch;
   final List<Widget> rows;
 
   @override
@@ -953,7 +968,10 @@ class _FolderCard extends StatelessWidget {
                 ),
               ),
             ),
-            ...rows,
+            KitAnimatedRows(
+              key: ValueKey('global-session-rows-$rowsEpoch'),
+              children: rows,
+            ),
             const SizedBox(height: 6),
           ],
         ),

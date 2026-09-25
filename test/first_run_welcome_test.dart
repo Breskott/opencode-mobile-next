@@ -424,7 +424,11 @@ void main() {
       find.byKey(const ValueKey('server-url-field')),
       'https://box.example:4097',
     );
+    // It folds away (design standard §10), then it is gone — before the
+    // automatic check of the new address (autoTestPause) could run.
     await tester.pump();
+    await tester.pump(KitMotion.standard);
+    await tester.pump(KitMotion.standard);
     expect(find.byKey(const ValueKey('server-test-failure')), findsNothing);
   });
 

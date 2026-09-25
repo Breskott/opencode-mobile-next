@@ -204,6 +204,9 @@ void main() {
 
     // The button stays for a re-run after fixing the server.
     final button = find.byKey(const ValueKey('test-server-connection'));
+    // The verdict unfolds first (design standard §10); the button sits
+    // below it, so it is found once the form has come to rest.
+    await tester.pumpAndSettle();
     await tester.ensureVisible(button);
     await tester.pumpAndSettle();
     await tester.tap(button);

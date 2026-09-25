@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../api/product_repository.dart';
 import '../widgets/product_states.dart';
 import '../app_iconography.dart';
+import '../kit/motion/kit_refresh.dart';
 
 class ProjectHealthScreen extends StatefulWidget {
   final ServerOperationsGateway repository;
@@ -206,7 +207,7 @@ class _ProjectHealthScreenState extends State<ProjectHealthScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: KitRefresh(
         onRefresh: _load,
         child: ListView(
           key: const ValueKey('project-health-list'),

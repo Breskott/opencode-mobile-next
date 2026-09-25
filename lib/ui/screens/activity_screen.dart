@@ -29,6 +29,8 @@ import 'run_result_screen.dart';
 import 'team/agent_screen.dart';
 import 'team/gate_sheet.dart';
 import '../widgets/session_title.dart';
+import '../kit/motion/kit_refresh.dart';
+import '../kit/motion/kit_animated_rows.dart';
 
 /// Activity: the single cross-session control centre (audit §3, §8).
 ///
@@ -583,7 +585,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
               snapshot.dueCheckIns(monitor.rulesFor(profile.id)).isNotEmpty;
         });
 
-    final body = RefreshIndicator(
+    final body = KitRefresh(
       onRefresh: _refresh,
       child: loading && empty
           ? const LoadingList()
@@ -629,46 +631,74 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       actionLabel: _l10n(context).isolatedTaskRetryOpen,
                       onAction: _refresh,
                     ),
-                  if (attentionCount > 0)
-                    SectionLabel(_l10n(context).setupSwitchAttention),
-                  for (final row in team)
-                    if (row.rank < teamActivityPermissionRank) row.widget,
-                  for (final permission in permissions)
-                    ActivityPermissionTile(
-                      key: ValueKey('activity-permission-${permission.id}'),
-                      permission: permission,
-                      controller: controller,
-                    ),
-                  for (final question in questions)
-                    ActivityQuestionTile(
-                      key: ValueKey('activity-question-${question.id}'),
-                      question: question,
-                      controller: controller,
-                    ),
-                  for (final form in sessionForms)
-                    ActivityFormTile(form: form, controller: controller),
-                  for (final row in team)
-                    if (row.rank > teamActivityPermissionRank) row.widget,
+                  // What waits on the person: a request that arrives while
+                  // the Inbox is open unfolds in, one answered (here or on
+                  // another device) folds away where it was (design
+                  // standard §10). The list's first paint shows them at
+                  // once.
+                  KitAnimatedRows(
+                    key: const ValueKey('activity-attention-rows'),
+                    children: [
+                      if (attentionCount > 0)
+                        KeyedSubtree(
+                          key: const ValueKey('activity-attention-label'),
+                          child: SectionLabel(
+                            _l10n(context).setupSwitchAttention,
+                          ),
+                        ),
+                      for (final row in team)
+                        if (row.rank < teamActivityPermissionRank) row.widget,
+                      for (final permission in permissions)
+                        ActivityPermissionTile(
+                          key: ValueKey('activity-permission-${permission.id}'),
+                          permission: permission,
+                          controller: controller,
+                        ),
+                      for (final question in questions)
+                        ActivityQuestionTile(
+                          key: ValueKey('activity-question-${question.id}'),
+                          question: question,
+                          controller: controller,
+                        ),
+                      for (final form in sessionForms)
+                        ActivityFormTile(
+                          key: ValueKey('activity-form-${form.id}'),
+                          form: form,
+                          controller: controller,
+                        ),
+                      for (final row in team)
+                        if (row.rank > teamActivityPermissionRank) row.widget,
+                    ],
+                  ),
                   if (globalForms.isNotEmpty) ...[
                     SectionLabel(_l10n(context).e7WorkspaceServerRequests),
                     for (final form in globalForms)
                       ActivityFormTile(form: form, controller: controller),
                   ],
                   ProfileMonitorInbox(controller: controller, compact: true),
-                  if (running.isNotEmpty)
-                    SectionLabel(_l10n(context).workRunning),
-                  if (running.isNotEmpty)
-                    for (final session in running)
-                      _SessionRow(
-                        key: ValueKey('activity-running-${session.id}'),
-                        session: session,
-                        running: true,
-                        subagents: _subagentCount(session.id),
-                        detail:
-                            controller.sessionDetailsErrors[session.id] ??
-                            _place(session),
-                        onTap: () => _openChat(session.id),
-                      ),
+                  // Conversations start and finish while the person looks:
+                  // their rows come and go gently too.
+                  KitAnimatedRows(
+                    key: const ValueKey('activity-running-rows'),
+                    children: [
+                      if (running.isNotEmpty)
+                        KeyedSubtree(
+                          key: const ValueKey('activity-running-label'),
+                          child: SectionLabel(_l10n(context).workRunning),
+                        ),
+                      for (final session in running)
+                        _SessionRow(
+                          key: ValueKey('activity-running-${session.id}'),
+                          session: session,
+                          running: true,
+                          subagents: _subagentCount(session.id),
+                          detail:
+                              controller.sessionDetailsErrors[session.id] ??
+                              _place(session),
+                          onTap: () => _openChat(session.id),
+                        ),
+                    ],
+                  ),
                   _completionDigests(),
                 ],
               ),

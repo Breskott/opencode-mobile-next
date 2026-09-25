@@ -9,6 +9,7 @@ import '../../state/connection.dart';
 import '../desktop/context_menu.dart';
 import '../widgets/product_states.dart';
 import '../app_theme.dart';
+import '../kit/motion/kit_refresh.dart';
 
 class ManagedWorkspacesScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -291,7 +292,7 @@ class _ManagedWorkspacesScreenState extends State<ManagedWorkspacesScreen> {
               ),
             )
           : null,
-      body: RefreshIndicator(
+      body: KitRefresh(
         onRefresh: _load,
         child: ListView(
           key: const ValueKey('managed-workspaces-list'),

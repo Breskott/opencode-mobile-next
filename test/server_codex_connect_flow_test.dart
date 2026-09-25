@@ -299,7 +299,8 @@ void main() {
         find.byKey(const ValueKey('server-password-field')),
         'replacement-token',
       );
-      await tester.pump();
+      // The stale verdict folds away (design standard §10), then is gone.
+      await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('server-save-failure')), findsNothing);
       await tester.tap(find.byKey(const ValueKey('test-server-connection')));
       await tester.pumpAndSettle();

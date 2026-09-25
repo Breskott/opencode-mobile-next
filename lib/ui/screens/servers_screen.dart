@@ -776,15 +776,22 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                       ),
                     ),
                   ),
-                if (_listFailure case final failure?)
-                  _Rails(
-                    child: KitNotice(
-                      key: const ValueKey('server-connect-failure'),
-                      tone: AppStatusTone.failure,
-                      message: failure,
-                      onDismiss: () => setState(() => _listFailure = null),
+                // A connect that failed unfolds over the rows and folds
+                // away when dismissed or retried (design standard §10).
+                KitReveal(
+                  key: const ValueKey('server-connect-failure-slot'),
+                  child: switch (_listFailure) {
+                    final failure? => _Rails(
+                      child: KitNotice(
+                        key: const ValueKey('server-connect-failure'),
+                        tone: AppStatusTone.failure,
+                        message: failure,
+                        onDismiss: () => setState(() => _listFailure = null),
+                      ),
                     ),
-                  ),
+                    null => null,
+                  },
+                ),
                 // The phone's own servers lead the list, one row each; the
                 // saved sign-ins they stand for are not listed again below.
                 _runningServerEntry(store.profiles, accountConnection),
@@ -808,28 +815,38 @@ class _ServersScreenState extends ConsumerState<ServersScreen> {
                   ),
                   const Divider(height: 17),
                 ],
-                for (final p in store.profiles)
-                  if (!looksLikeInAppServer(p) && !shownAsPhoneRow(p))
-                    _ServerRow(
-                      profile: p,
-                      connected:
-                          accountConnection.api != null &&
-                          accountConnection.profile?.id == p.id,
-                      busy: _busy,
-                      showAccount:
-                          p.id == activeId &&
-                          accountConnection.isConnected &&
-                          accountConnection.capabilities.agentAccount,
-                      onConnect: () => _connect(p),
-                      onEdit: () => _edit(existing: p),
-                      onRemove: () => _delete(p),
-                      onAccount: () => Navigator.of(context).push<void>(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              AgentAccountScreen(connection: accountConnection),
+                // A server added or forgotten while the list is open
+                // unfolds in or folds away where it was (design standard
+                // §10); the list's first paint shows the rows at once.
+                KitAnimatedRows(
+                  key: const ValueKey('saved-server-rows'),
+                  children: [
+                    for (final p in store.profiles)
+                      if (!looksLikeInAppServer(p) && !shownAsPhoneRow(p))
+                        _ServerRow(
+                          key: ValueKey('saved-server-${p.id}'),
+                          profile: p,
+                          connected:
+                              accountConnection.api != null &&
+                              accountConnection.profile?.id == p.id,
+                          busy: _busy,
+                          showAccount:
+                              p.id == activeId &&
+                              accountConnection.isConnected &&
+                              accountConnection.capabilities.agentAccount,
+                          onConnect: () => _connect(p),
+                          onEdit: () => _edit(existing: p),
+                          onRemove: () => _delete(p),
+                          onAccount: () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (_) => AgentAccountScreen(
+                                connection: accountConnection,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
+                  ],
+                ),
                 // Other ways in, as rows (§6): the OpenCode 2 shortcut, this
                 // phone, and the rarer setups folded under one row. A
                 // hairline keeps them from reading as more servers.
@@ -883,6 +900,7 @@ class _Rails extends StatelessWidget {
 /// "Connected" leading its line. Tapping connects; the rest is in the menu.
 class _ServerRow extends StatelessWidget {
   const _ServerRow({
+    super.key,
     required this.profile,
     required this.connected,
     required this.busy,
@@ -2407,6 +2425,11 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
             scene: ServersLinkScene(state, intro: !_linkMoved),
             width: 240,
             ambient: state == ServersLinkState.linking,
+            // Paired: a finished moment, so the spark takes the longer
+            // celebration entrance (design standard §10).
+            entranceDuration: state == ServersLinkState.linked
+                ? KitMotion.celebration
+                : KitMotion.entrance,
           ),
         ),
         SizedBox(
@@ -2555,38 +2578,51 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
     final failure = _submitFailure;
     final result = _isCodex ? null : _testResult;
     final codex = _isCodex ? _codexTestResult : null;
-    if (failure == null && result == null && codex == null) {
-      return const SizedBox.shrink();
-    }
+    // Each verdict unfolds in when it arrives and folds away when it goes
+    // (design standard §10); the slots stay in place so a new check that
+    // clears the old verdict and brings the next one moves smoothly.
+    Widget slot(Widget? child) => KitReveal(
+      child: child == null
+          ? null
+          : Padding(padding: const EdgeInsets.only(top: 8), child: child),
+    );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (failure != null) ...[
-            const SizedBox(height: 8),
-            KitNotice(
-              key: const ValueKey('server-save-failure'),
-              tone: AppStatusTone.failure,
-              message: failure,
-            ),
-          ],
-          if (codex != null) ...[
-            const SizedBox(height: 8),
-            _buildCodexProbeVerdict(Theme.of(context)),
-          ],
-          if (result != null) ...[
-            const SizedBox(height: 8),
-            KeyedSubtree(
-              key: const ValueKey('server-probe-verdict'),
-              child: _ProbeVerdict(
-                result: result,
-                saveAnyway: !result.ok && _verdictFromSave
-                    ? _saveAnywayAction(copy)
-                    : null,
-              ),
-            ),
-          ],
+          slot(
+            failure == null
+                ? null
+                : KitNotice(
+                    key: const ValueKey('server-save-failure'),
+                    tone: AppStatusTone.failure,
+                    message: failure,
+                  ),
+          ),
+          slot(
+            codex == null ? null : _buildCodexProbeVerdict(Theme.of(context)),
+          ),
+          slot(
+            result == null
+                ? null
+                : KeyedSubtree(
+                    key: const ValueKey('server-probe-verdict'),
+                    child: _ProbeVerdict(
+                      result: result,
+                      saveAnyway: !result.ok && _verdictFromSave
+                          ? _saveAnywayAction(copy)
+                          : null,
+                    ),
+                  ),
+          ),
+          // The 8 dp under the verdicts, only while there is one.
+          KitReveal(
+            fade: false,
+            child: failure == null && result == null && codex == null
+                ? null
+                : const SizedBox(height: 8),
+          ),
         ],
       ),
     );
@@ -2832,24 +2868,30 @@ class _ProfileEditorScreenState extends State<_ProfileEditorScreen> {
                               ),
                             ),
                           ),
-                        if (_needsPassword)
-                          rails(
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Semantics(
-                                container: true,
-                                liveRegion: true,
-                                excludeSemantics: true,
-                                label: copy.e7SetupMissingPasswordLong,
-                                child: KitNotice(
-                                  tone: AppStatusTone.attention,
-                                  icon: Icons.lock_reset_rounded,
-                                  liveRegion: false,
-                                  message: copy.e7SetupMissingPasswordShort,
-                                ),
-                              ),
-                            ),
+                        // Unfolds when a check finds the password missing,
+                        // folds away once it is typed (design standard §10).
+                        rails(
+                          KitReveal(
+                            child: !_needsPassword
+                                ? null
+                                : Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Semantics(
+                                      container: true,
+                                      liveRegion: true,
+                                      excludeSemantics: true,
+                                      label: copy.e7SetupMissingPasswordLong,
+                                      child: KitNotice(
+                                        tone: AppStatusTone.attention,
+                                        icon: Icons.lock_reset_rounded,
+                                        liveRegion: false,
+                                        message:
+                                            copy.e7SetupMissingPasswordShort,
+                                      ),
+                                    ),
+                                  ),
                           ),
+                        ),
                         if (_isCodex) ...[
                           rails(
                             Column(
@@ -3101,22 +3143,32 @@ class _PairingActions extends StatelessWidget {
           const SizedBox(height: 12),
         ],
         buttons,
-        if (notice != null) ...[
-          const SizedBox(height: 8),
-          KitNotice(
-            key: const ValueKey('server-pairing-notice'),
-            tone: AppStatusTone.ok,
-            message: notice,
-          ),
-        ],
-        if (failure != null) ...[
-          const SizedBox(height: 8),
-          KitNotice(
-            key: const ValueKey('server-pairing-failure'),
-            tone: AppStatusTone.failure,
-            message: setupUiMessage(copy, failure),
-          ),
-        ],
+        // What the code said unfolds under the buttons and folds away when
+        // the next try starts (design standard §10).
+        KitReveal(
+          child: notice == null
+              ? null
+              : Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: KitNotice(
+                    key: const ValueKey('server-pairing-notice'),
+                    tone: AppStatusTone.ok,
+                    message: notice,
+                  ),
+                ),
+        ),
+        KitReveal(
+          child: failure == null
+              ? null
+              : Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: KitNotice(
+                    key: const ValueKey('server-pairing-failure'),
+                    tone: AppStatusTone.failure,
+                    message: setupUiMessage(copy, failure),
+                  ),
+                ),
+        ),
       ],
     );
   }

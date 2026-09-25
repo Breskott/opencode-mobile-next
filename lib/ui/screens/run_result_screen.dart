@@ -8,6 +8,8 @@ import '../../domain/server_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../widgets/run_result_view.dart';
+import '../kit/motion/kit_refresh.dart';
+import '../kit/motion/kit_reveal.dart';
 
 /// Loads a session's newest history pages and shows the latest run's
 /// server-recorded outcome and tool evidence. Nothing is persisted: after a
@@ -211,18 +213,27 @@ class _RunResultScreenState extends State<RunResultScreen> {
     }
     return Scaffold(
       appBar: AppBar(title: Text(l10n.runResultsTitle)),
-      body: RefreshIndicator(
+      body: KitRefresh(
         onRefresh: _load,
         child: Column(
           children: [
-            if (_error != null && _loaded)
-              MaterialBanner(
-                key: const Key('run-result-refresh-error'),
-                content: Text(_error!),
-                actions: [
-                  TextButton(onPressed: _load, child: Text(l10n.commonRetry)),
-                ],
-              ),
+            // A failed refresh unfolds over the kept result and folds away
+            // once a retry works (design standard §10); always mounted, so
+            // the result below keeps its place and state.
+            KitReveal(
+              child: _error != null && _loaded
+                  ? MaterialBanner(
+                      key: const Key('run-result-refresh-error'),
+                      content: Text(_error!),
+                      actions: [
+                        TextButton(
+                          onPressed: _load,
+                          child: Text(l10n.commonRetry),
+                        ),
+                      ],
+                    )
+                  : null,
+            ),
             Expanded(child: body),
           ],
         ),

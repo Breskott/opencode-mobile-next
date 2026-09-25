@@ -185,7 +185,8 @@ void main() {
     await tester.pump(const Duration(seconds: 10));
     expect(find.text("Your message wasn't sent"), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('kit-status-dismiss')));
-    await tester.pump();
+    // The line folds away (design standard §10), then it is gone.
+    await _frames(tester, 4);
     expect(find.text("Your message wasn't sent"), findsNothing);
 
     // Sent again, and this time it goes: nothing is left on the line.

@@ -2886,6 +2886,7 @@ class _ReasoningState extends State<_Reasoning> {
 /// reach the agent", never two queue UIs.
 class _PendingSendsStrip extends StatelessWidget {
   const _PendingSendsStrip({
+    super.key,
     required this.drafts,
     required this.inboxItems,
     required this.isSending,
@@ -2916,11 +2917,13 @@ class _PendingSendsStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Merge both kinds into arrival order.
-    final entries = <({int time, Widget child})>[
+    // Merge both kinds into arrival order. Each row is keyed by what it
+    // stands for, so a message that leaves folds away where it was.
+    final entries = <({int time, Key id, Widget child})>[
       for (var index = 0; index < drafts.length; index++)
         (
           time: drafts[index].createdAt,
+          id: ValueKey('queued-row-${drafts[index].id}'),
           child: _QueuedPromptBubble(
             key: ValueKey('queued-send-$index'),
             entry: drafts[index],
@@ -2934,6 +2937,7 @@ class _PendingSendsStrip extends StatelessWidget {
       for (final item in inboxItems)
         (
           time: item.timeCreated ?? 0,
+          id: ValueKey('pending-row-${item.id}'),
           child: _InboxSendBubble(
             key: ValueKey('pending-send-${item.id}'),
             item: item,
@@ -2947,13 +2951,17 @@ class _PendingSendsStrip extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 860, maxHeight: 180),
         // No container-level size animation here: the strip lives inside a
         // scroll view, where an AnimatedSize re-measures every frame and
-        // never settles. Items animate individually instead.
+        // never settles. Items unfold in and fold away individually
+        // (KitAnimatedRows), each settling after KitMotion.standard.
         child: SingleChildScrollView(
-          child: Column(
+          // Always mounted now: never claim the page's primary controller.
+          primary: false,
+          child: KitAnimatedRows(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               for (final entry in entries)
                 Padding(
+                  key: entry.id,
                   padding: const EdgeInsetsDirectional.fromSTEB(16, 2, 8, 2),
                   child: entry.child,
                 ),

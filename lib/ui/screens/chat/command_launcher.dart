@@ -477,7 +477,7 @@ class _AgentPickerList extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     if (agents.isEmpty) {
-      return RefreshIndicator(
+      return KitRefresh(
         onRefresh: onRefresh,
         child: ListView(
           controller: scrollController,
@@ -514,7 +514,7 @@ class _AgentPickerList extends StatelessWidget {
         ),
       );
     }
-    return RefreshIndicator(
+    return KitRefresh(
       onRefresh: onRefresh,
       child: ListView.separated(
         key: const Key('composer-agent-list'),

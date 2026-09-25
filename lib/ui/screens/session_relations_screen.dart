@@ -10,6 +10,7 @@ import '../widgets/session_handoff.dart';
 import '../app_iconography.dart';
 import '../early_l10n.dart';
 import '../widgets/session_title.dart';
+import '../kit/motion/kit_refresh.dart';
 
 class SessionRelationsScreen extends StatefulWidget {
   final ConnectionController controller;
@@ -259,7 +260,7 @@ class _SessionRelationsScreenState extends State<SessionRelationsScreen> {
 
     return ListenableBuilder(
       listenable: widget.controller,
-      builder: (context, _) => RefreshIndicator(
+      builder: (context, _) => KitRefresh(
         onRefresh: _load,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
