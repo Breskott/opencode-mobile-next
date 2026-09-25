@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../kit_effects.dart';
 import '../kit_motion.dart';
 
 /// The app's few touches of feel (design standard §10), so a send and a
@@ -19,13 +20,23 @@ import '../kit_motion.dart';
 /// Never on scrolling, on every row, or on a failure the screen already
 /// shows: feedback that fires often stops meaning anything.
 abstract final class KitHaptics {
+  /// Settings › Appearance › Vibration ([KitEffects.haptics]), mirrored
+  /// here by the app so a call without a context obeys it too.
+  static bool enabled = true;
+
+  static bool _allowed(BuildContext? context) =>
+      enabled && (context == null || KitEffects.read(context).haptics);
+
   /// A light tick: the person sent something.
-  static void send() => unawaited(HapticFeedback.lightImpact());
+  static void send([BuildContext? context]) {
+    if (!_allowed(context)) return;
+    unawaited(HapticFeedback.lightImpact());
+  }
 
   /// A soft confirmation: something the person waited for finished.
   /// Android's CONFIRM effect (API 30+); nothing on older versions.
   static void done(BuildContext context) {
-    if (KitMotion.reduced(context)) return;
+    if (!_allowed(context) || KitMotion.reduced(context)) return;
     unawaited(HapticFeedback.successNotification());
   }
 }

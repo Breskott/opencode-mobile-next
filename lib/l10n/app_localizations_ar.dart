@@ -11560,7 +11560,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get e7SetupPairingInstructions =>
-      'شغّل «opencode2 pair» على الكمبيوتر، ثم الصق الرمز الذي يعرضه أو امسحه بالكاميرا.';
+      'شغّل «opencode2 pair» على حاسوبك، ثم الصق الرمز الذي يعرضه أو امسحه بالكاميرا.';
 
   @override
   String get e7SetupHostDaily => 'الاستخدام اليومي — نفّذ على الكمبيوتر';
@@ -14811,10 +14811,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تُغلق الدفعة على المضيف. تبقى عناصر عملها المفتوحة مفتوحة لدفعة أخرى.';
 
   @override
-  String get teamUiStartRunFab => 'أعطِ الفريق مهمة';
+  String get teamUiStartRunFab => 'كلّف الفريق بمهمة';
 
   @override
-  String get teamUiStartRunTitle => 'أعطِ الفريق مهمة';
+  String get teamUiStartRunTitle => 'كلّف الفريق بمهمة';
 
   @override
   String get teamUiStartRunObjectiveLabel => 'الهدف';
@@ -14920,7 +14920,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamUiStartRunPlanningHint =>
-      'يحوّل المخطِّط المهمة إلى خطوات. تظهر المهمة في هذه القائمة بمجرد أن يفعل.';
+      'يقسّم المخطِّط المهمة إلى خطوات، ثم تظهر في هذه القائمة.';
 
   @override
   String get teamUiStartRunStillPlanning =>
@@ -16475,7 +16475,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get emptyTeachTeamRunsMessage =>
-      'قل ما تحتاجه، وسيقسّمه الفريق إلى خطوات ويعرض تقدّمه هنا.';
+      'اكتب ما تحتاج إليه، فيقسّمه الفريق إلى خطوات ويعرض تقدّمه هنا.';
 
   @override
   String get emptyTeachSkillsMessage =>
@@ -17905,7 +17905,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get folderBrowserUp => 'مجلد واحد للأعلى';
+  String get folderBrowserUp => 'إلى المجلد الأعلى';
 
   @override
   String folderBrowserCurrent(String path) {
@@ -17930,7 +17930,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get folderBrowserProjectsHere =>
-      'هنا مشاريعك. انقر على مشروع لفتحه، أو أنشئ مشروعًا جديدًا بالأسفل.';
+      'مشاريعك هنا. اضغط على مشروع لفتحه، أو أنشئ مشروعًا جديدًا بالأسفل.';
 
   @override
   String get folderBrowserHomeHere =>
@@ -17948,7 +17948,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get folderBrowserEmptyBody =>
-      'أنشئ مشروعًا جديدًا فيه بالأسفل، أو اصعد مجلدًا واحدًا.';
+      'أنشئ فيه مشروعًا جديدًا بالأسفل، أو انتقل إلى المجلد الأعلى.';
 
   @override
   String get folderBrowserErrorTitle => 'تعذّر عرض هذا المجلد';
@@ -17964,7 +17964,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get folderBrowserErrorDenied => 'لا يُسمح للتطبيق بقراءته.';
 
   @override
-  String get folderBrowserErrorLinked => 'إنه رابط. أدخل مساره بدلًا من ذلك.';
+  String get folderBrowserErrorLinked => 'هذا رابط. أدخل مساره بدلًا من ذلك.';
 
   @override
   String get folderBrowserErrorFailed =>
@@ -17972,10 +17972,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get folderBrowserErrorTimedOut =>
-      'لم يأتِ رد في الوقت المناسب. حاول مرة أخرى.';
+      'استغرق الرد وقتًا طويلًا. حاول مرة أخرى.';
 
   @override
-  String get folderBrowserRetry => 'حاول مرة أخرى';
+  String get folderBrowserRetry => 'إعادة المحاولة';
 
   @override
   String get builtinServerEntryAction => 'إعداده';
@@ -18480,17 +18480,17 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String aiteamBringInDone(String project, String commit) {
-    return 'لدى $project أحدث عمل للفريق ($commit).';
+    return 'أصبح أحدث عمل للفريق ($commit) في $project.';
   }
 
   @override
   String aiteamBringInDirty(String commit, String project, String files) {
-    return 'عمل الفريق ($commit) ليس في $project بعد: في $project تغييرات خاصة به ($files)، فتُرك كما هو.';
+    return 'لم يُدخَل عمل الفريق ($commit) إلى $project بعد: في $project تغييرات خاصة به ($files)، لذا تُرك كما هو.';
   }
 
   @override
   String aiteamBringInDiverged(String commit, String project) {
-    return 'عمل الفريق ($commit) ليس في $project: في $project إيداعات خاصة به. ادمج الاثنين باستخدام git.';
+    return 'لم يُدخَل عمل الفريق ($commit) إلى $project: في $project إيداعات خاصة به. ادمج الاثنين باستخدام git.';
   }
 
   @override
@@ -18525,8 +18525,11 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: '$done من $total خطوات مكتملة',
-      one: '$done من خطوة واحدة مكتملة',
+      other: 'اكتملت $done من $total خطوة',
+      many: 'اكتملت $done من $total خطوة',
+      few: 'اكتملت $done من $total خطوات',
+      two: 'اكتملت $done من خطوتين',
+      one: 'اكتملت $done من خطوة واحدة',
     );
     return '$_temp0';
   }
@@ -18550,7 +18553,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiHomeTasksHeading => 'المهام';
 
   @override
-  String get teamUiHomeDoneToday => 'اكتملت اليوم';
+  String get teamUiHomeDoneToday => 'المكتملة اليوم';
 
   @override
   String get teamUiHomeDoneEarlier => 'المكتملة';
@@ -18560,7 +18563,10 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'عرض $count أخرى',
+      other: 'عرض $count مهمة أخرى',
+      many: 'عرض $count مهمة أخرى',
+      few: 'عرض $count مهام أخرى',
+      two: 'عرض مهمتين أخريين',
       one: 'عرض مهمة أخرى',
     );
     return '$_temp0';
@@ -18619,7 +18625,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiAgentRoleReviewer => 'مراجع (يدمج)';
 
   @override
-  String get teamUiAgentRolePlanner => 'المخطِّط';
+  String get teamUiAgentRolePlanner => 'مخطِّط';
 
   @override
   String get teamUiAgentRoleSupervisor => 'مشرف';
@@ -18640,7 +18646,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get teamUiRunStageReviewing => 'قيد المراجعة';
 
   @override
-  String get teamUiRunStageDone => 'اكتملت';
+  String get teamUiRunStageDone => 'مكتملة';
 
   @override
   String teamUiRunStageSemantics(int position, String stage) {
@@ -18662,11 +18668,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String teamUiRunDetailsCounts(int done, int working, int blocked) {
-    return '$done مكتملة · $working قيد العمل · $blocked متوقفة';
+    return '$done مكتملة · $working قيد العمل · $blocked معطّلة';
   }
 
   @override
-  String get teamUiRunDetailsUsage => 'الاستهلاك';
+  String get teamUiRunDetailsUsage => 'الاستخدام';
 
   @override
   String get teamUiRunDetailsStepsLabel => 'الخطوات';
@@ -18683,7 +18689,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get phoneServerRowRestarting => 'تجري إعادة التشغيل';
+  String get phoneServerRowRestarting => 'جارٍ إعادة التشغيل';
 
   @override
   String get phoneServerRowNotAnswering => 'لا يستجيب';
@@ -18727,7 +18733,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get managedRecoveryRowDetail =>
-      'حتى 3 محاولات، فقط أثناء فتح هذا التطبيق. لا يثبّت ولا يحدّث أبدًا.';
+      'حتى 3 محاولات، وفقط أثناء فتح التطبيق. لا يثبّت شيئًا ولا يحدّثه.';
 
   @override
   String get pluginsTeamRowTitle => 'فريق الذكاء الاصطناعي';
@@ -18738,7 +18744,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get pluginsSectionMore => 'إجراءات إضافية للإضافات';
+  String get pluginsSectionMore => 'المزيد من إجراءات الإضافات';
 
   @override
   String get pluginsDescriptionShort => 'يحمّلها الخادم لهذا المشروع.';
@@ -18763,7 +18769,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pluginsStatusFailedToLoad => 'تعذّر التحميل';
 
   @override
-  String get pluginsRowMore => 'إجراءات إضافية لهذه الإضافة';
+  String get pluginsRowMore => 'المزيد من إجراءات هذه الإضافة';
 
   @override
   String get pluginsDetailsId => 'المعرّف';
@@ -18776,7 +18782,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String localTerminalShellName(int number) {
-    return 'الطرفية $number';
+    return 'طرفية $number';
   }
 
   @override
@@ -18829,7 +18835,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String localTerminalEndedBody(int code) {
-    return 'خرجت بالرمز $code.';
+    return 'انتهت برمز الخروج $code.';
   }
 
   @override
@@ -18840,19 +18846,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get localTerminalFailedBody =>
-      'حاول مرة أخرى. إن تكرر الفشل، تجد السبب في التفاصيل.';
+      'حاول مرة أخرى. إن تكرر الفشل، فستجد السبب في «التفاصيل».';
 
   @override
-  String get localTerminalTryAgain => 'حاول مرة أخرى';
+  String get localTerminalTryAgain => 'إعادة المحاولة';
 
   @override
   String localTerminalCost(int perShell, int limit) {
-    return 'كل طرفية تشغّل $perShell برامج. مع تشغيل الفريق الذكي، قد يوقف أندرويد برامج التطبيق إذا تجاوزت $limit.';
+    return 'عدد البرامج لكل طرفية: $perShell. مع تشغيل فريق الذكاء الاصطناعي، قد يوقف أندرويد برامج التطبيق إذا تجاوز عددها $limit.';
   }
 
   @override
   String localTerminalCostNow(int perShell, int count, int limit) {
-    return 'كل طرفية تشغّل $perShell برامج. مع تشغيل الفريق الذكي، يشغّل التطبيق $count الآن، وقد يوقفها أندرويد إذا تجاوزت $limit.';
+    return 'عدد البرامج لكل طرفية: $perShell. مع تشغيل فريق الذكاء الاصطناعي، يشغّل التطبيق الآن $count، وقد يوقفها أندرويد إذا تجاوز عددها $limit.';
   }
 
   @override
@@ -18881,7 +18887,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get localTerminalSemantics =>
-      'الطرفية على هذا الهاتف. انقر للكتابة، والمس مطولًا لتحديد النص.';
+      'الطرفية على هذا الهاتف. اضغط للكتابة، واضغط مطولًا لتحديد النص.';
 
   @override
   String get phoneServerTermuxTitle => 'هذا الهاتف · Termux';
@@ -18909,7 +18915,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addServerConnectTo => 'الاتصال بـ';
 
   @override
-  String get addServerTypeOpenCode => 'OpenCode على كمبيوتر';
+  String get addServerTypeOpenCode => 'OpenCode على حاسوب';
 
   @override
   String get addServerTypeOpenCodeDetail => 'اقترن برمز، أو أدخل عنوانه';
@@ -18918,13 +18924,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addServerTypeCodex => 'Codex';
 
   @override
-  String get addServerTypeCodexDetail => 'خادم تطبيق Codex على الكمبيوتر';
+  String get addServerTypeCodexDetail => 'Codex app-server على حاسوبك';
 
   @override
   String get addServerTypePaseo => 'Claude Code أو Pi';
 
   @override
-  String get addServerTypePaseoDetail => 'عبر Paseo على الكمبيوتر';
+  String get addServerTypePaseoDetail => 'عبر Paseo على حاسوبك';
 
   @override
   String get addServerScan => 'امسح الرمز';
