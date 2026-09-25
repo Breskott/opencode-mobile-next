@@ -37,6 +37,7 @@ import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../kit/scenes/team_scenes.dart';
 import '../../widgets/team_moments.dart';
+import '../../widgets/team_now.dart';
 import '../../widgets/team_controls.dart'
     show teamControlReceiptWord, teamControlWord;
 import '../../widgets/team_receipt.dart';
@@ -376,8 +377,12 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
             needsYou: needsYou,
             now: _now,
             cycleOf: controller.cycleFor,
+            explainWait: true,
+            checkEvery: teamCheckInterval(controller),
+            paused: teamRest(snapshot.agents) == TeamRest.paused,
           ),
         ),
+        supportingMaxLines: 2,
         supportingKey: ValueKey('team-home-run-state-${run.id}'),
         onTap: () => _openRun(run),
       );
@@ -398,7 +403,26 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
         SectionLabel(text, key: key, padding: sectionPadding());
 
     final planning = teamPendingPlanning(controller, _now);
+    // One status line (design standard §5): old data wins; else the team's
+    // Now (what it is doing, what happens next) heads the list, where it
+    // scrolls with it instead of taking room from the tasks.
+    final now =
+        teamStatusLine(
+              context,
+              controller: controller,
+              keyPrefix: 'team-home',
+              onRetry: null,
+            ) ==
+            null
+        ? teamNowLine(
+            context,
+            controller: controller,
+            now: _now,
+            keyPrefix: 'team-home-now',
+          )
+        : null;
     final lead = <Widget>[
+      ?now,
       if (_searchOpen)
         _SearchBar(
           search: _search,
@@ -532,6 +556,8 @@ class _TeamHomeScreenState extends State<TeamHomeScreen> {
       _AgentsRow(
         key: const ValueKey('team-home-agents-row'),
         live: live.length,
+        total: snapshot.agents.length,
+        rest: teamRest(snapshot.agents),
         working: working,
         onTap: _openAgents,
       ),
@@ -571,11 +597,17 @@ class _AgentsRow extends StatelessWidget {
   const _AgentsRow({
     super.key,
     required this.live,
+    required this.total,
+    required this.rest,
     required this.working,
     required this.onTap,
   });
 
   final int live;
+
+  /// Every agent the host lists, asleep and paused ones included.
+  final int total;
+  final TeamRest rest;
   final int working;
   final VoidCallback onTap;
 
@@ -583,10 +615,22 @@ class _AgentsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = _copy(context);
     final muted = AppTheme.mutedOf(Theme.of(context));
-    final title = [
-      l10n.teamUiHomeAgentsRowCount(live),
-      if (working > 0) l10n.teamUiHomeAgentsRowWorking(working),
-    ].join(teamUsageSeparator);
+    // Asleep agents are the team too: "3 agents · asleep until there is
+    // work", not "No agents".
+    final title = switch (rest) {
+      TeamRest.asleep => [
+        l10n.teamUiHomeAgentsRowCount(total),
+        l10n.teamNowAgentsAsleep,
+      ],
+      TeamRest.paused => [
+        l10n.teamUiHomeAgentsRowCount(total),
+        l10n.teamNowAgentsPaused,
+      ],
+      TeamRest.awake => [
+        l10n.teamUiHomeAgentsRowCount(live),
+        if (working > 0) l10n.teamUiHomeAgentsRowWorking(working),
+      ],
+    }.join(teamUsageSeparator);
     return Semantics(
       button: true,
       hint: l10n.teamUiHomeAgentsRowHint,

@@ -1,0 +1,374 @@
+/// What the AI Team is doing now and what happens next, in the person's
+/// words (the owner, build 2054: "I have no idea to know when is next cycle
+/// and whats happening?"; docs/qa/team-discover-2026-09-25).
+///
+/// - [teamRest]: a team whose agents are all asleep (on-demand agents
+///   that wake when there is work) is not "Paused"; only agents switched
+///   off on purpose (suspended) make a paused team.
+/// - [teamCheckInterval]: how often the team looks for work to start, when
+///   the app knows it (the team inside the app: its own tuning's patrol
+///   interval). Elsewhere the app says what starts a worker instead.
+/// - [teamWaitLine]: a task waiting for a worker says for how long and
+///   when one starts; past two checks (three minutes when the interval is
+///   unknown), or when the host saw the start stall, it says no worker
+///   has started.
+/// - [teamNowLine]: the home's one line for the whole team, with the one
+///   action that helps (wake a worker, resume the team, or Why? opening
+///   the Technical details).
+library;
+
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../../builtin/team/builtin_team.dart' show BuiltinTeam;
+import '../../domain/orchestration_gateway.dart';
+import '../../l10n/app_localizations.dart';
+import '../../state/orchestration.dart';
+import '../app_theme.dart';
+import '../kit/kit.dart';
+import 'team_controls.dart' show teamControlReceiptWord, teamControlWord;
+import 'team_technical_details.dart' show showTeamHostDetailsSheet;
+import 'team_vocabulary.dart';
+
+/// The patrol interval of the team inside the app, read from the tuning it
+/// writes into the team's config, so the two cannot disagree.
+final Duration _builtinCheck = () {
+  final match = RegExp(
+    r'patrol_interval\s*=\s*"(\d+)(s|m)"',
+  ).firstMatch(BuiltinTeam.phoneTuning);
+  if (match == null) return const Duration(minutes: 1);
+  final value = int.parse(match.group(1)!);
+  return match.group(2) == 'm'
+      ? Duration(minutes: value)
+      : Duration(seconds: value);
+}();
+
+/// How often the team looks for work to start, or null when the app cannot
+/// know (a team on a computer, or in Termux, runs with its own settings).
+Duration? teamCheckInterval(OrchestrationController controller) =>
+    BuiltinTeam.isBuiltinConfig(controller.config) ? _builtinCheck : null;
+
+/// How a team with no live agent rests.
+enum TeamRest {
+  /// At least one agent is live, or none is known.
+  awake,
+
+  /// Every agent is asleep: they wake when there is work.
+  asleep,
+
+  /// Agents were switched off on purpose (suspended): nothing wakes them.
+  paused,
+}
+
+/// Whether [agent] was switched off on purpose.
+bool teamAgentPaused(OrchestrationAgent agent) =>
+    agent.suspended ||
+    const {
+      'suspended',
+      'paused',
+    }.contains(agent.rawState?.trim().toLowerCase());
+
+TeamRest teamRest(Iterable<OrchestrationAgent> agents) {
+  if (agents.isEmpty) return TeamRest.awake;
+  if (agents.any(teamAgentIsLive)) return TeamRest.awake;
+  return agents.any(teamAgentPaused) ? TeamRest.paused : TeamRest.asleep;
+}
+
+/// "the team checks every minute", or what starts a worker when the
+/// interval is unknown.
+String teamCheckPhrase(AppLocalizations l10n, Duration? every) {
+  if (every == null) return l10n.teamNowNextCheck;
+  if (every <= const Duration(minutes: 1)) return l10n.teamNowChecksEveryMinute;
+  return l10n.teamNowChecksEvery('${every.inMinutes}');
+}
+
+/// After this long without a worker, a waiting task is stuck: two of the
+/// team's checks, or the host's own "no agent started" window (three
+/// minutes) when the checks are unknown.
+Duration teamStuckAfter(Duration? every) =>
+    every == null ? const Duration(minutes: 3) : every * 2;
+
+/// The open task waits for a worker (not for the person, not for the
+/// merge).
+bool teamRunWaitsForWorker(
+  OrchestrationRun run,
+  List<WorkItem> work, {
+  DispatchCycle? Function(String workId)? cycleOf,
+}) =>
+    run.state == RunState.waiting &&
+    !teamRunAwaitsMerge(run, work, cycleOf: cycleOf);
+
+Iterable<DispatchCycle> _cycles(
+  OrchestrationRun run,
+  List<WorkItem> work,
+  DispatchCycle? Function(String workId)? cycleOf,
+) sync* {
+  if (cycleOf == null) return;
+  for (final item in work) {
+    if (item.runId != run.id) continue;
+    final cycle = cycleOf(item.id);
+    if (cycle != null) yield cycle;
+  }
+}
+
+/// Since when [run] has waited: the earliest wait its work reports, else
+/// when the task started.
+DateTime? teamWaitingSince(
+  OrchestrationRun run,
+  List<WorkItem> work, {
+  DispatchCycle? Function(String workId)? cycleOf,
+}) {
+  DateTime? since;
+  for (final cycle in _cycles(run, work, cycleOf)) {
+    final at = cycle.since;
+    if (at != null && (since == null || at.isBefore(since))) since = at;
+  }
+  return since ?? run.startedAt ?? run.updatedAt;
+}
+
+/// How long [run] has waited, or null when unknown.
+Duration? teamWaitingFor(
+  OrchestrationRun run,
+  List<WorkItem> work, {
+  required DateTime now,
+  DispatchCycle? Function(String workId)? cycleOf,
+}) {
+  final since = teamWaitingSince(run, work, cycleOf: cycleOf);
+  if (since == null) return null;
+  final age = now.difference(since);
+  return age.isNegative ? Duration.zero : age;
+}
+
+/// The waiting task has waited longer than the team's checks allow, the
+/// host saw no agent start, or the team is paused.
+bool teamRunStuck(
+  OrchestrationRun run,
+  List<WorkItem> work, {
+  required DateTime now,
+  Duration? every,
+  bool paused = false,
+  DispatchCycle? Function(String workId)? cycleOf,
+}) {
+  if (!teamRunWaitsForWorker(run, work, cycleOf: cycleOf)) return false;
+  if (paused) return true;
+  for (final cycle in _cycles(run, work, cycleOf)) {
+    if (cycle.stallReason == DispatchStall.hostNotStarted ||
+        cycle.stallReason == DispatchStall.agentCannotStart) {
+      return true;
+    }
+  }
+  final age = teamWaitingFor(run, work, now: now, cycleOf: cycleOf);
+  return age != null && age >= teamStuckAfter(every);
+}
+
+/// The waiting task's line: "Waiting for a worker · 1 min · the team
+/// checks every minute", or "Waiting for a worker · 6 min · no worker has
+/// started" once it is stuck. Null when [run] does not wait for a worker.
+String? teamWaitLine(
+  AppLocalizations l10n,
+  OrchestrationRun run,
+  List<WorkItem> work, {
+  required DateTime now,
+  Duration? every,
+  bool paused = false,
+  DispatchCycle? Function(String workId)? cycleOf,
+}) {
+  if (!teamRunWaitsForWorker(run, work, cycleOf: cycleOf)) return null;
+  final age = teamWaitingFor(run, work, now: now, cycleOf: cycleOf);
+  final stuck = teamRunStuck(
+    run,
+    work,
+    now: now,
+    every: every,
+    paused: paused,
+    cycleOf: cycleOf,
+  );
+  return [
+    l10n.teamUiCardRunStateWaiting,
+    if (age != null && age >= const Duration(minutes: 1))
+      teamElapsedLabel(l10n, age),
+    stuck ? l10n.teamNowNoWorkerStarted : teamCheckPhrase(l10n, every),
+  ].join(teamUsageSeparator);
+}
+
+/// The agent's own short name: `furiosa` for `demo-app/gastown.furiosa`.
+String teamAgentShortName(OrchestrationAgent agent) {
+  final tail = agent.name.split('/').last.split('.').last.trim();
+  return tail.isEmpty ? agent.name : tail;
+}
+
+/// "Worker · furiosa": the role in plain words and the short name. The
+/// engine's full name, pool and pack stay under Technical details.
+String teamAgentTitle(AppLocalizations l10n, OrchestrationAgent agent) {
+  final role = teamAgentRoleWord(l10n, teamAgentRole(agent));
+  final name = teamAgentShortName(agent);
+  return name.toLowerCase() == role.toLowerCase()
+      ? role
+      : l10n.teamAgentTitle(role, name);
+}
+
+/// A worker that is not running and could take the waiting work: the
+/// agent to wake, or null.
+OrchestrationAgent? teamSleepingWorker(Iterable<OrchestrationAgent> agents) {
+  OrchestrationAgent? found;
+  for (final agent in agents) {
+    if (teamAgentIsLive(agent)) continue;
+    if (teamAgentRole(agent) != TeamAgentRole.worker) continue;
+    // One asleep beats one paused on purpose.
+    if (found == null || (teamAgentPaused(found) && !teamAgentPaused(agent))) {
+      found = agent;
+    }
+  }
+  return found;
+}
+
+/// Wakes [agents] (resume), then says what the host answered.
+Future<void> teamWake(
+  BuildContext context,
+  OrchestrationController controller,
+  Iterable<OrchestrationAgent> agents,
+) async {
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  final records = [
+    for (final agent in agents)
+      await controller.controlAgent(agent.id, AgentControlAction.resume),
+  ];
+  if (records.isEmpty) return;
+  final record = records.last;
+  messenger?.showSnackBar(
+    SnackBar(
+      content: Text(
+        '${teamControlWord(l10n, record.request)} · '
+        '${teamControlReceiptWord(l10n, record.status)}',
+      ),
+    ),
+  );
+}
+
+/// The one action for a team that cannot go on by itself: wake what is
+/// asleep when the host takes controls, else Why? (the Technical details).
+KitAction teamUnstickAction(
+  BuildContext context,
+  OrchestrationController controller, {
+  required String keyPrefix,
+  required List<OrchestrationAgent> wake,
+  required String wakeLabel,
+}) {
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  if (controller.capabilities.controlAgent && wake.isNotEmpty) {
+    return KitAction(
+      key: ValueKey('$keyPrefix-wake'),
+      label: wakeLabel,
+      onPressed: () => unawaited(teamWake(context, controller, wake)),
+    );
+  }
+  return KitAction(
+    key: ValueKey('$keyPrefix-why'),
+    label: l10n.teamNowWhy,
+    onPressed: () => showTeamHostDetailsSheet(context, controller),
+  );
+}
+
+/// The home's one line for the whole team when something is in flight:
+/// paused, a task stuck, working, in review, or waiting with when a worker
+/// starts. Null when nothing is.
+Widget? teamNowLine(
+  BuildContext context, {
+  required OrchestrationController controller,
+  required DateTime now,
+  String keyPrefix = 'team-now',
+}) {
+  final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  final snapshot = controller.snapshot;
+  final agents = snapshot.agents;
+  final rest = teamRest(agents);
+  final every = teamCheckInterval(controller);
+  final cycleOf = controller.cycleFor;
+  final gated = teamGatedRuns(snapshot);
+  final open = [
+    for (final run in teamVisibleRuns(snapshot.runs))
+      if (run.state != RunState.completed &&
+          run.state != RunState.cancelled &&
+          run.state != RunState.failed)
+        run,
+  ]..sort((a, b) => teamCompareRuns(a, b, gated));
+  if (rest == TeamRest.paused && open.isNotEmpty) {
+    return KitStatusLine(
+      key: ValueKey('$keyPrefix-paused'),
+      icon: AppIconography.pause,
+      tone: AppStatusTone.attention,
+      message: l10n.teamNowPausedLine,
+      action: teamUnstickAction(
+        context,
+        controller,
+        keyPrefix: keyPrefix,
+        wake: [
+          for (final agent in agents)
+            if (teamAgentPaused(agent)) agent,
+        ],
+        wakeLabel: l10n.teamUiControlResume,
+      ),
+    );
+  }
+  for (final run in open) {
+    if (!teamRunStuck(
+      run,
+      snapshot.work,
+      now: now,
+      every: every,
+      cycleOf: cycleOf,
+    )) {
+      continue;
+    }
+    final age =
+        teamWaitingFor(run, snapshot.work, now: now, cycleOf: cycleOf) ??
+        Duration.zero;
+    final worker = teamSleepingWorker(agents);
+    return KitStatusLine(
+      key: ValueKey('$keyPrefix-stuck'),
+      icon: AppIconography.warning,
+      tone: AppStatusTone.attention,
+      message: l10n.teamNowStuckLine(run.title, teamElapsedLabel(l10n, age)),
+      action: teamUnstickAction(
+        context,
+        controller,
+        keyPrefix: keyPrefix,
+        wake: [?worker],
+        wakeLabel: l10n.teamNowStartWorker,
+      ),
+    );
+  }
+  for (final run in open) {
+    if (gated.contains(run.id)) continue;
+    if (teamRunAwaitsMerge(run, snapshot.work, cycleOf: cycleOf)) {
+      return KitStatusLine(
+        key: ValueKey('$keyPrefix-reviewing'),
+        icon: AppIconography.review,
+        tone: AppStatusTone.progress,
+        message: l10n.teamNowReviewingLine(run.title),
+      );
+    }
+    if (run.state == RunState.working) {
+      return KitStatusLine(
+        key: ValueKey('$keyPrefix-working'),
+        icon: AppIconography.play,
+        tone: AppStatusTone.progress,
+        message: l10n.teamNowWorkingLine(run.title),
+      );
+    }
+    if (teamRunWaitsForWorker(run, snapshot.work, cycleOf: cycleOf)) {
+      return KitStatusLine(
+        key: ValueKey('$keyPrefix-waiting'),
+        icon: AppIconography.waiting,
+        tone: AppStatusTone.neutral,
+        message: l10n.teamNowWaitingLine(
+          run.title,
+          teamCheckPhrase(l10n, every),
+        ),
+      );
+    }
+  }
+  return null;
+}

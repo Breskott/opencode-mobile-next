@@ -19081,4 +19081,92 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get teamDiscoverComputerChoiceBody =>
       'استخدم Gas City على حاسوب بدلًا من ذلك';
+
+  @override
+  String get teamNowAgentsAsleep => 'نائمون حتى يأتي عمل';
+
+  @override
+  String get teamNowAgentsPaused => 'موقوفون مؤقتًا';
+
+  @override
+  String get teamNowChecksEveryMinute => 'يتفقّد الفريق كل دقيقة';
+
+  @override
+  String teamNowChecksEvery(String minutes) {
+    return 'يتفقّد الفريق كل $minutes د';
+  }
+
+  @override
+  String get teamNowNextCheck => 'يبدأ عامل عند تفقّد الفريق التالي';
+
+  @override
+  String teamNowWaitingAge(String age) {
+    return 'ينتظر منذ $age';
+  }
+
+  @override
+  String get teamNowNoWorkerStarted => 'لم يبدأ أي عامل';
+
+  @override
+  String get teamNowPausedLine =>
+      'الفريق موقوف مؤقتًا · لن يبدأ شيء حتى تستأنفه';
+
+  @override
+  String teamNowStuckLine(String title, String age) {
+    return '«$title» ينتظر منذ $age ولم يبدأ أي عامل';
+  }
+
+  @override
+  String get teamNowStartWorker => 'شغّل عاملًا';
+
+  @override
+  String get teamNowWhy => 'لماذا؟';
+
+  @override
+  String teamNowWorkingLine(String title) {
+    return 'يعمل على «$title» · يراجعه مراجِع بعد ذلك';
+  }
+
+  @override
+  String teamNowReviewingLine(String title) {
+    return 'يراجع «$title» · يُدمج حين ينجح الفحص';
+  }
+
+  @override
+  String teamNowWaitingLine(String title, String next) {
+    return '«$title» ينتظر عاملًا · $next';
+  }
+
+  @override
+  String get teamAgentDidNotStartTitle => 'لم يبدأ العامل';
+
+  @override
+  String get teamAgentDidNotStartBody =>
+      'هناك مهمة تنتظر، لكن هذا العامل لا يعمل.';
+
+  @override
+  String get teamAgentStartIt => 'شغّله';
+
+  @override
+  String teamOutputNotRunning(String name) {
+    return '$name لا يعمل، لذا لا مخرجات';
+  }
+
+  @override
+  String get teamOutputSilent => 'لا مخرجات بعد · قد يستغرق البدء دقيقة';
+
+  @override
+  String teamAgentTitle(String role, String name) {
+    return '$role · $name';
+  }
+
+  @override
+  String teamAgentWorksOn(String title) {
+    return 'على «$title»';
+  }
+
+  @override
+  String teamOutputStartingPhone(String age) {
+    return 'يبدأ التشغيل · منذ $age · قد يستغرق ذلك بضع دقائق على الهاتف';
+  }
 }

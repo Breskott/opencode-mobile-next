@@ -560,9 +560,14 @@ void main() {
     ) async {
       final (controller, gateway) = await boot(configure: runShape);
       await pumpAgent(tester, controller, 'fox');
-      expect(find.text('fox'), findsWidgets);
-      expect(key('team-agent-term'), findsOneWidget);
-      expect(find.text('Agent · session bl-5qc'), findsOneWidget);
+      // Named by role and short name; the engine's session id is under
+      // Technical details, and the subtitle is the task it works on.
+      expect(key('team-agent-title'), findsOneWidget);
+      expect(
+        tester.widget<Text>(key('team-agent-title')).data,
+        endsWith(' · fox'),
+      );
+      expect(find.text('Agent · session bl-5qc'), findsNothing);
       expect(key('team-agent-state'), findsOneWidget);
       expect(
         find.descendant(
@@ -594,7 +599,15 @@ void main() {
       ]) {
         expect(key('team-agent-$section'), findsOneWidget, reason: section);
       }
-      expect(find.text('gastown.polecat'), findsOneWidget);
+      // The role in plain words; the pool's engine name is under
+      // Technical details only.
+      expect(
+        find.descendant(
+          of: key('team-agent-identity'),
+          matching: find.text('Worker'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('openai/gpt-x'), findsOneWidget);
       expect(find.text('OpenCode'), findsOneWidget);
       expect(find.text('3 h 14 min'), findsOneWidget);
@@ -666,7 +679,9 @@ void main() {
       await pumpAgent(tester, controller, 'fox');
       expect(key('team-agent-context'), findsNothing);
       expect(key('team-agent-recycling'), findsNothing);
-      expect(find.text('Not reported'), findsWidgets);
+      // Not reported is left out, not listed.
+      expect(find.text('Not reported'), findsNothing);
+      expect(key('team-agent-context-row'), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

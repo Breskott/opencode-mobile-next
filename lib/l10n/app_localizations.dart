@@ -30406,6 +30406,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use Gas City on a computer instead'**
   String get teamDiscoverComputerChoiceBody;
+
+  /// AI Team home: the agents row when every agent is asleep (on-demand agents, not paused), after '3 agents · '
+  ///
+  /// In en, this message translates to:
+  /// **'asleep until there is work'**
+  String get teamNowAgentsAsleep;
+
+  /// AI Team home: the agents row when the agents are paused on purpose, after '3 agents · '
+  ///
+  /// In en, this message translates to:
+  /// **'paused'**
+  String get teamNowAgentsPaused;
+
+  /// AI Team: how often the team looks for work to start, when it is every minute
+  ///
+  /// In en, this message translates to:
+  /// **'the team checks every minute'**
+  String get teamNowChecksEveryMinute;
+
+  /// AI Team: how often the team looks for work to start; {minutes} is a whole number
+  ///
+  /// In en, this message translates to:
+  /// **'the team checks every {minutes} min'**
+  String teamNowChecksEvery(String minutes);
+
+  /// AI Team: what starts a waiting task, when the app cannot know how often the team checks
+  ///
+  /// In en, this message translates to:
+  /// **'a worker starts at the team\'s next check'**
+  String get teamNowNextCheck;
+
+  /// AI Team: how long a task has waited for a worker; {age} is like '6 min'
+  ///
+  /// In en, this message translates to:
+  /// **'waiting {age}'**
+  String teamNowWaitingAge(String age);
+
+  /// AI Team: a task has waited longer than the team's checks allow and no worker started
+  ///
+  /// In en, this message translates to:
+  /// **'no worker has started'**
+  String get teamNowNoWorkerStarted;
+
+  /// AI Team home: the Now line while the team's agents are paused on purpose
+  ///
+  /// In en, this message translates to:
+  /// **'The team is paused · nothing starts until you resume it'**
+  String get teamNowPausedLine;
+
+  /// AI Team home: the Now line when a task waits too long; {title} is the task, {age} like '6 min'
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” has waited {age} and no worker has started'**
+  String teamNowStuckLine(String title, String age);
+
+  /// AI Team: the action that wakes a worker for a task that waits too long
+  ///
+  /// In en, this message translates to:
+  /// **'Start a worker'**
+  String get teamNowStartWorker;
+
+  /// AI Team: opens the team's technical details when the app has no action that helps
+  ///
+  /// In en, this message translates to:
+  /// **'Why?'**
+  String get teamNowWhy;
+
+  /// AI Team home: the Now line while a task is worked on
+  ///
+  /// In en, this message translates to:
+  /// **'Working on “{title}” · a reviewer checks it next'**
+  String teamNowWorkingLine(String title);
+
+  /// AI Team home: the Now line while a task's work waits for review and merge
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewing “{title}” · it merges when the check passes'**
+  String teamNowReviewingLine(String title);
+
+  /// AI Team home: the Now line while a task waits for a worker; {next} says when one starts
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” waits for a worker · {next}'**
+  String teamNowWaitingLine(String title, String next);
+
+  /// Agent screen: a worker that should be working is not running
+  ///
+  /// In en, this message translates to:
+  /// **'The worker didn\'t start'**
+  String get teamAgentDidNotStartTitle;
+
+  /// Agent screen: the line under 'The worker didn't start'
+  ///
+  /// In en, this message translates to:
+  /// **'A task is waiting, but this worker isn\'t running.'**
+  String get teamAgentDidNotStartBody;
+
+  /// Agent screen and live output: wakes the agent that is not running
+  ///
+  /// In en, this message translates to:
+  /// **'Start it'**
+  String get teamAgentStartIt;
+
+  /// Live output: the agent is not running; {name} is the agent's short name
+  ///
+  /// In en, this message translates to:
+  /// **'{name} isn\'t running, so there is no output'**
+  String teamOutputNotRunning(String name);
+
+  /// Live output: connected for 8 s with nothing yet
+  ///
+  /// In en, this message translates to:
+  /// **'No output yet · it can take a minute to start'**
+  String get teamOutputSilent;
+
+  /// Agent screen title: the role in plain words and the agent's short name, like 'Worker · furiosa'
+  ///
+  /// In en, this message translates to:
+  /// **'{role} · {name}'**
+  String teamAgentTitle(String role, String name);
+
+  /// Agent screen subtitle: the task the agent works on
+  ///
+  /// In en, this message translates to:
+  /// **'On “{title}”'**
+  String teamAgentWorksOn(String title);
+
+  /// Live output: the agent's session runs on this phone and has not written anything yet; {age} since the session was created, like '2 min'
+  ///
+  /// In en, this message translates to:
+  /// **'Starting up · {age} so far · this can take a few minutes on a phone'**
+  String teamOutputStartingPhone(String age);
 }
 
 class _AppLocalizationsDelegate

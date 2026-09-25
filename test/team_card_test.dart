@@ -485,7 +485,10 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Add subtract function to calc.py'), findsOneWidget);
-      expect(lineOf(tester, 'oc-xru'), 'Waiting for a worker');
+      // What happens next follows (docs/qa/team-discover-2026-09-25): the
+      // recorded task has waited days, so no worker has started.
+      expect(lineOf(tester, 'oc-xru'), startsWith('Waiting for a worker · '));
+      expect(lineOf(tester, 'oc-xru'), endsWith('no worker has started'));
       noEngineWords();
       expect(find.byKey(const ValueKey('team-card-stale')), findsNothing);
       // The card refreshes itself: no Refresh button.

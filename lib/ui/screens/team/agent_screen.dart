@@ -38,6 +38,7 @@ import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../widgets/team_agent_row.dart';
 import '../../widgets/team_controls.dart';
+import '../../widgets/team_now.dart';
 import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
 import 'agent_output_screen.dart';
@@ -160,12 +161,11 @@ class _AgentScreenState extends State<AgentScreen> {
       final l10n = _copy(context);
       final theme = Theme.of(context);
       final agent = _agent;
-      final sessionId = agent?.sessionId;
-      final term = agent == null
-          ? null
-          : sessionId != null && sessionId.isNotEmpty
-          ? l10n.teamUiAgentTermSession(sessionId)
-          : l10n.teamUiAgentTermNoSession;
+      // The agent by its role and short name ("Worker · furiosa") with the
+      // task it works on; the engine's full name, pool, pack and session
+      // are under Technical details.
+      final task = agent == null ? null : _workOf(agent)?.title;
+      final term = task == null ? null : l10n.teamAgentWorksOn(task);
       return Scaffold(
         key: const ValueKey('team-agent'),
         appBar: AppBar(
@@ -174,12 +174,10 @@ class _AgentScreenState extends State<AgentScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Agent names are identifiers: LTR in every locale.
               Text(
-                agent?.name ?? widget.agentId,
+                agent == null ? widget.agentId : teamAgentTitle(l10n, agent),
                 key: const ValueKey('team-agent-title'),
                 style: theme.textTheme.titleMedium,
-                textDirection: TextDirection.ltr,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -276,17 +274,33 @@ class _AgentScreenState extends State<AgentScreen> {
     );
   }
 
+  WorkItem? _workOf(OrchestrationAgent agent) {
+    for (final item in widget.controller.snapshot.work) {
+      if (item.id == agent.currentWorkId) return item;
+    }
+    return null;
+  }
+
+  /// A worker that is not running while a task waits for one: it should
+  /// have started (and the home's Now line says the same).
+  bool _didNotStart(OrchestrationAgent agent) {
+    if (teamAgentIsLive(agent)) return false;
+    if (teamAgentRole(agent) != TeamAgentRole.worker) return false;
+    final snapshot = widget.controller.snapshot;
+    return teamVisibleRuns(snapshot.runs).any(
+      (run) => teamRunWaitsForWorker(
+        run,
+        snapshot.work,
+        cycleOf: widget.controller.cycleFor,
+      ),
+    );
+  }
+
   Widget _sections(BuildContext context, OrchestrationAgent agent) {
     final l10n = _copy(context);
     final controller = widget.controller;
     final snapshot = controller.snapshot;
-    WorkItem? work;
-    for (final item in snapshot.work) {
-      if (item.id == agent.currentWorkId) {
-        work = item;
-        break;
-      }
-    }
+    final work = _workOf(agent);
     OrchestrationGate? gate;
     for (final g in snapshot.gates) {
       if (g.kind == GateKind.reviewReady) continue;
@@ -316,6 +330,27 @@ class _AgentScreenState extends State<AgentScreen> {
         ),
         children: [
           pad(_Header(agent: agent, now: _now)),
+          if (_didNotStart(agent)) ...[
+            const SizedBox(height: 12),
+            pad(
+              KitNotice(
+                key: const ValueKey('team-agent-did-not-start'),
+                tone: AppStatusTone.attention,
+                icon: AppIconography.warning,
+                title: l10n.teamAgentDidNotStartTitle,
+                message: l10n.teamAgentDidNotStartBody,
+                actions: [
+                  teamUnstickAction(
+                    context,
+                    controller,
+                    keyPrefix: 'team-agent-did-not-start',
+                    wake: [agent],
+                    wakeLabel: l10n.teamAgentStartIt,
+                  ),
+                ],
+              ),
+            ),
+          ],
           if (gate != null) ...[
             const SizedBox(height: 16),
             pad(
@@ -331,31 +366,30 @@ class _AgentScreenState extends State<AgentScreen> {
           _Section(
             key: const ValueKey('team-agent-identity'),
             title: l10n.teamUiAgentSectionIdentity,
+            // What the host reports, in plain words; a value it does not
+            // report is left out, not listed as "Not reported".
             children: [
               TeamIdentityRow(
-                label: l10n.teamUiAgentLabelName,
-                value: agent.name,
-                mono: true,
-              ),
-              TeamIdentityRow(
                 label: l10n.teamUiAgentLabelRole,
-                value: agent.pool ?? agent.pack ?? l10n.teamUiAgentValueUnknown,
-                mono: agent.pool != null || agent.pack != null,
+                value: teamAgentRoleWord(l10n, teamAgentRole(agent)),
               ),
-              TeamIdentityRow(
-                label: l10n.teamUiLabelProvider,
-                value: _or(agent.provider, l10n),
-                mono: agent.provider != null,
-              ),
-              TeamIdentityRow(
-                label: l10n.teamUiAgentLabelModel,
-                value: _or(agent.model, l10n),
-                mono: agent.model != null,
-              ),
-              TeamIdentityRow(
-                label: l10n.teamUiAgentLabelHarness,
-                value: _or(agent.harness, l10n),
-              ),
+              if (_has(agent.provider))
+                TeamIdentityRow(
+                  label: l10n.teamUiLabelProvider,
+                  value: agent.provider!,
+                  mono: true,
+                ),
+              if (_has(agent.model))
+                TeamIdentityRow(
+                  label: l10n.teamUiAgentLabelModel,
+                  value: agent.model!,
+                  mono: true,
+                ),
+              if (_has(agent.harness))
+                TeamIdentityRow(
+                  label: l10n.teamUiAgentLabelHarness,
+                  value: agent.harness!,
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -367,26 +401,28 @@ class _AgentScreenState extends State<AgentScreen> {
                 label: l10n.teamUiRunLabelState,
                 value: teamAgentStateWord(l10n, agent.state),
               ),
-              TeamIdentityRow(
-                label: l10n.teamUiAgentLabelSessionAge,
-                value: agent.sessionStartedAt == null
-                    ? l10n.teamUiAgentValueUnknown
-                    : teamElapsedLabel(l10n, _age(agent)),
-              ),
-              _ContextRow(
-                key: const ValueKey('team-agent-context-row'),
-                percent: agent.contextPercent,
-              ),
-              TeamIdentityRow(
-                label: l10n.teamUiAgentLabelWorkDir,
-                value: _or(agent.workDir, l10n),
-                mono: agent.workDir != null,
-              ),
-              TeamIdentityRow(
-                label: l10n.teamUiAgentLabelBranch,
-                value: _or(agent.branch, l10n),
-                mono: agent.branch != null,
-              ),
+              if (agent.sessionStartedAt != null)
+                TeamIdentityRow(
+                  label: l10n.teamUiAgentLabelSessionAge,
+                  value: teamElapsedLabel(l10n, _age(agent)),
+                ),
+              if (agent.contextPercent != null)
+                _ContextRow(
+                  key: const ValueKey('team-agent-context-row'),
+                  percent: agent.contextPercent,
+                ),
+              if (_has(agent.workDir))
+                TeamIdentityRow(
+                  label: l10n.teamUiAgentLabelWorkDir,
+                  value: agent.workDir!,
+                  mono: true,
+                ),
+              if (_has(agent.branch))
+                TeamIdentityRow(
+                  label: l10n.teamUiAgentLabelBranch,
+                  value: agent.branch!,
+                  mono: true,
+                ),
               if (controller.capabilities.usage)
                 _UsageRow(
                   key: const ValueKey('team-agent-usage-row'),
@@ -443,8 +479,7 @@ class _AgentScreenState extends State<AgentScreen> {
   }
 }
 
-String _or(String? value, AppLocalizations l10n) =>
-    value == null || value.isEmpty ? l10n.teamUiAgentValueUnknown : value;
+bool _has(String? value) => value != null && value.trim().isNotEmpty;
 
 // ---------------------------------------------------------------------------
 // Header

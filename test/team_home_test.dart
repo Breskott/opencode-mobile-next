@@ -483,8 +483,13 @@ void main() {
       // in the person's words: no "Batch · convoy".
       expect(find.text('Add subtract function to calc.py'), findsOneWidget);
       expect(find.text('sling-oc-loy'), findsNothing);
-      // One step is not worth counting ("0 of 1"): the state says it all.
-      expect(lineOf(tester, 'oc-xru'), 'Waiting for a worker');
+      // One step is not worth counting ("0 of 1"): the state says it all,
+      // then how long and whether a worker started (the recorded task has
+      // waited far past the team's checks; team-discover-2026-09-25).
+      expect(
+        lineOf(tester, 'oc-xru'),
+        'Waiting for a worker · 17 h 45 min · no worker has started',
+      );
       expect(find.textContaining('convoy'), findsNothing);
       expect(find.text('Planning'), findsNothing);
       // Five live agents; the dog slots and the core helper are not agents.

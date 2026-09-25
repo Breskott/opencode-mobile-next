@@ -203,6 +203,16 @@ void main() {
     tester,
   ) async {
     await _pump(tester, _home);
+    // Under the team's Now line and the tasks.
+    await tester.scrollUntilVisible(
+      _key('team-home-agents-row'),
+      200,
+      scrollable: find.descendant(
+        of: _key('team-home-runs'),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(_key('team-home-agents-row'));
     await tester.pumpAndSettle();
     expect(find.text('Worker'), findsNWidgets(2));

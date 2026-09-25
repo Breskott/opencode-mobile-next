@@ -18821,4 +18821,93 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get teamDiscoverComputerChoiceBody =>
       'Use Gas City on a computer instead';
+
+  @override
+  String get teamNowAgentsAsleep => 'asleep until there is work';
+
+  @override
+  String get teamNowAgentsPaused => 'paused';
+
+  @override
+  String get teamNowChecksEveryMinute => 'the team checks every minute';
+
+  @override
+  String teamNowChecksEvery(String minutes) {
+    return 'the team checks every $minutes min';
+  }
+
+  @override
+  String get teamNowNextCheck => 'a worker starts at the team\'s next check';
+
+  @override
+  String teamNowWaitingAge(String age) {
+    return 'waiting $age';
+  }
+
+  @override
+  String get teamNowNoWorkerStarted => 'no worker has started';
+
+  @override
+  String get teamNowPausedLine =>
+      'The team is paused · nothing starts until you resume it';
+
+  @override
+  String teamNowStuckLine(String title, String age) {
+    return '“$title” has waited $age and no worker has started';
+  }
+
+  @override
+  String get teamNowStartWorker => 'Start a worker';
+
+  @override
+  String get teamNowWhy => 'Why?';
+
+  @override
+  String teamNowWorkingLine(String title) {
+    return 'Working on “$title” · a reviewer checks it next';
+  }
+
+  @override
+  String teamNowReviewingLine(String title) {
+    return 'Reviewing “$title” · it merges when the check passes';
+  }
+
+  @override
+  String teamNowWaitingLine(String title, String next) {
+    return '“$title” waits for a worker · $next';
+  }
+
+  @override
+  String get teamAgentDidNotStartTitle => 'The worker didn\'t start';
+
+  @override
+  String get teamAgentDidNotStartBody =>
+      'A task is waiting, but this worker isn\'t running.';
+
+  @override
+  String get teamAgentStartIt => 'Start it';
+
+  @override
+  String teamOutputNotRunning(String name) {
+    return '$name isn\'t running, so there is no output';
+  }
+
+  @override
+  String get teamOutputSilent =>
+      'No output yet · it can take a minute to start';
+
+  @override
+  String teamAgentTitle(String role, String name) {
+    return '$role · $name';
+  }
+
+  @override
+  String teamAgentWorksOn(String title) {
+    return 'On “$title”';
+  }
+
+  @override
+  String teamOutputStartingPhone(String age) {
+    return 'Starting up · $age so far · this can take a few minutes on a phone';
+  }
 }

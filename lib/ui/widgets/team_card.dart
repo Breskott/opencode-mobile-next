@@ -37,6 +37,7 @@ import '../kit/kit.dart';
 import '../kit/scenes/team_scenes.dart';
 import '../screens/team/gate_sheet.dart';
 import '../screens/team/team_needs_you.dart';
+import 'team_now.dart';
 import 'team_vocabulary.dart';
 
 AppLocalizations _copy(BuildContext context) =>
@@ -318,6 +319,9 @@ class _DataBody extends StatelessWidget {
               needsYou: gated.contains(run.id),
               now: now,
               cycleOf: controller.cycleFor,
+              explainWait: true,
+              checkEvery: teamCheckInterval(controller),
+              paused: teamRest(snapshot.agents) == TeamRest.paused,
             ),
           ),
           supportingKey: ValueKey('team-card-run-line-${run.id}'),
