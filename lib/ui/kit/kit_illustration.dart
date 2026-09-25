@@ -216,6 +216,7 @@ class KitIllustration extends StatefulWidget {
     this.ambient = false,
     this.loopPeriod = KitMotion.breath,
     this.animateEntrance = true,
+    this.entranceDuration = KitMotion.entrance,
     this.semanticLabel,
   });
 
@@ -232,6 +233,10 @@ class KitIllustration extends StatefulWidget {
   /// False draws the finished drawing at once (a list rebuilt often).
   final bool animateEntrance;
 
+  /// How long the entrance takes: [KitMotion.entrance] for a drawing,
+  /// [KitMotion.celebration] for a finished moment worth marking.
+  final Duration entranceDuration;
+
   final String? semanticLabel;
 
   @override
@@ -242,7 +247,7 @@ class _KitIllustrationState extends State<KitIllustration>
     with TickerProviderStateMixin {
   late final AnimationController _entrance = AnimationController(
     vsync: this,
-    duration: KitMotion.entrance,
+    duration: widget.entranceDuration,
   )..addStatusListener(_entranceStatus);
   late final AnimationController _loop = AnimationController(
     vsync: this,

@@ -41,6 +41,22 @@ void main() {
     expect(tester.hasRunningAnimations, isFalse);
   });
 
+  testWidgets('a celebration takes the longer entrance', (tester) async {
+    final frames = <KitSceneFrame>[];
+    await tester.pumpWidget(
+      _host(
+        KitIllustration(
+          scene: _Probe(frames),
+          entranceDuration: KitMotion.celebration,
+        ),
+      ),
+    );
+    await tester.pump(KitMotion.entrance);
+    expect(frames.last.entrance, lessThan(1));
+    await tester.pumpAndSettle();
+    expect(frames.last.entrance, 1);
+  });
+
   testWidgets('reduced motion draws the finished drawing at once', (
     tester,
   ) async {

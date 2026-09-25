@@ -68,6 +68,7 @@ class KitStateView extends StatefulWidget {
     this.padding,
     this.illustration,
     this.illustrationAmbient = false,
+    this.illustrationWidth,
   });
 
   final IconData icon;
@@ -111,6 +112,10 @@ class KitStateView extends StatefulWidget {
   /// Keep [illustration] moving after its entrance: only for a state the
   /// person waits in (connecting, installing).
   final bool illustrationAmbient;
+
+  /// The drawing's width when the default (140 dp on a page, 88 inline)
+  /// does not suit: a scene with several figures on a screen with room.
+  final double? illustrationWidth;
 
   @override
   State<KitStateView> createState() => _KitStateViewState();
@@ -158,7 +163,7 @@ class _KitStateViewState extends State<KitStateView> {
               ? KitIllustration(
                   key: const ValueKey('kit-state-illustration'),
                   scene: widget.illustration!,
-                  width: page ? 140 : 88,
+                  width: widget.illustrationWidth ?? (page ? 140 : 88),
                   ambient: widget.illustrationAmbient,
                 )
               : Container(
