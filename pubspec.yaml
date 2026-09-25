@@ -109,6 +109,9 @@ dev_dependencies:
 
 flutter:
   generate: true
+  # KitGlass's liquid glass (lib/ui/kit/glass/, design standard §10).
+  shaders:
+    - shaders/kit_glass.frag
   assets:
     - shorebird.yaml
     - PRIVACY.md

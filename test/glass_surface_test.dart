@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_effects.dart';
 import 'package:opencode_mobile/ui/theme_packs.dart';
 import 'package:opencode_mobile/ui/widgets/glass_surface.dart';
 import 'package:opencode_mobile/ui/widgets/product_states.dart';
@@ -42,6 +43,32 @@ void main() {
       },
     );
   }
+
+  testWidgets('the dock turned to solid by Settings › Appearance › Glass', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark(),
+        home: const KitEffectsScope(
+          effects: KitEffects(glass: false),
+          child: GlassSurface(child: SizedBox(width: 320, height: 72)),
+        ),
+      ),
+    );
+    expect(find.byType(BackdropFilter), findsNothing);
+    final fills = tester
+        .widgetList<DecoratedBox>(
+          find.descendant(
+            of: find.byType(GlassSurface),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
+        .map((box) => box.decoration)
+        .whereType<BoxDecoration>()
+        .where((box) => box.color != null);
+    expect(fills.single.color!.a, 1);
+  });
 
   testWidgets('frosted material clips a single backdrop filter', (
     tester,
