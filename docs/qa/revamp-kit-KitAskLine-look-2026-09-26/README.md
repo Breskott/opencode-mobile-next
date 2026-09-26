@@ -14,23 +14,14 @@
 - Specs followed: STANDARDS.md KIT-9, KIT-43, LOOK-1, LOOK-2, LOOK-6, LOOK-12, LOOK-19,
   LOOK-33, LAY-8, A11Y-8; `docs/ux-system/kit-api/KitAskLine.md` in full;
   `docs/design/visual-language-2026-09-26.md` §7.
-- Contract problems (PROC-20): the frozen spec's own "Galleries required" section has two
-  internal issues, reported here rather than followed literally:
-  1. Its second bullet's size list ("360×800, **915×412**, 800×1280, 1280×800, 1600×1000")
-     transposes the second entry — every other gallery in the repo, and `kitGallerySizes`
-     itself, uses 412×915 (portrait) there, not 915×412 (landscape). Treated as a typo and
-     built against the standard `kitGallerySizes`.
-  2. Its "That is 30 PNGs" total double-counts: the States bucket's `ask_inline`/`skeleton`
-     entries at 412×915 share the exact golden name (`kitGalleryName` drops the size suffix
-     at 412×915) with the Default bucket's 412×915 entries for the same states, which are a
-     different render (bare vs. above a composer inset) — building both under one name would
-     make the second overwrite/compare against the first with mismatched content. Resolved by
-     dropping the States bucket's separate bare `ask_inline`/`skeleton` shots (their 412×915
-     dark/light coverage already comes from the Default bucket's own 412×915 iteration) and
-     keeping `ask_stacked` as the one States-only shot, since it appears nowhere else. Net:
-     26 unique PNGs, not 30, with every state still covered at 412×915 in both themes.
-  Neither changes the frozen API, tokens or acceptance criteria; both are documented instead
-  of worked around per this unit's instructions.
+- Contract problems (PROC-20): none. The gallery follows the spec's "Galleries required"
+  section as written (STANDARDS LAY-4, TEST-9): the three states at 412×915, the default
+  `ask_inline` (above a composer-height inset) and `skeleton` at 360×800, 915×412, 800×1280,
+  1280×800 and 1600×1000, and `ask_inline` at 2.0 text and in Arabic at 412×915 and
+  1280×800 — 6 + 20 + 4 = 30 PNGs, every name unique (the 412×915 shots belong to the
+  states bucket only). The shared `test/goldens/kit/kit_gallery.dart` `kitGallerySizes`
+  lacks 915×412 (it lists 412×915 in that slot); this gallery keeps its own size list
+  rather than editing the shared file, and that gap is reported to the integrator.
 - New kit parts (KIT-3): none.
 - Map items (EVID-11): n/a — no map page is assigned to this unit.
 - States per page (STATE-20): n/a (kit parts, not a page). Per-part doc states (KIT-12), as
@@ -44,8 +35,9 @@
 ## 2. Builds
 
 - Branch `revamp/kit-KitAskLine-look`, base `b67e3276b373c5bf5b6023d9ab5bcc61f5f23db4`
-  (`feat/phone-setup-v2`), code head `078a57c7` ("feat(kit): KitAskLine and
-  KitSkeletonTranscript take the look").
+  (`feat/phone-setup-v2`), code commits `078a57c7` ("feat(kit): KitAskLine and
+  KitSkeletonTranscript take the look") and the review-fix commit that follows this record's
+  first version (stacked glyph alignment, painted-colour and stacking tests, 915×412 shots).
 - No APK (unit agents do not build; R19/R20).
 
 ## 3. Devices
@@ -58,13 +50,12 @@ None: tests, goldens and renders only. Device proof is coordinator/checkpoint wo
 |---|---|---|---|---|
 | 1 | `flutter analyze lib/ui/kit/kit_ask_line.dart lib/ui/kit/kit_skeleton_transcript.dart test/kit/kit_ask_line_test.dart test/goldens/kit/kit_ask_line_golden_test.dart` | no issues | no issues | PASS |
 | 2 | `flutter analyze` (whole project) | no issues | no issues | PASS |
-| 3 | `flutter test -j 1 test/kit/kit_ask_line_test.dart` | all pass | 14 passed | PASS |
-| 4 | `flutter test -j 1 --update-goldens test/goldens/kit/kit_ask_line_golden_test.dart` (first run: no PNGs existed) | 26 shots render and pass G5 | 26 passed | PASS |
-| 5 | `flutter test -j 1 test/kit_ratchet_test.dart` | passes; per-file G21/G15x counts for the two files at or below baseline | 33 passed; both files' counts dropped to 0 (advisory "Shell:" lines only, not failures) | PASS |
-| 6 | `flutter test -j 1 test/design_standard_test.dart` | passes | 15 passed | PASS |
+| 3 | `flutter test -j 1 test/kit/kit_ask_line_test.dart` | all pass | 19 passed | PASS |
+| 3a | same file, `--plain-name "glyph is centred"`, with `lib/ui/kit/kit_ask_line.dart` reverted to `078a57c7` | fails (proves the test catches the unaligned glyph) | failed: glyph centre 12 dp, first-line centre 22 dp | PASS (expected failure) |
+| 4 | `flutter test -j 1 --update-goldens test/goldens/kit/kit_ask_line_golden_test.dart`, `--plain-name "KitAskLine"` then `"KitSkeletonTranscript"` (after the review fixes), then both again without `--update-goldens` | 30 shots render, pass G5 and then compare clean | 18 + 12 passed, then 18 + 12 passed | PASS |
+| 5–6 | `flutter test -j 1 test/kit_ratchet_test.dart test/design_standard_test.dart` (after the review fixes) | pass; per-file G21/G15x counts for the two files at or below baseline | 47 passed; both files' counts at 0 | PASS |
 | 7 | `flutter test -j 1 test/l10n_coverage_test.dart` | passes (no copy changed) | 3 passed | PASS |
-| 8 | `flutter test -j 1 test/first_reply_notify_card_test.dart` (shared caller, KitAskLine) | passes unchanged | 17 passed | PASS |
-| 9 | `flutter test -j 1 test/chat_states_standard_test.dart` (shared caller, KitSkeletonTranscript) | passes unchanged | 6 passed | PASS |
+| 8–9 | `flutter test -j 1 test/first_reply_notify_card_test.dart test/chat_states_standard_test.dart` (shared callers, after the review fixes) | pass unchanged | 22 passed | PASS |
 | 10 | `flutter test -j 1 --plain-name "KitSkeletonTranscript" test/kit_motion_test.dart` | passes | 2 passed | PASS |
 | 11 | `flutter test -j 1 --plain-name "KitSkeletonTranscript" test/text_scale_overflow_test.dart` | passes | 1 passed | PASS |
 | 12 | `flutter test -j 1 test/kit/kit_manifest_test.dart` (shared, gate G4) | 1 known "now passes" entry for `test · KitAskLine` (see §7); nothing else | exactly that one stale entry | FAIL (expected; see §7) |
@@ -77,9 +68,11 @@ None: tests, goldens and renders only. Device proof is coordinator/checkpoint wo
 
   | Rule | Test (`file` + `--plain-name`) or golden | Output |
   |---|---|---|
-  | LOOK-2, LOOK-6 | `test/kit/kit_ask_line_test.dart` "reads no colorScheme, textTheme, accent or partial-alpha text" | run 3 above |
+  | LOOK-2, LOOK-6 (source scan) | `test/kit/kit_ask_line_test.dart` "reads no colorScheme, textTheme, accent or partial-alpha text" and "reads no colorScheme, textTheme, accent or alpha" | run 3 above |
+  | LOOK-2, LOOK-6, LOOK-14 (painted colours) | `test/kit/kit_ask_line_test.dart` "paints the glyph, question and answers in opaque text roles, never the accent" (dark, light: every RenderParagraph colour is text1/text2, alpha 0xFF) and "paints every block and bar in opaque surface3, never the accent" (dark, light: all 9 ShapeDecorations surface3, alpha 0xFF, no gradient) | run 3 above |
+  | stacked layout (no change beyond tokens) | `test/kit/kit_ask_line_test.dart` "stacked at 2.0x text, the glyph is centred on the question's first line" (±2 dp; space3 above the question) | runs 3, 3a above |
   | LOOK-33 | `test/kit/kit_ask_line_test.dart` "renders the question, a 20 dp text2 glyph and both answers…" | run 3 above |
-  | A11Y-8 / stacking | `test/kit/kit_ask_line_test.dart` "sits beside the question when it fits; moves under it…" and "a long question at 320 dp stacks with no overflow" | run 3 above |
+  | A11Y-8 / stacking | `test/kit/kit_ask_line_test.dart` "sits beside the question when it fits; moves under it…" and "a long question at 320 dp stacks under it, start-aligned, with no overflow" (en and ar: both answers start at or below the question's bottom; accept's label starts at the question's left edge in LTR and right edge in RTL, with the direction asserted; decline follows or wraps start-aligned) | run 3 above |
   | LAY-8 / G6 overflow | `test/kit/kit_ask_line_test.dart` "no overflow from 320 to 1600 dp" | run 3 above |
   | KIT-43 | `test/kit/kit_ask_line_test.dart` "first_reply_notify_card and chat_states callers compile against the unchanged constructor" (×2) | run 3 above |
   | LOOK-19, LAY-5 | `test/kit/kit_ask_line_test.dart` "at most 700 dp wide at 1280 dp" | run 3 above |
@@ -89,8 +82,16 @@ None: tests, goldens and renders only. Device proof is coordinator/checkpoint wo
 - Changed test expectations (TEST-19): none — no existing test file in this unit's write set
   was edited; both `test/kit/kit_ask_line_test.dart` and
   `test/goldens/kit/kit_ask_line_golden_test.dart` are new.
-- Goldens changed (each opened and looked at): all 26 are new (`kit_ask_line_*.png`), no
-  approved VL canvas render exists to compare against for these two parts (EVID-12: none).
+- Goldens changed (each opened and looked at): all 30 are new to the base
+  (`kit_ask_line_*.png`), no approved VL canvas render exists to compare against for these two
+  parts (EVID-12: none). The review fixes regenerated the 14 `ask_*` shots (the composer
+  inset is now the opaque `surface2` role instead of a translucent literal; stacked shots move
+  the glyph onto the question's first line with a space3 top inset) and added the four
+  915×412 shots (`kit_ask_line_ask_inline_915x412_{dark,light}.png`,
+  `kit_ask_line_skeleton_915x412_{dark,light}.png`); the skeleton PNGs at the other sizes
+  are byte-identical. Inspected after the fixes: `kit_ask_line_ask_inline_text2_dark.png`,
+  `kit_ask_line_ask_stacked_dark.png`, `kit_ask_line_ask_inline_915x412_light.png`,
+  `kit_ask_line_skeleton_915x412_dark.png`.
   Representative shots inspected: `kit_ask_line_ask_inline_dark.png`/`_light.png` (inline,
   two-line question, buttons vertically centred against it, no accent),
   `kit_ask_line_ask_stacked_dark.png` (long question, answers reversed under it start-aligned,
@@ -111,7 +112,9 @@ None: tests, goldens and renders only. Device proof is coordinator/checkpoint wo
   48 dp `KitButton`s carrying their own labels. `KitSkeletonTranscript` stays wrapped in
   `ExcludeSemantics` (verified: adds zero semantics nodes over a bare screen, run 3). 200 %
   text (`test/kit/kit_ask_line_test.dart` "sits beside…at 2.0x text") and a long question at
-  320 dp, LTR and RTL (`"a long question at 320 dp stacks with no overflow"` ×2), both checked;
+  320 dp, LTR and RTL (`"a long question at 320 dp stacks under it, start-aligned, with no
+  overflow"` ×2; the test host now loads the app's localization delegates so `ar` really lays
+  out right to left), both checked;
   every gallery shot ran the G5 accessibility guidelines (tap targets, contrast, reading order)
   in both themes as part of `kitGalleryPart` (run 4).
 - Privacy and security: n/a — no credentials, stored data, links or notifications changed.
@@ -155,8 +158,10 @@ $F analyze
   of the part's own logic. The mechanism (fits beside when there is room; text scale 2.0 or a
   long question at 320 dp forces it under, start-aligned) is proven at a width chosen to fit
   under that substitute font; the literal 412 dp/1.0×, with the real Geist face, is proven by
-  the golden gallery (`kit_ask_line_ask_inline_412x915_dark/light.png`, visually inspected,
-  §5).
+  the golden gallery (`kit_ask_line_ask_inline_dark.png` and `kit_ask_line_ask_inline_light.png`,
+  the 412×915 shots, visually inspected, §5).
+- `test/goldens/kit/kit_gallery.dart`'s shared `kitGallerySizes` has no 915×412 entry; this
+  gallery lists its own sizes. Reported to the integrator (shared file, outside the write set).
 
 ## State
 
@@ -165,5 +170,5 @@ $F analyze
 | Implemented | Yes | `revamp/kit-KitAskLine-look` |
 | Enabled | Yes (no flag; both parts are used unconditionally by their existing callers) | |
 | Verified | Tests and goldens only | this record |
-| Committed | Yes | code head `078a57c7` |
+| Committed | Yes | `078a57c7` plus the review-fix commit on `revamp/kit-KitAskLine-look` |
 | Deployed | No | |

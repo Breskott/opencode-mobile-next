@@ -4,7 +4,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
 
@@ -16,6 +18,8 @@ Widget _host(
 }) => MaterialApp(
   theme: light ? AppTheme.light() : AppTheme.dark(),
   locale: locale,
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   builder: (context, app) => MediaQuery(
     data: MediaQuery.of(
       context,
@@ -42,6 +46,23 @@ KitAskLine _askLine({
   accept: KitAction(label: 'Notify me', onPressed: onAccept ?? () {}),
 );
 
+/// Every colour the paragraphs under [finder] paint their text with.
+List<Color> _paintedTextColours(WidgetTester tester, Finder finder) {
+  final colours = <Color>[];
+  for (final paragraph in tester.renderObjectList<RenderParagraph>(
+    find.descendant(of: finder, matching: find.byType(RichText)),
+  )) {
+    paragraph.text.visitChildren((span) {
+      final colour = span.style?.color;
+      if (colour != null) colours.add(colour);
+      return true;
+    });
+  }
+  return colours;
+}
+
+bool _opaque(Color colour) => colour.toARGB32() >> 24 == 0xFF;
+
 void main() {
   group('KitAskLine', () {
     test('reads no colorScheme, textTheme, accent or partial-alpha text '
@@ -53,6 +74,42 @@ void main() {
       expect(source.contains('withValues(alpha'), isFalse);
       expect(source.contains('withOpacity'), isFalse);
     });
+
+    for (final light in [false, true]) {
+      testWidgets('paints the glyph, question and answers in opaque text '
+          'roles, never the accent (${light ? 'light' : 'dark'})', (
+        tester,
+      ) async {
+        _setWidth(tester, 412);
+        await tester.pumpWidget(_host(_askLine(), light: light));
+        final roles = ThemeRoles.of(tester.element(find.byType(KitAskLine)));
+
+        Color only(Finder finder) {
+          final colours = _paintedTextColours(tester, finder).toSet();
+          expect(colours, hasLength(1), reason: '$finder');
+          return colours.single;
+        }
+
+        final glyph = only(find.byIcon(AppIconography.inbox));
+        final question = only(
+          find.text('Tell me when the first reply arrives?'),
+        );
+        final decline = only(find.text('Not now'));
+        final accept = only(find.text('Notify me'));
+        expect(glyph, roles.text2);
+        expect(question, roles.text1);
+        expect(decline, roles.text2);
+        expect(accept, anyOf(roles.text1, roles.text2));
+
+        final all = _paintedTextColours(tester, find.byType(KitAskLine));
+        expect(all, isNotEmpty);
+        for (final colour in all) {
+          expect(_opaque(colour), isTrue, reason: '$colour is translucent');
+          expect(colour, isNot(roles.accent));
+          expect([roles.text1, roles.text2], contains(colour));
+        }
+      });
+    }
 
     testWidgets('renders the question, a 20 dp text2 glyph and both answers; '
         'each answer fires once', (tester) async {
@@ -90,7 +147,7 @@ void main() {
       // A wide window, not the literal 412 dp of item 2: the test font has
       // no narrow proportional metrics, so a width tuned for the real Geist
       // face would already wrap here. 412 dp with the real face is the
-      // golden gallery's job (kit_ask_line_ask_inline_412x915_*).
+      // golden gallery's job (kit_ask_line_ask_inline_{dark,light}.png).
       _setWidth(tester, 900);
       await tester.pumpWidget(_host(_askLine(question: 'New reply?')));
       final inlineQuestion = tester.getRect(find.text('New reply?'));
@@ -114,7 +171,8 @@ void main() {
     });
 
     for (final locale in const [Locale('en'), Locale('ar')]) {
-      testWidgets('a long question at 320 dp stacks with no overflow '
+      testWidgets('a long question at 320 dp stacks under it, start-aligned, '
+          'with no overflow '
           '(${locale.languageCode})', (tester) async {
         _setWidth(tester, 320);
         await tester.pumpWidget(
@@ -131,8 +189,75 @@ void main() {
         expect(tester.takeException(), isNull);
         final line = tester.getRect(find.byType(KitAskLine));
         expect(line.width, lessThanOrEqualTo(320));
+
+        // Under the question: both answers start at or below its last line.
+        final question = tester.getRect(
+          find.textContaining('Tell me the moment'),
+        );
+        final accept = tester.getRect(find.text('Notify me'));
+        final decline = tester.getRect(find.text('Not now'));
+        expect(accept.top, greaterThanOrEqualTo(question.bottom));
+        expect(decline.top, greaterThanOrEqualTo(question.bottom));
+        // Start-aligned: the first answer's label (accept, then decline)
+        // begins at the question's start edge (the button's own inset is
+        // outdented by KitInset), right in RTL, left in LTR.
+        final rtl = locale.languageCode == 'ar';
+        expect(
+          Directionality.of(tester.element(find.byType(KitAskLine))),
+          rtl ? TextDirection.rtl : TextDirection.ltr,
+        );
+        if (rtl) {
+          expect(accept.right, moreOrLessEquals(question.right, epsilon: 1));
+          // Decline follows accept on its line, or wraps start-aligned.
+          expect(
+            decline.right < accept.left ||
+                (decline.top >= accept.bottom &&
+                    (decline.right - question.right).abs() <= 1),
+            isTrue,
+            reason: 'decline $decline after accept $accept',
+          );
+        } else {
+          expect(accept.left, moreOrLessEquals(question.left, epsilon: 1));
+          expect(
+            decline.left > accept.right ||
+                (decline.top >= accept.bottom &&
+                    (decline.left - question.left).abs() <= 1),
+            isTrue,
+            reason: 'decline $decline after accept $accept',
+          );
+        }
       });
     }
+
+    testWidgets('stacked at 2.0x text, the glyph is centred on the '
+        "question's first line", (tester) async {
+      _setWidth(tester, 412);
+      await tester.pumpWidget(_host(_askLine(), textScale: 2));
+      await tester.pumpAndSettle();
+      final glyph = tester.getRect(find.byIcon(AppIconography.inbox));
+      final paragraph = tester.renderObject<RenderParagraph>(
+        find.descendant(
+          of: find.text('Tell me when the first reply arrives?'),
+          matching: find.byType(RichText),
+        ),
+      );
+      final firstLine = paragraph
+          .getBoxesForSelection(
+            const TextSelection(baseOffset: 0, extentOffset: 1),
+          )
+          .single
+          .toRect();
+      final origin = paragraph.localToGlobal(Offset.zero);
+      final lineCentre = origin.dy + firstLine.center.dy;
+      expect(glyph.center.dy, moreOrLessEquals(lineCentre, epsilon: 2));
+      // The block keeps a space3 (12 dp) inset above the question.
+      final line = tester.getRect(find.byType(KitAskLine));
+      expect(
+        tester.getRect(find.text('Tell me when the first reply arrives?')).top -
+            line.top,
+        greaterThanOrEqualTo(12),
+      );
+    });
 
     testWidgets('no overflow from 320 to 1600 dp', (tester) async {
       for (final width in const <double>[320, 360, 412, 600, 800, 1200, 1600]) {
@@ -182,12 +307,48 @@ void main() {
   });
 
   group('KitSkeletonTranscript', () {
-    test('reads no colorScheme (LOOK-2)', () {
+    test('reads no colorScheme, textTheme, accent or alpha (LOOK-2)', () {
       final source = File(
         'lib/ui/kit/kit_skeleton_transcript.dart',
       ).readAsStringSync();
       expect(source.contains('colorScheme'), isFalse);
+      expect(source.contains('.textTheme'), isFalse);
+      expect(source.contains('accent'), isFalse);
+      expect(source.contains('withValues(alpha'), isFalse);
+      expect(source.contains('withOpacity'), isFalse);
     });
+
+    for (final light in [false, true]) {
+      testWidgets('paints every block and bar in opaque surface3, never the '
+          'accent (${light ? 'light' : 'dark'})', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: light ? AppTheme.light() : AppTheme.dark(),
+            home: const Scaffold(body: KitSkeletonTranscript()),
+          ),
+        );
+        final roles = ThemeRoles.of(
+          tester.element(find.byType(KitSkeletonTranscript)),
+        );
+        final boxes = tester.renderObjectList<RenderDecoratedBox>(
+          find.descendant(
+            of: find.byType(KitSkeletonTranscript),
+            matching: find.byType(DecoratedBox),
+          ),
+        );
+        // Two turns: a prompt block and three or four reply bars each.
+        expect(boxes.length, 9);
+        expect(_opaque(roles.surface3), isTrue);
+        for (final box in boxes) {
+          final decoration = box.decoration as ShapeDecoration;
+          final colour = decoration.color!;
+          expect(colour, roles.surface3);
+          expect(_opaque(colour), isTrue);
+          expect(colour, isNot(roles.accent));
+          expect(decoration.gradient, isNull);
+        }
+      });
+    }
 
     testWidgets('excluded from semantics; keeps its key', (tester) async {
       final handle = tester.ensureSemantics();

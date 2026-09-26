@@ -62,6 +62,22 @@ class KitAskLine extends StatelessWidget {
     return reserved + question + buttons > width || scaler.scale(1) > 1.5;
   }
 
+  /// The height of one line of the question at the current text scale.
+  double _lineHeight(BuildContext context) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: question,
+        style: KitText.styleOf(context, KitTextRole.secondary),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final result = painter.preferredLineHeight;
+    painter.dispose();
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
@@ -86,14 +102,21 @@ class KitAskLine extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           );
+          final glyph = Icon(
+            icon,
+            size: tokens.smallIconSize,
+            color: roles.text2,
+          );
           return ConstrainedBox(
             constraints: const BoxConstraints(
               minHeight: KitTokens.statusLineMinHeight,
             ),
             child: Padding(
+              // Stacked, the block keeps a space3 top inset so the question
+              // does not hug the line above it.
               padding: EdgeInsetsDirectional.fromSTEB(
                 tokens.gutter,
-                verticalInset,
+                stacked ? tokens.space3 : verticalInset,
                 tokens.space2,
                 verticalInset,
               ),
@@ -102,7 +125,16 @@ class KitAskLine extends StatelessWidget {
                     ? CrossAxisAlignment.start
                     : CrossAxisAlignment.center,
                 children: [
-                  Icon(icon, size: tokens.smallIconSize, color: roles.text2),
+                  // Stacked, the glyph is centred on the question's first
+                  // line (one line of the scaled secondary style), not on
+                  // the top of the block.
+                  if (stacked)
+                    SizedBox(
+                      height: _lineHeight(context),
+                      child: Center(child: glyph),
+                    )
+                  else
+                    glyph,
                   SizedBox(width: tokens.space3),
                   Expanded(
                     child: stacked

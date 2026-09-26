@@ -1,17 +1,10 @@
 // Gallery (gate G4) for KitAskLine and KitSkeletonTranscript
-// (docs/ux-system/kit-api/KitAskLine.md): the ask line's inline and
-// stacked states above a composer-height inset, and the transcript's
-// loading skeleton, on the five §8.4 window sizes, light and dark, at 2.0
-// text and in Arabic (right to left).
-//
-// The frozen spec's own size list transposes the second of the five
-// standard sizes ("915×412" instead of 412×915, the only entry that
-// differs from kitGallerySizes) and its "that is 30 PNGs" total double
-// counts the states bucket's ask_inline/skeleton entries against this
-// bucket's matching 412×915 shot; both are reported in the QA record. This
-// gallery renders the standard kitGallerySizes and gives ask_stacked (not
-// produced anywhere else) its own dedicated 412×915 pair, so every name
-// stays unique.
+// (docs/ux-system/kit-api/KitAskLine.md, TEST-9, TEST-20), 30 PNGs:
+// - states at 412x915, dark and light: ask_inline (above a composer-height
+//   inset), ask_stacked (a long question) and skeleton (6);
+// - the default ask_inline and skeleton at every other gallery size
+//   (360x800, 915x412, 800x1280, 1280x800, 1600x1000), dark and light (20);
+// - ask_inline at 2.0 text and in Arabic at 412x915 and 1280x800, dark (4).
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_ask_line_golden_test.dart
@@ -42,17 +35,31 @@ KitAskLine _askLine({
 /// A neutral placeholder the height of the composer the ask line sits
 /// above in the conversation (never a real composer: KitComposer has not
 /// merged yet, R13).
-const _composerInset = SizedBox(
-  height: 56,
-  child: ColoredBox(color: Color(0x11808080)),
+Widget _composerInset() => Builder(
+  builder: (context) => SizedBox(
+    height: 56,
+    child: ColoredBox(color: ThemeRoles.of(context).surface2),
+  ),
 );
+
+const _states = Size(412, 915);
+
+/// The default shots' sizes: every STANDARDS LAY-4 gallery size except
+/// 412x915, whose shots are the states above.
+const _defaultSizes = <Size>[
+  Size(360, 800),
+  Size(915, 412),
+  Size(800, 1280),
+  Size(1280, 800),
+  Size(1600, 1000),
+];
 
 Widget _askAboveComposer({bool arabic = false}) => Column(
   mainAxisSize: MainAxisSize.min,
   crossAxisAlignment: CrossAxisAlignment.stretch,
   children: [
     _askLine(arabic: arabic),
-    _composerInset,
+    _composerInset(),
   ],
 );
 
@@ -68,16 +75,16 @@ void main() {
           tester,
           name: kitGalleryName(
             'kit_ask_line_ask_stacked',
-            const Size(412, 915),
+            _states,
             light: light,
           ),
-          size: const Size(412, 915),
+          size: _states,
           light: light,
           child: SizedBox(width: 320, child: _askLine(question: _longQuestion)),
         );
       });
 
-      for (final size in kitGallerySizes) {
+      for (final size in [_states, ..._defaultSizes]) {
         testWidgets('inline above the composer · ${kitGallerySize(size)} · '
             '$mode', (tester) async {
           await kitGalleryPart(
@@ -133,7 +140,7 @@ void main() {
   group('KitSkeletonTranscript', () {
     for (final light in [false, true]) {
       final mode = light ? 'light' : 'dark';
-      for (final size in kitGallerySizes) {
+      for (final size in [_states, ..._defaultSizes]) {
         testWidgets('loading · ${kitGallerySize(size)} · $mode', (
           tester,
         ) async {
