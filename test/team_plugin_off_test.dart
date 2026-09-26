@@ -51,13 +51,16 @@ Directory _findFixtureRoot() {
 /// plugin is off. The Plugins settings entry (`settings-category-plugins`,
 /// `plugins-ai-team-*`) and the server editor's "Add AI Team" section
 /// (`server-editor-team-*`) are the entry points for turning it on and are
-/// meant to exist regardless (TEAM-106).
+/// meant to exist regardless (TEAM-106). So is the Work tab's door to the
+/// team while it is off (`team-discover-*`, docs/qa/team-discover-2026-09-25):
+/// it holds no plugin state and makes no call.
 const _pluginKeyPrefixes = ['team-', 'activity-team-'];
+const _entryPointPrefixes = ['team-discover-'];
 
 bool _isPluginKey(Key? key) => switch (key) {
-  ValueKey<String>(:final value) => _pluginKeyPrefixes.any(
-    (prefix) => value.startsWith(prefix),
-  ),
+  ValueKey<String>(:final value) =>
+    _pluginKeyPrefixes.any((prefix) => value.startsWith(prefix)) &&
+        !_entryPointPrefixes.any((prefix) => value.startsWith(prefix)),
   _ => false,
 };
 
@@ -507,8 +510,12 @@ void main() {
         expect(team.snapshot.hasData, isTrue);
         expect(team.snapshot.agents, isNotEmpty);
         expect(team.snapshot.runs, isNotEmpty);
-        expect(find.byType(TeamCard), findsOneWidget);
-        expect(find.byKey(const ValueKey('team-card-data')), findsOneWidget);
+        // The team's page door and its tasks are in the Work tab
+        // (docs/design/team-conversation-2026-09-26.md).
+        expect(
+          find.byKey(const ValueKey('team-work-door'), skipOffstage: false),
+          findsOneWidget,
+        );
         // The predicate the plugin-off tests rely on does see the plugin's
         // keys when they exist.
         expect(_pluginKeys(), findsWidgets);
@@ -570,7 +577,10 @@ void main() {
         expect(on, same(plugged));
         await team.start();
         await settle(tester);
-        expect(find.byType(TeamCard), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('team-work-door'), skipOffstage: false),
+          findsOneWidget,
+        );
 
         // Activity too: it reads the plugin's gates and agents for its
         // AI Team rows (none in the fixture's normal run, so no rows).

@@ -20,6 +20,7 @@ import '../../state/orchestration.dart';
 import '../app_theme.dart';
 import '../kit/kit_task_mark.dart';
 import 'relative_time.dart';
+import 'team_now.dart';
 
 // ---------------------------------------------------------------------------
 // The person's words: host phrase, task line, stages, roles
@@ -39,9 +40,10 @@ String? teamComputerName(OrchestrationController controller) {
   return name;
 }
 
-/// "Paused" when every agent is switched off on the host, "Not answering"
-/// when the shown data is old or the host could not be reached; null when
-/// neither holds.
+/// "Paused" when the agents were switched off on purpose (suspended) and
+/// none is live, "Not answering" when the shown data is old or the host
+/// could not be reached; null otherwise. Agents that are only asleep (they
+/// wake when there is work) are not a pause ([teamRest]).
 String? teamHostCondition(
   AppLocalizations l10n,
   OrchestrationController controller,
@@ -64,8 +66,7 @@ String? teamHostCondition(
   final snapshot = controller.snapshot;
   if (controller.phase == OrchestrationPhase.ready &&
       snapshot.hasData &&
-      snapshot.agents.isNotEmpty &&
-      teamLiveAgents(snapshot.agents).isEmpty) {
+      teamRest(snapshot.agents) == TeamRest.paused) {
     return l10n.teamUiHostPhrasePaused;
   }
   return null;
@@ -166,6 +167,10 @@ String teamTaskLine(
   required bool needsYou,
   required DateTime now,
   DispatchCycle? Function(String workId)? cycleOf,
+  bool explainWait = false,
+  Duration? checkEvery,
+  bool paused = false,
+  bool showWaitAge = true,
 }) {
   final finishedAt = run.finishedAt;
   if (finishedAt != null &&
@@ -180,6 +185,21 @@ String teamTaskLine(
       _ when run.merged => l10n.teamUiTaskMergedAgo(when),
       _ => l10n.teamUiTaskDoneAgo(when),
     };
+  }
+  // A task waiting for a worker says for how long and when one starts
+  // (teamWaitLine); the home and the Work tab card ask for it.
+  if (explainWait && !needsYou) {
+    final wait = teamWaitLine(
+      l10n,
+      run,
+      work,
+      now: now,
+      every: checkEvery,
+      paused: paused,
+      showAge: showWaitAge,
+      cycleOf: cycleOf,
+    );
+    if (wait != null) return wait;
   }
   final word = needsYou
       ? l10n.teamUiHomeRunNeedsYou

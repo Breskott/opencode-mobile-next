@@ -151,9 +151,22 @@ void main() {
       'screen; Technical details open', (tester) async {
     await pumpHome(tester, size: const Size(320, 740), scale: 2.5);
     noControls(tester);
-    for (final key in [run, start, info]) {
+    // The team's Now line heads the list and names the task with what
+    // happens next (docs/qa/team-discover-2026-09-25); at 2.5x the task's
+    // own row is one scroll below it, never pushed sideways.
+    for (final key in [const ValueKey('team-home-now-stuck'), start, info]) {
       onScreen(tester, key, 320);
     }
+    await tester.scrollUntilVisible(
+      find.byKey(run),
+      200,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('team-home-runs')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.pumpAndSettle();
+    onScreen(tester, run, 320);
     await tester.tap(find.byKey(info));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('team-home-host-sheet')), findsOneWidget);

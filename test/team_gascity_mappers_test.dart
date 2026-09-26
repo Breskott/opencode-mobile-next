@@ -1155,6 +1155,47 @@ void main() {
         AgentState.stopped,
       );
     });
+    test('agent: the session is the live truth; the agent list is the '
+        'fallback', () {
+      // The owner's phone (build 2054, 2026-09-25), read over adb: the
+      // worker's agent entry exactly as /agents listed it (lagging: pool
+      // sessions do not show there) ...
+      const fields = {
+        'available': true,
+        'display_name': 'OpenCode',
+        'name': 'demo-app/gastown.furiosa',
+        'pack': 'gastown',
+        'pack_derived': true,
+        'pool': 'demo-app/gastown.polecat',
+        'provider': 'opencode',
+        'rig': 'demo-app',
+        'running': false,
+        'state': 'stopped',
+        'suspended': false,
+      };
+      // ... alone it is stopped: nothing says otherwise.
+      expect(agent(fields).state, AgentState.stopped);
+      // ... while /sessions had its session active and running on a bead.
+      final session = GcSession.fromJson(const {
+        'id': 'ph-yqt',
+        'session_name': 'gastown__polecat-ph-yqt',
+        'alias': 'demo-app/gastown.furiosa',
+        'state': 'active',
+        'running': true,
+        'active_bead': 'da-r7d',
+        'created_at': '2026-09-25T19:51:05Z',
+      });
+      final live = agent(fields, session: session);
+      expect(live.state, AgentState.working);
+      expect(live.currentWorkId, 'da-r7d');
+      // A session that is not running is not working, whatever it says.
+      final gone = GcSession.fromJson(const {
+        'id': 'ph-yqt',
+        'state': 'active',
+        'running': false,
+      });
+      expect(agent(fields, session: gone).state, AgentState.stopped);
+    });
     test('agent: crashed', () {
       expect(
         agent(const {'state': 'error', 'running': false}).state,

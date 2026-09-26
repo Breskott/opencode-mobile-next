@@ -539,6 +539,20 @@ void main() {
         );
         // Nothing waits on the person: no section, not an empty one.
         expect(find.byKey(const ValueKey('team-home-needs-you')), findsNothing);
+        // The empty board's drawing has room now (team-discover-2026-09-25):
+        // at 2.5x text the agents row is further down the list.
+        await tester.scrollUntilVisible(
+          find.byKey(const ValueKey('team-home-agents-row')),
+          200,
+          scrollable: find.descendant(
+            of: find.byKey(const ValueKey('team-home-runs')),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('team-home-agents-row')),
+        );
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('team-home-agents-row')));
         await tester.pumpAndSettle();
         expect(

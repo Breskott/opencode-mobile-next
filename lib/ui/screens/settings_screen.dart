@@ -7,6 +7,8 @@ import '../../api/models.dart';
 import '../../api/product_repository.dart';
 import '../../api/provider_presentation.dart';
 import '../../background/live_background.dart';
+import '../../builtin/setup/phone_setup.dart';
+import '../../builtin/setup/setup_contract.dart' show SetupProgress;
 import '../../l10n/app_localizations.dart';
 import '../../platform/platform_capabilities.dart';
 import '../../state/connection.dart';
@@ -26,6 +28,7 @@ import '../widgets/phone_server_card.dart' show serverDisplayName;
 import '../widgets/product_states.dart';
 import 'host_management_screen.dart';
 import 'library_screen.dart';
+import '../widgets/team_discover.dart';
 import '../search/search_index.dart';
 import 'usage_hub_screen.dart';
 
@@ -336,6 +339,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
         row('settings-voice', subtitle: copy.settingsHubVoiceSubtitle),
       ],
       SettingsGroup.agentSetup: [
+        // The AI Team is findable here whether it is on or off, in the
+        // state words Settings › Plugins uses (teamStateLine): "Turning
+        // on…" while this phone installs it, "On · This phone", "Off" (with
+        // what it is for).
+        row(
+          'settings-ai-team',
+          builder: (context) {
+            Widget build(SetupProgress? setup) {
+              final line = teamStateLine(l10n, controller, setup: setup);
+              return _CategoryRow(
+                rowKey: 'settings-ai-team',
+                icon: AppIconography.agent,
+                title: l10n.teamUiHomeTitle,
+                subtitle: line == l10n.teamUiRowOff
+                    ? l10n.teamDiscoverRowLine
+                    : line,
+                onTap: () => _openEntry(entries['settings-ai-team']!, scope),
+              );
+            }
+
+            final profile = controller.profile;
+            if (profile == null ||
+                teamServerKindOf(profile) != TeamServerKind.inApp) {
+              return build(null);
+            }
+            return ValueListenableBuilder<SetupProgress>(
+              valueListenable: PhoneSetup.engine.progress,
+              builder: (context, setup, _) => build(setup),
+            );
+          },
+        ),
         row(
           'settings-models',
           subtitle: l10n.settingsDiscoveryNewChatsModel(

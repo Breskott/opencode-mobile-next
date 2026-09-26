@@ -141,6 +141,21 @@ const _migrated = <String, List<String>>{
     'team_home_loaded',
     'team_run_overview',
   ],
+  // Finding the AI Team while it is off (docs/qa/team-discover-2026-09-25):
+  // the Work tab's entry and folded row, and the intro
+  // (test/goldens/team_discover_golden_test.dart).
+  'lib/ui/widgets/team_discover.dart': [
+    'team_discover_work',
+    'team_discover_work_folded',
+  ],
+  'lib/ui/screens/team/team_intro_screen.dart': [
+    'team_intro_phone',
+    'team_intro_computer',
+  ],
+  'lib/ui/kit/scenes/team_discover_scenes.dart': [
+    'team_discover_scene_teaser',
+    'team_discover_scene_relay',
+  ],
   // §9 step 5: the chat's states and banners (not the transcript's
   // messages). Loading, could not load, the one status line (connection,
   // a message not sent, a prompt error, staged revert, subagent, sharing).
@@ -276,7 +291,7 @@ const _retired = <String, Map<String, String>>{
 const _allowed = <String, Map<String, String>>{
   'lib/ui/screens/workspace_screen.dart': {
     // Not raw progress: the conversation row's breathing "working" dot is a
-    // state mark, and the pull-to-refresh spinner is Material's own.
+    // state mark, and pull to refresh is the kit's (KitRefresh).
   },
 };
 

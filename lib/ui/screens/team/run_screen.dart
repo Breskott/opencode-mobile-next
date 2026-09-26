@@ -389,7 +389,7 @@ class _RunScreenState extends State<RunScreen>
     final tabs = TabBarView(
       controller: _tabs,
       children: [
-        RefreshIndicator(
+        KitRefresh(
           key: const ValueKey('team-run-pull'),
           onRefresh: _refresh,
           child: _Overview(

@@ -26,10 +26,12 @@ import '../../../state/profiles.dart';
 import '../../../termux/bridge.dart';
 import '../../../termux/team_runtime.dart';
 import '../../../builtin/builtin_server.dart' show looksLikeInAppServer;
+import '../../../builtin/team/builtin_team.dart' show BuiltinTeam;
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
 import '../../desktop/desktop_interaction.dart';
 import '../../widgets/builtin_team_section.dart';
+import '../../widgets/team_discover.dart' show teamStateLine;
 import '../../widgets/team_discovery_card.dart';
 import '../../widgets/team_host_form.dart';
 import '../../widgets/team_phone_section.dart';
@@ -125,6 +127,16 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: child,
     );
+    // One AI Team per page, in one state (the owner, build 2054: "why
+    // repeat gas city on the plugin page?"). On OpenCode inside the app the
+    // phone's card IS the AI Team; connecting a computer's team instead is
+    // a secondary choice under it, and once the phone's team is on, the
+    // same sheet holds its technical details. The "In this app" row stays
+    // for every other server, and for a computer's team connected here.
+    final phoneHosts = BuiltinTeamSection.appliesTo(profile);
+    final config = profile?.orchestration;
+    final phoneTeamOn = BuiltinTeam.isBuiltinConfig(config);
+    final phoneIsTheTeam = phoneHosts && (config == null || phoneTeamOn);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamUiPluginsTitle)),
       body: DesktopScrollbarArea(
@@ -139,9 +151,25 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
                 probe: widget.probe,
               ),
             ),
-            if (BuiltinTeamSection.appliesTo(profile))
+            if (phoneHosts)
               rails(
                 BuiltinTeamSection(connection: controller, profile: profile!),
+              ),
+            if (phoneIsTheTeam)
+              KitRow(
+                key: const ValueKey('plugins-team-other'),
+                leading: KitRow.icon(
+                  context,
+                  phoneTeamOn ? AppIconography.info : AppIconography.computer,
+                ),
+                title: phoneTeamOn
+                    ? l10n.teamUiTechnicalDetails
+                    : l10n.teamDiscoverComputerChoiceTitle,
+                supporting: phoneTeamOn
+                    ? null
+                    : TextSpan(text: l10n.teamDiscoverComputerChoiceBody),
+                trailing: const KitChevron(),
+                onTap: _openSheet,
               ),
             if (teamPhoneProfile(profile))
               rails(
@@ -165,7 +193,7 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
                   ),
                 ),
               )
-            else ...[
+            else if (!phoneIsTheTeam) ...[
               SectionLabel(
                 l10n.pluginsSectionInApp,
                 key: const ValueKey('plugins-section-app'),
@@ -178,10 +206,9 @@ class _PluginsSettingsScreenState extends State<PluginsSettingsScreen> {
                 leading: KitRow.icon(context, AppIconography.extensions),
                 title: l10n.pluginsTeamRowTitle,
                 supporting: TextSpan(
-                  text: teamRowSubtitle(
+                  text: teamStateLine(
                     l10n,
-                    profile: profile,
-                    orchestration: controller.orchestration,
+                    controller,
                     discovery: _discovery,
                     now: widget.now?.call() ?? DateTime.now(),
                   ),

@@ -1,0 +1,220 @@
+// Finding the AI Team while it is off (docs/qa/team-discover-2026-09-25),
+// at 412x915, dark and light, with the app's real fonts: the Work tab on
+// the owner's Termux phone with the entry, the same tab once it is folded, and the intro for OpenCode
+// inside the app (this phone) and for a computer, Settings' AI Team row, and
+// Settings › Plugins on OpenCode inside the app (one AI Team, the phone's).
+//
+// Regenerate deliberately:
+//   flutter test --update-goldens test/goldens/team_discover_golden_test.dart
+// and look at every changed image before committing it.
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:opencode_mobile/platform/platform_capabilities.dart';
+import 'package:opencode_mobile/api/models.dart';
+import 'package:opencode_mobile/ui/kit/kit_motion.dart';
+import 'package:opencode_mobile/builtin/team/builtin_team.dart';
+import 'package:opencode_mobile/ui/screens/home_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings/plugins_screen.dart';
+import 'package:opencode_mobile/ui/screens/settings_screen.dart';
+import 'package:opencode_mobile/ui/screens/team/team_intro_screen.dart';
+import 'package:opencode_mobile/ui/widgets/team_discover.dart';
+import 'package:opencode_mobile/termux/team_runtime.dart';
+import 'package:opencode_mobile/ui/widgets/builtin_team_section.dart';
+import 'package:opencode_mobile/ui/widgets/team_host_form.dart';
+import 'package:opencode_mobile/ui/widgets/team_phone_onboarding.dart';
+
+import '../../tool/capture/fixtures.dart' show captureApp, loadCaptureFonts;
+import '../support/work_tab_fixture.dart';
+
+/// The owner's phone: Termux that can run a team.
+class _Runtime extends TermuxTeamRuntime {
+  _Runtime()
+    : super(
+        runner: (_, {timeout = Duration.zero}) async => '',
+        manifestLoader: () async => null,
+        archProbe: () async => 'aarch64',
+      );
+
+  @override
+  Future<bool> get supportsAiTeam async => true;
+}
+
+/// The in-app team, installed and not yet on for the project.
+class _BuiltinTeam extends BuiltinTeam {
+  @override
+  Future<BuiltinTeamState> status() async =>
+      const BuiltinTeamState(installed: true);
+}
+
+void _mockSecureStorage(WidgetTester tester) {
+  const secure = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+    secure,
+    (call) async => call.method == 'readAll' ? <String, String>{} : null,
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      secure,
+      null,
+    ),
+  );
+}
+
+Future<void> _golden(
+  WidgetTester tester,
+  String name, {
+  required bool light,
+  required WorkController controller,
+  Widget home = const HomeScreen(initialTab: 0),
+}) async {
+  _mockSecureStorage(tester);
+  tester.view.physicalSize = const Size(412, 915);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+  final boundary = GlobalKey();
+  try {
+    await tester.pumpWidget(
+      captureApp(
+        home: home,
+        boundaryKey: boundary,
+        controller: controller,
+        light: light,
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    // Every drawing finishes its entrance.
+    await tester.pump(KitMotion.celebration);
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byKey(boundary),
+      matchesGoldenFile('${name}_${light ? 'light' : 'dark'}.png'),
+    );
+  } finally {
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+    await tester.pump();
+  }
+}
+
+Map<String, Session> _sessions() => {
+  'busy': workSession('busy', 'Add CSV export to reports', ago: workMinute),
+  'waiting': workSession(
+    'waiting',
+    'Upgrade the charting library',
+    ago: 40 * workMinute,
+  ),
+  'older': workSession(
+    'older',
+    'Explain the budget rules engine',
+    ago: 5 * 60 * workMinute,
+  ),
+};
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(loadCaptureFonts);
+  setUp(() => debugTeamPhoneRuntime = _Runtime());
+  tearDown(() {
+    debugBuiltinTeam = null;
+    debugTeamPhoneRuntime = null;
+    debugPlatformCapabilities = null;
+    teamHostProbe = defaultTeamHostProbe;
+  });
+
+  for (final light in [false, true]) {
+    final mode = light ? 'light' : 'dark';
+
+    testWidgets('work · AI Team off · $mode', (tester) async {
+      final controller = await workController(
+        sessions: _sessions(),
+        busy: {'busy'},
+      );
+      await _golden(
+        tester,
+        'team_discover_work',
+        light: light,
+        controller: controller,
+      );
+    });
+
+    testWidgets('work · AI Team off, folded · $mode', (tester) async {
+      final controller = await workController(
+        sessions: _sessions(),
+        busy: {'busy'},
+      );
+      await TeamDiscoverMemory.fold(controller.store.prefs);
+      await _golden(
+        tester,
+        'team_discover_work_folded',
+        light: light,
+        controller: controller,
+      );
+    });
+
+    testWidgets('settings · the AI Team row · $mode', (tester) async {
+      final controller = await workController(
+        name: 'pop-os',
+        baseUrl: 'http://100.100.1.2:4096',
+      );
+      await _golden(
+        tester,
+        'team_discover_settings',
+        light: light,
+        controller: controller,
+        home: SettingsScreen(
+          controller: controller,
+          initialGroup: SettingsGroup.agentSetup,
+        ),
+      );
+    });
+
+    testWidgets('plugins · OpenCode inside the app · $mode', (tester) async {
+      debugPlatformCapabilities = const PlatformCapabilities.android();
+      debugBuiltinTeam = _BuiltinTeam();
+      final controller = await workController(
+        name: 'This phone',
+        baseUrl: 'http://127.0.0.1:4097',
+      );
+      await _golden(
+        tester,
+        'team_discover_plugins_phone',
+        light: light,
+        controller: controller,
+        home: PluginsSettingsScreen(controller: controller),
+      );
+    });
+
+    testWidgets('intro · OpenCode inside the app · $mode', (tester) async {
+      debugPlatformCapabilities = const PlatformCapabilities.android();
+      final controller = await workController(
+        name: 'This phone',
+        baseUrl: 'http://127.0.0.1:4097',
+      );
+      await _golden(
+        tester,
+        'team_intro_phone',
+        light: light,
+        controller: controller,
+        home: TeamIntroScreen(controller: controller),
+      );
+    });
+
+    testWidgets('intro · a computer · $mode', (tester) async {
+      teamHostProbe = (url, {city}) async =>
+          const ProbeUnreachable(error: 'no answer');
+      final controller = await workController(
+        name: 'pop-os',
+        baseUrl: 'http://100.100.1.2:4096',
+      );
+      await _golden(
+        tester,
+        'team_intro_computer',
+        light: light,
+        controller: controller,
+        home: TeamIntroScreen(controller: controller),
+      );
+    });
+  }
+}

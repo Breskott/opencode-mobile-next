@@ -30322,6 +30322,390 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save this choice on this device. Try again.'**
   String get effectsSaveFailed;
+
+  /// Work tab and AI Team intro: the one line that says what the AI Team is for, while it is off
+  ///
+  /// In en, this message translates to:
+  /// **'Give a bigger job to a team'**
+  String get teamDiscoverEntryTitle;
+
+  /// Work tab: the AI Team entry's supporting line while it is off
+  ///
+  /// In en, this message translates to:
+  /// **'Agents plan it, work on it, check it and merge it. You step in when they ask.'**
+  String get teamDiscoverEntryBody;
+
+  /// Work tab: the folded AI Team row's supporting line, after the person has seen the entry
+  ///
+  /// In en, this message translates to:
+  /// **'Off · A team of agents for bigger jobs'**
+  String get teamDiscoverRowLine;
+
+  /// AI Team intro: what the team does, in one or two sentences
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what you want done. A team of agents splits it into steps, works on them side by side and brings the finished work into your project.'**
+  String get teamDiscoverIntroBody;
+
+  /// AI Team intro: heading of the four steps
+  ///
+  /// In en, this message translates to:
+  /// **'How it works'**
+  String get teamDiscoverHowHeading;
+
+  /// AI Team intro: step 1 title
+  ///
+  /// In en, this message translates to:
+  /// **'It plans'**
+  String get teamDiscoverStepPlanTitle;
+
+  /// AI Team intro: step 1 line
+  ///
+  /// In en, this message translates to:
+  /// **'A planner splits your job into steps.'**
+  String get teamDiscoverStepPlanBody;
+
+  /// AI Team intro: step 2 title
+  ///
+  /// In en, this message translates to:
+  /// **'It works'**
+  String get teamDiscoverStepWorkTitle;
+
+  /// AI Team intro: step 2 line
+  ///
+  /// In en, this message translates to:
+  /// **'Workers take the steps, each on its own copy of the project.'**
+  String get teamDiscoverStepWorkBody;
+
+  /// AI Team intro: step 3 title
+  ///
+  /// In en, this message translates to:
+  /// **'It checks'**
+  String get teamDiscoverStepCheckTitle;
+
+  /// AI Team intro: step 3 line
+  ///
+  /// In en, this message translates to:
+  /// **'A reviewer looks over each step\'s work.'**
+  String get teamDiscoverStepCheckBody;
+
+  /// AI Team intro: step 4 title
+  ///
+  /// In en, this message translates to:
+  /// **'It merges'**
+  String get teamDiscoverStepMergeTitle;
+
+  /// AI Team intro: step 4 line
+  ///
+  /// In en, this message translates to:
+  /// **'Finished work lands in your project. When it needs a decision, it asks you.'**
+  String get teamDiscoverStepMergeBody;
+
+  /// AI Team intro: heading of what the team needs when it runs on this phone
+  ///
+  /// In en, this message translates to:
+  /// **'What it needs on this phone'**
+  String get teamDiscoverNeedsPhone;
+
+  /// AI Team intro: heading of what the team needs on a computer; {server} is the server's name
+  ///
+  /// In en, this message translates to:
+  /// **'What it needs on {server}'**
+  String teamDiscoverNeedsServer(String server);
+
+  /// AI Team intro: download size row; {size} is like 180 MB
+  ///
+  /// In en, this message translates to:
+  /// **'About {size} to download'**
+  String teamDiscoverDownloadTitle(String size);
+
+  /// AI Team intro, OpenCode inside the app: where the download goes
+  ///
+  /// In en, this message translates to:
+  /// **'Installed once, next to OpenCode on this phone.'**
+  String get teamDiscoverInAppDownloadBody;
+
+  /// AI Team intro, OpenCode in Termux: where the download goes
+  ///
+  /// In en, this message translates to:
+  /// **'Installed into Termux, next to OpenCode.'**
+  String get teamDiscoverTermuxDownloadBody;
+
+  /// AI Team intro: the battery row's title
+  ///
+  /// In en, this message translates to:
+  /// **'More battery while it works'**
+  String get teamDiscoverBatteryTitle;
+
+  /// AI Team intro, OpenCode inside the app: why it costs battery
+  ///
+  /// In en, this message translates to:
+  /// **'Several agents run at once, and Android may stop some if it runs too many.'**
+  String get teamDiscoverInAppBatteryBody;
+
+  /// AI Team intro, OpenCode in Termux: why it costs battery
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Termux open while it works; Android may stop it in the background. Nothing is lost.'**
+  String get teamDiscoverTermuxBatteryBody;
+
+  /// AI Team intro, on this phone: the per-project row's title
+  ///
+  /// In en, this message translates to:
+  /// **'You choose the projects'**
+  String get teamDiscoverProjectTitle;
+
+  /// AI Team intro, on this phone: the per-project row's line
+  ///
+  /// In en, this message translates to:
+  /// **'Turn it on for each project you want it to work on.'**
+  String get teamDiscoverProjectBody;
+
+  /// AI Team intro, OpenCode in Termux on a phone that cannot run the team: the notice title
+  ///
+  /// In en, this message translates to:
+  /// **'This phone can\'t run the AI Team'**
+  String get teamDiscoverUnsupportedTitle;
+
+  /// AI Team intro, phone that cannot run the team: what is possible instead
+  ///
+  /// In en, this message translates to:
+  /// **'It needs a 64-bit phone and an app build that carries the team\'s programs. A computer can run it for you instead.'**
+  String get teamDiscoverUnsupportedBody;
+
+  /// AI Team intro, a computer: the row that says where the team runs; {server} is the server's name
+  ///
+  /// In en, this message translates to:
+  /// **'Runs on {server}'**
+  String teamDiscoverComputerTitle(String server);
+
+  /// AI Team intro, a computer: what to install
+  ///
+  /// In en, this message translates to:
+  /// **'Install Gas City there once; the app finds it by itself.'**
+  String get teamDiscoverComputerBody;
+
+  /// AI Team intro, a computer: the speed row's title
+  ///
+  /// In en, this message translates to:
+  /// **'As fast as your computer'**
+  String get teamDiscoverSpeedTitle;
+
+  /// AI Team intro, a computer: the speed row's line
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it awake while the team works.'**
+  String get teamDiscoverSpeedBody;
+
+  /// AI Team intro, a computer: the loading bar's label while the app looks for the team
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for it on {server}…'**
+  String teamDiscoverLooking(String server);
+
+  /// AI Team intro, a computer where the team was found: the notice line under 'Found on {server}'
+  ///
+  /// In en, this message translates to:
+  /// **'It is ready to turn on.'**
+  String get teamDiscoverFoundBody;
+
+  /// AI Team intro: the primary action that goes to the set-up for this kind of server
+  ///
+  /// In en, this message translates to:
+  /// **'Set it up'**
+  String get teamDiscoverSetUp;
+
+  /// AI Team intro, a computer: the secondary action that adds the team by its address
+  ///
+  /// In en, this message translates to:
+  /// **'Enter its address'**
+  String get teamDiscoverEnterAddress;
+
+  /// AI Team intro, a phone that cannot run the team: what is possible instead
+  ///
+  /// In en, this message translates to:
+  /// **'Run it on a computer'**
+  String get teamDiscoverOnComputer;
+
+  /// Settings and Plugins: the AI Team's state while the phone installs or turns it on
+  ///
+  /// In en, this message translates to:
+  /// **'Turning on…'**
+  String get teamDiscoverTurningOn;
+
+  /// Plugins, OpenCode inside the app: the secondary choice to connect a team that runs on a computer instead of this phone
+  ///
+  /// In en, this message translates to:
+  /// **'A team on a computer'**
+  String get teamDiscoverComputerChoiceTitle;
+
+  /// Plugins, OpenCode inside the app: the line under 'A team on a computer'
+  ///
+  /// In en, this message translates to:
+  /// **'Use Gas City on a computer instead'**
+  String get teamDiscoverComputerChoiceBody;
+
+  /// AI Team home: the agents row when every agent is asleep (on-demand agents, not paused), after '3 agents · '
+  ///
+  /// In en, this message translates to:
+  /// **'asleep until there is work'**
+  String get teamNowAgentsAsleep;
+
+  /// AI Team home: the agents row when the agents are paused on purpose, after '3 agents · '
+  ///
+  /// In en, this message translates to:
+  /// **'paused'**
+  String get teamNowAgentsPaused;
+
+  /// AI Team: how often the team looks for work to start, when it is every minute
+  ///
+  /// In en, this message translates to:
+  /// **'the team checks every minute'**
+  String get teamNowChecksEveryMinute;
+
+  /// AI Team: how often the team looks for work to start; {minutes} is a whole number
+  ///
+  /// In en, this message translates to:
+  /// **'the team checks every {minutes} min'**
+  String teamNowChecksEvery(String minutes);
+
+  /// AI Team: what starts a waiting task, when the app cannot know how often the team checks
+  ///
+  /// In en, this message translates to:
+  /// **'a worker starts at the team\'s next check'**
+  String get teamNowNextCheck;
+
+  /// AI Team: how long a task has waited for a worker; {age} is like '6 min'
+  ///
+  /// In en, this message translates to:
+  /// **'waiting {age}'**
+  String teamNowWaitingAge(String age);
+
+  /// AI Team: a task has waited longer than the team's checks allow and no worker started
+  ///
+  /// In en, this message translates to:
+  /// **'no worker has started'**
+  String get teamNowNoWorkerStarted;
+
+  /// AI Team home: the Now line while the team's agents are paused on purpose
+  ///
+  /// In en, this message translates to:
+  /// **'The team is paused · nothing starts until you resume it'**
+  String get teamNowPausedLine;
+
+  /// AI Team home: the Now line when a task waits too long; {title} is the task, {age} like '6 min'
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” has waited {age} and no worker has started'**
+  String teamNowStuckLine(String title, String age);
+
+  /// AI Team: the action that wakes a worker for a task that waits too long
+  ///
+  /// In en, this message translates to:
+  /// **'Start a worker'**
+  String get teamNowStartWorker;
+
+  /// AI Team: opens the team's technical details when the app has no action that helps
+  ///
+  /// In en, this message translates to:
+  /// **'Why?'**
+  String get teamNowWhy;
+
+  /// AI Team home: the Now line while a task is worked on
+  ///
+  /// In en, this message translates to:
+  /// **'Working on “{title}” · a reviewer checks it next'**
+  String teamNowWorkingLine(String title);
+
+  /// AI Team home: the Now line while a task's work waits for review and merge
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewing “{title}” · it merges when the check passes'**
+  String teamNowReviewingLine(String title);
+
+  /// AI Team home: the Now line while a task waits for a worker; {next} says when one starts
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” waits for a worker · {next}'**
+  String teamNowWaitingLine(String title, String next);
+
+  /// Agent screen: a worker that should be working is not running
+  ///
+  /// In en, this message translates to:
+  /// **'The worker didn\'t start'**
+  String get teamAgentDidNotStartTitle;
+
+  /// Agent screen: the line under 'The worker didn't start'
+  ///
+  /// In en, this message translates to:
+  /// **'A task is waiting, but this worker isn\'t running.'**
+  String get teamAgentDidNotStartBody;
+
+  /// Agent screen and live output: wakes the agent that is not running
+  ///
+  /// In en, this message translates to:
+  /// **'Start it'**
+  String get teamAgentStartIt;
+
+  /// Live output: the agent is not running; {name} is the agent's short name
+  ///
+  /// In en, this message translates to:
+  /// **'{name} isn\'t running, so there is no output'**
+  String teamOutputNotRunning(String name);
+
+  /// Live output: connected for 8 s with nothing yet
+  ///
+  /// In en, this message translates to:
+  /// **'No output yet · it can take a minute to start'**
+  String get teamOutputSilent;
+
+  /// Agent screen title: the role in plain words and the agent's short name, like 'Worker · furiosa'
+  ///
+  /// In en, this message translates to:
+  /// **'{role} · {name}'**
+  String teamAgentTitle(String role, String name);
+
+  /// Agent screen subtitle: the task the agent works on
+  ///
+  /// In en, this message translates to:
+  /// **'On “{title}”'**
+  String teamAgentWorksOn(String title);
+
+  /// Live output: the agent's session runs on this phone and has not written anything yet; {age} since the session was created, like '2 min'
+  ///
+  /// In en, this message translates to:
+  /// **'Starting up · {age} so far · this can take a few minutes on a phone'**
+  String teamOutputStartingPhone(String age);
+
+  /// Work tab: the new-conversation choice for a chat with one agent (today's conversation)
+  ///
+  /// In en, this message translates to:
+  /// **'Solo'**
+  String get teamNewModeSolo;
+
+  /// Work tab: the new-conversation choice that gives the task to the AI Team
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get teamNewModeTeam;
+
+  /// Work tab: what the Solo · Team choice is about, for screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation with'**
+  String get teamNewModeLabel;
+
+  /// Work tab: the primary button while Team is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'New team task'**
+  String get teamNewTask;
+
+  /// Work tab: the word before a team task's state line, so a team task reads apart from a conversation
+  ///
+  /// In en, this message translates to:
+  /// **'Team'**
+  String get teamTaskMark;
 }
 
 class _AppLocalizationsDelegate

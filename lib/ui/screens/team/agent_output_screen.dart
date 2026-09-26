@@ -8,15 +8,26 @@
 /// latest" pill) resumes and jumps. Once the host stops serving the
 /// session (404) the status line says so and whatever the controller
 /// cached stays on screen.
+///
+/// Never an endless "Connecting…" (design standard §4, the 8 s rule): an
+/// agent that is not running says so at once, with the one action that
+/// helps; one that runs but has written nothing after 8 s says it is
+/// starting (on a phone, with how long it has been: an agent's first words
+/// took four minutes on the owner's phone, 2026-09-25).
 library;
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../domain/orchestration_gateway.dart';
 import '../../../state/orchestration.dart';
 import '../../app_theme.dart';
 import '../../kit/kit.dart';
+import '../../widgets/team_now.dart';
+import '../../widgets/team_vocabulary.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -40,9 +51,15 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
   /// "at the end" (a nudge does not stop following).
   static const _endSlack = 24.0;
 
+  /// How long a live agent may stay silent before the line says so.
+  static const quietAfter = Duration(seconds: 8);
+
   late AgentOutputTail _tail;
   final _scroll = ScrollController();
   bool _follow = true;
+  late final DateTime _openedAt = DateTime.now();
+  bool _quiet = false;
+  Timer? _clock;
 
   @override
   void initState() {
@@ -50,10 +67,19 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
     _tail = widget.controller.watchAgentOutput(widget.agentId)
       ..addListener(_changed);
     WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToEnd());
+    // After 8 s without a first word, then once a minute for the "so far".
+    _clock = Timer(quietAfter, () {
+      if (!mounted) return;
+      setState(() => _quiet = true);
+      _clock = Timer.periodic(const Duration(minutes: 1), (_) {
+        if (mounted && !_tail.received) setState(() {});
+      });
+    });
   }
 
   @override
   void dispose() {
+    _clock?.cancel();
     _tail.removeListener(_changed);
     widget.controller.unwatchAgentOutput(widget.agentId);
     _scroll.dispose();
@@ -91,13 +117,50 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
     return false;
   }
 
-  String? get _name {
+  OrchestrationAgent? get _agent {
     for (final agent in widget.controller.snapshot.agents) {
       if (agent.id == widget.agentId || agent.sessionId == widget.agentId) {
-        return agent.name;
+        return agent;
       }
     }
     return null;
+  }
+
+  /// The status line while nothing has arrived: honest after 8 s.
+  (String, AppStatusTone, KitAction?) _waiting(
+    AppLocalizations l10n,
+    OrchestrationAgent? agent,
+  ) {
+    final controller = widget.controller;
+    if (agent != null && !teamAgentIsLive(agent)) {
+      return (
+        l10n.teamOutputNotRunning(teamAgentShortName(agent)),
+        AppStatusTone.attention,
+        teamUnstickAction(
+          context,
+          controller,
+          keyPrefix: 'team-agent-output',
+          wake: [agent],
+          wakeLabel: l10n.teamAgentStartIt,
+        ),
+      );
+    }
+    if (!_quiet) {
+      return (l10n.teamUiAgentOutputConnecting, AppStatusTone.neutral, null);
+    }
+    final hostMode = controller.host?.hostMode ?? controller.config.hostMode;
+    if (hostMode == OrchestrationHostMode.phone) {
+      final since = agent?.sessionStartedAt ?? _openedAt;
+      final age = DateTime.now().difference(since);
+      return (
+        l10n.teamOutputStartingPhone(
+          teamElapsedLabel(l10n, age.isNegative ? Duration.zero : age),
+        ),
+        AppStatusTone.progress,
+        null,
+      );
+    }
+    return (l10n.teamOutputSilent, AppStatusTone.progress, null);
   }
 
   @override
@@ -107,13 +170,14 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
     final muted = AppTheme.mutedOf(theme);
     final tail = _tail;
     final text = tail.text;
-    final (status, tone) = tail.ended
-        ? (l10n.teamUiAgentOutputEnded, AppStatusTone.neutral)
+    final agent = _agent;
+    final (status, tone, action) = tail.ended
+        ? (l10n.teamUiAgentOutputEnded, AppStatusTone.neutral, null)
         : !tail.available
-        ? (l10n.teamUiAgentOutputUnavailable, AppStatusTone.attention)
+        ? (l10n.teamUiAgentOutputUnavailable, AppStatusTone.attention, null)
         : tail.received
-        ? (l10n.teamUiAgentOutputLive, AppStatusTone.progress)
-        : (l10n.teamUiAgentOutputConnecting, AppStatusTone.neutral);
+        ? (l10n.teamUiAgentOutputLive, AppStatusTone.progress, null)
+        : _waiting(l10n, agent);
     final canFollow = !tail.ended && tail.available;
     return Scaffold(
       key: const ValueKey('team-agent-output-page'),
@@ -128,11 +192,11 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            if (_name case final name?)
+            // The agent by its role and short name, never the engine's.
+            if (agent != null)
               Text(
-                name,
+                teamAgentTitle(l10n, agent),
                 style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                textDirection: TextDirection.ltr,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -174,6 +238,7 @@ class _AgentOutputScreenState extends State<AgentOutputScreen> {
                   : AppIconography.statusDot,
               tone: tone,
               message: status,
+              action: action,
             ),
             SwitchListTile.adaptive(
               key: const ValueKey('team-agent-output-follow'),

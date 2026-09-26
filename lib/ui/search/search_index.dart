@@ -33,6 +33,7 @@ import '../screens/settings/plugins_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/tailscale_setup_screen.dart';
 import '../screens/team/team_home_screen.dart';
+import '../screens/team/team_intro_screen.dart';
 import '../screens/termux_processes_screen.dart';
 import '../screens/phone_setup/phone_setup_routes.dart';
 import '../screens/termux_storage_screen.dart';
@@ -513,6 +514,25 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       open: _screen(
         (scope) => CapabilitiesScreen(controller: scope.controller),
       ),
+    ),
+    // The AI Team as a place of its own in Settings, not only a plugin
+    // (docs/qa/team-discover-2026-09-25): off, it opens the intro, which
+    // leads to this server's set-up; on, Plugins, where it is managed.
+    SearchEntry(
+      id: 'settings-ai-team',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.agentSetup,
+      icon: AppIconography.agent,
+      title: l10n.teamUiHomeTitle,
+      keywords: l10n.discoverTeamAliases,
+      pages: const ['team-intro'],
+      gate: (scope) => scope.controller.profile != null,
+      open: (context, scope) {
+        final controller = scope.controller;
+        return controller.profile?.orchestration == null
+            ? openTeamIntro(context, controller)
+            : _push(context, PluginsSettingsScreen(controller: controller));
+      },
     ),
     SearchEntry(
       id: 'settings-category-plugins',

@@ -176,7 +176,7 @@ class _TeamAgentsScreenState extends State<TeamAgentsScreen> {
           for (final agent in off) row(agent),
       ],
     ];
-    return RefreshIndicator(
+    return KitRefresh(
       key: const ValueKey('team-agents-pull'),
       onRefresh: _refresh,
       child: ListView(

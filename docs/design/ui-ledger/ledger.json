@@ -1,5 +1,5 @@
 {
- "generatedFrom": "ca3951e0cfcb78b9e8d290e506945c0e62f48d8b",
+ "generatedFrom": "81fa7fd99c19e414a6e9df5bc109c074b3cd96db",
  "pages": [
   {
    "id": "system",
@@ -15158,10 +15158,26 @@
      "targetWidget": "TeamHomeScreen",
      "effect": "Embeds TeamCard(controller: team, onOpen: () => _openTeamHome(team)) after Recent and its load-more footer and before Archived; onOpen pushes TeamHomeScreen(controller: team). What the team needs from the person reaches Inbox; the card's other controls belong to the widget's owner.",
      "gates": [
-      "widget.controller.orchestration != null (AI Team plugin configured on the profile)"
+      "retired from the Work tab (docs/design/team-conversation-2026-09-26.md): the team's tasks are rows in its lists (workspace-team-task-row) and workspace-team-door opens the team page; TeamCard stays a widget"
      ],
      "destructive": false,
      "widgetFile": "lib/ui/widgets/team_card.dart"
+    },
+    {
+     "id": "workspace-team-door",
+     "type": "list-tile",
+     "label": "AI Team · <where it runs>",
+     "key": "work-team-door",
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 943,
+     "action": "navigate",
+     "target": "team-home",
+     "targetWidget": "TeamHomeScreen",
+     "effect": "The quiet door to the team's own page, where the TeamCard was.",
+     "gates": [
+      "controller.orchestration != null"
+     ],
+     "destructive": false
     },
     {
      "id": "workspace-archive-undo",
@@ -15585,6 +15601,38 @@
      "effect": "_createSession(): controller.createSession() then pushNamed('/chat/<id>', arguments: ChatRouteArguments.newlyCreated()), then refreshSessions(); docked quick-ask pill replacing a FAB.",
      "gates": [
       "disabled while _creating"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "workspace-new-mode",
+     "type": "toggle",
+     "label": "Solo | Team",
+     "key": "workspace-new-mode",
+     "file": "lib/ui/screens/workspace_screen.dart",
+     "line": 2673,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "New conversation's choice, remembered per server (oc.newConversationMode.<profileId>). Team turns the primary into 'New team task': TeamConversation.start with the team on, else the AI Team intro.",
+     "gates": [
+      "the server can run a team (teamPossibleOn: a Termux phone asks its runtime)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "workspace-team-task-row",
+     "type": "list-tile",
+     "label": "<team task title>",
+     "key": "work-team-task-<runId>",
+     "file": "lib/ui/widgets/team_task_row.dart",
+     "line": 64,
+     "action": "navigate",
+     "target": "team-run",
+     "targetWidget": "TeamConversation.open (stub: RunScreen)",
+     "effect": "A team task in Needs you or Running with the team mark and 'Team · <state line>'; opens the task's team conversation.",
+     "gates": [
+      "controller.orchestration != null; open tasks only"
      ],
      "destructive": false
     }
@@ -28780,6 +28828,10 @@
     {
      "page": "system",
      "element": "system-entry-team-link-run"
+    },
+    {
+     "page": "workspace",
+     "element": "workspace-team-task-row"
     }
    ],
    "gates": [
@@ -29580,6 +29632,10 @@
      "element": "workspace-team-card"
     },
     {
+     "page": "workspace",
+     "element": "workspace-team-door"
+    },
+    {
      "page": "embedded-team-card",
      "element": "embedded-team-card-run-row"
     },
@@ -30039,6 +30095,101 @@
      "effect": "TeamReceiptChip (team_receipt.dart) ActionChip.onPressed -> onOpen = the row's onTap -> showGateSheet(...), where the retry lives.",
      "gates": [
       "`record case final record? when record.status != MutationStatus.confirmed` (teamGateMutation(controller, gate)); replaces the chevron"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
+   "id": "team-intro",
+   "title": "AI Team",
+   "kind": "screen",
+   "area": "team",
+   "file": "lib/ui/screens/team/team_intro_screen.dart",
+   "widget": "TeamIntroScreen",
+   "presentedBy": [],
+   "line": 59,
+   "purpose": "The AI Team's intro while it is off: a drawing of a task going from agent to agent, what the team does in four steps (plans, works, checks, merges), what it needs on this kind of server, and one primary action that hands over to that kind's own set-up (docs/qa/team-discover-2026-09-25).",
+   "reachedFrom": [
+    {
+     "page": "embedded-team-discover",
+     "element": "embedded-team-discover-open"
+    },
+    {
+     "page": "embedded-team-discover",
+     "element": "embedded-team-discover-row"
+    },
+    {
+     "page": "settings",
+     "element": "settings-ai-team"
+    }
+   ],
+   "gates": [
+    "openTeamIntro(context, controller) from TeamDiscoverEntry (team off) or the Settings AI Team row when `controller.profile?.orchestration == null`",
+    "the server kind (teamServerKindOf): OpenCode inside the app, OpenCode in Termux (the phone's runtime supportsAiTeam decides between set-up and 'cannot run it'), or a computer (TeamDiscovery probes the host)"
+   ],
+   "elements": [
+    {
+     "id": "team-intro-set-up",
+     "type": "button",
+     "label": "Set it up",
+     "key": "team-intro-set-up",
+     "file": "lib/ui/screens/team/team_intro_screen.dart",
+     "line": 239,
+     "action": "navigate",
+     "target": "plugins-settings",
+     "targetWidget": "PluginsSettingsScreen",
+     "effect": "The one primary. OpenCode inside the app: pushReplacement(PluginsSettingsScreen), where BuiltinTeamSection adds, turns on and starts the team. Termux: reopens the phone offer (PhoneOffer.open) and pushReplacementNamed('/termux-setup'), whose TeamPhoneOnboardingBlock installs it. A computer without Gas City found: showTeamHostGuideSheet, then looks again when it closes.",
+     "gates": [
+      "in-app: always; Termux: supportsAiTeam; a computer: TeamDiscovery found nothing (yet)"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-intro-turn-on",
+     "type": "button",
+     "label": "Turn on",
+     "key": "team-intro-turn-on",
+     "file": "lib/ui/screens/team/team_intro_screen.dart",
+     "line": 255,
+     "action": "mutate",
+     "target": null,
+     "targetWidget": null,
+     "effect": "TeamDiscovery.turnOn(): saves the found host's config on the profile and syncs the plugin, then pops back (the Work tab's TeamCard takes the entry's place).",
+     "gates": [
+      "a computer, and TeamDiscovery found Gas City on the server's host"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-intro-address",
+     "type": "button",
+     "label": "Enter its address",
+     "key": "team-intro-address",
+     "file": "lib/ui/screens/team/team_intro_screen.dart",
+     "line": 267,
+     "action": "open-sheet",
+     "target": "team-host-sheet",
+     "targetWidget": "showTeamHostSheet",
+     "effect": "The manual-add form (address, city, kind of computer; probes on submit). A found host's config is saved on the profile and the intro pops.",
+     "gates": [
+      "a computer, and nothing found"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "team-intro-on-computer",
+     "type": "button",
+     "label": "Run it on a computer",
+     "key": "team-intro-on-computer",
+     "file": "lib/ui/screens/team/team_intro_screen.dart",
+     "line": 399,
+     "action": "open-sheet",
+     "target": "team-host-guide-sheet",
+     "targetWidget": "showTeamHostGuideSheet",
+     "effect": "The host guide: how to run Gas City on a computer.",
+     "gates": [
+      "Termux on a phone whose runtime cannot run a team (the 'This phone can't run the AI Team' notice)"
      ],
      "destructive": false
     }
@@ -30594,6 +30745,85 @@
    "sheetKey": "team-cycle-stop-confirm"
   },
   {
+   "id": "embedded-team-discover",
+   "title": "AI Team (off)",
+   "kind": "overlay",
+   "area": "team",
+   "file": "lib/ui/widgets/team_discover.dart",
+   "widget": "TeamDiscoverEntry",
+   "presentedBy": [],
+   "line": 156,
+   "purpose": "The Work tab's door to the AI Team while it is off, where the TeamCard goes when it is on (after the person's conversations): a small drawing and one line of value the first time, one quiet row once opened or hidden.",
+   "reachedFrom": [
+    {
+     "page": "workspace",
+     "element": null,
+     "via": "embedded"
+    }
+   ],
+   "gates": [
+    "WorkspaceScreen: `controller.orchestration == null` (else TeamCard)",
+    "absent without a profile, with an AI Team config, and on a Termux phone whose runtime cannot run a team",
+    "folded when the global preference oc.teamDiscover.folded is true (TeamDiscoverMemory)"
+   ],
+   "embeddedIn": [
+    "WorkspaceScreen"
+   ],
+   "hostPages": [
+    "workspace"
+   ],
+   "elements": [
+    {
+     "id": "embedded-team-discover-row",
+     "type": "list-tile",
+     "label": "AI Team · Off · A team of agents for bigger jobs",
+     "key": "team-discover-row",
+     "file": "lib/ui/widgets/team_discover.dart",
+     "line": 240,
+     "action": "navigate",
+     "target": "team-intro",
+     "targetWidget": "TeamIntroScreen",
+     "effect": "Opens the intro.",
+     "gates": [
+      "folded"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-team-discover-open",
+     "type": "list-tile",
+     "label": "Give a bigger job to a team",
+     "key": "team-discover-open",
+     "file": "lib/ui/widgets/team_discover.dart",
+     "line": 257,
+     "action": "navigate",
+     "target": "team-intro",
+     "targetWidget": "TeamIntroScreen",
+     "effect": "Folds the entry (seen) and opens the intro.",
+     "gates": [
+      "not folded"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "embedded-team-discover-hide",
+     "type": "icon-button",
+     "label": "[Not now]",
+     "key": "team-discover-hide",
+     "file": "lib/ui/widgets/team_discover.dart",
+     "line": 270,
+     "action": "toggle-setting",
+     "target": null,
+     "targetWidget": null,
+     "effect": "TeamDiscoverMemory.fold: the entry folds to the quiet row, for good.",
+     "gates": [
+      "not folded"
+     ],
+     "destructive": false
+    }
+   ]
+  },
+  {
    "id": "embedded-team-discovery-card",
    "title": "{server} also runs an AI team. Turn it on?",
    "kind": "overlay",
@@ -30671,6 +30901,10 @@
     {
      "page": "profile-editor",
      "element": "profile-editor-team-add"
+    },
+    {
+     "page": "team-intro",
+     "element": "team-intro-address"
     },
     {
      "page": "team-plugin-sheet",
@@ -30783,6 +31017,10 @@
     {
      "page": "profile-editor",
      "element": "profile-editor-team-learn"
+    },
+    {
+     "page": "team-intro",
+     "element": "team-intro-on-computer"
     },
     {
      "page": "team-plugin-sheet",
@@ -35144,12 +35382,32 @@
     {
      "page": "settings",
      "element": "settings-category-plugins"
+    },
+    {
+     "page": "team-intro",
+     "element": "team-intro-set-up"
     }
    ],
    "gates": [
     "profile != null || capabilities.pluginInventory (hub row gate, settings_screen.dart:517)"
    ],
    "elements": [
+    {
+     "id": "plugins-team-other",
+     "type": "list-tile",
+     "label": "A team on a computer | Technical details",
+     "key": "plugins-team-other",
+     "file": "lib/ui/screens/settings/plugins_screen.dart",
+     "line": 160,
+     "action": "open-sheet",
+     "target": "team-plugin-sheet",
+     "targetWidget": "TeamPluginSheet",
+     "effect": "OpenCode inside the app, where the phone's card (BuiltinTeamSection) is the AI Team: while it is off, the secondary choice to connect a computer's Gas City (the sheet's Add manually); once the phone's team is on, its technical details and Turn off. Replaces the 'In this app › AI Team' row there, so the page has one AI Team in one state.",
+     "gates": [
+      "BuiltinTeamSection.appliesTo(profile) && (profile.orchestration == null || BuiltinTeam.isBuiltinConfig(profile.orchestration))"
+     ],
+     "destructive": false
+    },
     {
      "id": "plugins-settings-ai-team-row",
      "type": "list-tile",
@@ -35160,9 +35418,10 @@
      "action": "open-sheet",
      "target": "team-plugin-sheet",
      "targetWidget": "TeamPluginSheet",
-     "effect": "_openSheet(): showModalBottomSheet(TeamPluginSheet). Subtitle (key plugins-ai-team-subtitle) from teamRowSubtitle per orchestration state.",
+     "effect": "_openSheet(): showModalBottomSheet(TeamPluginSheet). Subtitle (key plugins-ai-team-subtitle) from teamStateLine per orchestration state ('Turning on…' while this phone installs it).",
      "gates": [
-      "profile != null (else text \"Connect to a server to use plugins.\", key plugins-no-server)"
+      "profile != null (else text \"Connect to a server to use plugins.\", key plugins-no-server)",
+      "absent on OpenCode inside the app unless a computer's team is connected there (plugins-team-other instead)"
      ],
      "destructive": false
     },
@@ -35296,6 +35555,10 @@
     {
      "page": "plugins-settings",
      "element": "plugins-settings-ai-team-row"
+    },
+    {
+     "page": "plugins-settings",
+     "element": "plugins-team-other"
     }
    ],
    "gates": [],
@@ -35800,6 +36063,22 @@
      "effect": "Pushes AppearanceSettingsScreen(controller) via _open. Subtitle \"<appearance label> · <theme pack label>\".",
      "gates": [
       "row hidden when it does not match the search query (_HubRow.matches(_query))"
+     ],
+     "destructive": false
+    },
+    {
+     "id": "settings-ai-team",
+     "type": "list-tile",
+     "label": "AI Team",
+     "key": "settings-ai-team",
+     "file": "lib/ui/screens/settings_screen.dart",
+     "line": 347,
+     "action": "navigate",
+     "target": "team-intro",
+     "targetWidget": "TeamIntroScreen",
+     "effect": "The search index entry 'settings-ai-team': off, openTeamIntro; on, pushes PluginsSettingsScreen. Subtitle from teamStateLine, the same words as the Plugins row: 'Turning on…' while this phone installs it (PhoneSetup.engine), 'On · This phone', or 'Off · A team of agents for bigger jobs'.",
+     "gates": [
+      "controller.profile != null"
      ],
      "destructive": false
     },
@@ -39949,6 +40228,16 @@
     "to": "embedded-session-inventory-footer"
    },
    {
+    "from": "workspace",
+    "element": "workspace-team-task-row",
+    "to": "team-run"
+   },
+   {
+    "from": "workspace",
+    "element": "workspace-team-door",
+    "to": "team-home"
+   },
+   {
     "from": "workspace-folder-chooser",
     "element": "workspace-folder-chooser-create",
     "to": "project-folder-new-dialog"
@@ -41089,6 +41378,31 @@
     "to": "gate-sheet"
    },
    {
+    "from": "team-intro",
+    "element": "team-intro-set-up",
+    "to": "plugins-settings"
+   },
+   {
+    "from": "team-intro",
+    "element": "team-intro-address",
+    "to": "team-host-sheet"
+   },
+   {
+    "from": "team-intro",
+    "element": "team-intro-on-computer",
+    "to": "team-host-guide-sheet"
+   },
+   {
+    "from": "embedded-team-discover",
+    "element": "embedded-team-discover-open",
+    "to": "team-intro"
+   },
+   {
+    "from": "embedded-team-discover",
+    "element": "embedded-team-discover-row",
+    "to": "team-intro"
+   },
+   {
     "from": "gate-sheet",
     "element": "gate-sheet-work-chip",
     "to": "work-sheet"
@@ -41310,6 +41624,11 @@
    },
    {
     "from": "settings",
+    "element": "settings-ai-team",
+    "to": "team-intro"
+   },
+   {
+    "from": "settings",
     "element": "settings-category-plugins",
     "to": "plugins-settings"
    },
@@ -41412,6 +41731,11 @@
     "from": "privacy-settings",
     "element": "privacy-settings-clear-drafts",
     "to": "privacy-settings-clear-drafts-sheet"
+   },
+   {
+    "from": "plugins-settings",
+    "element": "plugins-team-other",
+    "to": "team-plugin-sheet"
    },
    {
     "from": "plugins-settings",
@@ -42795,6 +43119,12 @@
     "via": "embedded"
    },
    {
+    "from": "workspace",
+    "element": null,
+    "to": "embedded-team-discover",
+    "via": "embedded"
+   },
+   {
     "from": "team-run",
     "element": null,
     "to": "embedded-team-merge-section",
@@ -43102,6 +43432,11 @@
   {
    "file": "lib/ui/screens/team/policy_block.dart",
    "reason": "TeamPolicyBlock is a read-only rendering block (supervision line + boundary chips) embedded in the run Overview (run_screen.dart:775) only when `controller.policy != null`; no surface and no interactive element.",
+   "part": "i1-team-core"
+  },
+  {
+   "file": "lib/ui/screens/team/team_conversation_stub.dart",
+   "reason": "Stub of TeamConversation.start/open (feat/team-agent-chat replaces it at merge): opens the existing start sheet and RunScreen; no surface of its own.",
    "part": "i1-team-core"
   },
   {

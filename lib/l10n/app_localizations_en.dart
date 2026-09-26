@@ -18769,4 +18769,242 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get effectsSaveFailed =>
       'Could not save this choice on this device. Try again.';
+
+  @override
+  String get teamDiscoverEntryTitle => 'Give a bigger job to a team';
+
+  @override
+  String get teamDiscoverEntryBody =>
+      'Agents plan it, work on it, check it and merge it. You step in when they ask.';
+
+  @override
+  String get teamDiscoverRowLine => 'Off · A team of agents for bigger jobs';
+
+  @override
+  String get teamDiscoverIntroBody =>
+      'Describe what you want done. A team of agents splits it into steps, works on them side by side and brings the finished work into your project.';
+
+  @override
+  String get teamDiscoverHowHeading => 'How it works';
+
+  @override
+  String get teamDiscoverStepPlanTitle => 'It plans';
+
+  @override
+  String get teamDiscoverStepPlanBody =>
+      'A planner splits your job into steps.';
+
+  @override
+  String get teamDiscoverStepWorkTitle => 'It works';
+
+  @override
+  String get teamDiscoverStepWorkBody =>
+      'Workers take the steps, each on its own copy of the project.';
+
+  @override
+  String get teamDiscoverStepCheckTitle => 'It checks';
+
+  @override
+  String get teamDiscoverStepCheckBody =>
+      'A reviewer looks over each step\'s work.';
+
+  @override
+  String get teamDiscoverStepMergeTitle => 'It merges';
+
+  @override
+  String get teamDiscoverStepMergeBody =>
+      'Finished work lands in your project. When it needs a decision, it asks you.';
+
+  @override
+  String get teamDiscoverNeedsPhone => 'What it needs on this phone';
+
+  @override
+  String teamDiscoverNeedsServer(String server) {
+    return 'What it needs on $server';
+  }
+
+  @override
+  String teamDiscoverDownloadTitle(String size) {
+    return 'About $size to download';
+  }
+
+  @override
+  String get teamDiscoverInAppDownloadBody =>
+      'Installed once, next to OpenCode on this phone.';
+
+  @override
+  String get teamDiscoverTermuxDownloadBody =>
+      'Installed into Termux, next to OpenCode.';
+
+  @override
+  String get teamDiscoverBatteryTitle => 'More battery while it works';
+
+  @override
+  String get teamDiscoverInAppBatteryBody =>
+      'Several agents run at once, and Android may stop some if it runs too many.';
+
+  @override
+  String get teamDiscoverTermuxBatteryBody =>
+      'Keep Termux open while it works; Android may stop it in the background. Nothing is lost.';
+
+  @override
+  String get teamDiscoverProjectTitle => 'You choose the projects';
+
+  @override
+  String get teamDiscoverProjectBody =>
+      'Turn it on for each project you want it to work on.';
+
+  @override
+  String get teamDiscoverUnsupportedTitle =>
+      'This phone can\'t run the AI Team';
+
+  @override
+  String get teamDiscoverUnsupportedBody =>
+      'It needs a 64-bit phone and an app build that carries the team\'s programs. A computer can run it for you instead.';
+
+  @override
+  String teamDiscoverComputerTitle(String server) {
+    return 'Runs on $server';
+  }
+
+  @override
+  String get teamDiscoverComputerBody =>
+      'Install Gas City there once; the app finds it by itself.';
+
+  @override
+  String get teamDiscoverSpeedTitle => 'As fast as your computer';
+
+  @override
+  String get teamDiscoverSpeedBody => 'Keep it awake while the team works.';
+
+  @override
+  String teamDiscoverLooking(String server) {
+    return 'Looking for it on $server…';
+  }
+
+  @override
+  String get teamDiscoverFoundBody => 'It is ready to turn on.';
+
+  @override
+  String get teamDiscoverSetUp => 'Set it up';
+
+  @override
+  String get teamDiscoverEnterAddress => 'Enter its address';
+
+  @override
+  String get teamDiscoverOnComputer => 'Run it on a computer';
+
+  @override
+  String get teamDiscoverTurningOn => 'Turning on…';
+
+  @override
+  String get teamDiscoverComputerChoiceTitle => 'A team on a computer';
+
+  @override
+  String get teamDiscoverComputerChoiceBody =>
+      'Use Gas City on a computer instead';
+
+  @override
+  String get teamNowAgentsAsleep => 'asleep until there is work';
+
+  @override
+  String get teamNowAgentsPaused => 'paused';
+
+  @override
+  String get teamNowChecksEveryMinute => 'the team checks every minute';
+
+  @override
+  String teamNowChecksEvery(String minutes) {
+    return 'the team checks every $minutes min';
+  }
+
+  @override
+  String get teamNowNextCheck => 'a worker starts at the team\'s next check';
+
+  @override
+  String teamNowWaitingAge(String age) {
+    return 'waiting $age';
+  }
+
+  @override
+  String get teamNowNoWorkerStarted => 'no worker has started';
+
+  @override
+  String get teamNowPausedLine =>
+      'The team is paused · nothing starts until you resume it';
+
+  @override
+  String teamNowStuckLine(String title, String age) {
+    return '“$title” has waited $age and no worker has started';
+  }
+
+  @override
+  String get teamNowStartWorker => 'Start a worker';
+
+  @override
+  String get teamNowWhy => 'Why?';
+
+  @override
+  String teamNowWorkingLine(String title) {
+    return 'Working on “$title” · a reviewer checks it next';
+  }
+
+  @override
+  String teamNowReviewingLine(String title) {
+    return 'Reviewing “$title” · it merges when the check passes';
+  }
+
+  @override
+  String teamNowWaitingLine(String title, String next) {
+    return '“$title” waits for a worker · $next';
+  }
+
+  @override
+  String get teamAgentDidNotStartTitle => 'The worker didn\'t start';
+
+  @override
+  String get teamAgentDidNotStartBody =>
+      'A task is waiting, but this worker isn\'t running.';
+
+  @override
+  String get teamAgentStartIt => 'Start it';
+
+  @override
+  String teamOutputNotRunning(String name) {
+    return '$name isn\'t running, so there is no output';
+  }
+
+  @override
+  String get teamOutputSilent =>
+      'No output yet · it can take a minute to start';
+
+  @override
+  String teamAgentTitle(String role, String name) {
+    return '$role · $name';
+  }
+
+  @override
+  String teamAgentWorksOn(String title) {
+    return 'On “$title”';
+  }
+
+  @override
+  String teamOutputStartingPhone(String age) {
+    return 'Starting up · $age so far · this can take a few minutes on a phone';
+  }
+
+  @override
+  String get teamNewModeSolo => 'Solo';
+
+  @override
+  String get teamNewModeTeam => 'Team';
+
+  @override
+  String get teamNewModeLabel => 'New conversation with';
+
+  @override
+  String get teamNewTask => 'New team task';
+
+  @override
+  String get teamTaskMark => 'Team';
 }

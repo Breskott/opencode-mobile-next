@@ -1531,7 +1531,8 @@ void main() {
             )
             .text
             .toPlainText(),
-        'Waiting for a worker',
+        // Then when a worker starts (docs/qa/team-discover-2026-09-25).
+        startsWith('Waiting for a worker · '),
       );
 
       // A completed task leaves the card.
