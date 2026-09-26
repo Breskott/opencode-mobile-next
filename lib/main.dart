@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'background/live_background.dart';
+import 'builtin/app_exit_recovery.dart';
 import 'builtin/builtin_server.dart';
 import 'builtin/setup/phone_setup.dart';
 import 'builtin/setup/setup_finish.dart';
@@ -1449,6 +1450,22 @@ class _RootState extends ConsumerState<_Root> {
     _controller = ref.read(connProvider)..addListener(_changed);
     _builtin = ref.read(builtinServerStarterProvider)..addListener(_changed);
     _attachPhoneSetup();
+    _recoverFromLastExit();
+  }
+
+  /// Once per process: why Android last ended the app, and bring back the
+  /// phone's OpenCode (and the AI Team) it stopped with it.
+  void _recoverFromLastExit() {
+    unawaited(
+      ref
+          .read(appExitRecoveryProvider)
+          .runOnce(
+            store: _controller.store,
+            active: _controller.profile,
+            starter: _builtin,
+            diagnostics: _controller.diagnostics,
+          ),
+    );
   }
 
   /// The phone setup engine ends every job by starting OpenCode and

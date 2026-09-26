@@ -251,6 +251,7 @@ class BuiltinLinux(private val context: Context) {
         if (log.isFile) log.renameTo(File(home, "$name.previous.log"))
         val process = start(script, log).also { it.outputStream.close() }
         services[name] = Service(process, port, notice)
+        recordRunning()
         BuiltinServerService.start(context, currentNotice())
         // A service that exits on its own (a crash, a bad config) takes its
         // share of the "running" notification with it.
@@ -280,6 +281,7 @@ class BuiltinLinux(private val context: Context) {
 
     /** Keeps the foreground service exactly as long as any service runs. */
     private fun serviceSetChanged() {
+        recordRunning()
         if (services.values.none { it.process.isAlive }) {
             BuiltinServerService.stop(context)
             return
@@ -291,6 +293,22 @@ class BuiltinLinux(private val context: Context) {
             BuiltinServerService.start(context, currentNotice())
         } catch (error: Exception) {
             Log.w(TAG, "notification not updated", error)
+        }
+    }
+
+    /**
+     * Keeps what runs on disk (AppLifecycle): a stop by the person clears
+     * it, while a force stop or a kill runs nothing of ours and leaves it,
+     * so the next start knows what to bring back.
+     */
+    private fun recordRunning() {
+        try {
+            AppLifecycle.recordServices(
+                context,
+                services.filterValues { it.process.isAlive }.keys.toList(),
+            )
+        } catch (error: Exception) {
+            Log.w(TAG, "running services not recorded", error)
         }
     }
 

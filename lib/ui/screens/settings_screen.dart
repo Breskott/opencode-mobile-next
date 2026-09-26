@@ -397,6 +397,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               : null,
         ),
 
+        row('settings-keep-running', subtitle: l10n.keepRunningRowSubtitle),
+
         row(
           'settings-category-appearance',
           subtitle:

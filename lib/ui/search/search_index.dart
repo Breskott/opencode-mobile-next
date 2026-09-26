@@ -22,6 +22,7 @@ import '../screens/connection_help_screen.dart';
 import '../screens/external_agents_screen.dart';
 import '../screens/global_sessions_screen.dart';
 import '../screens/guide_screen.dart';
+import '../screens/keep_running_screen.dart';
 import '../screens/library_screen.dart';
 import '../screens/local_agent_screen.dart';
 import '../screens/profile_monitor_screen.dart';
@@ -440,6 +441,19 @@ List<SearchEntry> allSearchEntries(AppLocalizations l10n) {
       open: _screen(
         (scope) => NotificationsSettingsScreen(controller: scope.controller),
       ),
+    ),
+    SearchEntry(
+      id: 'settings-keep-running',
+      kind: SearchEntryKind.hubRow,
+      group: SettingsGroup.thisApp,
+      icon: AppIconography.batteryCharging,
+      title: l10n.keepRunningTitle,
+      keywords: l10n.keepRunningRowSubtitle,
+      pages: const ['keep-running'],
+      // What to allow so Android leaves the app (and the OpenCode inside
+      // it) running: Android only.
+      gate: (scope) => scope.platform.supportsBackgroundService,
+      open: (context, _) => openKeepRunningScreen(context),
     ),
     SearchEntry(
       id: 'settings-category-appearance',

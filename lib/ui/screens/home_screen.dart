@@ -17,6 +17,7 @@ import '../kit/kit_motion.dart';
 import '../kit/motion/kit_reveal.dart';
 import '../kit/motion/kit_tab_switcher.dart';
 import '../navigation/chat_route.dart';
+import '../widgets/app_exit_notice.dart';
 import '../widgets/connection_status_banner.dart';
 import '../widgets/glass_surface.dart';
 import '../widgets/phone_server_card.dart';
@@ -358,6 +359,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       ? ConnectionStatusBanner(controller: conn)
                       : null,
                 ),
+                // Once after Android closed the app while the phone's
+                // OpenCode ran in it (force stop, memory): what stopped and
+                // that it is coming back.
+                const AppExitNoticeLine(),
                 Expanded(
                   child: KitTabSwitcher(
                     index: activeTab,

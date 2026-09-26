@@ -31486,6 +31486,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'long press for moves'**
   String get teamBoardCardHint;
+
+  /// After a force stop: first half of the one-time notice; time is like 'at 00:06' or 'on Sep 25 at 20:19'
+  ///
+  /// In en, this message translates to:
+  /// **'Android closed OpenCode Mobile {time}'**
+  String appExitForceStopped(String time);
+
+  /// After a low-memory kill: first half of the notice
+  ///
+  /// In en, this message translates to:
+  /// **'Android closed OpenCode Mobile {time} to free memory'**
+  String appExitLowMemory(String time);
+
+  /// After a crash or not-responding: first half of the notice
+  ///
+  /// In en, this message translates to:
+  /// **'OpenCode Mobile stopped unexpectedly {time}'**
+  String appExitCrashed(String time);
+
+  /// After another system kill: first half of the notice
+  ///
+  /// In en, this message translates to:
+  /// **'Android stopped OpenCode Mobile {time}'**
+  String appExitKilled(String time);
+
+  /// The notice when only the phone's OpenCode server was running; what is one of the appExit first halves
+  ///
+  /// In en, this message translates to:
+  /// **'{what}. Your phone\'s OpenCode stopped with it; it\'s starting again.'**
+  String appExitServerStopped(String what);
+
+  /// The notice when the phone's OpenCode and the AI Team were running
+  ///
+  /// In en, this message translates to:
+  /// **'{what}. Your phone\'s OpenCode and the AI Team stopped with it; they\'re starting again.'**
+  String appExitServerAndTeamStopped(String what);
+
+  /// Time of the exit today, e.g. 'at 00:06'
+  ///
+  /// In en, this message translates to:
+  /// **'at {time}'**
+  String appExitAtTime(String time);
+
+  /// Time of an exit on an earlier day
+  ///
+  /// In en, this message translates to:
+  /// **'on {day} at {time}'**
+  String appExitOnDay(String day, String time);
+
+  /// Notice action: opens the keep-running guidance
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it running'**
+  String get appExitKeepRunning;
+
+  /// Settings row and screen title: what to allow so Android does not close the app
+  ///
+  /// In en, this message translates to:
+  /// **'Keep running in the background'**
+  String get keepRunningTitle;
+
+  /// Settings row subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'What to allow so your phone doesn\'t close the app'**
+  String get keepRunningRowSubtitle;
+
+  /// Keep running screen intro; maker is the phone's manufacturer name
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone\'s OpenCode and the AI Team run inside this app, so they stop when Android closes it. On this {maker}, allow these:'**
+  String keepRunningIntro(String maker);
+
+  /// Keep running: warning on phones that force-stop on swipe
+  ///
+  /// In en, this message translates to:
+  /// **'This phone closes an app you swipe away from Recent apps, even while it works. Lock it there instead of swiping it away.'**
+  String get keepRunningSwipeWarning;
+
+  /// Step: battery optimization exemption
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t optimize battery'**
+  String get keepRunningBatteryTitle;
+
+  /// Step detail: battery exemption not yet allowed
+  ///
+  /// In en, this message translates to:
+  /// **'Lets the app keep running while you use other apps.'**
+  String get keepRunningBatteryDetail;
+
+  /// Step detail: battery exemption already allowed
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed'**
+  String get keepRunningBatteryDone;
+
+  /// Step: lock the app in recents
+  ///
+  /// In en, this message translates to:
+  /// **'Lock it in Recent apps'**
+  String get keepRunningLockTitle;
+
+  /// Lock step on Nubia/RedMagic
+  ///
+  /// In en, this message translates to:
+  /// **'Open Recent apps and pull OpenCode Mobile\'s card down until the lock shows.'**
+  String get keepRunningLockNubia;
+
+  /// Lock step on Samsung
+  ///
+  /// In en, this message translates to:
+  /// **'Open Recent apps, tap OpenCode Mobile\'s icon above its card and choose Keep open.'**
+  String get keepRunningLockSamsung;
+
+  /// Lock step on other makers
+  ///
+  /// In en, this message translates to:
+  /// **'Open Recent apps, long-press OpenCode Mobile\'s card and tap the lock.'**
+  String get keepRunningLockOther;
+
+  /// Step: vendor autostart
+  ///
+  /// In en, this message translates to:
+  /// **'Allow auto-start'**
+  String get keepRunningAutostartTitle;
+
+  /// Autostart step detail
+  ///
+  /// In en, this message translates to:
+  /// **'Turn it on for OpenCode Mobile so the phone doesn\'t stop it in the background.'**
+  String get keepRunningAutostartDetail;
+
+  /// Autostart step on Huawei/Honor
+  ///
+  /// In en, this message translates to:
+  /// **'Under App launch, set OpenCode Mobile to Manage manually and turn on all three switches.'**
+  String get keepRunningAutostartHuawei;
+
+  /// Step: vendor background activity setting in app info
+  ///
+  /// In en, this message translates to:
+  /// **'Allow background activity'**
+  String get keepRunningBackgroundTitle;
+
+  /// Background step on Xiaomi
+  ///
+  /// In en, this message translates to:
+  /// **'In App info › Battery saver, choose No restrictions.'**
+  String get keepRunningBackgroundXiaomi;
+
+  /// Background step on Oppo/OnePlus/Realme
+  ///
+  /// In en, this message translates to:
+  /// **'In App info › Battery usage, allow background activity.'**
+  String get keepRunningBackgroundOppo;
+
+  /// Background step on Vivo
+  ///
+  /// In en, this message translates to:
+  /// **'In App info › Battery, allow high background power use.'**
+  String get keepRunningBackgroundVivo;
+
+  /// Background step on Samsung
+  ///
+  /// In en, this message translates to:
+  /// **'In App info › Battery, choose Unrestricted, and keep the app out of Sleeping apps.'**
+  String get keepRunningBackgroundSamsung;
+
+  /// Background step on Nubia and other makers
+  ///
+  /// In en, this message translates to:
+  /// **'In App info › Battery, choose Unrestricted or allow background running.'**
+  String get keepRunningBackgroundOther;
+
+  /// Button on a step that opens its settings screen
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get keepRunningOpen;
+
+  /// Snackbar when a settings screen could not be opened
+  ///
+  /// In en, this message translates to:
+  /// **'This phone has no such screen. Open Settings › Apps › OpenCode Mobile instead.'**
+  String get keepRunningOpenFailed;
+
+  /// Keep running screen: what happens when it is closed anyway
+  ///
+  /// In en, this message translates to:
+  /// **'If Android still closes the app, it starts your phone\'s OpenCode again the next time you open it.'**
+  String get keepRunningFootnote;
+
+  /// Maker fallback when the phone does not name its manufacturer
+  ///
+  /// In en, this message translates to:
+  /// **'phone'**
+  String get keepRunningThisPhone;
 }
 
 class _AppLocalizationsDelegate

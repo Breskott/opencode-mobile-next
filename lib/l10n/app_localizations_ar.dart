@@ -19779,4 +19779,136 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get teamBoardCardHint => 'اضغط مطولًا للنقل';
+
+  @override
+  String appExitForceStopped(String time) {
+    return 'أغلق أندرويد OpenCode Mobile $time';
+  }
+
+  @override
+  String appExitLowMemory(String time) {
+    return 'أغلق أندرويد OpenCode Mobile $time لتحرير الذاكرة';
+  }
+
+  @override
+  String appExitCrashed(String time) {
+    return 'توقّف OpenCode Mobile على نحو غير متوقع $time';
+  }
+
+  @override
+  String appExitKilled(String time) {
+    return 'أوقف أندرويد OpenCode Mobile $time';
+  }
+
+  @override
+  String appExitServerStopped(String what) {
+    return '$what. توقّف OpenCode على هاتفك معه، وهو يبدأ من جديد.';
+  }
+
+  @override
+  String appExitServerAndTeamStopped(String what) {
+    return '$what. توقّف OpenCode على هاتفك وفريق الذكاء الاصطناعي معه، وهما يبدآن من جديد.';
+  }
+
+  @override
+  String appExitAtTime(String time) {
+    return 'عند $time';
+  }
+
+  @override
+  String appExitOnDay(String day, String time) {
+    return 'يوم $day عند $time';
+  }
+
+  @override
+  String get appExitKeepRunning => 'أبقِه يعمل';
+
+  @override
+  String get keepRunningTitle => 'الاستمرار في العمل في الخلفية';
+
+  @override
+  String get keepRunningRowSubtitle =>
+      'ما يجب السماح به كي لا يغلق هاتفك التطبيق';
+
+  @override
+  String keepRunningIntro(String maker) {
+    return 'يعمل OpenCode وفريق الذكاء الاصطناعي على هاتفك داخل هذا التطبيق، لذا يتوقفان عندما يغلقه أندرويد. على هاتف $maker هذا، اسمح بما يلي:';
+  }
+
+  @override
+  String get keepRunningSwipeWarning =>
+      'يغلق هذا الهاتف التطبيق الذي تسحبه بعيدًا من التطبيقات الحديثة حتى وهو يعمل. اقفله هناك بدلًا من سحبه.';
+
+  @override
+  String get keepRunningBatteryTitle => 'عدم تحسين البطارية';
+
+  @override
+  String get keepRunningBatteryDetail =>
+      'يتيح للتطبيق الاستمرار في العمل أثناء استخدامك تطبيقات أخرى.';
+
+  @override
+  String get keepRunningBatteryDone => 'مسموح';
+
+  @override
+  String get keepRunningLockTitle => 'اقفله في التطبيقات الحديثة';
+
+  @override
+  String get keepRunningLockNubia =>
+      'افتح التطبيقات الحديثة واسحب بطاقة OpenCode Mobile للأسفل حتى يظهر القفل.';
+
+  @override
+  String get keepRunningLockSamsung =>
+      'افتح التطبيقات الحديثة، واضغط أيقونة OpenCode Mobile فوق بطاقته واختر إبقاء مفتوحًا.';
+
+  @override
+  String get keepRunningLockOther =>
+      'افتح التطبيقات الحديثة، واضغط مطولًا على بطاقة OpenCode Mobile ثم اضغط القفل.';
+
+  @override
+  String get keepRunningAutostartTitle => 'السماح بالتشغيل التلقائي';
+
+  @override
+  String get keepRunningAutostartDetail =>
+      'فعّله لتطبيق OpenCode Mobile كي لا يوقفه الهاتف في الخلفية.';
+
+  @override
+  String get keepRunningAutostartHuawei =>
+      'في تشغيل التطبيقات، اضبط OpenCode Mobile على الإدارة يدويًا وفعّل المفاتيح الثلاثة.';
+
+  @override
+  String get keepRunningBackgroundTitle => 'السماح بالنشاط في الخلفية';
+
+  @override
+  String get keepRunningBackgroundXiaomi =>
+      'في معلومات التطبيق › موفّر البطارية، اختر بلا قيود.';
+
+  @override
+  String get keepRunningBackgroundOppo =>
+      'في معلومات التطبيق › استخدام البطارية، اسمح بالنشاط في الخلفية.';
+
+  @override
+  String get keepRunningBackgroundVivo =>
+      'في معلومات التطبيق › البطارية، اسمح بالاستهلاك العالي للطاقة في الخلفية.';
+
+  @override
+  String get keepRunningBackgroundSamsung =>
+      'في معلومات التطبيق › البطارية، اختر غير مقيّد، وأبقِ التطبيق خارج التطبيقات النائمة.';
+
+  @override
+  String get keepRunningBackgroundOther =>
+      'في معلومات التطبيق › البطارية، اختر غير مقيّد أو اسمح بالعمل في الخلفية.';
+
+  @override
+  String get keepRunningOpen => 'فتح';
+
+  @override
+  String get keepRunningOpenFailed =>
+      'لا توجد هذه الشاشة على هذا الهاتف. افتح الإعدادات › التطبيقات › OpenCode Mobile بدلًا من ذلك.';
+
+  @override
+  String get keepRunningFootnote =>
+      'إذا أغلق أندرويد التطبيق رغم ذلك، فسيعيد تشغيل OpenCode على هاتفك في المرة التالية التي تفتحه فيها.';
+
+  @override
+  String get keepRunningThisPhone => 'الهاتف';
 }
