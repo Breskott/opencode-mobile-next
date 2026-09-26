@@ -99,4 +99,9 @@ scope, cancelled and stale confirmations, protected targets, partial stops,
 refresh failures, disposal and redacted output.
 
 Implemented: no. Enabled: no. Verified: source feasibility only. Deployed and
-released: no. Commit result and documentation checks are recorded below.
+released: no. Initial report committed locally as `009ee6a2` with the requested
+attribution trailers and `[skip ci]`; no push. The verification-note amendment
+was blocked by a read-only Git metadata directory (`index.lock` creation
+failed). This final note remains uncommitted, with the intended message in
+root `COMMIT_MSG.txt`. Documentation check passed: all six relative links
+resolve, no trailing whitespace, and `git diff --check` reported no errors.
