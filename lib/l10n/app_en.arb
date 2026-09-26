@@ -22005,5 +22005,34 @@
   "keepRunningThisPhone": "phone",
   "@keepRunningThisPhone": {
     "description": "Maker fallback when the phone does not name its manufacturer"
+  },
+  "teamAgentLastStep": "Last step: {step}",
+  "@teamAgentLastStep": {
+    "description": "Agent screen: the status's second line, the worker's newest tool call (a command or a file) from its live output",
+    "placeholders": {
+      "step": {
+        "type": "String",
+        "example": "flutter test test/settings_test.dart"
+      }
+    }
+  },
+  "teamAgentLastActive": "active {elapsed} ago",
+  "@teamAgentLastActive": {
+    "description": "Agent screen: when the agent last did something, after the last step",
+    "placeholders": {
+      "elapsed": {
+        "type": "String",
+        "example": "12 min"
+      }
+    }
+  },
+  "teamChatLeadEarlier": "{count, plural, =1{1 earlier update} other{{count} earlier updates}}",
+  "@teamChatLeadEarlier": {
+    "description": "Team conversation: the lead's older lines folded under one line",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

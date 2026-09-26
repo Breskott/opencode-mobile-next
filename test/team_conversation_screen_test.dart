@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/orchestration_gateway.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 
@@ -64,12 +65,14 @@ void main() {
     Future<void> Function(BuildContext, OrchestrationAgent)? onOpenAgent,
     String? runId = 'ma-convoy-1',
     TeamPendingTask? pending,
+    List<OrchestrationAgent>? agents,
   }) async {
     phoneViewport(tester);
     final (team, gateway) = await bootTeam(
       runs: runs,
       work: work ?? [_routed, _queued],
       gates: gates,
+      agents: agents,
     );
     final api = TeamChatApi({
       'ses_furiosa': [
@@ -348,5 +351,150 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(TeamConversationScreen), findsOneWidget);
     expect(_key('team-conversation-lead'), findsOneWidget);
+  });
+
+  // The chat's rule (the turn model in chat/message_view.dart): lines share
+  // the prose's edge, with no frame or fill, and work folds under one line.
+  group('drawn the chat\'s one way', () {
+    testWidgets('the lead reads as a plain reply: no fill, no bullets', (
+      tester,
+    ) async {
+      await pump(tester);
+      final lead = _key('team-conversation-lead');
+      final surfaces = find.descendant(
+        of: lead,
+        matching: find.byKey(const Key('assistant-text-surface')),
+      );
+      expect(surfaces, findsWidgets);
+      for (final element in surfaces.evaluate()) {
+        final box = (element.widget as AnimatedContainer).decoration;
+        expect(
+          (box as BoxDecoration?)?.color ?? Colors.transparent,
+          Colors.transparent,
+          reason: 'the lead is a finished reply, not one still being written',
+        );
+      }
+      // Three lines: none folded.
+      expect(_key('team-conversation-lead-earlier'), findsNothing);
+      expect(
+        find.descendant(
+          of: lead,
+          matching: find.textContaining('•', findRichText: true),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('many lead lines fold the earlier ones under one line', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        work: [
+          _routed,
+          _queued,
+          WorkItem(
+            id: 'ma-3',
+            title: 'Drop the old flag',
+            state: WorkState.cancelled,
+            runId: 'ma-convoy-1',
+            updatedAt: DateTime.utc(2026, 9, 25, 19, 53),
+          ),
+        ],
+        gates: [
+          OrchestrationGate(
+            id: 'ma-gate-1',
+            kind: GateKind.choice,
+            title: 'Which default?',
+            workId: 'ma-1',
+            runId: 'ma-convoy-1',
+            choices: const ['Follow the system', 'Always dark'],
+            createdAt: DateTime.utc(2026, 9, 25, 19, 54),
+          ),
+        ],
+      );
+      final planned = find.textContaining(
+        'Planned 3 steps',
+        findRichText: true,
+      );
+      expect(_key('team-conversation-lead-earlier'), findsOneWidget);
+      expect(find.text('3 earlier updates'), findsOneWidget);
+      expect(planned, findsNothing);
+      // The newest stay in view.
+      expect(
+        find.textContaining('Needs you', findRichText: true),
+        findsWidgets,
+      );
+      await tester.tap(_key('team-conversation-lead-earlier'));
+      await tester.pumpAndSettle();
+      expect(planned, findsWidgets);
+      await tester.pump(const Duration(seconds: 61));
+    });
+
+    testWidgets('a worker is a sub-agent line, not a boxed card', (
+      tester,
+    ) async {
+      OrchestrationAgent? opened;
+      await pump(tester, onOpenAgent: (_, agent) async => opened = agent);
+      final line = _key('team-conversation-agent-my-app/gastown.furiosa');
+      expect(line, findsOneWidget);
+      expect(
+        find.ancestor(of: line, matching: find.byType(KitPanel)),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: line, matching: find.byType(KitPanel)),
+        findsNothing,
+      );
+      // One line: who, what it works on, its state and time.
+      expect(
+        find.descendant(of: line, matching: find.text('furiosa · Worker')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: line,
+          matching: find.text('Add the toggle to Settings'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        tester.getSize(line).height,
+        lessThan(64),
+        reason: 'one line of the reply',
+      );
+      await tester.tap(line);
+      await tester.pumpAndSettle();
+      expect(opened?.id, 'my-app/gastown.furiosa');
+    });
+
+    testWidgets('the header never says Paused while the worker runs', (
+      tester,
+    ) async {
+      // The agents list says furiosa is suspended; its session runs.
+      final base = teamFuriosa();
+      await pump(
+        tester,
+        agents: [
+          OrchestrationAgent(
+            id: base.id,
+            name: base.name,
+            state: AgentState.stopped,
+            rawState: 'suspended',
+            suspended: true,
+            sessionId: base.sessionId,
+            sessionName: base.sessionName,
+            pool: base.pool,
+            currentWorkId: base.currentWorkId,
+            workDir: base.workDir,
+            sessionStartedAt: base.sessionStartedAt,
+            sessionState: 'active',
+            sessionRunning: true,
+          ),
+        ],
+      );
+      expect(find.text('AI Team · On this phone'), findsOneWidget);
+      expect(find.textContaining('Paused'), findsNothing);
+    });
   });
 }

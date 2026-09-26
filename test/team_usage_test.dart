@@ -546,12 +546,20 @@ void main() {
     });
 
     group('agent Runtime line', () {
+      // The agent screen is a short status page; what the host reports
+      // about the agent is folded under Technical details.
+      Future<void> details(WidgetTester tester) async {
+        await tester.tap(key('team-agent-technical'));
+        await tester.pumpAndSettle();
+      }
+
       testWidgets('tokens · context · cost with the hint', (tester) async {
         final (controller, _) = await boot();
         await pump(
           tester,
           AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
         );
+        await details(tester);
         expect(key('team-agent-usage-row'), findsOneWidget);
         expect(find.text('Tokens / context / cost'), findsOneWidget);
         expect(
@@ -559,10 +567,11 @@ void main() {
           findsOneWidget,
         );
         expect(key('team-agent-usage-hint'), findsOneWidget);
-        // Inside Runtime, after the branch row, before Current work.
+        // Under Technical details, after the context row, before the
+        // current work.
         expect(
           find.descendant(
-            of: key('team-agent-runtime'),
+            of: key('team-agent-technical'),
             matching: key('team-agent-usage'),
           ),
           findsOneWidget,
@@ -573,7 +582,7 @@ void main() {
         );
         expect(
           tester.getTopLeft(key('team-agent-usage')).dy,
-          lessThan(tester.getTopLeft(key('team-agent-work')).dy),
+          lessThan(tester.getTopLeft(key('team-agent-work-chip')).dy),
         );
       });
 
@@ -585,6 +594,7 @@ void main() {
           tester,
           AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
         );
+        await details(tester);
         expect(find.text(r'12.4k tokens · $0.42 est.'), findsOneWidget);
       });
 
@@ -594,6 +604,7 @@ void main() {
           tester,
           AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
         );
+        await details(tester);
         expect(find.text(r'0 tokens · ctx 63% · $0.00 est.'), findsOneWidget);
       });
 
@@ -603,6 +614,7 @@ void main() {
           tester,
           AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
         );
+        await details(tester);
         expect(key('team-agent-context-row'), findsOneWidget);
         expect(key('team-agent-usage'), findsNothing);
         expect(key('team-agent-usage-hint'), findsNothing);
@@ -615,6 +627,7 @@ void main() {
           tester,
           AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
         );
+        await details(tester);
         expect(key('team-agent-usage'), findsNothing);
         expect(find.textContaining('est.'), findsNothing);
       });
@@ -632,6 +645,7 @@ void main() {
           tester,
           AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
         );
+        await details(tester);
         expect(key('team-agent-usage-row'), findsNothing);
       });
 
@@ -644,6 +658,7 @@ void main() {
           AgentScreen(controller: controller, agentId: 'fox', now: () => clock),
           locale: const Locale('ar'),
         );
+        await details(tester);
         expect(find.text(ar.teamUiUsageRuntimeLabel), findsOneWidget);
         expect(find.text(ar.teamUiUsageRuntimeHint), findsOneWidget);
         final value = tester

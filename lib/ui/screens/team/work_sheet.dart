@@ -24,6 +24,8 @@ import '../../widgets/relative_time.dart';
 import '../../widgets/team_cycle_strip.dart';
 import '../../widgets/team_technical_details.dart';
 import '../../widgets/team_vocabulary.dart';
+import '../team_conversation/team_conversation.dart'
+    show openTeamAgentConversation;
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -69,6 +71,15 @@ String? workSessionLink(WorkItem item) {
   return _text(item.raw['opencode_session_id']) ??
       _text(metadata['opencode_session_id']) ??
       _text(metadata['oc.session_id']);
+}
+
+/// The agent working on [item] now, when the host lists one.
+OrchestrationAgent? _agentOn(OrchestrationSnapshot snapshot, WorkItem item) {
+  if (item.state != WorkState.working) return null;
+  for (final agent in snapshot.agents) {
+    if (agent.currentWorkId == item.id) return agent;
+  }
+  return null;
 }
 
 /// Who owns an item: the agent on it (by work id, id, name or session),
@@ -400,6 +411,17 @@ class _Body extends StatelessWidget {
               onPressed: () => openSession(link),
               icon: AppIconography.chat,
               label: l10n.teamUiWorkSheetOpenSession,
+            ),
+          ] else if (_agentOn(snapshot, item) case final agent?) ...[
+            // The work itself is shown in one place: the agent's own
+            // conversation on the chat page (Live output when it has none).
+            const SizedBox(height: 16),
+            KitButton.secondary(
+              key: const ValueKey('team-work-sheet-open-conversation'),
+              onPressed: () =>
+                  openTeamAgentConversation(context, agent, team: controller),
+              icon: AppIconography.chat,
+              label: l10n.teamOpenConversation,
             ),
           ],
           if (output != null) ...[

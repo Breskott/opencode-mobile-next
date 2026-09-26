@@ -19642,4 +19642,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keepRunningThisPhone => 'phone';
+
+  @override
+  String teamAgentLastStep(String step) {
+    return 'Last step: $step';
+  }
+
+  @override
+  String teamAgentLastActive(String elapsed) {
+    return 'active $elapsed ago';
+  }
+
+  @override
+  String teamChatLeadEarlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count earlier updates',
+      one: '1 earlier update',
+    );
+    return '$_temp0';
+  }
 }

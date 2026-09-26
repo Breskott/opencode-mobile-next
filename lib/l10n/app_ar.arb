@@ -5255,5 +5255,8 @@
   "keepRunningOpen": "فتح",
   "keepRunningOpenFailed": "لا توجد هذه الشاشة على هذا الهاتف. افتح الإعدادات › التطبيقات › OpenCode Mobile بدلًا من ذلك.",
   "keepRunningFootnote": "إذا أغلق أندرويد التطبيق رغم ذلك، فسيعيد تشغيل OpenCode على هاتفك في المرة التالية التي تفتحه فيها.",
-  "keepRunningThisPhone": "الهاتف"
+  "keepRunningThisPhone": "الهاتف",
+  "teamAgentLastStep": "آخر خطوة: {step}",
+  "teamAgentLastActive": "آخر نشاط قبل {elapsed}",
+  "teamChatLeadEarlier": "{count, plural, =1{تحديث سابق واحد} other{{count} تحديثات سابقة}}"
 }

@@ -23,11 +23,15 @@ import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/state/orchestration_store.dart';
 import 'package:opencode_mobile/state/profiles.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/run_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/team_home_screen.dart';
+import 'package:opencode_mobile/ui/screens/team_conversation/team_conversation.dart'
+    show TeamAgentTranscript;
 import 'package:opencode_mobile/ui/widgets/team_vocabulary.dart';
+import 'package:opencode_mobile/ui/widgets/tool_card.dart' show ToolCard;
 import 'package:shared_preferences/shared_preferences.dart';
 
 Directory _findFixtureRoot() {
@@ -368,12 +372,16 @@ void main() {
   Color colorOf(WidgetTester tester, Finder text) =>
       tester.widget<Text>(text).style!.color!;
 
+  // The list's own scrollable (the chat's parts inside it scroll wide
+  // output sideways in scrollables of their own).
   ScrollPosition outputPosition(WidgetTester tester) => tester
       .state<ScrollableState>(
-        find.descendant(
-          of: key('team-agent-output-list'),
-          matching: find.byType(Scrollable),
-        ),
+        find
+            .descendant(
+              of: key('team-agent-output-list'),
+              matching: find.byType(Scrollable),
+            )
+            .first,
       )
       .position;
 
@@ -586,31 +594,54 @@ void main() {
       expect(find.text('ctx 63%'), findsOneWidget);
       expect(find.text('Session 3 h 14 min'), findsOneWidget);
       expect(key('team-agent-recycling'), findsNothing);
-      // The output stream was opened for the agent's session.
+      // The output stream was opened for the agent's session: its newest
+      // step and when it was last active are one line of the status.
       expect(gateway.outputRequests, ['bl-5qc']);
+      final activity = tester
+          .widget<Text>(key('team-agent-activity-line'))
+          .data!;
+      expect(activity, startsWith('Last step: '));
+      expect(activity, endsWith(' · active 12 min ago'));
 
+      // A short status page: no sections, and no second renderer of the
+      // agent's work (its conversation, or Live output, shows that).
       for (final section in [
         'identity',
         'runtime',
         'work',
         'activity',
         'output',
-        'technical',
       ]) {
-        expect(key('team-agent-$section'), findsOneWidget, reason: section);
+        expect(key('team-agent-$section'), findsNothing, reason: section);
       }
-      // The role in plain words; the pool's engine name is under
-      // Technical details only.
+      expect(key('team-agent-step-group-header'), findsNothing);
+      expect(find.text('Ran 5 commands'), findsNothing);
+      expect(find.textContaining('Branch setup: metadata says'), findsNothing);
+      // No OpenCode server to look in here: the primary is Live output,
+      // with the reason beside it.
+      expect(
+        tester.widget<KitButton>(key('team-agent-open-output')).role,
+        KitButtonRole.primary,
+      );
+      expect(key('team-agent-open-conversation'), findsNothing);
+      expect(key('team-agent-conversation-miss'), findsOneWidget);
+      // The controls follow (this read-only host allows none).
+      expect(key('team-agent-controls'), findsOneWidget);
+      expect(key('team-agent-control-nudge'), findsNothing);
+
+      // What the host reports is folded under Technical details.
+      expect(find.text('openai/gpt-x'), findsNothing);
+      await tester.tap(key('team-agent-technical'));
+      await tester.pumpAndSettle();
       expect(
         find.descendant(
-          of: key('team-agent-identity'),
+          of: key('team-agent-technical'),
           matching: find.text('Worker'),
         ),
         findsOneWidget,
       );
       expect(find.text('openai/gpt-x'), findsOneWidget);
       expect(find.text('OpenCode'), findsOneWidget);
-      expect(find.text('3 h 14 min'), findsOneWidget);
       final workDir = find.text(
         '/home/eslam/city/.gc/worktrees/ocproof/polecats/fox',
       );
@@ -620,12 +651,10 @@ void main() {
         tester.widget<Text>(workDir).style?.fontFamily,
         AppTheme.monoFamily,
       );
-      expect(find.text('polecat/oc-cq6'), findsOneWidget);
+      expect(find.text('polecat/oc-cq6'), findsWidgets);
       expect(key('team-agent-work-chip'), findsOneWidget);
       expect(find.text('Sync engine'), findsOneWidget);
       expect(find.text('Nothing blocking it'), findsOneWidget);
-      expect(key('team-agent-open-output'), findsOneWidget);
-      expect(find.text('Live output'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -686,10 +715,10 @@ void main() {
     });
 
     testWidgets(
-      'Activity parses the recorded transcript into collapsed groups',
+      'Live output draws the recorded transcript with the chat\'s parts',
       (tester) async {
         final (controller, _) = await boot(configure: runShape);
-        await pumpAgent(tester, controller, 'fox');
+        await pumpOutput(tester, controller, 'fox');
         // The whole polecat recording replayed: 80 markers, eight groups
         // of tool calls with the agent's prose between them.
         final tail = controller.agentOutput('fox');
@@ -712,23 +741,48 @@ void main() {
           reason: 'the read tool call is classified as a read',
         );
 
-        final headers = key('team-agent-step-group-header');
-        expect(headers, findsWidgets);
-        expect(key('team-agent-step-group-body'), findsNothing);
-        expect(find.text('Ran 5 commands'), findsWidgets);
-        expect(key('team-agent-activity-empty'), findsNothing);
+        // The chat's own parts, not a second renderer: the agent's words
+        // are the reply's prose blocks, each run of calls one of the chat's
+        // folded tool lines ("Ran 5 commands"), no frame, and no raw
+        // `[tool: …]` markers or one monospace dump of the transcript.
+        final transcript = key('team-agent-output-text');
+        expect(tester.widget(transcript), isA<TeamAgentTranscript>());
+        Finder inside(Finder matching) =>
+            find.descendant(of: transcript, matching: matching);
+        expect(
+          inside(find.byKey(const Key('assistant-text-block'))),
+          findsWidgets,
+        );
+        final lines = inside(find.byKey(const Key('tool-call-group-header')));
+        expect(lines, findsWidgets);
+        expect(
+          inside(find.textContaining(RegExp(r'[Rr]an \d+ commands?'))),
+          findsWidgets,
+        );
+        expect(
+          inside(find.byKey(const Key('tool-call-group-steps'))),
+          findsNothing,
+        );
+        expect(inside(find.textContaining('[tool:')), findsNothing);
+        expect(key('team-agent-step-group-header'), findsNothing);
 
-        await tester.tap(headers.first);
+        // Opened, the calls are the chat's tool rows: the command in LTR
+        // mono.
+        await tester.ensureVisible(lines.first);
         await tester.pumpAndSettle();
-        expect(key('team-agent-step-group-body'), findsOneWidget);
-        final command = find.textContaining('ls /home/eslam/Storage/Code');
+        await tester.tap(lines.first);
+        await tester.pumpAndSettle();
+        expect(
+          inside(find.byKey(const Key('tool-call-group-steps'))),
+          findsOneWidget,
+        );
+        expect(inside(find.byType(ToolCard)), findsWidgets);
+        final command = inside(
+          find.textContaining('ls /home/eslam/Storage/Code'),
+        );
         expect(command, findsWidgets);
         final text = tester.widget<Text>(command.first);
         expect(text.style?.fontFamily, AppTheme.monoFamily);
-        expect(
-          Directionality.of(tester.element(command.first)),
-          TextDirection.ltr,
-        );
         expect(tester.takeException(), isNull);
       },
     );
@@ -738,22 +792,11 @@ void main() {
     ) async {
       final (controller, gateway) = await boot(configure: runShape);
       await pumpAgent(tester, controller, 'fox');
-      expect(
-        find.descendant(
-          of: key('team-agent-open-output'),
-          matching: find.text('Live'),
-        ),
-        findsOneWidget,
-      );
       gateway.inner.endOutput(
         'bl-5qc',
         reason: 'session bl-5qc has no live output',
       );
       await tester.pumpAndSettle();
-      expect(
-        find.text('Session ended · output no longer on the host'),
-        findsOneWidget,
-      );
       final tail = controller.agentOutput('fox');
       expect(tail.ended, isTrue);
       expect(tail.text, isNotEmpty, reason: 'the cached text stays');
@@ -761,6 +804,8 @@ void main() {
       await tester.tap(key('team-agent-open-output'));
       await tester.pumpAndSettle();
       expect(key('team-agent-output-page'), findsOneWidget);
+      // Why this page and not its conversation.
+      expect(key('team-agent-output-note'), findsOneWidget);
       expect(
         find.text('Session ended · output no longer on the host'),
         findsOneWidget,
@@ -780,12 +825,22 @@ void main() {
       final (controller, gateway) = await boot(configure: runShape);
       await pumpAgent(tester, controller, 'owl');
       expect(gateway.outputRequests, isEmpty);
-      expect(find.text('Agent'), findsOneWidget);
+      expect(
+        tester.widget<Text>(key('team-agent-title')).data,
+        startsWith('Agent'),
+      );
+      // Nothing done yet and no activity: no status line for it.
+      expect(key('team-agent-activity-line'), findsNothing);
+      await tester.tap(key('team-agent-open-output'));
+      await tester.pumpAndSettle();
       expect(
         find.text('Live output is not available for this agent'),
         findsOneWidget,
       );
-      expect(key('team-agent-activity-empty'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(key('team-agent-technical'));
+      await tester.pumpAndSettle();
       expect(key('team-agent-no-work'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -848,7 +903,9 @@ void main() {
   });
 
   group('output page', () {
-    testWidgets('is LTR mono and follows by default', (tester) async {
+    testWidgets('draws with the chat\'s parts and follows by default', (
+      tester,
+    ) async {
       final (controller, gateway) = await boot(
         configure: (g) {
           runShape(g);
@@ -864,8 +921,11 @@ void main() {
       );
       final text = key('team-agent-output-text');
       expect(text, findsOneWidget);
-      expect(tester.widget<Text>(text).style?.fontFamily, AppTheme.monoFamily);
-      expect(Directionality.of(tester.element(text)), TextDirection.ltr);
+      // The chat's reply, in the reader's direction (its commands stay LTR
+      // mono inside the chat's tool rows), never a raw mono dump.
+      expect(tester.widget(text), isA<TeamAgentTranscript>());
+      expect(Directionality.of(tester.element(text)), TextDirection.rtl);
+      expect(find.textContaining('[tool:'), findsNothing);
       expect(find.text('مباشر'), findsOneWidget);
       final follow = tester.widget<SwitchListTile>(
         key('team-agent-output-follow'),
@@ -891,7 +951,7 @@ void main() {
       final (controller, gateway) = await boot(
         configure: (g) {
           runShape(g);
-          g.inner.outputReplay = 6;
+          g.inner.outputReplay = 24;
         },
       );
       await pumpOutput(tester, controller, 'fox');
@@ -1002,27 +1062,17 @@ void main() {
         expect(tester.getSize(key('team-agent')).width, 320);
         expect(key('team-agent-header'), findsOneWidget);
         expect(key('team-agent-recycling'), findsOneWidget);
-        for (final section in [
-          'identity',
-          'runtime',
-          'work',
-          'activity',
+        for (final part in [
+          'activity-line',
           'open-output',
+          'controls',
           'technical',
         ]) {
-          await reveal(tester, 'team-agent-list', key('team-agent-$section'));
-          if (section == 'activity') {
-            // The list builds lazily: the first group sits right under
-            // the heading, so it exists now.
-            final header = key('team-agent-step-group-header').first;
-            await reveal(tester, 'team-agent-list', header);
-            await tester.tap(header);
-            await tester.pumpAndSettle();
-            expect(key('team-agent-step-group-body'), findsOneWidget);
-          }
+          await reveal(tester, 'team-agent-list', key('team-agent-$part'));
         }
         await tester.tap(key('team-agent-technical'));
         await tester.pumpAndSettle();
+        await reveal(tester, 'team-agent-list', key('team-agent-work-chip'));
         expect(tester.takeException(), isNull);
       });
 

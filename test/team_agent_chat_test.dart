@@ -16,6 +16,7 @@ import 'package:opencode_mobile/domain/server_gateway.dart';
 import 'package:opencode_mobile/ui/screens/chat_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_output_screen.dart';
 import 'package:opencode_mobile/ui/screens/team/agent_screen.dart';
+import 'package:opencode_mobile/ui/kit/kit.dart';
 
 import 'support/team_chat_fixture.dart';
 
@@ -83,6 +84,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Its conversation maps: "Open conversation" is the screen's one
+      // primary, and Live output moved to the overflow menu.
+      expect(
+        tester.widget<KitButton>(_key('team-agent-open-conversation')).role,
+        KitButtonRole.primary,
+      );
+      expect(_key('team-agent-open-output'), findsNothing);
+      expect(_key('team-agent-conversation-miss'), findsNothing);
+      // Its session runs (the agents list says stopped): Pause, not Resume,
+      // beside the "Working" status.
+      expect(_key('team-agent-control-pause'), findsOneWidget);
+      expect(_key('team-agent-control-resume'), findsNothing);
       await tester.scrollUntilVisible(
         find.text('Open conversation'),
         200,
@@ -207,18 +220,19 @@ void main() {
       'why', (tester) async {
     phoneViewport(tester);
     final (team, _) = await bootTeam();
+    // Only the previous task's session in the worktree: furiosa's current
+    // one is not on this server (still starting, or the team runs on
+    // another computer).
+    final repository = TeamChatRepository([
+      teamSession(
+        'ses_furiosa_old',
+        teamPolecatDir,
+        updated: DateTime.utc(2026, 9, 24, 17, 10),
+      ),
+    ]);
     final connection = await teamConnection(
       api: TeamChatApi(const {}),
-      // Only the previous task's session in the worktree: furiosa's
-      // current one is not on this server (still starting, or the team
-      // runs on another computer).
-      repository: TeamChatRepository([
-        teamSession(
-          'ses_furiosa_old',
-          teamPolecatDir,
-          updated: DateTime.utc(2026, 9, 24, 17, 10),
-        ),
-      ]),
+      repository: repository,
     );
     await tester.pumpWidget(
       teamChatApp(
@@ -231,12 +245,25 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    // The agent screen already knows: its primary is Live output, with the
+    // reason beside it, and no "Open conversation" that leads nowhere.
+    expect(find.text('Open conversation'), findsNothing);
+    expect(
+      tester.widget<KitButton>(_key('team-agent-open-output')).role,
+      KitButtonRole.primary,
+    );
+    expect(_key('team-agent-conversation-miss'), findsOneWidget);
+    expect(
+      find.textContaining("Its conversation isn't on the server"),
+      findsOneWidget,
+    );
     await tester.scrollUntilVisible(
-      find.text('Open conversation'),
+      _key('team-agent-open-output'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Open conversation'));
+    await tester.tap(_key('team-agent-open-output'));
     await tester.pumpAndSettle();
 
     expect(find.byType(ChatScreen), findsNothing);
@@ -246,6 +273,25 @@ void main() {
       find.textContaining("Its conversation isn't on the server"),
       findsOneWidget,
     );
+
+    // Its session shows up (the worker got going): Refresh looks again and
+    // Open conversation becomes the primary.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    repository.results.add(
+      teamSession(
+        'ses_furiosa',
+        teamPolecatDir,
+        updated: DateTime.utc(2026, 9, 25, 19, 54),
+      ),
+    );
+    await tester.tap(_key('team-agent-refresh'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<KitButton>(_key('team-agent-open-conversation')).role,
+      KitButtonRole.primary,
+    );
+    expect(_key('team-agent-conversation-miss'), findsNothing);
   });
 
   testWidgets('a watched team session stays out of the person\'s lists', (

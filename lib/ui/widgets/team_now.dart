@@ -25,6 +25,7 @@ import '../../builtin/team/builtin_team.dart' show BuiltinTeam;
 import '../../domain/orchestration_gateway.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/orchestration.dart';
+import '../../state/team_conversation.dart' show teamSessionState;
 import '../app_theme.dart';
 import '../kit/kit.dart';
 import 'team_controls.dart' show teamControlReceiptWord, teamControlWord;
@@ -72,6 +73,11 @@ bool teamAgentPaused(OrchestrationAgent agent) =>
 TeamRest teamRest(Iterable<OrchestrationAgent> agents) {
   if (agents.isEmpty) return TeamRest.awake;
   if (agents.any(teamAgentIsLive)) return TeamRest.awake;
+  // The session is the live truth: an agent the list calls stopped or
+  // suspended while its session runs is at work, not paused.
+  if (agents.any((agent) => teamSessionState(agent) == AgentState.working)) {
+    return TeamRest.awake;
+  }
   return agents.any(teamAgentPaused) ? TeamRest.paused : TeamRest.asleep;
 }
 

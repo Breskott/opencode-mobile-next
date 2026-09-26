@@ -31684,6 +31684,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'phone'**
   String get keepRunningThisPhone;
+
+  /// Agent screen: the status's second line, the worker's newest tool call (a command or a file) from its live output
+  ///
+  /// In en, this message translates to:
+  /// **'Last step: {step}'**
+  String teamAgentLastStep(String step);
+
+  /// Agent screen: when the agent last did something, after the last step
+  ///
+  /// In en, this message translates to:
+  /// **'active {elapsed} ago'**
+  String teamAgentLastActive(String elapsed);
+
+  /// Team conversation: the lead's older lines folded under one line
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 earlier update} other{{count} earlier updates}}'**
+  String teamChatLeadEarlier(int count);
 }
 
 class _AppLocalizationsDelegate
