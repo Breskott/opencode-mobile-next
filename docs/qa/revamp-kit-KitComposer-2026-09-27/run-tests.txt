@@ -1,0 +1,2 @@
+00:03 +41: 200 % text at 320 dp: no overflow; Stop and Send 8 dp apart
+00:03 +42: All tests passed!
