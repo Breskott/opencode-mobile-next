@@ -1513,8 +1513,10 @@
   {
    "id": "P9",
    "title": "Kit v2 migration",
-   "oneLine": "Finish the kit so the same thing looks and behaves the same everywhere, and let the tests keep it that way.",
+   "oneLine": "Every UI component comes from the kit, adaptive for phone, tablet and PC, and the G16 gate keeps it that way.",
    "why": [
+    "owner 2026-09-26: 'No UI component to be used should remain outside our kit. All is coming from our library only.' (kit-v2.md §9)",
+    "owner 2026-09-26 on P9: 'Ideally I would build this first and it should support tablet, PC, phones etc.' (kit-v2.md §8)",
     "owner 2026-09-24: 'every screen looks different and adhoc'; the design standard rule",
     "consistency-kit vertical 277/248 (widest): at least 8 AlertDialogs bypass the confirm sheet; chat mostly hand-built; termux-setup has 4 Scaffolds",
     "parts ranked by map demand: KitConfirmSheet 78, KitSheet 33, KitSegmented 15, KitLogPanel 13, KitChoiceRow 11, KitSearchField 10"
@@ -1563,7 +1565,16 @@
     "KitTechnicalValue",
     "KitSearchField",
     "KitIconButton",
-    "KitSecretField"
+    "KitSecretField",
+    "KitText",
+    "KitIcon",
+    "KitSurface",
+    "KitTappable",
+    "KitDivider",
+    "KitScaffold",
+    "KitPageRoute",
+    "kit/chat parts",
+    "one-off surface parts"
    ],
    "dependsOn": [],
    "slices": [
@@ -1637,13 +1648,63 @@
       "Arabic goldens for migrated screens"
      ],
      "proof": "Goldens plus a test run"
+    },
+    {
+     "id": "P9.7",
+     "title": "Text, icons and surfaces from the kit",
+     "finishLine": "KitText, KitIcon, KitSurface, KitTappable, KitDivider, KitScaffold and KitPageRoute exist with galleries at the §8.4 sizes; lib/ui outside the kit has no Text, Icon, Container, Card, DecoratedBox, Material, InkWell, GestureDetector, Divider, Scaffold or AppBar left (G16 baseline for these is zero).",
+     "nonGoal": "No visual redesign: the migration keeps each screen's look except where the kit role differs; no chat-library parts (P9.8).",
+     "effort": "L",
+     "acceptance": [
+      "G16 baseline has no entries for the listed widgets",
+      "goldens re-rendered and reviewed",
+      "text scale 2.0 and RTL galleries pass"
+     ],
+     "proof": "Emulator phone and tablet: census re-render of 20 sample screens before/after; docs/qa/kit-v2-text-surfaces-<date>/README.md"
+    },
+    {
+     "id": "P9.8",
+     "title": "Chat parts into the kit",
+     "finishLine": "KitTurn, KitMessage, KitMarkdown, KitToolRow, KitWorkLine, KitComposer, KitQueuedMessage and KitAgentStrip live in lib/ui/kit/chat/ with galleries; the chat library and the team conversation only arrange them; G16 baseline for chat files is zero.",
+     "nonGoal": "No change to the turn model (docs/design chat turn model) or protocol code.",
+     "effort": "L",
+     "acceptance": [
+      "chat_screen.dart and chat/*.dart construct no framework widget outside the allowlist",
+      "team conversation uses the same parts",
+      "chat goldens re-rendered and reviewed"
+     ],
+     "proof": "Emulator: a streamed OC1 and OC2 conversation with a tool call, a question and a queued message, phone and tablet; docs/qa/kit-v2-chat-<date>/README.md"
+    },
+    {
+     "id": "P9.9",
+     "title": "One-off surfaces into the kit",
+     "finishLine": "KitTerminalView, KitScanner, KitWorkGraph, KitNavRail, KitLevelMeter, KitBoardLane, KitTaskCard, KitSwatch, KitQr, KitBreadcrumb and KitDateTimePicker exist with galleries and replace their screen-local builds.",
+     "nonGoal": "No new behaviour in the terminal, scanner or board.",
+     "effort": "M",
+     "acceptance": [
+      "G16 baseline zero for the owning files",
+      "galleries at §8.4 sizes"
+     ],
+     "proof": "Emulator: terminal, pairing scanner, board and appearance screens on phone and tablet"
+    },
+    {
+     "id": "P9.10",
+     "title": "G16 goes absolute",
+     "finishLine": "The G16 baseline is empty and the gate fails on any framework widget outside the allowlist; MaterialPageRoute leaves the allowlist once KitPageRoute is used everywhere.",
+     "nonGoal": "None beyond the gate.",
+     "effort": "S",
+     "acceptance": [
+      "test/kit_ratchet_baseline.json is {}",
+      "kit_ratchet_test absolute mode passes"
+     ],
+     "proof": "Test output recorded in docs/qa/kit-v2-done-<date>/README.md"
     }
    ],
    "risks": [
     "the kit parts the earlier programmes need are built inside those programmes; P9 migrates the rest, so avoid building a part twice by checking lib/ui/kit first",
     "golden churn: regenerate only with the pinned Flutter 3.47.1"
    ],
-   "effortTotal": "L (1S + 5M; about 13.5 agent-days)"
+   "effortTotal": "XL (1S + 5M + 1S + 2L + 1M + 1S later slices; about 28 agent-days)"
   },
   {
    "id": "P10",

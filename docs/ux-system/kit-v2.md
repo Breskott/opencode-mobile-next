@@ -1241,3 +1241,58 @@ class KitLayout {
 ### 8.5 Order within P9
 
 Step A (P9.1) ships with `KitLayout`, and the sheet and confirmation adapt from the start. P9.2 moves the shell's rail and the Work/Inbox/Settings lists onto `KitScreen.twoPane`. Every later step's part meets §8.2 in the same commit as the part itself.
+
+---
+
+## 9. Kit only (owner rule, 2026-09-26)
+
+> "No UI component to be used should remain outside our kit. All is coming from our library only."
+
+This rule overrides the entry rule in "How the kit grows" and all of §5. No UI component lives outside `lib/ui/kit/`. A screen or module widget outside the kit only arranges kit parts, so a part used once is still a kit part. §5's module parts move into the kit (§9.2). Shortcuts, intents and routing draw nothing, so they can stay where they are.
+
+### 9.1 What a file outside the kit may construct
+
+The gate is an allowlist of Flutter framework widgets (G16). App-defined widgets are allowed if they are built from kit parts.
+
+| Allowed outside `lib/ui/kit/` | Widgets |
+|---|---|
+| Layout | `Column`, `Row`, `Flex`, `Expanded`, `Flexible`, `Spacer`, `Padding`, `SizedBox`, `Center`, `Align`, `Stack`, `PositionedDirectional`, `Wrap`, `ConstrainedBox`, `LimitedBox`, `AspectRatio`, `FittedBox`, `SafeArea`, `Offstage`, `Visibility`, `KeyedSubtree`, `RepaintBoundary`, `IgnorePointer`, `AbsorbPointer` |
+| Scrolling | `ListView`, `CustomScrollView`, `SliverList`, `SliverToBoxAdapter`, `SliverPadding`, `SliverFillRemaining` |
+| Builders | `Builder`, `StatefulBuilder`, `LayoutBuilder`, `ValueListenableBuilder`, `ListenableBuilder`, `AnimatedBuilder` (with `KitMotion`), `StreamBuilder`, `FutureBuilder` |
+| Semantics, focus and input plumbing | `Semantics`, `MergeSemantics`, `ExcludeSemantics`, `Focus`, `FocusScope`, `FocusTraversalGroup`, `Shortcuts`, `Actions`, `CallbackShortcuts`, `PopScope`, `Hero` |
+| Routes | `MaterialPageRoute` and `PageRouteBuilder`, until `KitPageRoute` exists |
+
+Everything else that draws or takes input comes from the kit. That includes `Text`, `RichText`, `Icon`, `Image`, every button, the `ListTile` family, `TextField`, `Card`, `Container`, `DecoratedBox`, `Material`, `InkWell`, `GestureDetector`, the chips, `Divider`, progress indicators, `Tooltip`, `Scaffold`, `AppBar`, dialogs, sheets, snackbars, menus, `Switch`, `Checkbox`, `Radio`, and `Theme` or `DefaultTextStyle` overrides.
+
+Counted on 2026-09-26 in `lib/ui` outside the kit (224 files):
+
+| Widget | Uses | Widget | Uses | Widget | Uses |
+|---|---|---|---|---|---|
+| `Text(` | 2,539 | `SnackBar(` | 213 | `Divider(` | 72 |
+| `Icon(` | 762 | `ListTile(` | 167 | `Chip(` | 70 |
+| `TextButton` | 259 | `IconButton(` | 152 | `CircularProgressIndicator` | 64 |
+| `FilledButton` | 138 | `Container(` | 137 | `InkWell(` | 47 |
+| `Scaffold(` | 98 | `AppBar(` | 95 | `AlertDialog(` | 44 |
+| `Card(` | 83 | `TextField(` | 81 | | |
+
+### 9.2 New kit parts this adds (to §1)
+
+| Part | Replaces | Notes |
+|---|---|---|
+| `KitText` (roles: title, heading, body, label, caption, mono, number) | `Text`, `RichText`, `DefaultTextStyle` | Roles map to the design standard's type scale. Numbers get tabular figures, and mono text is isolated LTR. |
+| `KitIcon` (a named kit icon set, sizes s/m/l, tone) | `Icon` | One icon vocabulary. A decorative icon is excluded from semantics by default. |
+| `KitSurface` (levels: plain, raised, tonal, glass; radius tokens) | `Container`, `Card`, `DecoratedBox`, `Material` | `KitPanel` and `KitGlass` become variants of it. |
+| `KitTappable` | `InkWell`, `GestureDetector` | 48 dp minimum, focus ring, hover, and the same `KitRowMenu` on right-click or long-press. |
+| `KitDivider` | `Divider` | |
+| `KitScaffold` | `Scaffold`, `AppBar` | `KitScreen` with `KitTopBar`, adaptive per §8. |
+| `KitPageRoute` | `MaterialPageRoute` | Uses `KitPageTransitions`; the allowlist entry for routes is then dropped. |
+| `KitDateTimePicker` | `showDatePicker`, `showTimePicker` | Replaces the stock allowance in G1. |
+| Chat parts (`lib/ui/kit/chat/`): `KitTurn`, `KitMessage`, `KitMarkdown`, `KitToolRow`, `KitWorkLine`, `KitComposer`, `KitQueuedMessage`, `KitAgentStrip` | the §5 transcript and composer groups | The chat library and the team conversation both arrange these. When a step edits `lib/ui/kit/chat/`, that step's worker owns both it and the chat library. |
+| Surfaces: `KitTerminalView` (with `TerminalKeyBar`), `KitScanner`, `KitWorkGraph`, `KitNavRail`, `KitLevelMeter`, `KitBoardLane`, `KitTaskCard`, `KitSwatch`, `KitQr`, `KitBreadcrumb` | the §5 one-off surfaces | Each gets a gallery at the §8.4 sizes like any other part. |
+
+### 9.3 Gate G16: kit only
+
+- `test/kit_ratchet_test.dart` resolves constructor calls in `lib/ui/**` outside `lib/ui/kit/` against the framework's widget class names, minus the §9.1 allowlist.
+- It keeps a per-file, per-widget baseline in `test/kit_ratchet_baseline.json` that can only shrink, and new files start at zero.
+- When the baseline is empty, the test switches to absolute: any framework widget outside the allowlist fails.
+- **Done** for P9 means the G16 baseline is empty and every kit part has its gallery.

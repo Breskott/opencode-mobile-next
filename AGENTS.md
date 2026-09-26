@@ -58,6 +58,12 @@ flutter test --concurrency=1    # serial in the phone-hosted container; a workst
   `lib/state/` profiles/Keystore, `ConnectionController`, offline queue;
   `lib/termux/`, `lib/background/`, `lib/voice/`, `lib/platform/` native
   bridges; `lib/ui/` screens and widgets.
+- **Kit only (owner rule, 2026-09-26):** every UI component comes from `lib/ui/kit/`.
+  Outside the kit, `lib/ui/` only arranges kit parts with layout, scrolling, builder,
+  semantics and focus widgets (the allowlist is in `docs/ux-system/kit-v2.md` §9).
+  A missing part is added to the kit, even if only one screen uses it; never
+  hand-build it on the screen. `test/kit_ratchet_test.dart` (G16) keeps the count
+  per file going down only.
 - UI talks to the domain gateway only — never `api/` or `api2/` directly.
   Gate features on `ServerCapabilities` flags, never on the flavor enum.
 - Treat as single-owner units (one editor at a time): `lib/state/connection.dart`,
