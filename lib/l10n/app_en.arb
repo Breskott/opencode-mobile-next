@@ -22241,5 +22241,9 @@
   "kitDiscardConfirm": "Discard changes",
   "@kitDiscardConfirm": {
     "description": "Kit sheet: the button that closes the sheet and drops the unsaved input"
+  },
+  "kitCopied": "Copied",
+  "@kitCopied": {
+    "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
   }
 }
