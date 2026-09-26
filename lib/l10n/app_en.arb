@@ -22267,6 +22267,51 @@
   "@kitWorking": {
     "description": "Kit icon button: the accessibility hint while a button's own tap is in flight"
   },
+  "kitCodeCopyCode": "Copy code",
+  "@kitCodeCopyCode": {
+    "description": "KitCodeBlock: the copy button's tooltip and label for a code block"
+  },
+  "kitCodeCopyCommand": "Copy command",
+  "@kitCodeCopyCommand": {
+    "description": "KitCodeBlock: the copy button's tooltip and label for a command block"
+  },
+  "kitCodeCopyOutput": "Copy output",
+  "@kitCodeCopyOutput": {
+    "description": "KitCodeBlock: the copy button's tooltip and label for an output block"
+  },
+  "kitCodeShowAll": "{count, plural, other{Show all {count} lines}}",
+  "@kitCodeShowAll": {
+    "description": "KitCodeBlock: the tertiary action that unfolds a capped block in place",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "kitCodeOpenFull": "Open full output",
+  "@kitCodeOpenFull": {
+    "description": "KitCodeBlock: the tertiary action on a capped block that has onOpenFull, opening the full text in its host instead of unfolding in place"
+  },
+  "kitWrapLines": "Wrap lines",
+  "@kitWrapLines": {
+    "description": "KitCodeBlock, KitLogPanel, KitViewer, KitDiffView: the wrap toggle's tooltip and semantic label"
+  },
+  "kitCodeChanges": "{added} added, {removed} removed",
+  "@kitCodeChanges": {
+    "description": "KitCodeBlock: the header's +n -n change counts, spoken in full to a screen reader",
+    "placeholders": {
+      "added": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "int"
+      }
+    }
+  },
+  "kitCodeEmpty": "Empty",
+  "@kitCodeEmpty": {
+    "description": "KitCodeBlock: shown in place of the block when its text is empty"
+  },
   "kitImageUnavailable": "Can't show this image",
   "@kitImageUnavailable": {
     "description": "KitImage: shown next to the broken-image glyph when a source fails to decode, from 120dp wide"
