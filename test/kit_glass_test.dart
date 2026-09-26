@@ -6,6 +6,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/glass/liquid_glass_filter.dart';
@@ -93,7 +94,8 @@ void main() {
       expect(_look(tester), KitGlassLook.solid);
       expect(find.byType(BackdropFilter), findsNothing);
       expect(find.byType(LiquidGlassFilter), findsNothing);
-      expect(_fills(tester).single.color!.a, 1);
+      // Visual language §6: glass off is a solid surface2 at 94 %.
+      expect(_fills(tester).single.color!.a, closeTo(.94, .001));
     });
 
     for (final media in <String, MediaQueryData>{
@@ -126,6 +128,106 @@ void main() {
         expect(look, KitGlassLook.solid);
       });
     }
+  });
+
+  group('rim, shadow and corners come from the theme', () {
+    // Unmistakable roles, so the pixels say where each came from.
+    const rimLight = Color(0xFFFF0000);
+    const rimDark = Color(0xFF0000FF);
+    const shadow = Color(0x8000FF00);
+    final theme = AppTheme.fromRoles(
+      graphiteDark.copyWith(
+        glassRimLight: rimLight,
+        glassRimDark: rimDark,
+        glassShadow: shadow,
+      ),
+    );
+    const boundary = ValueKey('glass-boundary');
+
+    Future<void> pumpGlass(WidgetTester tester) async {
+      KitGlassShader.debugSupportedOverride = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: const Scaffold(
+            body: Center(
+              child: RepaintBoundary(key: boundary, child: _glass),
+            ),
+          ),
+        ),
+      );
+      expect(_look(tester), KitGlassLook.frosted);
+    }
+
+    testWidgets('the one shadow is the glassShadow role, y 6, blur 16', (
+      tester,
+    ) async {
+      await pumpGlass(tester);
+      final shadows = tester
+          .widgetList<DecoratedBox>(
+            find.descendant(
+              of: find.byType(KitGlass),
+              matching: find.byType(DecoratedBox),
+            ),
+          )
+          .map((box) => box.decoration)
+          .whereType<BoxDecoration>()
+          .expand((box) => box.boxShadow ?? const <BoxShadow>[])
+          .toList();
+      expect(shadows, hasLength(1));
+      expect(shadows.single.color, shadow);
+      expect(shadows.single.offset, const Offset(0, 6));
+      expect(shadows.single.blurRadius, 16);
+    });
+
+    testWidgets('the corners default to the floating tab bar token', (
+      tester,
+    ) async {
+      await pumpGlass(tester);
+      final clip = tester.widget<ClipRRect>(
+        find.descendant(
+          of: find.byType(KitGlass),
+          matching: find.byType(ClipRRect),
+        ),
+      );
+      final tokens = theme.extension<KitTokens>()!;
+      expect(clip.borderRadius, BorderRadius.circular(tokens.navRadius));
+    });
+
+    testWidgets('the rim paints glassRimLight on top, glassRimDark below', (
+      tester,
+    ) async {
+      await pumpGlass(tester);
+      final dpr = tester.view.devicePixelRatio;
+      final render = tester.renderObject<RenderRepaintBoundary>(
+        find.byKey(boundary),
+      );
+      final image = (await tester.runAsync(
+        () => render.toImage(pixelRatio: dpr),
+      ))!;
+      final bytes = (await tester.runAsync(
+        () => image.toByteData(format: ui.ImageByteFormat.rawRgba),
+      ))!;
+      ({int r, int g, int b}) pixel(int x, int y) {
+        final i = (y * image.width + x) * 4;
+        return (
+          r: bytes.getUint8(i),
+          g: bytes.getUint8(i + 1),
+          b: bytes.getUint8(i + 2),
+        );
+      }
+
+      final middle = image.width ~/ 2;
+      final top = pixel(middle, 0);
+      final bottom = pixel(middle, image.height - 1);
+      // One physical pixel of rim at each edge: red above, blue below.
+      expect(top.r, greaterThan(top.b + 60), reason: 'top $top');
+      expect(bottom.b, greaterThan(bottom.r + 60), reason: 'bottom $bottom');
+      // Crisp (LOOK-21): the next physical row in is no longer the rim.
+      final inside = pixel(middle, 2);
+      expect(inside.r, lessThan(top.r), reason: 'inside $inside');
+      image.dispose();
+    });
   });
 
   testWidgets('liquid is chosen once the shader loaded on a capable phone', (

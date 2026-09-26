@@ -23,6 +23,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/ui/app_theme.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
 import '../../../tool/capture/fixtures.dart'
     show captureTheme, loadCaptureFonts;
@@ -72,8 +74,14 @@ ThemeData _theme({required bool light}) {
     );
   }
 
+  final text = theme.textTheme.apply(fontFamilyFallback: fallback);
   return theme.copyWith(
-    textTheme: theme.textTheme.apply(fontFamilyFallback: fallback),
+    // The kit's own styles carry the fallback too.
+    extensions: [
+      ...theme.extensions.values,
+      KitTokens.fromRoles(ThemeRoles.resolve(theme), text),
+    ],
+    textTheme: text,
     primaryTextTheme: theme.primaryTextTheme.apply(
       fontFamilyFallback: fallback,
     ),
@@ -104,6 +112,15 @@ const kitGallerySizes = <Size>[
 
 /// Where 2.0 text and Arabic are rendered.
 const kitGalleryScaledSizes = <Size>[Size(412, 915), Size(1280, 800)];
+
+/// The device pixel ratio a window of [size] renders at (visual language
+/// §7: goldens at the device's ratio, so a soft edge or a doubled hairline
+/// shows): 3.0 for a phone, 2.0 for a tablet, 1.0 for a PC window.
+double kitGalleryPixelRatio(Size size) => size.width < 600
+    ? 3
+    : size.shortestSide < 900 && size.width < 1200
+    ? 2
+    : 1;
 
 String kitGallerySize(Size size) =>
     '${size.width.toInt()}x${size.height.toInt()}';
@@ -513,4 +530,91 @@ Rect _globalRect(SemanticsNode node, double devicePixelRatio) {
     rect.right / devicePixelRatio,
     rect.bottom / devicePixelRatio,
   );
+}
+
+/// Pumps [child] as a screen's body at [size] (a part that is not a modal:
+/// rows, buttons, cards, type), settles, and compares the whole window with
+/// `goldens/kit/<name>.png`.
+Future<void> kitGalleryPart(
+  WidgetTester tester, {
+  required String name,
+  required Size size,
+  required bool light,
+  required Widget child,
+  Locale locale = const Locale('en'),
+  double textScale = 1,
+}) async {
+  final own = _themeName(light);
+  if (!name.endsWith('_$own')) {
+    throw ArgumentError.value(
+      name,
+      'name',
+      'G5 (STANDARDS.md §18, A11Y-6): a gallery shot name ends in "_$own" '
+          'when light is $light',
+    );
+  }
+  final stem = name.substring(0, name.length - own.length - 1);
+  // TEST-9: DPR 3.0, [size] in logical pixels.
+  tester.view.physicalSize = size * 3.0;
+  tester.view.devicePixelRatio = 3.0;
+  addTearDown(tester.view.reset);
+  final boundary = GlobalKey();
+  final semantics = tester.ensureSemantics();
+  // ARCH-11: rendered as Android.
+  debugDefaultTargetPlatformOverride = TargetPlatform.android;
+  try {
+    // G5 checks both themes (A11Y-6); the golden is the shot's own theme.
+    for (final pass in [!light, light]) {
+      late BuildContext context;
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(
+        RepaintBoundary(
+          key: boundary,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: _theme(light: pass),
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations: true,
+                textScaler: TextScaler.linear(textScale),
+              ),
+              child: child!,
+            ),
+            home: Scaffold(
+              body: Builder(
+                builder: (inner) {
+                  context = inner;
+                  return SafeArea(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 720),
+                          child: child,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await expectKitGalleryAccessible(
+        tester,
+        shot: '${stem}_${_themeName(pass)}',
+        direction: Directionality.of(context),
+      );
+    }
+  } finally {
+    debugDefaultTargetPlatformOverride = null;
+    semantics.dispose();
+  }
+  await expectLater(find.byKey(boundary), matchesGoldenFile('$name.png'));
 }

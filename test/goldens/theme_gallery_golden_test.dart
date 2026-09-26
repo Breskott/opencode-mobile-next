@@ -15,17 +15,9 @@ import 'package:opencode_mobile/ui/theme_packs.dart';
 void main() {
   setUpAll(() async {
     await _loadFont('AppMono', const [
-      'assets/fonts/JetBrainsMono-Regular.ttf',
-      'assets/fonts/JetBrainsMono-Medium.ttf',
-      'assets/fonts/JetBrainsMono-SemiBold.ttf',
-      'assets/fonts/JetBrainsMono-Bold.ttf',
+      'assets/fonts/geist/GeistMono-Variable.ttf',
     ]);
-    await _loadFont('AppDisplay', const [
-      'assets/fonts/SpaceGrotesk-Regular.ttf',
-      'assets/fonts/SpaceGrotesk-Medium.ttf',
-      'assets/fonts/SpaceGrotesk-SemiBold.ttf',
-      'assets/fonts/SpaceGrotesk-Bold.ttf',
-    ]);
+    await _loadFont('AppSans', const ['assets/fonts/geist/Geist-Variable.ttf']);
     final body = FontLoader('Roboto');
     for (final weight in ['Regular', 'Medium', 'Bold']) {
       body.addFont(
@@ -175,13 +167,12 @@ class _Gallery extends StatelessWidget {
               color: scheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(AppTheme.radiusCard),
               border: Border.all(color: AppTheme.hairline(theme)),
-              boxShadow: AppTheme.raised(theme),
             ),
             child: Row(
               children: [
                 Icon(AppIconography.shield, color: scheme.primary),
                 const SizedBox(width: 10),
-                const Expanded(child: Text('Raised surface with shadow')),
+                const Expanded(child: Text('Panel on surface1, no shadow')),
               ],
             ),
           ),

@@ -165,47 +165,61 @@ class _ToolsScreenState extends State<ToolsScreen> {
   Widget _body() {
     final model = _model!;
     final tools = _tools;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _modelHeader(model),
-        const Divider(height: 1),
-        _capabilitySummary(),
-        const Divider(height: 1),
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
-          child: TextField(
-            key: const Key('tools-search'),
-            controller: _search,
-            decoration: InputDecoration(
-              hintText: tools == null
-                  ? lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7LibrarySearchTools
-                  : lookupAppLocalizations(
-                      Localizations.localeOf(context),
-                    ).e7LibrarySearchTools2((tools.length).toString()),
-              prefixIcon: const Icon(AppIconography.search),
-              suffixIcon: _query.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: lookupAppLocalizations(
-                        Localizations.localeOf(context),
-                      ).commonClearSearch,
-                      onPressed: () {
-                        _search.clear();
-                        setState(() => _query = '');
-                      },
-                      icon: const Icon(AppIconography.close),
+    // The header (model, summary, search) grows with the person's text
+    // size; past 60 % of the page it scrolls on its own so the tool list
+    // keeps room at any size.
+    return LayoutBuilder(
+      builder: (context, constraints) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: constraints.maxHeight * .6),
+            child: ListView(
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              children: [
+                _modelHeader(model),
+                const Divider(height: 1),
+                _capabilitySummary(),
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 8),
+                  child: TextField(
+                    key: const Key('tools-search'),
+                    controller: _search,
+                    decoration: InputDecoration(
+                      hintText: tools == null
+                          ? lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7LibrarySearchTools
+                          : lookupAppLocalizations(
+                              Localizations.localeOf(context),
+                            ).e7LibrarySearchTools2((tools.length).toString()),
+                      prefixIcon: const Icon(AppIconography.search),
+                      suffixIcon: _query.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: lookupAppLocalizations(
+                                Localizations.localeOf(context),
+                              ).commonClearSearch,
+                              onPressed: () {
+                                _search.clear();
+                                setState(() => _query = '');
+                              },
+                              icon: const Icon(AppIconography.close),
+                            ),
+                      border: const OutlineInputBorder(),
+                      isDense: true,
                     ),
-              border: const OutlineInputBorder(),
-              isDense: true,
+                    onChanged: (value) => setState(() => _query = value),
+                  ),
+                ),
+              ],
             ),
-            onChanged: (value) => setState(() => _query = value),
           ),
-        ),
-        Expanded(child: _toolList()),
-      ],
+          Expanded(child: _toolList()),
+        ],
+      ),
     );
   }
 

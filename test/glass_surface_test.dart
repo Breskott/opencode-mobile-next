@@ -67,7 +67,8 @@ void main() {
         .map((box) => box.decoration)
         .whereType<BoxDecoration>()
         .where((box) => box.color != null);
-    expect(fills.single.color!.a, 1);
+    // Visual language §6: glass off is a solid surface2 at 94 %.
+    expect(fills.single.color!.a, closeTo(.94, .001));
   });
 
   testWidgets('frosted material clips a single backdrop filter', (

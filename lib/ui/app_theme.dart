@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_iconography.dart';
+import 'kit/kit_text.dart';
+import 'kit/kit_tokens.dart';
 import 'kit/motion/kit_page_transitions.dart';
 import 'theme_packs.dart';
 
 export 'app_iconography.dart';
+export 'theme_roles.dart';
 
 /// Pack-provided colors that live outside Material's scheme, carried on the
 /// ThemeData so widgets resolve them from context.
@@ -60,18 +63,23 @@ abstract final class AppIcons {
   static const externalLink = AppIconography.externalLink;
 }
 
-/// The shared visual system for the mobile client.
+/// The shared visual system for the mobile client: the visual language v1
+/// (docs/design/visual-language-2026-09-26.md).
 ///
 /// Keeping component defaults here prevents individual screens from drifting
-/// back to stock Material styling as the product grows. Color comes from a
-/// [ThemePack]; structure never changes between packs.
+/// back to stock Material styling as the product grows. Colour comes from a
+/// theme ([ThemePack] → [ThemeRoles]); type, shape and spacing never change
+/// between themes.
 abstract final class AppTheme {
-  /// Bundled JetBrains Mono; code is this product's primary material.
+  /// Bundled Geist: every word of the interface (§2).
+  static const sansFamily = 'AppSans';
+
+  /// Bundled Geist Mono: code, commands, paths.
   static const monoFamily = 'AppMono';
 
-  /// Bundled Space Grotesk; headlines and titles only. Body text stays on the
-  /// platform face, so the display face reads as identity, not as noise.
-  static const displayFamily = 'AppDisplay';
+  /// Headlines and titles share the one face; kept for callers that name
+  /// the display role.
+  static const displayFamily = sansFamily;
 
   /// Arabic uses the platform's Arabic-capable sans fallback rather than
   /// Latin display metrics. Zero tracking preserves connected glyph shaping.
@@ -103,9 +111,15 @@ abstract final class AppTheme {
       labelMedium: arabic(text.labelMedium),
       labelSmall: arabic(text.labelSmall),
     );
+    final text = adapt(theme.textTheme);
     return theme.copyWith(
-      textTheme: adapt(theme.textTheme),
+      textTheme: text,
       primaryTextTheme: adapt(theme.primaryTextTheme),
+      // The kit's styles follow the face.
+      extensions: [
+        ...theme.extensions.values,
+        KitTokens.fromRoles(rolesOf(theme), text),
+      ],
     );
   }
 
@@ -114,16 +128,20 @@ abstract final class AppTheme {
   /// runaway scales are capped. Critical flows are tested at this value.
   static const maxTextScale = 2.5;
 
-  /// Font sizes for the roles that sit outside Material's type scale.
+  /// Font sizes for the roles that sit outside Material's type scale
+  /// (§2, integers only per §7).
   static const codeFontSize = 13.0;
   static const codeLineHeight = 19 / codeFontSize;
-  static const captionFontSize = 11.0;
-  static const bodyFontSize = 14.0;
+  static const captionFontSize = 12.0;
+  static const bodyFontSize = 16.0;
 
-  /// The canonical corner-radius grid. Controls and inline surfaces take
-  /// [radiusControl]; cards and raised surfaces take [radiusCard].
-  static const radiusControl = 12.0;
-  static const radiusCard = 14.0;
+  /// The canonical corner-radius grid (§4). Controls and buttons take
+  /// [radiusControl]; panels and cards take [radiusCard].
+  static const radiusControl = 14.0;
+  static const radiusCard = 18.0;
+
+  /// The colour roles in force.
+  static ThemeRoles rolesOf(ThemeData theme) => ThemeRoles.resolve(theme);
 
   /// Pack-aware success green for status dots, done states, and diff
   /// additions. Prefer this over [success] wherever a ThemeData is in reach.
@@ -131,71 +149,39 @@ abstract final class AppTheme {
       theme.extension<AppSemanticColors>()?.success ??
       success(theme.colorScheme);
 
-  /// Brightness-based fallback with the OpenCode pack's values, for the rare
-  /// place that has only a scheme.
+  /// Brightness-based fallback with the default theme's values, for the
+  /// rare place that has only a scheme.
   static Color success(ColorScheme scheme) =>
       scheme.brightness == Brightness.dark
-      ? const Color(0xFF86D8A5)
-      : const Color(0xFF1E7A44);
+      ? graphiteDark.success
+      : graphiteLight.success;
 
-  /// The single source of status color. [AppStatusTone.progress] and
-  /// [AppStatusTone.attention] share the tertiary role deliberately: no
-  /// Material scheme carries a warning slot, and both states are always
-  /// carried by a distinct icon and label as well as color.
-  static Color statusColor(ThemeData theme, AppStatusTone tone) =>
-      switch (tone) {
-        AppStatusTone.neutral => theme.colorScheme.onSurfaceVariant,
-        AppStatusTone.progress => theme.colorScheme.tertiary,
-        AppStatusTone.ok => successOf(theme),
-        AppStatusTone.attention => theme.colorScheme.tertiary,
-        AppStatusTone.failure => theme.colorScheme.error,
-      };
+  /// The single source of status color. Progress is the accent ("working",
+  /// §1); attention is amber ("needs you"), never shared with anything else.
+  static Color statusColor(ThemeData theme, AppStatusTone tone) {
+    final roles = rolesOf(theme);
+    return switch (tone) {
+      AppStatusTone.neutral => roles.text2,
+      AppStatusTone.progress => roles.accent,
+      AppStatusTone.ok => successOf(theme),
+      AppStatusTone.attention => roles.attention,
+      AppStatusTone.failure => roles.danger,
+    };
+  }
 
-  /// The muted-text role. `theme.hintColor` is a fixed black54/white60 that
-  /// does not track the pack palette and drops under 4:1 on tinted light
-  /// packs; every supporting label resolves through here instead.
-  static Color mutedOf(ThemeData theme) => theme.colorScheme.onSurfaceVariant;
+  /// The muted-text role (`text2`). `theme.hintColor` is a fixed
+  /// black54/white60 that does not track the theme; every supporting label
+  /// resolves through here instead.
+  static Color mutedOf(ThemeData theme) => rolesOf(theme).text2;
 
-  /// One hairline recipe, matching [DividerThemeData], instead of five
-  /// hand-picked alphas over `outlineVariant`.
-  static Color hairline(ThemeData theme) =>
-      theme.colorScheme.outlineVariant.withValues(alpha: .7);
+  /// The one hairline (translucent, so it reads the same on any surface).
+  static Color hairline(ThemeData theme) => rolesOf(theme).hairline;
 
-  /// A faint wash of the primary colour for surfaces that are "live": the
+  /// A faint wash of the accent for surfaces that are "live": the
   /// assistant block still streaming, the tool card still running. Strong
   /// enough to register, weak enough to sit under text.
   static Color liveTint(ThemeData theme, {double alpha = .06}) =>
       theme.colorScheme.primary.withValues(alpha: alpha);
-
-  /// The one raised-surface shadow recipe. Reserved for the few surfaces that
-  /// float over content — the composer, the attention card, the model chip —
-  /// so depth stays meaningful. Everything else stays flat.
-  static List<BoxShadow> raised(ThemeData theme) {
-    final dark = theme.brightness == Brightness.dark;
-    final ink = dark ? theme.colorScheme.surfaceContainerLowest : Colors.black;
-    return [
-      BoxShadow(
-        color: ink.withValues(alpha: dark ? .55 : .10),
-        blurRadius: 22,
-        offset: const Offset(0, 10),
-      ),
-      BoxShadow(
-        color: ink.withValues(alpha: dark ? .35 : .05),
-        blurRadius: 4,
-        offset: const Offset(0, 1),
-      ),
-    ];
-  }
-
-  /// A soft coloured halo, for a control that has just changed state or is
-  /// asking for attention. Pair with [raised] rather than replacing it.
-  static List<BoxShadow> glow(Color color, {double strength = .35}) => [
-    BoxShadow(
-      color: color.withValues(alpha: strength),
-      blurRadius: 18,
-      spreadRadius: 1,
-    ),
-  ];
 
   /// True once the text scale makes side-by-side action buttons too narrow
   /// to hold their labels; action bars stack vertically past this point
@@ -203,12 +189,13 @@ abstract final class AppTheme {
   static bool stackedActions(BuildContext context) =>
       MediaQuery.textScalerOf(context).scale(bodyFontSize) > bodyFontSize * 1.6;
 
-  static const background = Color(0xFF101310);
-  static const surface = Color(0xFF151A17);
-  static const accent = Color(0xFF83CDAA);
-  static const lightBackground = Color(0xFFF6F9F6);
+  /// The default theme's grounds and accents (Graphite).
+  static const background = Color(0xFF0B0C0E);
+  static const surface = Color(0xFF141518);
+  static const accent = Color(0xFF3DDC8A);
+  static const lightBackground = Color(0xFFF3F3F1);
   static const lightSurface = Color(0xFFFFFFFF);
-  static const lightAccent = Color(0xFF176B4B);
+  static const lightAccent = Color(0xFF087F43);
 
   static ThemeData dark([ThemePack? pack]) =>
       fromPalette((pack ?? themePack(ThemePackId.opencode)).dark);
@@ -216,18 +203,21 @@ abstract final class AppTheme {
   static ThemeData light([ThemePack? pack]) =>
       fromPalette((pack ?? themePack(ThemePackId.opencode)).light);
 
-  static ThemeData fromPalette(ThemePalette palette) {
-    final dark = palette.scheme.brightness == Brightness.dark;
+  static ThemeData fromPalette(ThemePalette palette) =>
+      fromRoles(palette.themeRoles, base: palette.scheme);
+
+  /// The whole theme from a role set: the seam a custom theme uses
+  /// (`AppTheme.fromRoles(deriveRoles(accent: …, ground: …, …))`).
+  static ThemeData fromRoles(ThemeRoles roles, {ColorScheme? base}) {
+    final dark = roles.isDark;
     return _build(
-      scheme: palette.scheme,
-      backgroundColor: palette.background,
-      navigationColor: palette.navigation,
-      successColor: palette.success,
+      roles: roles,
+      scheme: schemeFromRoles(roles, base: base),
       overlayStyle: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: dark ? Brightness.light : Brightness.dark,
         statusBarBrightness: dark ? Brightness.dark : Brightness.light,
-        systemNavigationBarColor: palette.background,
+        systemNavigationBarColor: roles.ground,
         systemNavigationBarIconBrightness: dark
             ? Brightness.light
             : Brightness.dark,
@@ -236,21 +226,22 @@ abstract final class AppTheme {
   }
 
   static ThemeData _build({
+    required ThemeRoles roles,
     required ColorScheme scheme,
-    required Color backgroundColor,
-    required Color navigationColor,
-    required Color successColor,
     required SystemUiOverlayStyle overlayStyle,
   }) {
-    const roundedRectangle = RoundedRectangleBorder(
-      borderRadius: BorderRadius.all(Radius.circular(14)),
+    const control = RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(radiusControl)),
     );
+    final r = roles;
     final base = ThemeData(
       useMaterial3: true,
       brightness: scheme.brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: backgroundColor,
-      canvasColor: backgroundColor,
+      fontFamily: sansFamily,
+      scaffoldBackgroundColor: r.ground,
+      canvasColor: r.ground,
+      dividerColor: r.hairline,
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,
       // One page transition everywhere (design standard §10): the M3 shared
@@ -266,238 +257,284 @@ abstract final class AppTheme {
         },
       ),
     );
+    final text = KitText.textTheme(base.textTheme, r);
+    // A button's style replaces the ambient text style, so it carries the
+    // face itself.
+    final button = text.labelLarge!.merge(KitText.styleFor(KitTextRole.button));
+    final kit = KitTokens.fromRoles(r, text);
 
     return base.copyWith(
-      extensions: [AppSemanticColors(success: successColor)],
-      textTheme: base.textTheme.copyWith(
-        displayLarge: base.textTheme.displayLarge?.copyWith(
-          fontFamily: displayFamily,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -1,
-        ),
-        displayMedium: base.textTheme.displayMedium?.copyWith(
-          fontFamily: displayFamily,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.8,
-        ),
-        displaySmall: base.textTheme.displaySmall?.copyWith(
-          fontFamily: displayFamily,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.6,
-        ),
-        headlineLarge: base.textTheme.headlineLarge?.copyWith(
-          fontFamily: displayFamily,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.6,
-        ),
-        headlineMedium: base.textTheme.headlineMedium?.copyWith(
-          fontFamily: displayFamily,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.5,
-        ),
-        headlineSmall: base.textTheme.headlineSmall?.copyWith(
-          fontFamily: displayFamily,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.45,
-        ),
-        titleLarge: base.textTheme.titleLarge?.copyWith(
-          fontFamily: displayFamily,
-          fontSize: 24,
-          height: 30 / 24,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.25,
-        ),
-        titleMedium: base.textTheme.titleMedium?.copyWith(
-          fontSize: 16,
-          height: 22 / 16,
-          fontWeight: FontWeight.w600,
-        ),
-        bodyLarge: base.textTheme.bodyLarge?.copyWith(height: 23 / 16),
-        bodyMedium: base.textTheme.bodyMedium?.copyWith(height: 20 / 14),
-        bodySmall: base.textTheme.bodySmall?.copyWith(
-          fontSize: 13,
-          height: 18 / 13,
-        ),
-        labelLarge: base.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-        ),
-      ),
+      extensions: [
+        AppSemanticColors(success: r.success),
+        r,
+        kit,
+      ],
+      textTheme: text,
+      primaryTextTheme: KitText.textTheme(base.primaryTextTheme, r),
+      iconTheme: IconThemeData(color: r.text1, size: 22),
       appBarTheme: AppBarTheme(
-        backgroundColor: backgroundColor,
-        foregroundColor: scheme.onSurface,
+        backgroundColor: r.ground,
+        foregroundColor: r.text1,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
         toolbarHeight: 64,
+        // The top bar's title is the headline role (LOOK-17: no 20/26).
+        titleTextStyle: text.titleMedium?.merge(
+          KitText.styleFor(KitTextRole.headline),
+        ),
         systemOverlayStyle: overlayStyle,
       ),
       cardTheme: CardThemeData(
-        color: scheme.surfaceContainerLow,
+        color: r.surface1,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        shape: roundedRectangle,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kit.panelCornerRadius),
+        ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: scheme.surfaceContainerHigh,
+        backgroundColor: r.surface2,
         surfaceTintColor: Colors.transparent,
-        elevation: 8,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(22)),
+        elevation: 0,
+        barrierColor: r.scrim,
+        titleTextStyle: text.titleLarge,
+        contentTextStyle: text.bodyMedium?.copyWith(color: r.text2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kit.panelRadius),
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
-        modalBackgroundColor: scheme.surfaceContainerLow,
+        backgroundColor: r.surface2,
+        modalBackgroundColor: r.surface2,
+        modalBarrierColor: r.scrim,
         surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        modalElevation: 0,
         showDragHandle: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        dragHandleColor: kit.handleColor,
+        dragHandleSize: kit.handleSize,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(kit.sheetRadius),
+          ),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        height: 68,
+        height: kit.navHeight,
         elevation: 0,
-        backgroundColor: navigationColor,
+        backgroundColor: r.surface2,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: scheme.primary.withValues(alpha: .17),
-        indicatorShape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-        ),
+        // The active tab's lens: a clear pill of the glass itself.
+        indicatorColor: r.text1.withValues(alpha: r.isDark ? .12 : .08),
+        indicatorShape: const StadiumBorder(),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           return IconThemeData(
-            color: states.contains(WidgetState.selected)
-                ? scheme.primary
-                : scheme.onSurfaceVariant,
+            size: 22,
+            color: states.contains(WidgetState.selected) ? r.accent : r.text2,
           );
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          return base.textTheme.labelSmall?.copyWith(
-            color: states.contains(WidgetState.selected)
-                ? scheme.primary
-                : scheme.onSurfaceVariant,
+          return text.labelSmall?.copyWith(
+            color: states.contains(WidgetState.selected) ? r.text1 : r.text2,
             fontWeight: states.contains(WidgetState.selected)
-                ? FontWeight.w700
+                ? FontWeight.w600
                 : FontWeight.w500,
+            letterSpacing: 0,
           );
         }),
       ),
       navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: navigationColor,
-        indicatorColor: scheme.primary.withValues(alpha: .17),
-        selectedIconTheme: IconThemeData(color: scheme.primary),
-        unselectedIconTheme: IconThemeData(color: scheme.onSurfaceVariant),
-        selectedLabelTextStyle: TextStyle(
-          color: scheme.primary,
-          fontWeight: FontWeight.w700,
+        backgroundColor: r.ground,
+        indicatorColor: r.surface3,
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusControl),
         ),
-        unselectedLabelTextStyle: TextStyle(color: scheme.onSurfaceVariant),
+        selectedIconTheme: IconThemeData(color: r.accent, size: 22),
+        unselectedIconTheme: IconThemeData(color: r.text2, size: 22),
+        selectedLabelTextStyle: text.labelLarge?.copyWith(color: r.text1),
+        unselectedLabelTextStyle: text.labelLarge?.copyWith(
+          color: r.text2,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerLow,
+        fillColor: r.surface1,
+        hintStyle: text.bodyLarge?.copyWith(color: r.text3),
+        labelStyle: text.bodyLarge?.copyWith(color: r.text2),
+        floatingLabelStyle: text.bodyMedium?.copyWith(color: r.text2),
+        helperStyle: text.bodySmall?.copyWith(color: r.text2),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 15,
         ),
-        border: OutlineInputBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide(color: scheme.outlineVariant),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide(color: scheme.outlineVariant),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide(color: scheme.primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide(color: scheme.error),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(14)),
-          borderSide: BorderSide(color: scheme.error, width: 1.5),
-        ),
+        border: _field(r.hairline),
+        enabledBorder: _field(r.hairline),
+        disabledBorder: _field(r.hairline),
+        focusedBorder: _field(r.accent, width: 1.5),
+        errorBorder: _field(r.danger),
+        focusedErrorBorder: _field(r.danger, width: 1.5),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape: roundedRectangle,
-          textStyle: base.textTheme.labelLarge,
+          minimumSize: Size(48, kit.buttonHeight),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: control,
+          elevation: 0,
+          textStyle: button,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          side: BorderSide(color: scheme.outlineVariant),
-          shape: roundedRectangle,
-          textStyle: base.textTheme.labelLarge,
+          minimumSize: Size(48, kit.buttonHeight),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          foregroundColor: r.text1,
+          side: BorderSide(color: r.hairline, width: 0),
+          shape: control,
+          textStyle: button,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           minimumSize: const Size(48, 48),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          shape: roundedRectangle,
-          textStyle: base.textTheme.labelLarge,
+          shape: control,
+          textStyle: button,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          minimumSize: Size(48, kit.buttonHeight),
+          backgroundColor: r.surface3,
+          foregroundColor: r.text1,
+          elevation: 0,
+          shape: control,
+          textStyle: button,
         ),
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           minimumSize: const Size.square(48),
+          iconSize: 22,
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderRadius: BorderRadius.all(Radius.circular(radiusControl)),
           ),
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: scheme.primaryContainer,
-        foregroundColor: scheme.onPrimaryContainer,
-        elevation: 3,
-        focusElevation: 3,
-        hoverElevation: 4,
-        highlightElevation: 1,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(17)),
-        ),
+        backgroundColor: r.accent,
+        foregroundColor: r.onAccent,
+        elevation: 0,
+        focusElevation: 0,
+        hoverElevation: 0,
+        highlightElevation: 0,
+        shape: const StadiumBorder(),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: scheme.surfaceContainerHighest,
-        contentTextStyle: TextStyle(color: scheme.onSurface),
-        actionTextColor: scheme.primary,
-        elevation: 5,
+        backgroundColor: r.surface3,
+        contentTextStyle: text.bodyMedium?.copyWith(color: r.text1),
+        actionTextColor: r.accent,
+        elevation: 0,
         insetPadding: const EdgeInsets.all(12),
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(14)),
+          borderRadius: BorderRadius.all(Radius.circular(radiusControl)),
         ),
       ),
-      chipTheme: const ChipThemeData(
+      chipTheme: ChipThemeData(
         // Comfortable density: chips act as primary filters in this product
         // (model intents, variants, file breadcrumbs), so raise them from
-        // M3's 32dp toward a >=40dp visual target.
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        // M3's 32dp toward a >=40dp visual target. Pills (§4: 999).
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        backgroundColor: r.surface3,
+        selectedColor: Color.alphaBlend(
+          r.accent.withValues(alpha: .18),
+          r.surface3,
+        ),
+        side: BorderSide.none,
+        shape: const StadiumBorder(),
+        labelStyle: text.labelLarge?.copyWith(color: r.text1),
+        secondaryLabelStyle: text.labelLarge?.copyWith(color: r.text1),
       ),
-      dividerTheme: DividerThemeData(
-        color: scheme.outlineVariant.withValues(alpha: .7),
-        thickness: 1,
-        space: 1,
+      popupMenuTheme: PopupMenuThemeData(
+        color: r.surface2,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        textStyle: text.bodyLarge,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusControl),
+          side: BorderSide(color: r.hairline),
+        ),
       ),
+      menuTheme: MenuThemeData(
+        style: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(r.surface2),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          elevation: const WidgetStatePropertyAll(0),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radiusControl),
+              side: BorderSide(color: r.hairline),
+            ),
+          ),
+        ),
+      ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: r.surface3,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        textStyle: text.bodySmall?.copyWith(color: r.text1),
+      ),
+      badgeTheme: BadgeThemeData(
+        backgroundColor: r.attentionFill,
+        textColor: r.onAttentionFill,
+        textStyle: text.labelSmall,
+      ),
+      switchTheme: SwitchThemeData(
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? Colors.transparent
+              : r.hairline,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected) ? r.accent : r.surface3,
+        ),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) =>
+              states.contains(WidgetState.selected) ? r.onAccent : r.text2,
+        ),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: r.text2,
+        textColor: r.text1,
+        titleTextStyle: text.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
+        subtitleTextStyle: text.bodySmall?.copyWith(color: r.text2),
+        minVerticalPadding: 8,
+      ),
+      // Thickness 0 is Flutter's hairline: exactly one physical pixel at any
+      // device pixel ratio (§7).
+      dividerTheme: DividerThemeData(color: r.hairline, thickness: 0, space: 1),
       progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: scheme.primary,
-        linearTrackColor: scheme.surfaceContainerHighest,
-        circularTrackColor: scheme.surfaceContainerHighest,
+        color: r.accent,
+        linearTrackColor: r.surface3,
+        circularTrackColor: r.surface3,
       ),
       textSelectionTheme: TextSelectionThemeData(
-        cursorColor: scheme.primary,
-        selectionColor: scheme.primary.withValues(alpha: .28),
-        selectionHandleColor: scheme.primary,
+        cursorColor: r.accent,
+        selectionColor: r.accent.withValues(alpha: .28),
+        selectionHandleColor: r.accent,
       ),
     );
   }
+
+  static OutlineInputBorder _field(Color color, {double width = 1}) =>
+      OutlineInputBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(radiusControl)),
+        borderSide: BorderSide(color: color, width: width),
+      );
 }

@@ -14,6 +14,7 @@ import '../../l10n/app_localizations.dart';
 import '../app_theme.dart';
 import '../desktop/shortcuts.dart';
 import '../kit/kit_motion.dart';
+import '../kit/kit_tokens.dart';
 import '../kit/motion/kit_reveal.dart';
 import '../kit/motion/kit_tab_switcher.dart';
 import '../navigation/chat_route.dart';
@@ -572,10 +573,12 @@ class _ShellNavigationState extends State<_ShellNavigation> {
     final scaler = MediaQuery.textScalerOf(
       context,
     ).clamp(maxScaleFactor: _maxScale);
-    // The painted indicator is 32dp high. Its whole destination remains a
-    // 72dp touch target; counting a separate 48dp icon hit box made the dock
-    // unnecessarily tall. Leave at least 8dp above and below the visible stack.
-    final requiredHeight = 32 + 4 + scaler.scale(_labelHeight) + 16;
+    // The floating tab bar is 60 dp (visual language §4): the 32 dp lens
+    // behind the icon, the label, and 4 dp above and below the visible
+    // stack. Every destination stays a full-height touch target; at large
+    // text the bar grows with its labels.
+    final base = KitTokens.of(context).navHeight;
+    final requiredHeight = 32 + 2 + scaler.scale(_labelHeight) + 10;
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: _maxScale,
       child: NavigationBarTheme(
@@ -587,7 +590,7 @@ class _ShellNavigationState extends State<_ShellNavigation> {
           ),
         ),
         child: NavigationBar(
-          height: requiredHeight > 72 ? requiredHeight : 72,
+          height: requiredHeight > base ? requiredHeight : base,
           backgroundColor: Colors.transparent,
           labelTextStyle: WidgetStateProperty.resolveWith(
             (states) =>

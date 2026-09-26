@@ -59,8 +59,9 @@ void main() {
       _colorOf(tester, '/tmp/opencode/flutter/bin/'),
       AppTheme.mutedOf(theme),
     );
-    expect(_colorOf(tester, '--concurrency=1'), theme.colorScheme.secondary);
-    expect(_colorOf(tester, '"a b"'), theme.colorScheme.tertiary);
+    final roles = AppTheme.rolesOf(theme);
+    expect(_colorOf(tester, '--concurrency=1'), roles.codeType);
+    expect(_colorOf(tester, '"a b"'), roles.codeString);
   });
 
   testWidgets('output keeps its colours, or is tinted by what it says', (

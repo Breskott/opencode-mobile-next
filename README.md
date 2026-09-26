@@ -236,7 +236,7 @@ Everything technical lives one level down:
 
 ## Thanks and licence
 
-[MIT](LICENSE). The app bundles JetBrains Mono and Space Grotesk (both
+[MIT](LICENSE). The app bundles Geist and Geist Mono (both
 OFL-1.1), sherpa-onnx (Apache-2.0), ONNX Runtime and the Whisper models
 (MIT), and the packages listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 Built on the shoulders of the OpenCode team, who made the agent this app is a

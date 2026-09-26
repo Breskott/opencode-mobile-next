@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../app_theme.dart';
+import '../app_iconography.dart';
+import 'kit_tokens.dart';
 
 /// A list row (design standard §6): a leading icon or status dot, a
 /// one-line title, a one-line muted supporting line, and a trailing value,
@@ -69,27 +70,39 @@ class KitRow extends StatelessWidget {
   /// acting (§2).
   final bool destructive;
 
-  /// A leading icon at the row's size, muted unless [color] is given.
-  static Widget icon(BuildContext context, IconData icon, {Color? color}) =>
-      SizedBox.square(
-        dimension: 32,
-        child: Icon(
-          icon,
-          size: 21,
-          color: color ?? AppTheme.mutedOf(Theme.of(context)),
+  /// A leading icon in its tile (visual language §4): 30 dp of `surface3`
+  /// with 9 dp corners, the icon in `text1` unless [color] is given.
+  static Widget icon(BuildContext context, IconData icon, {Color? color}) {
+    final tokens = KitTokens.of(context);
+    return SizedBox.square(
+      dimension: tokens.iconTileSize,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: tokens.roles.surface3,
+          borderRadius: BorderRadius.circular(tokens.iconTileRadius),
         ),
-      );
+        child: Center(
+          child: Icon(icon, size: 20, color: color ?? tokens.roles.text1),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
     final supporting = this.supporting;
-    final titleColor = destructive ? theme.colorScheme.error : null;
+    final titleColor = destructive ? tokens.roles.danger : null;
     final Widget row = InkWell(
       onTap: enabled ? onTap : null,
       onLongPress: enabled ? onLongPress : null,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 56),
+        // 54 dp with one line, 60 with two (§4).
+        constraints: BoxConstraints(
+          minHeight: supporting == null && below == null
+              ? tokens.rowHeight
+              : tokens.rowHeightTwoLine,
+        ),
         child: Padding(
           padding:
               padding ??
@@ -115,9 +128,7 @@ class KitRow extends StatelessWidget {
                       key: titleKey,
                       maxLines: titleMaxLines,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: titleColor,
-                      ),
+                      style: tokens.rowTitle.copyWith(color: titleColor),
                     ),
                     if (supporting != null) ...[
                       const SizedBox(height: 2),
@@ -126,9 +137,7 @@ class KitRow extends StatelessWidget {
                         key: supportingKey,
                         maxLines: supportingMaxLines,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.mutedOf(theme),
-                        ),
+                        style: tokens.rowSupporting,
                       ),
                     ],
                     if (below case final below?) ...[
@@ -146,5 +155,139 @@ class KitRow extends StatelessWidget {
     );
     if (enabled) return row;
     return Opacity(opacity: .5, child: row);
+  }
+}
+
+/// A row's trailing value in `text3`, optionally before the chevron
+/// (visual language §5: "Claude Sonnet 4 ›"). The value is what the row
+/// is set to now; the chevron says the row opens a screen.
+class KitRowValue extends StatelessWidget {
+  const KitRowValue(this.value, {super.key, this.chevron = true});
+
+  final String value;
+  final bool chevron;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: tokens.minTarget),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.rowValue,
+            ),
+          ),
+          if (chevron)
+            Padding(
+              padding: EdgeInsetsDirectional.only(
+                start: tokens.space1,
+                end: tokens.space3,
+              ),
+              child: Icon(
+                AppIconography.chevronRight,
+                size: 20,
+                color: tokens.roles.text3,
+              ),
+            )
+          else
+            SizedBox(width: tokens.space4),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rows grouped on one panel (visual language §4, §5): `surface1`, 18 dp
+/// corners, a hairline of exactly one physical pixel between rows, inset
+/// to where the row's words start, with an optional section [label] 8 dp
+/// above. No per-row menus: a row's rarer actions open on long-press or
+/// right-click (`KitRowMenu`).
+class KitRowGroup extends StatelessWidget {
+  const KitRowGroup({
+    super.key,
+    required this.children,
+    this.label,
+    this.labelTrailing,
+    this.leadingIcons = true,
+    this.margin,
+  });
+
+  final List<Widget> children;
+
+  /// The section's name above the panel (never uppercase).
+  final String? label;
+  final Widget? labelTrailing;
+
+  /// Whether the rows lead with an icon tile: the separators then start
+  /// where the words do.
+  final bool leadingIcons;
+
+  /// Around the group; the screen gutter at the sides by default.
+  final EdgeInsetsGeometry? margin;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    final inset = leadingIcons
+        ? tokens.space4 + tokens.iconTileSize + tokens.space3
+        : tokens.space4;
+    final label = this.label;
+    return Padding(
+      padding: margin ?? EdgeInsets.symmetric(horizontal: tokens.gutter),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (label != null)
+            Padding(
+              padding: EdgeInsetsDirectional.only(
+                start: tokens.space1,
+                end: tokens.space1,
+                bottom: tokens.labelGap,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(label, style: tokens.sectionLabel),
+                    ),
+                  ),
+                  ?labelTrailing,
+                ],
+              ),
+            ),
+          Material(
+            color: tokens.roles.surface1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(tokens.panelCornerRadius),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0)
+                    Divider(
+                      height: 0,
+                      thickness: 0,
+                      indent: inset,
+                      color: tokens.roles.hairline,
+                    ),
+                  children[i],
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

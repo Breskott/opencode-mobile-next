@@ -360,6 +360,33 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
     final mark = tokens.markSize + markIcon - tokens.markIconSize;
     final typedName = widget.typedName;
     final alternative = widget.alternative;
+    final wide = KitLayout.modalWindowOf(context).isWide;
+    final confirm = KitButton.primary(
+      key: widget.confirmKey,
+      label: widget.confirmLabel,
+      destructive: danger,
+      working: _working,
+      expand: !wide,
+      // Keeps its fill while working; a second tap is ignored.
+      onPressed: _nameMatches ? () => unawaited(_confirm()) : null,
+    );
+    final cancel = KitButton.secondary(
+      key: const ValueKey('kit-confirm-cancel'),
+      label:
+          widget.cancelLabel ?? KitConfirmSheet.cancelFor(context, widget.kind),
+      expand: !wide,
+      onPressed: _working ? null : _cancel,
+    );
+    final reason = _nameMatches
+        ? null
+        : Padding(
+            padding: EdgeInsets.only(top: tokens.space2),
+            child: Text(
+              l10n.kitConfirmTypeNameReason,
+              key: const ValueKey('kit-confirm-reason'),
+              style: tokens.note,
+            ),
+          );
     return PopScope<Object?>(
       canPop: !_working,
       child: Focus(
@@ -383,8 +410,11 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                   width: mark,
                   height: mark,
                   decoration: BoxDecoration(
-                    color: tint.withValues(alpha: tokens.markTintAlpha),
-                    shape: BoxShape.circle,
+                    color: Color.alphaBlend(
+                      tint.withValues(alpha: tokens.markTintAlpha),
+                      tokens.sheetSurface,
+                    ),
+                    borderRadius: BorderRadius.circular(tokens.markRadius),
                   ),
                   child: Icon(
                     widget.icon ?? KitConfirmSheet.iconFor(widget.kind),
@@ -401,12 +431,11 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
               ),
               SizedBox(height: tokens.space2),
               Text(widget.body, style: tokens.confirmBody),
-              for (final consequence in widget.consequences) ...[
-                SizedBox(height: tokens.space2),
-                KitNotice(
-                  message: consequence,
-                  tone: AppStatusTone.attention,
-                  liveRegion: false,
+              if (widget.consequences.isNotEmpty) ...[
+                SizedBox(height: tokens.space4),
+                _KitConsequences(
+                  consequences: widget.consequences,
+                  danger: danger,
                 ),
               ],
               if (typedName != null) ...[
@@ -444,30 +473,25 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                 ),
               ],
               SizedBox(height: tokens.space5),
-              KitButton.primary(
-                key: widget.confirmKey,
-                label: widget.confirmLabel,
-                destructive: danger,
-                working: _working,
-                // Keeps its fill while working; a second tap is ignored.
-                onPressed: _nameMatches ? () => unawaited(_confirm()) : null,
-              ),
-              if (!_nameMatches) ...[
-                SizedBox(height: tokens.space2),
-                Text(
-                  l10n.kitConfirmTypeNameReason,
-                  key: const ValueKey('kit-confirm-reason'),
-                  style: tokens.note,
+              if (wide) ...[
+                // A PC or tablet (§5): the answers in a row at the end,
+                // the confirm last.
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Flexible(child: cancel),
+                    SizedBox(width: tokens.space3),
+                    Flexible(child: confirm),
+                  ],
                 ),
+                ?reason,
+              ] else ...[
+                confirm,
+                // The reason sits under the button it explains.
+                ?reason,
+                SizedBox(height: tokens.space3),
+                cancel,
               ],
-              SizedBox(height: tokens.space2),
-              KitButton.secondary(
-                key: const ValueKey('kit-confirm-cancel'),
-                label:
-                    widget.cancelLabel ??
-                    KitConfirmSheet.cancelFor(context, widget.kind),
-                onPressed: _working ? null : _cancel,
-              ),
               if (alternative != null) ...[
                 SizedBox(height: tokens.space1),
                 KitInset(
@@ -578,6 +602,68 @@ class _KitDetailsFoldState extends State<_KitDetailsFold> {
                 ),
         ),
       ],
+    );
+  }
+}
+
+/// A confirmation's consequences (visual language §5): counted facts that
+/// go with the act, as rows on one `surface1` panel with hairlines inset to
+/// the words. The first fact of a stop or delete carries the danger tone.
+class _KitConsequences extends StatelessWidget {
+  const _KitConsequences({required this.consequences, required this.danger});
+
+  final List<String> consequences;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.insetSurface,
+        borderRadius: BorderRadius.circular(tokens.detailsRadius),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < consequences.length; i++) ...[
+            if (i > 0)
+              Divider(
+                height: 0,
+                thickness: 0,
+                indent: tokens.space4 + 20 + tokens.space3,
+                color: roles.hairline,
+              ),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.space4,
+                vertical: tokens.space3,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 1),
+                    child: Icon(
+                      i == 0 && danger
+                          ? AppIconography.warning
+                          : AppIconography.info,
+                      size: 20,
+                      color: i == 0 && danger ? roles.danger : roles.text2,
+                    ),
+                  ),
+                  SizedBox(width: tokens.space3),
+                  Expanded(
+                    child: Text(consequences[i], style: tokens.rowTitle),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

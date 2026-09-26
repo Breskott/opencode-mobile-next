@@ -191,6 +191,9 @@ void main() {
               400,
               scrollable: find.byType(Scrollable).first,
             );
+            // Built is not yet on screen: bring it the rest of the way.
+            await tester.ensureVisible(docs);
+            await tester.pump();
             expect(docs.hitTestable(), findsOneWidget);
           }
           if (page == 'servers') {

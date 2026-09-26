@@ -145,9 +145,22 @@ void main() {
     }
   }
 
+  /// A lazily built list only builds what is near the viewport: scroll
+  /// until [finder] exists, then bring it fully into view.
+  Future<void> reveal(WidgetTester tester, Finder finder) async {
+    if (finder.evaluate().isEmpty) {
+      await tester.scrollUntilVisible(
+        finder,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+    }
+    await tester.ensureVisible(finder);
+  }
+
   /// At 2.5x most targets start below the fold: scroll them in, then tap.
   Future<void> tapVisible(WidgetTester tester, Finder finder) async {
-    await tester.ensureVisible(finder);
+    await reveal(tester, finder);
     await tester.pumpAndSettle();
     expect(finder.hitTestable(), findsOneWidget);
     await tester.tap(finder);
@@ -246,7 +259,7 @@ void main() {
                 findsOneWidget,
               );
               final row = find.byKey(const ValueKey('plugins-ai-team-row'));
-              await tester.ensureVisible(row);
+              await reveal(tester, row);
               await tester.pumpAndSettle();
               expect(row.hitTestable(), findsOneWidget);
             case 'sheet':
@@ -323,6 +336,10 @@ void main() {
               await tester.pumpAndSettle();
               expect(find.text(l10n.teamUiTailnetRequired), findsOneWidget);
             case 'guide':
+              await reveal(
+                tester,
+                find.byKey(const ValueKey('plugins-ai-team-row')),
+              );
               unawaited(
                 showTeamHostGuideSheet(
                   tester.element(

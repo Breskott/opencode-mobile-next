@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../kit_effects.dart';
+import '../kit_tokens.dart';
 import 'liquid_glass_filter.dart';
 
 /// How a [KitGlass] draws, decided per frame from the phone and the person.
@@ -86,18 +87,25 @@ class KitGlass extends StatelessWidget {
   const KitGlass({
     super.key,
     required this.child,
-    this.borderRadius = const BorderRadius.all(Radius.circular(24)),
+    this.borderRadius,
     this.shadow = true,
+    this.dim = true,
   });
 
   final Widget child;
 
   /// The glass's corners. The shader bends with the largest corner radius;
-  /// the clip follows each corner exactly.
-  final BorderRadius borderRadius;
+  /// the clip follows each corner exactly. Null takes the floating tab
+  /// bar's corners ([KitTokens.navRadius], 22).
+  final BorderRadius? borderRadius;
 
-  /// A soft drop shadow under translucent glass (never when solid).
+  /// The one tight shadow of floating glass ([KitTokens.glassShadows]:
+  /// y 6, blur 16, the `glassShadow` role; LOOK-20), never when solid.
   final bool shadow;
+
+  /// Glass that holds words (labels, a text field) dims what passes behind
+  /// it further, so content reads as colour, never as letters (§6).
+  final bool dim;
 
   /// Neutral ink stays readable even when contrasting content crosses behind
   /// the translucent material; muted palette roles are not sufficient here.
@@ -137,41 +145,49 @@ class KitGlass extends StatelessWidget {
 
   Widget _build(BuildContext context, ui.FragmentProgram? program) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    final borderRadius =
+        this.borderRadius ?? BorderRadius.circular(tokens.navRadius);
     final look = lookOf(context);
     final solid = look == KitGlassLook.solid;
     final dark = theme.brightness == Brightness.dark;
-    final tint = Color.alphaBlend(
-      scheme.primary.withValues(alpha: dark ? .035 : .018),
-      scheme.surfaceContainerLow,
-    );
-
-    // The tint is what keeps the dock's labels readable over any content
-    // (test/glass_surface_test.dart checks 4.5:1 over 125 backdrops). Liquid
-    // glass lays the same tint in its shader, full over the middle where the
-    // labels are and thinner across the bending edge.
-    final fill = tint.withValues(alpha: dark ? .78 : .72);
+    // The glass is `surface2` at 82 % (visual language §4), deeper where it
+    // holds words (§6). The fill is what keeps the dock's labels readable
+    // over any content (test/glass_surface_test.dart checks 4.5:1 over 125
+    // backdrops). Liquid glass lays the same fill in its shader, full over
+    // the middle where the labels are and thinner across the bending edge.
+    final fill = roles.surface2.withValues(alpha: dim ? .88 : .82);
+    // Glass turned off: a solid surface2 at 94 %; the system's high
+    // contrast, accessible navigation or remove animations: opaque.
+    final solidFill = reduceEffects(context)
+        ? roles.surface2
+        : roles.surface2.withValues(alpha: .94);
+    final dpr = MediaQuery.devicePixelRatioOf(context);
     final material = DecoratedBox(
       decoration: BoxDecoration(
         color: switch (look) {
-          KitGlassLook.solid => scheme.surfaceContainerHigh,
+          KitGlassLook.solid => solidFill,
           KitGlassLook.frosted => fill,
           KitGlassLook.liquid => null,
         },
         borderRadius: borderRadius,
-        border: Border.all(
-          color: solid
-              ? scheme.outline
-              : scheme.onSurface.withValues(
-                  // The shader draws its own rim of light; the hairline
-                  // stays only to hold the edge on a light backdrop.
-                  alpha: look == KitGlassLook.liquid
-                      ? (dark ? .08 : .10)
-                      : (dark ? .16 : .12),
-                ),
-        ),
+        border: solid ? Border.all(color: roles.hairline, width: 0) : null,
       ),
-      child: child,
+      // The rim (§7, LOOK-21): one physical pixel, the `glassRimLight` role
+      // along the top edge and `glassRimDark` along the bottom, never a
+      // soft glow.
+      child: solid
+          ? child
+          : CustomPaint(
+              foregroundPainter: _GlassRimPainter(
+                radius: borderRadius,
+                devicePixelRatio: dpr,
+                light: roles.glassRimLight,
+                dark: roles.glassRimDark,
+              ),
+              child: child,
+            ),
     );
 
     final backdropKey = BackdropGroup.of(context)?.backdropKey;
@@ -184,8 +200,8 @@ class KitGlass extends StatelessWidget {
       ),
       KitGlassLook.liquid => LiquidGlassFilter(
         program: program!,
-        radius: _largestRadius,
-        devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+        radius: _largestRadius(borderRadius),
+        devicePixelRatio: dpr,
         tint: fill,
         rim: dark ? .7 : 1,
         backdropKey: backdropKey,
@@ -196,24 +212,62 @@ class KitGlass extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: borderRadius,
-        boxShadow: solid || !shadow
-            ? const []
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? .18 : .06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+        boxShadow: solid || !shadow ? const [] : tokens.glassShadows,
       ),
       child: ClipRRect(borderRadius: borderRadius, child: glass),
     );
   }
 
-  double get _largestRadius => [
+  static double _largestRadius(BorderRadius borderRadius) => [
     borderRadius.topLeft.x,
     borderRadius.topRight.x,
     borderRadius.bottomLeft.x,
     borderRadius.bottomRight.x,
   ].reduce((a, b) => a > b ? a : b);
+}
+
+/// The glass's rim: a stroke of exactly one physical pixel on the rounded
+/// edge, snapped to the pixel grid, light at the top fading out by the
+/// middle and darker at the bottom.
+class _GlassRimPainter extends CustomPainter {
+  const _GlassRimPainter({
+    required this.radius,
+    required this.devicePixelRatio,
+    required this.light,
+    required this.dark,
+  });
+
+  final BorderRadius radius;
+  final double devicePixelRatio;
+  final Color light;
+  final Color dark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final px = 1 / devicePixelRatio;
+    final rect = (Offset.zero & size).deflate(px / 2);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = px
+      ..isAntiAlias = true
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          light,
+          light.withValues(alpha: 0),
+          dark.withValues(alpha: 0),
+          dark,
+        ],
+        stops: const [0, .35, .65, 1],
+      ).createShader(rect);
+    canvas.drawRRect(radius.toRRect(rect), paint);
+  }
+
+  @override
+  bool shouldRepaint(_GlassRimPainter old) =>
+      old.radius != radius ||
+      old.devicePixelRatio != devicePixelRatio ||
+      old.light != light ||
+      old.dark != dark;
 }

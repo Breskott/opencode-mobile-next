@@ -155,10 +155,13 @@ void main() {
       await _open(tester, context, kind: kind);
       final button = filledButton(tester, 'Delete conversation');
       final background = button.style?.backgroundColor?.resolve({});
+      // The one red fill (visual language §5: dangerFill, only inside a
+      // confirmation).
+      final dangerFill = AppTheme.rolesOf(theme).dangerFill;
       if (kind == KitConfirmKind.neutral) {
-        expect(background, isNot(theme.colorScheme.error), reason: '$kind');
+        expect(background, isNot(dangerFill), reason: '$kind');
       } else {
-        expect(background, theme.colorScheme.error, reason: '$kind');
+        expect(background, dangerFill, reason: '$kind');
       }
       expect(find.byIcon(AppIconography.question), findsNothing);
       expect(find.byIcon(KitConfirmSheet.iconFor(kind)), findsOneWidget);

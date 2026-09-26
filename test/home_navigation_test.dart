@@ -519,7 +519,7 @@ void main() {
     final dock = tester.getRect(find.byType(GlassSurface));
     expect(dock.left, 16);
     expect(dock.right, 374);
-    expect(dock.height, 72);
+    expect(dock.height, 60);
     final navigation = tester.widget<NavigationBar>(find.byType(NavigationBar));
     final navigationContext = tester.element(find.byType(NavigationBar));
     for (final states in [

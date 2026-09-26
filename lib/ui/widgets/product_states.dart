@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
 
+import '../kit/kit_text.dart';
+
 import '../../api/mcp_oauth.dart' show McpOAuthCallbackException;
 import '../../api/opencode_api.dart';
 import '../../api/product_repository.dart';
@@ -453,17 +455,11 @@ class SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final label = Text(
-      text,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: AppTheme.mutedOf(theme),
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.1,
-      ),
-    );
+    // The kit's section label (visual language §2 `label`, §4: 22 dp
+    // between sections, 8 to the panel), never uppercase.
+    final label = KitText(text, role: KitTextRole.label);
     return Padding(
-      padding: padding ?? const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      padding: padding ?? const EdgeInsetsDirectional.fromSTEB(16, 22, 16, 8),
       child: trailing == null
           ? label
           // A Wrap, not a Row: when the caption and its status do not fit

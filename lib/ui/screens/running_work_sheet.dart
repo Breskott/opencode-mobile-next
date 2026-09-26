@@ -976,7 +976,7 @@ class _ShellOutputScreenState extends State<ShellOutputScreen>
                             : l10n.workNoFinalOutput)
                       : output,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontFamily: 'monospace',
+                    fontFamily: AppTheme.monoFamily,
                     height: 1.5,
                   ),
                 ),

@@ -280,11 +280,11 @@ void main() {
     final review = find.byKey(const Key('permission-card-review'));
     expect(card, findsOneWidget);
     expect(find.descendant(of: card, matching: review), findsOneWidget);
-    // Full width inside the card (its 16 dp padding and 1 dp border), not a
-    // right-aligned chip.
+    // Full width inside the card (its 16 dp padding; the hairline border
+    // takes no room), not a right-aligned chip.
     expect(
       tester.getSize(review).width,
-      moreOrLessEquals(tester.getSize(card).width - 34, epsilon: 1),
+      moreOrLessEquals(tester.getSize(card).width - 32, epsilon: 1),
     );
     expect(
       find.descendant(of: card, matching: find.byType(FilledButton)),

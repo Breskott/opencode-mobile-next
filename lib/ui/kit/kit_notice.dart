@@ -32,7 +32,43 @@ class KitNotice extends StatelessWidget {
     this.onDismiss,
     this.messageKey,
     this.liveRegion = true,
-  });
+  }) : card = false,
+       caption = null,
+       primary = null,
+       secondary = null;
+
+  /// The needs-you card (visual language §5): on `attentionSurface` inside
+  /// an `attentionLine` border with 22 dp corners, an icon tile, a
+  /// [caption] in the tone ("Needs you · 40 s ago"), the [title] as a
+  /// headline, the [message], and its answer buttons in place ([primary]
+  /// and [secondary] side by side, [actions] as tertiary words). Amber
+  /// always means "needs you", so [tone] is attention unless the card is a
+  /// verdict of another kind.
+  const KitNotice.card({
+    super.key,
+    required this.message,
+    this.title,
+    this.caption,
+    this.tone = AppStatusTone.attention,
+    this.icon,
+    this.notes = const [],
+    this.primary,
+    this.secondary,
+    this.actions = const [],
+    this.onDismiss,
+    this.messageKey,
+    this.liveRegion = true,
+  }) : card = true;
+
+  /// Drawn as the needs-you card ([KitNotice.card]).
+  final bool card;
+
+  /// The card's small line above the title, in the tone.
+  final String? caption;
+
+  /// The card's answer buttons, in place.
+  final KitAction? primary;
+  final KitAction? secondary;
 
   final String? title;
   final String message;
@@ -63,6 +99,7 @@ class KitNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (card) return _buildCard(context);
     final theme = Theme.of(context);
     final tint = tone == AppStatusTone.neutral
         ? AppTheme.mutedOf(theme)
@@ -154,6 +191,152 @@ class KitNotice extends StatelessWidget {
                   icon: const Icon(AppIconography.close, size: 18),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    final attention = tone == AppStatusTone.attention;
+    final tint = tone == AppStatusTone.neutral
+        ? roles.text2
+        : AppTheme.statusColor(theme, tone);
+    final surface = attention
+        ? roles.attentionSurface
+        : tint.withValues(alpha: .08);
+    final line = attention ? roles.attentionLine : tint.withValues(alpha: .30);
+    final title = this.title;
+    final caption = this.caption;
+    final dismiss = onDismiss;
+    final primary = this.primary;
+    final secondary = this.secondary;
+    final shown = actions.take(2).toList();
+    final tileSize = tokens.markSize - 8;
+    return KitEntrance(
+      trigger: (tone, icon),
+      child: Semantics(
+        container: true,
+        liveRegion: liveRegion,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Color.alphaBlend(surface, roles.surface1),
+            borderRadius: BorderRadius.circular(tokens.cardRadius),
+            border: Border.all(color: line, width: 0),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(tokens.space4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox.square(
+                      dimension: tileSize,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: tint.withValues(alpha: .16),
+                          borderRadius: BorderRadius.circular(
+                            tokens.markRadius - 2,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            icon ?? _iconFor(tone),
+                            size: 20,
+                            color: tint,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: tokens.space3),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (caption != null) ...[
+                            Text(
+                              caption,
+                              style: tokens.cardCaption.copyWith(color: tint),
+                            ),
+                            SizedBox(height: tokens.space1),
+                          ],
+                          if (title != null) ...[
+                            Text(title, style: tokens.cardTitle),
+                            SizedBox(height: tokens.space1 / 2),
+                          ],
+                          Text(
+                            message,
+                            key: messageKey,
+                            style: title == null
+                                ? tokens.rowTitle
+                                : tokens.rowSupporting,
+                          ),
+                          for (final note in notes) ...[
+                            SizedBox(height: tokens.space1),
+                            Text(note, style: tokens.rowSupporting),
+                          ],
+                          if (shown.isNotEmpty)
+                            KitInset(
+                              child: Wrap(
+                                spacing: 4,
+                                children: [
+                                  for (final action in shown)
+                                    KitButton.fromAction(
+                                      action,
+                                      role: KitButtonRole.tertiary,
+                                    ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (dismiss != null)
+                      IconButton(
+                        key: const ValueKey('kit-notice-dismiss'),
+                        tooltip: lookupAppLocalizations(
+                          Localizations.localeOf(context),
+                        ).workspaceDismissNotice,
+                        onPressed: dismiss,
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(AppIconography.close, size: 20),
+                      ),
+                  ],
+                ),
+                if (primary != null || secondary != null) ...[
+                  SizedBox(height: tokens.space4),
+                  Row(
+                    children: [
+                      if (secondary != null)
+                        Expanded(
+                          flex: 3,
+                          child: KitButton.fromAction(
+                            secondary,
+                            role: KitButtonRole.secondary,
+                          ),
+                        ),
+                      if (primary != null && secondary != null)
+                        SizedBox(width: tokens.space3),
+                      if (primary != null)
+                        Expanded(
+                          flex: secondary == null ? 1 : 4,
+                          child: KitButton.fromAction(
+                            primary,
+                            role: KitButtonRole.primary,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),

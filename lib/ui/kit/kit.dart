@@ -7,7 +7,8 @@
 /// | [KitLayout], [KitWindow] | kit v2 §8.1 window classes: every part adapts to phone, tablet and PC |
 /// | [KitSheet], [showKitSheet], [KitSheetHeight], [KitDraft] | kit v2 §1.1 the one sheet frame, its draft and unsaved-input guard |
 /// | [KitConfirmSheet], [showKitConfirm], [KitConfirmKind] | kit v2 §1.2 the one confirmation (§4.1 undo, confirm or neither) |
-/// | [KitTokens] | kit v2 the colours, radii, elevations, scrim, type and spacing the modal parts read (a ThemeExtension) |
+/// | [KitTokens] | kit v2 the colours (the theme's [ThemeRoles]), radii, heights, scrim, type and spacing every part reads (a ThemeExtension) |
+/// | [KitText], [KitTextRole], [KitTextTone] | visual language §2 the type roles, coloured by theme role |
 /// | [KitTechnicalValue] | kit v2 §1.8 a technical value shown under Details, left to right |
 /// | [KitButton], [KitActionBlock], [KitAction] | §2 one button hierarchy |
 /// | [KitActionStack] | §2 the same hierarchy with each rare path on its own line |
@@ -63,6 +64,7 @@ export 'kit_state_view.dart';
 export 'kit_status_line.dart';
 export 'kit_status_mark.dart';
 export 'kit_technical_value.dart';
+export 'kit_text.dart';
 export 'kit_tokens.dart';
 export 'kit_task_mark.dart';
 export 'scenes/portal_scene.dart';
