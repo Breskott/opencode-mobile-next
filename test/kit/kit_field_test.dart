@@ -546,14 +546,56 @@ void main() {
       tester.widget(find.byType(KitField)).toStringDeep(),
       isNot(contains('sk-ant')),
     );
+    // The whole element tree too: the inner editable's own diagnostics
+    // list its controller, which must not print the text (SEC-2).
+    expect(
+      tester.binding.rootElement!.toStringDeep(),
+      isNot(contains('sk-ant')),
+    );
 
     await tester.tap(find.byTooltip('Show API key'));
     await tester.pump();
     expect(_textField(tester).obscureText, isFalse);
+    expect(
+      tester.binding.rootElement!.toStringDeep(),
+      isNot(contains('sk-ant')),
+    );
     await tester.tap(find.byTooltip('Hide API key'));
     await tester.pump();
     expect(_textField(tester).obscureText, isTrue);
     semantics.dispose();
+  });
+
+  testWidgets('10. Paste runs through the input formatters, like a keyboard '
+      'paste', (tester) async {
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+    final changes = <String>[];
+    await tester.pumpWidget(
+      _host(
+        KitField.secret(
+          label: 'API key',
+          controller: controller,
+          inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
+          onChanged: changes.add,
+        ),
+      ),
+    );
+    clipboard = '  sk-abc\n';
+    await tester.tap(find.byTooltip('Paste'));
+    await tester.pumpAndSettle();
+    expect(controller.text, 'sk-abc');
+    expect(_textField(tester).controller!.text, 'sk-abc');
+    expect(changes, ['sk-abc']);
+
+    // Typing still reaches the host's controller.
+    await tester.enterText(find.byType(TextField), 'sk-typed');
+    await tester.pump();
+    expect(controller.text, 'sk-typed');
+    // And the host's own edits reach the editable.
+    controller.clear();
+    await tester.pump();
+    expect(_textField(tester).controller!.text, isEmpty);
   });
 
   testWidgets('10. a disabled secret cannot be revealed', (tester) async {
@@ -575,6 +617,7 @@ void main() {
 
   testWidgets('10. saved shows Saved · Replace and no field; Replace calls '
       'onReplace and shows an empty field', (tester) async {
+    final semantics = tester.ensureSemantics();
     var replaced = 0;
     await tester.pumpWidget(
       _host(
@@ -588,12 +631,50 @@ void main() {
     expect(find.text('Saved'), findsOneWidget);
     expect(find.text('Replace'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
+    // With no editable to carry it, the row names the field: one node that
+    // reads the label, Saved and Replace, and whose tap is Replace.
+    final row = tester.getSemantics(find.text('Saved')).getSemanticsData();
+    expect(row.label, contains('API key'));
+    expect(row.label, contains('Saved'));
+    expect(row.label, contains('Replace'));
+    expect(row.flagsCollection.isButton, isTrue);
+    expect(row.hasAction(SemanticsAction.tap), isTrue);
+    semantics.dispose();
 
     await tester.tap(find.text('Replace'));
     await tester.pumpAndSettle();
     expect(replaced, 1);
     expect(find.byType(TextField), findsOneWidget);
     expect(_textField(tester).controller!.text, isEmpty);
+  });
+
+  testWidgets('10. a disabled saved secret says why Replace is off', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    var replaced = 0;
+    await tester.pumpWidget(
+      _host(
+        KitField.secret(
+          label: 'API key',
+          saved: true,
+          enabled: false,
+          disabledReason: 'Saving…',
+          helper: 'Stored on this phone only.',
+          onReplace: () => replaced++,
+        ),
+      ),
+    );
+    final row = tester.getSemantics(find.text('Saved')).getSemanticsData();
+    expect(row.label, contains('API key'));
+    expect(row.hint, contains('Saving…'));
+    expect(row.hint, isNot(contains('Saving…\nSaving…')));
+    expect(row.hasAction(SemanticsAction.tap), isFalse);
+    await tester.tap(find.text('Replace'), warnIfMissed: false);
+    await tester.pump();
+    expect(replaced, 0);
+    expect(find.byType(TextField), findsNothing);
+    semantics.dispose();
   });
 
   testWidgets('11. KitSecretField keeps its contract: prefilled allowed, the '

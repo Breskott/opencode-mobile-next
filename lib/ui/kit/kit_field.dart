@@ -345,6 +345,11 @@ class _KitFieldState extends State<KitField> {
   TextEditingController? _ownController;
   FocusNode? _ownFocus;
   TextEditingController? _listening;
+
+  /// The secret modes' editable controller, kept in step with [_controller]
+  /// both ways; its diagnostics never carry the text, so element dumps and
+  /// the inspector show no secret (SEC-2).
+  _RedactedController? _secretEdit;
   FocusNode? _focusListening;
   String _lastText = '';
   bool _revealed = false;
@@ -360,6 +365,11 @@ class _KitFieldState extends State<KitField> {
       widget.draft?.controller ??
       widget.controller ??
       (_ownController ??= TextEditingController());
+
+  /// What the editable edits: the host's controller, or in the secret modes
+  /// a redacted twin of it.
+  TextEditingController get _editController =>
+      widget._isSecret ? _secretEdit! : _controller;
 
   FocusNode get _focus => widget.focusNode ?? (_ownFocus ??= FocusNode());
 
@@ -411,10 +421,18 @@ class _KitFieldState extends State<KitField> {
   void _attach() {
     final controller = _controller;
     if (!identical(controller, _listening)) {
-      _listening?.removeListener(_onText);
-      _listening = controller..addListener(_onText);
+      _listening
+        ?..removeListener(_onText)
+        ..removeListener(_hostToEdit);
+      _listening = controller
+        ..addListener(_onText)
+        ..addListener(_hostToEdit);
       _lastText = controller.text;
     }
+    if (widget._isSecret && _secretEdit == null) {
+      _secretEdit = _RedactedController()..addListener(_editToHost);
+    }
+    _hostToEdit();
     final focus = _focus;
     if (!identical(focus, _focusListening)) {
       _focusListening?.removeListener(_onFocus);
@@ -424,11 +442,26 @@ class _KitFieldState extends State<KitField> {
 
   @override
   void dispose() {
-    _listening?.removeListener(_onText);
+    _listening
+      ?..removeListener(_onText)
+      ..removeListener(_hostToEdit);
     _focusListening?.removeListener(_onFocus);
+    _secretEdit?.dispose();
     _ownController?.dispose();
     _ownFocus?.dispose();
     super.dispose();
+  }
+
+  void _hostToEdit() {
+    final edit = _secretEdit;
+    if (edit != null && edit.value != _controller.value) {
+      edit.value = _controller.value;
+    }
+  }
+
+  void _editToHost() {
+    final edit = _secretEdit!;
+    if (_controller.value != edit.value) _controller.value = edit.value;
   }
 
   void _onFocus() {
@@ -517,11 +550,18 @@ class _KitFieldState extends State<KitField> {
       text = value.text + pasted;
       caret = text.length;
     }
-    _controller.value = TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: caret),
+    // The same fold EditableText applies to a keyboard or toolbar paste:
+    // every formatter sees the value before the paste as the old value.
+    final next = _formatters.fold<TextEditingValue>(
+      TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: caret),
+      ),
+      (next, formatter) => formatter.formatEditUpdate(value, next),
     );
-    widget.onChanged?.call(text);
+    if (next == value) return;
+    _controller.value = next;
+    if (next.text != value.text) widget.onChanged?.call(next.text);
   }
 
   void _replace() {
@@ -552,6 +592,16 @@ class _KitFieldState extends State<KitField> {
   };
 
   bool get _multiline => widget.kind == KitFieldKind.multiline;
+
+  /// The editable's input rules, in order; Paste runs through the same
+  /// chain so it lands exactly as a keyboard paste would.
+  List<TextInputFormatter> get _formatters => [
+    if (widget.kind == KitFieldKind.number)
+      KitNumberFormatter(decimal: widget.decimal),
+    ...widget.inputFormatters,
+    if (widget.maxLength != null)
+      LengthLimitingTextInputFormatter(widget.maxLength),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -606,13 +656,7 @@ class _KitFieldState extends State<KitField> {
       minLines = null;
       maxLines = widget.maxLines ?? 1;
     }
-    final formatters = <TextInputFormatter>[
-      if (widget.kind == KitFieldKind.number)
-        KitNumberFormatter(decimal: widget.decimal),
-      ...widget.inputFormatters,
-      if (widget.maxLength != null)
-        LengthLimitingTextInputFormatter(widget.maxLength),
-    ];
+    final formatters = _formatters;
     final secret = widget._isSecret;
     final hasTrailing = (secret && !_showsSaved) || widget.action != null;
     // A single line is laid out on a line box at least [minTarget] tall, so
@@ -637,7 +681,7 @@ class _KitFieldState extends State<KitField> {
     // KitSecretField's callers and tests find today.
     Widget editable = TextFormField(
       key: widget.fieldKey,
-      controller: _controller,
+      controller: _editController,
       focusNode: _focus,
       enabled: widget.enabled,
       autofocus: widget.autofocus,
@@ -803,25 +847,41 @@ class _KitFieldState extends State<KitField> {
 
     final Widget inside;
     if (secret && _showsSaved) {
-      inside = Row(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: EdgeInsetsDirectional.only(start: tokens.space4),
-              child: KitText(
-                l10n.kitFieldSaved,
-                role: KitTextRole.body,
-                tone: KitTextTone.secondary,
+      // No editable carries the label here, so the row does: one node that
+      // reads "API key, Saved, Replace" with its hint, and whose tap is
+      // Replace, so every saved key on a screen sounds different (KIT-20).
+      // A disabled Replace brings its own reason as its hint (STATE-8), so
+      // the row adds only an error or the helper.
+      final hint = _semanticHint(context, error);
+      inside = MergeSemantics(
+        child: Semantics(
+          label: widget.label,
+          hint: !widget.enabled && error == null ? null : hint,
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsetsDirectional.only(start: tokens.space4),
+                  child: KitText(
+                    l10n.kitFieldSaved,
+                    role: KitTextRole.body,
+                    tone: KitTextTone.secondary,
+                  ),
+                ),
               ),
-            ),
+              KitButton.fromAction(
+                KitAction(
+                  key: widget.replaceKey,
+                  label: l10n.kitFieldReplace,
+                  onPressed: widget.enabled ? _replace : null,
+                  disabledReason: widget.enabled ? null : widget.disabledReason,
+                ),
+                role: KitButtonRole.tertiary,
+              ),
+              SizedBox(width: tokens.space1),
+            ],
           ),
-          KitButton.tertiary(
-            key: widget.replaceKey,
-            label: l10n.kitFieldReplace,
-            onPressed: widget.enabled ? _replace : null,
-          ),
-          SizedBox(width: tokens.space1),
-        ],
+        ),
       );
     } else {
       inside = Row(
@@ -1006,6 +1066,12 @@ class _KitFieldState extends State<KitField> {
     }
     return widget.helper;
   }
+}
+
+/// A controller whose diagnostics name it but never its text.
+class _RedactedController extends TextEditingController {
+  @override
+  String toString() => '${describeIdentity(this)}(redacted)';
 }
 
 /// [KitFieldKind.number]'s input rule: digits only (one `.` with
