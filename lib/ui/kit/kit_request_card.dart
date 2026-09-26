@@ -62,6 +62,7 @@ class KitRequestCard extends StatelessWidget {
     final tone = this.tone;
     final tokens = KitTokens.of(context);
     final attention = tone == AppStatusTone.attention;
+    final large = MediaQuery.textScalerOf(context).scale(10) >= 20;
     final tint = tone == null
         ? scheme.primary
         : AppTheme.statusColor(theme, tone);
@@ -97,85 +98,109 @@ class KitRequestCard extends StatelessWidget {
                 width: 0,
               ),
             ),
+            // At large text (2x and up) never more than 45 % of the
+            // window: past that the words scroll and the answers stay in
+            // sight on a short phone.
+            constraints: large
+                ? BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(context).height * .45,
+                  )
+                : null,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox.square(
-                      dimension: tokens.markSize - 8,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: tint.withValues(alpha: .16),
-                          borderRadius: BorderRadius.circular(
-                            tokens.markRadius - 2,
-                          ),
-                        ),
-                        child: Center(child: Icon(icon, size: 20, color: tint)),
-                      ),
-                    ),
-                    SizedBox(width: tokens.space3),
-                    Expanded(
-                      child: Column(
+                _MaybeScroll(
+                  scroll: large,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Semantics(
-                            container: true,
-                            liveRegion: true,
-                            label: announcement,
-                            excludeSemantics: true,
-                            child: Text(
-                              title,
-                              key: titleKey,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: tokens.cardTitle,
+                          SizedBox.square(
+                            dimension: tokens.markSize - 8,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: tint.withValues(alpha: .16),
+                                borderRadius: BorderRadius.circular(
+                                  tokens.markRadius - 2,
+                                ),
+                              ),
+                              child: Center(
+                                child: Icon(icon, size: 20, color: tint),
+                              ),
                             ),
                           ),
-                          if (summary != null && summary.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: tokens.roles.ground,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: tokens.space3,
-                                    vertical: tokens.space2,
-                                  ),
-                                  // A command or a path reads left to right
-                                  // inside any language.
+                          SizedBox(width: tokens.space3),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Semantics(
+                                  container: true,
+                                  liveRegion: true,
+                                  label: announcement,
+                                  excludeSemantics: true,
                                   child: Text(
-                                    summary,
-                                    maxLines: 2,
+                                    title,
+                                    key: titleKey,
+                                    maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    textDirection: TextDirection.ltr,
-                                    style: tokens.technicalValue,
+                                    style: tokens.cardTitle,
                                   ),
                                 ),
-                              ),
+                                if (detail != null && detail.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      detail,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: tokens.rowSupporting,
+                                    ),
+                                  ),
+                              ],
                             ),
-                          if (detail != null && detail.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                detail,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: tokens.rowSupporting,
-                              ),
-                            ),
+                          ),
                         ],
                       ),
-                    ),
-                  ],
+                      // The command or path under the header, the card's full
+                      // width (visual language §5), so it wraps as late as it can.
+                      if (summary != null && summary.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.only(top: tokens.space3),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: tokens.roles.ground,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: tokens.space3,
+                                vertical: tokens.space2,
+                              ),
+                              // A command or a path reads left to right inside
+                              // any language.
+                              child: Text(
+                                summary,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textDirection: TextDirection.ltr,
+                                style: tokens.technicalValue,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (body case final body?)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: body,
+                        ),
+                    ],
+                  ),
                 ),
-                if (body case final body?)
-                  Padding(padding: const EdgeInsets.only(top: 8), child: body),
                 if (!actions.isEmpty) ...[const SizedBox(height: 12), actions],
               ],
             ),
@@ -184,4 +209,17 @@ class KitRequestCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Scrolls [child] only when [scroll] (a request card at large text);
+/// otherwise the card lays out at its own height with no scrollable in it.
+class _MaybeScroll extends StatelessWidget {
+  const _MaybeScroll({required this.scroll, required this.child});
+
+  final bool scroll;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) =>
+      scroll ? Flexible(child: SingleChildScrollView(child: child)) : child;
 }

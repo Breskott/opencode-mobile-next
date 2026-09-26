@@ -153,7 +153,9 @@ class _Palette {
     return _Palette(
       muted: AppTheme.mutedOf(theme),
       program: scheme.primary,
-      flag: scheme.secondary,
+      // Code roles (visual language §3): flags and strings stand apart
+      // from the path (text2) and the program (accent).
+      flag: AppTheme.rolesOf(theme).codeType,
       string: AppTheme.rolesOf(theme).codeString,
       error: scheme.error,
       warning: warning,

@@ -405,6 +405,9 @@ void main() {
         );
         await tester.tap(find.byKey(ValueKey('restore-stash-$id')));
         await _frames(tester);
+        // At 320 dp and large text the question scrolls: reach its answer.
+        await tester.ensureVisible(find.text('Restore').last);
+        await _frames(tester);
         await tester.tap(find.text('Restore').last);
         await _frames(tester);
         expect(

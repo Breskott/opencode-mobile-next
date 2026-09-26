@@ -29,7 +29,8 @@ enum KitTextRole {
   /// 12/16, 600, +0.02 em: "Needs you · 40 s ago".
   caption,
 
-  /// 16/20, 600: buttons.
+  /// 15/20, 600: buttons (the spec's 15–16; 15 keeps two labelled
+  /// actions side by side on a 390 dp phone).
   button,
 
   /// 13/19, Geist Mono: code, commands, paths (isolated left to right).
@@ -148,8 +149,8 @@ class KitText extends StatelessWidget {
       letterSpacing: 0.24,
     ),
     KitTextRole.button => const TextStyle(
-      fontSize: 16,
-      height: 20 / 16,
+      fontSize: 15,
+      height: 20 / 15,
       fontWeight: FontWeight.w600,
       letterSpacing: 0,
     ),
@@ -208,7 +209,7 @@ class KitText extends StatelessWidget {
   /// Material's type scale said in the kit's roles, so a `Text` styled
   /// with `theme.textTheme.x` reads the same as its kit counterpart:
   /// headlineLarge is [KitTextRole.largeTitle], titleLarge [KitTextRole.title],
-  /// titleMedium [KitTextRole.headline], bodyLarge [KitTextRole.body],
+  /// bodyLarge [KitTextRole.body],
   /// bodySmall [KitTextRole.secondary], labelMedium [KitTextRole.label],
   /// labelSmall [KitTextRole.caption]. Every colour is the opaque `text1`.
   static TextTheme textTheme(TextTheme base, ThemeRoles roles) {
@@ -256,22 +257,35 @@ class KitText extends StatelessWidget {
       ),
       headlineSmall: role(base.headlineSmall, styleFor(KitTextRole.title)),
       titleLarge: role(base.titleLarge, styleFor(KitTextRole.title)),
-      titleMedium: role(base.titleMedium, styleFor(KitTextRole.headline)),
+      // titleMedium keeps the app's 16/22: screens not yet on KitText wrap
+      // their headings on it. The kit's headline role is 17.
+      titleMedium: role(
+        base.titleMedium,
+        const TextStyle(
+          fontSize: 16,
+          height: 22 / 16,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.16,
+        ),
+      ),
       titleSmall: role(
         base.titleSmall,
         const TextStyle(
-          fontSize: 15,
-          height: 20 / 15,
+          fontSize: 14,
+          height: 20 / 14,
           fontWeight: FontWeight.w600,
           letterSpacing: 0,
         ),
       ),
       bodyLarge: role(base.bodyLarge, styleFor(KitTextRole.body)),
+      // bodyMedium (the ambient text of every Material widget), titleSmall
+      // and labelLarge keep Material's 14/20: screens not yet on KitText
+      // were laid out on it. The kit's roles carry the larger sizes.
       bodyMedium: role(
         base.bodyMedium,
         const TextStyle(
-          fontSize: 15,
-          height: 22 / 15,
+          fontSize: 14,
+          height: 20 / 14,
           fontWeight: FontWeight.w400,
           letterSpacing: 0,
         ),
@@ -280,8 +294,8 @@ class KitText extends StatelessWidget {
       labelLarge: role(
         base.labelLarge,
         const TextStyle(
-          fontSize: 15,
-          height: 20 / 15,
+          fontSize: 14,
+          height: 20 / 14,
           fontWeight: FontWeight.w600,
           letterSpacing: 0,
         ),

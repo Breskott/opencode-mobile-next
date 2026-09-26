@@ -321,22 +321,25 @@ class KitActionBlock extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= 600) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+          // One row with the primary at the end; when the labels do not
+          // fit the width (large text, long words) the row wraps instead of
+          // running off the edge.
+          return Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               for (final action in shown)
                 KitButton.fromAction(action, role: KitButtonRole.tertiary),
               ?more,
               ?menu,
-              const SizedBox(width: 8),
-              if (secondary case final secondary?) ...[
+              if (secondary case final secondary?)
                 KitButton.fromAction(
                   secondary,
                   role: KitButtonRole.secondary,
                   expand: false,
                 ),
-                const SizedBox(width: 8),
-              ],
               if (primary case final primary?)
                 KitButton.fromAction(
                   primary,

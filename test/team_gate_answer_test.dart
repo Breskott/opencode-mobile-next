@@ -668,6 +668,8 @@ void main() {
       final approve = find.byKey(const ValueKey('team-gate-approve'));
       final deny = find.byKey(const ValueKey('team-gate-deny'));
       final error = AppTheme.dark().colorScheme.error;
+      // The one red fill is dangerFill (visual language §5).
+      final fill = AppTheme.rolesOf(AppTheme.dark()).dangerFill;
       // The safe approve is the plain primary; deny takes the error tone.
       // Design standard §2: approve is the kit's primary, deny its
       // secondary (tonal, error-coloured), no longer an outlined button.
@@ -676,7 +678,7 @@ void main() {
             find.descendant(of: approve, matching: find.byType(FilledButton)),
           )
           .style!;
-      expect(approveStyle.backgroundColor?.resolve({}), isNot(error));
+      expect(approveStyle.backgroundColor?.resolve({}), isNot(fill));
       final denyStyle = tester
           .widget<FilledButton>(
             find.descendant(of: deny, matching: find.byType(FilledButton)),
@@ -700,7 +702,7 @@ void main() {
       final yes = tester.widget<FilledButton>(
         find.descendant(of: confirmYes, matching: find.byType(FilledButton)),
       );
-      expect(yes.style?.backgroundColor?.resolve({}), error);
+      expect(yes.style?.backgroundColor?.resolve({}), fill);
       await tester.tap(confirmYes);
       await tester.pumpAndSettle();
       expect(gateway.calls, hasLength(1));
@@ -719,7 +721,8 @@ void main() {
       );
       await pumpSheet(tester, team, 'req-destroy');
       final approve = find.byKey(const ValueKey('team-gate-approve'));
-      final error = AppTheme.dark().colorScheme.error;
+      // The one red fill is dangerFill (visual language §5).
+      final fill = AppTheme.rolesOf(AppTheme.dark()).dangerFill;
       expect(
         tester
             .widget<FilledButton>(
@@ -728,7 +731,7 @@ void main() {
             .style
             ?.backgroundColor
             ?.resolve({}),
-        error,
+        fill,
       );
       expect(
         find.byKey(const ValueKey('team-gate-destructive')),

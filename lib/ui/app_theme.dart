@@ -301,7 +301,7 @@ abstract final class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        toolbarHeight: 60,
+        toolbarHeight: 64,
         titleTextStyle: text.titleMedium?.copyWith(
           fontSize: 20,
           height: 26 / 20,
@@ -405,7 +405,7 @@ abstract final class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: Size(48, kit.buttonHeight),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape: control,
           elevation: 0,
           textStyle: button,
@@ -414,7 +414,7 @@ abstract final class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: Size(48, kit.buttonHeight),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           foregroundColor: r.text1,
           side: BorderSide(color: r.hairline, width: 0),
           shape: control,
