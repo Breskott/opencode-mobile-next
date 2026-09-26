@@ -1,0 +1,13 @@
+diff --git a/lib/ui/kit/kit_buttons.dart b/lib/ui/kit/kit_buttons.dart
+index 83297cc2..6c3897b0 100644
+--- a/lib/ui/kit/kit_buttons.dart
++++ b/lib/ui/kit/kit_buttons.dart
+@@ -298,7 +298,7 @@ class KitActionBlock extends StatelessWidget {
+           );
+     return LayoutBuilder(
+       builder: (context, constraints) {
+-        if (constraints.maxWidth >= 600) {
++        if (constraints.maxWidth >= 900) {
+           return Row(
+             mainAxisAlignment: MainAxisAlignment.end,
+             children: [
