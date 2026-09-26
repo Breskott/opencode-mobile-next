@@ -1,0 +1,12 @@
+00:00 +0: under system KitStatusMark working shows its still dot
+00:00 +1: under system KitConfirmSheet opens and settles at once
+00:00 +2: under system KitSheet opens and settles at once
+00:00 +3: under effectsOff KitStatusMark working shows its still dot
+Expected: no matching candidates
+  Actual: _TypeWidgetFinder:<Found 1 widget with type "CircularProgressIndicator": [
+   Which: means one was found but none were expected
+00:00 +3 -1: under effectsOff KitStatusMark working shows its still dot [E]
+00:00 +3 -1: under effectsOff KitConfirmSheet opens and settles at once
+00:00 +4 -1: under effectsOff KitSheet opens and settles at once
+00:00 +5 -1: with motion on, KitStatusMark working spins
+00:00 +6 -1: Some tests failed.
