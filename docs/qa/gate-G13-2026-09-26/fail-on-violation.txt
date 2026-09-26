@@ -1,0 +1,22 @@
+$ python3 docs/qa/gate-G13-2026-09-26/make_violation.py <scratch>
+wrote <scratch>/kit-v2.json and <scratch>/all.json; removed worktrees#worktrees-glossary-label (proposal fix)
+$ python3 tool/ux/check_kit_map.py --kit <scratch>/kit-v2.json --map <scratch>/all.json
+G13 kit map: 722 replaces entries checked; kit none 809 (baseline 809); hidden with an enable flow 236 (baseline 235); dead rows 16 (baseline 15); off vocabulary 4 (baseline 3)
+  FAIL kit: element 'chat#g13-dodge-0' has kit "custom"; use "none" or '+'-joined Kit*/Product*/SectionLabel names, 'custom' only as a suffix
+  FAIL kit: element 'chat#g13-dodge-1' has kit ""; use "none" or '+'-joined Kit*/Product*/SectionLabel names, 'custom' only as a suffix
+  FAIL kit: element 'chat#g13-dodge-2' has kit "None"; use "none" or '+'-joined Kit*/Product*/SectionLabel names, 'custom' only as a suffix
+  FAIL kit: element 'chat#g13-dodge-3' has no kit value; write "none" or its kit parts
+  FAIL replaces: new[0][KitSheet].replaces names element 'chat-element-that-does-not-exist' on page 'chat', which the map does not list
+  FAIL whenMissing: page 'chat' capability 'team.on' has a non-string value ["hidden"]; write one string that starts with explains, hidden, disabled, n/a, same, shown, offers-enable:<id>
+  FAIL kit none: element 'chat#g13-throwaway' is hand-built (kit "none") and is not in the baseline; build it from kit parts
+  FAIL kit none: element 'worktrees#worktrees-glossary-label' left the map, but page 'worktrees' has proposal 'fix'; an element leaves a keep/fix page only by being re-kitted (MAP-1)
+  FAIL STATE-12: page 'chat' hides whenMissing 'server.any', but 'server.any' has an enable flow; show one muted line with where it is available and offer the enable flow
+  FAIL STATE-12: page 'chat' leaves whenMissing 'project.open' as a dead row (disabled/dim); a missing capability never shows as a dead row: explain where it is available instead
+  FAIL whenMissing: page 'chat' capability 'server.any' does not start with one of explains, hidden, disabled, n/a, same, shown, offers-enable:<id>
+G13 FAILED: 11 violation(s)
+exit=1
+$ ... same copies with --update-baseline
+G13 FAILED: 11 violation(s)
+G13: baseline not written; it may only shrink
+exit=0
+baseline unchanged

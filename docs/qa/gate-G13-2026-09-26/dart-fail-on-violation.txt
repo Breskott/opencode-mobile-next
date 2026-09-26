@@ -1,0 +1,23 @@
+$ # throwaway: chat gets an element with kit "custom" in docs/ux-system/map/all.json (restored after)
+$ flutter test -j 1 test/kit_map_gate_test.dart
+00:00 +0: loading test/kit_map_gate_test.dart
+00:00 +0: the kit map gate passes on the committed map
+00:01 +0 -1: the kit map gate passes on the committed map [E]
+  Expected: <0>
+    Actual: <1>
+  G13 kit map: 721 replaces entries checked; kit none 809 (baseline 809); hidden with an enable flow 235 (baseline 235); dead rows 15 (baseline 15); off vocabulary 3 (baseline 3); base 9220f07038
+    base: no baseline at the merge base 9220f07038; nothing to compare
+    FAIL kit: element 'chat#g13-throwaway' has kit "custom"; use "none" or '+'-joined Kit*/Product*/SectionLabel names, 'custom' only as a suffix
+  G13 FAILED: 1 violation(s)
+  
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/kit_map_gate_test.dart 29:5                    main.<fn>
+  
+00:01 +0 -1: the kit map gate self-test passes
+00:03 +1 -1: Some tests failed.
+
+Failing tests:
+  test/kit_map_gate_test.dart: the kit map gate passes on the committed map
+exit=1
