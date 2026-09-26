@@ -95,6 +95,11 @@ class TeamDiscoverRelayScene extends KitScene {
   @override
   Size get box => const Size(200, 112);
 
+  /// The relay shows progress along a line (LAY-8): it mirrors under RTL
+  /// so the card still travels from the start edge.
+  @override
+  bool get mirrorsInRtl => true;
+
   static const _ground = 110.0;
   static const _agents = [
     Offset(40, _ground),

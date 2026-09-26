@@ -45,6 +45,11 @@ class ServersLinkScene extends KitScene {
   @override
   Size get box => const Size(200, 84);
 
+  /// The phone-to-computer link shows progress along a line (LAY-8): it
+  /// mirrors under RTL so the link still runs from the start edge.
+  @override
+  bool get mirrorsInRtl => true;
+
   @override
   bool differs(covariant ServersLinkScene old) =>
       super.differs(old) || old.state != state || old.intro != intro;

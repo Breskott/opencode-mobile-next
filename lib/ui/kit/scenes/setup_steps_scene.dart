@@ -42,6 +42,11 @@ class SetupStepsScene extends KitScene {
   @override
   Size get box => const Size(240, 100);
 
+  /// The step strip shows progress along a line (LAY-8): it mirrors under
+  /// RTL so the finished stop stays at the reading direction's end.
+  @override
+  bool get mirrorsInRtl => true;
+
   @override
   bool differs(covariant SetupStepsScene old) =>
       super.differs(old) ||

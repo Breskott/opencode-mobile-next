@@ -89,11 +89,12 @@ class SetupUnpluggedScene extends KitScene {
     }
     canvas.restore();
 
-    // The gap: the warning tone's few short marks.
+    // The gap: a few short marks in the muted tone (LOOK-4: "not answering"
+    // is not "needs you", so it never reaches for the attention amber).
     final marks = KitDraw.interval(t, .75, 1);
     if (marks > 0) {
       final pen = KitDraw.pen(
-        KitDraw.fade(p.warning, marks * (1 - .5 * reach)),
+        KitDraw.fade(p.muted, marks * (1 - .5 * reach)),
         KitDraw.hairline,
       );
       for (final (a, b) in _marks) {

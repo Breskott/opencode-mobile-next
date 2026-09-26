@@ -3,9 +3,10 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../app_theme.dart';
+import '../theme_roles.dart';
 import 'kit_effects.dart';
 import 'kit_motion.dart';
+import 'kit_tokens.dart';
 
 /// The app's drawings (design standard §10): line art in the brand's
 /// stroke — rounded caps and joins, the "open portal" mark's weight — drawn
@@ -32,6 +33,12 @@ abstract class KitScene {
   /// Whether this scene draws differently from [old] at the same frame
   /// (a scene with data, such as a progress, compares its fields).
   bool differs(covariant KitScene old) => old.runtimeType != runtimeType;
+
+  /// True for a drawing that shows progress along a line (steps, a relay, a
+  /// link from one device to another): [KitIllustration] flips it
+  /// horizontally under RTL (LAY-8: progress direction mirrors). Default
+  /// false: devices, folders and marks are pictures and never mirror.
+  bool get mirrorsInRtl => false;
 }
 
 /// The colours a scene draws with: always from the theme, never literals.
@@ -50,21 +57,29 @@ class KitPalette {
     required this.progress,
   });
 
-  factory KitPalette.of(ThemeData theme) {
-    final scheme = theme.colorScheme;
-    return KitPalette(
-      accent: scheme.primary,
-      accentSoft: scheme.primary.withValues(alpha: .16),
-      ink: scheme.onSurface,
-      muted: AppTheme.mutedOf(theme),
-      line: scheme.outlineVariant,
-      surface: scheme.surfaceContainerHigh,
-      success: AppTheme.statusColor(theme, AppStatusTone.ok),
-      warning: AppTheme.statusColor(theme, AppStatusTone.attention),
-      failure: AppTheme.statusColor(theme, AppStatusTone.failure),
-      progress: AppTheme.statusColor(theme, AppStatusTone.progress),
-    );
-  }
+  /// The palette of [roles] (design standard §10; KitScenes.md's one
+  /// mapping): every colour a scene paints comes from a [ThemeRoles] role,
+  /// so a drawing follows every theme pack with the same meanings as the
+  /// rest of the app — the accent for what matters, no red for failures
+  /// (B2 interim: [failure] is [ThemeRoles.text1], said in words and a
+  /// neutral mark, LOOK-5), amber only for "needs you" ([warning] is
+  /// [ThemeRoles.attention]; no scene uses it after v2), flat fills at no
+  /// more than [KitTokens.sceneWashAlpha] ([accentSoft], LOOK-36).
+  factory KitPalette.fromRoles(ThemeRoles roles) => KitPalette(
+    accent: roles.accent,
+    accentSoft: roles.accent.withValues(alpha: KitTokens.sceneWashAlpha),
+    ink: roles.text1,
+    muted: roles.text2,
+    line: roles.text3,
+    surface: roles.surface3,
+    success: roles.success,
+    warning: roles.attention,
+    failure: roles.text1,
+    progress: roles.accent,
+  );
+
+  factory KitPalette.of(ThemeData theme) =>
+      KitPalette.fromRoles(ThemeRoles.resolve(theme));
 
   /// The brand colour: the one thing in a scene that matters most.
   final Color accent;
@@ -202,10 +217,18 @@ abstract final class KitDraw {
   /// [color] at [opacity] of its own alpha.
   static Color fade(Color color, double opacity) =>
       color.withValues(alpha: color.a * opacity.clamp(0, 1));
+
+  /// A flat accent fill (LOOK-36): [palette].accentSoft, optionally faded
+  /// further by [opacity]; never above [KitTokens.sceneWashAlpha].
+  static Paint wash(KitPalette palette, [double opacity = 1]) =>
+      fill(fade(palette.accentSoft, opacity));
 }
 
 /// Shows a [KitScene] at [width], playing its entrance once and, when
 /// [ambient] and allowed, its loop (design standard §10).
+///
+/// States: entrance, finished, ambient, reduced (decorative; not
+/// interactive).
 ///
 /// Decorative by default (screen readers skip it); give [semanticLabel]
 /// only when the drawing says something the text around it does not.
@@ -325,6 +348,9 @@ class _KitIllustrationState extends State<KitIllustration>
   Widget build(BuildContext context) {
     final box = widget.scene.box;
     final height = widget.width * box.height / box.width;
+    final mirror =
+        widget.scene.mirrorsInRtl &&
+        Directionality.of(context) == TextDirection.rtl;
     final painter = CustomPaint(
       size: Size(widget.width, height),
       painter: _ScenePainter(
@@ -332,6 +358,7 @@ class _KitIllustrationState extends State<KitIllustration>
         entrance: _entrance,
         loop: _loop,
         palette: KitPalette.of(Theme.of(context)),
+        mirror: mirror,
       ),
     );
     final drawing = RepaintBoundary(child: painter);
@@ -348,12 +375,17 @@ class _ScenePainter extends CustomPainter {
     required this.entrance,
     required this.loop,
     required this.palette,
+    required this.mirror,
   }) : super(repaint: Listenable.merge([entrance, loop]));
 
   final KitScene scene;
   final Animation<double> entrance;
   final AnimationController loop;
   final KitPalette palette;
+
+  /// True flips the scene horizontally about its own box (LAY-8): set only
+  /// for [KitScene.mirrorsInRtl] scenes under RTL.
+  final bool mirror;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -365,6 +397,10 @@ class _ScenePainter extends CustomPainter {
       (size.height - box.height * scale) / 2,
     );
     canvas.scale(scale);
+    if (mirror) {
+      canvas.translate(box.width, 0);
+      canvas.scale(-1, 1);
+    }
     canvas.clipRect(ui.Offset.zero & box);
     scene.paint(
       canvas,
@@ -380,5 +416,7 @@ class _ScenePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ScenePainter old) =>
-      scene.differs(old.scene) || palette != old.palette;
+      scene.differs(old.scene) ||
+      palette != old.palette ||
+      mirror != old.mirror;
 }
