@@ -25,7 +25,10 @@ import 'kit_tokens.dart';
 /// shows one guarded accent [color] as a circle, for the custom theme's
 /// accent picker.
 ///
-/// States: default, selected (in use), disabled with reason.
+/// States: disabled.
+///
+/// Disabled always carries its reason. Selected (in use) is a look, shown in
+/// its gallery's grid scenes.
 ///
 /// The colours drawn in the miniature are the swatch's own [roles], never
 /// the current theme's — a swatch stays true to the theme it offers even
@@ -98,6 +101,8 @@ class KitSwatch extends StatelessWidget {
 /// "Adaptive"): columns from the space it has, start-aligned, one Tab stop,
 /// arrow keys move within it in reading order (KitChoiceList's group rule,
 /// kit-v2.md §8.2).
+///
+/// States: none — its swatches carry their own looks.
 class KitSwatchGrid extends StatelessWidget {
   const KitSwatchGrid({
     super.key,
@@ -845,6 +850,8 @@ ThemeData Function(ThemeData theme)? debugKitThemePreviewTheme;
 /// One state: it draws what it is given. It is a picture, not a control —
 /// one semantics node labelled [label], and nothing inside it is
 /// interactive or announced as a button.
+///
+/// States: none — a picture drawn from the roles it is given.
 class KitThemePreview extends StatelessWidget {
   const KitThemePreview({
     super.key,

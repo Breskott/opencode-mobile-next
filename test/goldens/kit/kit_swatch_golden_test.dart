@@ -58,6 +58,30 @@ Widget _grid({required bool light}) => KitSwatchGrid(
   ],
 );
 
+/// The disabled state alone (KIT-12): Material You, unavailable below
+/// Android 12, beside the Graphite swatch in use, so the dimmed miniature
+/// and its reason read against an enabled one.
+Widget _disabled({required bool light}) => KitSwatchGrid(
+  label: 'Theme',
+  children: [
+    KitSwatch(
+      swatchKey: const ValueKey('theme-pack-opencode'),
+      roles: _roles(ThemePackId.opencode, light: light),
+      label: themePackLabels[ThemePackId.opencode]!,
+      selected: true,
+      onPressed: () {},
+    ),
+    KitSwatch(
+      swatchKey: const ValueKey('theme-pack-dynamic'),
+      roles: null,
+      label: themePackLabels[ThemePackId.dynamic]!,
+      selected: false,
+      onPressed: null,
+      disabledReason: 'Needs Android 12 or later',
+    ),
+  ],
+);
+
 /// The 3 guarded Graphite accents (`graphiteAccents` minus the default
 /// green, which the Graphite pack itself shows in the grid above), in the
 /// gallery's brightness: blue selected.
@@ -211,6 +235,20 @@ void main() {
         );
       });
     }
+
+    testWidgets('kit_swatch disabled · $mode', (tester) async {
+      await kitGalleryPart(
+        tester,
+        name: kitGalleryName(
+          'kit_swatch_disabled',
+          const Size(412, 915),
+          light: light,
+        ),
+        size: const Size(412, 915),
+        light: light,
+        child: _disabled(light: light),
+      );
+    });
 
     testWidgets('kit_swatch grid_focused · $mode', (tester) async {
       await _focusedGridShot(

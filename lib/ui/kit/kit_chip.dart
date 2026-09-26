@@ -36,6 +36,9 @@ enum KitChipKind { plain, action, removable, count, summary }
 ///
 /// Internal keys (TEST-5): `kit-chip-remove` (the × target) and
 /// `kit-chip-check` (the selected check).
+///
+/// States: none — selected and expanded are looks; a chip that cannot act
+/// now is not shown (STATE-8).
 class KitChip extends StatelessWidget {
   /// A fact that does nothing when tapped: "main", "3 agents".
   const KitChip({super.key, required this.label, this.icon})
@@ -604,6 +607,8 @@ class _PillSurface extends StatelessWidget {
 /// between chips, and a run spacing that keeps every chip's 48 dp hit area
 /// clear of the next run's (LAY-9): [KitTokens.minTarget] minus
 /// [KitTokens.chipHeight]. Start-aligned in both directions.
+///
+/// States: none — it only lays its chips out.
 class KitChipWrap extends StatelessWidget {
   const KitChipWrap({super.key, required this.children});
 

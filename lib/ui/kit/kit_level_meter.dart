@@ -6,7 +6,8 @@ import 'kit_tokens.dart';
 /// The microphone's input level as bars. Decorative: excluded from
 /// semantics; its host says "Listening" in words.
 ///
-/// States: listening, quiet, paused (decorative; not interactive).
+/// States: none — decorative bars; listening, quiet and paused are the
+/// levels its host names in words, not KIT-12 states.
 ///
 /// docs/ux-system/kit-api/KitLevelMeter.md.
 class KitLevelMeter extends StatelessWidget {

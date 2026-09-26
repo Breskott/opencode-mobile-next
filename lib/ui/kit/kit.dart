@@ -7,8 +7,10 @@
 /// | [KitLayout], [KitWindow] | kit v2 §8.1 window classes: every part adapts to phone, tablet and PC |
 /// | [KitSheet], [showKitSheet], [KitSheetHeight], [KitDraft] | kit v2 §1.1 the one sheet frame, its draft and unsaved-input guard |
 /// | [KitConfirmSheet], [showKitConfirm], [KitConfirmKind] | kit v2 §1.2 the one confirmation (§4.1 undo, confirm or neither) |
+/// | [KitConsequences], [KitConsequence] | §5 a sheet's panel of one-line consequences |
 /// | [KitTokens] | kit v2 the colours (the theme's [ThemeRoles]), radii, heights, scrim, type and spacing every part reads (a ThemeExtension) |
 /// | [KitText], [KitTextRole], [KitTextTone] | visual language §2 the type roles, coloured by theme role |
+/// | [KitSelectable], [KitLtr] | KitText v2 a selectable region around several texts, and a left-to-right technical block |
 /// | [KitTechnicalValue] | kit v2 §1.8 a technical value shown under Details, left to right |
 /// | [KitButton], [KitActionBlock], [KitAction] | §2 one button hierarchy |
 /// | [KitActionStack] | §2 the same hierarchy with each rare path on its own line |
@@ -41,7 +43,7 @@
 /// | [KitSince], [KitSincePhase], [KitSinceStatus], [KitSinceTicks] | the one wait timer: slow after a while, then minute ticks |
 /// | [KitImage], [KitAvatar], [KitZoom], [KitZoomController] | kit v2 sharp raster images, the one identity mark, and the one pinch/pan/zoom viewer |
 /// | [KitQr] | kit v2 §5 a QR code another device can scan |
-/// | [KitSwatch], [KitSwatchGrid] | kit v2 §5 choosing a theme or accent by looking |
+/// | [KitSwatch], [KitSwatchGrid], [KitThemePreview] | kit v2 §5 choosing a theme or accent by looking, and a theme's live preview |
 /// | [KitLevelMeter] | the microphone's input level as bars (decorative) |
 /// | [KitTerminalView] | kit v2 §9.2 the terminal: a live xterm session or a transcript, in the theme's colours |
 /// | [KitPageRoute] | §10 a pushed page with the kit's one transition |
@@ -90,7 +92,9 @@ export 'kit_task_mark.dart';
 export 'kit_bottom_inset.dart';
 export 'kit_chip.dart';
 export 'kit_divider.dart';
-export 'kit_icon.dart';
+// The retired AppGlyph and AppBrandMark stay reachable only through
+// app_iconography.dart (KitIcon.md), so new code reaches for KitIcon.
+export 'kit_icon.dart' hide AppBrandMark, AppGlyph;
 export 'kit_image.dart';
 export 'kit_level_meter.dart';
 export 'kit_menu.dart';

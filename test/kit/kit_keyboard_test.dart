@@ -230,4 +230,51 @@ void main() {
       });
     });
   });
+
+  group('showKitMenu', () {
+    testWidgets('Esc closes the menu without choosing', (tester) async {
+      final context = await pumpKitHost(tester, size: _pc);
+      var runs = 0;
+      var closed = false;
+      KitMenuItem? result;
+      unawaited(
+        showKitMenu(
+          context,
+          items: [KitMenuItem(label: 'Archive', onSelected: () => runs++)],
+        ).then((v) {
+          result = v;
+          closed = true;
+        }),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Archive'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(closed, isTrue);
+      expect(result, isNull);
+      expect(runs, 0);
+      expect(find.text('Archive'), findsNothing);
+    });
+  });
+
+  group('showKitTerm', () {
+    testWidgets('Esc closes the explanation', (tester) async {
+      final context = await pumpKitHost(tester, size: _pc);
+      var closed = false;
+      unawaited(
+        showKitTerm(
+          context,
+          term: 'MCP',
+          explanation: 'A way to give the assistant extra tools.',
+          bubbleKey: const ValueKey('term-bubble'),
+        ).then((_) => closed = true),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('term-bubble')), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(closed, isTrue);
+      expect(find.byKey(const ValueKey('term-bubble')), findsNothing);
+    });
+  });
 }

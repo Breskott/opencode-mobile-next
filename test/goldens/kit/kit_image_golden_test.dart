@@ -10,6 +10,8 @@
 // kit.dart's export table) is wired up at integration once the coordinator
 // adds this part's row — a kit-part unit does not edit that shared harness
 // (docs/ux-system/revamp/STANDARDS.md, "Shared files you never stage").
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,6 +55,28 @@ class _FailingProvider extends ImageProvider<_FailingProvider> {
 
   @override
   bool operator ==(Object other) => other is _FailingProvider;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}
+
+/// An [ImageProvider] that never completes, so the loading state holds
+/// still for its golden.
+class _PendingProvider extends ImageProvider<_PendingProvider> {
+  const _PendingProvider();
+
+  @override
+  Future<_PendingProvider> obtainKey(ImageConfiguration configuration) =>
+      SynchronousFuture(this);
+
+  @override
+  ImageStreamCompleter loadImage(
+    _PendingProvider key,
+    ImageDecoderCallback decode,
+  ) => OneFrameImageStreamCompleter(Completer<ImageInfo>().future);
+
+  @override
+  bool operator ==(Object other) => other is _PendingProvider;
 
   @override
   int get hashCode => runtimeType.hashCode;
@@ -175,6 +199,24 @@ Widget _avatarGallery({bool arabic = false}) {
   ]);
 }
 
+/// KitAvatar's two states (KitImage.md): its image still loading, and its
+/// image failed; both keep the initials in the slot.
+Widget _avatarStateGallery({required bool failed}) => _list([
+  KitAvatar(
+    name: 'A teammate',
+    image: KitImageSource.provider(
+      failed ? const _FailingProvider() : const _PendingProvider(),
+    ),
+  ),
+  KitAvatar(
+    name: 'A teammate',
+    size: KitAvatarSize.mark,
+    image: KitImageSource.provider(
+      failed ? const _FailingProvider() : const _PendingProvider(),
+    ),
+  ),
+]);
+
 Widget _zoomGallery({required bool zoomed}) => SizedBox(
   width: 280,
   height: 280,
@@ -257,6 +299,26 @@ void main() {
         size: size,
         light: light,
         child: _avatarGallery(),
+      );
+    });
+
+    testWidgets('states · avatar loading · $mode', (tester) async {
+      await kitGalleryPart(
+        tester,
+        name: kitGalleryName('kit_image_avatar_loading', size, light: light),
+        size: size,
+        light: light,
+        child: _avatarStateGallery(failed: false),
+      );
+    });
+
+    testWidgets('states · avatar error · $mode', (tester) async {
+      await kitGalleryPart(
+        tester,
+        name: kitGalleryName('kit_image_avatar_error', size, light: light),
+        size: size,
+        light: light,
+        child: _avatarStateGallery(failed: true),
       );
     });
 

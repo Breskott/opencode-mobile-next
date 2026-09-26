@@ -24,6 +24,8 @@ enum KitDividerInset {
 /// separator is ever doubled, soft, or a different grey. Decorative only:
 /// it carries no state, is excluded from semantics, and is never
 /// interactive or focusable.
+///
+/// States: none — a static hairline between things.
 class KitDivider extends StatelessWidget {
   /// A horizontal hairline. Its layout extent is exactly one physical
   /// pixel; the spacing around it is the host's, from tokens.

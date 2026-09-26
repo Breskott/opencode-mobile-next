@@ -5,9 +5,9 @@
 //
 // Reduced from the frozen spec's 22-shot matrix by the owner decision in
 // docs/ux-system/revamp/STANDARDS.md (2026-09-27, R15: later owner
-// decisions win): Arabic/RTL and 2.0-text galleries are dropped, and every
-// part's gallery is phone (412x915) and one wide size (1280x800), light
-// and dark, only. See docs/qa/revamp-kit-KitQr-2026-09-27/README.md.
+// decisions win): Arabic/RTL galleries are dropped, and every part's
+// gallery is phone (412x915) and one wide size (1280x800), light and dark,
+// plus the text-2.0 twins gate G4 still asks for. See docs/qa/revamp-kit-KitQr-2026-09-27/README.md.
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_qr_golden_test.dart
@@ -105,5 +105,27 @@ void main() {
         });
       }
     }
+  }
+
+  // Text at 2.0 (TEST-9; Arabic is dropped, the text2 twins are not): the
+  // too-long notice and the caption row are the part's only words. Dark.
+  for (final size in kitGalleryScaledSizes) {
+    testWidgets('too_long · 2.0 text · ${kitGallerySize(size)} · dark', (
+      tester,
+    ) async {
+      await kitGalleryPart(
+        tester,
+        name: kitGalleryName(
+          'kit_qr_too_long',
+          size,
+          light: false,
+          text2: true,
+        ),
+        size: size,
+        light: false,
+        textScale: 2,
+        child: _scene(_State.tooLong),
+      );
+    });
   }
 }

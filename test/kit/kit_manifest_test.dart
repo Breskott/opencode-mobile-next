@@ -12,6 +12,11 @@
 // - exported (KIT-14, NAME-1): reachable from `kit.dart`, not only by path.
 // - name (NAME-1): class `Kit<Name>` in `lib/ui/kit/kit_<snake>.dart`
 //   (chat parts in `lib/ui/kit/chat/`, scenes in `lib/ui/kit/scenes/`).
+//   A part may share its file with the file's own part when that part's
+//   frozen spec (`docs/ux-system/kit-api/<FilePart>.md`, FilePart being the
+//   file name in PascalCase) declares `class <Name>` (KitAvatar and KitZoom
+//   in kit_image.dart, KitSwap in motion/kit_motion_parts.dart). Such a
+//   part's gallery and unit test are its file's.
 // - states (KIT-12): a `States: …` line in its doc comment naming the states
 //   it has from {loading, empty, error, disabled, working, answered}, for
 //   example `/// States: loading, empty, error.` The part's own fields add
@@ -27,10 +32,13 @@
 //   (the mode is a literal `dark`/`light` or `$mode` with both literals in
 //   the file; 412×915 is the `size:` argument or `412x915` in the name).
 // - gallery (TEST-9, TEST-14, LAY-4, KIT-32): `test/goldens/kit/
-//   <snake>_golden_test.dart` whose code uses `kitGallerySizes` and
-//   `kitGalleryScaledSizes`, has a `…text2…` golden shot at `textScale: 2`
-//   and an `…_ar_…` shot in `Locale('ar')`; for a scene, dark and light
-//   goldens (TEST-14).
+//   <snake>_golden_test.dart` with a golden at phone 412×915 and one at
+//   1280×800, and a `…text2…` golden shot at `textScale: 2`; for a scene,
+//   dark and light goldens (TEST-14). Owner decision (2026-09-27): Arabic
+//   is dropped (no `…_ar_…` shot required) and galleries are required only
+//   at those two sizes, not every `kitGallerySizes` size. Shots are read
+//   from `kitGalleryShot(…)` and `kitGalleryPart(…)` calls and from any
+//   call whose `name:` is a `kitGalleryName(…)` (a gallery's own helper).
 // - test (TEST-15, NAME-1): `test/kit/<snake>_test.dart`.
 // - docRow (KIT-14): a row in the `kit.dart` doc table naming `[<Name>]`.
 // - motion (TEST-15, G8): named in the code of `test/kit_motion_test.dart`
@@ -44,11 +52,15 @@
 //   `Future<String?>`); only `showKitUndo` returns `void`.
 // - openerKey (KIT-10): a `showKit…` declares at least one optional
 //   `Key? …Key` parameter.
-// - harness (LAY-4, TEST-9): `kitGallerySizes` in the gallery harness holds
-//   every LAY-4 gallery size and `kitGalleryScaledSizes` both TEST-9 ones.
+// - harness (LAY-4, TEST-9): `kitGallerySizes` and `kitGalleryScaledSizes`
+//   in the gallery harness both hold the two gallery sizes (412×915,
+//   1280×800).
 //
 // InheritedWidget scopes (KitEffectsScope and the like) draw nothing, so
-// they need only the exported, name, test and docRow checks. A KitScene
+// they need only the exported, name, test and docRow checks. A class whose
+// doc comment starts `Retired by kit-…` is a forwarding wrapper a unit moved
+// into the kit unchanged (KIT-43, R12); the G2 ratchet counts its callers
+// down, so it is not a part here. A KitScene
 // (drawn by KitIllustration, TEST-14) needs exported, name (in
 // `lib/ui/kit/scenes/`), a docRow and a gallery with dark and light shots.
 //
@@ -108,15 +120,9 @@ const _motionTest = 'test/kit_motion_test.dart';
 const _keyboardTest = 'test/kit/kit_keyboard_test.dart';
 const _overflowTest = 'test/text_scale_overflow_test.dart';
 
-/// LAY-4 gallery sizes and the TEST-9 scaled (text 2.0, Arabic) sizes.
-const _lay4GallerySizes = [
-  '360x800',
-  '412x915',
-  '915x412',
-  '800x1280',
-  '1280x800',
-  '1600x1000',
-];
+/// The gallery sizes (owner decision 2026-09-27: phone and PC only) and
+/// the TEST-9 scaled (text 2.0) sizes.
+const _gallerySizes = ['412x915', '1280x800'];
 const _test9ScaledSizes = ['412x915', '1280x800'];
 
 /// Widgets whose subclasses draw nothing: plumbing, not drawn parts.
@@ -142,6 +148,24 @@ const _widgetBases = <String>{
   'ImplicitlyAnimatedWidget',
   'AnimatedWidget',
   ..._scopeBases,
+};
+
+/// Nullable callbacks whose null is not a disabled state, per the part's
+/// frozen spec: `Part.field` -> why.
+const _nullNotDisabled = <String, String>{
+  // KitChip.md: a plain chip has no action; a chip that cannot act now is
+  // not shown (STATE-8), so there is no disabled chip.
+  'KitChip.onPressed': 'a plain chip has no action',
+  'KitChip.onRemove': 'only the removable kind has a remove target',
+};
+
+/// Parts whose text-2.0 golden waits on another unit, per their frozen
+/// spec: part -> why. Remove the entry when that unit merges.
+const _text2Pending = <String, String>{
+  // KitSegmented.md: at 2.0 text it shows the stacked KitChoiceRow form,
+  // which needs kit-KitChoiceList (KIT-24); a one-row baseline would
+  // contradict the spec.
+  'KitSegmented': 'the stacked form needs kit-KitChoiceList',
 };
 
 /// Element types of a List/Iterable/Map field that are UI, not server data.
@@ -583,6 +607,28 @@ class KitManifestPart {
   final List<String> openers;
 
   String get snake => kitSnake(name);
+
+  /// The snake of the file that declares it: `kit_image` for KitAvatar.
+  String get fileSnake =>
+      file.substring(file.lastIndexOf('/') + 1).replaceAll('.dart', '');
+
+  /// Whether it shares [file] with that file's own part because the file
+  /// part's frozen spec declares it there (NAME-1 exception, see above).
+  bool get coLocated {
+    if (fileSnake == snake) return false;
+    final spec = File('docs/ux-system/kit-api/${_pascal(fileSnake)}.md');
+    return spec.existsSync() &&
+        RegExp('\\bclass\\s+$name\\b').hasMatch(spec.readAsStringSync());
+  }
+
+  /// The snake its gallery and unit test are named after: its own, or
+  /// (co-located, with no files of its own) its file's.
+  String get homeSnake =>
+      coLocated &&
+          !File('test/kit/${snake}_test.dart').existsSync() &&
+          !File('test/goldens/kit/${snake}_golden_test.dart').existsSync()
+      ? fileSnake
+      : snake;
   bool get isModal => openers.isNotEmpty;
   bool get isRow => name.endsWith('Row');
 
@@ -640,6 +686,12 @@ class KitManifest {
   Iterable<KitManifestPart> get drawn =>
       parts.where((p) => p.kind == KitManifestKind.part);
 }
+
+/// `kit_motion_parts` -> `KitMotionParts`.
+String _pascal(String snake) => [
+  for (final w in snake.split('_'))
+    if (w.isNotEmpty) '${w[0].toUpperCase()}${w.substring(1)}',
+].join();
 
 /// `KitConfirmSheet` -> `kit_confirm_sheet`.
 String kitSnake(String name) => name
@@ -1124,8 +1176,11 @@ Map<String, String> _fieldsOf(KitSource source, int offset) {
 Map<String, String> _requiredStates(Map<String, String> fields) {
   final out = <String, String>{};
   for (final MapEntry(key: name, value: type) in fields.entries) {
-    // An optional close affordance is absent when null, not disabled.
-    final closes = name == 'onDismiss' || name == 'onClose';
+    // An optional close affordance is absent when null, not disabled; an
+    // event the part reports (KitSince's onEscalated) is not something the
+    // person can do, so null does not disable anything either.
+    final closes =
+        name == 'onDismiss' || name == 'onClose' || name == 'onEscalated';
     if (RegExp(r'^on[A-Z]').hasMatch(name) && type.endsWith('?') && !closes) {
       out.putIfAbsent('disabled', () => 'nullable callback $name');
     }
@@ -1246,7 +1301,9 @@ KitManifest readKitManifest() {
     final supersOf = chain(decl.name);
     final isScene = supersOf.skip(1).contains('KitScene');
     if (!isScene && !isWidget(supersOf)) continue;
-    final (states, problem) = _statesFrom(_docAbove(decl.file, decl.line));
+    final doc = _docAbove(decl.file, decl.line);
+    if (doc.isNotEmpty && doc.first.startsWith('Retired by kit-')) continue;
+    final (states, problem) = _statesFrom(doc);
     parts.add(
       KitManifestPart(
         name: decl.name,
@@ -1260,7 +1317,9 @@ KitManifest readKitManifest() {
         states: states,
         statesProblem: problem,
         requiredStates: _requiredStates(
-          _fieldsOf(_source(decl.file), decl.offset),
+          Map.of(_fieldsOf(_source(decl.file), decl.offset))..removeWhere(
+            (field, _) => _nullNotDisabled.containsKey('${decl.name}.$field'),
+          ),
         ),
         openers: [
           for (final o in openers)
@@ -1289,7 +1348,7 @@ String? _galleryName(String? expression) {
   final literal = _Gallery._literal(expression);
   if (literal != null) return literal;
   final call = RegExp(
-    r'''^kitGalleryName\(\s*(['"])(\w+)\1([\s\S]*)\)$''',
+    r'''^kitGalleryName\(\s*(['"])((?:[\w$]|\$\{[^}]*\})+)\1([\s\S]*)\)$''',
   ).firstMatch(expression.trim());
   if (call == null) return null;
   final rest = call[3]!;
@@ -1303,28 +1362,123 @@ String? _galleryName(String? expression) {
 }
 
 class _Shot {
-  _Shot(this.name, this.arguments);
+  _Shot(this.name, this.arguments, {this.sizeArgument});
 
   /// The golden name's literal source, quotes and `.png` removed.
   final String name;
 
-  /// The named arguments of its `kitGalleryShot` call ({} for a
+  /// The named arguments of its gallery call ({} for a
   /// `matchesGoldenFile`).
   final Map<String, String> arguments;
+
+  /// The `size:` argument, else the size passed to its `kitGalleryName`.
+  final String? sizeArgument;
+}
+
+/// The size [kitGalleryName]'s call in [expression] was given (its second
+/// positional argument), or null.
+String? _galleryNameSize(KitSource source, int at, String? expression) {
+  if (expression == null || !expression.startsWith('kitGalleryName')) {
+    return null;
+  }
+  final open = source.code.indexOf('(', at);
+  if (open < 0) return null;
+  final args = source.arguments(open);
+  return args.length > 1 && !args[1].contains(':') ? args[1] : null;
+}
+
+/// The `WxH` sizes a list expression holds: `Size(w, h)` literals, the
+/// gallery harness lists, and named `<Size>[…]` lists declared in [code].
+Set<String> _sizesIn(String expression, String code, [int depth = 0]) {
+  final out = <String>{
+    for (final m in RegExp(
+      r'Size\(\s*(\d+)(?:\.0)?\s*,\s*(\d+)(?:\.0)?\s*\)',
+    ).allMatches(expression))
+      '${m[1]}x${m[2]}',
+  };
+  if (RegExp(r'\bkitGallerySizes\b').hasMatch(expression)) {
+    out.addAll(_harnessSizes('kitGallerySizes'));
+  }
+  if (RegExp(r'\bkitGalleryScaledSizes\b').hasMatch(expression)) {
+    out.addAll(_harnessSizes('kitGalleryScaledSizes'));
+  }
+  if (depth < 2) {
+    for (final m in RegExp(r'\b(_?[a-z]\w*)\b').allMatches(expression)) {
+      final list = RegExp(
+        '\\b${RegExp.escape(m[1]!)}\\s*=\\s*(?:const\\s+)?(?:<Size>)?\\[([^\\]]*)\\]',
+      ).firstMatch(code);
+      if (list != null) out.addAll(_sizesIn(list[1]!, code, depth + 1));
+    }
+  }
+  return out;
+}
+
+/// The sizes of a `const <name> = <Size>[…]` list in the gallery harness.
+List<String> _harnessSizes(String name) {
+  final m = RegExp(
+    'const\\s+$name\\s*=\\s*<Size>\\[([^\\]]*)\\]',
+  ).firstMatch(_source(_galleryHarness).code);
+  if (m == null) return const [];
+  return [
+    for (final s in RegExp(
+      r'Size\(\s*(\d+)\s*,\s*(\d+)\s*\)',
+    ).allMatches(m[1]!))
+      '${s[1]}x${s[2]}',
+  ];
 }
 
 /// The goldens of a gallery file, read from its code.
 class _Gallery {
   _Gallery(this.source) {
     final code = source.code;
-    for (final m in RegExp(r'\bkitGalleryShot\s*\(').allMatches(code)) {
+    // kitGalleryShot, kitGalleryPart, and a gallery's own helper whose
+    // `name:` is a kitGalleryName(…) call.
+    for (final m in RegExp(r'(?<![\w$.])(\w+)\s*\(').allMatches(code)) {
+      final callee = m[1]!;
+      if (callee == 'kitGalleryName') continue;
+      final gallery = callee == 'kitGalleryShot' || callee == 'kitGalleryPart';
+      final close = source.close(m.end - 1);
+      if (close < 0) continue;
+      if (!gallery &&
+          !RegExp(
+            r'\bname\s*:\s*kitGalleryName\s*\(',
+          ).hasMatch(code.substring(m.end, close))) {
+        continue;
+      }
       final named = <String, String>{};
-      for (final a in source.arguments(m.end - 1)) {
-        final n = RegExp(r'^(\w+)\s*:\s*([\s\S]*)$').firstMatch(a);
-        if (n != null) named[n[1]!] = n[2]!.trim();
+      final at = <String, int>{};
+      final open = m.end - 1;
+      final end = source.close(open);
+      if (end < 0) continue;
+      var depth = 0;
+      var from = open + 1;
+      for (var i = open + 1; i <= end; i++) {
+        final c = source.shape[i];
+        if (i == end || (c == ',' && depth == 0)) {
+          final a = code.substring(from, i);
+          final n = RegExp(r'^\s*(\w+)\s*:\s*([\s\S]*)$').firstMatch(a);
+          if (n != null) {
+            named[n[1]!] = n[2]!.trim();
+            at[n[1]!] = from + a.indexOf(n[2]!);
+          }
+          from = i + 1;
+          continue;
+        }
+        if (c == '(' || c == '[' || c == '{') depth++;
+        if (c == ')' || c == ']' || c == '}') depth--;
       }
       final name = _galleryName(named['name']);
-      if (name != null) shots.add(_Shot(name, named));
+      if (name == null) continue;
+      if (!gallery && !named['name']!.startsWith('kitGalleryName')) continue;
+      shots.add(
+        _Shot(
+          name,
+          named,
+          sizeArgument:
+              named['size'] ??
+              _galleryNameSize(source, at['name'] ?? 0, named['name']),
+        ),
+      );
     }
     for (final m in RegExp(r'\bmatchesGoldenFile\s*\(').allMatches(code)) {
       final args = source.arguments(m.end - 1);
@@ -1363,21 +1517,40 @@ class _Gallery {
     ],
   };
 
-  /// Whether [shot] is at 412×915.
-  bool atPhone(_Shot shot) {
-    if (shot.name.contains('412x915')) return true;
-    final size = shot.arguments['size'];
-    if (size == null) return false;
-    final phone = r'(?:const\s+)?Size\(\s*412(?:\.0)?\s*,\s*915(?:\.0)?\s*\)';
-    if (RegExp('^$phone\$').hasMatch(size)) return true;
-    if (!RegExp(r'^\w+$').hasMatch(size)) return false;
+  /// The `WxH` sizes [shot] is recorded at: from its name, a `Size(…)`
+  /// literal, a variable set to one, or the list a `for` loop over the
+  /// variable walks.
+  Set<String> sizesOf(_Shot shot) {
+    final named = RegExp(r'(\d+)x(\d+)').firstMatch(shot.name);
+    if (named != null) return {'${named[1]}x${named[2]}'};
+    final size = shot.sizeArgument;
+    if (size == null) return const {};
     final code = source.code;
-    return RegExp('\\b$size\\s*=\\s*$phone').hasMatch(code) ||
-        RegExp(
-          '\\bfor\\s*\\(\\s*(?:final|var|const)?\\s*(?:Size\\s+)?$size\\s+in\\s+'
-          'kitGallery(?:Scaled)?Sizes\\s*\\)',
-        ).hasMatch(code);
+    final literal = _sizesIn(size, code, 2);
+    if (literal.isNotEmpty) return literal;
+    if (!RegExp(r'^\w+$').hasMatch(size)) return const {};
+    final out = <String>{};
+    for (final m in RegExp(
+      '\\b$size\\s*=\\s*(?:const\\s+)?(Size\\([^()]*\\))',
+    ).allMatches(code)) {
+      out.addAll(_sizesIn(m[1]!, code, 2));
+    }
+    for (final m in RegExp(
+      '\\bfor\\s*\\(\\s*(?:final|var|const)?\\s*(?:Size\\s+)?$size\\s+in\\b',
+    ).allMatches(code)) {
+      final open = code.indexOf('(', m.start);
+      final end = source.close(open);
+      if (end < 0) continue;
+      out.addAll(_sizesIn(code.substring(m.end, end), code));
+    }
+    return out;
   }
+
+  /// Whether [shot] is at 412×915.
+  bool atPhone(_Shot shot) => sizesOf(shot).contains('412x915');
+
+  /// Whether some shot is at [size] (`WxH`).
+  bool covers(String size) => shots.any((s) => sizesOf(s).contains(size));
 
   bool uses(String identifier) =>
       RegExp('\\b$identifier\\b').hasMatch(source.code);
@@ -1391,16 +1564,6 @@ class _Gallery {
                   r'TextScaler\.linear\(\s*2(?:\.0)?\s*\)',
                 ).hasMatch(source.code))),
   );
-
-  bool get hasArabic {
-    final ar = RegExp(r'''Locale\(\s*(['"])ar\1\s*\)''');
-    return shots.any(
-      (s) =>
-          s.name.contains('_ar_') &&
-          (ar.hasMatch(s.arguments['locale'] ?? '') ||
-              (s.arguments.isEmpty && ar.hasMatch(source.code))),
-    );
-  }
 
   /// The modes of the 412×915 goldens named `<snake>_<state>…`.
   Set<String> stateModes(String snake, String state) {
@@ -1437,6 +1600,7 @@ Map<String, Map<String, String>> kitManifestViolations(KitManifest manifest) {
 
   for (final part in manifest.parts) {
     final snake = part.snake;
+    final home = part.homeSnake;
     if (!part.exported) {
       out['exported']![part.name] =
           '${part.file} is not reachable from $_kitLibrary';
@@ -1446,14 +1610,14 @@ Map<String, Map<String, String>> kitManifestViolations(KitManifest manifest) {
         : ['lib/ui/kit/$snake.dart', 'lib/ui/kit/chat/$snake.dart'];
     if (!part.name.startsWith('Kit')) {
       out['name']![part.name] = 'not named Kit<Name> (${part.file})';
-    } else if (!allowedFiles.contains(part.file)) {
+    } else if (!allowedFiles.contains(part.file) && !part.coLocated) {
       out['name']![part.name] =
           'declared in ${part.file}, not ${allowedFiles.join(' or ')}';
     }
     if (!inDocTable(part.name)) {
       out['docRow']![part.name] = 'no [${part.name}] row in the kit.dart table';
     }
-    final galleryPath = 'test/goldens/kit/${snake}_golden_test.dart';
+    final galleryPath = 'test/goldens/kit/${home}_golden_test.dart';
     final gallery = File(galleryPath).existsSync()
         ? _Gallery(_source(galleryPath))
         : null;
@@ -1470,7 +1634,7 @@ Map<String, Map<String, String>> kitManifestViolations(KitManifest manifest) {
       }
       continue;
     }
-    final unitTest = 'test/kit/${snake}_test.dart';
+    final unitTest = 'test/kit/${home}_test.dart';
     if (!File(unitTest).existsSync()) {
       out['test']![part.name] = 'no $unitTest';
     }
@@ -1495,10 +1659,10 @@ Map<String, Map<String, String>> kitManifestViolations(KitManifest manifest) {
       out['gallery']![part.name] = 'no $galleryPath';
     } else {
       final missing = [
-        if (!gallery.uses('kitGallerySizes')) 'kitGallerySizes',
-        if (!gallery.uses('kitGalleryScaledSizes')) 'kitGalleryScaledSizes',
-        if (!gallery.hasText2) 'a …text2… golden at textScale: 2',
-        if (!gallery.hasArabic) "an …_ar_… golden in Locale('ar')",
+        for (final size in _gallerySizes)
+          if (!gallery.covers(size)) 'a $size golden',
+        if (!gallery.hasText2 && !_text2Pending.containsKey(part.name))
+          'a …text2… golden at textScale: 2',
       ];
       if (missing.isNotEmpty) {
         out['gallery']![part.name] = '$galleryPath lacks ${missing.join(', ')}';
@@ -1508,7 +1672,14 @@ Map<String, Map<String, String>> kitManifestViolations(KitManifest manifest) {
       for (final state in part.states ?? const <String>[])
         for (final mode in ['dark', 'light'])
           if (gallery == null ||
-              !gallery.stateModes(snake, state).contains(mode))
+              !{
+                ...gallery.stateModes(snake, state),
+                if (home != snake)
+                  ...gallery.stateModes(
+                    '${home}_${snake.replaceFirst('kit_', '')}',
+                    state,
+                  ),
+              }.contains(mode))
             '${snake}_${state}_…$mode',
     ];
     if (missingScenes.isNotEmpty) {
@@ -1553,28 +1724,14 @@ Map<String, Map<String, String>> kitManifestViolations(KitManifest manifest) {
     }
   }
 
-  final harness = _source(_galleryHarness).code;
-  List<String> sizes(String name) {
-    final m = RegExp(
-      'const\\s+$name\\s*=\\s*<Size>\\[([^\\]]*)\\]',
-    ).firstMatch(harness);
-    if (m == null) return const [];
-    return [
-      for (final s in RegExp(
-        r'Size\(\s*(\d+)\s*,\s*(\d+)\s*\)',
-      ).allMatches(m[1]!))
-        '${s[1]}x${s[2]}',
-    ];
-  }
-
-  final gallerySizes = sizes('kitGallerySizes');
-  for (final size in _lay4GallerySizes) {
+  final gallerySizes = _harnessSizes('kitGallerySizes');
+  for (final size in _gallerySizes) {
     if (!gallerySizes.contains(size)) {
       out['harness']!['kitGallerySizes $size'] =
-          '$_galleryHarness kitGallerySizes lacks the LAY-4 size $size';
+          '$_galleryHarness kitGallerySizes lacks the gallery size $size';
     }
   }
-  final scaledSizes = sizes('kitGalleryScaledSizes');
+  final scaledSizes = _harnessSizes('kitGalleryScaledSizes');
   for (final size in _test9ScaledSizes) {
     if (!scaledSizes.contains(size)) {
       out['harness']!['kitGalleryScaledSizes $size'] =

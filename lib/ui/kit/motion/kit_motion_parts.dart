@@ -44,6 +44,8 @@ Duration _durationOf(BuildContext context, KitPace pace) =>
 /// Built on [AnimatedSwitcher], so each child keeps its element and state
 /// from the moment it arrives until it has faded out, and a change during a
 /// swap fades every leaving child on from its current opacity.
+///
+/// States: none — motion only; its child carries any state.
 class KitSwap extends StatelessWidget {
   const KitSwap({
     super.key,
@@ -133,6 +135,8 @@ class _KitSwapLayerState extends State<_KitSwapLayer> {
 }
 
 /// Rotates its child. The rotation is paint only and does not change layout.
+///
+/// States: none — motion only; its child carries any state.
 class KitSpin extends StatelessWidget {
   /// Animated to [turns] (0.5 = half a turn) on [pace].
   const KitSpin({
@@ -212,6 +216,8 @@ enum _KitSpinKind { turns, fixed, chevron }
 /// A box whose paint changes between surface steps: the fill level and the
 /// hairline edge animate on [pace]. A change of size snaps; layout animation
 /// is [KitReveal]'s alone (MOT-5). [level] null is no fill.
+///
+/// States: none — motion only; its child carries any state.
 class KitAnimatedBox extends StatelessWidget {
   const KitAnimatedBox({
     super.key,
@@ -290,6 +296,8 @@ enum KitDimLevel {
 /// only. A debug assert fails when [child]'s render subtree contains a
 /// paragraph (LOOK-14: text at rest is opaque; dim text with a
 /// `KitTextTone` instead).
+///
+/// States: none — motion only; its child carries any state.
 class KitDim extends StatelessWidget {
   const KitDim({
     super.key,
@@ -358,6 +366,8 @@ bool _paintsNoParagraph(RenderObject node) {
 /// shows the new value at once (a new job, a reset). [builder] should
 /// change paint or a transform: a bar's fill, a count's position. It must
 /// not change layout.
+///
+/// States: none — motion only; its child carries any state.
 class KitAnimatedValue extends StatefulWidget {
   const KitAnimatedValue({
     super.key,

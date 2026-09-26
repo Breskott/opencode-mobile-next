@@ -29,7 +29,8 @@ AppLocalizations _l10n(BuildContext context) =>
 /// 48×48 dp: use it as a label, a heading word or at the end of a line,
 /// never in the middle of a paragraph (a paragraph says it in words).
 ///
-/// States: default, open (the explanation shows), hovered, focused.
+/// States: none — open (the explanation shows), hovered and focused are
+/// looks, shown in its gallery, not KIT-12 states.
 class KitTerm extends StatelessWidget {
   const KitTerm(
     this.term, {
@@ -67,11 +68,15 @@ class KitTerm extends StatelessWidget {
 /// The bubble is its own transparent route, so the system back gesture and
 /// Esc close it rather than the screen under it; a tap outside closes it
 /// too.
+///
+/// [bubbleKey] goes on the bubble's panel, or on the sheet when it opens as
+/// one (KIT-10), so a test can find the open explanation.
 Future<void> showKitTerm(
   BuildContext context, {
   required String term,
   required String explanation,
   KitAction? learnMore,
+  Key? bubbleKey,
 }) async {
   if (_needsSheet(
     context,
@@ -84,6 +89,7 @@ Future<void> showKitTerm(
       term: term,
       explanation: explanation,
       learnMore: learnMore,
+      sheetKey: bubbleKey,
     );
   }
   final navigator = Navigator.of(context);
@@ -104,6 +110,7 @@ Future<void> showKitTerm(
   _announce(context, term: term, explanation: explanation);
   await navigator.push(
     _KitTermRoute(
+      panelKey: bubbleKey,
       anchor: anchor,
       term: term,
       explanation: explanation,
@@ -200,6 +207,7 @@ Future<void> _showKitTermSheet(
   required String term,
   required String explanation,
   required KitAction? learnMore,
+  Key? sheetKey,
 }) {
   BuildContext? sheetContext;
   final onLearnMore = learnMore?.onPressed;
@@ -207,7 +215,7 @@ Future<void> _showKitTermSheet(
     context,
     title: term,
     height: KitSheetHeight.content,
-    sheetKey: const ValueKey('kit-term-sheet'),
+    sheetKey: sheetKey ?? const ValueKey('kit-term-sheet'),
     tertiary: [
       if (learnMore != null)
         KitAction(
@@ -284,6 +292,7 @@ class _KitTermBubbleLayout extends SingleChildLayoutDelegate {
 /// the dismiss action ([AppLocalizations.kitTermClose]).
 class _KitTermPanel extends StatelessWidget {
   const _KitTermPanel({
+    super.key,
     required this.term,
     required this.explanation,
     required this.learnMore,
@@ -785,6 +794,7 @@ class _KitTermCoreState extends State<_KitTermCore>
 /// [KitMotion.quick], instantly under reduced motion.
 class _KitTermRoute extends PopupRoute<void> {
   _KitTermRoute({
+    this.panelKey,
     required this.anchor,
     required this.term,
     required this.explanation,
@@ -795,6 +805,7 @@ class _KitTermRoute extends PopupRoute<void> {
     required Duration duration,
   }) : _duration = duration;
 
+  final Key? panelKey;
   final Rect anchor;
   final String term;
   final String explanation;
@@ -837,6 +848,7 @@ class _KitTermRoute extends PopupRoute<void> {
               rtl: direction == TextDirection.rtl,
             ),
             child: _KitTermPanel(
+              key: panelKey,
               term: term,
               explanation: explanation,
               learnMore: learnMore,

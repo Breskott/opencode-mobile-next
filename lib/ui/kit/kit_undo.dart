@@ -551,12 +551,17 @@ class _KitUndoBar extends StatelessWidget {
         onPressed: () => host.attemptUndo(pending),
       ),
     );
+    // Its own node too: KitIconButton v2's node is not a container, so
+    // without this its label would merge into the live region's.
     final dismiss = !showDismiss
         ? null
-        : KitIconButton(
-            icon: AppIconography.close,
-            label: l10n.kitSheetDismiss,
-            onPressed: () => host.dismiss(pending),
+        : Semantics(
+            container: true,
+            child: KitIconButton(
+              icon: AppIconography.close,
+              tooltip: l10n.kitSheetDismiss,
+              onPressed: () => host.dismiss(pending),
+            ),
           );
 
     // One polite live region (A11Y-3) whose own label is the message: the

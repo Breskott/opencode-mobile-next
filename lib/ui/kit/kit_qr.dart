@@ -22,7 +22,9 @@ import 'kit_tokens.dart';
 /// is square; there is no `size:` parameter. Error correction is fixed at
 /// M and is not a parameter.
 ///
-/// States: default, error (too long).
+/// States: none — a link too long to encode shows a notice in words (the
+/// gallery's too_long shot); the caller chose the data, so it is not a
+/// failure state.
 class KitQr extends StatelessWidget {
   const KitQr({
     super.key,
