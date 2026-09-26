@@ -33,6 +33,24 @@ abstract final class KitMotion {
   /// One breath of an ambient loop on a waiting screen.
   static const breath = Duration(seconds: 4);
 
+  /// A wait turns into an explanation after this (KitSince.md, KitField.md,
+  /// KitStateView.md; MOT-1, kit-v2 G9 "escalate after 8 s").
+  static const escalateAfter = Duration(seconds: 8);
+
+  /// How long an undo stays offered (KitReceipt.md, KitUndo.md: 8 s).
+  static const undoWindow = Duration(seconds: 8);
+
+  /// How long a copy control shows its check (KitIconButton.md,
+  /// KitAction.md). No spec states a value; 2 s is this seam's choice.
+  static const copiedHold = Duration(seconds: 2);
+
+  /// A log panel's default poll interval (KitLogPanel.md).
+  static const logPoll = Duration(seconds: 2);
+
+  /// Typing counts as settled after this: the search debounce and the
+  /// result-count announcement (KitSearchField.md, about 300 ms).
+  static const typingSettle = Duration(milliseconds: 300);
+
   static const Curve enter = Curves.easeOutCubic;
   static const Curve exit = Curves.easeInCubic;
   static const Curve emphasized = Curves.easeInOutCubicEmphasized;

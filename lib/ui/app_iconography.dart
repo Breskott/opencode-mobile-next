@@ -359,6 +359,13 @@ abstract final class AppIconography {
     fontFamily: 'AppPhosphorRegular',
     matchTextDirection: false,
   );
+
+  /// Wrap long lines (KitCodeBlock.md; Phosphor text-align-justify).
+  static const wrapText = IconData(
+    0xe482,
+    fontFamily: 'AppPhosphorRegular',
+    matchTextDirection: false,
+  );
   static const article = IconData(
     0xe0a8,
     fontFamily: 'AppPhosphorRegular',
