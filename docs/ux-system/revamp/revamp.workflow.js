@@ -339,6 +339,7 @@ async function buildReviewFix(u) {
     { label: `build ${u.id}`, phase: 'Build', schema: BUILD_SCHEMA, isolation: 'worktree', model: undefined },
   )
   if (!built) return null
+  if (A.review === false) return { unit: u.id, built, review: null }
   const review = await agent(
     `Adversarially review branch revamp/${u.id} in ${built.worktree} against ${BASE} ("git diff ${BASE}...HEAD").\n${describe(u)}\n` +
       'Use the STANDARDS.md §17 reviewer checklist. Try to find what is wrong: raw framework widgets outside the kit, colours or type ' +

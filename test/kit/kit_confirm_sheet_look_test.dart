@@ -408,7 +408,7 @@ void main() {
           expect(rect.left, greaterThanOrEqualTo(0), reason: label);
           expect(rect.right, lessThanOrEqualTo(width), reason: label);
           expect(rect.bottom, lessThanOrEqualTo(800), reason: label);
-          final para = tester.renderObject<RenderParagraph>(finder);
+          
           expect(
             tester.renderObject<RenderParagraph>(finder).didExceedMaxLines,
             isFalse,
