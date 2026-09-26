@@ -1,0 +1,5 @@
+  lib/ui/widgets/saved_server_connection_card.dart: 0 (baseline 7)
+  lib/ui/widgets/tool_card.dart: 0 (baseline 7)
+  lib/ui/widgets/transcript_display_toggles.dart: 0 (baseline 2)
+  lib/voice/notices.dart: 0 (baseline 1)
+00:00 +34: All tests passed!

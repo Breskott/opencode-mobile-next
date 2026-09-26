@@ -1,0 +1,5 @@
+00:01 +17: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-2/test/kit/kit_pre_wave_tokens_test.dart: KitLayout pre-wave widths and shares
+00:01 +18: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-2/test/kit/kit_pre_wave_tokens_test.dart: KitMotion pre-wave waits
+00:01 +19: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-2/test/kit/kit_pre_wave_tokens_test.dart: KitShape and KitSurfaceLevel resolve to the kit radii and roles
+00:01 +20: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_263f2366-20e-2/test/kit/kit_pre_wave_tokens_test.dart: wrap glyph is the Phosphor text-align-justify codepoint
+00:01 +21: All tests passed!
