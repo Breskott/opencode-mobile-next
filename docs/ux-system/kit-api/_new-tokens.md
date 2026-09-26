@@ -117,7 +117,7 @@ enough.
 
 ## Not added here
 
-- `KitTokens.toneFor` / `toneColor(AppStatusTone)` (README.md decision D12;
+- (Added 2026-09-27 as `KitTokens.toneFor`, `glyphFor` and `toneColor`.) `KitTokens.toneFor` / `toneColor(AppStatusTone)` (README.md decision D12;
   KitNotice, KitReceipt, KitStateView, KitStatusLine, KitStatusMark): the
   tone map needs the D12 table, which is not in the mention list.
 - The `AppIcons.wrap` registry entry (KitCodeBlock, a PROC-13 append).

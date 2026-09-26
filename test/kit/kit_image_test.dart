@@ -567,6 +567,38 @@ void main() {
       expect(find.text('OA'), findsOneWidget);
     });
 
+    testWidgets('a failing image is said in words and the error glyph, not '
+        'a red dot (LOOK-5, STATE-9)', (tester) async {
+      await _pump(
+        tester,
+        const KitAvatar(
+          name: 'Open AI',
+          image: KitImageSource.provider(_FailingProvider()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final semantics = _ownSemantics(tester, find.byType(KitAvatar))!;
+      expect(semantics.properties.label, 'Open AI');
+      expect(semantics.properties.value, _unavailable);
+      final roles = ThemeRoles.resolve(AppTheme.dark());
+      final glyph = tester.widget<Icon>(
+        find.descendant(
+          of: find.byType(KitAvatar),
+          matching: find.byType(Icon),
+        ),
+      );
+      expect(glyph.icon, KitTokens.glyphFor(AppStatusTone.failure));
+      expect(glyph.color, roles.text1);
+      expect(glyph.color, isNot(roles.danger));
+      final ring = tester.widget<Container>(
+        find.ancestor(
+          of: find.byWidget(glyph),
+          matching: find.byType(Container),
+        ),
+      );
+      expect((ring.decoration! as BoxDecoration).color, roles.ground);
+    });
+
     testWidgets('at 2.0 text the initials stay clamped', (tester) async {
       await _pump(
         tester,

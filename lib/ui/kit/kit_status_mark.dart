@@ -110,20 +110,25 @@ class KitStatusMark extends StatelessWidget {
     // The 20 dp glyph, grown with text up to maxIconScale and snapped to
     // whole physical pixels (LOOK-33).
     final glyphSize = _glyphSize(context, tokens);
+    // Done, working and failed take the kit's one status map
+    // (KitTokens.glyphFor / toneFor), so a mark and a KitIcon.status of the
+    // same state always agree. Waiting's hollow ring is the neutral glyph's
+    // shape drawn as a hairline (LOOK-8's ring colour).
+    final working = KitTokens.toneColor(roles, AppStatusTone.progress);
     final Widget glyph = paused
         ? Icon(AppIconography.pause, size: glyphSize, color: roles.text2)
         : switch (state) {
             KitMarkState.done => Icon(
-              AppIconography.check,
+              KitTokens.glyphFor(AppStatusTone.ok),
               size: glyphSize,
-              color: AppTheme.successOf(theme),
+              color: KitTokens.toneColor(roles, AppStatusTone.ok),
             ),
             KitMarkState.working =>
               reduceMotion
                   ? Icon(
                       AppIconography.statusDot,
                       size: KitTokens.markDotSize,
-                      color: roles.accent,
+                      color: working,
                     )
                   // The spec's "small indeterminate ring": the glyph's own
                   // size, and the kit's heavier stroke (two physical px;
@@ -132,13 +137,13 @@ class KitStatusMark extends StatelessWidget {
                       dimension: glyphSize,
                       child: CircularProgressIndicator(
                         strokeWidth: KitTokens.focusRingWidth(context),
-                        color: roles.accent,
+                        color: working,
                       ),
                     ),
             KitMarkState.failed => Icon(
-              AppIconography.error,
+              KitTokens.glyphFor(AppStatusTone.failure),
               size: glyphSize,
-              color: roles.text1,
+              color: KitTokens.toneColor(roles, AppStatusTone.failure),
             ),
             KitMarkState.waiting => Container(
               width: KitTokens.markRingSize,

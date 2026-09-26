@@ -314,7 +314,7 @@ class KitStatusLine extends StatelessWidget {
   Widget _icon(BuildContext context, KitTokens tokens, ThemeRoles roles) {
     final family = icon.fontFamily;
     if (family != null && family.startsWith('AppPhosphor')) {
-      return KitIcon.status(icon, tone);
+      return KitIcon.status(tone, icon: icon);
     }
     // Compatibility for a glyph outside the app's set (a caller not yet on
     // AppIconography): KitIcon rejects it, so it is drawn plainly in the

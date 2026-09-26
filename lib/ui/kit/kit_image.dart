@@ -11,6 +11,8 @@ import 'package:intl/intl.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../app_iconography.dart';
+import '../app_theme.dart' show AppStatusTone;
+import '../theme_roles.dart';
 import 'kit_icon_button.dart';
 import 'kit_layout.dart';
 import 'kit_motion.dart';
@@ -417,8 +419,12 @@ enum KitAvatarSize { tile, mark }
 ///
 /// States: loading, error.
 ///
-/// Both fall back to the initials, so the slot is never empty.
-class KitAvatar extends StatelessWidget {
+/// Both fall back to the initials, so the slot is never empty. Error also
+/// shows the failure glyph ([KitTokens.glyphFor], in its neutral tone) on a
+/// `ground` ring at the circle's bottom end, and says "Can't show this
+/// image" after the name: a shape and words, never a red dot (LOOK-5,
+/// STATE-9).
+class KitAvatar extends StatefulWidget {
   const KitAvatar({
     super.key,
     required this.name,
@@ -442,7 +448,32 @@ class KitAvatar extends StatelessWidget {
   final bool decorative;
 
   @override
+  State<KitAvatar> createState() => _KitAvatarState();
+}
+
+class _KitAvatarState extends State<KitAvatar> {
+  /// The image failed to load: the initials stay, and the error badge and
+  /// words join them.
+  bool _failed = false;
+
+  @override
+  void didUpdateWidget(KitAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.image != widget.image) _failed = false;
+  }
+
+  /// Called from the image's error builder, which runs during build: the
+  /// badge lands on the next frame.
+  void _markFailed() {
+    if (_failed) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_failed) setState(() => _failed = true);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final KitAvatar(:name, :icon, :size, :decorative) = widget;
     final tokens = KitTokens.of(context);
     final diameter = size == KitAvatarSize.tile
         ? tokens.iconTileSize
@@ -450,7 +481,7 @@ class KitAvatar extends StatelessWidget {
     final role = size == KitAvatarSize.tile
         ? KitTextRole.label
         : KitTextRole.headline;
-    final source = image;
+    final source = widget.image;
     final identity = icon != null
         ? Icon(icon, size: tokens.smallIconSize, color: tokens.roles.text1)
         : MediaQuery.withClampedTextScaling(
@@ -509,8 +540,10 @@ class KitAvatar extends StatelessWidget {
                             wasSynchronouslyLoaded,
                           );
                         },
-                    errorBuilder: (context, error, stack) =>
-                        const SizedBox.shrink(),
+                    errorBuilder: (context, error, stack) {
+                      _markFailed();
+                      return const SizedBox.shrink();
+                    },
                   ),
                 ),
             ],
@@ -518,14 +551,55 @@ class KitAvatar extends StatelessWidget {
         ),
       ),
     );
-    if (decorative) return ExcludeSemantics(child: content);
+    final failed = _failed && source != null;
+    final mark = failed
+        ? SizedBox(
+            width: diameter,
+            height: diameter,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                content,
+                PositionedDirectional(
+                  end: -KitTokens.avatarBadgeRing,
+                  bottom: -KitTokens.avatarBadgeRing,
+                  child: _KitAvatarErrorBadge(roles: tokens.roles),
+                ),
+              ],
+            ),
+          )
+        : content;
+    if (decorative) return ExcludeSemantics(child: mark);
     return Semantics(
       image: true,
       label: name,
+      value: failed ? _l10n(context).kitImageUnavailable : null,
       excludeSemantics: true,
-      child: content,
+      child: mark,
     );
   }
+}
+
+/// [KitAvatar]'s error badge: the failure glyph ([KitTokens.glyphFor]) in
+/// its tone ([KitTokens.toneFor], `text1`, never `danger`: LOOK-5) on a
+/// `ground` disc that rings it off the avatar.
+class _KitAvatarErrorBadge extends StatelessWidget {
+  const _KitAvatarErrorBadge({required this.roles});
+
+  final ThemeRoles roles;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: KitTokens.avatarBadgeSize,
+    height: KitTokens.avatarBadgeSize,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(color: roles.ground, shape: BoxShape.circle),
+    child: Icon(
+      KitTokens.glyphFor(AppStatusTone.failure),
+      size: KitTokens.avatarBadgeSize - 2 * KitTokens.avatarBadgeRing,
+      color: KitTokens.toneColor(roles, AppStatusTone.failure),
+    ),
+  );
 }
 
 /// The first grapheme of [name]'s first two words, folded to upper case —

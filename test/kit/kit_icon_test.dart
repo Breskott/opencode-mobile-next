@@ -1,13 +1,14 @@
 // KitIcon (docs/ux-system/kit-api/KitIcon.md, wave 1, tier 1a): the one
-// way to draw a glyph. See lib/ui/kit/kit_icon.dart's header for the PROC-20
-// contract problem this unit recorded (KitTokens.toneFor missing) and
-// docs/qa/revamp-kit-KitIcon-2026-09-26/README.md for the evidence.
+// way to draw a glyph. KitIcon.status reads the kit's one status map,
+// KitTokens.glyphFor / toneFor; docs/qa/revamp-kit-KitIcon-2026-09-26/
+// README.md has the evidence.
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_icon.dart';
+import 'package:opencode_mobile/ui/kit/kit_status_mark.dart';
 import 'package:opencode_mobile/ui/kit/kit_text.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
@@ -43,8 +44,7 @@ void main() {
     'KitIcon',
     builds: {
       'small': () => const KitIcon(AppIconography.check),
-      'status': () =>
-          const KitIcon.status(AppIconography.info, AppStatusTone.attention),
+      'status': () => const KitIcon.status(AppStatusTone.attention),
       'duotone': () => const KitIcon(AppIconography.workspaceSelected),
       'growsWithText': () =>
           const KitIcon(AppIconography.check, growsWithText: true),
@@ -257,7 +257,7 @@ void main() {
           await tester.pumpWidget(
             MaterialApp(
               theme: theme,
-              home: Center(child: KitIcon.status(AppIconography.info, status)),
+              home: Center(child: KitIcon.status(status)),
             ),
           );
           final color = tester.widget<Icon>(find.byType(Icon)).color;
@@ -268,12 +268,53 @@ void main() {
       },
     );
 
+    testWidgets(
+      'each status draws its own glyph, the one KitTokens.glyphFor and '
+      'KitStatusMark use, so no state is colour alone',
+      (tester) async {
+        final drawn = <AppStatusTone, IconData?>{};
+        for (final status in AppStatusTone.values) {
+          await tester.pumpWidget(_host(KitIcon.status(status)));
+          drawn[status] = tester.widget<Icon>(find.byType(Icon)).icon;
+          expect(drawn[status], KitTokens.glyphFor(status), reason: '$status');
+        }
+        expect(drawn.values.toSet(), hasLength(AppStatusTone.values.length));
+        expect(drawn.values, isNot(contains(AppIconography.info)));
+
+        // KitStatusMark's done and failed marks are the same glyphs.
+        for (final (state, status) in [
+          (KitMarkState.done, AppStatusTone.ok),
+          (KitMarkState.failed, AppStatusTone.failure),
+        ]) {
+          await tester.pumpWidget(_host(KitStatusMark(state: state)));
+          // The mark cross-fades between states; let the old one leave.
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<Icon>(find.byType(Icon)).icon,
+            KitTokens.glyphFor(status),
+            reason: '$state',
+          );
+        }
+
+        // A status line's own glyph still wins, in the status's tone.
+        await tester.pumpWidget(
+          _host(
+            const KitIcon.status(
+              AppStatusTone.ok,
+              icon: AppIconography.cloudOff,
+            ),
+          ),
+        );
+        expect(
+          tester.widget<Icon>(find.byType(Icon)).icon,
+          AppIconography.cloudOff,
+        );
+      },
+    );
+
     testWidgets('defaults to small and grows with text', (tester) async {
       await tester.pumpWidget(
-        _host(
-          const KitIcon.status(AppIconography.info, AppStatusTone.ok),
-          textScale: 2.0,
-        ),
+        _host(const KitIcon.status(AppStatusTone.ok), textScale: 2.0),
       );
       final icon = tester.widget<Icon>(find.byType(Icon));
       expect(icon.size, greaterThan(20));
@@ -358,7 +399,7 @@ void main() {
           for (final tone in KitTextTone.values)
             '$tone': KitIcon(AppIconography.check, tone: tone),
           for (final status in AppStatusTone.values)
-            '$status': KitIcon.status(AppIconography.info, status),
+            '$status': KitIcon.status(status),
           'duotone': const KitIcon(AppIconography.workspaceSelected),
         };
         for (final MapEntry(key: name, value: icon) in icons.entries) {
