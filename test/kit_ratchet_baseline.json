@@ -549,6 +549,9 @@
     }
   },
   "G16": {
+    "lib/main.dart": {
+      "MaterialPageRoute": 9
+    },
     "lib/ui/app_iconography.dart": {
       "Icon": 2,
       "Opacity": 1
@@ -611,6 +614,7 @@
       "IconButton": 3,
       "LinearProgressIndicator": 1,
       "ListTile": 1,
+      "MaterialPageRoute": 1,
       "Scaffold": 2,
       "SelectableText": 2,
       "SingleChildScrollView": 1,
@@ -626,6 +630,7 @@
       "IconButton": 1,
       "LinearProgressIndicator": 1,
       "ListTile": 9,
+      "MaterialPageRoute": 3,
       "Scaffold": 1,
       "Text": 31,
       "TextButton": 2,
@@ -665,6 +670,7 @@
       "Card": 1,
       "Icon": 1,
       "IconButton": 1,
+      "MaterialPageRoute": 1,
       "OutlinedButton": 1,
       "Scaffold": 1,
       "Text": 10
@@ -678,6 +684,7 @@
       "FilledButton": 4,
       "Icon": 10,
       "IconButton": 1,
+      "MaterialPageRoute": 1,
       "Opacity": 1,
       "OutlinedButton": 1,
       "Scaffold": 2,
@@ -811,6 +818,7 @@
       "Icon": 8,
       "IconButton": 2,
       "Material": 2,
+      "MaterialPageRoute": 1,
       "SelectableText": 1,
       "SingleChildScrollView": 4,
       "Text": 17,
@@ -858,6 +866,7 @@
       "Icon": 5,
       "IconButton": 1,
       "InkWell": 2,
+      "MaterialPageRoute": 4,
       "Scaffold": 1,
       "SnackBar": 1,
       "Text": 10,
@@ -896,6 +905,7 @@
       "TextButton": 4
     },
     "lib/ui/screens/chat/watching.dart": {
+      "MaterialPageRoute": 1,
       "Text": 1
     },
     "lib/ui/screens/chat_screen.dart": {
@@ -911,6 +921,7 @@
       "Icon": 20,
       "IconButton": 9,
       "ListTile": 6,
+      "MaterialPageRoute": 27,
       "NotificationListener": 1,
       "Opacity": 1,
       "OutlinedButton": 1,
@@ -981,6 +992,7 @@
       "Icon": 10,
       "LinearProgressIndicator": 2,
       "ListTile": 2,
+      "MaterialPageRoute": 4,
       "OutlinedButton": 4,
       "Scaffold": 4,
       "SelectableText": 2,
@@ -1004,6 +1016,7 @@
       "InkWell": 1,
       "ListTile": 5,
       "Material": 2,
+      "MaterialPageRoute": 1,
       "MouseRegion": 1,
       "PopupMenuButton": 2,
       "PopupMenuItem": 1,
@@ -1025,6 +1038,7 @@
       "IconButton": 1,
       "InkWell": 1,
       "ListTile": 1,
+      "MaterialPageRoute": 1,
       "OutlinedButton": 1,
       "PopupMenuButton": 1,
       "PopupMenuItem": 4,
@@ -1042,6 +1056,7 @@
       "Icon": 5,
       "IconButton": 1,
       "ListTile": 1,
+      "MaterialPageRoute": 1,
       "Scaffold": 1,
       "SelectableText": 1,
       "SingleChildScrollView": 1,
@@ -1055,6 +1070,7 @@
       "CustomPaint": 1,
       "Icon": 3,
       "InkWell": 1,
+      "MaterialPageRoute": 1,
       "NavigationBar": 1,
       "NavigationBarTheme": 1,
       "NavigationDestination": 4,
@@ -1091,6 +1107,7 @@
     "lib/ui/screens/keep_running_screen.dart": {
       "AppBar": 1,
       "Icon": 2,
+      "MaterialPageRoute": 1,
       "Scaffold": 1,
       "SnackBar": 1,
       "Text": 4,
@@ -1169,6 +1186,7 @@
       "Icon": 9,
       "IconButton": 2,
       "ListTile": 2,
+      "MaterialPageRoute": 1,
       "Scaffold": 1,
       "SelectableText": 2,
       "SnackBar": 4,
@@ -1237,6 +1255,7 @@
       "Divider": 1,
       "Icon": 11,
       "ListTile": 6,
+      "MaterialPageRoute": 5,
       "Scaffold": 1,
       "Text": 13
     },
@@ -1313,6 +1332,9 @@
       "Scaffold": 1,
       "TextField": 1
     },
+    "lib/ui/screens/phone_setup/phone_setup_routes.dart": {
+      "MaterialPageRoute": 3
+    },
     "lib/ui/screens/phone_setup/phone_setup_start_screen.dart": {
       "AnimatedSwitcher": 1,
       "AppBar": 1,
@@ -1332,6 +1354,7 @@
       "IconButton": 1,
       "ListTile": 4,
       "Material": 1,
+      "MaterialPageRoute": 4,
       "Scaffold": 1,
       "SnackBar": 1,
       "Text": 17,
@@ -1363,6 +1386,7 @@
       "Icon": 4,
       "IconButton": 1,
       "ListTile": 3,
+      "MaterialPageRoute": 3,
       "Text": 5,
       "TickerMode": 2
     },
@@ -1395,6 +1419,7 @@
       "Icon": 2,
       "IconButton": 1,
       "LinearProgressIndicator": 2,
+      "MaterialPageRoute": 1,
       "Scaffold": 1,
       "SelectableText": 1,
       "SingleChildScrollView": 1,
@@ -1450,6 +1475,7 @@
       "InkWell": 1,
       "LinearProgressIndicator": 1,
       "ListTile": 1,
+      "MaterialPageRoute": 1,
       "NotificationListener": 1,
       "OutlinedButton": 1,
       "Scaffold": 1,
@@ -1484,6 +1510,7 @@
       "Icon": 10,
       "IconButton": 8,
       "ListTileTheme": 1,
+      "MaterialPageRoute": 10,
       "Scaffold": 2,
       "SingleChildScrollView": 2,
       "SnackBar": 1,
@@ -1500,6 +1527,7 @@
       "Icon": 4,
       "IconButton": 1,
       "ListTile": 1,
+      "MaterialPageRoute": 1,
       "Scaffold": 1,
       "Text": 19,
       "TextButton": 2
@@ -1629,6 +1657,7 @@
       "AppBar": 1,
       "Icon": 2,
       "IconButton": 1,
+      "MaterialPageRoute": 1,
       "Scaffold": 1,
       "SnackBar": 2,
       "Text": 6,
@@ -1638,6 +1667,7 @@
       "AppBar": 1,
       "Icon": 4,
       "IconButton": 2,
+      "MaterialPageRoute": 1,
       "Scaffold": 1,
       "SingleChildScrollView": 1,
       "SnackBar": 1,
@@ -1651,6 +1681,7 @@
       "Icon": 1,
       "LinearProgressIndicator": 1,
       "ListTile": 1,
+      "MaterialPageRoute": 1,
       "OutlinedButton": 1,
       "Scaffold": 1,
       "SingleChildScrollView": 2,
@@ -1685,6 +1716,7 @@
       "ExpansionTile": 1,
       "Icon": 5,
       "IconButton": 1,
+      "MaterialPageRoute": 1,
       "Opacity": 1,
       "PopupMenuButton": 1,
       "PopupMenuItem": 2,
@@ -1697,6 +1729,7 @@
       "ExpansionTile": 1,
       "Icon": 6,
       "InkWell": 1,
+      "MaterialPageRoute": 2,
       "SingleChildScrollView": 1,
       "Text": 22,
       "TextField": 1,
@@ -1720,6 +1753,7 @@
       "IconButton": 1,
       "InkWell": 1,
       "Material": 1,
+      "MaterialPageRoute": 1,
       "Opacity": 1,
       "PopupMenuButton": 1,
       "PopupMenuItem": 2,
@@ -1737,6 +1771,7 @@
       "DropdownMenuItem": 3,
       "Icon": 5,
       "InkWell": 1,
+      "MaterialPageRoute": 1,
       "SingleChildScrollView": 1,
       "Text": 15,
       "TextField": 3
@@ -1744,6 +1779,7 @@
     "lib/ui/screens/team/team_agents_screen.dart": {
       "AppBar": 1,
       "Icon": 1,
+      "MaterialPageRoute": 1,
       "Opacity": 1,
       "Scaffold": 1,
       "Text": 2
@@ -1755,6 +1791,7 @@
       "DecoratedBox": 1,
       "Icon": 2,
       "IconButton": 1,
+      "MaterialPageRoute": 1,
       "Opacity": 1,
       "PageView": 1,
       "PopupMenuButton": 1,
@@ -1766,6 +1803,7 @@
       "CheckedPopupMenuItem": 1,
       "Icon": 8,
       "IconButton": 4,
+      "MaterialPageRoute": 1,
       "Opacity": 1,
       "PopupMenuButton": 1,
       "Scaffold": 1,
@@ -1776,6 +1814,7 @@
     },
     "lib/ui/screens/team/team_intro_screen.dart": {
       "AppBar": 1,
+      "MaterialPageRoute": 2,
       "Scaffold": 1,
       "Text": 3
     },
@@ -1801,7 +1840,8 @@
       "Theme": 1
     },
     "lib/ui/screens/team_conversation/team_conversation.dart": {
-      "Icon": 1
+      "Icon": 1,
+      "MaterialPageRoute": 2
     },
     "lib/ui/screens/terminal_screen.dart": {
       "AlertDialog": 1,
@@ -1818,6 +1858,7 @@
       "LinearProgressIndicator": 1,
       "ListTile": 1,
       "MaterialBanner": 1,
+      "MaterialPageRoute": 1,
       "OutlinedButton": 1,
       "PopupMenuButton": 1,
       "PopupMenuItem": 2,
@@ -1838,6 +1879,7 @@
       "Icon": 8,
       "IconButton": 2,
       "ListTile": 1,
+      "MaterialPageRoute": 1,
       "OutlinedButton": 1,
       "Scaffold": 1,
       "SelectableText": 2,
@@ -1853,6 +1895,7 @@
       "Divider": 3,
       "ExpansionTile": 1,
       "Icon": 7,
+      "MaterialPageRoute": 1,
       "Opacity": 1,
       "RadioGroup": 1,
       "RadioListTile": 3,
@@ -1869,6 +1912,7 @@
       "Icon": 6,
       "IconButton": 1,
       "ListTile": 1,
+      "MaterialPageRoute": 1,
       "OutlinedButton": 1,
       "Scaffold": 1,
       "Text": 22,
@@ -1944,6 +1988,7 @@
       "InkWell": 1,
       "ListTile": 7,
       "Material": 3,
+      "MaterialPageRoute": 6,
       "PopupMenuButton": 3,
       "PopupMenuDivider": 1,
       "PopupMenuItem": 12,
@@ -1977,6 +2022,7 @@
       "TextField": 1
     },
     "lib/ui/search/search_index.dart": {
+      "MaterialPageRoute": 1,
       "SingleChildScrollView": 1
     },
     "lib/ui/widgets/agent_blocks.dart": {
@@ -2045,6 +2091,7 @@
       "IconButton": 1,
       "InkWell": 1,
       "Material": 2,
+      "MaterialPageRoute": 1,
       "Scaffold": 1,
       "SingleChildScrollView": 1,
       "SliverPersistentHeader": 1,
@@ -2115,6 +2162,7 @@
       "InkWell": 1,
       "InputChip": 1,
       "Material": 4,
+      "MaterialPageRoute": 1,
       "RadioGroup": 1,
       "RadioListTile": 2,
       "Scaffold": 1,
@@ -2174,6 +2222,7 @@
       "GestureDetector": 1,
       "Icon": 4,
       "IconButton": 2,
+      "MaterialPageRoute": 1,
       "PopupMenuButton": 1,
       "PopupMenuItem": 1,
       "Scaffold": 1,
@@ -2220,6 +2269,7 @@
       "Container": 1,
       "Directionality": 1,
       "Icon": 1,
+      "MaterialPageRoute": 1,
       "PopupMenuButton": 1,
       "PopupMenuItem": 5,
       "SnackBar": 1,
@@ -2420,6 +2470,7 @@
       "DecoratedBox": 3,
       "FilledButton": 2,
       "Icon": 5,
+      "MaterialPageRoute": 1,
       "ScaleTransition": 1,
       "SingleChildScrollView": 1,
       "Text": 10,
@@ -2511,6 +2562,9 @@
       "Text": 2,
       "TextButton": 2
     },
+    "lib/ui/widgets/termux_phone_tools.dart": {
+      "MaterialPageRoute": 2
+    },
     "lib/ui/widgets/tool_card.dart": {
       "AnimatedContainer": 1,
       "AnimatedRotation": 1,
@@ -2541,6 +2595,9 @@
     "lib/ui/widgets/transcript_highlight.dart": {
       "Container": 1,
       "Text": 2
+    },
+    "lib/voice/notices.dart": {
+      "MaterialPageRoute": 1
     }
   },
   "G2": {

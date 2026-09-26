@@ -17,9 +17,11 @@
 // read window classes from KitLayout, never compare a width to a number
 // directly (§8.1).
 // G16 — kit-only allowlist: a file under lib/ui/ (minus lib/ui/kit/) may
-// only construct the plain layout/scrolling/builder/semantics/route Flutter
+// only construct the plain layout/scrolling/builder/semantics Flutter
 // widgets in `_g16Allowlist`; every other framework widget (Text, Icon,
-// buttons, Card, Scaffold, dialogs, ...) must come from the kit.
+// buttons, Card, Scaffold, dialogs, ...) must come from the kit. Pages are
+// pushed with KitPageRoute (KIT-7): MaterialPageRoute and PageRouteBuilder
+// count there and in the Flutter UI code elsewhere under lib/.
 // G2, G7, G15x, G17, G21, G48 — docs/ux-system/revamp/STANDARDS.md §18: kit
 // seams (copy, haptics, links, motion, retired wrappers), directional layout
 // and bidi marks, widths inside the kit, colour roles, look and motion
@@ -81,11 +83,21 @@ const _g16Allowlist = <String>{
   'Semantics', 'MergeSemantics', 'ExcludeSemantics', 'Focus', 'FocusScope',
   'FocusTraversalGroup', 'Shortcuts', 'Actions', 'CallbackShortcuts',
   'PopScope', 'Hero',
-  // KitPageRoute lands the kit's one route (KIT-7): MaterialPageRoute and
-  // PageRouteBuilder leave the allowlist here. Neither is in
-  // kit_ratchet_flutter_widgets.json (routes, not widgets), so this counts
-  // nothing today — the gate is ready the day a widget-catalogue change
-  // would otherwise start counting them.
+  // Routes: none. KitPageRoute is the kit's one route (KIT-7), so
+  // MaterialPageRoute and PageRouteBuilder left this list and G16 counts
+  // them (`_g16Routes`).
+};
+
+/// The routes G16 counts although they are not widgets, so the widget
+/// catalogue never lists them (KIT-7): a page is pushed with KitPageRoute,
+/// pushKitPage or replaceWithKitPage, and every other use is baselined per
+/// file and only shrinks. Name -> named constructors (none). Counted in
+/// lib/ui (minus the kit) and in the Flutter UI code elsewhere under lib/
+/// (`_uiElsewhere`: lib/main.dart, lib/voice/notices.dart, ...), where G16
+/// counts only these.
+const _g16Routes = <String, List<String>>{
+  'MaterialPageRoute': [],
+  'PageRouteBuilder': [],
 };
 
 /// Scrollbar is allowed only in the one file that owns desktop scroll
@@ -209,7 +221,7 @@ Map<String, int> _countG16(
     final name = m.group(1)!;
     if (allowlist.contains(name)) continue;
     if (appClasses.contains(name)) continue;
-    final ctors = widgets[name];
+    final ctors = widgets[name] ?? _g16Routes[name];
     if (ctors == null) continue; // not a known Flutter framework widget
     final namedPart = m.group(2);
     if (namedPart != null) {
@@ -220,6 +232,20 @@ Map<String, int> _countG16(
   }
   return counts;
 }
+
+/// G16's counts for [path]: every framework widget outside the allowlist
+/// in lib/ui (minus the kit), only the `_g16Routes` elsewhere under lib/.
+Map<String, int> _g16CountsFor(
+  String code,
+  String path,
+  Map<String, List<String>> widgets,
+  Set<String> appClasses,
+) => _countG16(
+  code,
+  path,
+  path.startsWith('lib/ui/') ? widgets : const {},
+  appClasses,
+);
 
 // --- STANDARDS.md §18 gates G2, G7, G15x, G17, G21, G48 -------------------
 //
@@ -1431,8 +1457,8 @@ void main() {
   final widgets = _loadFlutterWidgets();
   final appClasses = _loadAppDeclaredClasses();
   final g16Current = <String, Map<String, int>>{};
-  for (final path in _dartFiles('lib/ui')) {
-    final counts = _countG16(_codeOf(path), path, widgets, appClasses);
+  for (final path in [..._dartFiles('lib/ui'), ..._filesUnder(_uiElsewhere)]) {
+    final counts = _g16CountsFor(_codeOf(path), path, widgets, appClasses);
     if (counts.isNotEmpty) g16Current[path] = counts;
   }
 
@@ -1712,6 +1738,65 @@ MyAppWidget();
           appClasses,
         );
         expect(counts, {'Text': 2, 'FilledButton': 1});
+      },
+    );
+
+    test(
+      'KIT-7: a new MaterialPageRoute( in a file with no baseline entry fails '
+      'G16, in lib/ui and in UI code elsewhere under lib/',
+      () {
+        const source = '''
+Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
+Navigator.of(context).push(
+  PageRouteBuilder<void>(pageBuilder: (_, _, _) => page),
+);
+pushKitPage<void>(context, (_) => page);
+Navigator.of(context).push(KitPageRoute<void>(builder: (_) => page));
+final isPage = route is MaterialPageRoute;
+// MaterialPageRoute(builder: ignored, inside a comment)
+''';
+        expect(_g16Allowlist, isNot(contains('MaterialPageRoute')));
+        expect(_g16Allowlist, isNot(contains('PageRouteBuilder')));
+        final widgets = _loadFlutterWidgets();
+        const appClasses = {'KitPageRoute'};
+        final committed = baseline['G16'] as Map<String, dynamic>? ?? {};
+        for (final path in [
+          'lib/ui/screens/kit7_fixture_only.dart',
+          'lib/voice/kit7_fixture_only.dart',
+        ]) {
+          expect(committed.containsKey(path), isFalse, reason: path);
+          final counts = _g16CountsFor(
+            _stripLineComments(source),
+            path,
+            widgets,
+            appClasses,
+          );
+          expect(counts, {
+            'MaterialPageRoute': 1,
+            'PageRouteBuilder': 1,
+          }, reason: path);
+          final problems = _ratchetProblems('G16', {path: counts}, committed);
+          expect(problems, hasLength(2), reason: path);
+          expect(
+            problems,
+            contains(
+              contains('$path uses "MaterialPageRoute" x1 (new — baseline '),
+            ),
+          );
+        }
+
+        // A file with a baseline entry may not add one either.
+        const mainFile = 'lib/main.dart';
+        final base =
+            ((committed[mainFile]
+                        as Map<String, dynamic>?)?['MaterialPageRoute']
+                    as num?)
+                ?.toInt();
+        expect(base, isNotNull, reason: 'KIT-7 baselines $mainFile\'s routes');
+        final rose = _ratchetProblems('G16', {
+          mainFile: {'MaterialPageRoute': base! + 1},
+        }, committed);
+        expect(rose.single, contains('rose from $base to ${base + 1}'));
       },
     );
 

@@ -11,8 +11,9 @@ import 'package:opencode_mobile/ui/kit/kit_page_route.dart';
 /// Pumps an empty [MaterialApp] at [theme] and [locale] and returns a
 /// context under its Navigator to push from. [disableAnimations] seeds
 /// `MediaQuery.disableAnimationsOf` (the "remove animations" setting);
-/// [toggleAnimations], when given, lets a test flip it later without a new
-/// pump tree (the element identity, and any state under it, is kept).
+/// [toggleAnimations], when given, drives it instead, so a test can flip the
+/// setting while pages are open: the same app rebuilds with the new value,
+/// the way the system setting reaches a running app.
 Future<BuildContext> _pumpApp(
   WidgetTester tester, {
   ThemeData? theme,
@@ -118,17 +119,15 @@ void main() {
   });
 
   testWidgets(
-    'under disableAnimations the new page is opaque and in place with no '
-    'elapsed animation time',
+    'under disableAnimations the new page is opaque and in place after one '
+    'pump (G8x)',
     (tester) async {
       final context = await _pumpApp(tester, disableAnimations: true);
       unawaited(pushKitPage<void>(context, (_) => const Text('B')));
-      // Two zero-duration pumps: one for Navigator.push's own state change,
-      // one to build the new route's overlay entry — no animation time
-      // elapses (G8x: reduced motion never waits out the real duration).
-      await tester.pump();
       await tester.pump();
 
+      // Onstage (the default finder skips offstage widgets): the app's
+      // HeroController must not hold the page back for a measuring frame.
       expect(find.text('B'), findsOneWidget);
       for (final o in tester.widgetList<Opacity>(
         find.ancestor(of: find.text('B'), matching: find.byType(Opacity)),
@@ -140,6 +139,23 @@ void main() {
       )) {
         expect(t.transform.getTranslation().x, 0);
       }
+    },
+  );
+
+  testWidgets(
+    'with motion on, a pushed page keeps the hero measuring frame the '
+    'framework gives it',
+    (tester) async {
+      final context = await _pumpApp(tester);
+      unawaited(pushKitPage<void>(context, (_) => const Text('B')));
+      await tester.pump();
+
+      // Reduced motion alone skips that frame (the test above); with motion
+      // on, heroes still measure the page's settled layout first.
+      expect(find.text('B'), findsNothing);
+      expect(find.text('B', skipOffstage: false), findsOneWidget);
+      await tester.pump();
+      expect(find.text('B'), findsOneWidget);
     },
   );
 
@@ -195,52 +211,59 @@ void main() {
   });
 
   testWidgets(
-    'a draft in the page underneath survives push, pop and a reduced-motion '
+    'a draft in a page underneath survives push, pop and a reduced-motion '
     'toggle while the page above is open',
     (tester) async {
       final toggle = ValueNotifier<bool>(false);
       addTearDown(toggle.dispose);
-      final controller = TextEditingController();
-      addTearDown(controller.dispose);
-      late BuildContext context;
-      await tester.pumpWidget(
-        ValueListenableBuilder<bool>(
-          valueListenable: toggle,
-          builder: (outerContext, disable, child) => MaterialApp(
-            debugShowCheckedModeBanner: false,
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(disableAnimations: disable),
-              child: child!,
-            ),
-            home: Scaffold(
-              body: Builder(
-                builder: (inner) {
-                  context = inner;
-                  return TextField(controller: controller);
-                },
-              ),
-            ),
-          ),
-        ),
+      final context = await _pumpApp(tester, toggleAnimations: toggle);
+
+      // Page A holds its draft in widget state only: a TextField with no
+      // controller keeps the text in its own State, so the draft is still
+      // there only if page A's element subtree was never torn down.
+      late BuildContext pageA;
+      unawaited(
+        pushKitPage<void>(context, (inner) {
+          pageA = inner;
+          return const Material(child: TextField());
+        }),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'draft text');
+      await tester.pump();
+      final draftState = tester.state(find.byType(EditableText));
+
+      unawaited(pushKitPage<void>(pageA, (_) => const Text('B')));
+      await tester.pumpAndSettle();
+      expect(find.text('B'), findsOneWidget);
+      expect(
+        find.text('draft text', skipOffstage: false),
+        findsOneWidget,
+        reason: 'page A is covered but kept (maintainState)',
       );
 
-      await tester.enterText(find.byType(TextField), 'draft text');
-      expect(controller.text, 'draft text');
-
-      unawaited(pushKitPage<void>(context, (_) => const SizedBox.shrink()));
-      await tester.pumpAndSettle();
-
-      // Toggle reduced motion while the pushed page is still open.
+      // Reduced motion on and off again while page B is open over page A.
       toggle.value = true;
-      await tester.pump();
+      await tester.pumpAndSettle();
       toggle.value = false;
-      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(find.text('B'), findsOneWidget);
 
       Navigator.of(context).pop();
       await tester.pumpAndSettle();
+      expect(find.text('B'), findsNothing);
+      expect(find.text('draft text'), findsOneWidget);
+      expect(
+        tester.state(find.byType(EditableText)),
+        same(draftState),
+        reason: 'page A was kept, not rebuilt with an empty field',
+      );
 
-      expect(find.byType(TextField), findsOneWidget);
-      expect(controller.text, 'draft text');
+      // And once more with page A itself on top.
+      toggle.value = true;
+      await tester.pumpAndSettle();
+      expect(find.text('draft text'), findsOneWidget);
+      expect(tester.state(find.byType(EditableText)), same(draftState));
     },
   );
 

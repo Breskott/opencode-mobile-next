@@ -53,6 +53,20 @@ class KitPageRoute<T> extends PageRoute<T> {
   DelegatedTransitionBuilder? get delegatedTransition =>
       _transitions.delegatedTransition;
 
+  /// The app's HeroController holds a newly pushed page offstage for its
+  /// first frame, to measure where the page's heroes land once the
+  /// transition ends. Under reduced motion the kit transition draws the
+  /// arriving page whole and in place from its first frame, so that frame
+  /// has nothing to measure and would only hide the page: it stays onstage
+  /// and shows after one pump (MOT-7, G8x). With motion on, the measuring
+  /// frame stays as the framework has it.
+  @override
+  set offstage(bool value) {
+    final context = navigator?.context;
+    if (value && context != null && KitMotion.reduced(context)) return;
+    super.offstage = value;
+  }
+
   @override
   Widget buildPage(
     BuildContext context,
