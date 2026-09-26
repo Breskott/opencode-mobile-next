@@ -9,6 +9,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_divider.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
 import 'kit_motion_still.dart';
 
@@ -72,6 +73,19 @@ Future<double> _startGap(
       : container.right - hairline.right;
 }
 
+/// The whole semantics tree as a screen reader gets it (every node's label,
+/// flags, actions and rect), with the node ids left out, since those differ
+/// between two pumps of the same tree.
+String _semanticsTree(WidgetTester tester) => tester
+    .binding
+    .renderViews
+    .single
+    .owner!
+    .semanticsOwner!
+    .rootSemanticsNode!
+    .toStringDeep(childOrder: DebugSemanticsDumpOrder.traversalOrder)
+    .replaceAll(RegExp(r'SemanticsNode#\d+'), 'SemanticsNode');
+
 /// The layout size of a fresh [KitDivider] (or [KitDivider.vertical]) at
 /// [dpr], unconstrained on the axis its thickness lives on.
 Future<Size> _layoutSize(
@@ -130,6 +144,34 @@ void main() {
       );
       final box = key.currentContext!.findRenderObject()! as RenderBox;
       expect(box.size.height, closeTo(1 / 3, 1e-9));
+    });
+
+    testWidgets('both axes are exactly KitTokens.hairlineWidth thick', (
+      tester,
+    ) async {
+      final horizontal = GlobalKey();
+      final vertical = GlobalKey();
+      late double token;
+      await _pump(
+        tester,
+        Builder(
+          builder: (context) {
+            token = KitTokens.hairlineWidth(context);
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(width: 200, child: KitDivider(key: horizontal)),
+                SizedBox(height: 40, child: KitDivider.vertical(key: vertical)),
+              ],
+            );
+          },
+        ),
+        dpr: 2.625,
+      );
+      Size sizeOf(GlobalKey key) =>
+          (key.currentContext!.findRenderObject()! as RenderBox).size;
+      expect(sizeOf(horizontal).height, token);
+      expect(sizeOf(vertical).width, token);
     });
   });
 
@@ -301,21 +343,45 @@ void main() {
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
-    await _pump(
-      tester,
-      Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('Above'),
-          const SizedBox(width: 200, child: KitDivider()),
-          const Text('Below'),
-        ],
+    // Two rows with a separator between them, and the same two rows with an
+    // empty box of the same size in the separator's place: a screen reader
+    // must meet exactly the same nodes, in the same places, in both.
+    Future<String> treeWith(Widget between) async {
+      await _pump(
+        tester,
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [const Text('Above'), between, const Text('Below')],
+        ),
+      );
+      return _semanticsTree(tester);
+    }
+
+    for (final (name, divider) in [
+      ('horizontal', const SizedBox(width: 200, child: KitDivider())),
+      (
+        'text inset',
+        const SizedBox(
+          width: 200,
+          child: KitDivider(inset: KitDividerInset.text),
+        ),
       ),
-    );
-    final renderObject = tester
-        .element(find.byKey(const ValueKey('kit-divider-line')))
-        .findRenderObject()!;
-    expect(renderObject.debugSemantics, isNull);
+      ('vertical', const SizedBox(height: 40, child: KitDivider.vertical())),
+    ]) {
+      final withDivider = await treeWith(divider);
+      final dividerSize = tester.getSize(find.byType(KitDivider));
+      final withoutDivider = await treeWith(
+        SizedBox.fromSize(size: dividerSize),
+      );
+      expect(
+        withDivider,
+        withoutDivider,
+        reason: 'a $name KitDivider must add nothing to the semantics tree',
+      );
+      // The probe itself reads the tree: both rows are there.
+      expect(withDivider, contains('"Above"'));
+      expect(withDivider, contains('"Below"'));
+    }
     // Disposed here, not via addTearDown: Flutter's end-of-test check for a
     // dangling SemanticsHandle runs before addTearDown callbacks do.
     semantics.dispose();

@@ -2,7 +2,15 @@
 // the one hairline separator, its three horizontal insets and its vertical
 // form. KitDivider is not exported from kit.dart yet (the integrator adds
 // that row, R06), so this file imports it directly rather than through
-// package:opencode_mobile/ui/kit/kit.dart.
+// package:opencode_mobile/ui/kit/kit.dart. The rows and the toolbar around
+// the lines are the kit's own parts (KitRow with its icon tile,
+// KitIconButton), so the gallery shows the real anatomy the insets line up
+// with.
+//
+// Sizes: kitGallerySizes (kit_gallery.dart) follows kit-v2.md §8.4 and lacks
+// the landscape phone 915x412 that STANDARDS.md LAY-4/TEST-9 and
+// KitDivider.md require, so this file adds that shot itself (reported as a
+// contract problem in docs/qa/revamp-kit-KitDivider-2026-09-26/README.md).
 //
 // Regenerate deliberately:
 //   flutter test --update-goldens test/goldens/kit/kit_divider_golden_test.dart
@@ -11,55 +19,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/ui/app_iconography.dart';
 import 'package:opencode_mobile/ui/kit/kit_divider.dart';
+import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
+import 'package:opencode_mobile/ui/kit/kit_row.dart';
 import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
 import 'kit_gallery.dart';
 
-/// One placeholder row (a row group's real anatomy is KitRow's job; this
-/// gallery only has to show where the hairline sits relative to it): a
-/// leading icon tile when [leadingIcon], then a title.
+/// One row of a row group, the kit's own [KitRow]: a title, after the
+/// kit's leading icon tile ([KitRow.icon]) when [leadingIcon].
 Widget _row(String label, {bool leadingIcon = false}) => Builder(
-  builder: (context) {
-    final tokens = KitTokens.of(context);
-    return SizedBox(
-      height: tokens.rowHeight,
-      child: Padding(
-        padding: EdgeInsetsDirectional.only(
-          start: tokens.space4,
-          end: tokens.space4,
-        ),
-        child: Row(
-          children: [
-            if (leadingIcon) ...[
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: tokens.roles.surface2,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: SizedBox(
-                  width: tokens.iconTileSize,
-                  height: tokens.iconTileSize,
-                  child: Icon(
-                    AppIconography.terminal,
-                    size: 16,
-                    color: tokens.roles.text2,
-                  ),
-                ),
-              ),
-              SizedBox(width: tokens.space3),
-            ],
-            Expanded(
-              child: Text(
-                label,
-                style: tokens.rowTitle,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  },
+  builder: (context) => KitRow(
+    title: label,
+    leading: leadingIcon ? KitRow.icon(context, AppIconography.terminal) : null,
+  ),
 );
 
 /// The `insets` state (KitDivider.md §Galleries): a row group with `none`,
@@ -89,43 +61,38 @@ Widget _insets({bool arabic = false}) => Builder(
   },
 );
 
-/// The `vertical` state: a toolbar with two icon groups split by a vertical
-/// hairline, such as a chat composer's tool groups.
+/// The `vertical` state: a toolbar with two groups of the kit's icon
+/// buttons ([KitIconButton], 48 dp targets) split by a vertical hairline,
+/// such as a chat composer's tool groups. The toolbar is one target tall
+/// ([KitTokens.minTarget]); the line keeps [KitTokens.space3] clear of its
+/// top and bottom, so it is as tall as the glyphs beside it.
 Widget _vertical() => Builder(
   builder: (context) {
     final tokens = KitTokens.of(context);
-    Widget button(IconData icon) => DecoratedBox(
-      decoration: BoxDecoration(
-        color: tokens.roles.surface2,
-        shape: BoxShape.circle,
-      ),
-      child: SizedBox(
-        width: 40,
-        height: 40,
-        child: Icon(icon, size: 20, color: tokens.roles.text2),
-      ),
-    );
+    Widget button(IconData icon, String label) =>
+        KitIconButton(icon: icon, label: label, onPressed: () {});
     return DecoratedBox(
       decoration: BoxDecoration(color: tokens.roles.surface1),
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: tokens.space4,
-          vertical: tokens.space3,
+          vertical: tokens.space2,
         ),
         child: SizedBox(
-          height: 40,
+          height: tokens.minTarget,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              button(AppIconography.terminal),
-              SizedBox(width: tokens.space3),
-              button(AppIconography.check),
-              SizedBox(width: tokens.space4),
-              const KitDivider.vertical(),
-              SizedBox(width: tokens.space4),
-              button(AppIconography.info),
-              SizedBox(width: tokens.space3),
-              button(AppIconography.copy),
+              button(AppIconography.terminal, 'Open terminal'),
+              button(AppIconography.check, 'Mark done'),
+              SizedBox(width: tokens.space2),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: tokens.space3),
+                child: const KitDivider.vertical(),
+              ),
+              SizedBox(width: tokens.space2),
+              button(AppIconography.info, 'Details'),
+              button(AppIconography.copy, 'Copy'),
             ],
           ),
         ),
@@ -141,7 +108,9 @@ void main() {
   for (final light in [false, true]) {
     final mode = light ? 'light' : 'dark';
 
-    for (final size in kitGallerySizes) {
+    // TEST-9 / LAY-4: the §8.4 sizes of the shared helper, plus the
+    // landscape phone it lacks (see the note at the top of this file).
+    for (final size in [...kitGallerySizes, const Size(915, 412)]) {
       final at = kitGallerySize(size);
       testWidgets('kit_divider insets · $at · $mode', (tester) async {
         await kitGalleryPart(

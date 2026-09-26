@@ -45,6 +45,9 @@ class KitDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = KitTokens.of(context);
+    // The thickness is the kit's one hairline token (LOOK-21); the device
+    // pixel ratio is kept only to snap the line's position to the grid.
+    final thickness = KitTokens.hairlineWidth(context);
     final dpr = MediaQuery.devicePixelRatioOf(context);
     // TEST-5: an internal key so the part's own tests can find the painted
     // line itself, unambiguously, regardless of the inset padding around
@@ -54,6 +57,7 @@ class KitDivider extends StatelessWidget {
       key: const ValueKey('kit-divider-line'),
       child: _KitHairline(
         axis: _axis,
+        thickness: thickness,
         devicePixelRatio: dpr,
         color: tokens.roles.hairline,
       ),
@@ -74,24 +78,31 @@ class KitDivider extends StatelessWidget {
   }
 }
 
-/// Paints one hairline, its position rounded to the physical pixel grid at
-/// paint time (LOOK-21: "a doubled hairline or a half-pixel offset is a
-/// bug"). A filled rectangle, not a stroke, so its edges never antialias
-/// across two device-pixel rows.
+/// Paints one hairline [thickness] thick ([KitTokens.hairlineWidth]), its
+/// position rounded to the physical pixel grid at paint time (LOOK-21: "a
+/// doubled hairline or a half-pixel offset is a bug"). A filled rectangle,
+/// not a stroke, so its edges never antialias across two device-pixel rows.
 class _KitHairline extends LeafRenderObjectWidget {
   const _KitHairline({
     required this.axis,
+    required this.thickness,
     required this.devicePixelRatio,
     required this.color,
   });
 
   final Axis axis;
+
+  /// The line's layout extent across its axis, in logical pixels.
+  final double thickness;
+
+  /// Used only to snap the paint offset to the device-pixel grid.
   final double devicePixelRatio;
   final Color color;
 
   @override
   RenderObject createRenderObject(BuildContext context) => _RenderKitHairline(
     axis: axis,
+    thickness: thickness,
     devicePixelRatio: devicePixelRatio,
     color: color,
   );
@@ -103,6 +114,7 @@ class _KitHairline extends LeafRenderObjectWidget {
   ) {
     renderObject
       ..axis = axis
+      ..thickness = thickness
       ..devicePixelRatio = devicePixelRatio
       ..color = color;
   }
@@ -111,9 +123,11 @@ class _KitHairline extends LeafRenderObjectWidget {
 class _RenderKitHairline extends RenderBox {
   _RenderKitHairline({
     required Axis axis,
+    required double thickness,
     required double devicePixelRatio,
     required Color color,
   }) : _axis = axis,
+       _thickness = thickness,
        _devicePixelRatio = devicePixelRatio,
        _color = color;
 
@@ -124,11 +138,20 @@ class _RenderKitHairline extends RenderBox {
     markNeedsLayout();
   }
 
+  /// One physical pixel in logical pixels, from [KitTokens.hairlineWidth].
+  double _thickness;
+  set thickness(double value) {
+    if (_thickness == value) return;
+    _thickness = value;
+    markNeedsLayout();
+  }
+
+  /// Only the grid snap reads it, at paint time.
   double _devicePixelRatio;
   set devicePixelRatio(double value) {
     if (_devicePixelRatio == value) return;
     _devicePixelRatio = value;
-    markNeedsLayout();
+    markNeedsPaint();
   }
 
   Color _color;
@@ -137,9 +160,6 @@ class _RenderKitHairline extends RenderBox {
     _color = value;
     markNeedsPaint();
   }
-
-  /// One physical pixel, in logical pixels (KitTokens.hairlineWidth).
-  double get _thickness => _devicePixelRatio > 0 ? 1 / _devicePixelRatio : 1.0;
 
   @override
   double computeMinIntrinsicWidth(double height) =>
@@ -187,12 +207,16 @@ class _RenderKitHairline extends RenderBox {
     final paint = Paint()
       ..color = _color
       ..style = PaintingStyle.fill;
-    final thickness = _thickness;
     final Rect rect;
     if (_axis == Axis.horizontal) {
-      rect = Rect.fromLTWH(offset.dx, _snap(offset.dy), size.width, thickness);
+      rect = Rect.fromLTWH(offset.dx, _snap(offset.dy), size.width, _thickness);
     } else {
-      rect = Rect.fromLTWH(_snap(offset.dx), offset.dy, thickness, size.height);
+      rect = Rect.fromLTWH(
+        _snap(offset.dx),
+        offset.dy,
+        _thickness,
+        size.height,
+      );
     }
     context.canvas.drawRect(rect, paint);
   }
