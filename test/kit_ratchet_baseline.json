@@ -747,7 +747,6 @@
       "ClipRRect": 2,
       "ColoredBox": 2,
       "CustomPaint": 1,
-      "DecoratedBox": 1,
       "ExpansionTile": 2,
       "FractionallySizedBox": 1,
       "GestureDetector": 1,
@@ -3012,10 +3011,7 @@
       ".textTheme": 4
     },
     "lib/ui/kit/glass/kit_glass.dart": {
-      "Colors.*": 3
-    },
-    "lib/ui/kit/kit_tokens.dart": {
-      "Colors.*": 1
+      "Colors.*": 2
     },
     "lib/ui/screens/about_screen.dart": {
       ".textTheme": 5
@@ -3521,7 +3517,7 @@
     },
     "lib/ui/widgets/product_states.dart": {
       ".colorScheme": 4,
-      ".textTheme": 5
+      ".textTheme": 4
     },
     "lib/ui/widgets/provider_logo.dart": {
       ".colorScheme": 4
@@ -3696,7 +3692,6 @@
       "SizedBox numeric": 2
     },
     "lib/ui/kit/glass/kit_glass.dart": {
-      "Radius.circular(<n>": 1,
       "stroke width not KitTokens in kit": 1
     },
     "lib/ui/kit/kit_action_stack.dart": {
@@ -3708,11 +3703,15 @@
     },
     "lib/ui/kit/kit_buttons.dart": {
       "EdgeInsets numeric": 1,
-      "SizedBox numeric": 4
+      "SizedBox numeric": 2
+    },
+    "lib/ui/kit/kit_confirm_sheet.dart": {
+      "EdgeInsets numeric": 1
     },
     "lib/ui/kit/kit_notice.dart": {
       "EdgeInsets numeric": 2,
-      "SizedBox numeric": 3
+      "SizedBox numeric": 3,
+      "stroke width not KitTokens in kit": 1
     },
     "lib/ui/kit/kit_panel.dart": {
       "EdgeInsets numeric": 2,
@@ -3725,8 +3724,9 @@
       "SizedBox numeric": 5
     },
     "lib/ui/kit/kit_request_card.dart": {
-      "EdgeInsets numeric": 6,
-      "SizedBox numeric": 2,
+      "BorderRadius.circular(<n>": 1,
+      "EdgeInsets numeric": 3,
+      "SizedBox numeric": 1,
       "stroke width not KitTokens in kit": 1
     },
     "lib/ui/kit/kit_row.dart": {
@@ -3871,7 +3871,6 @@
       "Image.asset|network|memory|file(": 1,
       "SizedBox numeric": 15,
       "TextStyle(": 1,
-      "boxShadow:": 1,
       "disableAnimationsOf": 3,
       "icon size not 20/22/24": 10
     },
@@ -4848,4 +4847,3 @@
     }
   }
 }
-

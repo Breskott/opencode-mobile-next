@@ -10,10 +10,10 @@
 //    so does any export, part or superclass the manifest cannot read.
 //    KitSegmented, once it exists, must stack full-width KitChoiceRows, with
 //    no track beside them, at text 2.0 on every phone size. STANDARDS calls
-//    G6 absolute; until kit-KitAction-v2 fixes KitActionBlock it is a ratchet
-//    whose ceiling (_overflowCeiling) is fixed here and whose committed
-//    baseline must equal what overflows and may only shrink. Kit units add
-//    scenes there, never edit this file (PROC-13).
+//    G6 absolute; until kit-KitRow-v2 fixes KitRowValue in a KitRow it is a
+//    ratchet whose ceiling (_overflowCeiling) is fixed here and whose
+//    committed baseline must equal what overflows and may only shrink. Kit
+//    units add scenes there, never edit this file (PROC-13).
 import 'support/complete_message_history.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -353,41 +353,25 @@ KitManifest readKitManifest({String kitFile = '$_kitDir/kit.dart'}) {
 /// committed baseline may hold only these combinations, each with the same
 /// error and an overflow no larger. Nothing is ever added here (kit units
 /// never edit this file, PROC-13); a new scene or combination that overflows
-/// fails. It empties once kit-KitAction-v2 fixes KitActionBlock, whose row
-/// the sheet's pinned actions use.
+/// fails.
+///
+/// The KitActionBlock and KitSheet entries the gate was built with left
+/// when the visual language merge (ddcb6bc7) made them fit, so they are
+/// gone from here too. The one addition is that merge's own code, added
+/// once by the integrator when the merge met the gate
+/// (docs/qa/integrate-vl-gates-2026-09-26/README.md): KitRowValue as a
+/// KitRow's trailing value takes its full width at text 2.0 on a narrow
+/// phone. kit-KitRow-v2 removes it (docs/ux-system/kit-api/KitRow.md,
+/// test 11: no overflow at 2.0 and 320 dp).
 const _overflowCeiling = <String, Map<String, String>>{
-  'KitActionBlock/default': {
-    '800x1280 text 2.0 ltr':
-        'A RenderFlex overflowed by 264 pixels on the right.',
-    '800x1280 text 2.0 rtl':
-        'A RenderFlex overflowed by 14 pixels on the right.',
-    '840x1180 text 2.0 ltr':
-        'A RenderFlex overflowed by 224 pixels on the right.',
-    '915x412 text 2.0 ltr':
-        'A RenderFlex overflowed by 149 pixels on the right.',
-  },
-  'KitSheet/default': {
-    '800x1280 text 2.0 ltr':
+  'KitRowGroup/default': {
+    '320x640 text 2.0 ltr':
+        'A RenderFlex overflowed by 55 pixels on the right.',
+    '320x640 text 2.0 rtl':
+        'A RenderFlex overflowed by 55 pixels on the right.',
+    '360x740 text 2.0 ltr':
         'A RenderFlex overflowed by 15 pixels on the right.',
-    '915x412 text 2.0 ltr':
-        'A RenderFlex overflowed by 15 pixels on the right.',
-  },
-  'KitSheet/disabled': {
-    '800x1280 text 2.0 ltr':
-        'A RenderFlex overflowed by 15 pixels on the right.',
-    '915x412 text 2.0 ltr':
-        'A RenderFlex overflowed by 15 pixels on the right.',
-  },
-  'KitSheet/full': {
-    '800x1280 text 2.0 ltr':
-        'A RenderFlex overflowed by 15 pixels on the right.',
-    '915x412 text 2.0 ltr':
-        'A RenderFlex overflowed by 15 pixels on the right.',
-  },
-  'KitSheet/loading': {
-    '800x1280 text 2.0 ltr':
-        'A RenderFlex overflowed by 15 pixels on the right.',
-    '915x412 text 2.0 ltr':
+    '360x740 text 2.0 rtl':
         'A RenderFlex overflowed by 15 pixels on the right.',
   },
 };
