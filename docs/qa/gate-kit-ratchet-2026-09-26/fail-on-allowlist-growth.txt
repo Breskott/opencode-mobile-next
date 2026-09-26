@@ -70,22 +70,24 @@ Shell:   lib/ui/widgets/local_agent_onboarding.dart "OutlinedButton" 3 -> 2
 Shell:   lib/ui/widgets/local_agent_onboarding.dart "Text" 39 -> 36
 00:00 +3: G2: copy, haptics, links and motion go through the kit
 00:00 +4: G7: layout is directional and bidi marks come from KitBidi
-00:00 +4 -1: G7: layout is directional and bidi marks come from KitBidi [E]
+00:00 +5: G15 inside the kit: only kit_layout.dart owns widths
+00:00 +6: G17 colour: every colour comes from a ThemeRoles role
+00:00 +7: G21 look and motion: numbers and effects come from the kit
+Shell: G21: 1 baseline entries dropped — commit the smaller numbers with KIT_RATCHET_WRITE=1 KIT_RATCHET_GATES=G21:
+Shell:   lib/ui/screens/settings/personal_settings_screens.dart "KitGlass(/GlassSurface(" 3 -> 0
+00:00 +8: G48 drafts: multiline input in a kit sheet keeps a draft
+00:00 +9: allowlists never grow (KIT-5)
+00:00 +9 -1: allowlists never grow (KIT-5) [E]
   Expected: empty
     Actual: [
-              'G7: lib/ui/widgets/markdown.dart "TextAlign.right" rose from 1 to 2 — use the directional form (start/end, AlignmentDirectional, TextAlign.start/end, PositionedDirectional) (LAY-8; STANDARDS.md §18 G7)'
+              'G21 "KitGlass(/GlassSurface(" allows lib/ui/screens/settings/personal_settings_screens.dart'
             ]
-  G7: lib/ui/widgets/markdown.dart "TextAlign.right" rose from 1 to 2 — use the directional form (start/end, AlignmentDirectional, TextAlign.start/end, PositionedDirectional) (LAY-8; STANDARDS.md §18 G7)
+  KIT-5: G21 "KitGlass(/GlassSurface(" allows lib/ui/screens/settings/personal_settings_screens.dart — not in the committed "allow" set of test/kit_ratchet_baseline.json. Exemption maps never grow; fix the file instead, or (the coordinator or the unit the rule names) add the key to the JSON by hand with `ratchet-tighten: <gate> <pattern>` in the commit body (KIT-44).
   
   package:matcher                                     expect
   package:flutter_test/src/widget_tester.dart 473:18  expect
-  test/kit_ratchet_test.dart 1554:7                   main.<fn>
+  test/kit_ratchet_test.dart 1572:5                   main.<fn>
   
-00:00 +4 -1: G15 inside the kit: only kit_layout.dart owns widths
-00:00 +5 -1: G17 colour: every colour comes from a ThemeRoles role
-00:00 +6 -1: G21 look and motion: numbers and effects come from the kit
-00:00 +7 -1: G48 drafts: multiline input in a kit sheet keeps a draft
-00:00 +8 -1: allowlists never grow (KIT-5)
 00:00 +9 -1: allowlist keys are exact paths or folders under lib/
 00:00 +10 -1: every G2/G7/G15x/G17/G21/G48 row is named once and has a reason
 00:00 +11 -1: every allowlist entry gives a real reason
@@ -111,4 +113,4 @@ Shell:   lib/ui/widgets/local_agent_onboarding.dart "Text" 39 -> 36
 00:00 +31 -1: Some tests failed.
 
 Failing tests:
-  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-1/test/kit_ratchet_test.dart: G7: layout is directional and bidi marks come from KitBidi
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-1/test/kit_ratchet_test.dart: allowlists never grow (KIT-5)
