@@ -20095,57 +20095,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get kitDiscardConfirm => 'تجاهل التغييرات';
 
   @override
-  String get kitBreadcrumb => 'Folder path';
-
-  @override
-  String kitBreadcrumbOpen(String folder) {
-    return 'Open folder $folder';
-  }
-
-  @override
-  String kitBreadcrumbOpenRoot(String root) {
-    return 'Open $root';
-  }
-
-  @override
-  String kitBreadcrumbCurrent(String folder) {
-    return 'Current folder: $folder';
-  }
-
-  @override
-  String kitBreadcrumbMore(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count more folders',
-      one: '1 more folder',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get kitCopied => 'تم النسخ';
 
   @override
   String get kitMore => 'المزيد';
-
-  @override
-  String get kitUntilOff => 'Until I turn it off';
-
-  @override
-  String get kitUntilConversation => 'For this conversation';
-
-  @override
-  String get kitUntilHour => 'For an hour';
-
-  @override
-  String get kitRiskTurnOn => 'Turn on';
-
-  @override
-  String get kitRiskNotNow => 'Not now';
-
-  @override
-  String get kitRiskTurnOff => 'Turn off';
 
   @override
   String kitChipRemove(String label) {
@@ -20340,23 +20293,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get kitTaskStopped => 'متوقف';
-
-  @override
-  String get kitAgentStripLabel => 'Agents on this task';
-
-  @override
-  String kitAgentOpen(String name) {
-    return 'Open $name\'s conversation';
-  }
-
-  @override
-  String kitAgentLabel(String hasRole, String name, String role, String state) {
-    String _temp0 = intl.Intl.selectLogic(hasRole, {
-      'yes': '$name, $role, $state',
-      'other': '$name, $state',
-    });
-    return '$_temp0';
-  }
 
   @override
   String get kitSwatchInUse => 'قيد الاستخدام';
@@ -20811,15 +20747,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String kitTabLabel(String label, int count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    return '$label, $countString';
-  }
-
-  @override
   String kitNeedsYouBadgeSuffix(int count) {
     final intl.NumberFormat countNumberFormat =
         intl.NumberFormat.decimalPattern(localeName);
@@ -20924,4 +20851,383 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get kitComposerField => 'Message';
+
+  @override
+  String get kitComposerSend => 'Send';
+
+  @override
+  String get kitComposerSending => 'Sending';
+
+  @override
+  String get kitComposerSendOffline => 'Send when back online';
+
+  @override
+  String get kitComposerSendAfter => 'Send after this reply';
+
+  @override
+  String get kitComposerAddToTurn => 'Add to this turn';
+
+  @override
+  String get kitComposerStop => 'Stop the reply';
+
+  @override
+  String get kitComposerSendAfterShort => 'Send after';
+
+  @override
+  String get kitComposerAddToTurnShort => 'Add to this turn';
+
+  @override
+  String get kitComposerDeliveryLabel => 'When to send';
+
+  @override
+  String get kitComposerSendsAfter => 'Sends after this reply';
+
+  @override
+  String get kitComposerCannotSendYet =>
+      'You can send when this reply finishes';
+
+  @override
+  String get kitComposerOffline => 'Offline · sends when you\'re back online';
+
+  @override
+  String get kitComposerTools => 'Attach and more';
+
+  @override
+  String get kitComposerVoice => 'Talk instead of typing';
+
+  @override
+  String get kitComposerEditor => 'Open full-screen editor';
+
+  @override
+  String get kitVoiceLeave => 'Leave voice mode';
+
+  @override
+  String get kitVoiceStarting => 'Getting the microphone ready…';
+
+  @override
+  String get kitVoiceListening => 'Listening…';
+
+  @override
+  String get kitVoiceTranscribing => 'Writing down what you said…';
+
+  @override
+  String get kitVoiceWaitingReply => 'Waiting for the reply…';
+
+  @override
+  String get kitVoiceSpeaking => 'Reading the reply aloud';
+
+  @override
+  String get kitVoiceReplyReady => 'The reply is ready';
+
+  @override
+  String get kitVoicePaused => 'Paused · the agent needs you';
+
+  @override
+  String get kitVoiceMicDenied => 'The microphone is off for this app';
+
+  @override
+  String get kitVoiceFailed => 'Voice stopped';
+
+  @override
+  String get kitVoiceSend => 'Send';
+
+  @override
+  String get kitVoiceDone => 'Done';
+
+  @override
+  String get kitVoiceStopReading => 'Stop reading';
+
+  @override
+  String get kitVoiceReadReply => 'Read it aloud';
+
+  @override
+  String get kitVoiceListen => 'Listen';
+
+  @override
+  String get kitVoiceReadAloud => 'Read replies aloud';
+
+  @override
+  String kitVoiceElapsed(String minutes, String seconds) {
+    return '$minutes:$seconds';
+  }
+
+  @override
+  String get kitSearchClear => 'Clear search';
+
+  @override
+  String get kitSearchFilter => 'Filter';
+
+  @override
+  String kitSearchFilterActive(String name) {
+    return 'Filter: $name';
+  }
+
+  @override
+  String kitSearchResults(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count results',
+      one: '1 result',
+      zero: 'No results',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitSearchPartial(int count) {
+    return '$count loaded · searching the server…';
+  }
+
+  @override
+  String kitSearchNoMatch(String query) {
+    return 'Nothing matches $query';
+  }
+
+  @override
+  String kitSearchNoMatchIn(String what, String query) {
+    return 'Nothing in $what matches $query';
+  }
+
+  @override
+  String get kitTopBarBack => 'Back';
+
+  @override
+  String get kitTopBarClose => 'Close';
+
+  @override
+  String get kitTopBarSearch => 'Search';
+
+  @override
+  String get kitTopBarSwitchServer => 'Switch server';
+
+  @override
+  String get kitTopBarSwitchProject => 'Switch project';
+
+  @override
+  String get kitTopBarMore => 'More actions';
+
+  @override
+  String get kitAgentStripLabel => 'Agents on this task';
+
+  @override
+  String kitAgentOpen(String name) {
+    return 'Open $name\'s conversation';
+  }
+
+  @override
+  String kitAgentLabel(String hasRole, String name, String role, String state) {
+    String _temp0 = intl.Intl.selectLogic(hasRole, {
+      'yes': '$name, $role, $state',
+      'other': '$name, $state',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get kitBreadcrumb => 'Folder path';
+
+  @override
+  String kitBreadcrumbOpen(String folder) {
+    return 'Open folder $folder';
+  }
+
+  @override
+  String kitBreadcrumbOpenRoot(String root) {
+    return 'Open $root';
+  }
+
+  @override
+  String kitBreadcrumbCurrent(String folder) {
+    return 'Current folder: $folder';
+  }
+
+  @override
+  String kitBreadcrumbMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more folders',
+      one: '1 more folder',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitCodeCopyCode => 'Copy code';
+
+  @override
+  String get kitCodeCopyCommand => 'Copy command';
+
+  @override
+  String get kitCodeCopyOutput => 'Copy output';
+
+  @override
+  String kitCodeShowAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Show all $count lines',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitCodeOpenFull => 'Open full output';
+
+  @override
+  String get kitWrapLines => 'Wrap lines';
+
+  @override
+  String kitCodeChanges(int added, int removed) {
+    return '$added added, $removed removed';
+  }
+
+  @override
+  String get kitCodeEmpty => 'Empty';
+
+  @override
+  String kitTabLabel(String label, int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$label, $countString';
+  }
+
+  @override
+  String kitQueuedTitle(int count) {
+    return 'Waiting to send · $count';
+  }
+
+  @override
+  String get kitQueuedOffline => 'Sends when you\'re back online';
+
+  @override
+  String get kitQueuedWaiting => 'Waiting to send';
+
+  @override
+  String get kitQueuedReachedServer => 'Reached the server';
+
+  @override
+  String get kitQueuedAfterReply => 'Sends after this reply';
+
+  @override
+  String get kitQueuedAddToTurn => 'Adds to this turn';
+
+  @override
+  String get kitQueuedUpdate => 'Update waiting';
+
+  @override
+  String kitQueuedAttachments(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count attachments',
+      one: '1 attachment',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitQueuedItemLabel(int index, int count, String text, String state) {
+    return 'Waiting message $index of $count: $text. $state';
+  }
+
+  @override
+  String get kitQueuedActions => 'Message actions';
+
+  @override
+  String get kitLogTitle => 'Output';
+
+  @override
+  String get kitLogShowOutput => 'Show output';
+
+  @override
+  String get kitLogLive => 'Live';
+
+  @override
+  String kitLogQuiet(String age) {
+    return 'Last line $age ago';
+  }
+
+  @override
+  String kitLogQuietSeconds(int seconds) {
+    return 'Last line $seconds s ago';
+  }
+
+  @override
+  String get kitLogEnded => 'Ended';
+
+  @override
+  String kitLogEndedExit(String code) {
+    return 'Ended · exit $code';
+  }
+
+  @override
+  String get kitLogFailed => 'Failed';
+
+  @override
+  String kitLogFailedExit(String code) {
+    return 'Failed · exit $code';
+  }
+
+  @override
+  String get kitLogEmpty => 'No output yet';
+
+  @override
+  String kitLogNewLines(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new lines',
+      one: '1 new line',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kitLogDropped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count earlier lines not shown',
+      one: '1 earlier line not shown',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kitLogReadFailed => 'Couldn\'t read the output';
+
+  @override
+  String kitLogWarningLine(String line) {
+    return 'Warning: $line';
+  }
+
+  @override
+  String kitLogErrorLine(String line) {
+    return 'Error: $line';
+  }
+
+  @override
+  String get kitUntilOff => 'Until I turn it off';
+
+  @override
+  String get kitUntilConversation => 'For this conversation';
+
+  @override
+  String get kitUntilHour => 'For an hour';
+
+  @override
+  String get kitRiskTurnOn => 'Turn on';
+
+  @override
+  String get kitRiskNotNow => 'Not now';
+
+  @override
+  String get kitRiskTurnOff => 'Turn off';
 }

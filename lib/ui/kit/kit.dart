@@ -91,6 +91,7 @@ export 'kit_tokens.dart';
 export 'kit_task_mark.dart';
 export 'kit_bottom_inset.dart';
 export 'kit_chip.dart';
+export 'kit_code_block.dart';
 export 'kit_divider.dart';
 // The retired AppGlyph and AppBrandMark stay reachable only through
 // app_iconography.dart (KitIcon.md), so new code reaches for KitIcon.
