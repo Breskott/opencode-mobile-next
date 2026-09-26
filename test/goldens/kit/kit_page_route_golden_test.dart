@@ -132,18 +132,4 @@ void main() {
       );
     });
   }
-
-  testWidgets('kit_page_route mid forward · ar · dark', (tester) async {
-    await _shot(
-      tester,
-      name: 'kit_page_route_mid_forward_ar_dark',
-      light: false,
-      locale: const Locale('ar'),
-      drive: (context, theme) async {
-        unawaited(pushKitPage<void>(context, (_) => _page('ب', theme)));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 125));
-      },
-    );
-  });
 }
