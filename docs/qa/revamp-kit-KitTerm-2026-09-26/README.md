@@ -46,8 +46,7 @@
 
 ## 2. Builds
 
-- Branch `revamp/kit-KitTerm`, base `b67e3276`, code head: the commit this
-  record is committed alongside.
+- Branch `revamp/kit-KitTerm`, base `b67e3276`, code head `b98b1933`.
 - No APK (unit agents do not build; R19/R20 reserve device proof for the
   coordinator).
 
