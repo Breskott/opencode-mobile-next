@@ -1,6 +1,5 @@
-machine_lock: got test slot 3 after 6s
-00:00 +0: loading test/kit/kit_manifest_test.dart
-00:00 +0: G4: the manifest reads the kit library
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-3/test/kit/kit_manifest_test.dart
+00:00 +0: G4: the manifest reads the kit library and every kit file
 00:00 +1: G4: every kit part and opener meets the manifest (allowlist only shrinks)
 00:00 +1 -1: G4: every kit part and opener meets the manifest (allowlist only shrinks) [E]
   10 kit manifest violation(s) break STANDARDS.md G4 (NAME-1, KIT-10–KIT-14, TEST-9, TEST-14, TEST-15). Fix the part; the allowlist only shrinks:
@@ -14,10 +13,10 @@ machine_lock: got test slot 3 after 6s
     - overflow · KitZzProbe: not in test/text_scale_overflow_test.dart
     - openerReturn · showKitZzProbe: returns void, expected Future<…>
     - openerKey · showKitZzProbe: no optional Key? …Key parameter
-  package:matcher                        fail
-  test/kit/kit_manifest_test.dart 715:7  main.<fn>
+  package:matcher                         fail
+  test/kit/kit_manifest_test.dart 1651:7  main.<fn>
   
 00:00 +1 -1: Some tests failed.
 
 Failing tests:
-  test/kit/kit_manifest_test.dart: G4: every kit part and opener meets the manifest (allowlist only shrinks)
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-3/test/kit/kit_manifest_test.dart: G4: every kit part and opener meets the manifest (allowlist only shrinks)

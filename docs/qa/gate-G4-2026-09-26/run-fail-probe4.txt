@@ -1,0 +1,39 @@
+Waiting for another flutter command to release the startup lock...
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-3/test/kit/kit_manifest_test.dart
+00:00 +0: G4: the manifest reads the kit library and every kit file
+00:00 +1: G4: every kit part and opener meets the manifest (allowlist only shrinks)
+00:00 +1 -1: G4: every kit part and opener meets the manifest (allowlist only shrinks) [E]
+  26 kit manifest violation(s) break STANDARDS.md G4 (NAME-1, KIT-10–KIT-14, TEST-9, TEST-14, TEST-15). Fix the part; the allowlist only shrinks:
+    - exported · KitZzBare: lib/ui/kit/kit_zz_send.dart is not reachable from lib/ui/kit/kit.dart
+    - exported · KitZzLoaded: lib/ui/kit/kit_zz_send.dart is not reachable from lib/ui/kit/kit.dart
+    - exported · KitZzScene: lib/ui/kit/scenes/kit_zz_scene.dart is not reachable from lib/ui/kit/kit.dart
+    - exported · KitZzSend: lib/ui/kit/kit_zz_send.dart is not reachable from lib/ui/kit/kit.dart
+    - name · KitZzBare: declared in lib/ui/kit/kit_zz_send.dart, not lib/ui/kit/kit_zz_bare.dart or lib/ui/kit/chat/kit_zz_bare.dart
+    - name · KitZzLoaded: declared in lib/ui/kit/kit_zz_send.dart, not lib/ui/kit/kit_zz_loaded.dart or lib/ui/kit/chat/kit_zz_loaded.dart
+    - states · KitZzBare: "States: none" without a reason; write "States: none — <why it has no states>."
+    - states · KitZzSend: declares none but needs loading (shows server data sessions (Future<List<String>>)), empty (shows server data sessions (Future<List<String>>)), error (shows server data sessions (Future<List<String>>)), disabled (nullable callback onPressed), working (sends through working)
+    - stateScenes · KitZzLoaded: no 412x915 golden kit_zz_loaded_loading_…dark, kit_zz_loaded_loading_…light
+    - gallery · KitZzBare: no test/goldens/kit/kit_zz_bare_golden_test.dart
+    - gallery · KitZzLoaded: test/goldens/kit/kit_zz_loaded_golden_test.dart lacks kitGallerySizes, kitGalleryScaledSizes, a …text2… golden at textScale: 2, an …_ar_… golden in Locale('ar')
+    - gallery · KitZzScene: test/goldens/kit/kit_zz_scene_golden_test.dart has no dark or light golden
+    - gallery · KitZzSend: no test/goldens/kit/kit_zz_send_golden_test.dart
+    - test · KitZzBare: no test/kit/kit_zz_bare_test.dart
+    - test · KitZzLoaded: no test/kit/kit_zz_loaded_test.dart
+    - test · KitZzSend: no test/kit/kit_zz_send_test.dart
+    - docRow · KitZzBare: no [KitZzBare] row in the kit.dart table
+    - docRow · KitZzLoaded: no [KitZzLoaded] row in the kit.dart table
+    - docRow · KitZzScene: no [KitZzScene] row in the kit.dart table
+    - docRow · KitZzSend: no [KitZzSend] row in the kit.dart table
+    - motion · KitZzBare: not in test/kit_motion_test.dart
+    - motion · KitZzLoaded: not in test/kit_motion_test.dart
+    - motion · KitZzSend: not in test/kit_motion_test.dart
+    - overflow · KitZzBare: not in test/text_scale_overflow_test.dart
+    - overflow · KitZzLoaded: not in test/text_scale_overflow_test.dart
+    - overflow · KitZzSend: not in test/text_scale_overflow_test.dart
+  package:matcher                         fail
+  test/kit/kit_manifest_test.dart 1651:7  main.<fn>
+  
+00:00 +1 -1: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_d514fdd8-8d7-3/test/kit/kit_manifest_test.dart: G4: every kit part and opener meets the manifest (allowlist only shrinks)
