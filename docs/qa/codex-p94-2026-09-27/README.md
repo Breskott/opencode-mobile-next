@@ -113,4 +113,8 @@ Existing UI behavior/tests are unchanged; this is a new API, not an enabled UI f
 
 Implemented: backend API and tests. Enabled: no, awaiting UI adapter/highlights.
 Verified: formatting and limited matcher smoke only; Flutter verification blocked.
+Committed: implementation and tests in local commit `42a99ffc` on `codex/p94`.
+The final smoke output and this QA status update remain uncommitted: the amend
+attempt could not create the shared worktree `index.lock` (read-only filesystem).
+The requested commit message is preserved in root `COMMIT_MSG.txt`.
 Deployed/released: no.
