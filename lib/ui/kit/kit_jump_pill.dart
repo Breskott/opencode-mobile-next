@@ -118,7 +118,11 @@ class KitJumpPillLayer extends StatelessWidget {
     return Stack(
       children: [
         child,
-        Positioned.fill(
+        PositionedDirectional(
+          start: 0,
+          end: 0,
+          top: 0,
+          bottom: 0,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final tokens = KitTokens.of(context);
@@ -159,9 +163,11 @@ class KitJumpPillLayer extends StatelessWidget {
 /// scale). Under `KitMotion.reduced`, shows and hides at once and settles
 /// in one `pump()`. No haptics.
 ///
-/// Hidden (`visible: false`) is a [Visibility] with `maintainState: true`
-/// and every other `maintain*` flag at its default `false`: the pill stays
-/// mounted but is offstage, out of hit testing, semantics and focus.
+/// Hidden (`visible: false`) takes effect the moment [visible] flips: the
+/// pill is at once out of hit testing ([IgnorePointer]), semantics
+/// ([ExcludeSemantics]) and focus ([ExcludeFocus]); only the fade keeps
+/// painting until the exit settles. Settled hidden, a [Visibility] with
+/// `maintainState: true` keeps it mounted but offstage.
 class _KitJumpPillTransition extends StatefulWidget {
   const _KitJumpPillTransition({
     required this.label,
@@ -198,6 +204,23 @@ class _KitJumpPillTransitionState extends State<_KitJumpPillTransition>
   bool _ranInitial = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Rebuild when the exit settles (dismissed) or an entrance starts, so
+    // the Visibility below goes offstage once the fade has finished — the
+    // AnimatedBuilder alone only rebuilds its own subtree.
+    _controller.addStatusListener(_onStatus);
+  }
+
+  void _onStatus(AnimationStatus status) {
+    if (!mounted) return;
+    if (status == AnimationStatus.dismissed ||
+        status == AnimationStatus.forward) {
+      setState(() {});
+    }
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_ranInitial) return;
@@ -232,6 +255,7 @@ class _KitJumpPillTransitionState extends State<_KitJumpPillTransition>
 
   @override
   void dispose() {
+    _controller.removeStatusListener(_onStatus);
     _curve.dispose();
     _controller.dispose();
     super.dispose();
@@ -250,31 +274,42 @@ class _KitJumpPillTransitionState extends State<_KitJumpPillTransition>
     final away = widget.edge == KitJumpEdge.bottom
         ? tokens.space2
         : -tokens.space2;
+    final hidden = !widget.visible;
     return Visibility(
       visible: paintable,
       maintainState: true,
       maintainAnimation: true,
-      child: AnimatedBuilder(
-        animation: _curve,
-        builder: (context, child) {
-          final t = _curve.value.clamp(0.0, 1.0);
-          return Opacity(
-            opacity: t,
-            child: Transform.translate(
-              offset: Offset(0, (1 - t) * away),
-              child: child,
-            ),
-          );
-        },
-        child: _KitJumpPillButton(
-          label: widget.label,
-          icon: widget.icon,
-          onPressed: widget.onPressed,
-          pillKey: widget.pillKey,
+      // The same three wrappers in both states (only their flags change),
+      // so the button's own state survives a toggle.
+      child: IgnorePointer(
+        ignoring: hidden,
+        child: ExcludeSemantics(
+          excluding: hidden,
+          child: ExcludeFocus(excluding: hidden, child: _animated(away)),
         ),
       ),
     );
   }
+
+  Widget _animated(double away) => AnimatedBuilder(
+    animation: _curve,
+    builder: (context, child) {
+      final t = _curve.value.clamp(0.0, 1.0);
+      return Opacity(
+        opacity: t,
+        child: Transform.translate(
+          offset: Offset(0, (1 - t) * away),
+          child: child,
+        ),
+      );
+    },
+    child: _KitJumpPillButton(
+      label: widget.label,
+      icon: widget.icon,
+      onPressed: widget.onPressed,
+      pillKey: widget.pillKey,
+    ),
+  );
 }
 
 /// The pill's look (KitJumpPill.md "Tokens"): a [KitShape.pill] stadium in
@@ -333,6 +368,10 @@ class _KitJumpPillButtonState extends State<_KitJumpPillButton> {
       ),
     );
 
+    // KitJumpPill.md "Tokens": the `button` label is one line, two from
+    // 2.0 text (kit_request_card.dart's own large-text test).
+    final maxLines = MediaQuery.textScalerOf(context).scale(10) >= 20 ? 2 : 1;
+
     Widget pill = ConstrainedBox(
       constraints: BoxConstraints(minHeight: tokens.minTarget),
       child: DecoratedBox(
@@ -353,6 +392,10 @@ class _KitJumpPillButtonState extends State<_KitJumpPillButton> {
                   widget.label,
                   role: KitTextRole.button,
                   tone: KitTextTone.primary,
+                  maxLines: maxLines,
+                  // Last resort only: the pill takes the area's width less
+                  // two gutters before a label ever reaches its line limit.
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -361,28 +404,24 @@ class _KitJumpPillButtonState extends State<_KitJumpPillButton> {
       ),
     );
 
-    if (_focused) {
-      pill = DecoratedBox(
-        position: DecorationPosition.foreground,
-        decoration: ShapeDecoration(
-          shape: StadiumBorder(
-            side: BorderSide(
-              color: roles.accent,
-              width: KitTokens.focusRingWidth(context),
-              strokeAlign: BorderSide.strokeAlignOutside,
-            ),
-          ),
-        ),
-        child: pill,
-      );
-    }
-
-    return Semantics(
-      button: true,
-      label: widget.label,
-      container: true,
-      excludeSemantics: true,
-      onTap: widget.onPressed,
+    // The ring wraps the clipped Material, not its child: drawn outside the
+    // stadium (strokeAlignOutside), it would otherwise be clipped away by
+    // the Material's own ShapeBorderClipper. The DecoratedBox is always in
+    // the tree (an empty decoration while unfocused) so a focus change
+    // never remounts the InkWell that holds the focus.
+    final button = DecoratedBox(
+      position: DecorationPosition.foreground,
+      decoration: _focused
+          ? ShapeDecoration(
+              shape: StadiumBorder(
+                side: BorderSide(
+                  color: roles.accent,
+                  width: KitTokens.focusRingWidth(context),
+                  strokeAlign: BorderSide.strokeAlignOutside,
+                ),
+              ),
+            )
+          : const BoxDecoration(),
       child: Material(
         type: MaterialType.transparency,
         shape: shape,
@@ -399,6 +438,15 @@ class _KitJumpPillButtonState extends State<_KitJumpPillButton> {
           child: pill,
         ),
       ),
+    );
+
+    return Semantics(
+      button: true,
+      label: widget.label,
+      container: true,
+      excludeSemantics: true,
+      onTap: widget.onPressed,
+      child: button,
     );
   }
 }
