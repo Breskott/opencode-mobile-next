@@ -20456,6 +20456,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String kitTabLabel(String label, int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$label, $countString';
+  }
+
+  @override
   String kitNeedsYouBadgeSuffix(int count) {
     final intl.NumberFormat countNumberFormat =
         intl.NumberFormat.decimalPattern(localeName);

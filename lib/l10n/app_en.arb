@@ -23007,6 +23007,19 @@
       }
     }
   },
+  "kitTabLabel": "{label}, {count}",
+  "@kitTabLabel": {
+    "description": "KitTabStrip: a tab's semantics when it shows a count, e.g. 'Working, 3'. label is the host's tab word",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
   "kitNeedsYouBadgeSuffix": "{count, plural, =1{, 1 need you} other{, {count} need you}}",
   "@kitNeedsYouBadgeSuffix": {
     "description": "KitNeedsYou.badge: appended to the host's own semantics label so the count is read once, never by the badge itself",

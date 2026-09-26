@@ -1,12 +1,352 @@
+// Views that each keep their own state, switched from a strip of labelled
+// tabs (docs/ux-system/kit-api/KitTabSwitcher.md): the body alone
+// ([KitTabSwitcher], the shell's destinations under KitNav), the strip alone
+// ([KitTabStrip], a board that pages its own lanes) and both together
+// ([KitTabSwitcher.tabs]).
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 
+import '../../../l10n/app_localizations.dart';
 import '../kit_motion.dart';
+import '../kit_needs_you.dart';
+import '../kit_tappable.dart';
+import '../kit_text.dart';
+import '../kit_tokens.dart';
+import 'kit_motion_parts.dart';
 
-/// The shell's destinations, kept alive, switched with a fade-through
-/// (design standard §10): the tab being left fades out in the first third of
-/// [KitMotion.standard], then the chosen one fades in and settles from 97 %
-/// to full size. The two are never both half-visible, so the switch reads as
-/// one clean change instead of two lists blending into each other.
+/// One tab of a strip.
+@immutable
+class KitTab {
+  const KitTab({
+    required this.label,
+    this.count,
+    this.needsYou = 0,
+    this.icon,
+    this.key,
+    this.countKey,
+    this.needsYouKey,
+  });
+
+  /// The host's word ("Working"), shown as written.
+  final String label;
+
+  /// Null while the first answer comes: no number, never "0".
+  final int? count;
+
+  /// Above 0: `KitNeedsYou.badge` beside the label (LOOK-24).
+  final int needsYou;
+
+  /// An optional 20 dp glyph before the label.
+  final IconData? icon;
+
+  /// On the tab.
+  final Key? key;
+
+  /// On the count.
+  final Key? countKey;
+
+  /// On the needs-you badge (present only while [needsYou] is above 0).
+  final Key? needsYouKey;
+}
+
+/// A strip of tabs: one selected, each with its words, count and needs-you
+/// badge. Scrolls sideways when the tabs do not fit, and keeps the selected
+/// tab in view. States: default, counts loading, needs you, overflowing.
+///
+/// Keyboard: the strip is one Tab stop, entered on the selected tab; Left
+/// and Right (mirrored right to left) move focus, Home and End jump, Enter
+/// and Space select. Arrows never select.
+class KitTabStrip extends StatefulWidget {
+  const KitTabStrip({
+    super.key,
+    required this.tabs,
+    required this.selected,
+    required this.onSelected,
+    this.semanticsLabel,
+    this.stripKey,
+  }) : assert(
+         tabs.length >= 2 && tabs.length <= 8,
+         'KitTabStrip takes 2 to 8 tabs',
+       ),
+       assert(selected >= 0 && selected < tabs.length);
+
+  final List<KitTab> tabs;
+
+  /// The index of the selected tab in [tabs].
+  final int selected;
+
+  /// Called once per activation of a different tab; never for the selected
+  /// one.
+  final ValueChanged<int> onSelected;
+
+  /// The group's name ("Columns"); null: none.
+  final String? semanticsLabel;
+
+  /// On the strip's scroll view.
+  final Key? stripKey;
+
+  @override
+  State<KitTabStrip> createState() => _KitTabStripState();
+}
+
+class _KitTabStripState extends State<KitTabStrip> {
+  final _controller = ScrollController();
+  List<GlobalKey> _keys = [];
+  List<FocusNode> _nodes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _sync();
+    // The selected tab starts in view (an overflowing strip whose last tab
+    // is selected), without motion.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _reveal(widget.selected, animate: false),
+    );
+  }
+
+  void _sync() {
+    final n = widget.tabs.length;
+    if (_keys.length == n) return;
+    for (final node in _nodes.skip(n)) {
+      node.dispose();
+    }
+    _keys = [
+      for (var i = 0; i < n; i++) i < _keys.length ? _keys[i] : GlobalKey(),
+    ];
+    _nodes = [
+      for (var i = 0; i < n; i++)
+        i < _nodes.length ? _nodes[i] : FocusNode(debugLabel: 'KitTab $i'),
+    ];
+  }
+
+  @override
+  void didUpdateWidget(KitTabStrip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _sync();
+    if (oldWidget.selected != widget.selected) {
+      final index = widget.selected;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reveal(index));
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    for (final node in _nodes) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
+  void _reveal(int index, {bool animate = true}) {
+    if (!mounted || index >= _keys.length) return;
+    final context = _keys[index].currentContext;
+    if (context == null) return;
+    final duration = !animate || KitMotion.reduced(this.context)
+        ? Duration.zero
+        : KitMotion.standard;
+    // Scrolls only when the tab is cut off at either edge; a tab already in
+    // view stays where it is.
+    for (final policy in const [
+      ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+    ]) {
+      Scrollable.ensureVisible(
+        context,
+        alignmentPolicy: policy,
+        duration: duration,
+        curve: KitMotion.enter,
+      );
+    }
+  }
+
+  KeyEventResult _onKey(FocusNode _, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final current = _nodes.indexWhere((node) => node.hasPrimaryFocus);
+    if (current < 0) return KeyEventResult.ignored;
+    final forward = Directionality.of(context) == TextDirection.ltr ? 1 : -1;
+    final last = _nodes.length - 1;
+    final key = event.logicalKey;
+    final int target;
+    if (key == LogicalKeyboardKey.arrowRight) {
+      target = (current + forward).clamp(0, last);
+    } else if (key == LogicalKeyboardKey.arrowLeft) {
+      target = (current - forward).clamp(0, last);
+    } else if (key == LogicalKeyboardKey.home) {
+      target = 0;
+    } else if (key == LogicalKeyboardKey.end) {
+      target = last;
+    } else {
+      return KeyEventResult.ignored;
+    }
+    if (target != current) {
+      _nodes[target].requestFocus();
+      _reveal(target);
+    }
+    return KeyEventResult.handled;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    final tabs = widget.tabs;
+    return Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: widget.semanticsLabel,
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onKeyEvent: _onKey,
+        child: ScrollConfiguration(
+          // A horizontal strip keeps no permanent scrollbar (the desktop
+          // rule for strips).
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: SingleChildScrollView(
+            key: widget.stripKey,
+            controller: _controller,
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.gutter),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < tabs.length; i++) ...[
+                  if (i > 0) SizedBox(width: tokens.space2),
+                  KeyedSubtree(
+                    key: _keys[i],
+                    child: ExcludeFocusTraversal(
+                      excluding: i != widget.selected,
+                      child: _KitTabView(
+                        key: tabs[i].key,
+                        tab: tabs[i],
+                        selected: i == widget.selected,
+                        focusNode: _nodes[i],
+                        onTap: i == widget.selected
+                            ? _none
+                            : () => widget.onSelected(i),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static void _none() {}
+}
+
+/// One tab: a pill that cross-fades in when selected, its words, count and
+/// needs-you badge, read as one button.
+class _KitTabView extends StatelessWidget {
+  const _KitTabView({
+    super.key,
+    required this.tab,
+    required this.selected,
+    required this.focusNode,
+    required this.onTap,
+  });
+
+  final KitTab tab;
+  final bool selected;
+  final FocusNode focusNode;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    final locale = Localizations.localeOf(context);
+    final l10n = lookupAppLocalizations(locale);
+    final reduced = KitMotion.reduced(context);
+    final count = tab.count;
+    final tone = selected ? KitTextTone.primary : KitTextTone.secondary;
+    final spoken = count == null
+        ? tab.label
+        : l10n.kitTabLabel(tab.label, count);
+    final icon = tab.icon;
+
+    Widget words = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[
+          Icon(
+            icon,
+            size: tokens.smallIconSize,
+            color: selected ? roles.text1 : roles.text2,
+          ),
+          SizedBox(width: tokens.space1),
+        ],
+        KitText(tab.label, role: KitTextRole.label, tone: tone, maxLines: 1),
+        if (count != null) ...[
+          SizedBox(width: tokens.space1),
+          KeyedSubtree(
+            key: tab.countKey,
+            child: KitSwap(
+              child: KitText(
+                NumberFormat.decimalPattern(locale.toString()).format(count),
+                key: ValueKey(count),
+                role: KitTextRole.label,
+                tone: KitTextTone.primary,
+                tabular: true,
+                maxLines: 1,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+    words = Semantics(label: spoken, excludeSemantics: true, child: words);
+    if (tab.needsYou > 0) {
+      // Room after the words for the badge, which sits at its child's
+      // top-end corner.
+      words = Padding(
+        padding: const EdgeInsetsDirectional.only(end: KitTokens.badgeMinWidth),
+        child: words,
+      );
+    }
+
+    final fill = ShapeDecoration(
+      color: selected ? roles.surface3 : roles.surface3.withValues(alpha: 0),
+      shape: tokens.shapeOf(KitShape.pill),
+    );
+    return MergeSemantics(
+      child: AnimatedContainer(
+        duration: reduced ? Duration.zero : KitMotion.quick,
+        curve: KitMotion.enter,
+        decoration: fill,
+        child: KitTappable(
+          onTap: onTap,
+          selected: selected,
+          shape: KitShape.pill,
+          surface: selected ? KitSurfaceLevel.surface3 : KitSurfaceLevel.ground,
+          focusNode: focusNode,
+          child: Padding(
+            padding: EdgeInsetsDirectional.symmetric(horizontal: tokens.space3),
+            child: KitNeedsYou.badge(
+              key: tab.needsYou > 0 ? tab.needsYouKey : null,
+              count: tab.needsYou,
+              child: words,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The destinations, kept alive, switched with a fade-through (design
+/// standard §10): the one being left fades out in the first third of
+/// [KitMotion.standard], then the chosen one fades in. The two are never
+/// both half-visible, so the switch reads as one clean change. Nothing
+/// scales (MOT-2).
 ///
 /// Every destination keeps its state (a draft, a scroll position). The
 /// chosen one responds at once: it takes touches, focus and screen-reader
@@ -15,25 +355,59 @@ import '../kit_motion.dart';
 /// selection changes. A quick change of mind starts from what is painted
 /// now, so nothing queues or flashes.
 ///
-/// Paint and transform only (opacity and scale over each destination's own
-/// repaint boundary). With [reduceMotion] or the system's "remove
-/// animations" the chosen destination shows in the next frame.
+/// Paint only (opacity over each destination's own repaint boundary). With
+/// [reduceMotion] or the system's "remove animations" the chosen destination
+/// shows in the next frame.
+///
+/// [KitTabSwitcher.new] is the body alone (the shell's destinations, whose
+/// strip is KitNav); [KitTabSwitcher.tabs] puts a [KitTabStrip] over it.
 class KitTabSwitcher extends StatefulWidget {
   const KitTabSwitcher({
     super.key,
     required this.index,
     required this.children,
     this.reduceMotion = false,
-  }) : assert(index >= 0 && index < children.length);
+  }) : _tabs = null,
+       _onSelected = null,
+       _semanticsLabel = null,
+       _stripKey = null,
+       assert(index >= 0 && index < children.length);
+
+  /// The strip over the kept-alive body. [tabs] and [children] have the same
+  /// length.
+  const KitTabSwitcher.tabs({
+    super.key,
+    required List<KitTab> tabs,
+    required this.index,
+    required ValueChanged<int> onSelected,
+    required this.children,
+    this.reduceMotion = false,
+    String? semanticsLabel,
+    Key? stripKey,
+  }) : _tabs = tabs,
+       _onSelected = onSelected,
+       _semanticsLabel = semanticsLabel,
+       _stripKey = stripKey,
+       assert(
+         tabs.length == children.length,
+         'KitTabSwitcher.tabs: tabs and children have the same length',
+       ),
+       assert(index >= 0 && index < children.length);
 
   final int index;
   final List<Widget> children;
   final bool reduceMotion;
 
+  final List<KitTab>? _tabs;
+  final ValueChanged<int>? _onSelected;
+  final String? _semanticsLabel;
+  final Key? _stripKey;
+
   /// The share of the switch the old destination takes to fade out.
   static const fadeOutShare = .35;
 
-  /// The size the arriving destination settles from.
+  /// Retired by kit-KitTabSwitcher-v2: the body no longer scales (MOT-2,
+  /// Appendix A #23). Kept so existing references compile (KIT-43).
   static const settleFrom = .97;
 
   @override
@@ -94,20 +468,37 @@ class _KitTabSwitcherState extends State<KitTabSwitcher>
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _controller,
-    builder: (context, _) => Stack(
-      fit: StackFit.expand,
+  Widget build(BuildContext context) {
+    final body = AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) => Stack(
+        fit: StackFit.expand,
+        children: [
+          for (var i = 0; i < widget.children.length; i++)
+            _destination(i, _opacity(i)),
+        ],
+      ),
+    );
+    final tabs = widget._tabs;
+    final onSelected = widget._onSelected;
+    if (tabs == null || onSelected == null) return body;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (var i = 0; i < widget.children.length; i++)
-          _destination(i, _opacity(i)),
+        KitTabStrip(
+          tabs: tabs,
+          selected: widget.index,
+          onSelected: onSelected,
+          semanticsLabel: widget._semanticsLabel,
+          stripKey: widget._stripKey,
+        ),
+        Expanded(child: body),
       ],
-    ),
-  );
+    );
+  }
 
   Widget _destination(int i, double opacity) {
     final selected = i == widget.index;
-    const from = KitTabSwitcher.settleFrom;
     return Offstage(
       offstage: !selected && opacity == 0,
       child: TickerMode(
@@ -121,10 +512,7 @@ class _KitTabSwitcherState extends State<KitTabSwitcher>
               child: Opacity(
                 opacity: opacity,
                 alwaysIncludeSemantics: selected,
-                child: Transform.scale(
-                  scale: opacity >= 1 ? 1 : from + (1 - from) * opacity,
-                  child: RepaintBoundary(child: widget.children[i]),
-                ),
+                child: RepaintBoundary(child: widget.children[i]),
               ),
             ),
           ),
