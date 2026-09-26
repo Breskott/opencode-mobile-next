@@ -1,0 +1,495 @@
+Waiting for another flutter command to release the startup lock...
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading <worktree>/test/kit_motion_test.dart
+00:00 +0: <worktree>/test/kit_motion_test.dart: manifest the G4 manifest is read (the parser still works)
+00:00 +1: <worktree>/test/kit_motion_test.dart: manifest every kit.dart part has reduced-motion samples (G8x)
+00:00 +2: <worktree>/test/kit_motion_test.dart: manifest this file registers only the parts that predate G8x
+00:00 +3: <worktree>/test/kit_motion_test.dart: manifest the ratchet only shrinks and names real samples
+00:00 +4: <worktree>/test/kit_motion_test.dart: manifest registrations name parts kit.dart exports
+00:00 +5: <worktree>/test/kit_motion_test.dart: KitActionBlock (MOT-7) default settles at once under system
+00:00 +6: <worktree>/test/kit_motion_test.dart: KitActionBlock (MOT-7) working settles at once under system
+00:00 +7: <worktree>/test/kit_motion_test.dart: KitActionBlock (MOT-7) default settles at once under effectsOff
+00:00 +8: <worktree>/test/kit_motion_test.dart: KitActionBlock (MOT-7) working settles at once under effectsOff
+00:00 +9: <worktree>/test/kit_motion_test.dart: KitActionStack (MOT-7) default settles at once under system
+00:00 +10: <worktree>/test/kit_motion_test.dart: KitActionStack (MOT-7) default settles at once under effectsOff
+00:00 +11: <worktree>/test/kit_motion_test.dart: KitAnimatedRows (MOT-7) default settles at once under system
+00:00 +12: <worktree>/test/kit_motion_test.dart: KitAnimatedRows (MOT-7) row inserted changes and settles at once under system
+00:00 +13: <worktree>/test/kit_motion_test.dart: KitAnimatedRows (MOT-7) row removed changes and settles at once under system
+00:00 +14: <worktree>/test/kit_motion_test.dart: KitAnimatedRows (MOT-7) default settles at once under effectsOff
+00:00 +15: <worktree>/test/kit_motion_test.dart: KitAnimatedRows (MOT-7) row inserted changes and settles at once under effectsOff
+00:00 +16: <worktree>/test/kit_motion_test.dart: KitAnimatedRows (MOT-7) row removed changes and settles at once under effectsOff
+00:01 +17: <worktree>/test/kit_motion_test.dart: KitAskLine (MOT-7) default settles at once under system
+00:01 +18: <worktree>/test/kit_motion_test.dart: KitAskLine (MOT-7) default settles at once under effectsOff
+00:01 +19: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) primary working settles at once under system
+00:01 +20: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) secondary working settles at once under system
+00:01 +21: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) tertiary settles at once under system
+00:01 +22: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) disabled settles at once under system
+00:01 +23: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) working ends changes and settles at once under system
+00:01 +24: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) working ends with an icon changes and settles at once under system
+00:01 +25: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) primary working settles at once under effectsOff
+00:01 +26: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) secondary working settles at once under effectsOff
+00:01 +27: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) tertiary settles at once under effectsOff
+00:01 +28: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) disabled settles at once under effectsOff
+00:01 +29: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) working ends changes and settles at once under effectsOff
+00:01 +30: <worktree>/test/kit_motion_test.dart: KitButton (MOT-7) working ends with an icon changes and settles at once under effectsOff
+00:01 +31: <worktree>/test/kit_motion_test.dart: KitChevron (MOT-7) default settles at once under system
+00:01 +32: <worktree>/test/kit_motion_test.dart: KitChevron (MOT-7) default settles at once under effectsOff
+00:01 +33: <worktree>/test/kit_motion_test.dart: KitConfirmSheet (MOT-7) default settles at once under system
+00:01 +34: <worktree>/test/kit_motion_test.dart: KitConfirmSheet (MOT-7) working settles at once under system
+00:01 +35: <worktree>/test/kit_motion_test.dart: KitConfirmSheet (MOT-7) details open changes and settles at once under system
+00:01 +36: <worktree>/test/kit_motion_test.dart: KitConfirmSheet (MOT-7) default settles at once under effectsOff
+00:01 +37: <worktree>/test/kit_motion_test.dart: KitConfirmSheet (MOT-7) working settles at once under effectsOff
+00:01 +38: <worktree>/test/kit_motion_test.dart: KitConfirmSheet (MOT-7) details open changes and settles at once under effectsOff
+00:01 +39: <worktree>/test/kit_motion_test.dart: KitEntrance (MOT-7) default settles at once under system
+00:01 +40: <worktree>/test/kit_motion_test.dart: KitEntrance (MOT-7) trigger changes changes and settles at once under system
+00:01 +41: <worktree>/test/kit_motion_test.dart: KitEntrance (MOT-7) default settles at once under effectsOff
+00:01 +42: <worktree>/test/kit_motion_test.dart: KitEntrance (MOT-7) trigger changes changes and settles at once under effectsOff
+00:01 +43: <worktree>/test/kit_motion_test.dart: KitExpandRow (MOT-7) closed settles at once under system
+00:01 +44: <worktree>/test/kit_motion_test.dart: KitExpandRow (MOT-7) open settles at once under system
+00:01 +45: <worktree>/test/kit_motion_test.dart: KitExpandRow (MOT-7) opens on press changes and settles at once under system
+00:01 +46: <worktree>/test/kit_motion_test.dart: KitExpandRow (MOT-7) closes on press changes and settles at once under system
+00:01 +47: <worktree>/test/kit_motion_test.dart: KitExpandRow (MOT-7) closed settles at once under effectsOff
+00:01 +48: <worktree>/test/kit_motion_test.dart: KitExpandRow (MOT-7) open settles at once under effectsOff
+00:01 +49: <worktree>/test/kit_motion_test.dart: KitExpandRow (MOT-7) opens on press changes and settles at once under effectsOff
+00:01 +50: <worktree>/test/kit_motion_test.dart: KitExpandRow (MOT-7) closes on press changes and settles at once under effectsOff
+00:01 +51: <worktree>/test/kit_motion_test.dart: KitGlass (MOT-7) default settles at once under system
+00:01 +52: <worktree>/test/kit_motion_test.dart: KitGlass (MOT-7) default settles at once under effectsOff
+00:02 +53: <worktree>/test/kit_motion_test.dart: KitIconButton (MOT-7) default settles at once under system
+00:02 +54: <worktree>/test/kit_motion_test.dart: KitIconButton (MOT-7) default settles at once under effectsOff
+00:02 +55: <worktree>/test/kit_motion_test.dart: KitIllustration (MOT-7) entrance settles at once under system
+00:02 +56: <worktree>/test/kit_motion_test.dart: KitIllustration (MOT-7) ambient settles at once under system
+00:02 +57: <worktree>/test/kit_motion_test.dart: KitIllustration (MOT-7) ambient turns on changes and settles at once under system
+00:02 +58: <worktree>/test/kit_motion_test.dart: KitIllustration (MOT-7) entrance settles at once under effectsOff
+00:02 +59: <worktree>/test/kit_motion_test.dart: KitIllustration (MOT-7) ambient settles at once under effectsOff
+00:02 +60: <worktree>/test/kit_motion_test.dart: KitIllustration (MOT-7) ambient turns on changes and settles at once under effectsOff
+00:02 +61: <worktree>/test/kit_motion_test.dart: KitInset (MOT-7) default settles at once under system
+00:02 +62: <worktree>/test/kit_motion_test.dart: KitInset (MOT-7) default settles at once under effectsOff
+00:02 +63: <worktree>/test/kit_motion_test.dart: KitLoadingBar (MOT-7) loading settles at once under system
+00:02 +64: <worktree>/test/kit_motion_test.dart: KitLoadingBar (MOT-7) idle settles at once under system
+00:02 +65: <worktree>/test/kit_motion_test.dart: KitLoadingBar (MOT-7) loading ends changes and settles at once under system
+00:02 +66: <worktree>/test/kit_motion_test.dart: KitLoadingBar (MOT-7) loading settles at once under effectsOff
+00:02 +67: <worktree>/test/kit_motion_test.dart: KitLoadingBar (MOT-7) idle settles at once under effectsOff
+00:02 +68: <worktree>/test/kit_motion_test.dart: KitLoadingBar (MOT-7) loading ends changes and settles at once under effectsOff
+00:02 +69: <worktree>/test/kit_motion_test.dart: KitNotice (MOT-7) default settles at once under system
+00:02 +70: <worktree>/test/kit_motion_test.dart: KitNotice (MOT-7) default settles at once under effectsOff
+00:02 +71: <worktree>/test/kit_motion_test.dart: KitPanel (MOT-7) default settles at once under system
+00:02 +72: <worktree>/test/kit_motion_test.dart: KitPanel (MOT-7) default settles at once under effectsOff
+00:02 +73: <worktree>/test/kit_motion_test.dart: KitPortalScene (MOT-7) ambient settles at once under system
+00:02 +74: <worktree>/test/kit_motion_test.dart: KitPortalScene (MOT-7) ambient settles at once under effectsOff
+00:02 +75: <worktree>/test/kit_motion_test.dart: KitProgressView (MOT-7) waiting settles at once under system
+00:02 +76: <worktree>/test/kit_motion_test.dart: KitProgressView (MOT-7) known settles at once under system
+00:02 +77: <worktree>/test/kit_motion_test.dart: KitProgressView (MOT-7) progress moves changes and settles at once under system
+00:02 +78: <worktree>/test/kit_motion_test.dart: KitProgressView (MOT-7) waiting settles at once under effectsOff
+00:02 +79: <worktree>/test/kit_motion_test.dart: KitProgressView (MOT-7) known settles at once under effectsOff
+00:02 +80: <worktree>/test/kit_motion_test.dart: KitProgressView (MOT-7) progress moves changes and settles at once under effectsOff
+00:02 +81: <worktree>/test/kit_motion_test.dart: KitRefresh (MOT-7) default settles at once under system
+00:02 +82: <worktree>/test/kit_motion_test.dart: KitRefresh (MOT-7) pulled and released changes and settles at once under system
+00:02 +83: <worktree>/test/kit_motion_test.dart: KitRefresh (MOT-7) default settles at once under effectsOff
+00:02 +84: <worktree>/test/kit_motion_test.dart: KitRefresh (MOT-7) pulled and released changes and settles at once under effectsOff
+00:02 +85: <worktree>/test/kit_motion_test.dart: KitRequestCard (MOT-7) default settles at once under system
+00:02 +86: <worktree>/test/kit_motion_test.dart: KitRequestCard (MOT-7) default settles at once under effectsOff
+00:02 +87: <worktree>/test/kit_motion_test.dart: KitReveal (MOT-7) default settles at once under system
+00:02 +88: <worktree>/test/kit_motion_test.dart: KitReveal (MOT-7) child arrives changes and settles at once under system
+00:02 +89: <worktree>/test/kit_motion_test.dart: KitReveal (MOT-7) child leaves changes and settles at once under system
+00:02 +90: <worktree>/test/kit_motion_test.dart: KitReveal (MOT-7) default settles at once under effectsOff
+00:02 +91: <worktree>/test/kit_motion_test.dart: KitReveal (MOT-7) child arrives changes and settles at once under effectsOff
+00:02 +92: <worktree>/test/kit_motion_test.dart: KitReveal (MOT-7) child leaves changes and settles at once under effectsOff
+00:02 +93: <worktree>/test/kit_motion_test.dart: KitRow (MOT-7) default settles at once under system
+00:02 +94: <worktree>/test/kit_motion_test.dart: KitRow (MOT-7) disabled settles at once under system
+00:02 +95: <worktree>/test/kit_motion_test.dart: KitRow (MOT-7) default settles at once under effectsOff
+00:03 +96: <worktree>/test/kit_motion_test.dart: KitRow (MOT-7) disabled settles at once under effectsOff
+00:03 +97: <worktree>/test/kit_motion_test.dart: KitRowIcon (MOT-7) current settles at once under system
+00:03 +98: <worktree>/test/kit_motion_test.dart: KitRowIcon (MOT-7) current settles at once under effectsOff
+00:03 +99: <worktree>/test/kit_motion_test.dart: KitRowMenu (MOT-7) default settles at once under system
+00:03 +100: <worktree>/test/kit_motion_test.dart: KitRowMenu (MOT-7) menu opens changes and settles at once under system
+00:03 +101: <worktree>/test/kit_motion_test.dart: KitRowMenu (MOT-7) default settles at once under effectsOff
+00:03 +102: <worktree>/test/kit_motion_test.dart: KitRowMenu (MOT-7) menu opens changes and settles at once under effectsOff
+00:03 +103: <worktree>/test/kit_motion_test.dart: KitScreen (MOT-7) loading settles at once under system
+00:03 +104: <worktree>/test/kit_motion_test.dart: KitScreen (MOT-7) loading ends changes and settles at once under system
+00:03 +105: <worktree>/test/kit_motion_test.dart: KitScreen (MOT-7) loading settles at once under effectsOff
+00:03 +106: <worktree>/test/kit_motion_test.dart: KitScreen (MOT-7) loading ends changes and settles at once under effectsOff
+00:03 +107: <worktree>/test/kit_motion_test.dart: KitSecretField (MOT-7) default settles at once under system
+00:03 +108: <worktree>/test/kit_motion_test.dart: KitSecretField (MOT-7) revealed changes and settles at once under system
+00:03 +109: <worktree>/test/kit_motion_test.dart: KitSecretField (MOT-7) default settles at once under effectsOff
+00:03 +110: <worktree>/test/kit_motion_test.dart: KitSecretField (MOT-7) revealed changes and settles at once under effectsOff
+00:03 +111: <worktree>/test/kit_motion_test.dart: KitSheet (MOT-7) loading settles at once under system
+00:03 +112: <worktree>/test/kit_motion_test.dart: KitSheet (MOT-7) loading settles at once under effectsOff
+00:03 +113: <worktree>/test/kit_motion_test.dart: KitSkeletonRows (MOT-7) default settles at once under system
+00:03 +114: <worktree>/test/kit_motion_test.dart: KitSkeletonRows (MOT-7) default settles at once under effectsOff
+00:03 +115: <worktree>/test/kit_motion_test.dart: KitSkeletonTranscript (MOT-7) default settles at once under system
+00:03 +116: <worktree>/test/kit_motion_test.dart: KitSkeletonTranscript (MOT-7) default settles at once under effectsOff
+00:03 +117: <worktree>/test/kit_motion_test.dart: KitStateView (MOT-7) working settles at once under system
+00:03 +118: <worktree>/test/kit_motion_test.dart: KitStateView (MOT-7) illustrated settles at once under system
+00:03 +119: <worktree>/test/kit_motion_test.dart: KitStateView (MOT-7) details open changes and settles at once under system
+00:03 +120: <worktree>/test/kit_motion_test.dart: KitStateView (MOT-7) working settles at once under effectsOff
+00:03 +121: <worktree>/test/kit_motion_test.dart: KitStateView (MOT-7) illustrated settles at once under effectsOff
+00:03 +122: <worktree>/test/kit_motion_test.dart: KitStateView (MOT-7) details open changes and settles at once under effectsOff
+00:03 +123: <worktree>/test/kit_motion_test.dart: KitStatusLine (MOT-7) default settles at once under system
+00:03 +124: <worktree>/test/kit_motion_test.dart: KitStatusLine (MOT-7) default settles at once under effectsOff
+00:03 +125: <worktree>/test/kit_motion_test.dart: KitStatusMark (MOT-7) waiting settles at once under system
+00:03 +126: <worktree>/test/kit_motion_test.dart: KitStatusMark (MOT-7) working settles at once under system
+00:03 +127: <worktree>/test/kit_motion_test.dart: KitStatusMark (MOT-7) done settles at once under system
+00:03 +128: <worktree>/test/kit_motion_test.dart: KitStatusMark (MOT-7) failed settles at once under system
+00:03 +129: <worktree>/test/kit_motion_test.dart: KitStatusMark (MOT-7) working to done changes and settles at once under system
+00:03 +130: <worktree>/test/kit_motion_test.dart: KitStatusMark (MOT-7) waiting settles at once under effectsOff
+00:03 +131: <worktree>/test/kit_motion_test.dart: KitStatusMark (MOT-7) working settles at once under effectsOff
+00:03 +132: <worktree>/test/kit_motion_test.dart: KitStatusMark (MOT-7) done settles at once under effectsOff
+00:03 +133: <worktree>/test/kit_motion_test.dart: KitStatusMark (MOT-7) failed settles at once under effectsOff
+00:04 +134: <worktree>/test/kit_motion_test.dart: KitStatusMark (MOT-7) working to done changes and settles at once under effectsOff
+00:04 +135: <worktree>/test/kit_motion_test.dart: KitSwitchRow (MOT-7) default settles at once under system
+00:04 +136: <worktree>/test/kit_motion_test.dart: KitSwitchRow (MOT-7) switched on changes and settles at once under system
+00:04 +137: <worktree>/test/kit_motion_test.dart: KitSwitchRow (MOT-7) default settles at once under effectsOff
+00:04 +138: <worktree>/test/kit_motion_test.dart: KitSwitchRow (MOT-7) switched on changes and settles at once under effectsOff
+00:04 +139: <worktree>/test/kit_motion_test.dart: KitTabSwitcher (MOT-7) default settles at once under system
+00:04 +140: <worktree>/test/kit_motion_test.dart: KitTabSwitcher (MOT-7) index changes changes and settles at once under system
+00:04 +141: <worktree>/test/kit_motion_test.dart: KitTabSwitcher (MOT-7) default settles at once under effectsOff
+00:04 +142: <worktree>/test/kit_motion_test.dart: KitTabSwitcher (MOT-7) index changes changes and settles at once under effectsOff
+00:04 +143: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) waiting settles at once under system
+00:04 +144: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) working settles at once under system
+00:04 +145: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) done settles at once under system
+00:04 +146: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) failed settles at once under system
+00:04 +147: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) needsYou settles at once under system
+00:04 +148: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) stopped settles at once under system
+00:04 +149: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) waiting settles at once under effectsOff
+00:04 +150: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) working settles at once under effectsOff
+00:04 +151: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) done settles at once under effectsOff
+00:04 +152: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) failed settles at once under effectsOff
+00:04 +153: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) needsYou settles at once under effectsOff
+00:04 +154: <worktree>/test/kit_motion_test.dart: KitTaskMark (MOT-7) stopped settles at once under effectsOff
+00:04 +155: <worktree>/test/kit_motion_test.dart: LoadingList (MOT-7) default settles at once under system
+00:04 +156: <worktree>/test/kit_motion_test.dart: LoadingList (MOT-7) default settles at once under effectsOff
+00:04 +157: <worktree>/test/kit_motion_test.dart: ProductEmptyState (MOT-7) default settles at once under system
+00:04 +158: <worktree>/test/kit_motion_test.dart: ProductEmptyState (MOT-7) default settles at once under effectsOff
+00:04 +159: <worktree>/test/kit_motion_test.dart: ProductErrorState (MOT-7) default settles at once under system
+00:04 +160: <worktree>/test/kit_motion_test.dart: ProductErrorState (MOT-7) default settles at once under effectsOff
+00:04 +161: <worktree>/test/kit_motion_test.dart: ProductInlineEmpty (MOT-7) default settles at once under system
+00:04 +162: <worktree>/test/kit_motion_test.dart: ProductInlineEmpty (MOT-7) default settles at once under effectsOff
+00:04 +163: <worktree>/test/kit_motion_test.dart: SectionLabel (MOT-7) default settles at once under system
+00:04 +164: <worktree>/test/kit_motion_test.dart: SectionLabel (MOT-7) default settles at once under effectsOff
+00:04 +165: <worktree>/test/kit_motion_test.dart: showKitConfirm (MOT-7) destructive opens and settles at once under system
+00:04 +166: <worktree>/test/kit_motion_test.dart: showKitConfirm (MOT-7) dismissed changes and settles at once under system
+00:04 +167: <worktree>/test/kit_motion_test.dart: showKitConfirm (MOT-7) destructive opens and settles at once under effectsOff
+00:04 +168: <worktree>/test/kit_motion_test.dart: showKitConfirm (MOT-7) dismissed changes and settles at once under effectsOff
+00:04 +169: <worktree>/test/kit_motion_test.dart: showKitSheet (MOT-7) content opens and settles at once under system
+00:04 +170: <worktree>/test/kit_motion_test.dart: showKitSheet (MOT-7) full opens and settles at once under system
+00:04 +171: <worktree>/test/kit_motion_test.dart: showKitSheet (MOT-7) dismissed changes and settles at once under system
+00:04 +172: <worktree>/test/kit_motion_test.dart: showKitSheet (MOT-7) content opens and settles at once under effectsOff
+00:04 +173: <worktree>/test/kit_motion_test.dart: showKitSheet (MOT-7) full opens and settles at once under effectsOff
+00:04 +174: <worktree>/test/kit_motion_test.dart: showKitSheet (MOT-7) dismissed changes and settles at once under effectsOff
+00:04 +175: <worktree>/test/kit_motion_test.dart: with motion on, KitStatusMark working spins
+00:04 +176: <worktree>/test/kit_motion_test.dart: with motion on, KitExpandRow animates its opening
+00:05 +177: <worktree>/test/kit_motion_test.dart: KitStatusMark working shows its still dot under system
+00:05 +178: <worktree>/test/kit_motion_test.dart: KitStatusMark working shows its still dot under effectsOff
+00:05 +179: loading <worktree>/test/kit/kit_manifest_test.dart
+00:05 +179: <worktree>/test/kit/kit_manifest_test.dart: G4: the manifest reads the kit library
+00:05 +180: <worktree>/test/kit/kit_manifest_test.dart: G4: every kit part and opener meets the manifest (allowlist only shrinks)
+Shell: G4: these allowlist entries now pass; commit the smaller test/kit/kit_manifest_allowlist.json (or rerun with KIT_MANIFEST_WRITE=1):
+Shell:   - motion · KitActionBlock
+Shell:   - motion · KitActionStack
+Shell:   - motion · KitAnimatedRows
+Shell:   - motion · KitAskLine
+Shell:   - motion · KitButton
+Shell:   - motion · KitChevron
+Shell:   - motion · KitEntrance
+Shell:   - motion · KitExpandRow
+Shell:   - motion · KitGlass
+Shell:   - motion · KitIconButton
+Shell:   - motion · KitIllustration
+Shell:   - motion · KitInset
+Shell:   - motion · KitLoadingBar
+Shell:   - motion · KitNotice
+Shell:   - motion · KitPanel
+Shell:   - motion · KitProgressView
+Shell:   - motion · KitRefresh
+Shell:   - motion · KitRequestCard
+Shell:   - motion · KitReveal
+Shell:   - motion · KitRow
+Shell:   - motion · KitRowIcon
+Shell:   - motion · KitRowMenu
+Shell:   - motion · KitScreen
+Shell:   - motion · KitSecretField
+Shell:   - motion · KitSkeletonRows
+Shell:   - motion · KitSkeletonTranscript
+Shell:   - motion · KitStateView
+Shell:   - motion · KitStatusLine
+Shell:   - motion · KitSwitchRow
+Shell:   - motion · KitTabSwitcher
+Shell:   - motion · KitTaskMark
+Shell:   - motion · LoadingList
+Shell:   - motion · ProductEmptyState
+Shell:   - motion · ProductErrorState
+Shell:   - motion · ProductInlineEmpty
+Shell:   - motion · SectionLabel
+Shell: {
+Shell:   "_about": "Gate G4 (STANDARDS.md §18): kit parts and openers that predate the gate, by check. This list may only shrink; see test/kit/kit_manifest_test.dart.",
+Shell:   "name": [
+Shell:     "KitActionBlock",
+Shell:     "KitAnimatedRows",
+Shell:     "KitButton",
+Shell:     "KitChevron",
+Shell:     "KitEffectsScope",
+Shell:     "KitEntrance",
+Shell:     "KitExpandRow",
+Shell:     "KitGlass",
+Shell:     "KitInset",
+Shell:     "KitLoadingBar",
+Shell:     "KitPortalScene",
+Shell:     "KitProgressView",
+Shell:     "KitRefresh",
+Shell:     "KitReveal",
+Shell:     "KitRowIcon",
+Shell:     "KitRowMenu",
+Shell:     "KitSkeletonRows",
+Shell:     "KitSwitchRow",
+Shell:     "KitTabSwitcher",
+Shell:     "LoadingList",
+Shell:     "ProductEmptyState",
+Shell:     "ProductErrorState",
+Shell:     "ProductInlineEmpty",
+Shell:     "SectionLabel"
+Shell:   ],
+Shell:   "states": [
+Shell:     "KitActionBlock",
+Shell:     "KitActionStack",
+Shell:     "KitAnimatedRows",
+Shell:     "KitAskLine",
+Shell:     "KitButton",
+Shell:     "KitChevron",
+Shell:     "KitConfirmSheet",
+Shell:     "KitEntrance",
+Shell:     "KitExpandRow",
+Shell:     "KitGlass",
+Shell:     "KitIconButton",
+Shell:     "KitIllustration",
+Shell:     "KitInset",
+Shell:     "KitLoadingBar",
+Shell:     "KitNotice",
+Shell:     "KitPanel",
+Shell:     "KitProgressView",
+Shell:     "KitRefresh",
+Shell:     "KitRequestCard",
+Shell:     "KitReveal",
+Shell:     "KitRow",
+Shell:     "KitRowIcon",
+Shell:     "KitRowMenu",
+Shell:     "KitScreen",
+Shell:     "KitSecretField",
+Shell:     "KitSheet",
+Shell:     "KitSkeletonRows",
+Shell:     "KitSkeletonTranscript",
+Shell:     "KitStateView",
+Shell:     "KitStatusLine",
+Shell:     "KitStatusMark",
+Shell:     "KitSwitchRow",
+Shell:     "KitTabSwitcher",
+Shell:     "KitTaskMark",
+Shell:     "LoadingList",
+Shell:     "ProductEmptyState",
+Shell:     "ProductErrorState",
+Shell:     "ProductInlineEmpty",
+Shell:     "SectionLabel"
+Shell:   ],
+Shell:   "gallery": [
+Shell:     "KitActionBlock",
+Shell:     "KitActionStack",
+Shell:     "KitAnimatedRows",
+Shell:     "KitAskLine",
+Shell:     "KitButton",
+Shell:     "KitChevron",
+Shell:     "KitEntrance",
+Shell:     "KitExpandRow",
+Shell:     "KitGlass",
+Shell:     "KitIconButton",
+Shell:     "KitIllustration",
+Shell:     "KitInset",
+Shell:     "KitLoadingBar",
+Shell:     "KitNotice",
+Shell:     "KitPanel",
+Shell:     "KitPortalScene",
+Shell:     "KitProgressView",
+Shell:     "KitRefresh",
+Shell:     "KitRequestCard",
+Shell:     "KitReveal",
+Shell:     "KitRow",
+Shell:     "KitRowIcon",
+Shell:     "KitRowMenu",
+Shell:     "KitScreen",
+Shell:     "KitSecretField",
+Shell:     "KitSkeletonRows",
+Shell:     "KitSkeletonTranscript",
+Shell:     "KitStateView",
+Shell:     "KitStatusLine",
+Shell:     "KitStatusMark",
+Shell:     "KitSwitchRow",
+Shell:     "KitTabSwitcher",
+Shell:     "KitTaskMark",
+Shell:     "LoadingList",
+Shell:     "ProductEmptyState",
+Shell:     "ProductErrorState",
+Shell:     "ProductInlineEmpty",
+Shell:     "SectionLabel"
+Shell:   ],
+Shell:   "test": [
+Shell:     "KitActionBlock",
+Shell:     "KitActionStack",
+Shell:     "KitAnimatedRows",
+Shell:     "KitAskLine",
+Shell:     "KitButton",
+Shell:     "KitChevron",
+Shell:     "KitEffectsScope",
+Shell:     "KitEntrance",
+Shell:     "KitExpandRow",
+Shell:     "KitGlass",
+Shell:     "KitIconButton",
+Shell:     "KitIllustration",
+Shell:     "KitInset",
+Shell:     "KitLoadingBar",
+Shell:     "KitNotice",
+Shell:     "KitPanel",
+Shell:     "KitProgressView",
+Shell:     "KitRefresh",
+Shell:     "KitRequestCard",
+Shell:     "KitReveal",
+Shell:     "KitRow",
+Shell:     "KitRowIcon",
+Shell:     "KitRowMenu",
+Shell:     "KitScreen",
+Shell:     "KitSkeletonRows",
+Shell:     "KitSkeletonTranscript",
+Shell:     "KitStateView",
+Shell:     "KitStatusLine",
+Shell:     "KitStatusMark",
+Shell:     "KitSwitchRow",
+Shell:     "KitTabSwitcher",
+Shell:     "KitTaskMark",
+Shell:     "LoadingList",
+Shell:     "ProductEmptyState",
+Shell:     "ProductErrorState",
+Shell:     "ProductInlineEmpty",
+Shell:     "SectionLabel"
+Shell:   ],
+Shell:   "docRow": [
+Shell:     "KitAnimatedRows",
+Shell:     "KitEntrance",
+Shell:     "KitIconButton",
+Shell:     "KitInset",
+Shell:     "KitProgressView",
+Shell:     "KitRefresh",
+Shell:     "KitReveal",
+Shell:     "KitSecretField",
+Shell:     "KitTabSwitcher",
+Shell:     "LoadingList",
+Shell:     "ProductEmptyState",
+Shell:     "ProductErrorState",
+Shell:     "ProductInlineEmpty"
+Shell:   ],
+Shell:   "keyboard": [
+Shell:     "KitExpandRow",
+Shell:     "KitRow",
+Shell:     "KitSwitchRow"
+Shell:   ],
+Shell:   "overflow": [
+Shell:     "KitActionBlock",
+Shell:     "KitActionStack",
+Shell:     "KitAnimatedRows",
+Shell:     "KitAskLine",
+Shell:     "KitButton",
+Shell:     "KitChevron",
+Shell:     "KitConfirmSheet",
+Shell:     "KitEntrance",
+Shell:     "KitExpandRow",
+Shell:     "KitGlass",
+Shell:     "KitIconButton",
+Shell:     "KitIllustration",
+Shell:     "KitInset",
+Shell:     "KitLoadingBar",
+Shell:     "KitNotice",
+Shell:     "KitPanel",
+Shell:     "KitProgressView",
+Shell:     "KitRefresh",
+Shell:     "KitRequestCard",
+Shell:     "KitReveal",
+Shell:     "KitRow",
+Shell:     "KitRowIcon",
+Shell:     "KitRowMenu",
+Shell:     "KitScreen",
+Shell:     "KitSecretField",
+Shell:     "KitSheet",
+Shell:     "KitSkeletonRows",
+Shell:     "KitSkeletonTranscript",
+Shell:     "KitStateView",
+Shell:     "KitStatusLine",
+Shell:     "KitStatusMark",
+Shell:     "KitSwitchRow",
+Shell:     "KitTabSwitcher",
+Shell:     "KitTaskMark",
+Shell:     "LoadingList",
+Shell:     "ProductEmptyState",
+Shell:     "ProductErrorState",
+Shell:     "ProductInlineEmpty",
+Shell:     "SectionLabel"
+Shell:   ],
+Shell:   "harness": [
+Shell:     "kitGallerySizes 915x412"
+Shell:   ]
+Shell: }
+Shell: 
+00:05 +181: All tests passed!
