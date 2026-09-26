@@ -22242,6 +22242,82 @@
   "@kitDiscardConfirm": {
     "description": "Kit sheet: the button that closes the sheet and drops the unsaved input"
   },
+  "kitFieldShow": "Show",
+  "@kitFieldShow": {
+    "description": "KitField secret kind: the reveal button while the value is masked; the field's label follows it in the tooltip and semantic name (see kitFieldShowNamed)"
+  },
+  "kitFieldShowNamed": "Show {label}",
+  "@kitFieldShowNamed": {
+    "description": "KitField secret kind: tooltip and semantic name of the reveal button while masked, e.g. 'Show API key'",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "API key"
+      }
+    }
+  },
+  "kitFieldHide": "Hide",
+  "@kitFieldHide": {
+    "description": "KitField secret kind: the reveal button while the value is shown (see kitFieldHideNamed)"
+  },
+  "kitFieldHideNamed": "Hide {label}",
+  "@kitFieldHideNamed": {
+    "description": "KitField secret kind: tooltip and semantic name of the reveal button while the value is shown, e.g. 'Hide API key'",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "API key"
+      }
+    }
+  },
+  "kitFieldPaste": "Paste",
+  "@kitFieldPaste": {
+    "description": "KitField secret kind: the button that pastes the clipboard into the secret field (reads the clipboard once, on tap)"
+  },
+  "kitFieldSaved": "Saved",
+  "@kitFieldSaved": {
+    "description": "KitField secret kind: shown instead of the value when one is stored already, before 'Replace'"
+  },
+  "kitFieldReplace": "Replace",
+  "@kitFieldReplace": {
+    "description": "KitField secret kind: the action next to 'Saved' that clears the way to type a new value"
+  },
+  "kitFieldChecking": "Checking…",
+  "@kitFieldChecking": {
+    "description": "KitField: the helper line while the field's value is being checked (never a spinner in the field)"
+  },
+  "kitFieldStillChecking": "Still checking after {seconds} s",
+  "@kitFieldStillChecking": {
+    "description": "KitField: the helper line once a check has run for 8 seconds; ways out are offered under it",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
+  "kitFieldCount": "{count, plural, =1{1 of {max}} other{{count} of {max}}}",
+  "@kitFieldCount": {
+    "description": "KitField: the character counter shown from 80 % of the field's limit, e.g. '90 of 100'",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "max": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "kitFieldLimitReached": "Limit reached",
+  "@kitFieldLimitReached": {
+    "description": "KitField: the counter once the field holds its full limit; typing more changes nothing"
+  },
+  "kitFieldErrorLabel": "Error",
+  "@kitFieldErrorLabel": {
+    "description": "KitField: spoken before a field's error message, e.g. 'Error: Enter a port number'"
+  },
   "kitCopied": "Copied",
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
