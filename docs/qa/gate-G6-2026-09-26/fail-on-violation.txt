@@ -1,0 +1,203 @@
+Waiting for another flutter command to release the startup lock...
+00:00 +0: loading test/text_scale_overflow_test.dart
+00:00 +0: G6 kit overflow matrix (setUpAll)
+00:00 +0: G6 kit overflow matrix every exported kit part has a scene, and every scene a part
+00:00 +0 -1: G6 kit overflow matrix every exported kit part has a scene, and every scene a part [E]
+  Expected: empty
+    Actual: ['KitGlass']
+  Kit parts with no scene in test/kit/kit_overflow_scenes.dart (add one per declared state at the end of kitOverflowScenes)
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/text_scale_overflow_test.dart 538:7            main.<fn>.<fn>
+  
+00:00 +0 -1: G6 kit overflow matrix the overflow baseline names only scenes that exist
+00:00 +1 -1: G6 kit overflow matrix LoadingList/loading fits every overflow size, text scale and direction
+00:02 +2 -1: G6 kit overflow matrix ProductEmptyState/empty fits every overflow size, text scale and direction
+00:02 +3 -1: G6 kit overflow matrix ProductErrorState/error fits every overflow size, text scale and direction
+00:03 +4 -1: G6 kit overflow matrix ProductInlineEmpty/empty fits every overflow size, text scale and direction
+00:03 +5 -1: G6 kit overflow matrix SectionLabel/default fits every overflow size, text scale and direction
+00:04 +6 -1: G6 kit overflow matrix KitActionStack/default fits every overflow size, text scale and direction
+00:05 +7 -1: G6 kit overflow matrix KitAskLine/default fits every overflow size, text scale and direction
+00:05 +8 -1: G6 kit overflow matrix KitButton/default fits every overflow size, text scale and direction
+00:06 +9 -1: G6 kit overflow matrix KitButton/working fits every overflow size, text scale and direction
+00:06 +10 -1: G6 kit overflow matrix KitButton/disabled fits every overflow size, text scale and direction
+00:07 +11 -1: G6 kit overflow matrix KitActionBlock/default fits every overflow size, text scale and direction
+00:08 +12 -1: G6 kit overflow matrix KitActionBlock/disabled fits every overflow size, text scale and direction
+00:09 +13 -1: G6 kit overflow matrix KitInset/default fits every overflow size, text scale and direction
+00:09 +14 -1: G6 kit overflow matrix KitIconButton/default fits every overflow size, text scale and direction
+00:10 +15 -1: G6 kit overflow matrix KitIllustration/default fits every overflow size, text scale and direction
+00:10 +16 -1: G6 kit overflow matrix KitPanel/default fits every overflow size, text scale and direction
+00:11 +17 -1: G6 kit overflow matrix KitNotice/default fits every overflow size, text scale and direction
+00:11 +18 -1: G6 kit overflow matrix KitLoadingBar/loading fits every overflow size, text scale and direction
+00:12 +19 -1: G6 kit overflow matrix KitSkeletonRows/loading fits every overflow size, text scale and direction
+00:12 +20 -1: G6 kit overflow matrix KitProgressView/working fits every overflow size, text scale and direction
+00:13 +21 -1: G6 kit overflow matrix KitRequestCard/default fits every overflow size, text scale and direction
+00:13 +22 -1: G6 kit overflow matrix KitRequestCard/disabled fits every overflow size, text scale and direction
+00:14 +23 -1: G6 kit overflow matrix KitRow/default fits every overflow size, text scale and direction
+00:14 +24 -1: G6 kit overflow matrix KitRow/disabled fits every overflow size, text scale and direction
+00:15 +25 -1: G6 kit overflow matrix KitRowIcon/default fits every overflow size, text scale and direction
+00:15 +26 -1: G6 kit overflow matrix KitRowMenu/default fits every overflow size, text scale and direction
+00:16 +27 -1: G6 kit overflow matrix KitRowMenu/disabled fits every overflow size, text scale and direction
+00:16 +28 -1: G6 kit overflow matrix KitSwitchRow/default fits every overflow size, text scale and direction
+00:17 +29 -1: G6 kit overflow matrix KitSwitchRow/disabled fits every overflow size, text scale and direction
+00:17 +30 -1: G6 kit overflow matrix KitExpandRow/default fits every overflow size, text scale and direction
+00:18 +31 -1: G6 kit overflow matrix KitExpandRow/expanded fits every overflow size, text scale and direction
+00:18 +32 -1: G6 kit overflow matrix KitScreen/default fits every overflow size, text scale and direction
+00:19 +33 -1: G6 kit overflow matrix KitScreen/loading fits every overflow size, text scale and direction
+00:19 +34 -1: G6 kit overflow matrix KitSecretField/default fits every overflow size, text scale and direction
+00:20 +35 -1: G6 kit overflow matrix KitSecretField/disabled fits every overflow size, text scale and direction
+00:21 +36 -1: G6 kit overflow matrix KitSheet/default fits every overflow size, text scale and direction
+00:22 +37 -1: G6 kit overflow matrix KitSheet/full fits every overflow size, text scale and direction
+00:23 +38 -1: G6 kit overflow matrix KitSheet/loading fits every overflow size, text scale and direction
+00:24 +39 -1: G6 kit overflow matrix KitSheet/disabled fits every overflow size, text scale and direction
+00:25 +40 -1: G6 kit overflow matrix KitSheet/inline fits every overflow size, text scale and direction
+00:25 +41 -1: G6 kit overflow matrix KitConfirmSheet/neutral fits every overflow size, text scale and direction
+00:26 +42 -1: G6 kit overflow matrix KitConfirmSheet/destructive fits every overflow size, text scale and direction
+00:27 +43 -1: G6 kit overflow matrix KitConfirmSheet/stop fits every overflow size, text scale and direction
+00:27 +44 -1: G6 kit overflow matrix KitConfirmSheet/working fits every overflow size, text scale and direction
+00:28 +45 -1: G6 kit overflow matrix KitConfirmSheet/error fits every overflow size, text scale and direction
+00:28 +46 -1: G6 kit overflow matrix KitSkeletonTranscript/loading fits every overflow size, text scale and direction
+00:29 +47 -1: G6 kit overflow matrix KitStateView/error fits every overflow size, text scale and direction
+00:29 +48 -1: G6 kit overflow matrix KitStateView/working fits every overflow size, text scale and direction
+00:30 +49 -1: G6 kit overflow matrix KitStateView/empty fits every overflow size, text scale and direction
+00:30 +50 -1: G6 kit overflow matrix KitStateView/illustrated fits every overflow size, text scale and direction
+00:30 +51 -1: G6 kit overflow matrix KitStatusLine/default fits every overflow size, text scale and direction
+00:31 +52 -1: G6 kit overflow matrix KitStatusLine/together fits every overflow size, text scale and direction
+00:31 +53 -1: G6 kit overflow matrix KitStatusMark/default fits every overflow size, text scale and direction
+00:32 +54 -1: G6 kit overflow matrix KitTaskMark/default fits every overflow size, text scale and direction
+00:32 +55 -1: G6 kit overflow matrix KitAnimatedRows/default fits every overflow size, text scale and direction
+00:32 +56 -1: G6 kit overflow matrix KitRefresh/default fits every overflow size, text scale and direction
+00:33 +57 -1: G6 kit overflow matrix KitReveal/default fits every overflow size, text scale and direction
+00:33 +58 -1: G6 kit overflow matrix KitTabSwitcher/default fits every overflow size, text scale and direction
+00:34 +59 -1: G6 kit overflow matrix KitEffectsScope/default fits every overflow size, text scale and direction
+00:34 +60 -1: G6 kit overflow matrix KitPanel/violation fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 1.0 ltr: A RenderFlex overflowed by 164 pixels on the right.',
+            '320x640 text 1.0 rtl: A RenderFlex overflowed by 164 pixels on the right.',
+            '320x640 text 1.3 ltr: A RenderFlex overflowed by 285 pixels on the right.',
+            '320x640 text 1.3 rtl: A RenderFlex overflowed by 285 pixels on the right.',
+            '320x640 text 2.0 ltr: A RenderFlex overflowed by 569 pixels on the right.',
+            '320x640 text 2.0 rtl: A RenderFlex overflowed by 569 pixels on the right.',
+            '360x740 text 1.0 ltr: A RenderFlex overflowed by 124 pixels on the right.',
+            '360x740 text 1.0 rtl: A RenderFlex overflowed by 124 pixels on the right.',
+            '360x740 text 1.3 ltr: A RenderFlex overflowed by 245 pixels on the right.',
+            '360x740 text 1.3 rtl: A RenderFlex overflowed by 245 pixels on the right.',
+            '360x740 text 2.0 ltr: A RenderFlex overflowed by 529 pixels on the right.',
+            '360x740 text 2.0 rtl: A RenderFlex overflowed by 529 pixels on the right.',
+            '412x915 text 1.0 ltr: A RenderFlex overflowed by 72 pixels on the right.',
+            '412x915 text 1.0 rtl: A RenderFlex overflowed by 72 pixels on the right.',
+            '412x915 text 1.3 ltr: A RenderFlex overflowed by 193 pixels on the right.',
+            '412x915 text 1.3 rtl: A RenderFlex overflowed by 193 pixels on the right.',
+            '412x915 text 2.0 ltr: A RenderFlex overflowed by 477 pixels on the right.',
+            '412x915 text 2.0 rtl: A RenderFlex overflowed by 477 pixels on the right.',
+            '600x960 text 1.3 ltr: A RenderFlex overflowed by 5.3 pixels on the right.',
+            '600x960 text 1.3 rtl: A RenderFlex overflowed by 5.3 pixels on the right.',
+            '600x960 text 2.0 ltr: A RenderFlex overflowed by 289 pixels on the right.',
+            '600x960 text 2.0 rtl: A RenderFlex overflowed by 289 pixels on the right.',
+            '800x1280 text 2.0 ltr: A RenderFlex overflowed by 89 pixels on the right.',
+            '800x1280 text 2.0 rtl: A RenderFlex overflowed by 89 pixels on the right.',
+            ...
+          ]
+KitPanel/violation overflowed or threw in 26 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 1.0 ltr: A RenderFlex overflowed by 164 pixels on the right.
+320x640 text 1.0 rtl: A RenderFlex overflowed by 164 pixels on the right.
+320x640 text 1.3 ltr: A RenderFlex overflowed by 285 pixels on the right.
+320x640 text 1.3 rtl: A RenderFlex overflowed by 285 pixels on the right.
+320x640 text 2.0 ltr: A RenderFlex overflowed by 569 pixels on the right.
+320x640 text 2.0 rtl: A RenderFlex overflowed by 569 pixels on the right.
+360x740 text 1.0 ltr: A RenderFlex overflowed by 124 pixels on the right.
+360x740 text 1.0 rtl: A RenderFlex overflowed by 124 pixels on the right.
+360x740 text 1.3 ltr: A RenderFlex overflowed by 245 pixels on the right.
+360x740 text 1.3 rtl: A RenderFlex overflowed by 245 pixels on the right.
+360x740 text 2.0 ltr: A RenderFlex overflowed by 529 pixels on the right.
+360x740 text 2.0 rtl: A RenderFlex overflowed by 529 pixels on the right.
+412x915 text 1.0 ltr: A RenderFlex overflowed by 72 pixels on the right.
+412x915 text 1.0 rtl: A RenderFlex overflowed by 72 pixels on the right.
+412x915 text 1.3 ltr: A RenderFlex overflowed by 193 pixels on the right.
+412x915 text 1.3 rtl: A RenderFlex overflowed by 193 pixels on the right.
+412x915 text 2.0 ltr: A RenderFlex overflowed by 477 pixels on the right.
+412x915 text 2.0 rtl: A RenderFlex overflowed by 477 pixels on the right.
+600x960 text 1.3 ltr: A RenderFlex overflowed by 5.3 pixels on the right.
+600x960 text 1.3 rtl: A RenderFlex overflowed by 5.3 pixels on the right.
+600x960 text 2.0 ltr: A RenderFlex overflowed by 289 pixels on the right.
+600x960 text 2.0 rtl: A RenderFlex overflowed by 289 pixels on the right.
+800x1280 text 2.0 ltr: A RenderFlex overflowed by 89 pixels on the right.
+800x1280 text 2.0 rtl: A RenderFlex overflowed by 89 pixels on the right.
+840x1180 text 2.0 ltr: A RenderFlex overflowed by 49 pixels on the right.
+840x1180 text 2.0 rtl: A RenderFlex overflowed by 49 pixels on the right.
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/text_scale_overflow_test.dart:583:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/text_scale_overflow_test.dart line 583
+The test description was:
+  KitPanel/violation fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:34 +60 -2: G6 kit overflow matrix KitPanel/violation fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitPanel/violation fits every overflow size, text scale and direction
+  
+00:34 +60 -2: G6 kit overflow matrix KitButton/segmented-violation fits every overflow size, text scale and direction
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            '320x640 text 2.0 ltr: labels do not fit, but no KitChoiceRow (KIT-24: KitSegmented
+stacks full-width choice rows)',
+            '320x640 text 2.0 rtl: labels do not fit, but no KitChoiceRow (KIT-24: KitSegmented
+stacks full-width choice rows)',
+            '360x740 text 2.0 ltr: labels do not fit, but no KitChoiceRow (KIT-24: KitSegmented
+stacks full-width choice rows)',
+            '360x740 text 2.0 rtl: labels do not fit, but no KitChoiceRow (KIT-24: KitSegmented
+stacks full-width choice rows)'
+          ]
+KitButton/segmented-violation overflowed or threw in 4 of 54 combinations beyond
+test/text_scale_overflow_baseline.json:
+320x640 text 2.0 ltr: labels do not fit, but no KitChoiceRow (KIT-24: KitSegmented stacks full-width
+choice rows)
+320x640 text 2.0 rtl: labels do not fit, but no KitChoiceRow (KIT-24: KitSegmented stacks full-width
+choice rows)
+360x740 text 2.0 ltr: labels do not fit, but no KitChoiceRow (KIT-24: KitSegmented stacks full-width
+choice rows)
+360x740 text 2.0 rtl: labels do not fit, but no KitChoiceRow (KIT-24: KitSegmented stacks full-width
+choice rows)
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file://test/text_scale_overflow_test.dart:583:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file://test/text_scale_overflow_test.dart line 583
+The test description was:
+  KitButton/segmented-violation fits every overflow size, text scale and direction
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:35 +60 -3: G6 kit overflow matrix KitButton/segmented-violation fits every overflow size, text scale and direction [E]
+  Test failed. See exception logs above.
+  The test description was: KitButton/segmented-violation fits every overflow size, text scale and direction
+  
+00:35 +60 -3: G6 kit overflow matrix (tearDownAll)
+00:35 +60 -3: Some tests failed.
+
+Failing tests:
+  test/text_scale_overflow_test.dart: G6 kit overflow matrix KitButton/segmented-violation fits every overflow size, text scale and direction
+  test/text_scale_overflow_test.dart: G6 kit overflow matrix KitPanel/violation fits every overflow size, text scale and direction
+  test/text_scale_overflow_test.dart: G6 kit overflow matrix every exported kit part has a scene, and every scene a part

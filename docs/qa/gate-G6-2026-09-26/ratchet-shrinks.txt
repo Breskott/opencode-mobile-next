@@ -1,0 +1,92 @@
+00:00 +0: loading test/text_scale_overflow_test.dart
+00:00 +0: G6 kit overflow matrix (setUpAll)
+00:00 +0: G6 kit overflow matrix every exported kit part has a scene, and every scene a part
+00:00 +1: G6 kit overflow matrix the overflow baseline names only scenes that exist
+00:00 +2: G6 kit overflow matrix LoadingList/loading fits every overflow size, text scale and direction
+00:01 +3: G6 kit overflow matrix ProductEmptyState/empty fits every overflow size, text scale and direction
+00:02 +4: G6 kit overflow matrix ProductErrorState/error fits every overflow size, text scale and direction
+00:03 +5: G6 kit overflow matrix ProductInlineEmpty/empty fits every overflow size, text scale and direction
+00:03 +6: G6 kit overflow matrix SectionLabel/default fits every overflow size, text scale and direction
+00:04 +7: G6 kit overflow matrix KitActionStack/default fits every overflow size, text scale and direction
+00:05 +8: G6 kit overflow matrix KitAskLine/default fits every overflow size, text scale and direction
+00:05 +9: G6 kit overflow matrix KitButton/default fits every overflow size, text scale and direction
+00:06 +10: G6 kit overflow matrix KitButton/working fits every overflow size, text scale and direction
+00:07 +11: G6 kit overflow matrix KitButton/disabled fits every overflow size, text scale and direction
+00:07 +12: G6 kit overflow matrix KitActionBlock/default fits every overflow size, text scale and direction
+00:08 +13: G6 kit overflow matrix KitActionBlock/disabled fits every overflow size, text scale and direction
+00:09 +14: G6 kit overflow matrix KitInset/default fits every overflow size, text scale and direction
+00:09 +15: G6 kit overflow matrix KitIconButton/default fits every overflow size, text scale and direction
+00:10 +16: G6 kit overflow matrix KitIllustration/default fits every overflow size, text scale and direction
+00:10 +17: G6 kit overflow matrix KitPanel/default fits every overflow size, text scale and direction
+00:10 +18: G6 kit overflow matrix KitNotice/default fits every overflow size, text scale and direction
+00:11 +19: G6 kit overflow matrix KitLoadingBar/loading fits every overflow size, text scale and direction
+00:11 +20: G6 kit overflow matrix KitSkeletonRows/loading fits every overflow size, text scale and direction
+00:12 +21: G6 kit overflow matrix KitProgressView/working fits every overflow size, text scale and direction
+00:12 +22: G6 kit overflow matrix KitRequestCard/default fits every overflow size, text scale and direction
+00:13 +23: G6 kit overflow matrix KitRequestCard/disabled fits every overflow size, text scale and direction
+00:14 +24: G6 kit overflow matrix KitRow/default fits every overflow size, text scale and direction
+00:14 +25: G6 kit overflow matrix KitRow/disabled fits every overflow size, text scale and direction
+00:14 +26: G6 kit overflow matrix KitRowIcon/default fits every overflow size, text scale and direction
+00:15 +27: G6 kit overflow matrix KitRowMenu/default fits every overflow size, text scale and direction
+00:15 +28: G6 kit overflow matrix KitRowMenu/disabled fits every overflow size, text scale and direction
+00:16 +29: G6 kit overflow matrix KitSwitchRow/default fits every overflow size, text scale and direction
+00:16 +30: G6 kit overflow matrix KitSwitchRow/disabled fits every overflow size, text scale and direction
+00:17 +31: G6 kit overflow matrix KitExpandRow/default fits every overflow size, text scale and direction
+00:17 +32: G6 kit overflow matrix KitExpandRow/expanded fits every overflow size, text scale and direction
+00:18 +33: G6 kit overflow matrix KitScreen/default fits every overflow size, text scale and direction
+00:19 +34: G6 kit overflow matrix KitScreen/loading fits every overflow size, text scale and direction
+00:19 +35: G6 kit overflow matrix KitSecretField/default fits every overflow size, text scale and direction
+00:20 +36: G6 kit overflow matrix KitSecretField/disabled fits every overflow size, text scale and direction
+00:21 +37: G6 kit overflow matrix KitSheet/default fits every overflow size, text scale and direction
+00:22 +38: G6 kit overflow matrix KitSheet/full fits every overflow size, text scale and direction
+00:23 +39: G6 kit overflow matrix KitSheet/loading fits every overflow size, text scale and direction
+00:24 +40: G6 kit overflow matrix KitSheet/disabled fits every overflow size, text scale and direction
+00:24 +41: G6 kit overflow matrix KitSheet/inline fits every overflow size, text scale and direction
+00:25 +42: G6 kit overflow matrix KitConfirmSheet/neutral fits every overflow size, text scale and direction
+00:25 +43: G6 kit overflow matrix KitConfirmSheet/destructive fits every overflow size, text scale and direction
+00:26 +44: G6 kit overflow matrix KitConfirmSheet/stop fits every overflow size, text scale and direction
+00:27 +45: G6 kit overflow matrix KitConfirmSheet/working fits every overflow size, text scale and direction
+00:27 +46: G6 kit overflow matrix KitConfirmSheet/error fits every overflow size, text scale and direction
+00:28 +47: G6 kit overflow matrix KitSkeletonTranscript/loading fits every overflow size, text scale and direction
+00:28 +48: G6 kit overflow matrix KitStateView/error fits every overflow size, text scale and direction
+00:28 +49: G6 kit overflow matrix KitStateView/working fits every overflow size, text scale and direction
+00:29 +50: G6 kit overflow matrix KitStateView/empty fits every overflow size, text scale and direction
+00:29 +51: G6 kit overflow matrix KitStateView/illustrated fits every overflow size, text scale and direction
+00:29 +52: G6 kit overflow matrix KitStatusLine/default fits every overflow size, text scale and direction
+00:30 +53: G6 kit overflow matrix KitStatusLine/together fits every overflow size, text scale and direction
+00:30 +54: G6 kit overflow matrix KitStatusMark/default fits every overflow size, text scale and direction
+00:30 +55: G6 kit overflow matrix KitTaskMark/default fits every overflow size, text scale and direction
+00:31 +56: G6 kit overflow matrix KitAnimatedRows/default fits every overflow size, text scale and direction
+00:31 +57: G6 kit overflow matrix KitRefresh/default fits every overflow size, text scale and direction
+00:31 +58: G6 kit overflow matrix KitReveal/default fits every overflow size, text scale and direction
+00:32 +59: G6 kit overflow matrix KitTabSwitcher/default fits every overflow size, text scale and direction
+00:32 +60: G6 kit overflow matrix KitGlass/default fits every overflow size, text scale and direction
+00:32 +61: G6 kit overflow matrix KitEffectsScope/default fits every overflow size, text scale and direction
+00:32 +62: G6 kit overflow matrix (tearDownAll)
+Shell: --- G6 overflow baseline shrank (commit as test/text_scale_overflow_baseline.json) ---
+Shell: {
+Shell:   "KitActionBlock/default": [
+Shell:     "800x1280 text 2.0 ltr",
+Shell:     "800x1280 text 2.0 rtl",
+Shell:     "840x1180 text 2.0 ltr",
+Shell:     "915x412 text 2.0 ltr"
+Shell:   ],
+Shell:   "KitSheet/default": [
+Shell:     "800x1280 text 2.0 ltr",
+Shell:     "915x412 text 2.0 ltr"
+Shell:   ],
+Shell:   "KitSheet/disabled": [
+Shell:     "800x1280 text 2.0 ltr",
+Shell:     "915x412 text 2.0 ltr"
+Shell:   ],
+Shell:   "KitSheet/full": [
+Shell:     "800x1280 text 2.0 ltr",
+Shell:     "915x412 text 2.0 ltr"
+Shell:   ],
+Shell:   "KitSheet/loading": [
+Shell:     "800x1280 text 2.0 ltr",
+Shell:     "915x412 text 2.0 ltr"
+Shell:   ]
+Shell: }
+Shell: --- end baseline ---
+00:33 +62: All tests passed!
