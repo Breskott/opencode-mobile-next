@@ -1,0 +1,6 @@
+{
+  "_about": "Gate G5 (STANDARDS.md §18) baseline: gallery shots that failed a G5 check on 2026-09-26, by golden name. It may only shrink; kitGalleryShot prints the smaller entry when a listed check passes. Why each entry is here: docs/qa/gate-G5-2026-09-26/README.md.",
+  "shots": {
+    "kit_confirm_destructive_text2_1280x800_light": ["textContrast"]
+  }
+}
