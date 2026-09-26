@@ -6019,6 +6019,18 @@ abstract class AppLocalizations {
   /// **'Disable quota monitoring'**
   String get quotaMonitorDisable;
 
+  /// Quota monitoring source: the row that picks the percentage used at which a device alert fires; its value is a quotaBudgetPercent string.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert when used reaches'**
+  String get quotaMonitorThreshold;
+
+  /// Quota monitoring source: why the threshold and Disable are unavailable for a moment while a change is saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get quotaMonitorSaving;
+
   /// No description provided for @setupChooseServerTitle.
   ///
   /// In en, this message translates to:

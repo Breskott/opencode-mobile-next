@@ -3647,6 +3647,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get quotaMonitorDisable => 'تعطيل مراقبة الحصص';
 
   @override
+  String get quotaMonitorThreshold => 'Alert when used reaches';
+
+  @override
+  String get quotaMonitorSaving => 'Saving…';
+
+  @override
   String get setupChooseServerTitle => 'اختر إعداد خادمك';
 
   @override

@@ -1,124 +1,116 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../api/provider_presentation.dart';
 import '../app_theme.dart';
+import '../kit/kit_image.dart';
+import '../kit/kit_shape.dart';
+import '../kit/kit_surface.dart';
+import '../kit/kit_text.dart';
 
-/// A provider's logo in a rounded square tile.
+/// A provider's identity mark: a [KitAvatar] (KitImage.md, "Replaces").
 ///
 /// The mark is the provider's website favicon, fetched at first use from
-/// Google's favicon service (see [providerLogoUrl]) and cached by the image
+/// Google's favicon service (see [providerLogoUrl]; the URL is app-authored
+/// and reaches the kit only as an [ImageProvider]) and cached by the image
 /// pipeline like any other network image. While it loads, and whenever it
-/// cannot load, the tile shows a two-letter monogram instead, so a row never
-/// has an empty leading slot. OpenCode's own providers draw the app's prompt
-/// glyph rather than a fetched image.
+/// cannot load, the avatar shows the initials of the provider's presented
+/// name instead, so a row never has an empty leading slot. OpenCode's own
+/// providers show the terminal glyph rather than a fetched image.
 ///
-/// Decorative: the row that shows the logo already names the provider, so the
-/// tile is excluded from the semantics tree.
+/// Decorative: the row that shows the logo already names the provider, so
+/// the mark is excluded from the semantics tree.
 class ProviderLogo extends StatelessWidget {
-  const ProviderLogo(this.providerID, {super.key, this.size = 28});
+  const ProviderLogo(this.providerID, {super.key, this.size});
 
   final String providerID;
-  final double size;
+
+  /// Null: the avatar at its own tile size ([KitAvatarSize.tile], 30 dp),
+  /// which lines up with every other row's leading tile. A number scales
+  /// the whole mark to that square, for a logo set inline with text (the
+  /// model picker's 18 and 24 dp marks).
+  final double? size;
 
   /// Test seam. When set, every logo asks this for its [ImageProvider]
   /// instead of building a [NetworkImage]; returning null skips the image
-  /// entirely and renders the monogram, so widget tests never touch the
+  /// entirely and renders the initials, so widget tests never touch the
   /// network and render deterministically.
   static ImageProvider? Function(String url)? imageProviderOverride;
 
-  /// Decode width for the fetched favicon: the service serves 128px PNGs
-  /// and the tile never draws larger than that.
+  /// Retired: [KitAvatar] decodes at its own laid-out size times the device
+  /// pixel ratio (KitImage.md, "Decode size"). Kept for callers.
   static const int cacheWidth = 128;
 
+  /// Retired: the loaded cross-fade is [KitImage]'s own, on
+  /// `KitMotion.quick`. Kept for callers.
   static const Duration fadeIn = Duration(milliseconds: 150);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // The presented name's words ("fireworks-ai" -> "fireworks ai"), so
+    // KitAvatar's initials take one letter from each of the first two.
+    final words = presentProvider(providerID).name
+        .split(RegExp(r'[^\p{L}\p{N}]+', unicode: true))
+        .where((word) => word.isNotEmpty)
+        .join(' ');
+    final name = words.isEmpty ? providerID : words;
+    final Widget avatar;
     if (isOpenCodeProvider(providerID)) {
-      return BrandTile(
-        size: size,
-        color: theme.colorScheme.primary.withValues(alpha: .12),
-        child: Text(
-          '❯',
-          key: const ValueKey('provider-logo-prompt-glyph'),
-          maxLines: 1,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontFamily: AppTheme.monoFamily,
-            fontSize: size * .5,
-            fontWeight: FontWeight.w700,
-            height: 1,
-            color: theme.colorScheme.primary,
-          ),
-        ),
+      avatar = KitAvatar(
+        key: const ValueKey('provider-logo-prompt-glyph'),
+        name: name,
+        icon: AppIconography.terminal,
+        decorative: true,
+      );
+    } else {
+      final url = providerLogoUrl(providerID).toString();
+      final override = imageProviderOverride;
+      final image = override == null ? NetworkImage(url) : override(url);
+      avatar = KitAvatar(
+        name: name,
+        image: image == null ? null : KitImageSource.provider(image),
+        decorative: true,
       );
     }
-    final url = providerLogoUrl(providerID).toString();
-    final override = imageProviderOverride;
-    final image = override == null ? NetworkImage(url) : override(url);
-    final monogram = ProviderMonogram(providerID, size: size);
-    if (image == null) return BrandTile(size: size, child: monogram);
-    final inset = (size * .14).roundToDouble();
-    return BrandTile(
-      size: size,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(BrandTile.radiusFor(size) * .55),
-        child: Image(
-          image: ResizeImage.resizeIfNeeded(cacheWidth, null, image),
-          width: size - inset * 2,
-          height: size - inset * 2,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.medium,
-          gaplessPlayback: true,
-          excludeFromSemantics: true,
-          errorBuilder: (context, error, stackTrace) => monogram,
-          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-            if (wasSynchronouslyLoaded) return child;
-            if (frame == null) return monogram;
-            return TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: 1),
-              duration: fadeIn,
-              curve: Curves.easeOut,
-              child: child,
-              builder: (context, opacity, child) =>
-                  Opacity(opacity: opacity, child: child),
-            );
-          },
-        ),
-      ),
+    final dimension = size;
+    if (dimension == null) return avatar;
+    return SizedBox.square(
+      dimension: dimension,
+      child: FittedBox(child: avatar),
     );
   }
 }
 
-/// The two-letter stand-in drawn while a logo loads or when it cannot.
+/// Retired by kit-KitImage: [KitAvatar] draws the initials itself. A thin
+/// forwarding wrapper kept for callers (STANDARDS KIT-43: no `@Deprecated`,
+/// which would put infos into every caller's analyze).
+///
+/// The two-letter stand-in for a provider's logo, in the label role.
 class ProviderMonogram extends StatelessWidget {
   const ProviderMonogram(this.providerID, {super.key, required this.size});
 
   final String providerID;
+
+  /// Unused: the label role sets the size. Kept for callers.
   final double size;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Text(
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: KitText(
       providerMonogram(providerID),
+      role: KitTextRole.label,
+      tone: KitTextTone.secondary,
       maxLines: 1,
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: size * .38,
-        fontWeight: FontWeight.w700,
-        letterSpacing: -.2,
-        height: 1,
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
-    );
-  }
+      softWrap: false,
+    ),
+  );
 }
 
-/// The rounded square behind a [ProviderLogo]: a neutral
-/// `surfaceContainerHigh` fill with a hairline border. Sibling rows (MCP
-/// servers) reuse it so their leading slot lines up with the provider tiles.
+/// Retired by kit-KitImage: use [KitSurface.tile] for an icon, or
+/// [KitAvatar] for an identity. A thin forwarding wrapper kept for callers
+/// (STANDARDS KIT-43: no `@Deprecated`).
+///
+/// A [size] square of `surface3` in the kit's tile shape, with [child]
+/// centred. Decorative: excluded from semantics, as before.
 class BrandTile extends StatelessWidget {
   const BrandTile({
     super.key,
@@ -130,29 +122,24 @@ class BrandTile extends StatelessWidget {
   final double size;
   final Widget child;
 
-  /// Overrides the neutral fill (the OpenCode glyph sits on a primary tint).
+  /// Unused: the fill is always `surface3` (a colour never encodes
+  /// identity). Kept for callers.
   final Color? color;
 
-  /// The spec radius is for the 28px tile; smaller tiles scale it down so
-  /// an 18px logo does not turn into a circle.
+  /// Retired: the kit's tile shape sets the corners. Kept for callers.
   static double radiusFor(double size) =>
       AppTheme.radiusControl * .6 * (size / 28).clamp(.6, 1.0);
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ExcludeSemantics(
-      child: Container(
-        width: size,
-        height: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color ?? theme.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(radiusFor(size)),
-          border: Border.all(color: AppTheme.hairline(theme), width: .8),
-        ),
-        child: child,
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: KitSurface(
+      level: KitSurfaceLevel.surface3,
+      shape: KitShape.tile,
+      padding: KitSurfacePadding.none,
+      child: SizedBox.square(
+        dimension: size,
+        child: Center(child: child),
       ),
-    );
-  }
+    ),
+  );
 }

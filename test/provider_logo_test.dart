@@ -81,10 +81,12 @@ void main() {
         matching: find.byType(Image),
       ),
     );
-    expect(image.width, 28 - 8);
-    expect(image.fit, BoxFit.contain);
-    // The monogram is only the loading placeholder; once decoded it is gone.
-    expect(find.text('AN'), findsNothing);
+    // KitAvatar (KitImage.md): the circle is always filled, decoded for its
+    // laid-out size, filtered at high quality.
+    expect(image.fit, BoxFit.cover);
+    expect(image.filterQuality, FilterQuality.high);
+    // The default is the kit's tile size, so it lines up with row tiles.
+    expect(tester.getSize(find.byType(ProviderLogo)), const Size(30, 30));
   });
 
   testWidgets('a logo that cannot load falls back to the monogram', (
@@ -107,9 +109,10 @@ void main() {
     await tester.pump();
 
     expect(find.byType(Image), findsNothing);
-    expect(find.text('GR'), findsOneWidget);
-    final tile = tester.widget<BrandTile>(find.byType(BrandTile));
-    expect(tile.size, 18);
+    // KitAvatar's initials: the first grapheme of each of the presented
+    // name's first two words ("Groq" -> "G").
+    expect(find.text('G'), findsOneWidget);
+    expect(tester.getSize(find.byType(ProviderLogo)), const Size(18, 18));
   });
 
   testWidgets('OpenCode providers draw the prompt glyph, never an image', (
@@ -128,11 +131,15 @@ void main() {
 
     expect(requests, 0);
     expect(find.byType(Image), findsNothing);
-    final glyph = tester.widget<Text>(
-      find.byKey(const ValueKey('provider-logo-prompt-glyph')),
+    final glyph = find.byKey(const ValueKey('provider-logo-prompt-glyph'));
+    expect(glyph, findsOneWidget);
+    expect(
+      find.descendant(
+        of: glyph,
+        matching: find.byIcon(AppIconography.terminal),
+      ),
+      findsOneWidget,
     );
-    expect(glyph.data, '❯');
-    expect(glyph.style?.color, AppTheme.dark().colorScheme.primary);
   });
 
   testWidgets('logo is decorative and excluded from semantics', (tester) async {
@@ -142,7 +149,8 @@ void main() {
     await tester.pumpWidget(_app(const ProviderLogo('groq')));
     await tester.pump();
 
-    expect(find.bySemanticsLabel('GR'), findsNothing);
+    expect(find.bySemanticsLabel('G'), findsNothing);
+    expect(find.bySemanticsLabel('Groq'), findsNothing);
     handle.dispose();
   });
 }

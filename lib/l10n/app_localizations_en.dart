@@ -3598,6 +3598,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quotaMonitorDisable => 'Disable quota monitoring';
 
   @override
+  String get quotaMonitorThreshold => 'Alert when used reaches';
+
+  @override
+  String get quotaMonitorSaving => 'Saving…';
+
+  @override
   String get setupChooseServerTitle => 'Choose your server setup';
 
   @override

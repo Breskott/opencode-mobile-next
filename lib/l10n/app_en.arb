@@ -23686,5 +23686,13 @@
         "type": "int"
       }
     }
+  },
+  "quotaMonitorThreshold": "Alert when used reaches",
+  "@quotaMonitorThreshold": {
+    "description": "Quota monitoring source: the row that picks the percentage used at which a device alert fires; its value is a quotaBudgetPercent string."
+  },
+  "quotaMonitorSaving": "Saving…",
+  "@quotaMonitorSaving": {
+    "description": "Quota monitoring source: why the threshold and Disable are unavailable for a moment while a change is saved."
   }
 }
