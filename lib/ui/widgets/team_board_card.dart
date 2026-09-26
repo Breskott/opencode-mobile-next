@@ -1,9 +1,6 @@
-/// One card of the AI Team's board (docs/design/team-board-2026-09-26.md §2
-/// "Card anatomy"): the task's mark, its title in the person's words (two
-/// lines), one muted meta line (priority when not normal, type when not a
-/// plain task, who has it, how long ago) and at most one flag line (needs
-/// you, blocked by, stopped with an error, moving, in its epic). A trailing
-/// "⋯" only when the person may change something here.
+/// The AI Team board's words for a card and the mapping from the app's
+/// [TeamBoardCard] to the kit's `KitTaskCard` (kit-KitTaskCard): the kit
+/// reads no app model, so the words and the mapping stay here.
 library;
 
 import 'package:flutter/material.dart';
@@ -11,7 +8,10 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/team_board.dart';
 import '../app_theme.dart';
-import '../kit/kit.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_receipt.dart';
+import '../kit/kit_task_card.dart';
+import '../kit/kit_task_mark.dart';
 
 AppLocalizations _copy(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -127,6 +127,47 @@ KitTaskState teamBoardMark(TeamBoardCard card) {
   return null;
 }
 
+/// The card's flag as the kit's [KitTaskFlag], in [teamBoardFlag]'s order;
+/// null when there is none or the card is moving (a receipt then).
+KitTaskFlag? _teamBoardKitFlag(AppLocalizations l10n, TeamBoardCard card) {
+  if (card.moving) return null;
+  final flag = teamBoardFlag(l10n, card);
+  if (flag == null) return null;
+  if (card.needsYou) {
+    // The needs-you word is the kit's own ("Needs you"); the board's flag
+    // says nothing more, so the line is the word alone.
+    return const KitTaskFlag(kind: KitTaskFlagKind.needsYou, label: '');
+  }
+  if (card.failed) {
+    return KitTaskFlag(kind: KitTaskFlagKind.failed, label: flag.$3);
+  }
+  if (card.isBlocked && card.column != TeamBoardColumn.done) {
+    return KitTaskFlag(kind: KitTaskFlagKind.blocked, label: flag.$3);
+  }
+  if (card.cancelled) {
+    return KitTaskFlag(kind: KitTaskFlagKind.stopped, label: flag.$3);
+  }
+  return KitTaskFlag(kind: KitTaskFlagKind.info, label: flag.$3, icon: flag.$1);
+}
+
+KitPriority _kitPriority(WorkPriority priority) => switch (priority) {
+  WorkPriority.urgent => KitPriority.urgent,
+  WorkPriority.high => KitPriority.high,
+  WorkPriority.normal => KitPriority.normal,
+  WorkPriority.low => KitPriority.low,
+  WorkPriority.someday => KitPriority.someday,
+};
+
+IconData _typeIcon(String? type) => switch (type) {
+  'bug' => AppIconography.bug,
+  'feature' => AppIconography.sparkle,
+  'epic' => AppIconography.layers,
+  _ => AppIconography.checklist,
+};
+
+/// One card of the AI Team's board, as a `KitTaskCard`.
+///
+/// Retired by kit-KitTaskCard: use KitTaskCard.
 class TeamBoardCardView extends StatelessWidget {
   const TeamBoardCardView({
     super.key,
@@ -141,8 +182,8 @@ class TeamBoardCardView extends StatelessWidget {
   final DateTime now;
   final VoidCallback onOpen;
 
-  /// Opens the move sheet from the trailing "⋯"; null when the person may
-  /// change nothing here (no "⋯").
+  /// Opens the move sheet from the trailing "Move or change" action; null
+  /// when the person may change nothing here (no action).
   final VoidCallback? onMoves;
 
   /// The same sheet from a long press (moves, or why there are none).
@@ -151,278 +192,76 @@ class TeamBoardCardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = _copy(context);
-    final theme = Theme.of(context);
-    final muted = AppTheme.mutedOf(theme);
-    final flag = teamBoardFlag(l10n, card);
     final id = card.id;
-
-    final meta = <InlineSpan>[];
-    void add(InlineSpan span) {
-      if (meta.isNotEmpty) meta.add(const TextSpan(text: '  ·  '));
-      meta.add(span);
-    }
-
-    if (card.priority != WorkPriority.normal) {
-      final word = teamBoardPriorityWord(l10n, card.priority);
-      final hot = card.priority.value <= WorkPriority.high.value;
-      add(
-        TextSpan(
-          children: [
-            WidgetSpan(
-              alignment: PlaceholderAlignment.middle,
-              child: Padding(
-                padding: const EdgeInsetsDirectional.only(end: 4),
-                child: TeamBoardPriorityGlyph(priority: card.priority),
-              ),
-            ),
-            TextSpan(
-              text: word,
-              style: hot
-                  ? TextStyle(
-                      color: card.priority == WorkPriority.urgent
-                          ? AppTheme.statusColor(theme, AppStatusTone.failure)
-                          : theme.colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                    )
-                  : null,
-            ),
-          ],
-        ),
-      );
-    }
     final typeWord = teamBoardTypeWord(l10n, card.type);
-    if (typeWord != null) {
-      add(
-        TextSpan(
-          children: [
-            WidgetSpan(
-              alignment: PlaceholderAlignment.middle,
-              child: Padding(
-                padding: const EdgeInsetsDirectional.only(end: 4),
-                child: Icon(_typeIcon(card.type), size: 14, color: muted),
-              ),
-            ),
-            TextSpan(
-              text: card.isEpic && card.epicTotal > 0
-                  ? '$typeWord · '
-                        '${l10n.teamBoardEpicProgress(card.epicDone, card.epicTotal)}'
-                  : typeWord,
-            ),
-          ],
-        ),
-      );
-    }
-    if (card.agentName case final name?) add(TextSpan(text: name));
     final at = card.item.updatedAt ?? card.item.createdAt;
-    if (at != null) {
-      add(TextSpan(text: teamBoardAgeLabel(l10n, now.difference(at))));
-    }
 
-    final flagLine = flag == null
-        ? null
-        : Padding(
-            key: ValueKey('team-board-card-flag-$id'),
-            padding: const EdgeInsets.only(top: 6),
-            child: Row(
-              children: [
-                Icon(
-                  flag.$1,
-                  size: 16,
-                  color: flag.$2 == AppStatusTone.neutral
-                      ? muted
-                      : AppTheme.statusColor(theme, flag.$2),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    flag.$3,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: flag.$2 == AppStatusTone.neutral
-                          ? muted
-                          : AppTheme.statusColor(theme, flag.$2),
-                      fontWeight: flag.$2 == AppStatusTone.neutral
-                          ? null
-                          : FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-
-    final done = card.column == TeamBoardColumn.done;
-    final content = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ExcludeSemantics(child: KitTaskMark(state: teamBoardMark(card))),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 5),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // The person's own words: two lines (§6).
-                Text(
-                  card.item.title,
-                  key: ValueKey('team-board-card-title-$id'),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    height: 1.3,
-                    color: done && !card.needsYou ? muted : null,
-                  ),
-                ),
-                if (meta.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text.rich(
-                    TextSpan(children: meta),
-                    key: ValueKey('team-board-card-meta-$id'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                  ),
-                ],
-                ?flagLine,
-              ],
-            ),
-          ),
+    final meta = <KitTaskMeta>[
+      if (card.priority != WorkPriority.normal)
+        KitTaskMeta(
+          teamBoardPriorityWord(l10n, card.priority),
+          priority: _kitPriority(card.priority),
+          strong: card.priority.value <= WorkPriority.high.value,
         ),
-        if (onMoves case final moves?)
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: IconButton(
-              key: ValueKey('team-board-card-more-$id'),
-              tooltip: l10n.teamBoardMoveMenuTooltip,
-              padding: EdgeInsets.zero,
-              iconSize: 20,
-              color: muted,
-              // 40 dp drawn, 48 dp to touch (the card's own padding).
-              style: IconButton.styleFrom(
-                tapTargetSize: MaterialTapTargetSize.padded,
-              ),
-              onPressed: moves,
-              icon: const Icon(AppIconography.more),
-            ),
-          )
-        else
-          const SizedBox(width: 8),
-      ],
-    );
-
-    return Semantics(
-      key: ValueKey('team-board-card-$id'),
-      button: true,
-      onLongPressHint: onMoves == null ? null : l10n.teamBoardCardHint,
-      child: GestureDetector(
-        onLongPress: onLongPress,
-        child: KitPanel(
-          tone: card.needsYou ? AppStatusTone.attention : AppStatusTone.neutral,
-          padding: const EdgeInsetsDirectional.fromSTEB(8, 8, 4, 10),
-          onTap: onOpen,
-          child: content,
+      if (typeWord != null)
+        KitTaskMeta(
+          card.isEpic && card.epicTotal > 0
+              ? '$typeWord · '
+                    '${l10n.teamBoardEpicProgress(card.epicDone, card.epicTotal)}'
+              : typeWord,
+          icon: _typeIcon(card.type),
         ),
-      ),
+      if (card.agentName case final name?) KitTaskMeta(name),
+      if (at != null) KitTaskMeta(teamBoardAgeLabel(l10n, now.difference(at))),
+    ];
+
+    final moving = card.moving
+        ? l10n.teamBoardFlagMoving(teamBoardColumnWord(l10n, card.column))
+        : null;
+
+    return KitTaskCard(
+      cardKey: ValueKey('team-board-card-$id'),
+      titleKey: ValueKey('team-board-card-title-$id'),
+      metaKey: ValueKey('team-board-card-meta-$id'),
+      flagKey: ValueKey('team-board-card-flag-$id'),
+      actionKey: ValueKey('team-board-card-more-$id'),
+      title: card.item.title,
+      mark: teamBoardMark(card),
+      onOpen: onOpen,
+      meta: meta,
+      flag: _teamBoardKitFlag(l10n, card),
+      // The board knows no send time for a move, so this receipt does not
+      // escalate on its own; a refused move keeps the board's screen-level
+      // notice.
+      receipt: moving == null
+          ? null
+          : KitReceipt(
+              state: KitReceiptState.sending,
+              label: moving,
+              automatic: true,
+            ),
+      action: onMoves == null
+          ? null
+          : KitAction(
+              label: l10n.teamBoardMoveMenuTooltip,
+              icon: AppIconography.swap,
+              onPressed: onMoves,
+              disabledReason: moving,
+            ),
+      onLongPress: onLongPress,
     );
   }
-
-  static IconData _typeIcon(String? type) => switch (type) {
-    'bug' => AppIconography.bug,
-    'feature' => AppIconography.sparkle,
-    'epic' => AppIconography.layers,
-    _ => AppIconography.checklist,
-  };
 }
 
-/// A priority drawn as signal bars (Linear's convention): three bars filled
-/// to the level, a filled square with a bang for urgent, a dashed line for
-/// someday. Decorative: the word beside it says the priority.
+/// A priority drawn as signal bars; forwards to [KitPriorityGlyph].
+///
+/// Retired by kit-KitTaskCard: use KitPriorityGlyph.
 class TeamBoardPriorityGlyph extends StatelessWidget {
   const TeamBoardPriorityGlyph({super.key, required this.priority});
 
   final WorkPriority priority;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ExcludeSemantics(
-      child: CustomPaint(
-        size: const Size.square(14),
-        painter: _PriorityPainter(
-          priority: priority,
-          on: priority == WorkPriority.urgent
-              ? AppTheme.statusColor(theme, AppStatusTone.failure)
-              : theme.colorScheme.onSurface,
-          off: AppTheme.mutedOf(theme).withValues(alpha: .35),
-          ink: theme.colorScheme.surface,
-        ),
-      ),
-    );
-  }
-}
-
-class _PriorityPainter extends CustomPainter {
-  const _PriorityPainter({
-    required this.priority,
-    required this.on,
-    required this.off,
-    required this.ink,
-  });
-
-  final WorkPriority priority;
-  final Color on;
-  final Color off;
-  final Color ink;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    if (priority == WorkPriority.urgent) {
-      final box = RRect.fromLTRBR(1, 1, w - 1, h - 1, const Radius.circular(3));
-      canvas.drawRRect(box, Paint()..color = on);
-      final bang = Paint()
-        ..color = ink
-        ..strokeWidth = 1.8
-        ..strokeCap = StrokeCap.round;
-      canvas
-        ..drawLine(Offset(w / 2, h * .28), Offset(w / 2, h * .56), bang)
-        ..drawCircle(Offset(w / 2, h * .74), 1, Paint()..color = ink);
-      return;
-    }
-    if (priority == WorkPriority.someday) {
-      final dash = Paint()
-        ..color = off
-        ..strokeWidth = 2
-        ..strokeCap = StrokeCap.round;
-      for (var x = 2.0; x < w - 1; x += 4) {
-        canvas.drawLine(Offset(x, h / 2), Offset(x + 1, h / 2), dash);
-      }
-      return;
-    }
-    final lit = switch (priority) {
-      WorkPriority.high => 3,
-      WorkPriority.normal => 2,
-      _ => 1,
-    };
-    const bar = 3.0;
-    const gap = 1.5;
-    for (var i = 0; i < 3; i++) {
-      final left = 1 + i * (bar + gap);
-      final top = h - 2 - (h - 4) * (i + 1) / 3;
-      canvas.drawRRect(
-        RRect.fromLTRBR(left, top, left + bar, h - 2, const Radius.circular(1)),
-        Paint()..color = i < lit ? on : off,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_PriorityPainter old) =>
-      old.priority != priority || old.on != on || old.off != off;
+  Widget build(BuildContext context) =>
+      KitPriorityGlyph(priority: _kitPriority(priority));
 }
