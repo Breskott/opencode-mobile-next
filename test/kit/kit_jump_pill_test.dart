@@ -10,7 +10,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit.dart';
-import 'package:opencode_mobile/ui/kit/kit_jump_pill.dart';
 
 import '../goldens/kit/kit_gallery.dart' show loadKitGalleryFonts;
 

@@ -147,8 +147,9 @@ class DraftPhotoRecovery {
           workspace: current == null ? photo.workspace : current.workspace,
         ),
       );
-      if (!await drafts.save(all))
+      if (!await drafts.save(all)) {
         return DraftPhotoRecoveryResult.retryRequired;
+      }
       if (!_owned(photo)) return await _removed(photo);
       await photos.discard(photo.id);
       return DraftPhotoRecoveryResult.attached;
