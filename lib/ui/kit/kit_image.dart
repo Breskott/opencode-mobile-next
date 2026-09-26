@@ -1158,7 +1158,7 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
                   children: [
                     KitIconButton(
                       icon: AppIconography.collapse,
-                      label: _canZoomOut
+                      tooltip: _canZoomOut
                           ? withKeys(l10n.kitZoomOut, '−')
                           : l10n.kitZoomOut,
                       onPressed: _canZoomOut ? () => stepZoom(false) : null,
@@ -1167,7 +1167,7 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
                     KitIconButton(
                       key: widget.resetControlKey,
                       icon: AppIconography.retry,
-                      label: _atRest
+                      tooltip: _atRest
                           ? l10n.kitZoomAtStart
                           : withKeys(
                               widget.mode == KitZoomMode.canvas
@@ -1180,7 +1180,7 @@ class _KitZoomState extends State<KitZoom> with SingleTickerProviderStateMixin {
                     SizedBox(width: tokens.space2),
                     KitIconButton(
                       icon: AppIconography.expand,
-                      label: _atMax
+                      tooltip: _atMax
                           ? l10n.kitZoomAtMax
                           : withKeys(l10n.kitZoomIn, '='),
                       onPressed: _atMax ? null : () => stepZoom(true),

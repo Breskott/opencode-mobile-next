@@ -638,7 +638,7 @@ void main() {
     // tooltip and a semantic name), so it is found by its field, not by
     // find.widgetWithText.
     Finder byLabel(String label) =>
-        find.byWidgetPredicate((w) => w is KitIconButton && w.label == label);
+        find.byWidgetPredicate((w) => w is KitIconButton && w.tooltip == label);
 
     testWidgets('double-tap goes to 2x and back to 1x', (tester) async {
       await _pump(tester, zoom());
@@ -841,7 +841,7 @@ void main() {
         find.byKey(const ValueKey('fit')),
       );
       expect(fit.onPressed, isNull);
-      expect(fit.label, 'Already at full view');
+      expect(fit.tooltip, 'Already at full view');
 
       controller.zoomIn();
       await tester.pumpAndSettle();
@@ -859,7 +859,7 @@ void main() {
       expect(translation(controller), Offset.zero);
 
       expect(
-        tester.widget<KitIconButton>(find.byKey(const ValueKey('fit'))).label,
+        tester.widget<KitIconButton>(find.byKey(const ValueKey('fit'))).tooltip,
         'Fit to screen · Ctrl+0',
       );
       controller.reset();

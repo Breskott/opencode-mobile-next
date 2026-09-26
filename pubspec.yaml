@@ -13,6 +13,8 @@ dependencies:
     sdk: flutter
   intl: any
   cupertino_icons: ^1.0.8
+  # KitSince reads the time through package:clock so tests can fake it.
+  clock: ^1.1.2
   # Dropping files onto the composer. Flutter exposes no native file-drop
   # channel of its own on desktop, so this is the one dependency the desktop
   # interaction work needs. Pinned exactly, because it registers a platform
