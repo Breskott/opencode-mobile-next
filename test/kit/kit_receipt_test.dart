@@ -13,12 +13,14 @@ import 'package:clock/clock.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
 import 'package:opencode_mobile/state/orchestration.dart';
 import 'package:opencode_mobile/ui/app_theme.dart';
 import 'package:opencode_mobile/ui/kit/kit_receipt.dart';
 import 'package:opencode_mobile/ui/kit/kit_row.dart';
+import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 import 'package:opencode_mobile/ui/widgets/team_receipt.dart';
 
 /// Every `updateNode` the framework sent: the node id and its label.
@@ -368,6 +370,38 @@ void main() {
     expect(_visible(tester), 'Answered on the laptop');
   });
 
+  testWidgets('answered elsewhere with no device says "another device"', (
+    tester,
+  ) async {
+    late BuildContext context;
+    for (final where in const [null, '  ']) {
+      await tester.pumpWidget(
+        _app(
+          Builder(
+            builder: (inner) {
+              context = inner;
+              return KitReceipt(
+                state: KitReceiptState.answeredElsewhere,
+                where: where,
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(_visible(tester), 'Answered on another device');
+      expect(find.textContaining('…'), findsNothing);
+      expect(
+        KitReceipt.span(
+          context,
+          KitReceiptState.answeredElsewhere,
+          where: where,
+        ).toPlainText(),
+        'Answered on another device · ',
+      );
+    }
+  });
+
   testWidgets('semantics: word, reason and time; the mark is excluded', (
     tester,
   ) async {
@@ -415,10 +449,62 @@ void main() {
     ).formatTimeOfDay(TimeOfDay.fromDateTime(at));
     expect(
       _visible(tester),
-      startsWith("Restarted the phone's server at $time"),
+      "Restarted the phone's server at $time · | Undo",
     );
     await tester.tap(find.text('Undo'));
     expect(undos, 1);
+  });
+
+  testWidgets('automatic names the act in every state, beside the state\'s '
+      'own mark', (tester) async {
+    final roles = AppTheme.rolesOf(AppTheme.dark());
+    final at = clock.now();
+    late String time;
+    Future<void> show(KitReceiptState state, {String? reason}) async {
+      await tester.pumpWidget(
+        _app(
+          KitReceipt(
+            state: state,
+            automatic: true,
+            label: "Restarted the phone's server",
+            reason: reason,
+            at: at,
+            onUndo: () {},
+            onRetry: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+      final context = tester.element(find.byType(KitReceipt));
+      time = MaterialLocalizations.of(
+        context,
+      ).formatTimeOfDay(TimeOfDay.fromDateTime(at));
+    }
+
+    // Sent: the act, the sent check in text2 (never the success check), no
+    // Undo (STATE-10: sent is not done).
+    await show(KitReceiptState.sent);
+    expect(_visible(tester), "Restarted the phone's server at $time");
+    expect(tester.widget<Icon>(find.byType(Icon)).color, roles.text2);
+    expect(find.text('Sent'), findsNothing);
+    expect(find.text('Undo'), findsNothing);
+
+    // Not confirmed: the act, the warning mark, and the state's Try again.
+    await show(KitReceiptState.notConfirmed);
+    expect(
+      _visible(tester),
+      "Restarted the phone's server at $time · | Try again",
+    );
+    expect(find.byIcon(AppIconography.warning), findsOneWidget);
+    expect(find.text('Not confirmed yet'), findsNothing);
+
+    // Refused: the act and the server's reason, the error mark.
+    await show(KitReceiptState.refused, reason: 'the server is busy');
+    expect(
+      _visible(tester),
+      "Restarted the phone's server: the server is busy at $time",
+    );
+    expect(find.byIcon(AppIconography.error), findsOneWidget);
   });
 
   testWidgets('span: the same words, no actions', (tester) async {
@@ -483,6 +569,42 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.byType(KitReceipt));
+    expect(taps, 1);
+  });
+
+  testWidgets('onTap: keyboard focus draws the kit ring and Enter taps', (
+    tester,
+  ) async {
+    final roles = AppTheme.rolesOf(AppTheme.dark());
+    var taps = 0;
+    await tester.pumpWidget(
+      _app(KitReceipt(state: KitReceiptState.sent, onTap: () => taps++)),
+    );
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(KitReceipt));
+    final width = KitTokens.focusRingWidth(context);
+    bool ringed() => tester
+        .widgetList<DecoratedBox>(
+          find.descendant(
+            of: find.byType(KitReceipt),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
+        .any((box) {
+          final decoration = box.decoration;
+          if (decoration is! BoxDecoration) return false;
+          final border = decoration.border;
+          return border is Border &&
+              border.top.color == roles.accent &&
+              border.top.width == width;
+        });
+
+    expect(ringed(), isFalse);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pumpAndSettle();
+    expect(ringed(), isTrue, reason: 'keyboard focus shows the ring');
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
     expect(taps, 1);
   });
 
@@ -594,7 +716,7 @@ void main() {
       expect(_visible(tester), 'Not accepted');
     });
 
-    testWidgets('unconfirmed offers Try again into onOpen, keeps its label', (
+    testWidgets('unconfirmed is one tap target into onOpen, keeps its label', (
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
@@ -608,14 +730,67 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Try again'), findsOneWidget);
+      expect(_visible(tester), 'Not confirmed yet');
+      // The sheet it opens is where the retry lives: no second target.
+      expect(find.text('Try again'), findsNothing);
+      expect(find.byType(InkWell), findsOneWidget);
       expect(
         find.bySemanticsLabel('Unconfirmed, open to retry'),
         findsOneWidget,
       );
-      await tester.tap(find.text('Try again'));
+      await tester.tap(find.text('Not confirmed yet'));
       expect(opens, 1);
       semantics.dispose();
     });
+
+    // The wrapper's live call sites put it in KitRow.trailing (an unflexed
+    // Row child, team_needs_you.dart) behind a leading icon and a two-line
+    // title: it must fit a 360 dp phone at large text.
+    for (final scale in const [1.3, 2.0]) {
+      testWidgets(
+        'unconfirmed fits a KitRow trailing at 360 dp, text x$scale',
+        (tester) async {
+          tester.view.physicalSize = const Size(360, 800);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          var opens = 0;
+          await tester.pumpWidget(
+            MediaQuery(
+              data: MediaQueryData(
+                size: const Size(360, 800),
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: _app(
+                Builder(
+                  builder: (context) => KitRow(
+                    leading: KitRow.icon(context, AppIconography.warning),
+                    title:
+                        'Approve the database migration for the release '
+                        'branch before the nightly run',
+                    titleMaxLines: 2,
+                    supporting: const TextSpan(text: 'Approval · 2m ago'),
+                    trailing: Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        start: 8,
+                        end: 12,
+                      ),
+                      child: TeamReceiptChip(
+                        record: record(MutationStatus.unconfirmed),
+                        onOpen: () => opens++,
+                      ),
+                    ),
+                    onTap: () {},
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          await tester.tap(find.byType(TeamReceiptChip));
+          expect(opens, 1);
+        },
+      );
+    }
   });
 }

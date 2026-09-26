@@ -22448,6 +22448,24 @@
       }
     }
   },
+  "kitReceiptAnsweredElsewhereUnknown": "Answered on another device",
+  "@kitReceiptAnsweredElsewhereUnknown": {
+    "description": "Kit receipt: someone answered this on another device first, and the app does not know which device"
+  },
+  "kitReceiptActRefusedReason": "{act}: {reason}",
+  "@kitReceiptActRefusedReason": {
+    "description": "Kit receipt, automatic line: the automatic act the server refused, then its reason ('Restarted the phone's server: the server is busy'); the error mark beside it says it was refused",
+    "placeholders": {
+      "act": {
+        "type": "String",
+        "example": "Restarted the phone's server"
+      },
+      "reason": {
+        "type": "String",
+        "example": "the server is busy"
+      }
+    }
+  },
   "kitReceiptAt": "at {time}",
   "@kitReceiptAt": {
     "description": "Kit receipt: when the latest change happened, after the receipt's word: 'Sent at 10:42'",

@@ -1,0 +1,204 @@
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart
+00:00 +0: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation the recorded normal run yields the five timestamps in order
+00:00 +1: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation the recorded run, cut after routing, waits for an agent
+00:00 +2: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation a routed-only item with no events is agent starting
+00:00 +3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation nothing known: routed pending, nothing reached
+00:00 +4: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation hostNotStarted: routed over three minutes, no agent
+00:00 +5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation agentCannotStart: woke and stopped twice within a minute
+00:00 +6: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation providerLimit: the transcript names a usage limit
+00:00 +7: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation the provider-limit words: usage limit, quota, rate limit
+00:00 +8: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation workingLong: over thirty minutes with nothing pushed
+00:00 +9: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation mergeWaiting: handed to the refinery over fifteen minutes ago
+00:00 +10: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation handed to the refinery 20 h ago, no events: times are the bead's update, and the merge wait is a stall
+00:00 +11: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation no timestamps at all: reached steps carry no time, and nothing counts as a stall
+00:00 +12: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation an event times a step the item left untimed; later untimed steps stay untimed
+00:00 +13: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: derivation merged: closed bead, completed item or completed run end it
+00:00 +14: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: controller cycleForRun is the least-advanced tracked item
+00:00 +15: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: controller the tick runs only while a strip watches a moving cycle
+00:01 +16: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip done steps carry a check and time, the current step pulses, the rest sit dim
+00:01 +17: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip reduced motion: static, no ticker; merged: none either
+00:01 +18: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip hostNotStarted: sentence, Refresh and the How sheet
+00:01 +19: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip agentCannotStart: sentence and the How sheet first
+00:01 +20: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip providerLimit from the probed transcript: Open agent output, and Stop in two steps
+00:02 +21: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip providerLimit without controls: no Stop
+00:02 +22: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip workingLong: sentence and Open agent output
+00:02 +23: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip TEAM-117: the refinery bead the day before, no update time: checks without times, the merge sentence, never the clock
+00:02 +24: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip mergeWaiting: Nudge refinery with controls, Refresh without
+00:02 +25: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip 320dp 2.5x rtl en: the strip wraps to rows and fits
+00:02 +26: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip 320dp 2.5x rtl ar: the strip wraps to rows and fits
+00:02 +27: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip 320dp 2.5x ltr en: the strip wraps to rows and fits
+00:02 +28: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: strip 320dp 2.5x ltr ar: the strip wraps to rows and fits
+00:02 +29: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: placement the card shows no strip: the task line says where it is (AI Team redesign)
+00:02 +30: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: placement the run Overview shows the four stages and why it waits, with no time it cannot know (TEAM-117)
+00:03 +31: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_cycle_test.dart: placement the Work sheet shows the full strip at the top
+00:03 +32: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart
+00:05 +32: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: gating read-only host: no controls, no FAB, no run menu
+00:07 +33: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: gating front host: every control, never Open session
+00:07 +34: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: gating only the granted controls exist
+00:07 +35: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: gating a stopped agent offers Resume and no Stop
+00:07 +36: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: nudge one tap sends the nudge and the chip follows the record
+00:07 +37: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: nudge no result inside the window: Unconfirmed, never re-sent
+00:07 +38: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: nudge the host refuses: Refused with the reason
+00:07 +39: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: two-step Stop: first tap confirms, second sends
+00:08 +40: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: two-step Stop: backing out sends nothing
+00:08 +41: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: two-step Restart: confirmation then the restart action
+00:08 +42: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: two-step Cancel run: overflow → confirmation → cancelRun
+00:08 +43: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: two-step Cancel run: backing out sends nothing
+00:08 +44: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: two-step a batch offers Close batch; a finished run offers nothing
+00:09 +45: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: message and reassign Message: the sheet sends the text
+00:09 +46: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: message and reassign Reassign: the picker lists ready work and sends assign
+00:09 +47: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: message and reassign Reassign: nothing ready says so
+00:09 +48: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run an empty Runs list teaches and offers Start a run
+00:10 +49: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run sends objective + supervision to the Mayor, shows Planning, resolves
+00:10 +50: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run a chosen project is named in the message
+00:10 +51: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run a suspended Mayor: host-off copy, nothing sent
+00:11 +52: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run TEAM-306: a suspended Mayor on the phone host shows the direct task form; Send creates the work and slings it at the project pool
+00:11 +53: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run TEAM-306: a refused direct task stays on the sheet and says why; nothing is slung
+00:11 +54: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run TEAM-306: no project listed: the host-off copy, even on the phone host
+00:11 +55: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run no Mayor listed: the missing copy
+00:11 +56: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run a Mayor without a session is woken before the message
+00:11 +57: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run after 30 minutes: Still planning; Dismiss hides it
+00:12 +58: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run a refused objective says why
+00:12 +59: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: start a run the planning message round-trips through its record
+00:12 +60: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: layout agent controls and the start sheet at 320dp × 2.5x ltr
+00:12 +61: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_controls_test.dart: layout agent controls and the start sheet at 320dp × 2.5x rtl
+00:13 +62: All tests passed!
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart
+00:00 +0: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart: the task reads as a conversation from the team's real data
+00:01 +1: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart: Message the team goes through the team's control, never into the worker's OpenCode session
+00:01 +2: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart: the worker card opens its conversation in watching mode
+00:02 +3: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart: a question from the team is the request card, answered here
+00:02 +4: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart: many steps fold under one line
+00:02 +5: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart: a task just given binds to its run once the team lists it
+00:02 +6: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart: the task Overview opens the task as a conversation
+00:03 +7: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart: drawn the chat's one way the lead reads as a plain reply: no fill, no bullets
+00:03 +8: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart: drawn the chat's one way many lead lines fold the earlier ones under one line
+00:03 +9: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart: drawn the chat's one way a worker is a sub-agent line, not a boxed card
+00:03 +10: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_conversation_screen_test.dart: drawn the chat's one way the header never says Paused while the worker runs
+00:03 +11: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_one_page_test.dart
+00:04 +11: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_one_page_test.dart: P0.3: every door lands on the conversation a team-home task row opens its conversation, not RunScreen
+00:06 +12: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_one_page_test.dart: P0.3: every door lands on the conversation team-home opened from a conversation comes back to the same task instead of stacking a second copy
+00:06 +13: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_one_page_test.dart: P0.3: every door lands on the conversation "Give the team a task" on team-home lands on the new task's conversation
+00:07 +14: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_one_page_test.dart: P0.4: Stop task from the conversation Stop asks first, cancels the task and shows the receipt
+00:07 +15: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_one_page_test.dart: P0.4: Stop task from the conversation a refusal reads as the host's own words
+00:07 +16: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_one_page_test.dart: P0.4: Stop task from the conversation no Stop on a finished task
+00:07 +17: /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_one_page_test.dart: P0.4: Stop task from the conversation no Stop where the host takes no cancel control
+00:07 +18: All tests passed!

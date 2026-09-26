@@ -57,36 +57,33 @@ Downloading packages...
 Got dependencies!
 54 packages have newer versions incompatible with dependency constraints.
 Try `flutter pub outdated` for more information.
-00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/kit/kit_receipt_test.dart
-00:00 +0: every state sent renders "Sent" and its mark
-00:00 +1: every state confirmed renders "Done" and its mark
-00:00 +2: every state notConfirmed renders "Not confirmed yet" and its mark
-00:00 +3: every state refused renders "Not accepted" and its mark
-00:00 +4: every state answeredElsewhere renders "Answered on the laptop" and its mark
-00:00 +5: every state marks carry the spec colours
-00:00 +6: every state sending shows a working ring
-00:00 +7: every state a sent receipt with a label never says the act
-00:00 +8: every state confirmed with a label says the act
-00:00 +9: escalation (STATE-5, STATE-10) sent turns into Not confirmed yet at 8 s, announced once
-00:01 +10: escalation (STATE-5, STATE-10) sending with since escalates too
-00:01 +11: escalation (STATE-5, STATE-10) confirmed never escalates
-00:01 +12: announcements: three transitions, three announcements; a rebuild with the same state none (A11Y-3)
-00:01 +13: Undo shows until at + 8 s and calls onUndo once
-00:01 +14: Undo is never offered on a receipt that is not confirmed
-00:01 +15: refused names the reason; answered elsewhere the device
-00:01 +16: answered elsewhere with no device says "another device"
-00:01 +17: semantics: word, reason and time; the mark is excluded
-00:01 +18: automatic: "{label} at {time}" with Undo (KitAutoLine)
-00:01 +19: automatic names the act in every state, beside the state's own mark
-00:01 +20: span: the same words, no actions
-00:01 +21: onTap makes the words one button
-00:01 +22: onTap: keyboard focus draws the kit ring and Enter taps
-00:01 +23: actions are 48 dp targets
-00:01 +24: 200 % text wraps, never truncates, and stays in bounds
-00:01 +25: reduced motion: sending is a still dot and settles
-00:01 +26: TeamReceiptChip wrapper (C24) confirmed renders nothing
-00:01 +27: TeamReceiptChip wrapper (C24) sent and rejected show their words; tap opens
-00:01 +28: TeamReceiptChip wrapper (C24) unconfirmed is one tap target into onOpen, keeps its label
-00:01 +29: TeamReceiptChip wrapper (C24) unconfirmed fits a KitRow trailing at 360 dp, text x1.3
-00:01 +30: TeamReceiptChip wrapper (C24) unconfirmed fits a KitRow trailing at 360 dp, text x2.0
-00:01 +31: All tests passed!
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/goldens/kit/kit_receipt_golden_test.dart
+00:00 +0: (setUpAll)
+00:00 +0: sending · 412x915 · dark
+00:00 +1: sent · 412x915 · dark
+00:00 +2: not_confirmed · 412x915 · dark
+00:01 +3: confirmed · 412x915 · dark
+00:01 +4: refused · 412x915 · dark
+00:01 +5: answered_elsewhere · 412x915 · dark
+00:01 +6: automatic · 412x915 · dark
+00:01 +7: span_in_rows · 412x915 · dark
+00:01 +8: default (confirmed) · 1280x800 · dark
+00:01 +9: not_confirmed · 2.0 text · 412x915 · dark
+00:01 +10: not_confirmed · 2.0 text · 1280x800 · dark
+00:01 +11: answered_elsewhere · 2.0 text · 412x915 · dark
+00:02 +12: answered_elsewhere · 2.0 text · 1280x800 · dark
+00:02 +13: sending · 412x915 · light
+00:02 +14: sent · 412x915 · light
+00:02 +15: not_confirmed · 412x915 · light
+00:02 +16: confirmed · 412x915 · light
+00:02 +17: refused · 412x915 · light
+00:02 +18: answered_elsewhere · 412x915 · light
+00:02 +19: automatic · 412x915 · light
+00:02 +20: span_in_rows · 412x915 · light
+00:02 +21: default (confirmed) · 1280x800 · light
+00:03 +22: not_confirmed · 2.0 text · 412x915 · light
+00:03 +23: not_confirmed · 2.0 text · 1280x800 · light
+00:03 +24: answered_elsewhere · 2.0 text · 412x915 · light
+00:03 +25: answered_elsewhere · 2.0 text · 1280x800 · light
+00:03 +26: (tearDownAll)
+00:03 +26: All tests passed!

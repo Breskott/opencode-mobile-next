@@ -59,7 +59,7 @@ Got dependencies!
 Try `flutter pub outdated` for more information.
 00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_gate_answer_test.dart
 00:00 +0: choice Send routes the option to exactly the gate's request id
-00:01 +1: choice a confirmed answer says Answered and closes the sheet
+00:00 +1: choice a confirmed answer says Answered and closes the sheet
 00:01 +2: free text the composer sends the text under action "text"
 00:01 +3: confirmation Approve on a safe prompt is one tap; Deny is two-step red
 00:01 +4: confirmation a destructive approve is two-step in the error tone
@@ -106,15 +106,109 @@ The test description was:
 00:04 +19 -1: notifications SessionLinkIntent accepts a team link beside session links
 00:04 +20 -1: notifications a decision notification tap opens the exact sheet, sends nothing
 00:05 +21 -1: notifications a completed-run notification tap opens the task's conversation (P0.3), not the run page
-00:06 +22 -1: layout 320dp 2.5x rtl en: every variant with actions fits
+00:05 +22 -1: layout 320dp 2.5x rtl en: every variant with actions fits
 00:06 +23 -1: layout 320dp 2.5x rtl en: the receipt with Retry fits
 00:06 +24 -1: layout 320dp 2.5x rtl ar: every variant with actions fits
-00:07 +25 -1: layout 320dp 2.5x rtl ar: the receipt with Retry fits
-00:07 +26 -1: layout 320dp 2.5x ltr en: every variant with actions fits
-00:08 +27 -1: layout 320dp 2.5x ltr en: the receipt with Retry fits
-00:08 +28 -1: layout 320dp 2.5x ltr ar: every variant with actions fits
-00:08 +29 -1: layout 320dp 2.5x ltr ar: the receipt with Retry fits
-00:08 +30 -1: Some tests failed.
+00:06 +25 -1: layout 320dp 2.5x rtl ar: the receipt with Retry fits
+00:06 +26 -1: layout 320dp 2.5x ltr en: every variant with actions fits
+00:07 +27 -1: layout 320dp 2.5x ltr en: the receipt with Retry fits
+00:07 +28 -1: layout 320dp 2.5x ltr ar: every variant with actions fits
+00:07 +29 -1: layout 320dp 2.5x ltr ar: the receipt with Retry fits
+00:07 +30 -1: Some tests failed.
 
 Failing tests:
   /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_gate_answer_test.dart: rows Activity: an unconfirmed row offers Retry into the sheet
+
+--- probe: line 1060 finder changed to find.text("Not confirmed yet") (reverted) ---
+Resolving dependencies...
+Downloading packages...
+  android_file_picker 1.1.0 (2.0.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 2.0.0 (2.1.0 available)
+  cross_file 0.3.5+5 (0.4.0 available)
+  dbus 0.7.15 (0.8.0 available)
+  dio 5.11.0 (5.11.1 available)
+  dio_web_adapter 2.2.1 (2.2.2 available)
+  dynamic_color 1.9.0 (2.1.0 available)
+  equatable 2.0.7 (3.0.0 available)
+  file_picker 12.2.0 (13.1.0 available)
+  file_picker_darwin 1.1.0 (2.1.2 available)
+  file_picker_linux 1.1.0 (2.0.1 available)
+  file_picker_platform_interface 3.3.0 (4.0.0 available)
+  file_picker_web 3.1.0 (4.0.0 available)
+  flutter_secure_storage 11.0.0 (11.2.0 available)
+  flutter_secure_storage_darwin 0.4.0 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.2 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.3 (2.1.1 available)
+  image_picker_android 0.8.13+22 (0.8.13+23 available)
+  image_picker_ios 0.8.13+7 (0.8.13+8 available)
+  jni_flutter 1.0.2 (1.0.3 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mime 2.0.0 (2.1.0 available)
+  mobile_scanner 7.4.0 (7.4.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  qr 3.0.2 (4.0.0 available)
+  record_android 2.1.2 (2.2.0 available)
+  record_linux 2.1.1 (2.1.2 available)
+  record_web 2.1.2 (2.1.3 available)
+  record_windows 2.2.3 (2.3.0 available)
+  shared_preferences_android 2.4.27 (2.4.28 available)
+  shared_preferences_foundation 2.5.6 (2.5.7 available)
+  sherpa_onnx 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_arm64 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_armeabi 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86 1.13.7 (1.13.8 available)
+  sherpa_onnx_android_x86_64 1.13.7 (1.13.8 available)
+  sherpa_onnx_ios 1.13.7 (1.13.8 available)
+  sherpa_onnx_linux 1.13.7 (1.13.8 available)
+  sherpa_onnx_macos 1.13.7 (1.13.8 available)
+  sherpa_onnx_web 1.13.7 (1.13.8 available)
+  sherpa_onnx_windows 1.13.7 (1.13.8 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.14 available)
+  url_launcher_android 6.3.32 (6.3.33 available)
+  url_launcher_ios 6.4.1 (6.4.2 available)
+  url_launcher_linux 3.2.2 (3.2.3 available)
+  url_launcher_macos 3.2.5 (3.2.6 available)
+  url_launcher_windows 3.1.5 (3.1.6 available)
+  vector_math 2.4.2 (2.4.3 available)
+  windows_file_picker 1.2.0 (2.0.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_501a46a2-753-1/test/team_gate_answer_test.dart
+00:00 +0: choice Send routes the option to exactly the gate's request id
+00:00 +1: choice a confirmed answer says Answered and closes the sheet
+00:01 +2: free text the composer sends the text under action "text"
+00:01 +3: confirmation Approve on a safe prompt is one tap; Deny is two-step red
+00:01 +4: confirmation a destructive approve is two-step in the error tone
+00:01 +5: gate bead Mark done answers the bead gate
+00:01 +6: run failed Retry re-slings the stuck work to its agent
+00:01 +7: run failed Cancel work is two-step in red and cancels the run
+00:02 +8: run failed View logs and Restart or reassign open the agent screens
+00:02 +9: receipts unconfirmed: the copy, Retry under a new key, old marked
+00:02 +10: receipts rejected: the host's message and Try again
+00:02 +11: receipts a sent answer with no result becomes unconfirmed
+00:02 +12: rows Activity: Sent chip, row leaves only on confirmation
+00:02 +13: rows Activity: an unconfirmed row offers Retry into the sheet
+00:03 +14: rows home Needs you: the chip and the row removal
+00:03 +15: capabilities no control capability: actions absent, host line stays
+00:03 +16: notifications tracker: baseline, one alert per id, kinds, settled
+00:03 +17: notifications one alert per gate, ids and fixed copy only, dismissed on settle
+00:03 +18: notifications in the foreground nothing is posted
+00:03 +19: notifications TeamLink: ids only, both shapes, strict parse
+00:03 +20: notifications SessionLinkIntent accepts a team link beside session links
+00:03 +21: notifications a decision notification tap opens the exact sheet, sends nothing
+00:04 +22: notifications a completed-run notification tap opens the task's conversation (P0.3), not the run page
+00:04 +23: layout 320dp 2.5x rtl en: every variant with actions fits
+00:05 +24: layout 320dp 2.5x rtl en: the receipt with Retry fits
+00:05 +25: layout 320dp 2.5x rtl ar: every variant with actions fits
+00:05 +26: layout 320dp 2.5x rtl ar: the receipt with Retry fits
+00:05 +27: layout 320dp 2.5x ltr en: every variant with actions fits
+00:06 +28: layout 320dp 2.5x ltr en: the receipt with Retry fits
+00:06 +29: layout 320dp 2.5x ltr ar: every variant with actions fits
+00:06 +30: layout 320dp 2.5x ltr ar: the receipt with Retry fits
+00:06 +31: All tests passed!

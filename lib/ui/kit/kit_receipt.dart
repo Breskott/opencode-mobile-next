@@ -38,8 +38,10 @@ enum KitReceiptState {
 /// again, "Not accepted: {reason}", "Answered on {where}".
 ///
 /// With [automatic] it is the automation vertical's `KitAutoLine` (AUTO-4):
-/// "Restarted the phone's server at 10:42" with Undo while the window is
-/// open.
+/// "Restarted the phone's server at 10:42 · Undo". The [label] names the
+/// act in every state and the state's own mark stays beside it, so an
+/// automatic act that was only sent keeps the sent check, never the success
+/// check (STATE-10).
 ///
 /// A waiting receipt (sending or sent, with [since]) turns into "Not
 /// confirmed yet" with Try again after [KitMotion.escalateAfter], on
@@ -75,9 +77,11 @@ class KitReceipt extends StatelessWidget {
 
   final KitReceiptState state;
 
-  /// The words for the act, replacing the confirmed word: "Allowed once",
-  /// "Restarted the phone's server". Used only once the write is
-  /// confirmed: a label never makes a sent write read as done (STATE-10).
+  /// The words for the act, replacing the confirmed word: "Allowed once".
+  /// On an ordinary receipt it is used only once the write is confirmed: a
+  /// label never makes a sent write read as done (STATE-10). On an
+  /// [automatic] line it replaces the state word in every state
+  /// ("Restarted the phone's server"), beside the state's own mark.
   final String? label;
 
   /// [KitReceiptState.refused]: the server's reason in plain words.
@@ -103,7 +107,8 @@ class KitReceipt extends StatelessWidget {
   /// The receipt opens where the write lives (the gate sheet).
   final VoidCallback? onTap;
 
-  /// The automatic-action line (KitAutoLine, AUTO-4).
+  /// The automatic-action line (KitAutoLine, AUTO-4): "{label} at {time}",
+  /// with " · " before its action.
   final bool automatic;
 
   final Key? retryKey;
@@ -140,13 +145,14 @@ class KitReceipt extends StatelessWidget {
         if (shown != KitReceiptState.confirmed || undo == null) {
           return _body(context, shown, undoOpen: false);
         }
-        // The Undo window rides the kit's one wait timer: it closes when a
-        // wait begun at [at] turns slow, and [KitMotion.undoWindow] equals
-        // [KitMotion.escalateAfter] (both 8 s, K2 §1.16/§1.17). With no
-        // [at], it stays open while the caller offers [onUndo].
-        assert(KitMotion.undoWindow == KitMotion.escalateAfter);
+        // The Undo window rides the kit's one wait timer: a wait turns slow
+        // [KitMotion.escalateAfter] after its start, so a wait started at
+        // [at] + (undoWindow - escalateAfter) turns slow exactly at
+        // [at] + [KitMotion.undoWindow], whatever the two constants are.
+        // With no [at], it stays open while the caller offers [onUndo].
+        final opened = at;
         return KitSince(
-          since: at,
+          since: opened?.add(KitMotion.undoWindow - KitMotion.escalateAfter),
           builder: (context, window) =>
               _body(context, shown, undoOpen: !window.isSlow),
         );
@@ -171,12 +177,19 @@ class KitReceipt extends StatelessWidget {
       reason: reason,
       label: label,
       where: where,
+      automatic: automatic,
     );
     final time = at == null ? null : _time(context, at!);
     final atWords = time == null ? null : l10n.kitReceiptAt(time);
     final trimmedReason = reason?.trim();
     final semanticsLabel = [
-      _plainWord(context, shown, label: label, where: where),
+      _plainWord(
+        context,
+        shown,
+        label: label,
+        where: where,
+        automatic: automatic,
+      ),
       if (shown == KitReceiptState.refused &&
           trimmedReason != null &&
           trimmedReason.isNotEmpty)
@@ -198,58 +211,6 @@ class KitReceipt extends StatelessWidget {
       ),
     );
 
-    final words = KitText.rich(
-      TextSpan(
-        children: [
-          TextSpan(
-            text: word,
-            style: TextStyle(color: _wordColor(roles, shown)),
-          ),
-          if (atWords != null)
-            TextSpan(
-              text: ' $atWords',
-              style: TextStyle(color: roles.text2),
-            ),
-        ],
-      ),
-      role: KitTextRole.secondary,
-    );
-
-    Widget line = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        mark,
-        SizedBox(width: tokens.space2),
-        Flexible(child: words),
-      ],
-    );
-    final tap = onTap;
-    if (tap != null) {
-      line = InkWell(
-        onTap: tap,
-        borderRadius: BorderRadius.circular(tokens.space2),
-        hoverColor: roles.surface2,
-        focusColor: roles.surface3,
-        highlightColor: roles.surface3,
-        splashFactory: NoSplash.splashFactory,
-        // A 48 dp target (LAY-9) whose words stay flush with the text above.
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: tokens.minTarget),
-          child: line,
-        ),
-      );
-    }
-    // The one live region (A11Y-3): its label changes once per transition,
-    // and a rebuild with the same words sends nothing new to announce.
-    line = Semantics(
-      container: true,
-      liveRegion: true,
-      button: tap != null,
-      onTap: tap,
-      label: semanticsLabel,
-      child: ExcludeSemantics(child: line),
-    );
-
     final retry = onRetry;
     final actions = <Widget>[
       if (shown == KitReceiptState.notConfirmed && retry != null)
@@ -266,6 +227,53 @@ class KitReceipt extends StatelessWidget {
         ),
     ];
 
+    final words = KitText.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: word,
+            style: TextStyle(color: _wordColor(roles, shown)),
+          ),
+          if (atWords != null)
+            TextSpan(
+              text: ' $atWords',
+              style: TextStyle(color: roles.text2),
+            ),
+          // KitAutoLine: "{label} at {time} · Undo". The line breaks after
+          // the separator, so the dot ends the words and the action follows
+          // on the same line or starts the next. The live region's label
+          // does not carry it, so it never re-announces.
+          if (automatic && actions.isNotEmpty)
+            TextSpan(
+              text: ' ·',
+              style: TextStyle(color: roles.text2),
+            ),
+        ],
+      ),
+      role: KitTextRole.secondary,
+    );
+
+    Widget line = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        mark,
+        SizedBox(width: tokens.space2),
+        Flexible(child: words),
+      ],
+    );
+    final tap = onTap;
+    if (tap != null) line = _TapTarget(onTap: tap, child: line);
+    // The one live region (A11Y-3): its label changes once per transition,
+    // and a rebuild with the same words sends nothing new to announce.
+    line = Semantics(
+      container: true,
+      liveRegion: true,
+      button: tap != null,
+      onTap: tap,
+      label: semanticsLabel,
+      child: ExcludeSemantics(child: line),
+    );
+
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       spacing: tokens.space2,
@@ -279,6 +287,7 @@ class KitReceipt extends StatelessWidget {
               ? const SizedBox.shrink(key: ValueKey('none'))
               : Wrap(
                   key: ValueKey((shown, undoOpen)),
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: tokens.space2,
                   children: actions,
                 ),
@@ -288,22 +297,43 @@ class KitReceipt extends StatelessWidget {
   }
 }
 
-/// The word a receipt shows: the state word, or for confirmed the act.
+/// The word a receipt shows: the state word, or for confirmed (and on an
+/// automatic line, for every state) the act.
 String _visibleWord(
   BuildContext context,
   KitReceiptState state, {
   String? reason,
   String? label,
   String? where,
+  bool automatic = false,
 }) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
   final trimmed = reason?.trim();
   if (state == KitReceiptState.refused &&
       trimmed != null &&
       trimmed.isNotEmpty) {
-    return l10n.kitReceiptRefusedReason(KitBidi.auto(trimmed));
+    final act = _automaticAct(label, automatic);
+    return act == null
+        ? l10n.kitReceiptRefusedReason(KitBidi.auto(trimmed))
+        : l10n.kitReceiptActRefusedReason(
+            KitBidi.auto(act),
+            KitBidi.auto(trimmed),
+          );
   }
-  return _plainWord(context, state, label: label, where: where);
+  return _plainWord(
+    context,
+    state,
+    label: label,
+    where: where,
+    automatic: automatic,
+  );
+}
+
+/// The act an automatic line names in place of the state word, if any.
+String? _automaticAct(String? label, bool automatic) {
+  if (!automatic) return null;
+  final act = label?.trim();
+  return act == null || act.isEmpty ? null : act;
 }
 
 /// The word without the refusal's reason (semantics lists that apart).
@@ -312,8 +342,13 @@ String _plainWord(
   KitReceiptState state, {
   String? label,
   String? where,
+  bool automatic = false,
 }) {
   final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+  // KitAutoLine (KitReceipt.md States, "automatic"): the act replaces the
+  // state word in every state; the state's own mark says how far it got.
+  final automaticAct = _automaticAct(label, automatic);
+  if (automaticAct != null) return KitBidi.auto(automaticAct);
   final act = label?.trim();
   final place = where?.trim();
   return switch (state) {
@@ -325,9 +360,10 @@ String _plainWord(
           : l10n.kitReceiptConfirmed,
     KitReceiptState.notConfirmed => l10n.kitReceiptNotConfirmed,
     KitReceiptState.refused => l10n.kitReceiptRefused,
-    KitReceiptState.answeredElsewhere => l10n.kitReceiptAnsweredElsewhere(
-      KitBidi.auto(place != null && place.isNotEmpty ? place : '…'),
-    ),
+    KitReceiptState.answeredElsewhere =>
+      place != null && place.isNotEmpty
+          ? l10n.kitReceiptAnsweredElsewhere(KitBidi.auto(place))
+          : l10n.kitReceiptAnsweredElsewhereUnknown,
   };
 }
 
@@ -397,3 +433,64 @@ String _time(BuildContext context, DateTime at) =>
       TimeOfDay.fromDateTime(at.toLocal()),
       alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
     );
+
+/// The receipt as one button (KitReceipt.md Adaptive: "`onTap` makes the
+/// receipt one button (focus ring, Enter)"): a 48 dp target (LAY-9) whose
+/// words stay flush with the text above; keyboard focus draws the kit's
+/// focus ring ([KitTokens.focusRingWidth] in `accent`, as [KitButton]
+/// does, LOOK-21), and hover only highlights.
+class _TapTarget extends StatefulWidget {
+  const _TapTarget({required this.onTap, required this.child});
+
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  State<_TapTarget> createState() => _TapTargetState();
+}
+
+class _TapTargetState extends State<_TapTarget> {
+  final WidgetStatesController _states = WidgetStatesController();
+
+  @override
+  void dispose() {
+    _states.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    final roles = tokens.roles;
+    final radius = BorderRadius.circular(tokens.space2);
+    return ListenableBuilder(
+      listenable: _states,
+      builder: (context, child) => DecoratedBox(
+        position: DecorationPosition.foreground,
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          border: _states.value.contains(WidgetState.focused)
+              ? Border.all(
+                  color: roles.accent,
+                  width: KitTokens.focusRingWidth(context),
+                )
+              : null,
+        ),
+        child: child,
+      ),
+      child: InkWell(
+        onTap: widget.onTap,
+        statesController: _states,
+        borderRadius: radius,
+        hoverColor: roles.surface2,
+        focusColor: Colors.transparent,
+        highlightColor: roles.surface3,
+        splashFactory: NoSplash.splashFactory,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: tokens.minTarget),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}

@@ -101,6 +101,15 @@ String? teamReceiptChipLabel(AppLocalizations l10n, MutationRecord record) =>
 /// confirmed and for a gate never answered from here, so screens do not
 /// grow "Done" words before their own units adopt [KitReceipt].
 ///
+/// Its call sites put it in a row's trailing slot (`KitRow.trailing`,
+/// `ListTile.trailing`), which gives it unbounded width. So it stays one
+/// compact tap target, as the chip was: the receipt with `onTap: onOpen` and
+/// no separate Try again (the sheet it opens is where the retry lives), at
+/// most [maxWidthFraction] of the screen wide so its words wrap instead of
+/// squeezing the row's title or overflowing (KitReceipt.md "The wrapper
+/// keeps meaning" asks for `onRetry: onOpen`; that is a PROC-20 contract
+/// problem in docs/qa/revamp-kit-KitReceipt-2026-09-27/README.md).
+///
 /// Retired by kit-KitReceipt: use [KitReceipt]. A thin forwarding wrapper
 /// (KitReceipt.md, C24; STANDARDS KIT-43 forbids `@Deprecated`, which would
 /// put infos into every caller's analyze); slice-P4.1c deletes it.
@@ -116,6 +125,9 @@ class TeamReceiptChip extends StatelessWidget {
   /// Opens the Gate sheet, where the retry lives.
   final VoidCallback onOpen;
 
+  /// The share of the screen width the trailing receipt may take.
+  static const double maxWidthFraction = .4;
+
   @override
   Widget build(BuildContext context) {
     final state = switch (record.status) {
@@ -125,13 +137,13 @@ class TeamReceiptChip extends StatelessWidget {
       MutationStatus.confirmed => null,
     };
     if (state == null) return const SizedBox.shrink();
-    final retry = state == KitReceiptState.notConfirmed;
-    final receipt = KitReceipt(
-      state: state,
-      onRetry: retry ? onOpen : null,
-      onTap: onOpen,
+    final maxWidth = (MediaQuery.sizeOf(context).width * maxWidthFraction)
+        .floorToDouble();
+    final Widget receipt = ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: KitReceipt(state: state, onTap: onOpen),
     );
-    if (!retry) return receipt;
+    if (state != KitReceiptState.notConfirmed) return receipt;
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
     // The chip's retry label is kept (KitReceipt.md, "The wrapper keeps
     // meaning"): one button that opens the sheet where the retry lives.
