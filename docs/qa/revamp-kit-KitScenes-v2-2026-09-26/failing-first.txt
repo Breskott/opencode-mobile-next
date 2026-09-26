@@ -1,0 +1,40 @@
+# Fix round, failing first (2026-09-26)
+# Pinned Flutter 3.47.1; worktree wf_ce49045b-395-3, branch revamp/kit-KitScenes-v2, on bd49124e plus the new test only.
+
+## A. New group 3 (any-role washes, variants incl. SetupPhoneScene(stopped)) before the scene fix
+$ flutter test -j 1 test/kit/kit_scenes_test.dart
+3. Flat, light fills (LOOK-36) SetupPhoneScene(stopped), catppuccinDark [E]
+3. Flat, light fills (LOOK-36) SetupPhoneScene(stopped), graphiteDark [E]
+3. Flat, light fills (LOOK-36) SetupPhoneScene(stopped), graphiteLight [E]
+3. Flat, light fills (LOOK-36) SetupStepsScene(halted: failed), catppuccinDark [E]
+3. Flat, light fills (LOOK-36) SetupStepsScene(halted: failed), graphiteDark [E]
+3. Flat, light fills (LOOK-36) SetupStepsScene(halted: failed), graphiteLight [E]
+3. Flat, light fills (LOOK-36) SetupStepsScene(halted: paused), catppuccinDark [E]
+3. Flat, light fills (LOOK-36) SetupStepsScene(halted: paused), graphiteDark [E]
+3. Flat, light fills (LOOK-36) SetupStepsScene(halted: paused), graphiteLight [E]
+3. Flat, light fills (LOOK-36) SetupStepsScene(install, halted: failed), catppuccinDark [E]
+3. Flat, light fills (LOOK-36) SetupStepsScene(install, halted: failed), graphiteDark [E]
+3. Flat, light fills (LOOK-36) SetupStepsScene(install, halted: failed), graphiteLight [E]
+3. Flat, light fills (LOOK-36) SetupUnpluggedScene, catppuccinDark [E]
+3. Flat, light fills (LOOK-36) SetupUnpluggedScene, graphiteDark [E]
+3. Flat, light fills (LOOK-36) SetupUnpluggedScene, graphiteLight [E]
++170 -15: Some tests failed. (all 15 failures are the group-3 rows above; groups 1, 2, 4, 5, 6 pass)
+
+First failure messages:
+  Expected: a value less than or equal to <0.120001>
+    Actual: <0.3500000238418579>
+     Which: is not a value less than or equal to <0.120001>
+  SetupUnpluggedScene (graphiteDark, loop 0.0): a translucent fill over Size(68.0, 68.0) scene units is a wash and must stay at or under KitTokens.sceneWashAlpha (0.12); it is Color(alpha: 0.3500, red: 0.5412, green: 0.5529, blue: 0.5804, colorSpace: ColorSpace.sRGB)
+  Expected: a value less than or equal to <0.120001>
+    Actual: <0.5>
+     Which: is not a value less than or equal to <0.120001>
+  SetupStepsScene(halted: failed) (graphiteDark, loop 0.0): a translucent fill over Size(60.0, 60.0) scene units is a wash and must stay at or under KitTokens.sceneWashAlpha (0.12); it is Color(alpha: 0.5000, red: 0.5412, green: 0.5529, blue: 0.5804, colorSpace: ColorSpace.sRGB)
+
+## B. The old _sameHue (exact 64-bit channel equality) against a painted colour
+# Paint stores colours as 32-bit floats, so a painted role never compared equal:
+# the old groups 2 (no red, no amber) and 3 (accent washes) matched nothing and could not fail.
+$ flutter test -j 1 test/kit/kit_scenes_test.dart --plain-name 'not vacuous'   # with the old _sameHue restored
+  Expected: true
+    Actual: <false>
+  the portal paints the accent; a hue check that never matches a painted colour would let any scene through
+Some tests failed.
