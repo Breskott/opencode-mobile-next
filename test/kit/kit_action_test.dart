@@ -9,8 +9,11 @@
 // overflow into "More", with a destructive item last after a divider;
 // KitAction.copy; `working` ignores taps; the shortcut hint; and KIT-43
 // compatibility (old call shapes, old keys).
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
@@ -27,20 +30,78 @@ Future<void> _pumpAt(
   Widget child, {
   Size size = _compact,
   Locale locale = const Locale('en'),
+  double textScale = 1,
+  bool reducedMotion = false,
+  Key? appKey,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     MaterialApp(
+      key: appKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark(),
       locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(textScale),
+          disableAnimations: reducedMotion,
+        ),
+        child: child!,
+      ),
       home: Scaffold(body: child),
     ),
   );
+}
+
+/// Every kit button's full hit area (its [ButtonStyleButton], which holds
+/// the 48 dp target), not the words inside it (LAY-9).
+List<Rect> _buttonRects(WidgetTester tester) => [
+  for (final element
+      in find.byWidgetPredicate((w) => w is ButtonStyleButton).evaluate())
+    if (element.renderObject case final RenderBox box)
+      box.localToGlobal(Offset.zero) & box.size,
+];
+
+/// The hit area of the button labelled [label].
+Rect _buttonRect(WidgetTester tester, String label) => tester.getRect(
+  find
+      .ancestor(
+        of: find.text(label),
+        matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+      )
+      .first,
+);
+
+/// The clear distance between two rectangles (0 when they touch or
+/// overlap).
+double _gap(Rect a, Rect b) {
+  final dx = [b.left - a.right, a.left - b.right, 0.0].reduce(math.max);
+  final dy = [b.top - a.bottom, a.top - b.bottom, 0.0].reduce(math.max);
+  return math.sqrt(dx * dx + dy * dy);
+}
+
+/// Mocks the platform channel (the clipboard) and records what it gets.
+List<MethodCall> _mockClipboard() {
+  final calls = <MethodCall>[];
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+  messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+    calls.add(call);
+    return null;
+  });
+  addTearDown(
+    () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+  );
+  return calls;
+}
+
+String? _clipboardText(List<MethodCall> calls) {
+  final call = calls.lastWhere((c) => c.method == 'Clipboard.setData');
+  return (call.arguments as Map)['text'] as String?;
 }
 
 /// Connects a mouse for the test (a fine pointer, [KitLayout.finePointer]).
@@ -124,10 +185,7 @@ void main() {
         ),
       );
       expect(tester.takeException(), isNull);
-      expect(
-        find.byKey(const ValueKey('kit-action-reason-primary')),
-        findsNothing,
-      );
+      expect(find.byKey(const ValueKey('kit-action-reason')), findsNothing);
     });
 
     testWidgets('a row (medium+) collects reasons under it, end-aligned', (
@@ -188,15 +246,24 @@ void main() {
         expect(duplicate.dy, greaterThan(cancel.dy));
         expect(delete.dy, greaterThan(duplicate.dy));
 
-        // LAY-9: the destructive target keeps its clearance from the one
-        // above it.
-        final duplicateBottom = tester.getBottomLeft(find.text('Duplicate')).dy;
-        final deleteTop = tester.getTopLeft(find.text('Delete')).dy;
-        expect(deleteTop - duplicateBottom, greaterThanOrEqualTo(8));
+        // LAY-9: the destructive button's 48 dp area keeps 8 dp from every
+        // other target's area (the buttons, not their words).
+        final targets = _buttonRects(tester);
+        final deleteArea = _buttonRect(tester, 'Delete');
+        expect(deleteArea.height, greaterThanOrEqualTo(48));
+        expect(targets.length, 4);
+        for (final other in targets) {
+          if (other == deleteArea) continue;
+          expect(_gap(deleteArea, other), greaterThanOrEqualTo(8));
+        }
       });
     }
 
-    testWidgets('a short window keeps the stack even when wide (LAY-3)', (
+    // PROC-20 (QA record, contract problem 4): KitAction.md rule 1 / LAY-3
+    // ("a short window stacks") overflows KitRequestCard's 45 % large-text
+    // cap at 915x412 (G6), so that one item stays at today's behaviour: the
+    // window's width decides, and a short wide window keeps the row.
+    testWidgets('a short wide window keeps today\'s row (PROC-20)', (
       tester,
     ) async {
       await _pumpAt(
@@ -206,6 +273,20 @@ void main() {
           secondary: const KitAction(label: 'Cancel', onPressed: null),
         ),
         size: _shortWide,
+      );
+      final save = tester.getTopLeft(find.text('Save'));
+      final cancel = tester.getTopLeft(find.text('Cancel'));
+      expect(save.dy, cancel.dy);
+      expect(save.dx, greaterThan(cancel.dx));
+    });
+
+    testWidgets('compact stacks with no destructive tertiary', (tester) async {
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          primary: const KitAction(label: 'Save', onPressed: null),
+          secondary: const KitAction(label: 'Cancel', onPressed: null),
+        ),
       );
       final save = tester.getTopLeft(find.text('Save'));
       final cancel = tester.getTopLeft(find.text('Cancel'));
@@ -495,6 +576,549 @@ void main() {
       for (final label in ['A', 'B', 'C', 'D']) {
         expect(find.text(label), findsOneWidget);
       }
+    });
+  });
+
+  group('disabled look (LOOK-14, test 2)', () {
+    testWidgets('a disabled primary and secondary paint text3 on surface3 at '
+        'full alpha, with no Opacity around a button', (tester) async {
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          primary: const KitAction(
+            label: 'Save',
+            onPressed: null,
+            disabledReason: 'Fill in the server address first.',
+          ),
+          secondary: const KitAction(
+            label: 'Test',
+            onPressed: null,
+            disabledReason: 'Nothing to test yet.',
+          ),
+          tertiary: const [
+            KitAction(
+              label: 'Duplicate',
+              onPressed: null,
+              disabledReason: 'Save it first.',
+            ),
+          ],
+        ),
+      );
+      final roles = KitTokens.of(tester.element(find.text('Save'))).roles;
+      for (final label in ['Save', 'Test']) {
+        final material = tester.widget<Material>(
+          find
+              .descendant(
+                of: find.ancestor(
+                  of: find.text(label),
+                  matching: find.byWidgetPredicate(
+                    (w) => w is ButtonStyleButton,
+                  ),
+                ),
+                matching: find.byType(Material),
+              )
+              .first,
+        );
+        expect(material.color, roles.surface3, reason: label);
+        expect(material.color!.a, 1.0, reason: label);
+      }
+      for (final label in ['Save', 'Test', 'Duplicate']) {
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.text(label),
+        );
+        expect(paragraph.text.style?.color, roles.text3, reason: label);
+        expect(paragraph.text.style!.color!.a, 1.0, reason: label);
+      }
+      expect(
+        find.descendant(
+          of: find.byType(KitActionBlock),
+          matching: find.byType(Opacity),
+        ),
+        findsNothing,
+      );
+    });
+  });
+
+  group('overflow items (More)', () {
+    testWidgets('a copy action in More is enabled and copies', (tester) async {
+      final calls = _mockClipboard();
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          tertiary: [
+            KitAction.copy(label: 'Copy details', text: () => 'details'),
+            KitAction.copy(label: 'Copy all', text: () => 'all'),
+            KitAction.copy(label: 'Copy log', text: () => 'the log'),
+          ],
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
+      await tester.pumpAndSettle();
+      final item = tester.widget<PopupMenuItem<int>>(
+        find.ancestor(
+          of: find.text('Copy log'),
+          matching: find.byType(PopupMenuItem<int>),
+        ),
+      );
+      expect(item.enabled, isTrue);
+      await tester.tap(find.text('Copy log'));
+      await tester.pumpAndSettle();
+      expect(_clipboardText(calls), 'the log');
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('a disabled action in More shows its reason as a line and '
+        'as its hint', (tester) async {
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          tertiary: [
+            KitAction(label: 'One', onPressed: () {}),
+            KitAction(label: 'Two', onPressed: () {}),
+            const KitAction(
+              label: 'Export',
+              onPressed: null,
+              disabledReason: 'Nothing to export yet.',
+            ),
+          ],
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('kit-actions-more')));
+      await tester.pumpAndSettle();
+      expect(find.text('Nothing to export yet.'), findsOneWidget);
+      expect(find.byKey(const ValueKey('kit-action-reason')), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Nothing to export yet.')).dy,
+        greaterThan(tester.getTopLeft(find.text('Export')).dy),
+      );
+      expect(
+        tester.getSemantics(find.text('Export')),
+        isSemantics(
+          label: 'Export\nNothing to export yet.',
+          hint: 'Nothing to export yet.',
+          isEnabled: false,
+          hasEnabledState: true,
+        ),
+      );
+    });
+
+    testWidgets('two tertiary actions with the same label and reasons build '
+        '(no label-derived keys)', (tester) async {
+      await _pumpAt(
+        tester,
+        KitActionStack(
+          primary: const KitAction(
+            label: 'Save',
+            onPressed: null,
+            disabledReason: 'Reason A.',
+          ),
+          tertiary: const [
+            KitAction(label: 'Retry', onPressed: null, disabledReason: 'B.'),
+            KitAction(label: 'Retry', onPressed: null, disabledReason: 'C.'),
+          ],
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('kit-action-reason')), findsNWidgets(3));
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          primary: const KitAction(
+            label: 'Save',
+            onPressed: null,
+            disabledReason: 'Reason A.',
+          ),
+          secondary: const KitAction(
+            label: 'Test',
+            onPressed: null,
+            disabledReason: 'Reason D.',
+          ),
+          tertiary: const [
+            KitAction(label: 'Retry', onPressed: null, disabledReason: 'B.'),
+            KitAction(label: 'Retry', onPressed: null, disabledReason: 'C.'),
+          ],
+        ),
+        size: _large,
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('kit-action-reason')), findsNWidgets(4));
+    });
+  });
+
+  group('KitAction.copy keys and redaction', () {
+    testWidgets('the caller\'s key is on exactly one widget and taps copy', (
+      tester,
+    ) async {
+      final calls = _mockClipboard();
+      const key = ValueKey('copy-details');
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          secondary: KitAction.copy(
+            key: key,
+            label: 'Copy details',
+            text: () => 'details',
+          ),
+        ),
+      );
+      expect(find.byKey(key), findsOneWidget);
+      await tester.tap(find.byKey(key));
+      await tester.pump();
+      expect(_clipboardText(calls), 'details');
+      await tester.pump(KitMotion.copiedHold);
+    });
+
+    testWidgets('a GlobalKey on a copy action builds', (tester) async {
+      _mockClipboard();
+      final key = GlobalKey();
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          primary: KitAction.copy(key: key, label: 'Copy', text: () => 'x'),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(key), findsOneWidget);
+    });
+
+    testWidgets('a provider key is redacted before it reaches the clipboard '
+        '(G12)', (tester) async {
+      final calls = _mockClipboard();
+      const secret = 'sk-ant-api03-AbCdEfGhIjKlMnOpQrSt';
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          primary: KitAction.copy(
+            label: 'Copy details',
+            text: () => 'key $secret done',
+          ),
+        ),
+      );
+      await tester.tap(find.text('Copy details'));
+      await tester.pump();
+      final copied = _clipboardText(calls)!;
+      expect(copied, isNot(contains(secret)));
+      expect(copied, 'key sk-ant-${KitRedact.mask} done');
+      await tester.pump(KitMotion.copiedHold);
+    });
+  });
+
+  group('working semantics (STATE-7)', () {
+    testWidgets('working with onPressed: null renders disabled, as before', (
+      tester,
+    ) async {
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          primary: const KitAction(
+            label: 'Start',
+            onPressed: null,
+            working: true,
+          ),
+        ),
+        reducedMotion: true,
+      );
+      final button = tester.widget<ButtonStyleButton>(
+        find.byWidgetPredicate((w) => w is ButtonStyleButton),
+      );
+      expect(button.onPressed, isNull);
+      expect(
+        tester.getSemantics(find.text('Start')),
+        isSemantics(isEnabled: false, hasEnabledState: true),
+      );
+    });
+
+    testWidgets('working with a callback keeps the accent fill, ignores taps '
+        'and is not announced as an enabled button', (tester) async {
+      var tapped = 0;
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          primary: KitAction(
+            label: 'Start',
+            onPressed: () => tapped++,
+            working: true,
+          ),
+        ),
+        reducedMotion: true,
+      );
+      final roles = KitTokens.of(tester.element(find.text('Start'))).roles;
+      final material = tester.widget<Material>(
+        find
+            .descendant(
+              of: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(material.color, roles.accent);
+      expect(
+        tester.getSemantics(find.byKey(const ValueKey('kit-button-working'))),
+        isSemantics(
+          label: 'Start',
+          isButton: true,
+          isEnabled: false,
+          hasEnabledState: true,
+        ),
+      );
+      await tester.tap(find.text('Start'));
+      await tester.pump();
+      expect(tapped, 0);
+    });
+  });
+
+  group('keyboard focus ring (LOOK-21, LAY-10)', () {
+    for (final (role, action) in [
+      (
+        'secondary',
+        KitActionBlock(
+          secondary: KitAction(label: 'Test', onPressed: () {}),
+        ),
+      ),
+      (
+        'tertiary',
+        KitActionBlock(
+          tertiary: [KitAction(label: 'Test', onPressed: () {})],
+        ),
+      ),
+      (
+        'primary',
+        KitActionBlock(
+          primary: KitAction(label: 'Test', onPressed: () {}),
+        ),
+      ),
+    ]) {
+      testWidgets('a $role button draws a focusRingWidth ring when focused '
+          'from the keyboard', (tester) async {
+        await _pumpAt(tester, action);
+        BorderSide side() {
+          final material = tester.widget<Material>(
+            find
+                .descendant(
+                  of: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+                  matching: find.byType(Material),
+                )
+                .first,
+          );
+          return (material.shape! as OutlinedBorder).side;
+        }
+
+        expect(side(), BorderSide.none);
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pumpAndSettle();
+        final context = tester.element(find.text('Test'));
+        final roles = KitTokens.of(context).roles;
+        expect(side().width, KitTokens.focusRingWidth(context));
+        expect(side().color, role == 'primary' ? roles.onAccent : roles.accent);
+      });
+    }
+  });
+
+  group('shortcut window rule (test 8)', () {
+    Widget block() => KitActionBlock(
+      primary: const KitAction(
+        label: 'Send',
+        onPressed: null,
+        shortcut: 'Ctrl+Enter',
+      ),
+    );
+
+    testWidgets('absent at 412x915 on touch', (tester) async {
+      await _pumpAt(tester, block());
+      expect(find.textContaining('Ctrl+Enter'), findsNothing);
+    });
+
+    testWidgets('absent at 412x915 even with a mouse (compact window)', (
+      tester,
+    ) async {
+      await _connectMouse(tester);
+      await _pumpAt(tester, block());
+      expect(find.textContaining('Ctrl+Enter'), findsNothing);
+    });
+
+    testWidgets('shown at 1280x800 with a mouse', (tester) async {
+      await _connectMouse(tester);
+      await _pumpAt(tester, block(), size: _large);
+      expect(find.textContaining('Ctrl+Enter'), findsOneWidget);
+    });
+  });
+
+  group('G6: no overflow (test 11)', () {
+    const sizes = <Size>[
+      Size(320, 640),
+      Size(360, 740),
+      Size(412, 915),
+      Size(600, 960),
+      Size(800, 1280),
+      Size(840, 1180),
+      Size(1280, 800),
+      Size(1600, 1000),
+      Size(915, 412),
+    ];
+    Widget scene(bool rtl) => ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        KitActionBlock(
+          primary: KitAction(
+            label: rtl ? 'حفظ الخادم' : 'Save the server',
+            onPressed: null,
+            disabledReason: rtl
+                ? 'املأ عنوان الخادم أولاً قبل الحفظ.'
+                : 'Fill in the server address first, then save it.',
+          ),
+          secondary: KitAction(
+            label: rtl ? 'إلغاء' : 'Cancel',
+            onPressed: () {},
+          ),
+          tertiary: [
+            KitAction(
+              label: rtl
+                  ? 'نسخ عنوان الخادم مع كل التفاصيل التقنية'
+                  : 'Copy the server address with every technical detail',
+              onPressed: () {},
+            ),
+            KitAction(
+              label: rtl
+                  ? 'فتح إعدادات الاتصال المتقدمة لهذا الخادم'
+                  : 'Open the advanced connection settings for this server',
+              onPressed: null,
+              disabledReason: rtl
+                  ? 'غير متصل الآن.'
+                  : 'Not connected right now, so settings are read-only.',
+            ),
+          ],
+        ),
+        KitActionStack(
+          primary: KitAction(
+            label: rtl ? 'تحديث' : 'Update the server now',
+            onPressed: null,
+            disabledReason: rtl
+                ? 'لا يوجد تحديث.'
+                : 'There is no update to install right now.',
+          ),
+          tertiary: [
+            KitAction(
+              label: rtl
+                  ? 'إعادة تشغيل الخادم وكل العمليات الجارية'
+                  : 'Restart the server and every running process',
+              onPressed: () {},
+            ),
+            KitAction(
+              label: rtl
+                  ? 'إيقاف الخادم وكل العمليات الجارية الآن'
+                  : 'Stop the server and every running process now',
+              onPressed: null,
+              destructive: true,
+              disabledReason: rtl
+                  ? 'لا شيء قيد التشغيل.'
+                  : 'Nothing is running on this server.',
+            ),
+          ],
+        ),
+      ],
+    );
+
+    testWidgets('every LAY-4 size x text 1.0/1.3/2.0 x LTR/RTL', (
+      tester,
+    ) async {
+      final failures = <String>[];
+      for (final size in sizes) {
+        for (final scale in [1.0, 1.3, 2.0]) {
+          for (final rtl in [false, true]) {
+            final where =
+                '${size.width.toInt()}x${size.height.toInt()} '
+                'text $scale ${rtl ? 'rtl' : 'ltr'}';
+            await _pumpAt(
+              tester,
+              scene(rtl),
+              size: size,
+              textScale: scale,
+              locale: Locale(rtl ? 'ar' : 'en'),
+              appKey: ValueKey(where),
+            );
+            final error = tester.takeException();
+            if (error != null) {
+              failures.add('$where: ${'$error'.split('\n').first}');
+            }
+          }
+        }
+      }
+      expect(failures, isEmpty);
+    });
+  });
+
+  group('G8: settles after one pump under reduced motion (test 12)', () {
+    final states = <String, Widget Function()>{
+      'default': () => KitActionBlock(
+        primary: KitAction(label: 'Save', onPressed: () {}),
+        secondary: KitAction(label: 'Cancel', onPressed: () {}),
+        tertiary: [KitAction(label: 'Rename', onPressed: () {})],
+      ),
+      'disabled': () => KitActionBlock(
+        primary: const KitAction(
+          label: 'Save',
+          onPressed: null,
+          disabledReason: 'Fill in the address first.',
+        ),
+      ),
+      'working': () => KitActionBlock(
+        primary: KitAction(label: 'Save', onPressed: () {}, working: true),
+        secondary: KitAction(label: 'Test', onPressed: () {}, working: true),
+      ),
+      'working, no icon': () =>
+          KitButton.secondary(label: 'Test', onPressed: () {}, working: true),
+      'destructive': () => KitActionBlock(
+        secondary: KitAction(label: 'Cancel', onPressed: () {}),
+        tertiary: [
+          KitAction(label: 'Delete', onPressed: () {}, destructive: true),
+        ],
+      ),
+      'stack': () => KitActionStack(
+        primary: KitAction(label: 'Update', onPressed: () {}, working: true),
+        tertiary: [KitAction(label: 'Restart', onPressed: () {})],
+      ),
+      'shortcut': () => KitActionBlock(
+        primary: KitAction(
+          label: 'Send',
+          onPressed: () {},
+          shortcut: 'Ctrl+Enter',
+        ),
+      ),
+    };
+    for (final MapEntry(key: name, value: build) in states.entries) {
+      testWidgets(name, (tester) async {
+        await _pumpAt(tester, build(), reducedMotion: true, size: _large);
+        await tester.pump();
+        expect(tester.hasRunningAnimations, isFalse);
+      });
+    }
+
+    testWidgets('copied', (tester) async {
+      _mockClipboard();
+      await _pumpAt(
+        tester,
+        KitActionBlock(
+          primary: KitAction.copy(label: 'Copy details', text: () => 'x'),
+        ),
+        reducedMotion: true,
+      );
+      // Pressed without a pointer, so Material's ink ripple (the tap's own
+      // feedback, not the kit's swap) is not what is measured.
+      tester
+          .widget<ButtonStyleButton>(
+            find.byWidgetPredicate((w) => w is ButtonStyleButton),
+          )
+          .onPressed!();
+      // The copy's clipboard and announcement futures resolve, then one
+      // pump shows the swap.
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Copied'), findsOneWidget);
+      expect(tester.hasRunningAnimations, isFalse);
+      await tester.pump(KitMotion.copiedHold);
+      await tester.pump();
+      expect(find.text('Copy details'), findsOneWidget);
+      expect(tester.hasRunningAnimations, isFalse);
     });
   });
 }

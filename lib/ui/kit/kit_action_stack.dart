@@ -3,21 +3,21 @@ import 'package:flutter/material.dart';
 import 'kit_buttons.dart';
 import 'kit_tokens.dart';
 
-/// A disabled action's reason (STATE-8, KitAction.md), start-aligned under
-/// its button. Found in tests by its text first (TEST-5); [id]
-/// disambiguates the key when the stack shows more than one. A private
-/// twin of `KitActionBlock`'s own `_KitActionReason`: each file is its own
-/// library, so the tiny widget is kept local rather than made public.
+/// A disabled action's reason (STATE-8, KitAction.md): one muted line,
+/// found in tests by its text first (TEST-5). The key sits on the inner
+/// [Text], the only child of this widget, so every line has the same key
+/// without two keyed siblings. Kept identical to `KitActionBlock`'s copy in
+/// kit_buttons.dart (each file is its own library; a shared public widget
+/// would be a new kit part, KIT-3).
 class _KitActionReason extends StatelessWidget {
-  const _KitActionReason(this.text, {required this.id});
+  const _KitActionReason(this.text);
 
   final String text;
-  final String id;
 
   @override
   Widget build(BuildContext context) => Text(
     text,
-    key: ValueKey('kit-action-reason-$id'),
+    key: const ValueKey('kit-action-reason'),
     style: KitTokens.of(context).note,
   );
 }
@@ -55,7 +55,7 @@ class KitActionStack extends StatelessWidget {
       children.add(KitButton.fromAction(primary, role: KitButtonRole.primary));
       if (primary.disabledReason case final reason?) {
         children.add(reasonGap);
-        children.add(_KitActionReason(reason, id: 'primary'));
+        children.add(_KitActionReason(reason));
       }
     }
     if (secondary case final secondary?) {
@@ -65,7 +65,7 @@ class KitActionStack extends StatelessWidget {
       );
       if (secondary.disabledReason case final reason?) {
         children.add(reasonGap);
-        children.add(_KitActionReason(reason, id: 'secondary'));
+        children.add(_KitActionReason(reason));
       }
     }
     for (final action in tertiary) {
@@ -77,7 +77,7 @@ class KitActionStack extends StatelessWidget {
       );
       if (action.disabledReason case final reason?) {
         children.add(reasonGap);
-        children.add(_KitActionReason(reason, id: 'tertiary-${action.label}'));
+        children.add(_KitActionReason(reason));
       }
     }
 

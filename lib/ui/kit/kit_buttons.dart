@@ -75,8 +75,8 @@ class KitAction {
 
   /// The key combination that does the same ("Ctrl+Enter"), as the
   /// shortcuts help writes it. Shown after the label on a fine pointer
-  /// (visual language §5 "keyboard hints on buttons"). Display only; the
-  /// shortcut layer binds it.
+  /// from [KitWindow.expanded] up (visual language §5 "keyboard hints on
+  /// buttons"). Display only; the shortcut layer binds it.
   final String? shortcut;
 
   /// Set only by [KitAction.copy].
@@ -98,13 +98,18 @@ enum KitButtonRole { primary, secondary, tertiary }
 /// is in flight (a second or two, e.g. creating a conversation): the icon
 /// and the spinner crossfade over [KitMotion.quick], and a button without
 /// an icon makes room for the spinner smoothly instead of jumping (§10).
-/// It is never a status display: a state that lasts, like "Starting the server…", is
-/// progress in a [KitStateView], not a disabled button (§2). While
-/// [working] is true, taps are ignored (the button keeps its enabled fill
-/// so it never reads as disabled, C21 f).
+/// It is never a status display: a state that lasts, like "Starting the
+/// server…", is progress in a [KitStateView], not a disabled button (§2).
+/// While [working] is true, taps are ignored: an enabled action keeps its
+/// enabled fill (never read as disabled by sight, C21 f) and tells a screen
+/// reader it cannot be pressed right now; a caller that passes
+/// `onPressed: null` while working renders disabled, as before.
+/// Under reduced motion the spinner holds still (MOT-7).
 ///
 /// [shortcut] shows the key combination after the label on a fine pointer
-/// (kit-KitAction-v2), isolated left to right ([KitBidi.ltr]).
+/// from [KitWindow.expanded] up (kit-KitAction-v2), isolated left to right
+/// ([KitBidi.ltr]). Keyboard focus draws a ring of
+/// [KitTokens.focusRingWidth] (LOOK-21).
 class KitButton extends StatelessWidget {
   const KitButton({
     super.key,
@@ -205,7 +210,8 @@ class KitButton extends StatelessWidget {
   );
 
   /// A tertiary button's side padding; blocks pull the row back by it so
-  /// the label lines up with the text above.
+  /// the label lines up with the text above. Kept for callers (KIT-43); the
+  /// kit itself reads [KitTokens.space2], which it equals.
   static const tertiaryInset = 8.0;
 
   final KitButtonRole role;
@@ -240,7 +246,6 @@ class KitButton extends StatelessWidget {
         expand: expand,
         maxLines: maxLines,
         copyText: copyText,
-        buttonKey: key,
       );
     }
 
@@ -316,9 +321,27 @@ class KitButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(tokens.buttonRadius),
     );
     // Taps never fire while the action's own tap is in flight (STATE-7):
-    // the callback becomes a no-op so the fill stays the enabled colour
-    // (never partial opacity, C21 f) instead of reading as disabled.
-    final effectiveOnPressed = working ? () {} : onPressed;
+    // an enabled callback becomes a no-op so the fill stays the enabled
+    // colour (never partial opacity, C21 f) instead of reading as disabled.
+    // A caller that passes null while working stays disabled, as before.
+    final inFlight = working && onPressed != null;
+    final effectiveOnPressed = inFlight ? () {} : onPressed;
+    // LOOK-21, LAY-10: keyboard focus draws a ring inside the button's own
+    // shape, in a colour that reads on its fill (accent on the quiet
+    // buttons; the fill's own foreground on a filled primary).
+    final ringColor = role != KitButtonRole.primary
+        ? roles.accent
+        : destructive
+        ? roles.onDangerFill
+        : roles.onAccent;
+    final ring = WidgetStateProperty.resolveWith<BorderSide?>(
+      (states) => states.contains(WidgetState.focused)
+          ? BorderSide(
+              color: ringColor,
+              width: KitTokens.focusRingWidth(context),
+            )
+          : null,
+    );
     Widget result;
     switch (role) {
       case KitButtonRole.primary:
@@ -332,7 +355,7 @@ class KitButton extends StatelessWidget {
           foregroundColor: destructive ? roles.onDangerFill : roles.onAccent,
           disabledBackgroundColor: roles.surface3,
           disabledForegroundColor: roles.text3,
-        );
+        ).copyWith(side: ring);
         result = leading == null
             ? FilledButton(
                 onPressed: effectiveOnPressed,
@@ -354,7 +377,7 @@ class KitButton extends StatelessWidget {
           foregroundColor: destructive ? roles.danger : roles.text1,
           disabledBackgroundColor: roles.surface3,
           disabledForegroundColor: roles.text3,
-        );
+        ).copyWith(side: ring);
         result = leading == null
             ? FilledButton.tonal(
                 onPressed: effectiveOnPressed,
@@ -371,10 +394,10 @@ class KitButton extends StatelessWidget {
         final style = TextButton.styleFrom(
           minimumSize: minimum,
           shape: shape,
-          padding: const EdgeInsets.symmetric(horizontal: tertiaryInset),
+          padding: EdgeInsets.symmetric(horizontal: tokens.space2),
           foregroundColor: destructive ? roles.danger : roles.text2,
           disabledForegroundColor: roles.text3,
-        );
+        ).copyWith(side: ring);
         result = leading == null
             ? TextButton(
                 onPressed: effectiveOnPressed,
@@ -387,6 +410,19 @@ class KitButton extends StatelessWidget {
                 icon: leading,
                 label: labelWidget,
               );
+    }
+    if (inFlight) {
+      // Honest while in flight: the button looks enabled but ignores taps,
+      // so a screen reader hears it as not pressable now, not as an
+      // enabled button that does nothing.
+      result = Semantics(
+        container: true,
+        button: true,
+        enabled: false,
+        label: label,
+        excludeSemantics: true,
+        child: result,
+      );
     }
     final reason = disabledReason;
     if (reason != null && onPressed == null) {
@@ -426,7 +462,12 @@ class _KitButtonLabel extends StatelessWidget {
       textAlign: TextAlign.center,
     );
     final shortcut = this.shortcut;
-    if (shortcut == null || !KitLayout.finePointer(context)) return text;
+    // Visual language §5: on a fine pointer, from expanded up.
+    if (shortcut == null ||
+        !KitLayout.finePointer(context) ||
+        !KitLayout.windowOf(context).isWide) {
+      return text;
+    }
     final tokens = KitTokens.of(context);
     final hintStyle = role == KitButtonRole.tertiary
         ? KitText.styleOf(context, KitTextRole.mono, tone: KitTextTone.tertiary)
@@ -442,14 +483,25 @@ class _KitButtonLabel extends StatelessWidget {
   }
 }
 
-/// The small spinner a working button shows.
+/// The small spinner a working button shows, in the button's own
+/// foreground. Under reduced motion it holds still as a three-quarter arc
+/// (MOT-7: no running ticker after one pump).
 class _Spinner extends StatelessWidget {
   const _Spinner({super.key});
 
   @override
   Widget build(BuildContext context) => SizedBox.square(
     dimension: KitTokens.of(context).smallIconSize,
-    child: const CircularProgressIndicator(strokeWidth: 2),
+    child: CircularProgressIndicator(
+      // No stroke token exists yet (KitProgress owns spinners); the kit's
+      // other small spinner, KitStatusMark, draws the same 2 dp stroke.
+      strokeWidth: 2,
+      value: KitMotion.reduced(context) ? .75 : null,
+      color: IconTheme.of(context).color,
+      // No track on a button: the arc alone, so the still arc reads as
+      // one (a track would close it into a ring).
+      backgroundColor: Colors.transparent,
+    ),
   );
 }
 
@@ -465,7 +517,6 @@ class _KitCopyButton extends StatefulWidget {
     this.shortcut,
     this.expand = true,
     this.maxLines = 2,
-    this.buttonKey,
   });
 
   final KitButtonRole role;
@@ -475,7 +526,6 @@ class _KitCopyButton extends StatefulWidget {
   final String? shortcut;
   final bool expand;
   final int maxLines;
-  final Key? buttonKey;
 
   @override
   State<_KitCopyButton> createState() => _KitCopyButtonState();
@@ -504,8 +554,9 @@ class _KitCopyButtonState extends State<_KitCopyButton> {
   @override
   Widget build(BuildContext context) {
     final l10n = lookupAppLocalizations(Localizations.localeOf(context));
+    // The caller's key stays on the outer KitButton only (one widget per
+    // key, so find.byKey and a GlobalKey both work).
     return KitButton._derived(
-      key: widget.buttonKey,
       role: widget.role,
       label: _copied ? l10n.kitCopied : widget.label,
       onPressed: _copied ? () {} : _handleTap,
@@ -524,18 +575,19 @@ class _KitCopyButtonState extends State<_KitCopyButton> {
 const _copiedKey = ValueKey('kit-action-copied');
 
 /// A disabled action's reason (STATE-8, KitAction.md): one muted line,
-/// found in tests by its text first (TEST-5); [id] disambiguates the key
-/// when a block shows more than one.
+/// found in tests by its text first (TEST-5). The key sits on the inner
+/// [Text], the only child of this widget, so every line has the same key
+/// without two keyed siblings. Kept identical to the copy in
+/// kit_action_stack.dart (each file is its own library).
 class _KitActionReason extends StatelessWidget {
-  const _KitActionReason(this.text, {required this.id});
+  const _KitActionReason(this.text);
 
   final String text;
-  final String id;
 
   @override
   Widget build(BuildContext context) => Text(
     text,
-    key: ValueKey('kit-action-reason-$id'),
+    key: const ValueKey('kit-action-reason'),
     style: KitTokens.of(context).note,
   );
 }
@@ -546,8 +598,10 @@ class _KitActionReason extends StatelessWidget {
 /// shows as a muted line under its button (STATE-8). A destructive tertiary
 /// makes the whole block lay out as [KitActionStack] on every window
 /// (LAY-14, §2.7), so a destructive act never sits beside a frequent one.
-/// From [KitWindow.medium] up (and not a short window) the block is one
-/// end-aligned row with the primary at the end.
+/// From [KitWindow.medium] up the block is one end-aligned row with the
+/// primary at the end. (A short window keeps today's row: KitAction.md's
+/// "short window stacks" waits on KitRequestCard, see the unit's QA record,
+/// contract problem 4.)
 class KitActionBlock extends StatelessWidget {
   const KitActionBlock({
     super.key,
@@ -578,11 +632,14 @@ class KitActionBlock extends StatelessWidget {
     final more = _buildMore(context, overflow, tokens);
     final hasDestructiveTertiary = tertiary.any((a) => a.destructive);
     // LAY-14, §2.7: a destructive tertiary forces the stacked layout, on
-    // every window, so it is never beside a frequent action.
+    // every window, so it is never beside a frequent action. PROC-20: the
+    // spec's "a short window stacks" (rule 1, LAY-3) is left at today's
+    // behaviour (the window's width decides) until KitRequestCard keeps its
+    // actions inside its 45 % large-text cap; stacking there overflows it
+    // (G6, 915x412 at text 2.0).
     final stacked =
         hasDestructiveTertiary ||
-        KitLayout.windowOf(context) == KitWindow.compact ||
-        KitLayout.isShort(context);
+        KitLayout.windowOf(context) == KitWindow.compact;
 
     if (!stacked) {
       final row = Wrap(
@@ -612,12 +669,12 @@ class KitActionBlock extends StatelessWidget {
       // STATE-8: reasons collect under the row, end-aligned, in slot order.
       final reasons = [
         if (primary?.disabledReason case final reason?)
-          _KitActionReason(reason, id: 'primary'),
+          _KitActionReason(reason),
         if (secondary?.disabledReason case final reason?)
-          _KitActionReason(reason, id: 'secondary'),
+          _KitActionReason(reason),
         for (final action in shown)
           if (action.disabledReason case final reason?)
-            _KitActionReason(reason, id: 'tertiary-${action.label}'),
+            _KitActionReason(reason),
       ];
       if (reasons.isEmpty) return row;
       return Column(
@@ -660,7 +717,7 @@ class KitActionBlock extends StatelessWidget {
           KitButton.fromAction(primary, role: KitButtonRole.primary),
           if (primary.disabledReason case final reason?) ...[
             SizedBox(height: tokens.space1),
-            _KitActionReason(reason, id: 'primary'),
+            _KitActionReason(reason),
           ],
         ],
         if (primary != null && secondary != null)
@@ -669,7 +726,7 @@ class KitActionBlock extends StatelessWidget {
           KitButton.fromAction(secondary, role: KitButtonRole.secondary),
           if (secondary.disabledReason case final reason?) ...[
             SizedBox(height: tokens.space1),
-            _KitActionReason(reason, id: 'secondary'),
+            _KitActionReason(reason),
           ],
         ],
         if (hasTertiaryLine && (primary != null || secondary != null))
@@ -689,10 +746,7 @@ class KitActionBlock extends StatelessWidget {
                       ),
                       if (action.disabledReason case final reason?) ...[
                         SizedBox(height: tokens.space1),
-                        _KitActionReason(
-                          reason,
-                          id: 'tertiary-${action.label}',
-                        ),
+                        _KitActionReason(reason),
                       ],
                       if (action != shown.last || more != null || menu != null)
                         SizedBox(height: tokens.space2),
@@ -722,7 +776,10 @@ class KitActionBlock extends StatelessWidget {
 }
 
 /// The "More" overflow menu (kit-actions-more): a destructive action beyond
-/// the first two tertiary actions renders last, after a divider (§2.7).
+/// the first two tertiary actions renders last, after a divider (§2.7). A
+/// copy action copies through [KitCopy]; a disabled action shows its
+/// [KitAction.disabledReason] as a second, muted line and as its hint
+/// (STATE-8).
 Widget? _buildMore(
   BuildContext context,
   List<KitAction> overflow,
@@ -740,23 +797,56 @@ Widget? _buildMore(
     key: const ValueKey('kit-actions-more'),
     tooltip: lookupAppLocalizations(Localizations.localeOf(context)).kitMore,
     icon: const Icon(AppIconography.more),
-    onSelected: (index) => overflow[index].onPressed?.call(),
-    itemBuilder: (_) => [
+    onSelected: (index) {
+      final action = overflow[index];
+      final copyText = action.copyText;
+      if (copyText != null) {
+        KitCopy.copy(context, copyText());
+      } else {
+        action.onPressed?.call();
+      }
+    },
+    itemBuilder: (menuContext) => [
       for (var position = 0; position < order.length; position++) ...[
         if (position == firstDestructive) const PopupMenuDivider(),
-        PopupMenuItem(
-          key: overflow[order[position]].key,
-          value: order[position],
-          enabled: overflow[order[position]].onPressed != null,
-          child: Text(
-            overflow[order[position]].label,
-            style: overflow[order[position]].destructive
-                ? TextStyle(color: tokens.roles.danger)
-                : null,
-          ),
-        ),
+        _moreItem(menuContext, overflow[order[position]], order[position]),
       ],
     ],
+  );
+}
+
+/// One "More" item: its label in the kit's body role (danger when
+/// destructive, `text3` when disabled) and, when disabled with a reason,
+/// that reason under it.
+PopupMenuItem<int> _moreItem(BuildContext context, KitAction action, int id) {
+  final enabled = action.enabled;
+  final reason = enabled ? null : action.disabledReason;
+  final label = Text(
+    action.label,
+    style: KitText.styleOf(
+      context,
+      KitTextRole.body,
+      tone: !enabled
+          ? KitTextTone.tertiary
+          : action.destructive
+          ? KitTextTone.danger
+          : KitTextTone.primary,
+    ),
+  );
+  return PopupMenuItem<int>(
+    key: action.key,
+    value: id,
+    enabled: enabled,
+    child: reason == null
+        ? label
+        : Semantics(
+            hint: reason,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [label, _KitActionReason(reason)],
+            ),
+          ),
   );
 }
 
@@ -768,16 +858,18 @@ class KitInset extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Align(
-    alignment: AlignmentDirectional.centerStart,
-    child: Transform.translate(
-      offset: Offset(
-        Directionality.of(context) == TextDirection.rtl
-            ? KitButton.tertiaryInset
-            : -KitButton.tertiaryInset,
-        0,
+  Widget build(BuildContext context) {
+    // The tertiary button's side padding (KitButton.tertiaryInset).
+    final inset = KitTokens.of(context).space2;
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Transform.translate(
+        offset: Offset(
+          Directionality.of(context) == TextDirection.rtl ? inset : -inset,
+          0,
+        ),
+        child: child,
       ),
-      child: child,
-    ),
-  );
+    );
+  }
 }
