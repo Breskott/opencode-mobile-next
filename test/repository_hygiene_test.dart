@@ -210,11 +210,18 @@ void main() {
 // G25 (docs/ux-system/revamp/STANDARDS.md §18): repository hygiene rules made
 // mechanical. Rules: PROC-1, MOT-10, SEC-6, SEC-7, TEST-12, TEST-18.
 //
-// Absolute except TEST-12, which is a ratchet: golden-failure artefacts that
-// were committed before the gate existed are listed in
-// test/repository_hygiene_baseline.json. The list may only shrink; any tracked
-// `failures/` path not on it fails, and when entries are no longer tracked the
-// test prints the smaller list to commit.
+// Absolute except TEST-12, which is a ratchet until the coordinator untracks
+// the golden-failure artefacts committed before the gate existed (see
+// docs/qa/gate-G25-2026-09-26/README.md). They are listed in
+// test/repository_hygiene_baseline.json. The list may only shrink: a tracked
+// `failures/` path not on it fails, a listed path that is no longer tracked
+// fails (so it cannot be committed again later), and the list can never be
+// longer than [_test12Ceiling].
+//
+// On CI (GITHUB_ACTIONS/CI set) the pinned-revision checks are skipped: the
+// workflows install upstream Flutter because Shorebird's fork cannot be
+// installed there. CI instead asserts it runs the one version every workflow
+// pins. Provisional PROC-20 choice awaiting the coordinator; see the record.
 // ---------------------------------------------------------------------------
 
 /// The pinned Shorebird Flutter framework revision (AGENTS.md, PROC-1).
@@ -222,12 +229,20 @@ const _pinnedRevisionPrefix = '91f8bd75';
 
 const _baselinePath = 'test/repository_hygiene_baseline.json';
 
-/// A Dart `import`/`export` directive of the banned package. Built from
-/// pieces so this file never matches itself.
-final _animateDirective = RegExp(
-  '^\\s*(import|export)\\s+[\'"]package:${'flutter'}_animate/',
-  multiLine: true,
-);
+/// The most TEST-12 baseline entries there may ever be: the 24 golden-failure
+/// files tracked when the gate landed. Edits may only LOWER this number
+/// (lower it whenever the baseline shrinks); raising it re-opens the ratchet.
+const _test12Ceiling = 24;
+
+/// True when the suite runs on a CI runner (GitHub Actions sets both).
+final _onCi =
+    Platform.environment['GITHUB_ACTIONS'] == 'true' ||
+    Platform.environment['CI'] == 'true';
+
+/// A reference to the banned package anywhere in a Dart file: plain,
+/// multi-line and conditional (`if (dart.library.io) '…'`) directives alike.
+/// Built from pieces so this file never matches itself.
+final _animateUri = 'package:${'flutter'}_animate/';
 
 final _failuresPath = RegExp(r'(^|/)failures/');
 
@@ -248,6 +263,12 @@ List<String> _trackedFiles() {
   return files;
 }
 
+/// Kotlin/Groovy source with `/* … */` and `// …` comments removed, so a
+/// commented-out setting neither satisfies nor trips a check.
+String _withoutComments(String source) => source
+    .replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '')
+    .replaceAll(RegExp(r'//.*$', multiLine: true), '');
+
 /// The root of the Flutter SDK running this test: FLUTTER_ROOT (exported by
 /// the `flutter` launcher script), else the SDK that owns flutter_tester.
 Directory _runningFlutterRoot() {
@@ -266,31 +287,75 @@ Directory _runningFlutterRoot() {
   );
 }
 
+Map<String, dynamic> _runningFlutterVersion() {
+  final root = _runningFlutterRoot();
+  final versionFile = File('${root.path}/bin/cache/flutter.version.json');
+  expect(
+    versionFile.existsSync(),
+    isTrue,
+    reason: 'G25: ${versionFile.path} is missing',
+  );
+  return jsonDecode(versionFile.readAsStringSync()) as Map<String, dynamic>;
+}
+
+/// Every `flutter-version:` a tracked workflow installs, with
+/// `${{ env.NAME }}` resolved from the same file, keyed by the value.
+Map<String, List<String>> _workflowFlutterPins(List<String> tracked) {
+  final pins = <String, List<String>>{};
+  for (final path in tracked) {
+    if (!RegExp(r'^\.github/workflows/[^/]+\.ya?ml$').hasMatch(path)) continue;
+    final text = File(path).readAsStringSync();
+    for (final match in RegExp(
+      r'''^\s*flutter-version:\s*["']?(.+?)["']?\s*$''',
+      multiLine: true,
+    ).allMatches(text)) {
+      var value = match.group(1)!;
+      final env = RegExp(
+        r'^\$\{\{\s*env\.([A-Za-z_]+)\s*\}\}$',
+      ).firstMatch(value);
+      if (env != null) {
+        value =
+            RegExp(
+              '^\\s*${env.group(1)}:\\s*["\']?([^"\'\\s]+)["\']?\\s*\$',
+              multiLine: true,
+            ).firstMatch(text)?.group(1) ??
+            'unresolved ${env.group(1)}';
+      }
+      (pins[value] ??= []).add(path);
+    }
+  }
+  return pins;
+}
+
 void _g25() {
   group('G25 repository hygiene', () {
     test('MOT-10: flutter_animate is never a dependency or an import', () {
-      for (final path in const ['pubspec.yaml', 'pubspec.lock']) {
-        expect(
-          File(path).readAsStringSync().contains('flutter_animate'),
-          isFalse,
-          reason:
-              '$path names flutter_animate; it is banned (pending timers '
-              'fail widget tests) — use the framework animation APIs',
-        );
-      }
+      final tracked = _trackedFiles();
       final offenders = <String>[];
-      for (final root in const ['lib', 'test']) {
-        for (final entity in Directory(root).listSync(recursive: true)) {
-          if (entity is! File || !entity.path.endsWith('.dart')) continue;
-          if (_animateDirective.hasMatch(entity.readAsStringSync())) {
-            offenders.add(entity.path);
-          }
+      for (final path in tracked) {
+        final pubspec = RegExp(r'(^|/)pubspec\.(yaml|lock)$').hasMatch(path);
+        if (!pubspec && !path.endsWith('.dart')) continue;
+        final file = File(path);
+        if (!file.existsSync()) continue;
+        final text = file.readAsStringSync();
+        if (pubspec
+            ? text.contains('flutter_animate')
+            : text.contains(_animateUri)) {
+          offenders.add(path);
         }
       }
+      // The two manifests that matter most must have been scanned.
+      expect(
+        tracked,
+        containsAll(const ['pubspec.yaml', 'pubspec.lock']),
+        reason: 'G25: pubspec.yaml/pubspec.lock are not tracked',
+      );
       expect(
         offenders,
         isEmpty,
-        reason: 'these files import flutter_animate (MOT-10): $offenders',
+        reason:
+            'MOT-10: flutter_animate is banned (pending timers fail widget '
+            'tests); use the framework animation APIs. Named in: $offenders',
       );
     });
 
@@ -338,10 +403,24 @@ void _g25() {
 
     test('TEST-12: golden-failure artefacts are never committed (ratchet)', () {
       final baseline =
-          (jsonDecode(File(_baselinePath).readAsStringSync())
-                  as Map<String, dynamic>)['TEST-12']
-              as List<dynamic>;
-      final allowed = baseline.cast<String>().toSet();
+          ((jsonDecode(File(_baselinePath).readAsStringSync())
+                      as Map<String, dynamic>)['TEST-12']
+                  as List<dynamic>)
+              .cast<String>();
+      expect(
+        baseline.length,
+        lessThanOrEqualTo(_test12Ceiling),
+        reason:
+            'TEST-12: $_baselinePath lists ${baseline.length} paths but the '
+            'ratchet ceiling is $_test12Ceiling. The baseline may only '
+            'shrink; untrack the new failure files instead of listing them',
+      );
+      final allowed = baseline.toSet();
+      expect(
+        allowed.length,
+        baseline.length,
+        reason: 'TEST-12: $_baselinePath lists a path twice',
+      );
       final tracked = _trackedFiles().where(_failuresPath.hasMatch).toSet();
 
       final added = tracked.difference(allowed).toList()..sort();
@@ -353,16 +432,18 @@ void _g25() {
             '(they are test output, not evidence):\n${added.join('\n')}',
       );
 
-      final gone = allowed.difference(tracked);
-      if (gone.isNotEmpty) {
-        final smaller = tracked.toList()..sort();
-        stdout.writeln(
-          '--- G25 TEST-12 baseline shrank by ${gone.length}; commit this '
-          'list as "TEST-12" in $_baselinePath ---\n'
-          '${const JsonEncoder.withIndent('  ').convert(smaller)}\n'
-          '--- end baseline ---',
-        );
-      }
+      final gone = allowed.difference(tracked).toList()..sort();
+      final smaller = tracked.toList()..sort();
+      expect(
+        gone,
+        isEmpty,
+        reason:
+            'TEST-12: the baseline shrank by ${gone.length}; a stale entry '
+            'would let that path be committed again. Commit this list as '
+            '"TEST-12" in $_baselinePath and lower _test12Ceiling to '
+            '${smaller.length}:\n'
+            '${const JsonEncoder.withIndent('  ').convert(smaller)}',
+      );
     });
 
     test('the pubspec version is name+build with a positive build number', () {
@@ -379,66 +460,135 @@ void _g25() {
     });
 
     test('PROC-1: the Android build targets compileSdk 37 and Java 17', () {
-      final gradle = File('android/app/build.gradle.kts').readAsStringSync();
+      const app = 'android/app/build.gradle.kts';
+      final gradle = _withoutComments(File(app).readAsStringSync());
       final compileSdk = RegExp(
         r'^\s*compileSdk\s*=\s*(\S+)\s*$',
         multiLine: true,
       ).allMatches(gradle).map((m) => m.group(1)).toList();
-      expect(
-        compileSdk,
-        ['37'],
-        reason: 'android/app/build.gradle.kts must set compileSdk = 37 once',
-      );
-      for (final line in const [
-        'sourceCompatibility = JavaVersion.VERSION_17',
-        'targetCompatibility = JavaVersion.VERSION_17',
-        'jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17',
-      ]) {
+      expect(compileSdk, ['37'], reason: '$app must set compileSdk = 37 once');
+      for (final setting in <String, RegExp>{
+        'sourceCompatibility = JavaVersion.VERSION_17': RegExp(
+          r'sourceCompatibility\s*=\s*JavaVersion\.VERSION_17\b',
+        ),
+        'targetCompatibility = JavaVersion.VERSION_17': RegExp(
+          r'targetCompatibility\s*=\s*JavaVersion\.VERSION_17\b',
+        ),
+        'jvmTarget = JvmTarget.JVM_17': RegExp(
+          r'jvmTarget\s*=\s*(org\.jetbrains\.kotlin\.gradle\.dsl\.)?'
+          r'JvmTarget\.JVM_17\b',
+        ),
+      }.entries) {
         expect(
-          gradle,
-          contains(line),
-          reason: 'android/app/build.gradle.kts lost "$line" (Java 17)',
+          setting.value.hasMatch(gradle),
+          isTrue,
+          reason: '$app lost "${setting.key}" (Java 17)',
         );
       }
+
+      // No Android build file may select any other Java version.
+      final javaSettings = <RegExp>[
+        RegExp(r'JavaVersion\.VERSION_(\w+)'),
+        RegExp(r'JvmTarget\.JVM_(\w+)'),
+        RegExp(r'''jvmTarget\s*=\s*["']([^"']+)["']'''),
+        RegExp(r'jvmToolchain\(\s*(\d+)\s*\)'),
+        RegExp(r'JavaLanguageVersion\.of\(\s*(\d+)\s*\)'),
+      ];
+      final others = <String>[];
+      for (final path in _trackedFiles()) {
+        if (!path.startsWith('android/')) continue;
+        final file = File(path);
+        if (!file.existsSync()) continue;
+        if (RegExp(r'\.(kts|gradle)$').hasMatch(path)) {
+          final text = _withoutComments(file.readAsStringSync());
+          for (final pattern in javaSettings) {
+            for (final match in pattern.allMatches(text)) {
+              if (match.group(1) != '17') others.add('$path: ${match[0]}');
+            }
+          }
+        } else if (path.endsWith('.properties')) {
+          for (final line in file.readAsLinesSync()) {
+            final home = RegExp(
+              r'^\s*org\.gradle\.java\.home\s*[=:]\s*(.*)$',
+            ).firstMatch(line);
+            if (home != null &&
+                !RegExp(r'(^|\D)17(\D|$)').hasMatch(home.group(1)!)) {
+              others.add('$path: ${line.trim()}');
+            }
+          }
+        }
+      }
+      expect(
+        others,
+        isEmpty,
+        reason:
+            'PROC-1: an Android build file selects a Java other than 17:'
+            '\n${others.join('\n')}',
+      );
     });
 
-    test('PROC-1, TEST-18: the running Flutter is the pinned revision and '
-        'the widget-name ratchet was generated from it', () {
-      final root = _runningFlutterRoot();
-      final versionFile = File('${root.path}/bin/cache/flutter.version.json');
-      expect(
-        versionFile.existsSync(),
-        isTrue,
-        reason: 'G25: ${versionFile.path} is missing',
-      );
-      final running =
-          (jsonDecode(versionFile.readAsStringSync())
-                  as Map<String, dynamic>)['frameworkRevision']
-              as String?;
-      expect(
-        running,
-        startsWith(_pinnedRevisionPrefix),
-        reason:
-            'PROC-1: tests run on Flutter revision $running from '
-            '${root.path}; use the pinned Shorebird Flutter 3.47.1 '
-            '($_pinnedRevisionPrefix…)',
-      );
+    test(
+      'PROC-1, TEST-18: the running Flutter is the pinned revision and '
+      'the widget-name ratchet was generated from it',
+      () {
+        final running =
+            _runningFlutterVersion()['frameworkRevision'] as String?;
+        expect(
+          running,
+          startsWith(_pinnedRevisionPrefix),
+          reason:
+              'PROC-1: tests run on Flutter revision $running from '
+              '${_runningFlutterRoot().path}; use the pinned Shorebird '
+              'Flutter 3.47.1 ($_pinnedRevisionPrefix…)',
+        );
 
-      final widgets =
-          (jsonDecode(
-                    File(
-                      'test/kit_ratchet_flutter_widgets.json',
-                    ).readAsStringSync(),
-                  )
-                  as Map<String, dynamic>)['flutterRevision']
-              as String?;
+        final widgets =
+            (jsonDecode(
+                      File(
+                        'test/kit_ratchet_flutter_widgets.json',
+                      ).readAsStringSync(),
+                    )
+                    as Map<String, dynamic>)['flutterRevision']
+                as String?;
+        expect(
+          widgets,
+          running,
+          reason:
+              'TEST-18: test/kit_ratchet_flutter_widgets.json was generated '
+              'from Flutter $widgets but tests run on $running; regenerate '
+              'it with `dart run tool/kit/flutter_widget_names.dart`',
+        );
+      },
+      skip: _onCi
+          ? 'PROC-1 revision pin is local-only: CI installs upstream Flutter '
+                '(Shorebird fork not installable on runners); the CI pin '
+                'test below checks the upstream version instead'
+          : false,
+    );
+
+    test('PROC-1: every CI workflow pins the same Flutter version, and CI '
+        'runs it', () {
+      final pins = _workflowFlutterPins(_trackedFiles());
       expect(
-        widgets,
-        running,
+        pins,
+        isNotEmpty,
+        reason: 'G25: no workflow installs Flutter with `flutter-version:`',
+      );
+      expect(
+        pins.keys.toList(),
+        hasLength(1),
         reason:
-            'TEST-18: test/kit_ratchet_flutter_widgets.json was generated '
-            'from Flutter $widgets but tests run on $running; regenerate it '
-            'with `dart run tool/kit/flutter_widget_names.dart`',
+            'PROC-1: the workflows install different Flutter versions: '
+            '${pins.map((v, files) => MapEntry(v, files.toSet().toList()))}',
+      );
+      if (!_onCi) return;
+      final running = _runningFlutterVersion()['frameworkVersion'] as String?;
+      expect(
+        running,
+        pins.keys.single,
+        reason:
+            'PROC-1: this CI run uses Flutter $running but the workflows '
+            'pin ${pins.keys.single}',
       );
     });
   });

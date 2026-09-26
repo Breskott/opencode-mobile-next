@@ -1,5 +1,5 @@
 {
-  "_comment": "G25 ratchet (STANDARDS TEST-12): golden-failure artefacts committed before the gate existed. The list may only shrink: untrack a file (git rm --cached) and delete its line. test/repository_hygiene_test.dart prints the smaller list when it shrinks.",
+  "_comment": "G25 ratchet (STANDARDS TEST-12): golden-failure artefacts committed before the gate existed. The list may only shrink and never exceed _test12Ceiling (24) in test/repository_hygiene_test.dart. A listed path that is no longer tracked fails the test (its message prints the smaller list to commit, and lower the ceiling with it). Preferred end state: git rm --cached these files, add failures/ to .gitignore, empty this list and set the ceiling to 0 in the same commit.",
   "TEST-12": [
     "test/goldens/failures/team_agent_controls_dark_isolatedDiff.png",
     "test/goldens/failures/team_agent_controls_dark_maskedDiff.png",

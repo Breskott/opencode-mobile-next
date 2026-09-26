@@ -1,20 +1,16 @@
-Resolving dependencies...
-Downloading packages...
-Got dependencies!
-54 packages have newer versions incompatible with dependency constraints.
-Try `flutter pub outdated` for more information.
 00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart
 00:00 +0: G25 repository hygiene MOT-10: flutter_animate is never a dependency or an import
-00:01 +1: G25 repository hygiene SEC-6, SEC-7: no skill packs, keystores or signing secrets and no screen recordings in docs/qa are tracked
-00:01 +2: G25 repository hygiene TEST-12: golden-failure artefacts are never committed (ratchet)
-00:01 +3: G25 repository hygiene the pubspec version is name+build with a positive build number
-00:01 +4: G25 repository hygiene PROC-1: the Android build targets compileSdk 37 and Java 17
-00:01 +5: G25 repository hygiene PROC-1, TEST-18: the running Flutter is the pinned revision and the widget-name ratchet was generated from it
-00:01 +6: the internal engineering log is out of the public tree
-00:01 +7: the root points contributors at CONTRIBUTING, not the log
-00:01 +8: third-party agent skill packs are not carried in the tree
-00:01 +9: every bundled third-party component has a license text
-00:01 +10: a public repository carries its governance files
-00:01 +11: the non-affiliation statement reaches every public entry point
-00:01 +12: the notice inventory matches the resolved dependency versions
-00:01 +13: All tests passed!
+00:06 +1: G25 repository hygiene SEC-6, SEC-7: no skill packs, keystores or signing secrets and no screen recordings in docs/qa are tracked
+00:06 +2: G25 repository hygiene TEST-12: golden-failure artefacts are never committed (ratchet)
+00:06 +3: G25 repository hygiene the pubspec version is name+build with a positive build number
+00:06 +4: G25 repository hygiene PROC-1: the Android build targets compileSdk 37 and Java 17
+00:06 +5: G25 repository hygiene PROC-1, TEST-18: the running Flutter is the pinned revision and the widget-name ratchet was generated from it
+00:06 +6: G25 repository hygiene PROC-1: every CI workflow pins the same Flutter version, and CI runs it
+00:06 +7: the internal engineering log is out of the public tree
+00:06 +8: the root points contributors at CONTRIBUTING, not the log
+00:06 +9: third-party agent skill packs are not carried in the tree
+00:06 +10: every bundled third-party component has a license text
+00:06 +11: a public repository carries its governance files
+00:06 +12: the non-affiliation statement reaches every public entry point
+00:06 +13: the notice inventory matches the resolved dependency versions
+00:06 +14: All tests passed!
