@@ -1822,15 +1822,22 @@
    "presentedBy": [
     "showTeamHostDetailsSheet"
    ],
-   "line": 40,
-   "purpose": "Read-only host identity (provider, version, city, address, host mode, access), raw values with copy buttons and the product-to-provider term list.",
+   "line": 66,
+   "purpose": "Read-only host facts in the kit sheet (showKitSheet): where the host runs with its host kind's line, access (with the read-only explanation), the product-to-provider term glossary, then one open KitDetailsFold with provider, version, city, address and the host's last answer, each once and copyable.",
    "reachedFrom": [
+    {
+     "page": "team-home",
+     "element": null,
+     "widget": "KitIconButton (team-home-info)",
+     "file": "lib/ui/screens/team/team_home_screen.dart",
+     "line": 268
+    },
     {
      "page": "?",
      "element": null,
-     "widget": "_HostChip",
-     "file": "lib/ui/screens/team/team_home_screen.dart",
-     "line": 362
+     "widget": "team_now host line",
+     "file": "lib/ui/widgets/team_now.dart",
+     "line": 279
     }
    ],
    "gates": [],
@@ -1838,13 +1845,13 @@
     {
      "id": "team-host-details-sheet-copy",
      "type": "icon-button",
-     "label": "Copy",
+     "label": "Copy {label}",
      "key": null,
-     "line": 229,
+     "line": 161,
      "action": "copy",
      "target": null,
      "targetWidget": null,
-     "effect": "Clipboard.setData(value) then SnackBar \"Copied\"; one per TeamTechnicalValue row (provider, address, city, last answer).",
+     "effect": "KitDetailsFold copy through KitCopy.copy (redacted): a check in place and \"Copied\" announced once, no snackbar; one per copyable value, plus Copy all.",
      "gates": [
       "row value is non-empty"
      ],
@@ -1859,7 +1866,7 @@
    "file": "lib/ui/widgets/team_technical_details.dart",
    "widget": "TeamTechnicalValue",
    "presentedBy": [],
-   "line": 190,
+   "line": 236,
    "purpose": "Label + selectable mono value + copy button, reused in Technical details expanders on hosts owned by other agents.",
    "reachedFrom": [],
    "gates": [],
@@ -1872,13 +1879,13 @@
     {
      "id": "embedded-team-technical-value-copy",
      "type": "icon-button",
-     "label": "Copy",
+     "label": "Copy {label}",
      "key": null,
-     "line": 229,
+     "line": 281,
      "action": "copy",
      "target": null,
      "targetWidget": null,
-     "effect": "Clipboard.setData(ClipboardData(text: value)) then SnackBar \"Copied\".",
+     "effect": "KitIconButton.copy through KitCopy.copy (redacted): a 48 dp target at the row's end, a check in place and \"Copied\" announced once, no snackbar.",
      "gates": [
       "value.isNotEmpty"
      ],

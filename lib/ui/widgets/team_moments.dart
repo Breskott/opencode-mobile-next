@@ -19,8 +19,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../kit/kit_illustration.dart';
 import '../kit/kit_motion.dart';
 import '../kit/motion/kit_reveal.dart';
+import '../kit/kit_text.dart';
+import '../kit/kit_tokens.dart';
 import '../kit/scenes/team_scenes.dart';
-import 'product_states.dart' show SectionLabel;
 
 /// Which merged tasks have had their celebration, per profile.
 abstract final class TeamCelebrations {
@@ -77,6 +78,9 @@ class TeamMergedCelebration extends StatefulWidget {
   /// The task is done and its work landed.
   final bool merged;
 
+  /// The drawing's width; its height follows [TeamMergedScene.box].
+  static const drawingWidth = 176.0;
+
   @override
   State<TeamMergedCelebration> createState() => _TeamMergedCelebrationState();
 }
@@ -116,14 +120,16 @@ class _TeamMergedCelebrationState extends State<TeamMergedCelebration> {
     return KitReveal(
       child: !_show
           ? null
-          : const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Align(
+          : Padding(
+              padding: EdgeInsetsDirectional.only(
+                bottom: KitTokens.of(context).space3,
+              ),
+              child: const Align(
                 alignment: AlignmentDirectional.centerStart,
                 child: KitIllustration(
                   key: ValueKey('team-run-celebration'),
                   scene: TeamMergedScene(),
-                  width: 176,
+                  width: TeamMergedCelebration.drawingWidth,
                   entranceDuration: KitMotion.celebration,
                 ),
               ),
@@ -202,7 +208,15 @@ class _TeamNeedsYouLabelState extends State<TeamNeedsYouLabel> {
 
   @override
   Widget build(BuildContext context) {
-    final padding = widget.padding ?? const EdgeInsets.fromLTRB(16, 24, 16, 8);
+    final tokens = KitTokens.of(context);
+    final padding =
+        widget.padding ??
+        EdgeInsets.fromLTRB(
+          tokens.gutter,
+          tokens.space6,
+          tokens.gutter,
+          tokens.labelGap,
+        );
     final box = const TeamNudgeScene().box;
     final height = TeamNeedsYouLabel.drawingWidth * box.height / box.width;
     return Padding(
@@ -213,29 +227,36 @@ class _TeamNeedsYouLabelState extends State<TeamNeedsYouLabel> {
           Expanded(
             child: Padding(
               padding: EdgeInsets.only(bottom: padding.bottom),
-              child: SectionLabel(widget.text, padding: EdgeInsets.zero),
+              child: Semantics(
+                header: true,
+                child: KitText(widget.text, role: KitTextRole.label),
+              ),
             ),
           ),
           // Takes no height of its own: the drawing rises above the label's
           // line, and its foot tucks behind the block's top edge (the
           // block's 4 dp margin, then just under its border), so the agent
-          // peeks over it.
+          // peeks over it. An unclipped stack draws it outside the gap's
+          // box, where the label row does not grow for it.
           SizedBox(
             width: TeamNeedsYouLabel.drawingWidth,
             height: padding.bottom,
-            child: OverflowBox(
-              alignment: Alignment.bottomCenter,
-              minHeight: height,
-              maxHeight: height,
-              child: Transform.translate(
-                offset: const Offset(0, _tuck),
-                child: KitIllustration(
-                  key: ValueKey('team-needs-you-nudge-$_wave'),
-                  scene: const TeamNudgeScene(),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                PositionedDirectional(
+                  start: 0,
+                  bottom: -_tuck,
                   width: TeamNeedsYouLabel.drawingWidth,
-                  animateEntrance: _fresh,
+                  height: height,
+                  child: KitIllustration(
+                    key: ValueKey('team-needs-you-nudge-$_wave'),
+                    scene: const TeamNudgeScene(),
+                    width: TeamNeedsYouLabel.drawingWidth,
+                    animateEntrance: _fresh,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
