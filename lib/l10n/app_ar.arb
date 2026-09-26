@@ -5354,5 +5354,8 @@
   "kitTerminalViewShowingLast": "{count, plural, =1{يُعرض آخر سطر فقط} other{تُعرض آخر {count} من الأسطر}}",
   "kitUndoAction": "تراجع",
   "kitUndoFailed": "تعذّر التراجع. {message}",
-  "kitUndoWorking": "جارٍ التراجع"
+  "kitUndoWorking": "جارٍ التراجع",
+  "kitTermHint": "يتوفر شرح",
+  "kitTermShow": "إظهار الشرح",
+  "kitTermClose": "إغلاق الشرح"
 }
