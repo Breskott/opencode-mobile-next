@@ -1,0 +1,65 @@
+Resolving dependencies...
+Downloading packages...
+Got dependencies!
+54 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart
+00:00 +0: G25 repository hygiene MOT-10: flutter_animate is never a dependency or an import
+00:00 +0 -1: G25 repository hygiene MOT-10: flutter_animate is never a dependency or an import [E]
+  [pubspec.yaml dump elided; the matcher now prints only the reason, see fail-on-violation-round-2b.txt]
+00:00 +0 -1: G25 repository hygiene SEC-6, SEC-7: no skill packs, keystores or signing secrets and no screen recordings in docs/qa are tracked
+00:00 +0 -2: G25 repository hygiene SEC-6, SEC-7: no skill packs, keystores or signing secrets and no screen recordings in docs/qa are tracked [E]
+  Expected: empty
+    Actual: [
+              'SEC-7 .claude/skills/ is never committed: .claude/skills/g25-tmp.md is tracked'
+            ]
+  SEC-7 .claude/skills/ is never committed: .claude/skills/g25-tmp.md is tracked
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/repository_hygiene_test.dart 320:7             _g25.<fn>.<fn>
+  
+00:00 +0 -2: G25 repository hygiene TEST-12: golden-failure artefacts are never committed (ratchet)
+Shell: --- G25 TEST-12 baseline shrank by 1; commit this list as "TEST-12" in test/repository_hygiene_baseline.json ---
+Shell: [
+Shell:   "test/goldens/failures/team_agent_controls_dark_isolatedDiff.png",
+Shell:   "test/goldens/failures/team_agent_controls_dark_maskedDiff.png",
+Shell:   "test/goldens/failures/team_agent_controls_dark_masterImage.png",
+Shell:   "test/goldens/failures/team_agent_controls_dark_testImage.png",
+Shell:   "test/goldens/failures/team_agent_controls_light_isolatedDiff.png",
+Shell:   "test/goldens/failures/team_agent_controls_light_maskedDiff.png",
+Shell:   "test/goldens/failures/team_agent_controls_light_masterImage.png",
+Shell:   "test/goldens/failures/team_agent_controls_light_testImage.png",
+Shell:   "test/goldens/failures/team_agent_dark_isolatedDiff.png",
+Shell:   "test/goldens/failures/team_agent_dark_maskedDiff.png",
+Shell:   "test/goldens/failures/team_agent_dark_masterImage.png",
+Shell:   "test/goldens/failures/team_agent_dark_testImage.png",
+Shell:   "test/goldens/failures/team_agent_light_isolatedDiff.png",
+Shell:   "test/goldens/failures/team_agent_light_maskedDiff.png",
+Shell:   "test/goldens/failures/team_agent_light_masterImage.png",
+Shell:   "test/goldens/failures/team_agent_light_testImage.png",
+Shell:   "test/goldens/failures/team_agent_output_dark_isolatedDiff.png",
+Shell:   "test/goldens/failures/team_agent_output_dark_maskedDiff.png",
+Shell:   "test/goldens/failures/team_agent_output_dark_masterImage.png",
+Shell:   "test/goldens/failures/team_agent_output_dark_testImage.png",
+Shell:   "test/goldens/failures/team_agent_output_light_isolatedDiff.png",
+Shell:   "test/goldens/failures/team_agent_output_light_maskedDiff.png",
+Shell:   "test/goldens/failures/team_agent_output_light_masterImage.png",
+Shell:   "test/goldens/failures/team_agent_output_light_testImage.png"
+Shell: ]
+Shell: --- end baseline ---
+00:00 +1 -2: G25 repository hygiene the pubspec version is name+build with a positive build number
+00:00 +2 -2: G25 repository hygiene PROC-1: the Android build targets compileSdk 37 and Java 17
+00:00 +3 -2: G25 repository hygiene PROC-1, TEST-18: the running Flutter is the pinned revision and the widget-name ratchet was generated from it
+00:00 +4 -2: the internal engineering log is out of the public tree
+00:00 +5 -2: the root points contributors at CONTRIBUTING, not the log
+00:00 +6 -2: third-party agent skill packs are not carried in the tree
+00:00 +7 -2: every bundled third-party component has a license text
+00:00 +8 -2: a public repository carries its governance files
+00:00 +9 -2: the non-affiliation statement reaches every public entry point
+00:00 +10 -2: the notice inventory matches the resolved dependency versions
+00:00 +11 -2: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart: G25 repository hygiene MOT-10: flutter_animate is never a dependency or an import
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart: G25 repository hygiene SEC-6, SEC-7: no skill packs, keystores or signing secrets and no screen recordings in docs/qa are tracked

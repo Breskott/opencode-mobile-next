@@ -1,0 +1,34 @@
+machine_lock: got test slot 2 after 12s
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart
+00:00 +0: G25 repository hygiene PROC-1: the Android build targets compileSdk 37 and Java 17
+00:00 +0 -1: G25 repository hygiene PROC-1: the Android build targets compileSdk 37 and Java 17 [E]
+  Expected: empty
+    Actual: [
+              'android/build.gradle.kts: JavaVersion.VERSION_11',
+              'android/gradle.properties: org.gradle.java.home=/usr/lib/jvm/java-21-openjdk'
+            ]
+  PROC-1: an Android build file selects a Java other than 17:
+  android/build.gradle.kts: JavaVersion.VERSION_11
+  android/gradle.properties: org.gradle.java.home=/usr/lib/jvm/java-21-openjdk
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/repository_hygiene_test.dart 521:7             _g25.<fn>.<fn>
+  
+00:00 +0 -1: G25 repository hygiene PROC-1, TEST-18: the running Flutter is the pinned revision and the widget-name ratchet was generated from it
+00:00 +1 -1: G25 repository hygiene PROC-1: every CI workflow pins the same Flutter version, and CI runs it
+00:00 +1 -2: G25 repository hygiene PROC-1: every CI workflow pins the same Flutter version, and CI runs it [E]
+  Expected: an object with length of <1>
+    Actual: ['3.47.2', '3.47.9']
+     Which: has length of <2>
+  PROC-1: the workflows install different Flutter versions: {3.47.2: [.github/workflows/android-quality.yml, .github/workflows/android-release.yml, .github/workflows/desktop-linux.yml, .github/workflows/desktop-windows.yml, .github/workflows/sdk-regenerate.yml], 3.47.9: [.github/workflows/ios-quality.yml]}
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/repository_hygiene_test.dart 577:7             _g25.<fn>.<fn>
+  
+00:00 +1 -2: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart: G25 repository hygiene PROC-1: every CI workflow pins the same Flutter version, and CI runs it
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart: G25 repository hygiene PROC-1: the Android build targets compileSdk 37 and Java 17

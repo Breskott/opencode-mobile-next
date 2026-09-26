@@ -1,0 +1,84 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart
+00:00 +0: G25 repository hygiene MOT-10: flutter_animate is never a dependency or an import
+00:00 +0 -1: G25 repository hygiene MOT-10: flutter_animate is never a dependency or an import [E]
+  Expected: empty
+    Actual: ['packages/opencode_sdk/pubspec.yaml', 'tool/g25_violation_tmp.dart']
+  MOT-10: flutter_animate is banned (pending timers fail widget tests); use the framework animation APIs. Named in: [packages/opencode_sdk/pubspec.yaml, tool/g25_violation_tmp.dart]
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/repository_hygiene_test.dart 353:7             _g25.<fn>.<fn>
+  
+00:00 +0 -1: G25 repository hygiene SEC-6, SEC-7: no skill packs, keystores or signing secrets and no screen recordings in docs/qa are tracked
+00:00 +1 -1: G25 repository hygiene TEST-12: golden-failure artefacts are never committed (ratchet)
+00:00 +1 -2: G25 repository hygiene TEST-12: golden-failure artefacts are never committed (ratchet) [E]
+  Expected: empty
+    Actual: ['test/goldens/failures/team_agent_dark_testImage.png']
+  TEST-12: the baseline shrank by 1; a stale entry would let that path be committed again. Commit this list as "TEST-12" in test/repository_hygiene_baseline.json and lower _test12Ceiling to 23:
+  [
+    "test/goldens/failures/team_agent_controls_dark_isolatedDiff.png",
+    "test/goldens/failures/team_agent_controls_dark_maskedDiff.png",
+    "test/goldens/failures/team_agent_controls_dark_masterImage.png",
+    "test/goldens/failures/team_agent_controls_dark_testImage.png",
+    "test/goldens/failures/team_agent_controls_light_isolatedDiff.png",
+    "test/goldens/failures/team_agent_controls_light_maskedDiff.png",
+    "test/goldens/failures/team_agent_controls_light_masterImage.png",
+    "test/goldens/failures/team_agent_controls_light_testImage.png",
+    "test/goldens/failures/team_agent_dark_isolatedDiff.png",
+    "test/goldens/failures/team_agent_dark_maskedDiff.png",
+    "test/goldens/failures/team_agent_dark_masterImage.png",
+    "test/goldens/failures/team_agent_light_isolatedDiff.png",
+    "test/goldens/failures/team_agent_light_maskedDiff.png",
+    "test/goldens/failures/team_agent_light_masterImage.png",
+    "test/goldens/failures/team_agent_light_testImage.png",
+    "test/goldens/failures/team_agent_output_dark_isolatedDiff.png",
+    "test/goldens/failures/team_agent_output_dark_maskedDiff.png",
+    "test/goldens/failures/team_agent_output_dark_masterImage.png",
+    "test/goldens/failures/team_agent_output_dark_testImage.png",
+    "test/goldens/failures/team_agent_output_light_isolatedDiff.png",
+    "test/goldens/failures/team_agent_output_light_maskedDiff.png",
+    "test/goldens/failures/team_agent_output_light_masterImage.png",
+    "test/goldens/failures/team_agent_output_light_testImage.png"
+  ]
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/repository_hygiene_test.dart 437:7             _g25.<fn>.<fn>
+  
+00:00 +1 -2: G25 repository hygiene the pubspec version is name+build with a positive build number
+00:00 +2 -2: G25 repository hygiene PROC-1: the Android build targets compileSdk 37 and Java 17
+00:00 +2 -3: G25 repository hygiene PROC-1: the Android build targets compileSdk 37 and Java 17 [E]
+  Expected: true
+    Actual: <false>
+  android/app/build.gradle.kts lost "sourceCompatibility = JavaVersion.VERSION_17" (Java 17)
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/repository_hygiene_test.dart 482:9             _g25.<fn>.<fn>
+  
+00:00 +2 -3: G25 repository hygiene PROC-1, TEST-18: the running Flutter is the pinned revision and the widget-name ratchet was generated from it
+00:00 +3 -3: G25 repository hygiene PROC-1: every CI workflow pins the same Flutter version, and CI runs it
+00:00 +3 -4: G25 repository hygiene PROC-1: every CI workflow pins the same Flutter version, and CI runs it [E]
+  Expected: an object with length of <1>
+    Actual: ['3.47.2', '3.47.9']
+     Which: has length of <2>
+  PROC-1: the workflows install different Flutter versions: {3.47.2: [.github/workflows/android-quality.yml, .github/workflows/android-release.yml, .github/workflows/sdk-regenerate.yml], 3.47.9: [.github/workflows/ios-quality.yml]}
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/repository_hygiene_test.dart 577:7             _g25.<fn>.<fn>
+  
+00:00 +3 -4: the internal engineering log is out of the public tree
+00:00 +4 -4: the root points contributors at CONTRIBUTING, not the log
+00:00 +5 -4: third-party agent skill packs are not carried in the tree
+00:00 +6 -4: every bundled third-party component has a license text
+00:00 +7 -4: a public repository carries its governance files
+00:00 +8 -4: the non-affiliation statement reaches every public entry point
+00:00 +9 -4: the notice inventory matches the resolved dependency versions
+00:01 +10 -4: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart: G25 repository hygiene MOT-10: flutter_animate is never a dependency or an import
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart: G25 repository hygiene PROC-1: every CI workflow pins the same Flutter version, and CI runs it
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart: G25 repository hygiene PROC-1: the Android build targets compileSdk 37 and Java 17
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart: G25 repository hygiene TEST-12: golden-failure artefacts are never committed (ratchet)

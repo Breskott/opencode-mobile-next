@@ -1,0 +1,38 @@
+00:00 +0: loading /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart
+00:00 +0: G25 repository hygiene MOT-10: flutter_animate is never a dependency or an import
+00:09 +1: G25 repository hygiene SEC-6, SEC-7: no skill packs, keystores or signing secrets and no screen recordings in docs/qa are tracked
+00:09 +2: G25 repository hygiene TEST-12: golden-failure artefacts are never committed (ratchet)
+00:09 +2 -1: G25 repository hygiene TEST-12: golden-failure artefacts are never committed (ratchet) [E]
+  Expected: a value less than or equal to <24>
+    Actual: <25>
+     Which: is not a value less than or equal to <24>
+  TEST-12: test/repository_hygiene_baseline.json lists 25 paths but the ratchet ceiling is 24. The baseline may only shrink; untrack the new failure files instead of listing them
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/repository_hygiene_test.dart 410:7             _g25.<fn>.<fn>
+  
+00:09 +2 -1: G25 repository hygiene the pubspec version is name+build with a positive build number
+00:09 +3 -1: G25 repository hygiene PROC-1: the Android build targets compileSdk 37 and Java 17
+00:09 +4 -1: G25 repository hygiene PROC-1, TEST-18: the running Flutter is the pinned revision and the widget-name ratchet was generated from it
+  Skip: PROC-1 revision pin is local-only: CI installs upstream Flutter (Shorebird fork not installable on runners); the CI pin test below checks the upstream version instead
+00:09 +4 ~1 -1: G25 repository hygiene PROC-1: every CI workflow pins the same Flutter version, and CI runs it
+00:09 +4 ~1 -2: G25 repository hygiene PROC-1: every CI workflow pins the same Flutter version, and CI runs it [E]
+  Expected: '3.47.2'
+    Actual: '3.47.1'
+     Which: is different.
+            Expected: 3.47.2
+              Actual: 3.47.1
+                           ^
+             Differ at offset 5
+  PROC-1: this CI run uses Flutter 3.47.1 but the workflows pin 3.47.2
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/repository_hygiene_test.dart 586:7             _g25.<fn>.<fn>
+  
+00:09 +4 ~1 -2: Some tests failed.
+
+Failing tests:
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart: G25 repository hygiene PROC-1: every CI workflow pins the same Flutter version, and CI runs it
+  /home/eslam/Storage/Code/oc_app/.claude/worktrees/wf_88be54cc-40b-5/test/repository_hygiene_test.dart: G25 repository hygiene TEST-12: golden-failure artefacts are never committed (ratchet)
