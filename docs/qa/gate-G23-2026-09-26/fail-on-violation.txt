@@ -1,0 +1,47 @@
+54 packages have newer versions incompatible with dependency constraints.
+00:00 +0: loading test/golden_harness_test.dart
+00:00 +0: G23 golden-name rule (TEST-20) accepts the documented shapes
+00:00 +1: G23 golden-name rule (TEST-20) rejects the rest
+00:00 +2: G23 golden-name rule (TEST-20) reads the regenerate header only at the top of the file
+00:00 +3: G23 loadCaptureFonts registers every AppTheme and pubspec family
+00:00 +3 -1: G23 loadCaptureFonts registers every AppTheme and pubspec family [E]
+  Expected: empty
+    Actual: ['AppPhosphorDuotone']
+  loadCaptureFonts (tool/capture/fixtures.dart) must register every family AppTheme or pubspec.yaml declares (TEST-8); missing: [AppPhosphorDuotone]
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/golden_harness_test.dart 335:5                 main.<fn>
+  
+00:00 +3 -1: G23 golden harness ratchet (TEST-7, TEST-8, TEST-9, TEST-20, ARCH-11)
+00:00 +3 -2: G23 golden harness ratchet (TEST-7, TEST-8, TEST-9, TEST-20, ARCH-11) [E]
+  Expected: empty
+    Actual: [
+              'kitGalleryDpr3: test/goldens/kit/zz_g23_probe_golden_test.dart',
+              'androidPlatform: test/goldens/zz_g23_probe_golden_test.dart',
+              'regenerateHeader: test/goldens/zz_g23_probe_golden_test.dart',
+              'captureFonts: test/goldens/zz_g23_probe_golden_test.dart',
+              'arabicFont: test/goldens/zz_g23_probe_golden_test.dart',
+              'goldenNames: test/goldens/kit/kit_probe_state_412x915_dark.png (412x915 is the default: leave it out)',
+              'goldenNames: test/goldens/zz_probe_dark.png (needs <module>_<page>_<state>)',
+              'trackedFailures: test/goldens/failures/zz_probe_testImage.png'
+            ]
+  New golden-harness violations (STANDARDS.md §18 G23). Fix them; the baseline only shrinks:
+    kitGalleryDpr3: test/goldens/kit/zz_g23_probe_golden_test.dart
+    androidPlatform: test/goldens/zz_g23_probe_golden_test.dart
+    regenerateHeader: test/goldens/zz_g23_probe_golden_test.dart
+    captureFonts: test/goldens/zz_g23_probe_golden_test.dart
+    arabicFont: test/goldens/zz_g23_probe_golden_test.dart
+    goldenNames: test/goldens/kit/kit_probe_state_412x915_dark.png (412x915 is the default: leave it out)
+    goldenNames: test/goldens/zz_probe_dark.png (needs <module>_<page>_<state>)
+    trackedFailures: test/goldens/failures/zz_probe_testImage.png
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18  expect
+  test/golden_harness_test.dart 386:5                 main.<fn>
+  
+00:00 +3 -2: Some tests failed.
+
+Failing tests:
+  test/golden_harness_test.dart: G23 golden harness ratchet (TEST-7, TEST-8, TEST-9, TEST-20, ARCH-11)
+  test/golden_harness_test.dart: G23 loadCaptureFonts registers every AppTheme and pubspec family
