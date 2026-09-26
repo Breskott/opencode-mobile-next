@@ -23088,5 +23088,18 @@
         "type": "int"
       }
     }
+  },
+  "kitJumpLatest": "Jump to latest",
+  "@kitJumpLatest": {
+    "description": "KitJumpPill: the bottom pill's label when the host gives no new-item count"
+  },
+  "kitJumpNewLatest": "{count, plural, =1{1 new · Jump to latest} other{{count} new · Jump to latest}}",
+  "@kitJumpNewLatest": {
+    "description": "KitJumpPill: the bottom pill's label with a new-item count the host supplies",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

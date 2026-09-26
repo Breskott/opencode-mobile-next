@@ -20522,4 +20522,18 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return 'needs $title and $_temp0 more';
   }
+
+  @override
+  String get kitJumpLatest => 'Jump to latest';
+
+  @override
+  String kitJumpNewLatest(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count new · Jump to latest',
+      one: '1 new · Jump to latest',
+    );
+    return '$_temp0';
+  }
 }
