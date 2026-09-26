@@ -5306,5 +5306,6 @@
   "kitDiscardBody": "ما غيّرته هنا غير محفوظ، ولا يمكن التراجع عن تجاهله.",
   "kitDiscardConfirm": "تجاهل التغييرات",
   "kitCopied": "تم النسخ",
-  "kitMenu": "قائمة"
+  "kitCopyDetails": "نسخ التفاصيل",
+  "kitReportProblem": "الإبلاغ عن مشكلة"
 }

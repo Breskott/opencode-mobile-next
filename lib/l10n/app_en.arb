@@ -22246,8 +22246,12 @@
   "@kitCopied": {
     "description": "Kit copy: spoken to a screen reader once after a value is copied to the clipboard"
   },
-  "kitMenu": "Menu",
-  "@kitMenu": {
-    "description": "Kit menu: the popup menu's default name for a screen reader, when the caller gives none"
+  "kitCopyDetails": "Copy details",
+  "@kitCopyDetails": {
+    "description": "Kit notice and state view: the label of the icon button that copies an error's technical details (redacted) to the clipboard"
+  },
+  "kitReportProblem": "Report a problem",
+  "@kitReportProblem": {
+    "description": "Kit notice and state view: the action on an error that opens the app's problem report, prefilled with that error and previewed before anything is sent"
   }
 }

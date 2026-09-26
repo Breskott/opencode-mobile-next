@@ -2,17 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../../state/nudges.dart';
 import '../app_theme.dart';
-import '../kit/kit.dart';
+import '../kit/kit_buttons.dart';
+import '../kit/kit_notice.dart';
+import '../kit/kit_tokens.dart';
 
-/// The one quiet line every one-time nudge uses: one sentence, one action,
-/// one close button (design standard §5: a condition on a working screen is
-/// a status line, not a card). It sits where the moment happened, never over
+/// Retired by kit-KitNotice-v2: use KitNotice.offer.
+///
+/// A one-time nudge: one sentence, one action, one close button, drawn by
+/// [KitNotice.offer]. It sits where the moment happened, never over
 /// content, and carries no box, shadow or accent so it cannot be mistaken
 /// for a request that needs an answer.
 ///
 /// The sentence always wraps whole. When it needs more than one line, the
 /// action and the close button share the row under it, so a height-limited
-/// slot that scrolls to its end always shows them together.
+/// slot that scrolls to its end always shows them together. It keeps the
+/// screen's side rails itself, as the status line it used to be did, so its
+/// two call sites stay unchanged until their screens adopt the offer.
 class NudgeCard extends StatelessWidget {
   const NudgeCard({
     super.key,
@@ -34,18 +39,26 @@ class NudgeCard extends StatelessWidget {
   final IconData icon;
 
   @override
-  Widget build(BuildContext context) => KitStatusLine(
-    key: ValueKey('nudge-${id.wire}'),
-    icon: icon,
-    message: message,
-    action: KitAction(
-      key: ValueKey('nudge-${id.wire}-action'),
-      label: actionLabel,
-      onPressed: onAction,
-    ),
-    onDismiss: onDismiss,
-    dismissKey: ValueKey('nudge-${id.wire}-dismiss'),
-    dismissTooltip: dismissTooltip,
-    controlsTogether: true,
-  );
+  Widget build(BuildContext context) {
+    final tokens = KitTokens.of(context);
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        start: tokens.gutter,
+        end: tokens.space1,
+      ),
+      child: KitNotice.offer(
+        key: ValueKey('nudge-${id.wire}'),
+        message: message,
+        icon: icon,
+        action: KitAction(
+          key: ValueKey('nudge-${id.wire}-action'),
+          label: actionLabel,
+          onPressed: onAction,
+        ),
+        onDismiss: onDismiss,
+        dismissKey: ValueKey('nudge-${id.wire}-dismiss'),
+        dismissLabel: dismissTooltip,
+      ),
+    );
+  }
 }
