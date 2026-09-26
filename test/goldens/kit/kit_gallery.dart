@@ -133,51 +133,52 @@ Future<void> kitGalleryShot(
   double textScale = 1,
   bool settleAfterThen = true,
 }) async {
-  // TEST-9: DPR 3.0, [size] in logical pixels. ARCH-11: rendered as Android;
-  // the override is cleared at the end of the shot (flutter_test checks it
-  // before tear-downs run), and by the tear-down if the shot throws.
+  // TEST-9: DPR 3.0, [size] in logical pixels.
   tester.view.physicalSize = size * 3.0;
   tester.view.devicePixelRatio = 3.0;
   addTearDown(tester.view.reset);
-  debugDefaultTargetPlatformOverride = TargetPlatform.android;
-  addTearDown(() => debugDefaultTargetPlatformOverride = null);
   final boundary = GlobalKey();
   late BuildContext context;
-  await tester.pumpWidget(
-    RepaintBoundary(
-      key: boundary,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: _theme(light: light),
-        locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            disableAnimations: true,
-            textScaler: TextScaler.linear(textScale),
+  // ARCH-11: rendered as Android. Cleared in the finally: flutter_test checks
+  // it before tear-downs run, also when a caller catches a failed shot.
+  debugDefaultTargetPlatformOverride = TargetPlatform.android;
+  try {
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: boundary,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: _theme(light: light),
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              disableAnimations: true,
+              textScaler: TextScaler.linear(textScale),
+            ),
+            child: child!,
           ),
-          child: child!,
-        ),
-        home: Scaffold(
-          body: Builder(
-            builder: (inner) {
-              context = inner;
-              return const SizedBox.expand();
-            },
+          home: Scaffold(
+            body: Builder(
+              builder: (inner) {
+                context = inner;
+                return const SizedBox.expand();
+              },
+            ),
           ),
         ),
       ),
-    ),
-  );
-  unawaited(Future.sync(() => open(context)));
-  await tester.pumpAndSettle();
-  if (then != null) {
-    await then(tester);
-    if (settleAfterThen) await tester.pumpAndSettle();
+    );
+    unawaited(Future.sync(() => open(context)));
+    await tester.pumpAndSettle();
+    if (then != null) {
+      await then(tester);
+      if (settleAfterThen) await tester.pumpAndSettle();
+    }
+    expect(tester.takeException(), isNull);
+  } finally {
+    debugDefaultTargetPlatformOverride = null;
   }
-  expect(tester.takeException(), isNull);
   await expectLater(find.byKey(boundary), matchesGoldenFile('$name.png'));
-
-  debugDefaultTargetPlatformOverride = null;
 }

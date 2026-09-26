@@ -3,7 +3,8 @@
 // A pure-Dart file scan, no widget pumping. It makes these rules mechanical:
 //
 // - TEST-9: the kit gallery frame (test/goldens/kit/kit_gallery.dart) renders
-//   at device pixel ratio 3.0, and no kit gallery file sets another ratio.
+//   at device pixel ratio 3.0, and no other file in test/goldens/kit/ that
+//   compares goldens itself sets another ratio.
 // - ARCH-11: every golden harness (a test file that compares against a
 //   golden file, kit_gallery.dart included) sets
 //   debugDefaultTargetPlatformOverride = TargetPlatform.android (or runs
@@ -286,8 +287,7 @@ Map<String, Set<String>> scan() {
 
   final result = {for (final k in checkKeys) k: <String>{}};
 
-  // TEST-9: the kit gallery frame at DPR 3, and nothing in the kit gallery
-  // folder at another ratio.
+  // TEST-9: the kit gallery frame at DPR 3.
   if (!code.containsKey(_kitGallery)) {
     result['kitGalleryDpr3']!.add('$_kitGallery: missing');
   } else {
@@ -299,7 +299,10 @@ Map<String, Set<String>> scan() {
       result['kitGalleryDpr3']!.add(_kitGallery);
     }
   }
-  for (final p in dart) {
+  // Other kit files that compare goldens themselves (a file that only
+  // calls kitGalleryShot gets DPR 3 from it; a pure widget test in the
+  // folder, such as G5's self-test, may pump at any ratio).
+  for (final p in harnesses) {
     if (!p.startsWith(_kitDir) || p == _kitGallery) continue;
     final bad = _dprAssign
         .allMatches(code[p]!)
