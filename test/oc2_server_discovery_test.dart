@@ -16,6 +16,7 @@ import 'package:opencode_mobile/ui/screens/servers_screen.dart';
 import 'support/fake_setup_engine.dart';
 import 'support/server_editor.dart';
 import 'support/setup_capture_preferences.dart';
+import 'support/voice_device_channel.dart';
 
 class _Store extends ProfileStore {
   _Store({required super.prefs, required this.saved});
@@ -287,6 +288,8 @@ void main() {
   testWidgets('known OC1 user reaches phone setup with no runtime forced', (
     tester,
   ) async {
+    // Phone setup's pre-flight reads the device when its screen opens.
+    answerVoiceDeviceProbe();
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);

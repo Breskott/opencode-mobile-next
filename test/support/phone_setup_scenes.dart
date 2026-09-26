@@ -23,6 +23,7 @@ import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_ready_screen.
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_start_screen.dart';
 import 'package:opencode_mobile/ui/screens/phone_setup/phone_setup_welcome_entry.dart';
 import 'package:opencode_mobile/ui/widgets/phone_server_card.dart';
+import 'package:opencode_mobile/voice/device.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../tool/capture/fixtures.dart' show captureTheme;
@@ -197,10 +198,21 @@ final sceneAptLog = [
   'Processing triggers for libc-bin (2.39-0ubuntu8.4) ...',
 ].join('\n');
 
+/// A phone the pre-flight (P0.8) finds nothing wrong with, so a scene never
+/// waits on the real `oc/voice` channel.
+const _sceneDevice = VoiceDeviceInfo(
+  availableStorageBytes: 20000000000,
+  memoryClassMb: 256,
+  totalMemoryMb: 8192,
+  supportedAbis: ['arm64-v8a'],
+  hasMicrophone: true,
+);
+
 Widget _start({TermuxRunningServer? termux, bool inApp = false}) =>
     PhoneSetupStartScreen(
       termuxProbe: () async => termux ?? const TermuxRunningServer.absent(),
       inAppProbe: () async => inApp,
+      deviceProbe: () async => _sceneDevice,
       openProgress: (_) async {},
     );
 
